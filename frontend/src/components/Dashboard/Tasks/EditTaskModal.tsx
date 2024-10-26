@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Type, Tag as TagIcon, Calendar, AlertCircle, Link2, Plus, Loader, Save, Trash2 } from 'lucide-react';
+import { X, Type, Tag as TagIcon, Calendar, AlertCircle, Plus, Loader, Save, Trash2 } from 'lucide-react';
 import { Input } from '../../shared/Input';
 import { Task, useTasks } from '../../../contexts/TasksContext';
-import { AddLinkModal } from './AddLinkModal';
-import { useNotes } from '../../../contexts/NotesContext';
+import { SuggestionButton } from '../../shared/SuggestionButton';
 
 interface EditTaskModalProps {
   isOpen: boolean;
@@ -13,14 +12,12 @@ interface EditTaskModalProps {
 
 export function EditTaskModal({ isOpen, onClose, task }: EditTaskModalProps) {
   const { updateTask, deleteTask } = useTasks();
-  const { notes } = useNotes();
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description);
   const [dueDate, setDueDate] = useState(task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 16) : '');
   const [priority, setPriority] = useState(task.priority);
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState(task.tags);
-  const [showAddLinkModal, setShowAddLinkModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -88,22 +85,11 @@ export function EditTaskModal({ isOpen, onClose, task }: EditTaskModalProps) {
     }
   };
 
-  const linkedItems = [
-    ...task.linkedNotes.map(id => {
-      const note = notes.find(n => n.id === id);
-      return note ? { ...note, type: 'note' as const } : null;
-    }),
-    ...task.linkedIdeas.map(id => {
-      const idea = notes.find(n => n.id === id && n.tags.includes('idea'));
-      return idea ? { ...idea, type: 'idea' as const } : null;
-    })
-  ].filter((item): item is NonNullable<typeof item> => item !== null);
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       
-      <div className="relative w-full max-w-4xl glass-morphism rounded-xl">
+      <div className="relative w-full max-w-2xl glass-morphism rounded-xl">
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-dark-border">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
             Edit Task
@@ -125,28 +111,62 @@ export function EditTaskModal({ isOpen, onClose, task }: EditTaskModalProps) {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="grid grid-cols-3 gap-6 p-6">
-          <div className="col-span-2 space-y-4">
-            <Input
-              id="task-title"
-              name="title"
-              type="text"
-              label="Title"
-              icon={Type}
-              value={title}
-              onChange={(e) => {
-                setTitle(e.target.value);
-                setError('');
-              }}
-              placeholder="Enter task title"
-              error={error}
-              disabled={isLoading}
-            />
+        <form onSubmit={handleSubmit} className="p-4">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label htmlFor="task-title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Title
+                </label>
+                <SuggestionButton
+                  type="title"
+                  itemType="task"
+                  input={{ content: description }}
+                  onSuggestion={(suggestion) => setTitle(suggestion as string)}
+                  disabled={isLoading}
+                  context={{
+                    currentTitle: title,
+                    tags,
+                    dueDate,
+                    priority
+                  }}
+                />
+              </div>
+              <Input
+                id="task-title"
+                name="title"
+                type="text"
+                icon={Type}
+                value={title}
+                onChange={(e) => {
+                  setTitle(e.target.value);
+                  setError('');
+                }}
+                placeholder="Enter task title"
+                error={error}
+                disabled={isLoading}
+              />
+            </div>
 
-            <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Description
-              </label>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Description
+                </label>
+                <SuggestionButton
+                  type="content"
+                  itemType="task"
+                  input={{ title }}
+                  onSuggestion={(suggestion) => setDescription(suggestion as string)}
+                  disabled={isLoading}
+                  context={{
+                    currentContent: description,
+                    tags,
+                    dueDate,
+                    priority
+                  }}
+                />
+              </div>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -200,9 +220,21 @@ export function EditTaskModal({ isOpen, onClose, task }: EditTaskModalProps) {
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Tags
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Tags
+                </label>
+                <SuggestionButton
+                  type="tags"
+                  itemType="task"
+                  input={{ title, content: description }}
+                  onSuggestion={(suggestion) => setTags(suggestion as string[])}
+                  disabled={isLoading}
+                  context={{
+                    currentTags: tags
+                  }}
+                />
+              </div>
               <div className="flex flex-wrap gap-2 mb-2">
                 {tags.map(tag => (
                   <span
@@ -250,70 +282,7 @@ export function EditTaskModal({ isOpen, onClose, task }: EditTaskModalProps) {
             </div>
           </div>
 
-          <div className="col-span-1 space-y-4">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-gray-900 dark:text-white">
-                Connected Items
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowAddLinkModal(true)}
-                className="flex items-center gap-1.5 px-2 py-1 text-sm text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                Add Link
-              </button>
-            </div>
-
-            <div className="space-y-2 max-h-[400px] overflow-y-auto">
-              {linkedItems.length > 0 ? (
-                linkedItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="p-3 rounded-lg bg-gray-50 dark:bg-dark-hover hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors group relative"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={`p-1.5 rounded-lg flex-shrink-0 ${
-                        item.type === 'idea'
-                          ? 'bg-amber-100 dark:bg-amber-900/30'
-                          : 'bg-blue-100 dark:bg-blue-900/30'
-                      }`}>
-                        <Link2 className={`w-4 h-4 ${
-                          item.type === 'idea'
-                            ? 'text-amber-600 dark:text-amber-400'
-                            : 'text-blue-600 dark:text-blue-400'
-                        }`} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-gray-900 dark:text-white truncate">
-                          {item.title}
-                        </h4>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
-                          {item.content}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          // Handle removing link
-                        }}
-                        className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Remove link"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
-                  No connected items yet
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="col-span-3 flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-dark-border">
+          <div className="flex justify-end gap-3 mt-6">
             <button
               type="button"
               onClick={onClose}
@@ -342,12 +311,6 @@ export function EditTaskModal({ isOpen, onClose, task }: EditTaskModalProps) {
           </div>
         </form>
       </div>
-
-      <AddLinkModal
-        isOpen={showAddLinkModal}
-        onClose={() => setShowAddLinkModal(false)}
-        taskId={task.id}
-      />
     </div>
   );
 }

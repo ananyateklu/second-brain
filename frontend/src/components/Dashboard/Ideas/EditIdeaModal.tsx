@@ -1,18 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { X, Type, Tag as TagIcon, Loader, Save, Star, FileText } from 'lucide-react';
+import { X, Type, Tag as TagIcon, Loader, Save, Trash2, Star, Lightbulb } from 'lucide-react';
 import { Input } from '../../shared/Input';
-import { Note } from '../../../contexts/NotesContext';
 import { useNotes } from '../../../contexts/NotesContext';
 import { SuggestionButton } from '../../shared/SuggestionButton';
 
-interface EditNoteModalProps {
+interface EditIdeaModalProps {
   isOpen: boolean;
   onClose: () => void;
-  note: Note | null;
+  ideaId: string | null;
 }
 
-export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
-  const { updateNote, toggleFavoriteNote } = useNotes();
+export function EditIdeaModal({ isOpen, onClose, ideaId }: EditIdeaModalProps) {
+  const { notes, updateNote, toggleFavoriteNote } = useNotes();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [tagInput, setTagInput] = useState('');
@@ -20,16 +19,18 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const idea = notes.find(note => note.id === ideaId);
+
   useEffect(() => {
-    if (note) {
-      setTitle(note.title);
-      setContent(note.content);
-      setTags(note.tags);
+    if (idea) {
+      setTitle(idea.title);
+      setContent(idea.content);
+      setTags(idea.tags);
       setError('');
     }
-  }, [note]);
+  }, [idea]);
 
-  if (!isOpen || !note) return null;
+  if (!isOpen || !idea) return null;
 
   const handleAddTag = () => {
     const trimmedTag = tagInput.trim();
@@ -40,7 +41,9 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    setTags(tags.filter(tag => tag !== tagToRemove));
+    if (tagToRemove !== 'idea') {
+      setTags(tags.filter(tag => tag !== tagToRemove));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -55,14 +58,14 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
     setError('');
 
     try {
-      await updateNote(note.id, {
+      await updateNote(idea.id, {
         title: title.trim(),
         content: content.trim(),
-        tags,
+        tags: tags.includes('idea') ? tags : ['idea', ...tags],
       });
       onClose();
     } catch (error) {
-      setError('Failed to update note. Please try again.');
+      setError('Failed to update idea. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -75,23 +78,23 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
       <div className="relative w-full max-w-2xl glass-morphism rounded-xl">
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-dark-border">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-              <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+              <Lightbulb className="w-5 h-5 text-amber-600 dark:text-amber-400" />
             </div>
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-              Edit Note
+              Edit Idea
             </h2>
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => toggleFavoriteNote(note.id)}
+              onClick={() => toggleFavoriteNote(idea.id)}
               className={`p-2 rounded-lg transition-colors ${
-                note.isFavorite
+                idea.isFavorite
                   ? 'text-amber-500 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20'
                   : 'text-gray-400 hover:text-amber-500 dark:text-gray-500 dark:hover:text-amber-400 hover:bg-gray-100 dark:hover:bg-dark-hover'
               }`}
             >
-              <Star className="w-5 h-5" fill={note.isFavorite ? 'currentColor' : 'none'} />
+              <Star className="w-5 h-5" fill={idea.isFavorite ? 'currentColor' : 'none'} />
             </button>
             <button
               onClick={onClose}
@@ -106,12 +109,12 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
           <div className="space-y-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label htmlFor="note-title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label htmlFor="idea-title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Title
                 </label>
                 <SuggestionButton
                   type="title"
-                  itemType="note"
+                  itemType="idea"
                   input={{ content }}
                   onSuggestion={(suggestion) => setTitle(suggestion as string)}
                   disabled={isLoading}
@@ -122,7 +125,7 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
                 />
               </div>
               <Input
-                id="note-title"
+                id="idea-title"
                 name="title"
                 type="text"
                 icon={Type}
@@ -131,7 +134,7 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
                   setTitle(e.target.value);
                   setError('');
                 }}
-                placeholder="Enter note title"
+                placeholder="What's your idea?"
                 error={error}
                 disabled={isLoading}
               />
@@ -140,11 +143,11 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Content
+                  Description
                 </label>
                 <SuggestionButton
                   type="content"
-                  itemType="note"
+                  itemType="idea"
                   input={{ title }}
                   onSuggestion={(suggestion) => setContent(suggestion as string)}
                   disabled={isLoading}
@@ -157,7 +160,7 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                placeholder="Write your note content..."
+                placeholder="Describe your idea..."
                 rows={8}
                 disabled={isLoading}
                 className="w-full px-4 py-3 bg-white dark:bg-dark-bg border border-gray-300 dark:border-dark-border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
@@ -171,9 +174,9 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
                 </label>
                 <SuggestionButton
                   type="tags"
-                  itemType="note"
+                  itemType="idea"
                   input={{ title, content }}
-                  onSuggestion={(suggestion) => setTags(suggestion as string[])}
+                  onSuggestion={(suggestion) => setTags(['idea', ...(suggestion as string[])])}
                   disabled={isLoading}
                   context={{
                     currentTags: tags
@@ -187,13 +190,15 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
                     className="inline-flex items-center gap-1 px-2.5 py-1 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 rounded-full text-sm"
                   >
                     {tag}
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveTag(tag)}
-                      className="p-0.5 hover:text-primary-800 dark:hover:text-primary-200"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
+                    {tag !== 'idea' && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveTag(tag)}
+                        className="p-0.5 hover:text-primary-800 dark:hover:text-primary-200"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
                   </span>
                 ))}
               </div>

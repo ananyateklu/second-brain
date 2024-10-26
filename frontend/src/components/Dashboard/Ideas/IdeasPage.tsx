@@ -5,7 +5,7 @@ import { IdeasList } from './IdeasList';
 import { IdeasGrid } from './IdeasGrid';
 import { IdeasMindMap } from './IdeasMindMap';
 import { NewIdeaModal } from './NewIdeaModal';
-import { IdeaDetailsModal } from './IdeaDetailsModal';
+import { EditIdeaModal } from './EditIdeaModal';
 
 type ViewMode = 'list' | 'grid' | 'mindmap';
 
@@ -141,7 +141,7 @@ export function IdeasPage() {
         onClose={() => setShowNewIdeaModal(false)}
       />
 
-      <IdeaDetailsModal
+      <EditIdeaModal
         isOpen={selectedIdeaId !== null}
         onClose={() => setSelectedIdeaId(null)}
         ideaId={selectedIdeaId}
