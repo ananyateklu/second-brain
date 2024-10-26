@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 import { useActivities } from './ActivityContext';
 
 export interface Note {
@@ -12,7 +12,7 @@ export interface Note {
   isFavorite: boolean;
   isArchived?: boolean;
   archivedAt?: string;
-  linkedNotes?: string[];
+  linkedNotes: string[];
 }
 
 interface NotesContextType {
@@ -33,18 +33,6 @@ const NotesContext = createContext<NotesContextType | null>(null);
 export function NotesProvider({ children }: { children: React.ReactNode }) {
   const [notes, setNotes] = useState<Note[]>([]);
   const { addActivity } = useActivities();
-  const pendingActivityRef = useRef<(() => void) | null>(null);
-
-  // Helper to safely schedule activity logging
-  const scheduleActivity = useCallback((activityFn: () => void) => {
-    pendingActivityRef.current = activityFn;
-    setTimeout(() => {
-      if (pendingActivityRef.current) {
-        pendingActivityRef.current();
-        pendingActivityRef.current = null;
-      }
-    }, 0);
-  }, []);
 
   const addNote = useCallback((note: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'linkedNotes'>) => {
     const newNote: Note = {
@@ -56,19 +44,17 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     };
     setNotes(prev => [newNote, ...prev]);
 
-    scheduleActivity(() => {
-      addActivity({
-        actionType: 'create',
-        itemType: note.tags.includes('idea') ? 'idea' : 'note',
-        itemId: newNote.id,
-        itemTitle: newNote.title,
-        description: `Created ${note.tags.includes('idea') ? 'idea' : 'note'}: ${newNote.title}`,
-        metadata: {
-          tags: newNote.tags
-        }
-      });
+    addActivity({
+      actionType: 'create',
+      itemType: note.tags.includes('idea') ? 'idea' : 'note',
+      itemId: newNote.id,
+      itemTitle: newNote.title,
+      description: `Created ${note.tags.includes('idea') ? 'idea' : 'note'}: ${newNote.title}`,
+      metadata: {
+        tags: newNote.tags
+      }
     });
-  }, [addActivity, scheduleActivity]);
+  }, [addActivity]);
 
   const updateNote = useCallback((id: string, updates: Partial<Note>) => {
     setNotes(prev => {
@@ -85,48 +71,44 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
       const newNotes = [...prev];
       newNotes[noteIndex] = updatedNote;
 
-      scheduleActivity(() => {
-        addActivity({
-          actionType: 'edit',
-          itemType: oldNote.tags.includes('idea') ? 'idea' : 'note',
-          itemId: id,
-          itemTitle: updates.title || oldNote.title,
-          description: `Updated ${oldNote.tags.includes('idea') ? 'idea' : 'note'}: ${updates.title || oldNote.title}`,
-          metadata: {
-            previousTitle: oldNote.title,
-            newTitle: updates.title,
-            previousContent: oldNote.content,
-            newContent: updates.content,
-            tags: updates.tags || oldNote.tags
-          }
-        });
+      addActivity({
+        actionType: 'edit',
+        itemType: oldNote.tags.includes('idea') ? 'idea' : 'note',
+        itemId: id,
+        itemTitle: updates.title || oldNote.title,
+        description: `Updated ${oldNote.tags.includes('idea') ? 'idea' : 'note'}: ${updates.title || oldNote.title}`,
+        metadata: {
+          previousTitle: oldNote.title,
+          newTitle: updates.title,
+          previousContent: oldNote.content,
+          newContent: updates.content,
+          tags: updates.tags || oldNote.tags
+        }
       });
 
       return newNotes;
     });
-  }, [addActivity, scheduleActivity]);
+  }, [addActivity]);
 
   const deleteNote = useCallback((id: string) => {
     setNotes(prev => {
       const noteToDelete = prev.find(note => note.id === id);
       if (!noteToDelete) return prev;
 
-      scheduleActivity(() => {
-        addActivity({
-          actionType: 'delete',
-          itemType: noteToDelete.tags.includes('idea') ? 'idea' : 'note',
-          itemId: id,
-          itemTitle: noteToDelete.title,
-          description: `Deleted ${noteToDelete.tags.includes('idea') ? 'idea' : 'note'}: ${noteToDelete.title}`,
-          metadata: {
-            tags: noteToDelete.tags
-          }
-        });
+      addActivity({
+        actionType: 'delete',
+        itemType: noteToDelete.tags.includes('idea') ? 'idea' : 'note',
+        itemId: id,
+        itemTitle: noteToDelete.title,
+        description: `Deleted ${noteToDelete.tags.includes('idea') ? 'idea' : 'note'}: ${noteToDelete.title}`,
+        metadata: {
+          tags: noteToDelete.tags
+        }
       });
 
       return prev.filter(note => note.id !== id);
     });
-  }, [addActivity, scheduleActivity]);
+  }, [addActivity]);
 
   const togglePinNote = useCallback((id: string) => {
     setNotes(prev => {
@@ -137,19 +119,17 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
       const newNotes = [...prev];
       newNotes[noteIndex] = { ...note, isPinned: !note.isPinned };
 
-      scheduleActivity(() => {
-        addActivity({
-          actionType: note.isPinned ? 'unpin' : 'pin',
-          itemType: note.tags.includes('idea') ? 'idea' : 'note',
-          itemId: id,
-          itemTitle: note.title,
-          description: `${note.isPinned ? 'Unpinned' : 'Pinned'} ${note.tags.includes('idea') ? 'idea' : 'note'}: ${note.title}`
-        });
+      addActivity({
+        actionType: note.isPinned ? 'unpin' : 'pin',
+        itemType: note.tags.includes('idea') ? 'idea' : 'note',
+        itemId: id,
+        itemTitle: note.title,
+        description: `${note.isPinned ? 'Unpinned' : 'Pinned'} ${note.tags.includes('idea') ? 'idea' : 'note'}: ${note.title}`
       });
 
       return newNotes;
     });
-  }, [addActivity, scheduleActivity]);
+  }, [addActivity]);
 
   const toggleFavoriteNote = useCallback((id: string) => {
     setNotes(prev => {
@@ -160,19 +140,17 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
       const newNotes = [...prev];
       newNotes[noteIndex] = { ...note, isFavorite: !note.isFavorite };
 
-      scheduleActivity(() => {
-        addActivity({
-          actionType: note.isFavorite ? 'unfavorite' : 'favorite',
-          itemType: note.tags.includes('idea') ? 'idea' : 'note',
-          itemId: id,
-          itemTitle: note.title,
-          description: `${note.isFavorite ? 'Removed from' : 'Added to'} favorites: ${note.title}`
-        });
+      addActivity({
+        actionType: note.isFavorite ? 'unfavorite' : 'favorite',
+        itemType: note.tags.includes('idea') ? 'idea' : 'note',
+        itemId: id,
+        itemTitle: note.title,
+        description: `${note.isFavorite ? 'Removed from' : 'Added to'} favorites: ${note.title}`
       });
 
       return newNotes;
     });
-  }, [addActivity, scheduleActivity]);
+  }, [addActivity]);
 
   const archiveNote = useCallback((id: string) => {
     setNotes(prev => {
@@ -187,19 +165,17 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
         archivedAt: new Date().toISOString()
       };
 
-      scheduleActivity(() => {
-        addActivity({
-          actionType: 'archive',
-          itemType: note.tags.includes('idea') ? 'idea' : 'note',
-          itemId: id,
-          itemTitle: note.title,
-          description: `Archived ${note.tags.includes('idea') ? 'idea' : 'note'}: ${note.title}`
-        });
+      addActivity({
+        actionType: 'archive',
+        itemType: note.tags.includes('idea') ? 'idea' : 'note',
+        itemId: id,
+        itemTitle: note.title,
+        description: `Archived ${note.tags.includes('idea') ? 'idea' : 'note'}: ${note.title}`
       });
 
       return newNotes;
     });
-  }, [addActivity, scheduleActivity]);
+  }, [addActivity]);
 
   const unarchiveNote = useCallback((id: string) => {
     setNotes(prev => {
@@ -214,67 +190,57 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
         archivedAt: undefined
       };
 
-      scheduleActivity(() => {
-        addActivity({
-          actionType: 'unarchive',
-          itemType: note.tags.includes('idea') ? 'idea' : 'note',
-          itemId: id,
-          itemTitle: note.title,
-          description: `Unarchived ${note.tags.includes('idea') ? 'idea' : 'note'}: ${note.title}`
-        });
+      addActivity({
+        actionType: 'unarchive',
+        itemType: note.tags.includes('idea') ? 'idea' : 'note',
+        itemId: id,
+        itemTitle: note.title,
+        description: `Unarchived ${note.tags.includes('idea') ? 'idea' : 'note'}: ${note.title}`
       });
 
       return newNotes;
     });
-  }, [addActivity, scheduleActivity]);
+  }, [addActivity]);
 
   const addLink = useCallback((sourceId: string, targetId: string) => {
-    setNotes(prev => {
-      const sourceNote = prev.find(note => note.id === sourceId);
-      const targetNote = prev.find(note => note.id === targetId);
-      if (!sourceNote || !targetNote) return prev;
-
-      return prev.map(note => {
-        if (note.id === sourceId) {
-          const currentLinks = note.linkedNotes || [];
-          if (!currentLinks.includes(targetId)) {
-            return {
-              ...note,
-              linkedNotes: [...currentLinks, targetId],
-              updatedAt: new Date().toISOString()
-            };
-          }
-        }
-        if (note.id === targetId) {
-          const currentLinks = note.linkedNotes || [];
-          if (!currentLinks.includes(sourceId)) {
-            return {
-              ...note,
-              linkedNotes: [...currentLinks, sourceId],
-              updatedAt: new Date().toISOString()
-            };
-          }
-        }
-        return note;
-      });
-    });
-  }, []);
-
-  const removeLink = useCallback((sourceId: string, targetId: string) => {
-    setNotes(prev => {
-      return prev.map(note => {
-        if (note.id === sourceId || note.id === targetId) {
+    setNotes(prev => prev.map(note => {
+      if (note.id === sourceId) {
+        const currentLinks = note.linkedNotes || [];
+        if (!currentLinks.includes(targetId)) {
           return {
             ...note,
-            linkedNotes: (note.linkedNotes || []).filter(id => 
-              id !== (note.id === sourceId ? targetId : sourceId)
-            ),
+            linkedNotes: [...currentLinks, targetId],
             updatedAt: new Date().toISOString()
           };
         }
-        return note;
-      });
-    });
+      }
+      if (note.id === targetId) {
+        const currentLinks = note.linkedNotes || [];
+        if (!currentLinks.includes(sourceId)) {
+          return {
+            ...note,
+            linkedNotes: [...currentLinks, sourceId],
+            updatedAt: new Date().toISOString()
+          };
+        }
+      }
+      return note;
+    }));
+  }, []);
+
+  const removeLink = useCallback((sourceId: string, targetId: string) => {
+    setNotes(prev => prev.map(note => {
+      if (note.id === sourceId || note.id === targetId) {
+        return {
+          ...note,
+          linkedNotes: (note.linkedNotes || []).filter(id => 
+            id !== (note.id === sourceId ? targetId : sourceId)
+          ),
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return note;
+    }));
   }, []);
 
   return (

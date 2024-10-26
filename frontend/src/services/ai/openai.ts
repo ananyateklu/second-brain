@@ -23,6 +23,24 @@ export class OpenAIService {
     return typeof apiKey === 'string' && apiKey.trim().startsWith('sk-') && apiKey.length > 20;
   }
 
+  private cleanResponse(text: string): string {
+    // First, remove any markdown backticks or code blocks
+    text = text.replace(/```[^`]*```/g, '');
+    text = text.replace(/`([^`]+)`/g, '$1');
+
+    // Remove any response prefixes
+    text = text.replace(/^(Title:|Suggested Title:|Generated Title:|Response:|Here's a title:|How about:|I suggest:|Try this:|Result:)/i, '');
+
+    // Remove all types of quotes and apostrophes
+    text = text.replace(/["''""`]/g, '');
+
+    // Clean up whitespace
+    text = text.trim();
+    text = text.replace(/\s+/g, ' ');
+
+    return text;
+  }
+
   async testConnection(): Promise<boolean> {
     if (!this.client) {
       throw new Error('OpenAI client not initialized');
@@ -77,14 +95,29 @@ export class OpenAIService {
     try {
       switch (model.endpoint) {
         case 'chat': {
+          const systemMessage = message.includes('Generate') || message.includes('Create') ? 
+            'You are a direct assistant. Never use quotes or formatting in your responses. Always respond with plain text only.' : 
+            undefined;
+
           const response = await this.client.chat.completions.create({
             model: modelId,
-            messages: [{ role: 'user', content: message }],
+            messages: [
+              ...(systemMessage ? [{ role: 'system', content: systemMessage }] : []),
+              { role: 'user', content: message }
+            ],
             temperature: 0.7,
             max_tokens: 1000
           });
+
+          let content = response.choices[0]?.message?.content || '';
+          
+          // Clean the response if it's a title generation request
+          if (message.toLowerCase().includes('title')) {
+            content = this.cleanResponse(content);
+          }
+
           return {
-            content: response.choices[0]?.message?.content || '',
+            content,
             type: 'text'
           };
         }
@@ -122,7 +155,6 @@ export class OpenAIService {
               voice: 'alloy'
             });
             
-            // Convert the response to a blob URL
             const audioBlob = new Blob([await response.arrayBuffer()], { type: 'audio/mpeg' });
             const audioUrl = URL.createObjectURL(audioBlob);
             
@@ -181,7 +213,6 @@ export class OpenAIService {
         voice: 'alloy'
       });
 
-      // Convert the response to a blob URL
       const audioBlob = new Blob([await response.arrayBuffer()], { type: 'audio/mpeg' });
       const audioUrl = URL.createObjectURL(audioBlob);
 

@@ -22,11 +22,25 @@ export class NamingService {
     
     try {
       const response = await this.aiService.sendMessage(prompt, this.MODEL_ID);
-      const suggestion = response.content.trim();
+      let suggestion = response.content;
+
+      // Remove any markdown or code formatting
+      suggestion = suggestion.replace(/```[^`]*```/g, '');
+      suggestion = suggestion.replace(/`([^`]+)`/g, '$1');
+
+      // Remove any response prefixes
+      suggestion = suggestion.replace(/^(Title:|Suggested Title:|Generated Title:|Response:|Here's a title:|How about:|I suggest:|Try this:|Result:)/i, '');
+
+      // Remove all types of quotes and apostrophes
+      suggestion = suggestion.replace(/["''""`]/g, '');
+
+      // Clean up whitespace
+      suggestion = suggestion.trim();
+      suggestion = suggestion.replace(/\s+/g, ' ');
       
       // Ensure the suggestion meets our requirements
       if (suggestion.length > 60) {
-        return suggestion.slice(0, 57) + '...';
+        suggestion = suggestion.slice(0, 57) + '...';
       }
       
       return suggestion;
@@ -47,26 +61,37 @@ export class NamingService {
     }
   ): string {
     const prompts = {
-      note: `Generate a concise, descriptive title for this note. The title should:
-- Be clear and under 60 characters
-- Capture the main topic or purpose
-- Use natural language
-- Be specific but not verbose`,
-      idea: `Create a captivating, memorable title for this idea. The title should:
-- Be creative but clear, under 60 characters
-- Capture the innovative aspect
-- Be engaging and memorable
-- Reflect the potential impact`,
-      task: `Generate a clear, action-oriented title for this task. The title should:
-- Be specific and under 60 characters
-- Start with a verb when possible
-- Clearly state the objective
-- Include key context`,
-      reminder: `Create a clear, time-relevant title for this reminder. The title should:
-- Be specific and under 60 characters
-- Include relevant timing context
-- Be action-oriented
-- Be immediately understandable`
+      note: `Write a title for this note. IMPORTANT RULES:
+- DO NOT use any quotes or punctuation marks
+- DO NOT prefix with Title: or similar
+- Keep it under 60 characters
+- Make it clear and descriptive
+- Write the title as plain text only
+- Respond with just the title text`,
+
+      idea: `Write a title for this idea. IMPORTANT RULES:
+- DO NOT use any quotes or punctuation marks
+- DO NOT prefix with Title: or similar
+- Keep it under 60 characters
+- Make it creative but clear
+- Write the title as plain text only
+- Respond with just the title text`,
+
+      task: `Write a title for this task. IMPORTANT RULES:
+- DO NOT use any quotes or punctuation marks
+- DO NOT prefix with Title: or similar
+- Keep it under 60 characters
+- Start with a verb
+- Write the title as plain text only
+- Respond with just the title text`,
+
+      reminder: `Write a title for this reminder. IMPORTANT RULES:
+- DO NOT use any quotes or punctuation marks
+- DO NOT prefix with Title: or similar
+- Keep it under 60 characters
+- Make it time-relevant
+- Write the title as plain text only
+- Respond with just the title text`
     };
 
     let contextInfo = '';
@@ -85,9 +110,7 @@ export class NamingService {
       }
     }
 
-    return `${prompts[type]}
-
-Content to analyze:${contextInfo}\n\n${content}\n\nGenerated Title:`;
+    return `${prompts[type]}\n\nContent:${contextInfo}\n\n${content}`;
   }
 }
 

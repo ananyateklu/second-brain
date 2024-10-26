@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { X, Type, Tag as TagIcon, Loader, Save, Star, Lightbulb } from 'lucide-react';
+import {
+  X,
+  Type,
+  Tag as TagIcon,
+  Loader,
+  Save,
+  Star,
+  Lightbulb,
+} from 'lucide-react';
 import { Input } from '../../shared/Input';
 import { useNotes } from '../../../contexts/NotesContext';
 import { SuggestionButton } from '../../shared/SuggestionButton';
@@ -19,7 +27,7 @@ export function EditIdeaModal({ isOpen, onClose, ideaId }: EditIdeaModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const idea = notes.find(note => note.id === ideaId);
+  const idea = notes.find((note) => note.id === ideaId);
 
   useEffect(() => {
     if (idea) {
@@ -42,7 +50,7 @@ export function EditIdeaModal({ isOpen, onClose, ideaId }: EditIdeaModalProps) {
 
   const handleRemoveTag = (tagToRemove: string) => {
     if (tagToRemove !== 'idea') {
-      setTags(tags.filter(tag => tag !== tagToRemove));
+      setTags(tags.filter((tag) => tag !== tagToRemove));
     }
   };
 
@@ -73,8 +81,11 @@ export function EditIdeaModal({ isOpen, onClose, ideaId }: EditIdeaModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      
+      <div
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
       <div className="relative w-full max-w-2xl glass-morphism rounded-xl">
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-dark-border">
           <div className="flex items-center gap-2">
@@ -94,7 +105,10 @@ export function EditIdeaModal({ isOpen, onClose, ideaId }: EditIdeaModalProps) {
                   : 'text-gray-400 hover:text-amber-500 dark:text-gray-500 dark:hover:text-amber-400 hover:bg-gray-100 dark:hover:bg-dark-hover'
               }`}
             >
-              <Star className="w-5 h-5" fill={idea.isFavorite ? 'currentColor' : 'none'} />
+              <Star
+                className="w-5 h-5"
+                fill={idea.isFavorite ? 'currentColor' : 'none'}
+              />
             </button>
             <button
               onClick={onClose}
@@ -109,7 +123,10 @@ export function EditIdeaModal({ isOpen, onClose, ideaId }: EditIdeaModalProps) {
           <div className="space-y-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label htmlFor="idea-title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label
+                  htmlFor="idea-title"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
                   Title
                 </label>
                 <SuggestionButton
@@ -120,7 +137,7 @@ export function EditIdeaModal({ isOpen, onClose, ideaId }: EditIdeaModalProps) {
                   disabled={isLoading}
                   context={{
                     currentTitle: title,
-                    tags
+                    tags,
                   }}
                 />
               </div>
@@ -150,11 +167,13 @@ export function EditIdeaModal({ isOpen, onClose, ideaId }: EditIdeaModalProps) {
                   type="content"
                   itemType="idea"
                   input={{ title }}
-                  onSuggestion={(suggestion) => setContent(suggestion as string)}
+                  onSuggestion={(suggestion) =>
+                    setContent(suggestion as string)
+                  }
                   disabled={isLoading}
                   context={{
                     currentContent: content,
-                    tags
+                    tags,
                   }}
                 />
               </div>
@@ -177,15 +196,17 @@ export function EditIdeaModal({ isOpen, onClose, ideaId }: EditIdeaModalProps) {
                   type="tags"
                   itemType="idea"
                   input={{ title, content }}
-                  onSuggestion={(suggestion) => setTags(['idea', ...(suggestion as string[])])}
+                  onSuggestion={(suggestion) =>
+                    setTags(['idea', ...(suggestion as string[])])
+                  }
                   disabled={isLoading}
                   context={{
-                    currentTags: tags
+                    currentTags: tags,
                   }}
                 />
               </div>
               <div className="flex flex-wrap gap-2 mb-2">
-                {tags.map(tag => (
+                {tags.map((tag) => (
                   <span
                     key={tag}
                     className="inline-flex items-center gap-1 px-2.5 py-1 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 rounded-full text-sm"

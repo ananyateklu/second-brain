@@ -9,7 +9,7 @@ export interface Note {
   isFavorite: boolean;
   isArchived?: boolean;
   archivedAt?: string;
-  linkedNotes?: string[];
+  linkedNotes: string[];
 }
 
 export interface NoteLink {
