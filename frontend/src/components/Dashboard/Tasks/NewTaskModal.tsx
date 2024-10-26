@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { X, Type, Tag as TagIcon, Calendar, AlertCircle, Link2, Plus, Loader } from 'lucide-react';
+import { X, Type, Tag as TagIcon, Calendar, AlertCircle, Plus, Loader } from 'lucide-react';
 import { Input } from '../../shared/Input';
 import { useTasks } from '../../../contexts/TasksContext';
-import { AddLinkModal } from './AddLinkModal';
+import { SuggestionButton } from '../../shared/SuggestionButton';
 
 interface NewTaskModalProps {
   isOpen: boolean;
@@ -17,7 +17,6 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
-  const [showAddLinkModal, setShowAddLinkModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -86,26 +85,60 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
 
         <form onSubmit={handleSubmit} className="p-4">
           <div className="space-y-4">
-            <Input
-              id="task-title"
-              name="title"
-              type="text"
-              label="Title"
-              icon={Type}
-              value={title}
-              onChange={(e) => {
-                setTitle(e.target.value);
-                setError('');
-              }}
-              placeholder="Enter task title"
-              error={error}
-              disabled={isLoading}
-            />
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label htmlFor="task-title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Title
+                </label>
+                <SuggestionButton
+                  type="title"
+                  itemType="task"
+                  input={{ content: description }}
+                  onSuggestion={(suggestion) => setTitle(suggestion as string)}
+                  disabled={isLoading}
+                  context={{
+                    currentTitle: title,
+                    tags,
+                    dueDate,
+                    priority
+                  }}
+                />
+              </div>
+              <Input
+                id="task-title"
+                name="title"
+                type="text"
+                icon={Type}
+                value={title}
+                onChange={(e) => {
+                  setTitle(e.target.value);
+                  setError('');
+                }}
+                placeholder="Enter task title"
+                error={error}
+                disabled={isLoading}
+              />
+            </div>
 
-            <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Description
-              </label>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Description
+                </label>
+                <SuggestionButton
+                  type="content"
+                  itemType="task"
+                  input={{ title }}
+                  onSuggestion={(suggestion) => setDescription(suggestion as string)}
+                  disabled={isLoading}
+                  context={{
+                    currentContent: description,
+                    tags,
+                    dueDate,
+                    priority
+                  }}
+                />
+              </div>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -159,9 +192,21 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Tags
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Tags
+                </label>
+                <SuggestionButton
+                  type="tags"
+                  itemType="task"
+                  input={{ title, content: description }}
+                  onSuggestion={(suggestion) => setTags(suggestion as string[])}
+                  disabled={isLoading}
+                  context={{
+                    currentTags: tags
+                  }}
+                />
+              </div>
               <div className="flex flex-wrap gap-2 mb-2">
                 {tags.map(tag => (
                   <span
@@ -235,12 +280,6 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
           </div>
         </form>
       </div>
-
-      <AddLinkModal
-        isOpen={showAddLinkModal}
-        onClose={() => setShowAddLinkModal(false)}
-        taskId={null}
-      />
     </div>
   );
 }

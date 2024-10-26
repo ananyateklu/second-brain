@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Type, Tag as TagIcon, Loader } from 'lucide-react';
 import { Input } from '../../shared/Input';
 import { useNotes } from '../../../contexts/NotesContext';
+import { SuggestionButton } from '../../shared/SuggestionButton';
 
 interface NewIdeaModalProps {
   isOpen: boolean;
@@ -13,7 +14,7 @@ export function NewIdeaModal({ isOpen, onClose }: NewIdeaModalProps) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [tagInput, setTagInput] = useState('');
-  const [tags, setTags] = useState<string[]>(['idea']); // Always include 'idea' tag
+  const [tags, setTags] = useState<string[]>(['idea']);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -53,11 +54,6 @@ export function NewIdeaModal({ isOpen, onClose }: NewIdeaModalProps) {
         isFavorite: false
       });
       
-      setTitle('');
-      setContent('');
-      setTags(['idea']);
-      setTagInput('');
-      
       onClose();
     } catch (error) {
       setError('Failed to create idea. Please try again.');
@@ -85,26 +81,56 @@ export function NewIdeaModal({ isOpen, onClose }: NewIdeaModalProps) {
 
         <form onSubmit={handleSubmit} className="p-4">
           <div className="space-y-4">
-            <Input
-              id="idea-title"
-              name="title"
-              type="text"
-              label="Title"
-              icon={Type}
-              value={title}
-              onChange={(e) => {
-                setTitle(e.target.value);
-                setError('');
-              }}
-              placeholder="What's your idea?"
-              error={error}
-              disabled={isLoading}
-            />
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label htmlFor="idea-title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Title
+                </label>
+                <SuggestionButton
+                  type="title"
+                  itemType="idea"
+                  input={{ content }}
+                  onSuggestion={(suggestion) => setTitle(suggestion as string)}
+                  disabled={isLoading}
+                  context={{
+                    currentTitle: title,
+                    tags
+                  }}
+                />
+              </div>
+              <Input
+                id="idea-title"
+                name="title"
+                type="text"
+                icon={Type}
+                value={title}
+                onChange={(e) => {
+                  setTitle(e.target.value);
+                  setError('');
+                }}
+                placeholder="What's your idea?"
+                error={error}
+                disabled={isLoading}
+              />
+            </div>
 
-            <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Description
-              </label>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Description
+                </label>
+                <SuggestionButton
+                  type="content"
+                  itemType="idea"
+                  input={{ title }}
+                  onSuggestion={(suggestion) => setContent(suggestion as string)}
+                  disabled={isLoading}
+                  context={{
+                    currentContent: content,
+                    tags
+                  }}
+                />
+              </div>
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
@@ -116,9 +142,21 @@ export function NewIdeaModal({ isOpen, onClose }: NewIdeaModalProps) {
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Tags
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Tags
+                </label>
+                <SuggestionButton
+                  type="tags"
+                  itemType="idea"
+                  input={{ title, content }}
+                  onSuggestion={(suggestion) => setTags(['idea', ...(suggestion as string[])])}
+                  disabled={isLoading}
+                  context={{
+                    currentTags: tags
+                  }}
+                />
+              </div>
               <div className="flex flex-wrap gap-2 mb-2">
                 {tags.map(tag => (
                   <span

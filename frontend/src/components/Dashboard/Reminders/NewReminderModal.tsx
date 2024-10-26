@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { X, Type, Tag as TagIcon, Calendar, Link2, Plus, Loader } from 'lucide-react';
+import { X, Type, Tag as TagIcon, Calendar, Clock, Plus, Loader } from 'lucide-react';
 import { Input } from '../../shared/Input';
 import { useReminders } from '../../../contexts/RemindersContext';
+import { SuggestionButton } from '../../shared/SuggestionButton';
 
 interface NewReminderModalProps {
   isOpen: boolean;
@@ -86,26 +87,58 @@ export function NewReminderModal({ isOpen, onClose }: NewReminderModalProps) {
 
         <form onSubmit={handleSubmit} className="p-4">
           <div className="space-y-4">
-            <Input
-              id="reminder-title"
-              name="title"
-              type="text"
-              label="Title"
-              icon={Type}
-              value={title}
-              onChange={(e) => {
-                setTitle(e.target.value);
-                setError('');
-              }}
-              placeholder="Enter reminder title"
-              error={error}
-              disabled={isLoading}
-            />
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label htmlFor="reminder-title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Title
+                </label>
+                <SuggestionButton
+                  type="title"
+                  itemType="reminder"
+                  input={{ content: description }}
+                  onSuggestion={(suggestion) => setTitle(suggestion as string)}
+                  disabled={isLoading}
+                  context={{
+                    currentTitle: title,
+                    tags,
+                    dueDate: dueDateTime
+                  }}
+                />
+              </div>
+              <Input
+                id="reminder-title"
+                name="title"
+                type="text"
+                icon={Type}
+                value={title}
+                onChange={(e) => {
+                  setTitle(e.target.value);
+                  setError('');
+                }}
+                placeholder="Enter reminder title"
+                error={error}
+                disabled={isLoading}
+              />
+            </div>
 
-            <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Description
-              </label>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Description
+                </label>
+                <SuggestionButton
+                  type="content"
+                  itemType="reminder"
+                  input={{ title }}
+                  onSuggestion={(suggestion) => setDescription(suggestion as string)}
+                  disabled={isLoading}
+                  context={{
+                    currentContent: description,
+                    tags,
+                    dueDate: dueDateTime
+                  }}
+                />
+              </div>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -151,9 +184,21 @@ export function NewReminderModal({ isOpen, onClose }: NewReminderModalProps) {
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Tags
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Tags
+                </label>
+                <SuggestionButton
+                  type="tags"
+                  itemType="reminder"
+                  input={{ title, content: description }}
+                  onSuggestion={(suggestion) => setTags(suggestion as string[])}
+                  disabled={isLoading}
+                  context={{
+                    currentTags: tags
+                  }}
+                />
+              </div>
               <div className="flex flex-wrap gap-2 mb-2">
                 {tags.map(tag => (
                   <span
