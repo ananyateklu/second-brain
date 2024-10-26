@@ -2,6 +2,7 @@ import React from 'react';
 import { Activity } from '../../../contexts/ActivityContext';
 import { ActivityItem } from './ActivityItem';
 import { groupActivitiesByDate } from './utils';
+import { History } from 'lucide-react';
 
 interface ActivityFeedProps {
   activities: Activity[];
@@ -57,11 +58,15 @@ export function ActivityFeed({ activities, filters, searchQuery }: ActivityFeedP
 
   if (filteredActivities.length === 0) {
     return (
-      <div className="text-center py-12">
-        <p className="text-gray-500 dark:text-gray-400">
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <History className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+          No activities found
+        </h3>
+        <p className="text-gray-500 dark:text-gray-400 max-w-md">
           {searchQuery || filters.actionTypes.length > 0 || filters.itemTypes.length > 0
-            ? "No activities match your search criteria"
-            : "No recent activities"}
+            ? "No activities match your search criteria. Try adjusting your filters."
+            : "Start creating and managing your notes to see activity here."}
         </p>
       </div>
     );

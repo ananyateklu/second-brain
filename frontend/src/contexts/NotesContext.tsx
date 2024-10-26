@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
+import { useActivities } from './ActivityContext';
 
 export interface Note {
   id: string;
@@ -9,7 +10,9 @@ export interface Note {
   updatedAt: string;
   isPinned: boolean;
   isFavorite: boolean;
-  linkedNotes: string[];
+  isArchived?: boolean;
+  archivedAt?: string;
+  linkedNotes?: string[];
 }
 
 interface NotesContextType {
@@ -19,50 +22,29 @@ interface NotesContextType {
   deleteNote: (id: string) => void;
   togglePinNote: (id: string) => void;
   toggleFavoriteNote: (id: string) => void;
+  archiveNote: (id: string) => void;
+  unarchiveNote: (id: string) => void;
   addLink: (sourceId: string, targetId: string) => void;
   removeLink: (sourceId: string, targetId: string) => void;
 }
 
 const NotesContext = createContext<NotesContextType | null>(null);
 
-const INITIAL_NOTES: Note[] = [
-  {
-    id: '1',
-    title: 'Project Planning Framework',
-    content: 'A comprehensive framework for planning and executing projects effectively. Key components include scope definition, timeline management, and resource allocation.',
-    tags: ['project-management', 'planning', 'framework'],
-    createdAt: '2024-01-15T10:00:00Z',
-    updatedAt: '2024-01-15T10:00:00Z',
-    isPinned: true,
-    isFavorite: true,
-    linkedNotes: []
-  },
-  {
-    id: '2',
-    title: 'Agile Methodology Overview',
-    content: 'Deep dive into Agile principles and practices. Covers sprint planning, daily standups, retrospectives, and continuous improvement.',
-    tags: ['agile', 'methodology', 'project-management'],
-    createdAt: '2024-01-16T14:30:00Z',
-    updatedAt: '2024-01-16T14:30:00Z',
-    isPinned: false,
-    isFavorite: true,
-    linkedNotes: []
-  },
-  {
-    id: '3',
-    title: 'Resource Allocation Strategies',
-    content: 'Best practices for allocating resources across projects. Includes techniques for balancing workload and optimizing team performance.',
-    tags: ['resources', 'management', 'planning'],
-    createdAt: '2024-01-17T09:15:00Z',
-    updatedAt: '2024-01-17T09:15:00Z',
-    isPinned: false,
-    isFavorite: false,
-    linkedNotes: []
-  }
-];
-
 export function NotesProvider({ children }: { children: React.ReactNode }) {
-  const [notes, setNotes] = useState<Note[]>(INITIAL_NOTES);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const { addActivity } = useActivities();
+  const pendingActivityRef = useRef<(() => void) | null>(null);
+
+  // Helper to safely schedule activity logging
+  const scheduleActivity = useCallback((activityFn: () => void) => {
+    pendingActivityRef.current = activityFn;
+    setTimeout(() => {
+      if (pendingActivityRef.current) {
+        pendingActivityRef.current();
+        pendingActivityRef.current = null;
+      }
+    }, 0);
+  }, []);
 
   const addNote = useCallback((note: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'linkedNotes'>) => {
     const newNote: Note = {
@@ -73,46 +55,185 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
       linkedNotes: []
     };
     setNotes(prev => [newNote, ...prev]);
-  }, []);
+
+    scheduleActivity(() => {
+      addActivity({
+        actionType: 'create',
+        itemType: note.tags.includes('idea') ? 'idea' : 'note',
+        itemId: newNote.id,
+        itemTitle: newNote.title,
+        description: `Created ${note.tags.includes('idea') ? 'idea' : 'note'}: ${newNote.title}`,
+        metadata: {
+          tags: newNote.tags
+        }
+      });
+    });
+  }, [addActivity, scheduleActivity]);
 
   const updateNote = useCallback((id: string, updates: Partial<Note>) => {
-    setNotes(prev => prev.map(note => 
-      note.id === id 
-        ? { ...note, ...updates, updatedAt: new Date().toISOString() }
-        : note
-    ));
-  }, []);
+    setNotes(prev => {
+      const noteIndex = prev.findIndex(note => note.id === id);
+      if (noteIndex === -1) return prev;
+
+      const oldNote = prev[noteIndex];
+      const updatedNote = {
+        ...oldNote,
+        ...updates,
+        updatedAt: new Date().toISOString()
+      };
+
+      const newNotes = [...prev];
+      newNotes[noteIndex] = updatedNote;
+
+      scheduleActivity(() => {
+        addActivity({
+          actionType: 'edit',
+          itemType: oldNote.tags.includes('idea') ? 'idea' : 'note',
+          itemId: id,
+          itemTitle: updates.title || oldNote.title,
+          description: `Updated ${oldNote.tags.includes('idea') ? 'idea' : 'note'}: ${updates.title || oldNote.title}`,
+          metadata: {
+            previousTitle: oldNote.title,
+            newTitle: updates.title,
+            previousContent: oldNote.content,
+            newContent: updates.content,
+            tags: updates.tags || oldNote.tags
+          }
+        });
+      });
+
+      return newNotes;
+    });
+  }, [addActivity, scheduleActivity]);
 
   const deleteNote = useCallback((id: string) => {
     setNotes(prev => {
-      // First, remove all links to this note from other notes
-      const updatedNotes = prev.map(note => ({
-        ...note,
-        linkedNotes: note.linkedNotes.filter(linkedId => linkedId !== id)
-      }));
-      // Then remove the note itself
-      return updatedNotes.filter(note => note.id !== id);
+      const noteToDelete = prev.find(note => note.id === id);
+      if (!noteToDelete) return prev;
+
+      scheduleActivity(() => {
+        addActivity({
+          actionType: 'delete',
+          itemType: noteToDelete.tags.includes('idea') ? 'idea' : 'note',
+          itemId: id,
+          itemTitle: noteToDelete.title,
+          description: `Deleted ${noteToDelete.tags.includes('idea') ? 'idea' : 'note'}: ${noteToDelete.title}`,
+          metadata: {
+            tags: noteToDelete.tags
+          }
+        });
+      });
+
+      return prev.filter(note => note.id !== id);
     });
-  }, []);
+  }, [addActivity, scheduleActivity]);
 
   const togglePinNote = useCallback((id: string) => {
-    setNotes(prev => prev.map(note =>
-      note.id === id
-        ? { ...note, isPinned: !note.isPinned, updatedAt: new Date().toISOString() }
-        : note
-    ));
-  }, []);
+    setNotes(prev => {
+      const noteIndex = prev.findIndex(note => note.id === id);
+      if (noteIndex === -1) return prev;
+
+      const note = prev[noteIndex];
+      const newNotes = [...prev];
+      newNotes[noteIndex] = { ...note, isPinned: !note.isPinned };
+
+      scheduleActivity(() => {
+        addActivity({
+          actionType: note.isPinned ? 'unpin' : 'pin',
+          itemType: note.tags.includes('idea') ? 'idea' : 'note',
+          itemId: id,
+          itemTitle: note.title,
+          description: `${note.isPinned ? 'Unpinned' : 'Pinned'} ${note.tags.includes('idea') ? 'idea' : 'note'}: ${note.title}`
+        });
+      });
+
+      return newNotes;
+    });
+  }, [addActivity, scheduleActivity]);
 
   const toggleFavoriteNote = useCallback((id: string) => {
-    setNotes(prev => prev.map(note =>
-      note.id === id
-        ? { ...note, isFavorite: !note.isFavorite, updatedAt: new Date().toISOString() }
-        : note
-    ));
-  }, []);
+    setNotes(prev => {
+      const noteIndex = prev.findIndex(note => note.id === id);
+      if (noteIndex === -1) return prev;
+
+      const note = prev[noteIndex];
+      const newNotes = [...prev];
+      newNotes[noteIndex] = { ...note, isFavorite: !note.isFavorite };
+
+      scheduleActivity(() => {
+        addActivity({
+          actionType: note.isFavorite ? 'unfavorite' : 'favorite',
+          itemType: note.tags.includes('idea') ? 'idea' : 'note',
+          itemId: id,
+          itemTitle: note.title,
+          description: `${note.isFavorite ? 'Removed from' : 'Added to'} favorites: ${note.title}`
+        });
+      });
+
+      return newNotes;
+    });
+  }, [addActivity, scheduleActivity]);
+
+  const archiveNote = useCallback((id: string) => {
+    setNotes(prev => {
+      const noteIndex = prev.findIndex(note => note.id === id);
+      if (noteIndex === -1) return prev;
+
+      const note = prev[noteIndex];
+      const newNotes = [...prev];
+      newNotes[noteIndex] = {
+        ...note,
+        isArchived: true,
+        archivedAt: new Date().toISOString()
+      };
+
+      scheduleActivity(() => {
+        addActivity({
+          actionType: 'archive',
+          itemType: note.tags.includes('idea') ? 'idea' : 'note',
+          itemId: id,
+          itemTitle: note.title,
+          description: `Archived ${note.tags.includes('idea') ? 'idea' : 'note'}: ${note.title}`
+        });
+      });
+
+      return newNotes;
+    });
+  }, [addActivity, scheduleActivity]);
+
+  const unarchiveNote = useCallback((id: string) => {
+    setNotes(prev => {
+      const noteIndex = prev.findIndex(note => note.id === id);
+      if (noteIndex === -1) return prev;
+
+      const note = prev[noteIndex];
+      const newNotes = [...prev];
+      newNotes[noteIndex] = {
+        ...note,
+        isArchived: false,
+        archivedAt: undefined
+      };
+
+      scheduleActivity(() => {
+        addActivity({
+          actionType: 'unarchive',
+          itemType: note.tags.includes('idea') ? 'idea' : 'note',
+          itemId: id,
+          itemTitle: note.title,
+          description: `Unarchived ${note.tags.includes('idea') ? 'idea' : 'note'}: ${note.title}`
+        });
+      });
+
+      return newNotes;
+    });
+  }, [addActivity, scheduleActivity]);
 
   const addLink = useCallback((sourceId: string, targetId: string) => {
     setNotes(prev => {
+      const sourceNote = prev.find(note => note.id === sourceId);
+      const targetNote = prev.find(note => note.id === targetId);
+      if (!sourceNote || !targetNote) return prev;
+
       return prev.map(note => {
         if (note.id === sourceId) {
           const currentLinks = note.linkedNotes || [];
@@ -157,13 +278,15 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <NotesContext.Provider value={{ 
-      notes, 
-      addNote, 
-      updateNote, 
+    <NotesContext.Provider value={{
+      notes,
+      addNote,
+      updateNote,
       deleteNote,
       togglePinNote,
       toggleFavoriteNote,
+      archiveNote,
+      unarchiveNote,
       addLink,
       removeLink
     }}>

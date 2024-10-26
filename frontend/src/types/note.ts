@@ -7,6 +7,8 @@ export interface Note {
   updatedAt: string;
   isPinned: boolean;
   isFavorite: boolean;
+  isArchived?: boolean;
+  archivedAt?: string;
   linkedNotes?: string[];
 }
 

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { X, Type, Tag as TagIcon, Loader, Save, Star, FileText } from 'lucide-react';
+import { X, Type, Tag as TagIcon, Loader, Save, Star, FileText, Archive, Trash2 } from 'lucide-react';
 import { Input } from '../../shared/Input';
 import { Note } from '../../../contexts/NotesContext';
 import { useNotes } from '../../../contexts/NotesContext';
+import { useNavigate } from 'react-router-dom';
 import { SuggestionButton } from '../../shared/SuggestionButton';
 
 interface EditNoteModalProps {
@@ -12,19 +13,23 @@ interface EditNoteModalProps {
 }
 
 export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
-  const { updateNote, toggleFavoriteNote } = useNotes();
+  const navigate = useNavigate();
+  const { updateNote, toggleFavoriteNote, archiveNote, deleteNote } = useNotes();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
 
   useEffect(() => {
     if (note) {
       setTitle(note.title);
       setContent(note.content);
       setTags(note.tags);
+      setIsFavorite(note.isFavorite);
       setError('');
     }
   }, [note]);
@@ -41,6 +46,29 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
 
   const handleRemoveTag = (tagToRemove: string) => {
     setTags(tags.filter(tag => tag !== tagToRemove));
+  };
+
+  const handleArchive = () => {
+    archiveNote(note.id);
+    onClose();
+  };
+
+  const handleDelete = async () => {
+    setIsLoading(true);
+    try {
+      await deleteNote(note.id);
+      onClose();
+      navigate('/dashboard/notes');
+    } catch (error) {
+      setError('Failed to delete note');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleFavorite = async () => {
+    await toggleFavoriteNote(note.id);
+    setIsFavorite(!isFavorite);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -84,14 +112,28 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => toggleFavoriteNote(note.id)}
+              onClick={handleFavorite}
               className={`p-2 rounded-lg transition-colors ${
-                note.isFavorite
+                isFavorite
                   ? 'text-amber-500 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20'
                   : 'text-gray-400 hover:text-amber-500 dark:text-gray-500 dark:hover:text-amber-400 hover:bg-gray-100 dark:hover:bg-dark-hover'
               }`}
             >
-              <Star className="w-5 h-5" fill={note.isFavorite ? 'currentColor' : 'none'} />
+              <Star className="w-5 h-5" fill={isFavorite ? 'currentColor' : 'none'} />
+            </button>
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="p-2 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-dark-hover rounded-lg transition-colors"
+              title="Delete note"
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
+            <button
+              onClick={handleArchive}
+              className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-dark-hover rounded-lg transition-colors"
+              title="Archive note"
+            >
+              <Archive className="w-5 h-5" />
             </button>
             <button
               onClick={onClose}
@@ -255,6 +297,56 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
             </button>
           </div>
         </form>
+
+        {/* Delete Confirmation Dialog */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowDeleteConfirm(false)} />
+            
+            <div className="relative w-full max-w-md glass-morphism rounded-xl p-6">
+              <div className="flex flex-col items-center gap-4">
+                <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-full">
+                  <Trash2 className="w-6 h-6 text-red-600 dark:text-red-400" />
+                </div>
+                
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    Delete Note
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Are you sure you want to delete this note? This action cannot be undone.
+                  </p>
+                </div>
+
+                <div className="flex gap-3 mt-2">
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-hover rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDelete}
+                    disabled={isLoading}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader className="w-4 h-4 animate-spin" />
+                        <span>Deleting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="w-4 h-4" />
+                        <span>Delete Note</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -3,50 +3,31 @@ import React, { createContext, useContext, useState, useCallback } from 'react';
 export interface Activity {
   id: string;
   timestamp: string;
-  actionType: 'create' | 'edit' | 'delete' | 'complete' | 'incomplete' | 'link' | 'unlink' | 'tag' | 'favorite' | 'settings';
-  itemType: 'note' | 'task' | 'idea' | 'reminder' | 'tag' | 'settings';
+  actionType: 'create' | 'edit' | 'archive' | 'unarchive' | 'delete' | 'favorite' | 'unfavorite' | 'pin' | 'unpin';
+  itemType: 'note' | 'task' | 'idea' | 'reminder';
   itemId: string;
   itemTitle: string;
   description: string;
-  undoable: boolean;
-  metadata?: Record<string, any>;
+  metadata?: {
+    previousTitle?: string;
+    newTitle?: string;
+    previousContent?: string;
+    newContent?: string;
+    tags?: string[];
+  };
 }
 
 interface ActivityContextType {
   activities: Activity[];
   addActivity: (activity: Omit<Activity, 'id' | 'timestamp'>) => void;
-  undoActivity: (activityId: string) => Promise<void>;
   clearActivities: () => void;
+  getActivitiesByItemId: (itemId: string) => Activity[];
 }
 
 const ActivityContext = createContext<ActivityContextType | null>(null);
 
-// Sample initial activities for demonstration
-const INITIAL_ACTIVITIES: Activity[] = [
-  {
-    id: '1',
-    timestamp: new Date().toISOString(),
-    actionType: 'create',
-    itemType: 'note',
-    itemId: '123',
-    itemTitle: 'Project Planning Notes',
-    description: 'Created a new note for project planning',
-    undoable: true
-  },
-  {
-    id: '2',
-    timestamp: new Date(Date.now() - 3600000).toISOString(),
-    actionType: 'edit',
-    itemType: 'task',
-    itemId: '456',
-    itemTitle: 'Review Documentation',
-    description: 'Updated task deadline',
-    undoable: true
-  }
-];
-
 export function ActivityProvider({ children }: { children: React.ReactNode }) {
-  const [activities, setActivities] = useState<Activity[]>(INITIAL_ACTIVITIES);
+  const [activities, setActivities] = useState<Activity[]>([]);
 
   const addActivity = useCallback((activity: Omit<Activity, 'id' | 'timestamp'>) => {
     const newActivity: Activity = {
@@ -57,27 +38,20 @@ export function ActivityProvider({ children }: { children: React.ReactNode }) {
     setActivities(prev => [newActivity, ...prev]);
   }, []);
 
-  const undoActivity = useCallback(async (activityId: string) => {
-    const activity = activities.find(a => a.id === activityId);
-    if (!activity || !activity.undoable) {
-      throw new Error('Activity cannot be undone');
-    }
-
-    // Here you would implement the actual undo logic based on the activity type
-    // For now, we'll just remove the activity from the list
-    setActivities(prev => prev.filter(a => a.id !== activityId));
-  }, [activities]);
-
   const clearActivities = useCallback(() => {
     setActivities([]);
   }, []);
+
+  const getActivitiesByItemId = useCallback((itemId: string) => {
+    return activities.filter(activity => activity.itemId === itemId);
+  }, [activities]);
 
   return (
     <ActivityContext.Provider value={{
       activities,
       addActivity,
-      undoActivity,
-      clearActivities
+      clearActivities,
+      getActivitiesByItemId
     }}>
       {children}
     </ActivityContext.Provider>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Type, Tag as TagIcon, Loader, Save, Trash2, Star, Lightbulb } from 'lucide-react';
+import { X, Type, Tag as TagIcon, Loader, Save, Star, Lightbulb } from 'lucide-react';
 import { Input } from '../../shared/Input';
 import { useNotes } from '../../../contexts/NotesContext';
 import { SuggestionButton } from '../../shared/SuggestionButton';
@@ -64,7 +64,7 @@ export function EditIdeaModal({ isOpen, onClose, ideaId }: EditIdeaModalProps) {
         tags: tags.includes('idea') ? tags : ['idea', ...tags],
       });
       onClose();
-    } catch (error) {
+    } catch {
       setError('Failed to update idea. Please try again.');
     } finally {
       setIsLoading(false);
@@ -128,6 +128,7 @@ export function EditIdeaModal({ isOpen, onClose, ideaId }: EditIdeaModalProps) {
                 id="idea-title"
                 name="title"
                 type="text"
+                label="Title"
                 icon={Type}
                 value={title}
                 onChange={(e) => {

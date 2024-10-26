@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import CytoscapeComponent from 'react-cytoscapejs';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { Note } from '../../../contexts/NotesContext';
+import cytoscape, { Stylesheet } from 'cytoscape';
 
 interface IdeasMindMapProps {
   ideas: Note[];
@@ -10,7 +11,7 @@ interface IdeasMindMapProps {
 
 export function IdeasMindMap({ ideas, onIdeaClick }: IdeasMindMapProps) {
   const { theme } = useTheme();
-  const cyRef = useRef<any>(null);
+  const cyRef = useRef<cytoscape.Core | null>(null);
 
   const elements = React.useMemo(() => {
     const nodes = ideas.map(idea => ({
@@ -36,7 +37,7 @@ export function IdeasMindMap({ ideas, onIdeaClick }: IdeasMindMapProps) {
     return [...nodes, ...edges];
   }, [ideas]);
 
-  const stylesheet = [
+  const stylesheet: Stylesheet[] = [
     {
       selector: 'node',
       style: {
@@ -48,16 +49,13 @@ export function IdeasMindMap({ ideas, onIdeaClick }: IdeasMindMapProps) {
         'text-valign': 'center',
         'text-halign': 'center',
         'font-size': '12px',
-        'font-weight': '500',
+        'font-weight': 500,
         'width': '120px',
         'height': '40px',
-        'padding': '5px',
         'text-wrap': 'wrap',
         'text-max-width': '100px',
         'shape': 'roundrectangle',
-        'text-margin-y': '2px',
         'transition-property': 'background-color, border-color, border-width',
-        'transition-duration': '0.2s',
         'text-outline-color': theme === 'dark' ? '#1E1E1E' : '#FFFFFF',
         'text-outline-width': 1,
         'min-zoomed-font-size': 8
@@ -95,7 +93,7 @@ export function IdeasMindMap({ ideas, onIdeaClick }: IdeasMindMapProps) {
     if (cyRef.current) {
       const cy = cyRef.current;
 
-      cy.on('tap', 'node', (event: any) => {
+      cy.on('tap', 'node', (event: cytoscape.EventObject) => {
         const nodeId = event.target.id();
         onIdeaClick(nodeId);
       });
@@ -123,9 +121,8 @@ export function IdeasMindMap({ ideas, onIdeaClick }: IdeasMindMapProps) {
           nodeDimensionsIncludeLabels: true,
           padding: 50,
           componentSpacing: 100,
-          nodeRepulsion: 8000,
-          idealEdgeLength: 100,
-          edgeElasticity: 0.45,
+          idealEdgeLength: () => 100,
+          edgeElasticity: () => 0.45,
           nestingFactor: 0.1,
           gravity: 0.3,
           numIter: 1000,

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, Tag as TagIcon, Star, Pin, FileText, Lightbulb } from 'lucide-react';
+import { Clock, Tag as TagIcon, Star, Pin, FileText, Lightbulb, Archive } from 'lucide-react';
 import { useNotes } from '../../contexts/NotesContext';
 
 export interface Note {
@@ -10,7 +10,7 @@ export interface Note {
   createdAt: string;
   updatedAt: string;
   isPinned: boolean;
-  isFavorite?: boolean;
+  isFavorite: boolean;
 }
 
 interface NoteCardProps {
@@ -19,7 +19,7 @@ interface NoteCardProps {
 }
 
 export function NoteCard({ note, viewMode = 'grid' }: NoteCardProps) {
-  const { togglePinNote, toggleFavoriteNote } = useNotes();
+  const { togglePinNote, toggleFavoriteNote, archiveNote } = useNotes();
 
   if (!note) return null;
 
@@ -30,6 +30,21 @@ export function NoteCard({ note, viewMode = 'grid' }: NoteCardProps) {
   });
 
   const isIdea = note.tags.includes('idea');
+
+  const handleArchive = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    archiveNote(note.id);
+  };
+
+  const handleFavorite = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toggleFavoriteNote(note.id);
+  };
+
+  const handlePin = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    togglePinNote(note.id);
+  };
 
   return (
     <div className={`
@@ -64,7 +79,7 @@ export function NoteCard({ note, viewMode = 'grid' }: NoteCardProps) {
 
           <div className="flex flex-col gap-2">
             <button
-              onClick={() => togglePinNote(note.id)}
+              onClick={handlePin}
               className={`p-1.5 rounded-lg transition-colors ${
                 note.isPinned
                   ? 'text-primary-600 dark:text-primary-500 bg-primary-50 dark:bg-primary-900/20'
@@ -76,7 +91,7 @@ export function NoteCard({ note, viewMode = 'grid' }: NoteCardProps) {
             </button>
 
             <button
-              onClick={() => toggleFavoriteNote(note.id)}
+              onClick={handleFavorite}
               className={`p-1.5 rounded-lg transition-colors ${
                 note.isFavorite
                   ? 'text-amber-500 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20'
@@ -85,6 +100,14 @@ export function NoteCard({ note, viewMode = 'grid' }: NoteCardProps) {
               title={note.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
             >
               <Star className="w-4 h-4" fill={note.isFavorite ? 'currentColor' : 'none'} />
+            </button>
+
+            <button
+              onClick={handleArchive}
+              className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 dark:text-gray-500 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-dark-hover transition-colors"
+              title="Archive note"
+            >
+              <Archive className="w-4 h-4" />
             </button>
           </div>
         </div>
