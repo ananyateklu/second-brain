@@ -53,6 +53,9 @@ builder.Services.AddAuthorization();
 // Add services to the container.
 builder.Services.AddControllers();
 
+// Register AnthropicService
+builder.Services.AddHttpClient<IAnthropicService, AnthropicService>();
+
 // Define CORS policy
 builder.Services.AddCors(options =>
 {
