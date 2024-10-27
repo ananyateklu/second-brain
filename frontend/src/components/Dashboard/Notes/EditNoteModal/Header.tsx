@@ -15,7 +15,7 @@ export function Header({ note, onClose, onShowDeleteConfirm }: HeaderProps) {
   const handleFavorite = async () => {
     try {
       await toggleFavoriteNote(note.id);
-    } catch {
+    } catch (error) {
       console.error('Failed to toggle favorite status');
     }
   };
@@ -24,7 +24,7 @@ export function Header({ note, onClose, onShowDeleteConfirm }: HeaderProps) {
     try {
       await archiveNote(note.id);
       onClose();
-    } catch {
+    } catch (error) {
       console.error('Failed to archive note');
     }
   };

@@ -52,7 +52,7 @@ export function LinkedNotesPanel({ linkedNotes, onShowAddLink }: LinkedNotesPane
                   </p>
                 </div>
                 <button
-                  onClick={() => removeLink(linkedNote.id, 'targetId')}
+                  onClick={() => removeLink(linkedNote.id)}
                   className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 rounded transition-opacity"
                 >
                   <X className="w-4 h-4" />

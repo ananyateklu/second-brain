@@ -2,7 +2,6 @@ import React, { useEffect, useRef } from 'react';
 import CytoscapeComponent from 'react-cytoscapejs';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { Note } from '../../../contexts/NotesContext';
-import cytoscape, { Stylesheet, LayoutOptions } from 'cytoscape'; // Import cytoscape and types
 
 interface IdeasMindMapProps {
   ideas: Note[];
@@ -11,7 +10,7 @@ interface IdeasMindMapProps {
 
 export function IdeasMindMap({ ideas, onIdeaClick }: IdeasMindMapProps) {
   const { theme } = useTheme();
-  const cyRef = useRef<cytoscape.Core | null>(null);
+  const cyRef = useRef<any>(null);
 
   const elements = React.useMemo(() => {
     const nodes = ideas.map(idea => ({
@@ -37,8 +36,7 @@ export function IdeasMindMap({ ideas, onIdeaClick }: IdeasMindMapProps) {
     return [...nodes, ...edges];
   }, [ideas]);
 
-  // Define stylesheet with explicit type
-  const stylesheet: Stylesheet[] = [
+  const stylesheet = [
     {
       selector: 'node',
       style: {
@@ -50,19 +48,23 @@ export function IdeasMindMap({ ideas, onIdeaClick }: IdeasMindMapProps) {
         'text-valign': 'center',
         'text-halign': 'center',
         'font-size': '12px',
+        'font-weight': '500',
         'width': '120px',
         'height': '40px',
-        'text-wrap': 'wrap', // 'wrap', 'none', 'ellipsis'
+        'padding': '5px',
+        'text-wrap': 'wrap',
         'text-max-width': '100px',
         'shape': 'roundrectangle',
+        'text-margin-y': '2px',
         'transition-property': 'background-color, border-color, border-width',
+        'transition-duration': '0.2s',
         'text-outline-color': theme === 'dark' ? '#1E1E1E' : '#FFFFFF',
         'text-outline-width': 1,
         'min-zoomed-font-size': 8
       }
     },
     {
-      selector: 'node[isFavorite]', // Corrected Selector
+      selector: 'node[?isFavorite]',
       style: {
         'border-color': '#F59E0B',
         'border-width': 3
@@ -89,29 +91,11 @@ export function IdeasMindMap({ ideas, onIdeaClick }: IdeasMindMapProps) {
     }
   ];
 
-  // Define layout with explicit type and function for nodeRepulsion
-  const layout: LayoutOptions = {
-    name: 'cose',
-    animate: false,
-    nodeDimensionsIncludeLabels: true,
-    padding: 50,
-    componentSpacing: 100,
-    nodeRepulsion: () => 8000, // Changed to a function
-    idealEdgeLength: () => 100, // Changed to a function
-    edgeElasticity: () => 0.45, // Changed to a function
-    nestingFactor: 0.1,
-    gravity: 0.3,
-    numIter: 1000,
-    initialTemp: 200,
-    coolingFactor: 0.95,
-    minTemp: 1.0
-  };
-
   useEffect(() => {
     if (cyRef.current) {
       const cy = cyRef.current;
 
-      cy.on('tap', 'node', (event: cytoscape.EventObject) => {
+      cy.on('tap', 'node', (event: any) => {
         const nodeId = event.target.id();
         onIdeaClick(nodeId);
       });
@@ -133,7 +117,22 @@ export function IdeasMindMap({ ideas, onIdeaClick }: IdeasMindMapProps) {
       <CytoscapeComponent
         elements={elements}
         stylesheet={stylesheet}
-        layout={layout} // Passing the layout object
+        layout={{
+          name: 'cose',
+          animate: false,
+          nodeDimensionsIncludeLabels: true,
+          padding: 50,
+          componentSpacing: 100,
+          nodeRepulsion: 8000,
+          idealEdgeLength: 100,
+          edgeElasticity: 0.45,
+          nestingFactor: 0.1,
+          gravity: 0.3,
+          numIter: 1000,
+          initialTemp: 200,
+          coolingFactor: 0.95,
+          minTemp: 1.0
+        }}
         style={{ width: '100%', height: '100%' }}
         cy={(cy) => { cyRef.current = cy; }}
         wheelSensitivity={0.2}

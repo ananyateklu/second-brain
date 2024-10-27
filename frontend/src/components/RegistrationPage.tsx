@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Mail, Lock, ShieldCheck, Sun, Moon, Loader, AlertCircle } from 'lucide-react';
 import { Logo } from './shared/Logo';
 import { Input } from './shared/Input';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
+import { validateEmail, validatePassword } from '../utils/validation';
 
 interface RegistrationFormData {
   fullName: string;
@@ -24,7 +25,7 @@ interface ValidationErrors {
 export function RegistrationPage() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
-  const { register, isLoading } = useAuth();
+  const { register, isLoading, error: authError } = useAuth();
   const [formData, setFormData] = useState<RegistrationFormData>({
     fullName: '',
     email: '',
@@ -33,6 +34,12 @@ export function RegistrationPage() {
   });
   const [errors, setErrors] = useState<ValidationErrors>({});
 
+  useEffect(() => {
+    if (authError) {
+      setErrors(prev => ({ ...prev, general: authError }));
+    }
+  }, [authError]);
+
   const validateForm = (): boolean => {
     const newErrors: ValidationErrors = {};
 
@@ -40,17 +47,11 @@ export function RegistrationPage() {
       newErrors.fullName = 'Full name is required';
     }
 
-    if (!formData.email) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Invalid email format';
-    }
+    const emailError = validateEmail(formData.email);
+    if (emailError) newErrors.email = emailError;
 
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
-    }
+    const passwordError = validatePassword(formData.password);
+    if (passwordError) newErrors.password = passwordError;
 
     if (!formData.confirmPassword) {
       newErrors.confirmPassword = 'Please confirm your password';
@@ -71,7 +72,7 @@ export function RegistrationPage() {
       await register(formData.email, formData.password, formData.fullName);
       navigate('/dashboard');
     } catch (error) {
-      setErrors({ general: 'Failed to create account. Please try again.' });
+      // Error is handled by the auth context and displayed via the errors state
     }
   };
 

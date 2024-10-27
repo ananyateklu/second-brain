@@ -72,7 +72,7 @@ export function EditIdeaModal({ isOpen, onClose, ideaId }: EditIdeaModalProps) {
         tags: tags.includes('idea') ? tags : ['idea', ...tags],
       });
       onClose();
-    } catch {
+    } catch (error) {
       setError('Failed to update idea. Please try again.');
     } finally {
       setIsLoading(false);
@@ -145,7 +145,6 @@ export function EditIdeaModal({ isOpen, onClose, ideaId }: EditIdeaModalProps) {
                 id="idea-title"
                 name="title"
                 type="text"
-                label="Title"
                 icon={Type}
                 value={title}
                 onChange={(e) => {

@@ -57,7 +57,6 @@ export function MainContent({
               id="note-title"
               name="title"
               type="text"
-              label="Title"
               icon={Type}
               value={title}
               onChange={(e) => {

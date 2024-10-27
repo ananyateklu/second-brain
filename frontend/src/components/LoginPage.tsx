@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+// LoginPage.tsx
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Lock, AlertCircle, Loader, Sun, Moon } from 'lucide-react';
 import { Logo } from './shared/Logo';
 import { Input } from './shared/Input';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
-import { ForgotPasswordModal } from './auth/ForgotPasswordModal';
+import { ForgotPasswordModal } from './shared/ForgotPasswordModal';
+import { validateEmail, validatePassword } from '../utils/validation';
 
 interface LoginFormData {
   email: string;
@@ -21,8 +23,9 @@ interface ValidationErrors {
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { theme, toggleTheme } = useTheme();
-  const { login, isLoading } = useAuth();
+  const { login, isLoading, error: authError } = useAuth();
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [formData, setFormData] = useState<LoginFormData>({
     email: '',
@@ -32,17 +35,14 @@ export function LoginPage() {
 
   const [errors, setErrors] = useState<ValidationErrors>({});
 
-  const validateEmail = (email: string): string | undefined => {
-    if (!email) return 'Email is required';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Invalid email format';
-    return undefined;
-  };
+  // If we were redirected here, get the intended destination
+  const from = location.state?.from?.pathname || '/dashboard';
 
-  const validatePassword = (password: string): string | undefined => {
-    if (!password) return 'Password is required';
-    if (password.length < 6) return 'Password must be at least 6 characters';
-    return undefined;
-  };
+  useEffect(() => {
+    if (authError) {
+      setErrors(prev => ({ ...prev, general: authError }));
+    }
+  }, [authError]);
 
   const validateForm = (): boolean => {
     const newErrors: ValidationErrors = {};
@@ -62,12 +62,9 @@ export function LoginPage() {
     
     if (!validateForm()) return;
 
-    try {
-      await login(formData.email, formData.password);
-      navigate('/dashboard');
-    } catch (error) {
-      setErrors({ general: 'Invalid email or password' });
-    }
+    await login(formData.email, formData.password);
+    // After successful login, redirect to the intended destination
+    navigate(from, { replace: true });
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
