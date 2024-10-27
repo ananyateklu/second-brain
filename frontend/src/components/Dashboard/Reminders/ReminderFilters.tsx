@@ -1,4 +1,3 @@
-import React from 'react';
 import { Search, Bell, Calendar } from 'lucide-react';
 
 interface ReminderFiltersProps {
@@ -30,11 +29,10 @@ export function ReminderFilters({
       <div className="flex gap-2">
         <button
           onClick={() => onFilterChange('all')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-            selectedFilter === 'all'
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${selectedFilter === 'all'
               ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
               : 'bg-white dark:bg-dark-bg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-hover'
-          }`}
+            }`}
         >
           <Calendar className="w-4 h-4" />
           <span>All</span>
@@ -42,11 +40,10 @@ export function ReminderFilters({
 
         <button
           onClick={() => onFilterChange('due')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-            selectedFilter === 'due'
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${selectedFilter === 'due'
               ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
               : 'bg-white dark:bg-dark-bg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-hover'
-          }`}
+            }`}
         >
           <Bell className="w-4 h-4" />
           <span>Due</span>
@@ -54,11 +51,10 @@ export function ReminderFilters({
 
         <button
           onClick={() => onFilterChange('upcoming')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-            selectedFilter === 'upcoming'
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${selectedFilter === 'upcoming'
               ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
               : 'bg-white dark:bg-dark-bg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-hover'
-          }`}
+            }`}
         >
           <Calendar className="w-4 h-4" />
           <span>Upcoming</span>

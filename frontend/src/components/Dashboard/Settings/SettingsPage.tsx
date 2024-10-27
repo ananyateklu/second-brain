@@ -1,4 +1,3 @@
-import React from 'react';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { Moon, Sun, Bell, Shield, Database } from 'lucide-react';
 import { AISettingsSection } from './AISettingsSection';

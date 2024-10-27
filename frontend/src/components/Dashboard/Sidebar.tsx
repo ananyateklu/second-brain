@@ -1,7 +1,6 @@
-import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { 
-  Brain, 
+import {
+  Brain,
   Home,
   BookOpen,
   Tag,
@@ -89,8 +88,8 @@ export function Sidebar({ isOpen }: SidebarProps) {
                     to={item.to}
                     className={({ isActive }) =>
                       `flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors duration-200
-                      ${isActive 
-                        ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium' 
+                      ${isActive
+                        ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-hover'
                       }`
                     }
@@ -110,8 +109,8 @@ export function Sidebar({ isOpen }: SidebarProps) {
             to="/dashboard/settings"
             className={({ isActive }) =>
               `flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors duration-200
-              ${isActive 
-                ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium' 
+              ${isActive
+                ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
                 : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-hover'
               }`
             }
@@ -123,8 +122,8 @@ export function Sidebar({ isOpen }: SidebarProps) {
             to="/dashboard/help"
             className={({ isActive }) =>
               `flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors duration-200
-              ${isActive 
-                ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium' 
+              ${isActive
+                ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
                 : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-hover'
               }`
             }

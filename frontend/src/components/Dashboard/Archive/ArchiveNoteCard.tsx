@@ -1,4 +1,3 @@
-import React from 'react';
 import { FileText, Calendar, Tag, Link2, Star, RotateCcw, Lightbulb } from 'lucide-react';
 import { Note } from '../../../contexts/NotesContext';
 import { useNotes } from '../../../contexts/NotesContext';
@@ -21,13 +20,13 @@ export function ArchiveNoteCard({ note, isSelected, onSelect }: ArchiveNoteCardP
   const isIdea = note.tags.includes('idea');
 
   return (
-    <div 
+    <div
       onClick={onSelect}
       className={`
         group bg-white dark:bg-dark-card rounded-xl p-4 hover:shadow-md 
         dark:hover:shadow-lg dark:hover:shadow-black/10 transition-all duration-200
-        border-2 ${isSelected 
-          ? 'border-primary-500 dark:border-primary-400' 
+        border-2 ${isSelected
+          ? 'border-primary-500 dark:border-primary-400'
           : 'border-transparent hover:border-gray-200 dark:hover:border-gray-700'
         }
       `}
@@ -47,11 +46,10 @@ export function ArchiveNoteCard({ note, isSelected, onSelect }: ArchiveNoteCardP
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <div className={`p-1.5 rounded-lg ${
-                isIdea 
+              <div className={`p-1.5 rounded-lg ${isIdea
                   ? 'bg-amber-100 dark:bg-amber-900/30'
                   : 'bg-blue-100 dark:bg-blue-900/30'
-              }`}>
+                }`}>
                 {isIdea ? (
                   <Lightbulb className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                 ) : (

@@ -1,4 +1,3 @@
-import React from 'react';
 import { EditIdeaModal } from './EditIdeaModal';
 
 interface IdeaDetailsModalProps {

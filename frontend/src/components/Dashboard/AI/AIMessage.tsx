@@ -1,4 +1,3 @@
-import React from 'react';
 import { Bot, User } from 'lucide-react';
 
 interface Message {
@@ -21,9 +20,9 @@ export function AIMessage({ message }: AIMessageProps) {
     switch (message.type) {
       case 'image':
         return (
-          <img 
-            src={message.content} 
-            alt="AI Generated" 
+          <img
+            src={message.content}
+            alt="AI Generated"
             className="max-w-lg rounded-lg shadow-lg"
             loading="lazy"
           />
@@ -42,20 +41,18 @@ export function AIMessage({ message }: AIMessageProps) {
 
   return (
     <div className={`flex items-start gap-3 ${isUser ? 'flex-row-reverse' : ''}`}>
-      <div className={`p-2 rounded-lg ${
-        isUser 
+      <div className={`p-2 rounded-lg ${isUser
           ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
           : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
-      }`}>
+        }`}>
         {isUser ? <User className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
       </div>
 
       <div className={`flex-1 ${isUser ? 'text-right' : ''}`}>
-        <div className={`inline-block max-w-[85%] p-4 rounded-xl ${
-          isUser
+        <div className={`inline-block max-w-[85%] p-4 rounded-xl ${isUser
             ? 'bg-primary-600 text-white'
             : 'bg-white dark:bg-dark-card text-gray-900 dark:text-white'
-        }`}>
+          }`}>
           {renderContent()}
         </div>
         {message.model && (

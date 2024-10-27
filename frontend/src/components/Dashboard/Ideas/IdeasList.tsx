@@ -1,4 +1,3 @@
-import React from 'react';
 import { Star, Link2, Tag, ChevronRight, Lightbulb } from 'lucide-react';
 import { Note } from '../../../contexts/NotesContext';
 import { formatDate } from '../../../utils/dateUtils';

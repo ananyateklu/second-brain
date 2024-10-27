@@ -1,4 +1,3 @@
-import React from 'react';
 import { Reminder } from '../../../contexts/RemindersContext';
 import { ReminderCard } from './ReminderCard';
 

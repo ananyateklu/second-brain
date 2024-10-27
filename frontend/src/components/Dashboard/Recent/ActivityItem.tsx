@@ -1,7 +1,6 @@
-import React from 'react';
-import { 
-  FileText, 
-  Lightbulb, 
+import {
+  FileText,
+  Lightbulb,
   Star,
   Archive,
   Trash2,
@@ -62,7 +61,7 @@ export function ActivityItem({ activity, onClick }: ActivityItemProps) {
   };
 
   return (
-    <div 
+    <div
       onClick={onClick}
       className={`
         group bg-white dark:bg-dark-card rounded-lg p-4 

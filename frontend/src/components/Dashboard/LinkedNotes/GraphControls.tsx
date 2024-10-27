@@ -1,4 +1,3 @@
-import React from 'react';
 import { ZoomIn, ZoomOut, Maximize, Target } from 'lucide-react';
 
 interface GraphControlsProps {
@@ -18,7 +17,7 @@ export function GraphControls({ onZoomIn, onZoomOut, onFit, onCenter }: GraphCon
       >
         <ZoomIn className="w-5 h-5 text-gray-600 dark:text-gray-400" />
       </button>
-      
+
       <button
         onClick={onZoomOut}
         className="p-2 hover:bg-gray-100 dark:hover:bg-dark-hover rounded-lg transition-colors"
@@ -26,7 +25,7 @@ export function GraphControls({ onZoomIn, onZoomOut, onFit, onCenter }: GraphCon
       >
         <ZoomOut className="w-5 h-5 text-gray-600 dark:text-gray-400" />
       </button>
-      
+
       <button
         onClick={onFit}
         className="p-2 hover:bg-gray-100 dark:hover:bg-dark-hover rounded-lg transition-colors"
@@ -34,7 +33,7 @@ export function GraphControls({ onZoomIn, onZoomOut, onFit, onCenter }: GraphCon
       >
         <Maximize className="w-5 h-5 text-gray-600 dark:text-gray-400" />
       </button>
-      
+
       <button
         onClick={onCenter}
         className="p-2 hover:bg-gray-100 dark:hover:bg-dark-hover rounded-lg transition-colors"

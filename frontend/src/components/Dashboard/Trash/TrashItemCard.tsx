@@ -1,9 +1,9 @@
-import React from 'react';
-import { 
-  FileText, 
-  CheckSquare, 
-  Lightbulb, 
-  Bell, 
+;
+import {
+  FileText,
+  CheckSquare,
+  Lightbulb,
+  Bell,
   Tag,
   Star,
   RotateCcw,
@@ -50,8 +50,8 @@ export function TrashItemCard({ item, isSelected, onSelect }: TrashItemCardProps
   return (
     <div className={`
       group relative bg-white dark:bg-dark-card rounded-lg border-2 transition-all duration-200
-      ${isSelected 
-        ? 'border-primary-500 dark:border-primary-400' 
+      ${isSelected
+        ? 'border-primary-500 dark:border-primary-400'
         : 'border-transparent hover:border-gray-200 dark:hover:border-gray-700'
       }
     `}>

@@ -1,4 +1,3 @@
-import React from 'react';
 import { useNotes } from '../../../contexts/NotesContext';
 import { ArchiveNoteCard } from './ArchiveNoteCard';
 import { RotateCcw } from 'lucide-react';
@@ -16,9 +15,9 @@ interface ArchiveListProps {
   onRestoreSelected: () => void;
 }
 
-export function ArchiveList({ 
-  filters, 
-  searchQuery, 
+export function ArchiveList({
+  filters,
+  searchQuery,
   selectedItems,
   onSelectItem,
   onRestoreSelected
@@ -110,8 +109,8 @@ export function ArchiveList({
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {archivedNotes.map(note => (
-          <ArchiveNoteCard 
-            key={note.id} 
+          <ArchiveNoteCard
+            key={note.id}
             note={note}
             isSelected={selectedItems.includes(note.id)}
             onSelect={() => onSelectItem(note.id)}

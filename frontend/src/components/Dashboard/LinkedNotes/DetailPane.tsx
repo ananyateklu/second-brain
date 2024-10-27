@@ -1,4 +1,3 @@
-import React from 'react';
 import { X, Link2, Calendar, Tag } from 'lucide-react';
 import { Note } from '../../../contexts/NotesContext';
 import { LinkType } from './types';

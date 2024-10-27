@@ -1,14 +1,13 @@
-import React from 'react';
 import { Link2, Plus, Type, X } from 'lucide-react';
-import { Note } from '../../../../contexts/NotesContext';
-import { useNotes } from '../../../../contexts/NotesContext';
+import { Note, useNotes } from '../../../../contexts/NotesContext';
 
 interface LinkedNotesPanelProps {
-  linkedNotes: Note[];
-  onShowAddLink: () => void;
+  readonly linkedNotes: Note[];
+  readonly onShowAddLink: () => void;
+  readonly currentNoteId: string;
 }
 
-export function LinkedNotesPanel({ linkedNotes, onShowAddLink }: LinkedNotesPanelProps) {
+export function LinkedNotesPanel({ linkedNotes, onShowAddLink, currentNoteId }: LinkedNotesPanelProps) {
   const { removeLink } = useNotes();
 
   return (
@@ -52,7 +51,7 @@ export function LinkedNotesPanel({ linkedNotes, onShowAddLink }: LinkedNotesPane
                   </p>
                 </div>
                 <button
-                  onClick={() => removeLink(linkedNote.id)}
+                  onClick={() => removeLink(currentNoteId, linkedNote.id)}
                   className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 rounded transition-opacity"
                 >
                   <X className="w-4 h-4" />

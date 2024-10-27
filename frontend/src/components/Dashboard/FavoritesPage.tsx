@@ -1,4 +1,3 @@
-import React from 'react';
 import { NoteCard, Note } from './NoteCard';
 
 const MOCK_FAVORITES: Note[] = [

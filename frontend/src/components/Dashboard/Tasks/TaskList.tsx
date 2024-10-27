@@ -1,4 +1,3 @@
-import React from 'react';
 import { useTasks } from '../../../contexts/TasksContext';
 import { TaskCard } from './TaskCard';
 
@@ -30,7 +29,7 @@ export function TaskList({ searchQuery, filters }: TaskListProps) {
     if (filters.dueDate !== 'all') {
       const today = new Date();
       const dueDate = task.dueDate ? new Date(task.dueDate) : null;
-      
+
       switch (filters.dueDate) {
         case 'today':
           matchesDueDate = dueDate?.toDateString() === today.toDateString();

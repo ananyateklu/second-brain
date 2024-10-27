@@ -1,4 +1,3 @@
-import React from 'react';
 import { Activity } from '../../../contexts/ActivityContext';
 import { ActivityItem } from './ActivityItem';
 import { groupActivitiesByDate } from './utils';

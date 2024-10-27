@@ -1,4 +1,3 @@
-import React from 'react';
 
 interface ImageGenerationLoadingProps {
   progress: number;
@@ -20,9 +19,9 @@ export function ImageGenerationLoading({ progress }: ImageGenerationLoadingProps
               {Math.round(progress)}%
             </span>
           </div>
-          
+
           <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div 
+            <div
               className="h-full bg-primary-600 dark:bg-primary-500 rounded-full transition-all duration-300 ease-out"
               style={{ width: `${progress}%` }}
             />

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Circle } from 'lucide-react';
 
 interface LinkType {
@@ -27,7 +26,7 @@ export function LinkTypeSelector({ linkTypes, onLinkTypeChange }: LinkTypeSelect
           >
             <Circle
               className="w-4 h-4"
-              style={{ 
+              style={{
                 color: type.color,
                 strokeDasharray: type.style === 'dashed' ? '4' : type.style === 'dotted' ? '2' : 'none'
               }}

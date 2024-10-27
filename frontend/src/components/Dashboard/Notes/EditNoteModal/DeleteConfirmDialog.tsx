@@ -1,4 +1,3 @@
-import React from 'react';
 import { Trash2, Loader } from 'lucide-react';
 
 interface DeleteConfirmDialogProps {
@@ -19,13 +18,13 @@ export function DeleteConfirmDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      
+
       <div className="relative w-full max-w-md glass-morphism rounded-xl p-6">
         <div className="flex flex-col items-center gap-4">
           <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-full">
             <Trash2 className="w-6 h-6 text-red-600 dark:text-red-400" />
           </div>
-          
+
           <div className="text-center">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
               Delete Note

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Type, Tag as TagIcon, X } from 'lucide-react';
 import { Input } from '../../../shared/Input';
 import { SuggestionButton } from '../../../shared/SuggestionButton';

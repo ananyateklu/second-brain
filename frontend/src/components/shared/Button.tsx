@@ -1,4 +1,3 @@
-import React from 'react';
 import { ChevronRight } from 'lucide-react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -6,13 +5,13 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   showIcon?: boolean;
 }
 
-export function Button({ 
-  variant = 'primary', 
-  showIcon = true, 
-  children, 
+export function Button({
+  variant = 'primary',
+  showIcon = true,
+  children,
   disabled,
   className = '',
-  ...props 
+  ...props
 }: ButtonProps) {
   const baseStyles = "w-full py-3 rounded-lg transition-colors flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed";
   const variants = {
@@ -21,8 +20,8 @@ export function Button({
   };
 
   return (
-    <button 
-      {...props} 
+    <button
+      {...props}
       disabled={disabled}
       className={`${baseStyles} ${variants[variant]} ${className}`}
     >

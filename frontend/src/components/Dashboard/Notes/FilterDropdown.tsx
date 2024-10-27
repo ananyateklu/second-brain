@@ -1,4 +1,3 @@
-import React from 'react';
 import { ArrowDownAZ, ArrowUpAZ, Clock, Star, Pin } from 'lucide-react';
 
 interface FilterDropdownProps {
@@ -39,7 +38,7 @@ export function FilterDropdown({ filters, allTags, onFilterChange }: FilterDropd
             )}
             Title
           </button>
-          
+
           <button
             onClick={() => onFilterChange('sortBy', 'updatedAt')}
             className={`
@@ -69,7 +68,7 @@ export function FilterDropdown({ filters, allTags, onFilterChange }: FilterDropd
             <ArrowUpAZ className="w-4 h-4" />
             Ascending
           </button>
-          
+
           <button
             onClick={() => onFilterChange('sortOrder', 'desc')}
             className={`
@@ -105,7 +104,7 @@ export function FilterDropdown({ filters, allTags, onFilterChange }: FilterDropd
             <Pin className="w-4 h-4" />
             Pinned
           </button>
-          
+
           <button
             onClick={() => onFilterChange('showFavorites', !filters.showFavorites)}
             className={`

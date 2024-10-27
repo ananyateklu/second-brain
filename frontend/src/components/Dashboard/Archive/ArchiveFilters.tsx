@@ -1,4 +1,3 @@
-import React from 'react';
 import { ArrowDownAZ, ArrowUpAZ, Calendar, Tag, Link2 } from 'lucide-react';
 
 interface ArchiveFiltersProps {
@@ -37,7 +36,7 @@ export function ArchiveFilters({ filters, onFilterChange }: ArchiveFiltersProps)
             )}
             Title
           </button>
-          
+
           <button
             onClick={() => onFilterChange('sortBy', 'archivedAt')}
             className={`
@@ -81,7 +80,7 @@ export function ArchiveFilters({ filters, onFilterChange }: ArchiveFiltersProps)
             <ArrowUpAZ className="w-4 h-4" />
             Ascending
           </button>
-          
+
           <button
             onClick={() => onFilterChange('sortOrder', 'desc')}
             className={`

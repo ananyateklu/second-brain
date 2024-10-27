@@ -1,4 +1,3 @@
-import React from 'react';
 import { AIMessage } from './AIMessage';
 
 interface Message {

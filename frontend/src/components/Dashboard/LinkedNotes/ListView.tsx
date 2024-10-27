@@ -1,4 +1,3 @@
-import React from 'react';
 import { useNotes } from '../../../contexts/NotesContext';
 import { formatDate } from '../../../utils/dateUtils';
 import { Link2 } from 'lucide-react';
@@ -62,7 +61,7 @@ export function ListView({ onNoteSelect }: ListViewProps) {
           ))}
         </div>
       </div>
-      
+
       {notes.length === 0 && (
         <div className="flex items-center justify-center h-full">
           <p className="text-gray-500 dark:text-gray-400">

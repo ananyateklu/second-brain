@@ -1,4 +1,3 @@
-import React from 'react';
 import { Star, Link2, Tag, Lightbulb } from 'lucide-react';
 import { Note } from '../../../contexts/NotesContext';
 import { formatDate } from '../../../utils/dateUtils';
@@ -18,7 +17,7 @@ export function IdeasGrid({ ideas, onIdeaClick }: IdeasGridProps) {
           className="group relative overflow-hidden bg-white dark:bg-dark-card rounded-xl hover-card cursor-pointer"
         >
           <div className="absolute inset-0 gradient-border opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          
+
           <div className="relative p-5 sm:p-6">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1">

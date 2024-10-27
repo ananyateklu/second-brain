@@ -1,4 +1,3 @@
-import React from 'react';
 import { X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -28,7 +27,7 @@ export function ConfirmationDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      
+
       <div className="relative w-full max-w-md glass-morphism rounded-xl">
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
@@ -56,11 +55,10 @@ export function ConfirmationDialog({
             </button>
             <button
               onClick={onConfirm}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-white transition-colors ${
-                isDangerous
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-white transition-colors ${isDangerous
                   ? 'bg-red-600 hover:bg-red-700'
                   : 'bg-primary-600 hover:bg-primary-700'
-              }`}
+                }`}
             >
               <Icon className="w-4 h-4" />
               <span>{confirmLabel}</span>

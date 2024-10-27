@@ -1,4 +1,3 @@
-import React from 'react';
 import { Brain } from 'lucide-react';
 
 export function Logo() {

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Clock, Tag as TagIcon, Star, Pin, FileText, Lightbulb, Archive } from 'lucide-react';
 import { useNotes } from '../../contexts/NotesContext';
 
@@ -52,16 +51,15 @@ export function NoteCard({ note, viewMode = 'grid' }: NoteCardProps) {
       ${viewMode === 'list' ? 'flex gap-4' : ''}
     `}>
       <div className="absolute inset-0 gradient-border opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-      
+
       <div className="relative p-5 sm:p-6 flex-1">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <div className={`p-1.5 rounded-lg ${
-                isIdea 
-                  ? 'bg-amber-100 dark:bg-amber-900/30' 
+              <div className={`p-1.5 rounded-lg ${isIdea
+                  ? 'bg-amber-100 dark:bg-amber-900/30'
                   : 'bg-blue-100 dark:bg-blue-900/30'
-              }`}>
+                }`}>
                 {isIdea ? (
                   <Lightbulb className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                 ) : (
@@ -80,11 +78,10 @@ export function NoteCard({ note, viewMode = 'grid' }: NoteCardProps) {
           <div className="flex flex-col gap-2">
             <button
               onClick={handlePin}
-              className={`p-1.5 rounded-lg transition-colors ${
-                note.isPinned
+              className={`p-1.5 rounded-lg transition-colors ${note.isPinned
                   ? 'text-primary-600 dark:text-primary-500 bg-primary-50 dark:bg-primary-900/20'
                   : 'text-gray-400 hover:text-primary-600 dark:text-gray-500 dark:hover:text-primary-500 hover:bg-gray-100 dark:hover:bg-dark-hover'
-              }`}
+                }`}
               title={note.isPinned ? 'Unpin note' : 'Pin note'}
             >
               <Pin className="w-4 h-4" fill={note.isPinned ? 'currentColor' : 'none'} />
@@ -92,11 +89,10 @@ export function NoteCard({ note, viewMode = 'grid' }: NoteCardProps) {
 
             <button
               onClick={handleFavorite}
-              className={`p-1.5 rounded-lg transition-colors ${
-                note.isFavorite
+              className={`p-1.5 rounded-lg transition-colors ${note.isFavorite
                   ? 'text-amber-500 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20'
                   : 'text-gray-400 hover:text-amber-500 dark:text-gray-500 dark:hover:text-amber-400 hover:bg-gray-100 dark:hover:bg-dark-hover'
-              }`}
+                }`}
               title={note.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
             >
               <Star className="w-4 h-4" fill={note.isFavorite ? 'currentColor' : 'none'} />
@@ -111,7 +107,7 @@ export function NoteCard({ note, viewMode = 'grid' }: NoteCardProps) {
             </button>
           </div>
         </div>
-        
+
         {note.tags && note.tags.length > 0 && (
           <div className="mt-4 flex flex-wrap gap-2">
             {note.tags.map(tag => (
@@ -125,7 +121,7 @@ export function NoteCard({ note, viewMode = 'grid' }: NoteCardProps) {
             ))}
           </div>
         )}
-        
+
         <div className="mt-4 flex items-center text-sm text-gray-500 dark:text-gray-400">
           <Clock className="w-4 h-4 mr-1.5 flex-shrink-0" />
           <span>Last edited {formattedDate}</span>

@@ -1,10 +1,9 @@
-import React from 'react';
-import { 
-  FileText, 
-  CheckSquare, 
-  Lightbulb, 
-  Bell, 
-  Tag, 
+import {
+  FileText,
+  CheckSquare,
+  Lightbulb,
+  Bell,
+  Tag,
   Settings,
   Plus,
   Pencil,
@@ -74,11 +73,10 @@ export function ActivityFilters({ filters, onFilterChange }: ActivityFiltersProp
             <button
               key={id}
               onClick={() => toggleActionType(id)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                filters.actionTypes.includes(id)
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${filters.actionTypes.includes(id)
                   ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
                   : 'bg-gray-100 dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-dark-hover'
-              }`}
+                }`}
             >
               <Icon className="w-4 h-4" />
               {label}
@@ -97,11 +95,10 @@ export function ActivityFilters({ filters, onFilterChange }: ActivityFiltersProp
             <button
               key={id}
               onClick={() => toggleItemType(id)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                filters.itemTypes.includes(id)
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${filters.itemTypes.includes(id)
                   ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
                   : 'bg-gray-100 dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-dark-hover'
-              }`}
+                }`}
             >
               <Icon className="w-4 h-4" />
               {label}
@@ -120,11 +117,10 @@ export function ActivityFilters({ filters, onFilterChange }: ActivityFiltersProp
             <button
               key={id}
               onClick={() => onFilterChange('dateRange', id)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                filters.dateRange === id
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${filters.dateRange === id
                   ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
                   : 'bg-gray-100 dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-dark-hover'
-              }`}
+                }`}
             >
               <Calendar className="w-4 h-4" />
               {label}
