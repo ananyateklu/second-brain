@@ -1,19 +1,7 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { taskService } from '../api/services/taskService';  // Import the taskService
+import { Task } from '../api/types/task';
 
-export interface Task {
-  id: string;
-  title: string;
-  description: string;
-  status: 'incomplete' | 'completed';
-  priority: 'low' | 'medium' | 'high';
-  dueDate: string | null;
-  tags: string[];
-  linkedNotes: string[];
-  linkedIdeas: string[];
-  createdAt: string;
-  updatedAt: string;
-  reminders: string[];
-}
 
 interface TasksContextType {
   tasks: Task[];
@@ -27,73 +15,77 @@ interface TasksContextType {
 
 const TasksContext = createContext<TasksContextType | null>(null);
 
-const INITIAL_TASKS: Task[] = [
-  {
-    id: '1',
-    title: 'Review Project Proposal',
-    description: 'Review and provide feedback on the Q2 project proposal document.',
-    status: 'incomplete',
-    priority: 'high',
-    dueDate: '2024-03-20T10:00:00Z',
-    tags: ['project', 'review'],
-    linkedNotes: [],
-    linkedIdeas: [],
-    createdAt: '2024-03-15T08:00:00Z',
-    updatedAt: '2024-03-15T08:00:00Z',
-    reminders: ['2024-03-19T15:00:00Z']
-  },
-  {
-    id: '2',
-    title: 'Update Documentation',
-    description: 'Update the API documentation with new endpoints.',
-    status: 'completed',
-    priority: 'medium',
-    dueDate: '2024-03-18T16:00:00Z',
-    tags: ['documentation', 'api'],
-    linkedNotes: [],
-    linkedIdeas: [],
-    createdAt: '2024-03-14T11:00:00Z',
-    updatedAt: '2024-03-18T15:30:00Z',
-    reminders: []
-  }
-];
 
 export function TasksProvider({ children }: { children: React.ReactNode }) {
-  const [tasks, setTasks] = useState<Task[]>(INITIAL_TASKS);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const addTask = useCallback((task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const newTask: Task = {
-      ...task,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    setTasks(prev => [newTask, ...prev]);
+  // Fetch tasks from the backend API when the component mounts
+  useEffect(() => {
+    async function fetchTasks() {
+      try {
+        setIsLoading(true);
+        const response = await taskService.getTasks();
+        setTasks(response.data);
+      } catch (err) {
+        console.error('Failed to fetch tasks:', err);
+        setError('Failed to fetch tasks.');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchTasks();
   }, []);
 
-  const updateTask = useCallback((id: string, updates: Partial<Task>) => {
-    setTasks(prev => prev.map(task =>
-      task.id === id
-        ? { ...task, ...updates, updatedAt: new Date().toISOString() }
-        : task
-    ));
+  const addTask = useCallback(async (taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
+    try {
+      const response = await taskService.createTask(taskData);
+      const newTask = response.data;
+      setTasks(prev => [newTask, ...prev]);
+    } catch (err) {
+      console.error('Failed to create task:', err);
+      throw err;
+    }
   }, []);
 
-  const deleteTask = useCallback((id: string) => {
-    setTasks(prev => prev.filter(task => task.id !== id));
+  const updateTask = useCallback(async (id: string, updates: Partial<Task>) => {
+    try {
+      const response = await taskService.updateTask(id, updates);
+      const updatedTask = response.data;
+      setTasks(prev => prev.map(task => task.id === id ? updatedTask : task));
+    } catch (err) {
+      console.error('Failed to update task:', err);
+      throw err;
+    }
   }, []);
 
-  const toggleTaskStatus = useCallback((id: string) => {
-    setTasks(prev => prev.map(task =>
-      task.id === id
-        ? {
-            ...task,
-            status: task.status === 'completed' ? 'incomplete' : 'completed',
-            updatedAt: new Date().toISOString()
-          }
-        : task
-    ));
+  const deleteTask = useCallback(async (id: string) => {
+    try {
+      await taskService.deleteTask(id);
+      setTasks(prev => prev.filter(task => task.id !== id));
+    } catch (err) {
+      console.error('Failed to delete task:', err);
+      throw err;
+    }
   }, []);
+
+  const toggleTaskStatus = useCallback(async (id: string) => {
+    try {
+      const task = tasks.find(task => task.id === id);
+      if (!task) return;
+  
+      const updatedStatus = task.status === 'completed' ? 'incomplete' : 'completed';
+      const response = await taskService.updateTask(id, { status: updatedStatus });
+      const updatedTask = response.data;
+  
+      setTasks(prev => prev.map(t => t.id === id ? updatedTask : t));
+    } catch (err) {
+      console.error('Failed to toggle task status:', err);
+      throw err;
+    }
+  }, [tasks]);
 
   const addTaskLink = useCallback((taskId: string, itemId: string, type: 'note' | 'idea') => {
     setTasks(prev => prev.map(task => {
@@ -127,19 +119,12 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <TasksContext.Provider value={{
-      tasks,
-      addTask,
-      updateTask,
-      deleteTask,
-      toggleTaskStatus,
-      addTaskLink,
-      removeTaskLink
-    }}>
+    <TasksContext.Provider value={{ tasks, addTask, updateTask, deleteTask, toggleTaskStatus, addTaskLink, removeTaskLink }}>
       {children}
     </TasksContext.Provider>
   );
 }
+
 
 export function useTasks() {
   const context = useContext(TasksContext);

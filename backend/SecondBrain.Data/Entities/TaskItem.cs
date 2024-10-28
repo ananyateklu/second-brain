@@ -26,6 +26,7 @@ namespace SecondBrain.Data.Entities
         public string Description { get; set; } = string.Empty;
         public TaskStatus Status { get; set; }
         public TaskPriority Priority { get; set; }
+        public string Tags { get; set; }
         public DateTime? DueDate { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
