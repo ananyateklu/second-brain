@@ -1,13 +1,28 @@
+// ContentSuggestionService.ts
 import { AIService } from './index';
+import { PROMPT_CONFIG } from './promptConfig';
 
 export class ContentSuggestionService {
   private aiService: AIService;
-  private readonly MODEL_ID = 'gpt-4o-mini';
 
   constructor() {
     this.aiService = new AIService();
+    // Remove the modelId from the constructor
+    // this.modelId = this.getSelectedModel();
   }
 
+  // Use a getter to retrieve the modelId whenever needed
+  private get modelId(): string {
+    return localStorage.getItem('content_suggestions_model') || 'gpt-4';
+  }
+
+  private isClaude(): boolean {
+    return this.modelId.startsWith('claude');
+  }
+
+  /**
+   * Generates a title for the given content type.
+   */
   async generateTitle(
     content: string,
     type: 'note' | 'idea' | 'task' | 'reminder',
@@ -22,6 +37,9 @@ export class ContentSuggestionService {
     return this.generateSuggestion(prompt, 60);
   }
 
+  /**
+   * Generates detailed content based on the title and type.
+   */
   async generateContent(
     title: string,
     type: 'note' | 'idea' | 'task' | 'reminder',
@@ -36,6 +54,9 @@ export class ContentSuggestionService {
     return this.generateSuggestion(prompt);
   }
 
+  /**
+   * Generates relevant tags for the given input and type.
+   */
   async generateTags(
     input: { title?: string; content?: string },
     type: 'note' | 'idea' | 'task' | 'reminder',
@@ -52,22 +73,52 @@ export class ContentSuggestionService {
       .slice(0, 5); // Limit to 5 tags
   }
 
+  /**
+   * Handles the AI response, including model-specific parsing and cleaning.
+   */
   private async generateSuggestion(prompt: string, maxLength?: number): Promise<string> {
     try {
-      const response = await this.aiService.sendMessage(prompt, this.MODEL_ID);
+      console.log(`Sending prompt to ${this.modelId}:`, prompt);
+      const response = await this.aiService.sendMessage(prompt, this.modelId);
+      console.log(`Received response from ${this.modelId}:`, response.content);
+
       let suggestion = response.content.trim();
-      
+
+      // Remove unwanted characters and formatting
+      suggestion = suggestion.replace(/```[^`]*```/g, '');
+      suggestion = suggestion.replace(/`([^`]+)`/g, '$1');
+      suggestion = suggestion.replace(/["'`]/g, '');
+
+      // Clean up whitespace
+      suggestion = suggestion.replace(/\s+/g, ' ').trim();
+
+      // Truncate if necessary
       if (maxLength && suggestion.length > maxLength) {
         suggestion = suggestion.slice(0, maxLength - 3) + '...';
       }
-      
+
       return suggestion;
     } catch (error) {
-      console.error('Failed to generate suggestion:', error);
-      throw new Error('Failed to generate suggestion');
+      console.error(`Failed to generate suggestion for model ${this.modelId}:`, error);
+      throw new Error(`Failed to generate suggestion for the selected AI model (${this.modelId}). Please try again later.`);
     }
   }
 
+  /**
+   * Replaces placeholders in the prompt with actual values.
+   */
+  private replacePlaceholders(prompt: string, replacements: Record<string, string>): string {
+    let updatedPrompt = prompt;
+    for (const [key, value] of Object.entries(replacements)) {
+      const placeholder = `{${key}}`;
+      updatedPrompt = updatedPrompt.split(placeholder).join(value);
+    }
+    return updatedPrompt;
+  }
+
+  /**
+   * Creates a prompt for title generation based on type and model.
+   */
   private createTitlePrompt(
     content: string,
     type: 'note' | 'idea' | 'task' | 'reminder',
@@ -78,32 +129,16 @@ export class ContentSuggestionService {
       priority?: string;
     }
   ): string {
-    const prompts = {
-      note: `Generate a concise, descriptive title for this note. The title should:
-- Be clear and under 60 characters
-- Capture the main topic or purpose
-- Use natural language
-- Be specific but not verbose`,
-      idea: `Create a captivating, memorable title for this idea. The title should:
-- Be creative but clear, under 60 characters
-- Capture the innovative aspect
-- Be engaging and memorable
-- Reflect the potential impact`,
-      task: `Generate a clear, action-oriented title for this task. The title should:
-- Be specific and under 60 characters
-- Start with a verb when possible
-- Clearly state the objective
-- Include key context`,
-      reminder: `Create a clear, time-relevant title for this reminder. The title should:
-- Be specific and under 60 characters
-- Include relevant timing context
-- Be action-oriented
-- Be immediately understandable`
+    const promptTemplate = PROMPT_CONFIG.title[type][this.isClaude() ? 'claude' : 'openai'];
+    const replacements: Record<string, string> = {
+      content,
     };
-
-    return this.createPrompt(prompts[type], content, context);
+    return this.replacePlaceholders(promptTemplate, replacements);
   }
 
+  /**
+   * Creates a prompt for content generation based on type and model.
+   */
   private createContentPrompt(
     title: string,
     type: 'note' | 'idea' | 'task' | 'reminder',
@@ -114,32 +149,18 @@ export class ContentSuggestionService {
       priority?: string;
     }
   ): string {
-    const prompts = {
-      note: `Generate detailed, well-structured content for this note. The content should:
-- Expand on the title's topic
-- Be informative and clear
-- Include relevant details
-- Use proper formatting`,
-      idea: `Develop this idea with compelling content. The description should:
-- Explain the core concept
-- Highlight potential benefits
-- Address key considerations
-- Suggest possible next steps`,
-      task: `Create a clear task description. The content should:
-- Detail the specific requirements
-- Include any important steps
-- Mention relevant dependencies
-- Set clear success criteria`,
-      reminder: `Write a helpful reminder description. The content should:
-- Specify what needs to be done
-- Include important details
-- Mention any prerequisites
-- Note any related deadlines`
+    const promptTemplate = PROMPT_CONFIG.content[type][this.isClaude() ? 'claude' : 'openai'];
+    const contextInfo = context ? this.buildContext(context) : '';
+    const replacements: Record<string, string> = {
+      title,
+      context: contextInfo,
     };
-
-    return this.createPrompt(prompts[type], title, context);
+    return this.replacePlaceholders(promptTemplate, replacements);
   }
 
+  /**
+   * Creates a prompt for tag generation based on type and model.
+   */
   private createTagsPrompt(
     input: { title?: string; content?: string },
     type: 'note' | 'idea' | 'task' | 'reminder',
@@ -147,43 +168,49 @@ export class ContentSuggestionService {
       currentTags?: string[];
     }
   ): string {
-    const prompt = `Generate relevant tags for this ${type}. The tags should:
-- Be concise and specific
-- Cover key themes and categories
-- Be useful for organization
-- Include 3-5 tags total
+    const promptTemplate = PROMPT_CONFIG.tags[type][this.isClaude() ? 'claude' : 'openai'];
 
-Content to analyze:
-${input.title ? `Title: ${input.title}\n` : ''}${input.content ? `Content: ${input.content}\n` : ''}${
-      context?.currentTags?.length ? `Current Tags: ${context.currentTags.join(', ')}\n` : ''
-    }
-Generate tags as a comma-separated list:`;
+    const titleSection = input.title ? `Title: ${input.title}\n` : '';
+    const contentSection = input.content ? `Content: ${input.content}\n` : '';
+    const currentTagsSection =
+      context && context.currentTags && context.currentTags.length > 0
+        ? `Current Tags: ${context.currentTags.join(', ')}\n`
+        : '';
 
-    return prompt;
+    const replacements: Record<string, string> = {
+      titleSection,
+      contentSection,
+      currentTagsSection,
+    };
+
+    return this.replacePlaceholders(promptTemplate, replacements);
   }
 
-  private createPrompt(
-    basePrompt: string,
-    content: string,
-    context?: Record<string, any>
-  ): string {
+  /**
+   * Builds the context string for content prompts.
+   */
+  private buildContext(context: {
+    currentContent?: string;
+    tags?: string[];
+    dueDate?: string;
+    priority?: string;
+  }): string {
     let contextInfo = '';
-    if (context) {
-      Object.entries(context).forEach(([key, value]) => {
-        if (value) {
-          if (Array.isArray(value)) {
-            contextInfo += `\n${key}: ${value.join(', ')}`;
-          } else {
-            contextInfo += `\n${key}: ${value}`;
-          }
-        }
-      });
+    if (context.currentContent) {
+      contextInfo += `\nCurrent Content: ${context.currentContent}`;
     }
-
-    return `${basePrompt}
-
-Content to analyze:${contextInfo}\n\n${content}\n\nGenerated Response:`;
+    if (context.tags && context.tags.length > 0) {
+      contextInfo += `\nRelevant Tags: ${context.tags.join(', ')}`;
+    }
+    if (context.dueDate) {
+      contextInfo += `\nDue Date: ${context.dueDate}`;
+    }
+    if (context.priority) {
+      contextInfo += `\nPriority Level: ${context.priority}`;
+    }
+    return contextInfo;
   }
 }
 
+// Initialize the service instance
 export const contentSuggestionService = new ContentSuggestionService();

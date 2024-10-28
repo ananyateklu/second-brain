@@ -1,6 +1,7 @@
 import { OpenAIService } from './openai';
 import { AnthropicService } from './anthropic';
 import { AIModel, AIResponse } from '../../types/ai';
+import { AI_MODELS } from './models';
 
 export class AIService {
   private openai: OpenAIService;
@@ -40,17 +41,19 @@ export class AIService {
   }
 
   getAvailableModels(): AIModel[] {
-    return [
-      ...this.openai.getModels(),
-      ...this.anthropic.getModels()
-    ];
+    return AI_MODELS.filter(model => model.provider === 'openai' || model.provider === 'anthropic');
   }
 
   isOpenAIConfigured(): boolean {
     return this.openai.isConfigured();
   }
 
-  isAnthropicConfigured(): boolean {
-    return this.anthropic.isConfigured();
+  async isAnthropicConfigured(): Promise<boolean> {
+    try {
+      return await this.anthropic.testConnection();
+    } catch (error) {
+      console.error('Error checking Anthropic configuration:', error);
+      return false;
+    }
   }
 }

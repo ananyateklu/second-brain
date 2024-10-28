@@ -1,4 +1,4 @@
-import api from '../config/axios';
+import api from '../../services/api/api';
 import { LoginFormData } from '../../types/auth';
 
 export const authService = {

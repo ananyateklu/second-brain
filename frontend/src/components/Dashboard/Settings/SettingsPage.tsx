@@ -10,6 +10,10 @@ interface AISettings {
     temperature: number;
     maxTokens: number;
   };
+  contentSuggestions?: {
+    provider: 'openai' | 'anthropic';
+    modelId: string;
+  };
 }
 
 export function SettingsPage() {
@@ -17,11 +21,21 @@ export function SettingsPage() {
 
   const handleSaveAISettings = async (settings: AISettings) => {
     try {
-      // In a real implementation, this would make an API call to save the settings
+      // Simulate an API call or save operation
       await new Promise(resolve => setTimeout(resolve, 1000));
-      // Show success message
+
+      // Save settings to local storage
+      if (settings.openaiApiKey) {
+        localStorage.setItem('openai_api_key', settings.openaiApiKey);
+      }
+      if (settings.contentSuggestions) {
+        localStorage.setItem('content_suggestions_provider', settings.contentSuggestions.provider);
+        localStorage.setItem('content_suggestions_model', settings.contentSuggestions.modelId);
+      }
+
     } catch (error) {
       // Show error message
+      console.error('Failed to save settings:', error);
     }
   };
 

@@ -3,8 +3,8 @@ import { AnthropicService } from './ai/anthropic';
 import { AIModel, AIResponse } from '../types/ai';
 
 export class AIService {
-  private openai: OpenAIService;
-  private anthropic: AnthropicService;
+  private readonly openai: OpenAIService;
+  private readonly anthropic: AnthropicService;
 
   constructor() {
     this.openai = new OpenAIService();

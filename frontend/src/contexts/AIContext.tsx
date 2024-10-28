@@ -1,9 +1,10 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
 import { AIService } from '../services/ai';
 import { AIModel, AIResponse } from '../types/ai';
 
 interface AIContextType {
   isOpenAIConfigured: boolean;
+  isAnthropicConfigured: boolean;
   error: string | null;
   sendMessage: (input: string | File, modelId: string) => Promise<AIResponse>;
   configureOpenAI: (apiKey: string) => Promise<void>;
@@ -17,6 +18,23 @@ const aiService = new AIService();
 export function AIProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [isOpenAIConfigured, setIsOpenAIConfigured] = useState<boolean>(aiService.isOpenAIConfigured());
+  const [isAnthropicConfigured, setIsAnthropicConfigured] = useState<boolean>(aiService.isAnthropicConfigured());
+  const [availableModels, setAvailableModels] = useState<AIModel[]>(aiService.getAvailableModels());
+
+
+  // Initialize Anthropic configuration status
+  useEffect(() => {
+    const checkAnthropicConfig = async () => {
+      const isConfigured = await aiService.isAnthropicConfigured();
+      setIsAnthropicConfigured(isConfigured);
+    };
+    checkAnthropicConfig();
+  }, []);
+
+  // Update available models whenever configuration changes
+  useEffect(() => {
+    setAvailableModels(aiService.getAvailableModels());
+  }, [isOpenAIConfigured, isAnthropicConfigured]);
 
   const configureOpenAI = useCallback(async (apiKey: string) => {
     try {
@@ -81,13 +99,14 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const value = {
+  const value = useMemo(() => ({
     isOpenAIConfigured,
+    isAnthropicConfigured,
     error,
     sendMessage,
     configureOpenAI,
-    availableModels: aiService.getAvailableModels()
-  };
+    availableModels
+  }), [isOpenAIConfigured, isAnthropicConfigured, error, sendMessage, configureOpenAI, availableModels]);
 
   return <AIContext.Provider value={value}>{children}</AIContext.Provider>;
 }

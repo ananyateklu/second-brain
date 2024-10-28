@@ -17,5 +17,6 @@ export interface AuthState {
     id: string;
     email: string;
     name: string;
+    createdAt?: string; 
   };
 }

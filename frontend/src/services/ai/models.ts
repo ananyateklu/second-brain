@@ -140,7 +140,7 @@ export const AI_MODELS: AIModel[] = [
   },
   // Anthropic Models (Mocked for now)
   {
-    id: 'claude-3-opus',
+    id: 'claude-3-opus-latest',
     name: 'Claude 3 Opus',
     provider: 'anthropic',
     category: 'chat',
@@ -150,11 +150,21 @@ export const AI_MODELS: AIModel[] = [
     endpoint: 'chat',
   },
   {
-    id: 'claude-3-sonnet',
-    name: 'Claude 3 Sonnet',
+    id: 'claude-3-5-sonnet-latest',
+    name: 'Claude 3 Sonnet (New)',
     provider: 'anthropic',
     category: 'chat',
-    description: 'Balanced performance and efficiency',
+    description: 'Claude 3.5 Sonnet - Anthropic\'s latest language model',
+    isConfigured: true,
+    color: '#f97316',
+    endpoint: 'chat',
+  },
+  {
+    id: 'claude-3-haiku-20240307',
+    name: 'Claude 3 Haiku',
+    provider: 'anthropic',
+    category: 'chat',
+    description: 'Fastest and most compact Claude 3 model',
     isConfigured: true,
     color: '#f97316',
     endpoint: 'chat',

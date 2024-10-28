@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { AuthState } from '../types/auth';
-import { authService, AuthResponse } from '../services/api';
+import { authService, AuthResponse } from '../services/api/auth.service';
+import api from '../services/api/api';
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
@@ -108,72 +109,39 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
     }
   }, []);
 
+  // AuthContext.tsx
+
   const fetchCurrentUser = useCallback(async () => {
-    console.log('Fetching current user...');
-  
     const accessToken = localStorage.getItem('access_token');
-    const refreshTokenStored = localStorage.getItem('refresh_token');
-  
-    console.log('Access Token Retrieved:', accessToken);
-    console.log('Refresh Token Retrieved:', refreshTokenStored);
-  
-    if (!accessToken && !refreshTokenStored) {
-      console.log('No tokens found. User is not logged in.');
+    console.log('Access token in fetchCurrentUser:', accessToken);
+
+    if (!accessToken) {
       setAuthState(prev => ({ ...prev, isLoading: false }));
       return;
     }
-  
+
     setAuthState(prev => ({ ...prev, isLoading: true }));
     try {
-      // Attempt to fetch current user with access token
-      const response = await authService.getCurrentUser();
-  
-      console.log('Fetched user:', response.user);
-  
+      const user = await authService.getCurrentUser();
+      console.log('Fetched user:', user);
+
       setAuthState({
         isLoading: false,
         error: null,
-        user: response.user,
+        user: user, // Set the user directly
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error fetching current user:', error);
-      // If access token is invalid or expired, try to refresh it
-      if (refreshTokenStored) {
-        console.log('Access token invalid. Attempting to refresh token...');
-        try {
-         
-          console.log('Token refreshed successfully.');
-          // Retry fetching user data with new access token
-          const retryResponse = await authService.getCurrentUser();
-          console.log('Fetched user after refresh:', retryResponse.user);
-  
-          setAuthState({
-            isLoading: false,
-            error: null,
-            user: retryResponse.user,
-          });
-        } catch (refreshError: any) {
-          console.error('Failed to refresh token:', refreshError);
-          setAuthState({
-            isLoading: false,
-            error: null,
-            user: null,
-          });
-          logout();
-        }
-      } else {
-        console.log('No refresh token available. Logging out.');
-        setAuthState({
-          isLoading: false,
-          error: null,
-          user: null,
-        });
-        logout();
-      }
+      // Clear tokens and state on error
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      setAuthState({
+        isLoading: false,
+        error: null,
+        user: null,
+      });
     }
-  }, [logout]);
-  
-  
+  }, []);
 
   // **Initialize Auth State on Mount**
   useEffect(() => {

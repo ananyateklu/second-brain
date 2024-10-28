@@ -1,3 +1,4 @@
+import React from 'react';
 import { useNotes } from '../../../contexts/NotesContext';
 import { ArchiveNoteCard } from './ArchiveNoteCard';
 import { RotateCcw } from 'lucide-react';
