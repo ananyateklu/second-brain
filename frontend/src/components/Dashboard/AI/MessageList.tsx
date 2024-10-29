@@ -16,19 +16,20 @@ interface MessageListProps {
 }
 
 export function MessageList({ messages, isLoading, messagesEndRef }: MessageListProps) {
-  if (messages.length === 0) {
-    return (
-      <div className="h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
-        Select a model and start a conversation
-      </div>
-    );
-  }
-
   return (
-    <div className="h-full overflow-y-auto p-4 space-y-4">
-      {messages.map(message => (
-        <AIMessage key={message.id} message={message} />
+    <div className="p-4 overflow-y-auto h-full">
+      {messages.map((message) => (
+        <div key={message.id} className={`mb-4 ${message.role === 'assistant' ? 'text-left' : 'text-right'}`}>
+          <div className={`inline-block px-4 py-2 rounded-lg ${message.role === 'assistant' ? 'bg-gray-200 text-gray-800' : 'bg-primary-600 text-white'}`}>
+            {message.content}
+          </div>
+        </div>
       ))}
+      {isLoading && (
+        <div className="mb-4 text-center text-gray-500">
+          The assistant is typing...
+        </div>
+      )}
       <div ref={messagesEndRef} />
     </div>
   );

@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bot, Settings } from 'lucide-react';
 import { useAI } from '../../../contexts/AIContext';
-import { AIModel } from '../../../types/ai';
+import { AIModel, AIResponse } from '../../../types/ai';
 import { ModelSelector } from './ModelSelector';
 import { ChatInterface } from './ChatInterface';
 import { ImageInterface } from './ImageInterface';
@@ -22,7 +22,7 @@ interface Message {
 
 export function AIAssistantPage() {
   const navigate = useNavigate();
-  const { isOpenAIConfigured, availableModels } = useAI();
+  const { isOpenAIConfigured, availableModels, sendMessage } = useAI();
   const [selectedCategory, setSelectedCategory] = useState<string>('chat');
   const [selectedModel, setSelectedModel] = useState<AIModel | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -60,6 +60,77 @@ export function AIAssistantPage() {
       timestamp: new Date().toISOString(),
     };
     setMessages(prev => [...prev, newMessage]);
+  };
+
+  const handleUserInput = async (input: string) => {
+    if (!selectedModel) {
+      setError('Please select a model before sending a message.');
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    // Add the user's message to the message list
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: input,
+      type: 'text',
+      timestamp: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, userMessage]);
+
+    try {
+      // Send the message to the AI service
+      const aiResponse: AIResponse = await sendMessage(input, selectedModel.id);
+
+      // Process the assistant's response content blocks
+      const assistantMessages: Message[] = [];
+      
+      if (aiResponse.contentBlocks) {
+        for (const contentBlock of aiResponse.contentBlocks) {
+          if (contentBlock.type === 'text') {
+            assistantMessages.push({
+              id: (Date.now() + assistantMessages.length + 1).toString(),
+              role: 'assistant',
+              content: contentBlock.text,
+              type: 'text',
+              timestamp: new Date().toISOString(),
+              model: selectedModel.name,
+            });
+          } else if (contentBlock.type === 'image') {
+            // Handle image content
+            assistantMessages.push({
+              id: (Date.now() + assistantMessages.length + 1).toString(),
+              role: 'assistant',
+              content: contentBlock.url, // Assuming image URL is in contentBlock.url
+              type: 'image',
+              timestamp: new Date().toISOString(),
+              model: selectedModel.name,
+            });
+          }
+          // Handle other content types if necessary
+        }
+      } else {
+        // If contentBlocks is not provided, use the content directly
+        assistantMessages.push({
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: aiResponse.content,
+          type: aiResponse.type,
+          timestamp: new Date().toISOString(),
+          model: selectedModel.name,
+        });
+      }
+
+      // Add the assistant's messages to the message list
+      setMessages((prev) => [...prev, ...assistantMessages]);
+    } catch (e: any) {
+      setError(e.message || 'Failed to communicate with the AI assistant.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (!isOpenAIConfigured) {

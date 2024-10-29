@@ -15,6 +15,9 @@ api.interceptors.request.use(
     console.log('Token in interceptor:', token);
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
+      console.log('Token in interceptor:', token);
+    } else {
+      console.log('Token in interceptor is null');
     }
     return config;
   },

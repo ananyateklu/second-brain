@@ -26,6 +26,7 @@ export interface AIMessage {
 export interface AIResponse {
   content: string;
   type: 'text' | 'image' | 'audio';
+  contentBlocks?: ContentBlock[];
   metadata?: {
     model?: string;
     usage?: {
@@ -33,4 +34,11 @@ export interface AIResponse {
       output_tokens: number;
     };
   };
+}
+
+interface ContentBlock {
+  type: string;
+  text?: string;
+  url?: string;
+  // Add other properties as needed
 }

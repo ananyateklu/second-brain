@@ -15,7 +15,7 @@ namespace SecondBrain.Api.DTOs.Anthropic
         public string Role { get; set; }
 
         [JsonPropertyName("content")]
-        public List<Content> Content { get; set; }
+        public List<ContentBlock> Content { get; set; }
 
         [JsonPropertyName("model")]
         public string Model { get; set; }
@@ -30,13 +30,34 @@ namespace SecondBrain.Api.DTOs.Anthropic
         public Usage Usage { get; set; }
     }
 
-    public class Content
+    public class ContentBlock
     {
         [JsonPropertyName("type")]
-        public string Type { get; set; } // e.g., "text"
+        public string Type { get; set; } // e.g., "text", "tool_use", "tool_result"
 
+        // For "text" type
         [JsonPropertyName("text")]
         public string Text { get; set; }
+
+        // For "tool_use" type
+        [JsonPropertyName("id")]
+        public string Id { get; set; }
+
+        [JsonPropertyName("name")]
+        public string Name { get; set; }
+
+        [JsonPropertyName("input")]
+        public object Input { get; set; }
+
+        // For "tool_result" type
+        [JsonPropertyName("tool_use_id")]
+        public string ToolUseId { get; set; }
+
+        [JsonPropertyName("content")]
+        public object Content { get; set; }
+
+        [JsonPropertyName("is_error")]
+        public bool? IsError { get; set; }
     }
 
     public class Usage

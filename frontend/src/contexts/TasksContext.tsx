@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { taskService } from '../api/services/taskService';  // Import the taskService
 import { Task } from '../api/types/task';
+import { useAuth } from './AuthContext';
 
 
 interface TasksContextType {
@@ -18,26 +19,26 @@ const TasksContext = createContext<TasksContextType | null>(null);
 
 export function TasksProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   // Fetch tasks from the backend API when the component mounts
   useEffect(() => {
-    async function fetchTasks() {
-      try {
-        setIsLoading(true);
-        const response = await taskService.getTasks();
-        setTasks(response.data);
-      } catch (err) {
-        console.error('Failed to fetch tasks:', err);
-        setError('Failed to fetch tasks.');
-      } finally {
-        setIsLoading(false);
-      }
+    if (user) {
+      fetchTasks();
     }
+  }, [user]);
 
-    fetchTasks();
-  }, []);
+  const fetchTasks = async () => {
+    try {
+      const response = await taskService.getTasks();
+      const fetchedTasks = response.data;
+      setTasks(fetchedTasks);
+    } catch (error) {
+      console.error('Failed to fetch tasks:', error);
+    }
+  };
 
   const addTask = useCallback(async (taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
     try {
@@ -75,11 +76,11 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     try {
       const task = tasks.find(task => task.id === id);
       if (!task) return;
-  
+
       const updatedStatus = task.status === 'completed' ? 'incomplete' : 'completed';
       const response = await taskService.updateTask(id, { status: updatedStatus });
       const updatedTask = response.data;
-  
+
       setTasks(prev => prev.map(t => t.id === id ? updatedTask : t));
     } catch (err) {
       console.error('Failed to toggle task status:', err);

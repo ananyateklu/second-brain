@@ -62,9 +62,13 @@ export function LoginPage() {
     
     if (!validateForm()) return;
 
-    await login(formData.email, formData.password);
-    // After successful login, redirect to the intended destination
-    navigate(from, { replace: true });
+    try {
+      await login(formData.email, formData.password);
+      // After successful login and state update, redirect to the intended destination
+      navigate(from, { replace: true });
+    } catch (error) {
+      // Handle login errors if needed
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

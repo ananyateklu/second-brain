@@ -18,29 +18,29 @@ export function App() {
       <AuthProvider>
         <ActivityProvider>
           <TrashProvider>
-            <NotesProvider>
-              <TasksProvider>
-                <RemindersProvider>
-                  <AIProvider>
-                    <BrowserRouter>
-                      <Routes>
-                        <Route path="/login" element={<LoginPage />} />
-                        <Route path="/register" element={<RegistrationPage />} />
-                        <Route
-                          path="/dashboard/*"
-                          element={
-                            <ProtectedRoute>
+            <BrowserRouter>
+              <Routes>
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegistrationPage />} />
+                <Route
+                  path="/dashboard/*"
+                  element={
+                    <ProtectedRoute>
+                      <NotesProvider>
+                        <TasksProvider>
+                          <RemindersProvider>
+                            <AIProvider>
                               <Dashboard />
-                            </ProtectedRoute>
-                          }
-                        />
-                        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                      </Routes>
-                    </BrowserRouter>
-                  </AIProvider>
-                </RemindersProvider>
-              </TasksProvider>
-            </NotesProvider>
+                            </AIProvider>
+                          </RemindersProvider>
+                        </TasksProvider>
+                      </NotesProvider>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              </Routes>
+            </BrowserRouter>
           </TrashProvider>
         </ActivityProvider>
       </AuthProvider>

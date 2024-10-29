@@ -25,12 +25,18 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
     try {
       const response: AuthResponse = await authService.login({ email, password });
 
-
       console.log('Login response:', response);
 
       // Store tokens in localStorage
       localStorage.setItem('access_token', response.accessToken);
       localStorage.setItem('refresh_token', response.refreshToken);
+      console.log('Tokens stored in localStorage:', {
+        accessToken: localStorage.getItem('access_token'),
+        refreshToken: localStorage.getItem('refresh_token'),
+      });
+
+      // Optional: Call fetchCurrentUser if needed
+      // await fetchCurrentUser();
 
       setAuthState({
         isLoading: false,
