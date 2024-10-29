@@ -24,5 +24,6 @@ namespace SecondBrain.Data.Entities
 
         // Navigation Properties
         public ICollection<TaskItemNote> TaskItemNotes { get; set; } = new List<TaskItemNote>();
+        public ICollection<NoteTag> NoteTags { get; set; } = new List<NoteTag>();
     }
 }

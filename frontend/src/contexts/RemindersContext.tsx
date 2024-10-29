@@ -1,112 +1,127 @@
-import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
+import { reminderService, Reminder as ApiReminder } from '../api/services/reminderService';
+import { useActivities } from './ActivityContext';
 
-export interface Reminder {
-  id: string;
-  title: string;
-  description?: string;
-  dueDateTime: string;
-  repeatInterval?: 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom';
-  customRepeatPattern?: string;
-  tags: string[];
-  isSnoozed: boolean;
-  snoozeUntil?: string;
-  isCompleted: boolean; // Added completion status
-  completedAt?: string; // Added completion timestamp
-  createdAt: string;
-  updatedAt: string;
+export interface Reminder extends ApiReminder {
+  tags: string[]; // Assuming tags are part of the reminder
 }
 
 interface RemindersContextType {
   reminders: Reminder[];
-  addReminder: (reminder: Omit<Reminder, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  addReminder: (reminderData: Omit<Reminder, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => Promise<void>;
   updateReminder: (id: string, updates: Partial<Reminder>) => Promise<void>;
   deleteReminder: (id: string) => Promise<void>;
   snoozeReminder: (id: string, until: string) => Promise<void>;
-  toggleReminderCompletion: (id: string) => Promise<void>; // Added toggle completion
+  toggleReminderCompletion: (id: string) => Promise<void>;
   getDueReminders: () => Reminder[];
   getUpcomingReminders: () => Reminder[];
 }
 
 const RemindersContext = createContext<RemindersContextType | null>(null);
 
-const INITIAL_REMINDERS: Reminder[] = [
-  {
-    id: '1',
-    title: 'Team Meeting',
-    description: 'Weekly team sync to discuss project progress',
-    dueDateTime: '2024-03-20T10:00:00Z',
-    repeatInterval: 'weekly',
-    tags: ['meetings', 'team'],
-    isSnoozed: false,
-    isCompleted: false,
-    createdAt: '2024-03-13T08:00:00Z',
-    updatedAt: '2024-03-13T08:00:00Z'
-  },
-  {
-    id: '2',
-    title: 'Project Deadline',
-    description: 'Submit final project deliverables',
-    dueDateTime: '2024-03-25T17:00:00Z',
-    tags: ['project', 'deadline'],
-    isSnoozed: false,
-    isCompleted: false,
-    createdAt: '2024-03-13T09:00:00Z',
-    updatedAt: '2024-03-13T09:00:00Z'
-  }
-];
-
 export function RemindersProvider({ children }: { children: React.ReactNode }) {
-  const [reminders, setReminders] = useState<Reminder[]>(INITIAL_REMINDERS);
+  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const { addActivity } = useActivities();
 
-  const addReminder = useCallback(async (reminder: Omit<Reminder, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const now = new Date().toISOString();
-    const newReminder: Reminder = {
-      ...reminder,
-      id: Date.now().toString(),
-      isCompleted: false,
-      createdAt: now,
-      updatedAt: now
-    };
-    setReminders(prev => [newReminder, ...prev]);
+  // Fetch reminders from the API on component mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const fetchedReminders = await reminderService.getReminders();
+        setReminders(fetchedReminders.map(reminder => ({
+          ...reminder,
+          tags: [], // Initialize tags if not provided
+        })));
+      } catch (error) {
+        console.error('Failed to fetch reminders:', error);
+      }
+    })();
   }, []);
+
+  const addReminder = useCallback(async (reminderData: Omit<Reminder, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
+    try {
+      const newReminder = await reminderService.createReminder({
+        title: reminderData.title,
+        description: reminderData.description,
+        dueDateTime: reminderData.dueDateTime,
+        repeatInterval: reminderData.repeatInterval,
+        customRepeatPattern: reminderData.customRepeatPattern,
+      });
+      setReminders(prev => [newReminder, ...prev]);
+
+      // Record activity
+      await addActivity({
+        actionType: 'create',
+        itemType: 'reminder',
+        itemId: newReminder.id,
+        itemTitle: newReminder.title,
+        description: `Created reminder: ${newReminder.title}`,
+        metadata: { tags: reminderData.tags },
+      });
+    } catch (error) {
+      console.error('Failed to add reminder:', error);
+    }
+  }, [addActivity]);
 
   const updateReminder = useCallback(async (id: string, updates: Partial<Reminder>) => {
-    setReminders(prev => prev.map(reminder =>
-      reminder.id === id
-        ? { ...reminder, ...updates, updatedAt: new Date().toISOString() }
-        : reminder
-    ));
-  }, []);
+    try {
+      const updatedReminder = await reminderService.updateReminder(id, updates);
+      setReminders(prev =>
+        prev.map(reminder => (reminder.id === id ? { ...reminder, ...updatedReminder } : reminder))
+      );
+
+      // Record activity
+      await addActivity({
+        actionType: 'edit',
+        itemType: 'reminder',
+        itemId: updatedReminder.id,
+        itemTitle: updatedReminder.title,
+        description: `Updated reminder: ${updatedReminder.title}`,
+        metadata: { tags: updates.tags },
+      });
+    } catch (error) {
+      console.error('Failed to update reminder:', error);
+    }
+  }, [addActivity]);
 
   const deleteReminder = useCallback(async (id: string) => {
-    setReminders(prev => prev.filter(reminder => reminder.id !== id));
-  }, []);
+    try {
+      await reminderService.deleteReminder(id);
+      setReminders(prev => prev.filter(reminder => reminder.id !== id));
+
+      // Record activity
+      await addActivity({
+        actionType: 'delete',
+        itemType: 'reminder',
+        itemId: id,
+        itemTitle: '',
+        description: `Deleted reminder`,
+      });
+    } catch (error) {
+      console.error('Failed to delete reminder:', error);
+    }
+  }, [addActivity]);
 
   const snoozeReminder = useCallback(async (id: string, until: string) => {
-    setReminders(prev => prev.map(reminder =>
-      reminder.id === id
-        ? {
-            ...reminder,
-            isSnoozed: true,
-            snoozeUntil: until,
-            updatedAt: new Date().toISOString()
-          }
-        : reminder
-    ));
-  }, []);
+    try {
+      await updateReminder(id, { isSnoozed: true, snoozeUntil: until });
+    } catch (error) {
+      console.error('Failed to snooze reminder:', error);
+    }
+  }, [updateReminder]);
 
   const toggleReminderCompletion = useCallback(async (id: string) => {
-    setReminders(prev => prev.map(reminder =>
-      reminder.id === id
-        ? {
-            ...reminder,
-            isCompleted: !reminder.isCompleted,
-            completedAt: !reminder.isCompleted ? new Date().toISOString() : undefined,
-            updatedAt: new Date().toISOString()
-          }
-        : reminder
-    ));
-  }, []);
+    const reminder = reminders.find(r => r.id === id);
+    if (!reminder) return;
+    try {
+      await updateReminder(id, {
+        isCompleted: !reminder.isCompleted,
+        completedAt: !reminder.isCompleted ? new Date().toISOString() : undefined,
+      });
+    } catch (error) {
+      console.error('Failed to toggle reminder completion:', error);
+    }
+  }, [reminders, updateReminder]);
 
   const getDueReminders = useCallback(() => {
     const now = new Date();
@@ -123,7 +138,7 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
     const now = new Date();
     const tomorrow = new Date(now);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    
+
     return reminders.filter(reminder => {
       if (reminder.isCompleted) return false;
       const dueDate = new Date(reminder.dueDateTime);
@@ -131,22 +146,30 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
     });
   }, [reminders]);
 
-  const value = useMemo(() => ({
-    reminders,
-    addReminder,
-    updateReminder,
-    deleteReminder,
-    snoozeReminder,
-    toggleReminderCompletion,
-    getDueReminders,
-    getUpcomingReminders
-  }), [reminders, addReminder, updateReminder, deleteReminder, snoozeReminder, toggleReminderCompletion, getDueReminders, getUpcomingReminders]);
-
-  return (
-    <RemindersContext.Provider value={value}>
-      {children}
-    </RemindersContext.Provider>
+  const value = useMemo(
+    () => ({
+      reminders,
+      addReminder,
+      updateReminder,
+      deleteReminder,
+      snoozeReminder,
+      toggleReminderCompletion,
+      getDueReminders,
+      getUpcomingReminders,
+    }),
+    [
+      reminders,
+      addReminder,
+      updateReminder,
+      deleteReminder,
+      snoozeReminder,
+      toggleReminderCompletion,
+      getDueReminders,
+      getUpcomingReminders,
+    ]
   );
+
+  return <RemindersContext.Provider value={value}>{children}</RemindersContext.Provider>;
 }
 
 export function useReminders() {

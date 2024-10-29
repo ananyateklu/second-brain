@@ -32,7 +32,7 @@ export function Sidebar({ isOpen }: SidebarProps) {
     {
       section: 'Main',
       items: [
-        { name: 'Dashboard', icon: Home, to: '/dashboard' },
+        { name: 'Dashboard', icon: Home, to: '/dashboard', exact: true },
         { name: 'Notes', icon: BookOpen, to: '/dashboard/notes' },
         { name: 'Linked Notes', icon: LinkIcon, to: '/dashboard/linked' },
         { name: 'Tags', icon: Tag, to: '/dashboard/tags' },
@@ -86,6 +86,7 @@ export function Sidebar({ isOpen }: SidebarProps) {
                   <NavLink
                     key={item.name}
                     to={item.to}
+                    end={item.exact}
                     className={({ isActive }) =>
                       `flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors duration-200
                       ${isActive

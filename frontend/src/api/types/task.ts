@@ -20,3 +20,12 @@ export interface Task {
     dueDate?: string;
     tags?: string[];
   }
+
+export interface UpdateTaskDto {
+  title?: string;
+  description?: string;
+  priority?: number;
+  dueDate?: string | null;
+  tags?: string[];
+  status?: number;
+}

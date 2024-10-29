@@ -1,25 +1,9 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
-
-export interface Activity {
-  id: string;
-  timestamp: string;
-  actionType: 'create' | 'edit' | 'archive' | 'unarchive' | 'delete' | 'favorite' | 'unfavorite' | 'pin' | 'unpin';
-  itemType: 'note' | 'task' | 'idea' | 'reminder';
-  itemId: string;
-  itemTitle: string;
-  description: string;
-  metadata?: {
-    previousTitle?: string;
-    newTitle?: string;
-    previousContent?: string;
-    newContent?: string;
-    tags?: string[];
-  };
-}
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { activityService, Activity } from '../api/services/activityService';
 
 interface ActivityContextType {
   activities: Activity[];
-  addActivity: (activity: Omit<Activity, 'id' | 'timestamp'>) => void;
+  addActivity: (activity: Omit<Activity, 'id' | 'timestamp'>) => Promise<void>;
   clearActivities: () => void;
   getActivitiesByItemId: (itemId: string) => Activity[];
 }
@@ -29,13 +13,27 @@ const ActivityContext = createContext<ActivityContextType | null>(null);
 export function ActivityProvider({ children }: { children: React.ReactNode }) {
   const [activities, setActivities] = useState<Activity[]>([]);
 
-  const addActivity = useCallback((activity: Omit<Activity, 'id' | 'timestamp'>) => {
-    const newActivity: Activity = {
-      ...activity,
-      id: Date.now().toString(),
-      timestamp: new Date().toISOString()
-    };
-    setActivities(prev => [newActivity, ...prev]);
+  const fetchActivities = useCallback(async () => {
+    try {
+      const response = await activityService.getActivities();
+      setActivities(response.data);
+    } catch (err) {
+      console.error('Failed to fetch activities:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchActivities();
+  }, [fetchActivities]);
+
+  const addActivity = useCallback(async (activity: Omit<Activity, 'id' | 'timestamp'>) => {
+    try {
+      const response = await activityService.createActivity(activity);
+      const newActivity = response.data;
+      setActivities(prev => [newActivity, ...prev]);
+    } catch (err) {
+      console.error('Failed to add activity:', err);
+    }
   }, []);
 
   const clearActivities = useCallback(() => {

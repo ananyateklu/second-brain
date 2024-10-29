@@ -15,6 +15,11 @@ namespace SecondBrain.Data
         public DbSet<Reminder> Reminders { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<TaskItemNote> TaskItemNotes { get; set; }
+        public DbSet<Activity> Activities { get; set; }
+        public DbSet<Tag> Tags { get; set; }
+        public DbSet<NoteTag> NoteTags { get; set; }
+        public DbSet<ReminderTag> ReminderTags { get; set; }
+        public DbSet<IdeaTag> IdeaTags { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -65,6 +70,48 @@ namespace SecondBrain.Data
                 .WithMany(n => n.TaskItemNotes)
                 .HasForeignKey(tn => tn.NoteId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure NoteTag
+            modelBuilder.Entity<NoteTag>()
+                .HasKey(nt => new { nt.NoteId, nt.TagId });
+
+            modelBuilder.Entity<NoteTag>()
+                .HasOne(nt => nt.Note)
+                .WithMany(n => n.NoteTags)
+                .HasForeignKey(nt => nt.NoteId);
+
+            modelBuilder.Entity<NoteTag>()
+                .HasOne(nt => nt.Tag)
+                .WithMany(t => t.NoteTags)
+                .HasForeignKey(nt => nt.TagId);
+
+            // Configure ReminderTag
+            modelBuilder.Entity<ReminderTag>()
+                .HasKey(rt => new { rt.ReminderId, rt.TagId });
+
+            modelBuilder.Entity<ReminderTag>()
+                .HasOne(rt => rt.Reminder)
+                .WithMany(r => r.ReminderTags)
+                .HasForeignKey(rt => rt.ReminderId);
+
+            modelBuilder.Entity<ReminderTag>()
+                .HasOne(rt => rt.Tag)
+                .WithMany(t => t.ReminderTags)
+                .HasForeignKey(rt => rt.TagId);
+
+            // Configure IdeaTag
+            modelBuilder.Entity<IdeaTag>()
+                .HasKey(it => new { it.IdeaId, it.TagId });
+
+            modelBuilder.Entity<IdeaTag>()
+                .HasOne(it => it.Idea)
+                .WithMany(i => i.IdeaTags)
+                .HasForeignKey(it => it.IdeaId);
+
+            modelBuilder.Entity<IdeaTag>()
+                .HasOne(it => it.Tag)
+                .WithMany(t => t.IdeaTags)
+                .HasForeignKey(it => it.TagId);
         }
     }
 }

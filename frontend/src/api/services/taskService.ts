@@ -1,5 +1,6 @@
 import api from '../../services/api/api';
-import { Task } from '../types/task';
+import { Task, UpdateTaskDto } from '../types/task';
+import { mapPriorityToNumber } from '../../utils/priorityMapping';
 
 export const taskService = {
   getTasks: () => api.get<Task[]>('/api/Tasks'),
@@ -12,11 +13,17 @@ export const taskService = {
     priority: 'low' | 'medium' | 'high';
     dueDate?: string | null;
     tags: string[];
-    // Include other fields required by the backend
-  }) => api.post<Task>('/api/Tasks', taskData),
+  }) => {
+    const priorityNumber = mapPriorityToNumber(taskData.priority);
+    return api.post<Task>('/api/Tasks', {
+      ...taskData,
+      priority: priorityNumber,
+    });
+  },
 
-  updateTask: (id: string, updates: Partial<Task>) =>
-    api.patch<Task>(`/api/Tasks/${id}`, updates),
+  updateTask: (id: string, updates: UpdateTaskDto) => {
+    return api.patch<Task>(`/api/Tasks/${id}`, updates);
+  },
 
   deleteTask: (id: string) => api.delete(`/api/Tasks/${id}`),
 };

@@ -2,6 +2,9 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import { taskService } from '../api/services/taskService';  // Import the taskService
 import { Task } from '../api/types/task';
 import { useAuth } from './AuthContext';
+import { mapPriorityToNumber } from '../utils/priorityMapping';
+import { UpdateTaskDto } from '../api/types/task';
+import { useActivities } from './ActivityContext';
 
 
 interface TasksContextType {
@@ -9,7 +12,6 @@ interface TasksContextType {
   addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => void;
   updateTask: (id: string, updates: Partial<Task>) => void;
   deleteTask: (id: string) => void;
-  toggleTaskStatus: (id: string) => void;
   addTaskLink: (taskId: string, itemId: string, type: 'note' | 'idea') => void;
   removeTaskLink: (taskId: string, itemId: string, type: 'note' | 'idea') => void;
 }
@@ -20,8 +22,7 @@ const TasksContext = createContext<TasksContextType | null>(null);
 export function TasksProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const { user } = useAuth();
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const { addActivity } = useActivities();
 
   // Fetch tasks from the backend API when the component mounts
   useEffect(() => {
@@ -42,9 +43,29 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
 
   const addTask = useCallback(async (taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
     try {
-      const response = await taskService.createTask(taskData);
+      const priorityNumber = mapPriorityToNumber(taskData.priority);
+      const response = await taskService.createTask({
+        ...taskData,
+        priority: priorityNumber,
+      });
       const newTask = response.data;
       setTasks(prev => [newTask, ...prev]);
+
+      // Add activity
+      addActivity({
+        id: newTask.id,
+        actionType: 'create',
+        itemType: 'task',
+        itemId: newTask.id,
+        itemTitle: newTask.title,
+        timestamp: new Date().toISOString(),
+        description: `Created task "${newTask.title}"`,
+        metadata: {
+          tags: newTask.tags,
+          priority: newTask.priority,
+          dueDate: newTask.dueDate,
+        },
+      });
     } catch (err) {
       console.error('Failed to create task:', err);
       throw err;
@@ -53,9 +74,37 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
 
   const updateTask = useCallback(async (id: string, updates: Partial<Task>) => {
     try {
-      const response = await taskService.updateTask(id, updates);
+      const updatesToSend: UpdateTaskDto = {};
+
+      if (updates.title !== undefined) updatesToSend.title = updates.title;
+      if (updates.description !== undefined) updatesToSend.description = updates.description;
+      if (updates.dueDate !== undefined) updatesToSend.dueDate = updates.dueDate;
+      if (updates.tags !== undefined) updatesToSend.tags = updates.tags;
+
+      if (updates.priority !== undefined) {
+        updatesToSend.priority = mapPriorityToNumber(updates.priority);
+      }
+
+
+      const response = await taskService.updateTask(id, updatesToSend);
       const updatedTask = response.data;
       setTasks(prev => prev.map(task => task.id === id ? updatedTask : task));
+
+      // Add activity
+      addActivity({
+        id,
+        actionType: 'edit',
+        itemType: 'task',
+        itemId: updatedTask.id,
+        itemTitle: updatedTask.title,
+        timestamp: new Date().toISOString(),
+        description: `Updated task "${updatedTask.title}"`,
+        metadata: {
+          tags: updatedTask.tags,
+          priority: updatedTask.priority,
+          dueDate: updatedTask.dueDate,
+        },
+      });
     } catch (err) {
       console.error('Failed to update task:', err);
       throw err;
@@ -64,26 +113,29 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
 
   const deleteTask = useCallback(async (id: string) => {
     try {
+      const taskToDelete = tasks.find(task => task.id === id);
+      if (!taskToDelete) throw new Error('Task not found');
+
       await taskService.deleteTask(id);
       setTasks(prev => prev.filter(task => task.id !== id));
+
+      // Add activity
+      addActivity({
+        id,
+        actionType: 'delete',
+        itemType: 'task',
+        itemId: taskToDelete.id,
+        itemTitle: taskToDelete.title,
+        timestamp: new Date().toISOString(),
+        description: `Deleted task "${taskToDelete.title}"`,
+        metadata: {
+          tags: taskToDelete.tags,
+          priority: taskToDelete.priority,
+          dueDate: taskToDelete.dueDate,
+        },
+      });
     } catch (err) {
       console.error('Failed to delete task:', err);
-      throw err;
-    }
-  }, []);
-
-  const toggleTaskStatus = useCallback(async (id: string) => {
-    try {
-      const task = tasks.find(task => task.id === id);
-      if (!task) return;
-
-      const updatedStatus = task.status === 'completed' ? 'incomplete' : 'completed';
-      const response = await taskService.updateTask(id, { status: updatedStatus });
-      const updatedTask = response.data;
-
-      setTasks(prev => prev.map(t => t.id === id ? updatedTask : t));
-    } catch (err) {
-      console.error('Failed to toggle task status:', err);
       throw err;
     }
   }, [tasks]);
@@ -120,7 +172,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <TasksContext.Provider value={{ tasks, addTask, updateTask, deleteTask, toggleTaskStatus, addTaskLink, removeTaskLink }}>
+    <TasksContext.Provider value={{ tasks, addTask, updateTask, deleteTask, addTaskLink, removeTaskLink }}>
       {children}
     </TasksContext.Provider>
   );

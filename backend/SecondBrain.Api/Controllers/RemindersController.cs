@@ -50,7 +50,7 @@ namespace SecondBrain.Api.Controllers
                 Title = request.Title,
                 Description = request.Description,
                 DueDateTime = request.DueDateTime,
-                RepeatInterval = (RepeatInterval?)request.RepeatInterval,
+                RepeatInterval = request.RepeatInterval,
                 CustomRepeatPattern = request.CustomRepeatPattern,
                 IsSnoozed = false,
                 IsCompleted = false,

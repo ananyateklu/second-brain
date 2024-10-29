@@ -1,4 +1,5 @@
 import api from './api';
+import { UpdateTaskDto } from '../../api/types/task';
 
 export interface Task {
   id: string;
@@ -34,8 +35,8 @@ export const tasksService = {
     return response.data;
   },
 
-  async updateTask(id: string, data: Partial<CreateTaskData>): Promise<Task> {
-    const response = await api.put<Task>(`/api/Tasks/${id}`, data);
+  async updateTask(id: string, updates: UpdateTaskDto): Promise<Task> {
+    const response = await api.patch<Task>(`/api/Tasks/${id}`, updates);
     return response.data;
   },
 

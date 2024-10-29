@@ -10,7 +10,7 @@ export function TagsPage() {
 
   const tagStats = useMemo(() => {
     if (!notes) return [];
-    
+
     const stats = new Map<string, number>();
     notes.forEach(note => {
       note.tags.forEach(tag => {
@@ -48,11 +48,10 @@ export function TagsPage() {
                   <button
                     key={tag}
                     onClick={() => setSelectedTag(tag)}
-                    className={`w-full px-4 py-3 flex items-center justify-between transition-colors ${
-                      selectedTag === tag
+                    className={`w-full px-4 py-3 flex items-center justify-between transition-colors ${selectedTag === tag
                         ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
                         : 'hover:bg-gray-50 dark:hover:bg-dark-hover text-gray-700 dark:text-gray-300'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-2">
                       <Hash className="w-4 h-4" />
