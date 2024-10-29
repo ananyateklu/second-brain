@@ -29,10 +29,8 @@ namespace SecondBrain.Api.Controllers
             var tags = await _context.Tags
                 .Where(t => t.NoteTags.Any(nt => nt.Note.UserId == userId)
                             || t.ReminderTags.Any(rt => rt.Reminder.UserId == userId)
-                            || t.IdeaTags.Any(it => it.Idea.UserId == userId)
-                            || t.TaskItemTags.Any(tt => tt.Task.UserId == userId))
+                            || t.TaskItemTags.Any(tt => tt.TaskItem.UserId == userId))
                 .ToListAsync();
-
             return Ok(tags);
         }
 
@@ -102,8 +100,7 @@ namespace SecondBrain.Api.Controllers
                     tag.Name,
                     NoteCount = tag.NoteTags.Count(nt => nt.Note.UserId == userId),
                     ReminderCount = tag.ReminderTags.Count(rt => rt.Reminder.UserId == userId),
-                    IdeaCount = tag.IdeaTags.Count(it => it.Idea.UserId == userId),
-                    TaskCount = tag.TaskItemTags.Count(tt => tt.Task.UserId == userId),
+                    TaskCount = tag.TaskItemTags.Count(tt => tt.TaskItem.UserId == userId),
                 })
                 .ToListAsync();
 
@@ -111,7 +108,7 @@ namespace SecondBrain.Api.Controllers
             {
                 t.Id,
                 t.Name,
-                TotalCount = t.NoteCount + t.ReminderCount + t.IdeaCount + t.TaskCount
+                TotalCount = t.NoteCount + t.ReminderCount + t.TaskCount
             });
 
             return Ok(result);
@@ -137,13 +134,9 @@ namespace SecondBrain.Api.Controllers
                         .Where(rt => rt.Reminder.UserId == userId)
                         .Select(rt => new { rt.Reminder.Id, rt.Reminder.Description })
                         .ToList(),
-                    Ideas = t.IdeaTags
-                        .Where(it => it.Idea.UserId == userId)
-                        .Select(it => new { it.Idea.Id, it.Idea.Content })
-                        .ToList(),
                     Tasks = t.TaskItemTags
-                        .Where(tt => tt.Task.UserId == userId)
-                        .Select(tt => new { tt.Task.Id, tt.Task.Title })
+                        .Where(tt => tt.TaskItem.UserId == userId)
+                        .Select(tt => new { tt.TaskItem.Id, tt.TaskItem.Title })
                         .ToList()
                 })
                 .FirstOrDefaultAsync();
