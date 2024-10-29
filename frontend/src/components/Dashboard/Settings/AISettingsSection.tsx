@@ -4,8 +4,9 @@ import { useAI } from '../../../contexts/AIContext';
 
 interface AISettings {
   openaiApiKey?: string;
+  geminiApiKey?: string;
   contentSuggestions?: {
-    provider: 'openai' | 'anthropic';
+    provider: 'openai' | 'anthropic'| 'gemini';
     modelId: string;
   };
 }
@@ -20,17 +21,20 @@ interface AISettingsSectionProps {
 }
 
 export function AISettingsSection({ onSave }: AISettingsSectionProps) {
-  const { configureOpenAI, availableModels, isOpenAIConfigured } = useAI();
+  const { configureOpenAI, configureGemini, availableModels, isOpenAIConfigured, isGeminiConfigured } = useAI();
   const [settings, setSettings] = useState<AISettings>({
     openaiApiKey: localStorage.getItem('openai_api_key') || '',
+    geminiApiKey: localStorage.getItem('gemini_api_key') || '',
     contentSuggestions: {
-      provider: (localStorage.getItem('content_suggestions_provider') as 'openai' | 'anthropic') || 'openai',
+      provider: (localStorage.getItem('content_suggestions_provider') as 'openai' | 'anthropic' | 'gemini') || 'openai',
       modelId: localStorage.getItem('content_suggestions_model') || 'gpt-4',
     },
   });
 
   const [showOpenAIKey, setShowOpenAIKey] = useState(false);
+  const [showGeminiApiKey, setShowGeminiApiKey] = useState(false);
   const [isTestingOpenAI, setIsTestingOpenAI] = useState(false);
+  const [isTestingGemini, setIsTestingGemini] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [testResults, setTestResults] = useState<Record<string, TestResult>>({});
   const [saveResult, setSaveResult] = useState<TestResult | null>(null);
@@ -49,7 +53,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
       setSettings(prev => ({
         ...prev,
         contentSuggestions: {
-          provider: value as 'openai' | 'anthropic',
+          provider: value as 'openai' | 'anthropic' | 'gemini',
           modelId: firstModelForProvider ?? prev.contentSuggestions?.modelId ?? '',
         },
       }));
@@ -80,38 +84,73 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
       console.error('Failed to save settings:', error);
       setSaveResult({ success: false, message: error?.message || 'Failed to save settings.' });
     } finally {
-      setIsSaving(false);
+      setIsSaving(false);     
     }
   };
 
-  const testConnection = async (service: 'openai') => {
-    setIsTestingOpenAI(true);
-    setTestResults(prev => {
-      const newResults = { ...prev };
-      delete newResults[service];
-      return newResults;
-    });
+  const testConnection = async (service: 'openai' | 'gemini') => {
+    if (service === 'gemini') {
+      setIsTestingGemini(true);
+      setTestResults((prev) => {
+        const newResults = { ...prev };
+        delete newResults[service];
+        return newResults;
+      });
 
-    try {
-      await configureOpenAI(settings.openaiApiKey || '');
-      setTestResults(prev => ({
-        ...prev,
-        [service]: {
-          success: true,
-          message: 'Connection successful!'
-        }
-      }));
-    } catch (error: any) {
-      console.error(`${service} test connection error:`, error);
-      setTestResults(prev => ({
-        ...prev,
-        [service]: {
-          success: false,
-          message: error?.message || `Failed to connect to ${service}. Please check your credentials.`
-        }
-      }));
-    } finally {
-      setIsTestingOpenAI(false);
+      try {
+        await configureGemini(settings.geminiApiKey || '');
+        setTestResults((prev) => ({
+          ...prev,
+          [service]: {
+            success: true,
+            message: 'Connection successful!',
+          },
+        }));
+      } catch (error: any) {
+        console.error(`${service} test connection error:`, error);
+        setTestResults((prev) => ({
+          ...prev,
+          [service]: {
+            success: false,
+            message:
+              error?.message ||
+              `Failed to connect to ${service}. Please check your credentials.`,
+          },
+        }));
+      } finally {
+        setIsTestingGemini(false);
+      }
+    } else if (service === 'openai') {
+      setIsTestingOpenAI(true);
+      setTestResults((prev) => {
+        const newResults = { ...prev };
+        delete newResults[service];
+        return newResults;
+      });
+
+      try {
+        await configureOpenAI(settings.openaiApiKey || '');
+        setTestResults((prev) => ({
+          ...prev,
+          [service]: {
+            success: true,
+            message: 'Connection successful!',
+          },
+        }));
+      } catch (error: any) {
+        console.error(`${service} test connection error:`, error);
+        setTestResults((prev) => ({
+          ...prev,
+          [service]: {
+            success: false,
+            message:
+              error?.message ||
+              `Failed to connect to ${service}. Please check your credentials.`,
+          },
+        }));
+      } finally {
+        setIsTestingOpenAI(false);
+      }
     }
   };
 
@@ -197,6 +236,82 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
         </div>
       </div>
 
+            {/* Gemini Configuration */}
+            <div className="space-y-4">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+          Google Gemini Configuration
+        </h3>
+        <div className="glass-morphism p-6 rounded-xl space-y-4">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              API Key
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Key className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type={showGeminiApiKey ? 'text' : 'password'}
+                name="geminiApiKey"
+                value={settings.geminiApiKey}
+                onChange={handleInputChange}
+                className="block w-full pl-10 pr-12 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-dark-bg text-gray-900 dark:text-white"
+                placeholder="Your Gemini API Key"
+              />
+              <button
+                type="button"
+                onClick={() => setShowGeminiApiKey(!showGeminiApiKey)}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+              >
+                {showGeminiApiKey ? (
+                  <EyeOff className="h-5 w-5 text-gray-400" />
+                ) : (
+                  <Eye className="h-5 w-5 text-gray-400" />
+                )}
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => testConnection('gemini')}
+              disabled={isTestingGemini || !settings.geminiApiKey}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isTestingGemini ? (
+                <>
+                  <Loader className="w-4 h-4 animate-spin" />
+                  <span>Testing...</span>
+                </>
+              ) : (
+                <>
+                  <TestTube className="w-4 h-4" />
+                  <span>Test Connection</span>
+                </>
+              )}
+            </button>
+
+            {testResults.gemini && (
+              <div
+                className={`flex items-center gap-2 text-sm ${
+                  testResults.gemini.success
+                    ? 'text-green-600 dark:text-green-400'
+                    : 'text-red-600 dark:text-red-400'
+                }`}
+              >
+                {testResults.gemini.success ? (
+                  <CheckCircle className="w-4 h-4" />
+                ) : (
+                  <AlertCircle className="w-4 h-4" />
+                )}
+                <span>{testResults.gemini.message}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Content Suggestions Configuration */}
       <div className="space-y-4">
         <h3 className="text-lg font-medium text-gray-900 dark:text-white">
@@ -214,6 +329,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
               className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-dark-bg text-gray-900 dark:text-white"
             >
               {isOpenAIConfigured && <option value="openai">OpenAI</option>}
+              {isGeminiConfigured && <option value="gemini">Google Gemini</option>}
               {<option value="anthropic">Anthropic (Claude)</option>}
             </select>
           </div>

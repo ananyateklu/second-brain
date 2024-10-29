@@ -1,18 +1,25 @@
 import { OpenAIService } from './openai';
 import { AnthropicService } from './anthropic';
+import { GeminiService } from './gemini';
 import { AIModel, AIResponse } from '../../types/ai';
 import { AI_MODELS } from './models';
 
 export class AIService {
   private openai: OpenAIService;
   private anthropic: AnthropicService;
+  private geminiService: GeminiService;
 
   constructor() {
     this.openai = new OpenAIService();
     this.anthropic = new AnthropicService();
+    this.geminiService = new GeminiService();
   }
 
   async sendMessage(message: string, modelId: string): Promise<AIResponse> {
+    if (modelId.startsWith('models/gemini-')) {
+      return this.geminiService.sendMessage(message, modelId);
+    }
+
     const model = this.getAvailableModels().find(m => m.id === modelId);
     if (!model) {
       throw new Error('Invalid model selected');

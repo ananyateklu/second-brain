@@ -11,7 +11,7 @@ interface AISettings {
     maxTokens: number;
   };
   contentSuggestions?: {
-    provider: 'openai' | 'anthropic';
+    provider: 'openai' | 'anthropic' | 'gemini';
     modelId: string;
   };
 }

@@ -9,7 +9,7 @@ export interface RateLimits {
 export interface AIModel {
   id: string;
   name: string;
-  provider: 'openai' | 'anthropic';
+  provider: 'openai' | 'anthropic' | 'gemini';
   category: 'chat' | 'completion' | 'embedding' | 'image' | 'audio';
   description: string;
   isConfigured: boolean;

@@ -12,7 +12,13 @@ export const PROMPT_CONFIG = {
     {content}
     
     Generated Title:`,
-          claude: `Please provide a clear and concise title for the following note. Ensure it is under 60 characters and accurately reflects the content.
+          anthropic: `Please provide a clear and concise title for the following note. Ensure it is under 60 characters and accurately reflects the content.
+    
+    Note Content:
+    {content}
+    
+    Title:`,
+          gemini: `Please suggest a clear and concise title for the following note. Ensure it is under 60 characters and accurately reflects the content.
     
     Note Content:
     {content}
@@ -30,7 +36,13 @@ export const PROMPT_CONFIG = {
     {content}
     
     Generated Title:`,
-          claude: `Please suggest a creative and clear title for the following idea. The title should be under 60 characters and highlight the innovative aspect.
+          anthropic: `Please suggest a creative and clear title for the following idea. The title should be under 60 characters and highlight the innovative aspect.
+    
+    Idea Description:
+    {content}
+    
+    Title:`,
+          gemini: `Please suggest a creative and clear title for the following idea. The title should be under 60 characters and highlight the innovative aspect.
     
     Idea Description:
     {content}
@@ -48,7 +60,13 @@ export const PROMPT_CONFIG = {
     {content}
     
     Generated Title:`,
-          claude: `Please create an action-oriented title for the following task. Ensure it starts with a verb, is under 60 characters, and clearly states the objective.
+          anthropic: `Please create an action-oriented title for the following task. Ensure it starts with a verb, is under 60 characters, and clearly states the objective.
+    
+    Task Details:
+    {content}
+    
+    Title:`,
+          gemini: `Please create an action-oriented title for the following task. Ensure it starts with a verb, is under 60 characters, and clearly states the objective.
     
     Task Details:
     {content}
@@ -66,7 +84,13 @@ export const PROMPT_CONFIG = {
     {content}
     
     Generated Title:`,
-          claude: `Please provide a time-relevant title for the following reminder. Ensure it is under 60 characters, action-oriented, and includes relevant timing context.
+          anthropic: `Please provide a time-relevant title for the following reminder. Ensure it is under 60 characters, action-oriented, and includes relevant timing context.
+    
+    Reminder Details:
+    {content}
+    
+    Title:`,
+          gemini: `Please provide a time-relevant title for the following reminder. Ensure it is under 60 characters, action-oriented, and includes relevant timing context.
     
     Reminder Details:
     {content}
@@ -85,7 +109,12 @@ export const PROMPT_CONFIG = {
     Title: {title}
     
     Content:{context}`,
-          claude: `Please provide a detailed and well-structured description for the following note. Ensure it expands on the title, is clear, and includes relevant details.
+          anthropic: `Please provide a detailed and well-structured description for the following note. Ensure it expands on the title, is clear, and includes relevant details.
+    
+    Note Title: {title}
+    
+    Description:{context}`,
+          gemini: `Please provide a detailed and well-structured description for the following note. Ensure it expands on the title, is clear, and includes relevant details.
     
     Note Title: {title}
     
@@ -101,7 +130,12 @@ export const PROMPT_CONFIG = {
     Title: {title}
     
     Content:{context}`,
-          claude: `Please elaborate on the following idea with a compelling description. It should explain the core concept, highlight potential benefits, address key considerations, and suggest possible next steps.
+          anthropic: `Please elaborate on the following idea with a compelling description. It should explain the core concept, highlight potential benefits, address key considerations, and suggest possible next steps.
+    
+    Idea Title: {title}
+    
+    Description:{context}`,
+          gemini: `Please elaborate on the following idea with a compelling description. It should explain the core concept, highlight potential benefits, address key considerations, and suggest possible next steps.
     
     Idea Title: {title}
     
@@ -117,7 +151,12 @@ export const PROMPT_CONFIG = {
     Title: {title}
     
     Content:{context}`,
-          claude: `Please provide a clear description for the following task. It should detail the specific requirements, include important steps, mention relevant dependencies, and set clear success criteria.
+          anthropic: `Please provide a clear description for the following task. It should detail the specific requirements, include important steps, mention relevant dependencies, and set clear success criteria.
+    
+    Task Title: {title}
+    
+    Description:{context}`,
+          gemini: `Please provide a clear description for the following task. It should detail the specific requirements, include important steps, mention relevant dependencies, and set clear success criteria.
     
     Task Title: {title}
     
@@ -133,7 +172,12 @@ export const PROMPT_CONFIG = {
     Title: {title}
     
     Content:{context}`,
-          claude: `Please provide a helpful description for the following reminder. It should specify what needs to be done, include important details, mention any prerequisites, and note any related deadlines.
+          anthropic: `Please provide a helpful description for the following reminder. It should specify what needs to be done, include important details, mention any prerequisites, and note any related deadlines.
+    
+    Reminder Title: {title}
+    
+    Description:{context}`,
+          gemini: `Please provide a helpful description for the following reminder. It should specify what needs to be done, include important details, mention any prerequisites, and note any related deadlines.
     
     Reminder Title: {title}
     
@@ -152,7 +196,12 @@ export const PROMPT_CONFIG = {
     {titleSection}{contentSection}{currentTagsSection}
     
     Generate tags as a comma-separated list:`,
-          claude: `Please provide 3-5 relevant tags for the following note. Ensure the tags are concise, specific, and cover key themes.
+          anthropic: `Please provide 3-5 relevant tags for the following note. Ensure the tags are concise, specific, and cover key themes.
+    
+    {titleSection}{contentSection}{currentTagsSection}
+    
+    Tags:`,
+          gemini: `Please provide 3-5 relevant tags for the following note. Ensure the tags are concise, specific, and cover key themes.
     
     {titleSection}{contentSection}{currentTagsSection}
     
@@ -169,7 +218,12 @@ export const PROMPT_CONFIG = {
     {titleSection}{contentSection}{currentTagsSection}
     
     Generate tags as a comma-separated list:`,
-          claude: `Please provide 3-5 relevant tags for the following idea. Ensure the tags are concise, specific, and cover key themes.
+          anthropic: `Please provide 3-5 relevant tags for the following idea. Ensure the tags are concise, specific, and cover key themes.
+    
+    {titleSection}{contentSection}{currentTagsSection}
+    
+    Tags:`,
+          gemini: `Please provide 3-5 relevant tags for the following idea. Ensure the tags are concise, specific, and cover key themes.
     
     {titleSection}{contentSection}{currentTagsSection}
     
@@ -186,7 +240,12 @@ export const PROMPT_CONFIG = {
     {titleSection}{contentSection}{currentTagsSection}
     
     Generate tags as a comma-separated list:`,
-          claude: `Please provide 3-5 relevant tags for the following task. Ensure the tags are concise, specific, and cover key themes.
+          anthropic: `Please provide 3-5 relevant tags for the following task. Ensure the tags are concise, specific, and cover key themes.
+    
+    {titleSection}{contentSection}{currentTagsSection}
+    
+    Tags:`,
+          gemini: `Please provide 3-5 relevant tags for the following task. Ensure the tags are concise, specific, and cover key themes.
     
     {titleSection}{contentSection}{currentTagsSection}
     
@@ -203,7 +262,12 @@ export const PROMPT_CONFIG = {
     {titleSection}{contentSection}{currentTagsSection}
     
     Generate tags as a comma-separated list:`,
-          claude: `Please provide 3-5 relevant tags for the following reminder. Ensure the tags are concise, specific, and cover key themes.
+          anthropic: `Please provide 3-5 relevant tags for the following reminder. Ensure the tags are concise, specific, and cover key themes.
+    
+    {titleSection}{contentSection}{currentTagsSection}
+    
+    Tags:`,
+          gemini: `Please provide 3-5 relevant tags for the following reminder. Ensure the tags are concise, specific, and cover key themes.
     
     {titleSection}{contentSection}{currentTagsSection}
     

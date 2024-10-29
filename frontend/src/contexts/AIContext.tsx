@@ -5,9 +5,11 @@ import { AIModel, AIResponse } from '../types/ai';
 interface AIContextType {
   isOpenAIConfigured: boolean;
   isAnthropicConfigured: boolean;
+  isGeminiConfigured: boolean;
   error: string | null;
   sendMessage: (input: string | File, modelId: string) => Promise<AIResponse>;
   configureOpenAI: (apiKey: string) => Promise<void>;
+  configureGemini: (apiKey: string) => Promise<void>;
   availableModels: AIModel[];
 }
 
@@ -19,6 +21,7 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [isOpenAIConfigured, setIsOpenAIConfigured] = useState<boolean>(aiService.isOpenAIConfigured());
   const [isAnthropicConfigured, setIsAnthropicConfigured] = useState<boolean>(aiService.isAnthropicConfigured());
+  const [isGeminiConfigured, setIsGeminiConfigured] = useState<boolean>(aiService.isGeminiConfigured());
   const [availableModels, setAvailableModels] = useState<AIModel[]>(aiService.getAvailableModels());
 
 
@@ -31,10 +34,19 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
     checkAnthropicConfig();
   }, []);
 
+  // Initialize Gemini configuration status
+  useEffect(() => {
+    const checkGeminiConfig = async () => {
+      const isConfigured = aiService.isGeminiConfigured();
+      setIsGeminiConfigured(isConfigured);
+    };
+    checkGeminiConfig();
+  }, []);
+
   // Update available models whenever configuration changes
   useEffect(() => {
     setAvailableModels(aiService.getAvailableModels());
-  }, [isOpenAIConfigured, isAnthropicConfigured]);
+  }, [isOpenAIConfigured, isAnthropicConfigured, isGeminiConfigured]);
 
   const configureOpenAI = useCallback(async (apiKey: string) => {
     try {
@@ -50,6 +62,24 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
       console.error('Failed to configure OpenAI:', errorMessage);
       setError(errorMessage);
       setIsOpenAIConfigured(false);
+      throw error;
+    }
+  }, []);
+
+  const configureGemini = useCallback(async (apiKey: string) => {
+    try {
+      setError(null);
+      const success = await aiService.setGeminiKey(apiKey);
+      if (success) {
+        setIsGeminiConfigured(true);
+      } else {
+        throw new Error('Failed to configure Gemini');
+      }
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Failed to configure Gemini';
+      console.error('Failed to configure Gemini:', errorMessage);
+      setError(errorMessage);
+      setIsGeminiConfigured(false);
       throw error;
     }
   }, []);
@@ -102,11 +132,13 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo(() => ({
     isOpenAIConfigured,
     isAnthropicConfigured,
+    isGeminiConfigured,
     error,
     sendMessage,
     configureOpenAI,
+    configureGemini,
     availableModels
-  }), [isOpenAIConfigured, isAnthropicConfigured, error, sendMessage, configureOpenAI, availableModels]);
+  }), [isOpenAIConfigured, isAnthropicConfigured, isGeminiConfigured, error, sendMessage, configureOpenAI, configureGemini, availableModels]);
 
   return <AIContext.Provider value={value}>{children}</AIContext.Provider>;
 }

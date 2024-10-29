@@ -7,17 +7,23 @@ export class ContentSuggestionService {
 
   constructor() {
     this.aiService = new AIService();
-    // Remove the modelId from the constructor
-    // this.modelId = this.getSelectedModel();
   }
 
   // Use a getter to retrieve the modelId whenever needed
   private get modelId(): string {
-    return localStorage.getItem('content_suggestions_model') || 'gpt-4';
+    return (
+      localStorage.getItem('content_suggestions_model') ||
+      'gpt-4'
+    );
   }
 
-  private isClaude(): boolean {
-    return this.modelId.startsWith('claude');
+  private get provider(): 'openai' | 'anthropic' | 'gemini' {
+    return (
+      (localStorage.getItem('content_suggestions_provider') as
+        | 'openai'
+        | 'anthropic'
+        | 'gemini') || 'openai'
+    );
   }
 
   /**
@@ -68,7 +74,7 @@ export class ContentSuggestionService {
     const suggestion = await this.generateSuggestion(prompt);
     return suggestion
       .split(',')
-      .map(tag => tag.trim())
+      .map((tag) => tag.trim())
       .filter(Boolean)
       .slice(0, 5); // Limit to 5 tags
   }
@@ -76,11 +82,20 @@ export class ContentSuggestionService {
   /**
    * Handles the AI response, including model-specific parsing and cleaning.
    */
-  private async generateSuggestion(prompt: string, maxLength?: number): Promise<string> {
+  private async generateSuggestion(
+    prompt: string,
+    maxLength?: number
+  ): Promise<string> {
     try {
       console.log(`Sending prompt to ${this.modelId}:`, prompt);
-      const response = await this.aiService.sendMessage(prompt, this.modelId);
-      console.log(`Received response from ${this.modelId}:`, response.content);
+      const response = await this.aiService.sendMessage(
+        prompt,
+        this.modelId
+      );
+      console.log(
+        `Received response from ${this.modelId}:`,
+        response.content
+      );
 
       let suggestion = response.content.trim();
 
@@ -99,15 +114,23 @@ export class ContentSuggestionService {
 
       return suggestion;
     } catch (error) {
-      console.error(`Failed to generate suggestion for model ${this.modelId}:`, error);
-      throw new Error(`Failed to generate suggestion for the selected AI model (${this.modelId}). Please try again later.`);
+      console.error(
+        `Failed to generate suggestion for model ${this.modelId}:`,
+        error
+      );
+      throw new Error(
+        `Failed to generate suggestion for the selected AI model (${this.modelId}). Please try again later.`
+      );
     }
   }
 
   /**
    * Replaces placeholders in the prompt with actual values.
    */
-  private replacePlaceholders(prompt: string, replacements: Record<string, string>): string {
+  private replacePlaceholders(
+    prompt: string,
+    replacements: Record<string, string>
+  ): string {
     let updatedPrompt = prompt;
     for (const [key, value] of Object.entries(replacements)) {
       const placeholder = `{${key}}`;
@@ -129,7 +152,8 @@ export class ContentSuggestionService {
       priority?: string;
     }
   ): string {
-    const promptTemplate = PROMPT_CONFIG.title[type][this.isClaude() ? 'claude' : 'openai'];
+    const promptTemplate =
+      PROMPT_CONFIG.title[type][this.provider];
     const replacements: Record<string, string> = {
       content,
     };
@@ -149,7 +173,8 @@ export class ContentSuggestionService {
       priority?: string;
     }
   ): string {
-    const promptTemplate = PROMPT_CONFIG.content[type][this.isClaude() ? 'claude' : 'openai'];
+    const promptTemplate =
+      PROMPT_CONFIG.content[type][this.provider];
     const contextInfo = context ? this.buildContext(context) : '';
     const replacements: Record<string, string> = {
       title,
@@ -168,10 +193,15 @@ export class ContentSuggestionService {
       currentTags?: string[];
     }
   ): string {
-    const promptTemplate = PROMPT_CONFIG.tags[type][this.isClaude() ? 'claude' : 'openai'];
+    const promptTemplate =
+      PROMPT_CONFIG.tags[type][this.provider];
 
-    const titleSection = input.title ? `Title: ${input.title}\n` : '';
-    const contentSection = input.content ? `Content: ${input.content}\n` : '';
+    const titleSection = input.title
+      ? `Title: ${input.title}\n`
+      : '';
+    const contentSection = input.content
+      ? `Content: ${input.content}\n`
+      : '';
     const currentTagsSection =
       context && context.currentTags && context.currentTags.length > 0
         ? `Current Tags: ${context.currentTags.join(', ')}\n`
