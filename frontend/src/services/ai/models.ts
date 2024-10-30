@@ -299,5 +299,15 @@ export const AI_MODELS: AIModel[] = [
     isConfigured: true,
     color: '#6B7280',
     endpoint: 'chat',
+  },
+  {
+    id: 'phi3.5',
+    name: 'Phi 3.5',
+    provider: 'llama',
+    category: 'chat',
+    description: 'A lightweight AI model with 3.8 billion parameters with performance overtaking similarly and larger sized models.',
+    isConfigured: true,
+    color: '#6B7280',
+    endpoint: 'chat',
   }
 ];
