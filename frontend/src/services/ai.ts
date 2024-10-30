@@ -1,17 +1,20 @@
 import { OpenAIService } from './ai/openai';
 import { AnthropicService } from './ai/anthropic';
 import { GeminiService } from './ai/gemini';
+import { LlamaService } from './ai/llama';
 import { AIModel, AIResponse } from '../types/ai';
 
 export class AIService {
   private readonly openai: OpenAIService;
   private readonly anthropic: AnthropicService;
   private readonly gemini: GeminiService;
+  public readonly llama: LlamaService;
 
   constructor() {
     this.openai = new OpenAIService();
     this.anthropic = new AnthropicService();
     this.gemini = new GeminiService();
+    this.llama = new LlamaService();
   }
 
   async sendMessage(message: string, modelId: string): Promise<AIResponse> {
@@ -27,6 +30,8 @@ export class AIService {
         return this.anthropic.sendMessage(message, modelId);
       case 'gemini':
         return this.gemini.sendMessage(message, modelId);
+      case 'llama':
+        return this.llama.sendMessage(message, modelId);
       default:
         throw new Error('Unsupported AI provider');
     }
@@ -57,6 +62,7 @@ export class AIService {
       ...this.openai.getModels(),
       ...this.anthropic.getModels(),
       ...this.gemini.getModels(),
+      ...this.llama.getModels(),
     ];
   }
 

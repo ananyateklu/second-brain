@@ -21,7 +21,7 @@ interface AISettingsSectionProps {
 }
 
 export function AISettingsSection({ onSave }: AISettingsSectionProps) {
-  const { configureOpenAI, configureGemini, availableModels, isOpenAIConfigured, isGeminiConfigured } = useAI();
+  const { configureOpenAI, configureGemini, availableModels, isOpenAIConfigured, isGeminiConfigured, isLlamaConfigured } = useAI();
   const [settings, setSettings] = useState<AISettings>({
     openaiApiKey: localStorage.getItem('openai_api_key') || '',
     geminiApiKey: localStorage.getItem('gemini_api_key') || '',
@@ -331,6 +331,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
               {isOpenAIConfigured && <option value="openai">OpenAI</option>}
               {isGeminiConfigured && <option value="gemini">Google Gemini</option>}
               {<option value="anthropic">Anthropic (Claude)</option>}
+              {isLlamaConfigured && <option value="llama">Llama</option>}
             </select>
           </div>
 

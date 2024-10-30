@@ -1,3 +1,6 @@
+using System.ComponentModel.DataAnnotations;
+using SecondBrain.Data.Entities;
+
 namespace SecondBrain.Data.Entities
 {
     public class NoteTag

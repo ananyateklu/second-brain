@@ -23,7 +23,17 @@ export const PROMPT_CONFIG = {
     Note Content:
     {content}
     
-    Title:`
+    Title:`,
+          llama: `Generate a concise, descriptive title for this note. The title should:
+    - Be clear and under 60 characters
+    - Capture the main topic or purpose
+    - Use natural language
+    - Be specific but not verbose
+    
+    Content:
+    {content}
+    
+    Generated Title:`
         },
         idea: {
           openai: `Create a captivating, memorable title for this idea. The title should:
@@ -47,7 +57,17 @@ export const PROMPT_CONFIG = {
     Idea Description:
     {content}
     
-    Title:`
+    Title:`,
+          llama: `Create a captivating, memorable title for this idea. The title should:
+    - Be creative but clear, under 60 characters
+    - Capture the innovative aspect
+    - Be engaging and memorable
+    - Reflect the potential impact
+    
+    Content:
+    {content}
+    
+    Generated Title:`
         },
         task: {
           openai: `Generate a clear, action-oriented title for this task. The title should:
@@ -71,7 +91,17 @@ export const PROMPT_CONFIG = {
     Task Details:
     {content}
     
-    Title:`
+    Title:`,
+          llama: `Generate a clear, action-oriented title for this task. The title should:
+    - Be specific and under 60 characters
+    - Start with a verb when possible
+    - Clearly state the objective
+    - Include key context
+    
+    Content:
+    {content}
+    
+    Generated Title:`
         },
         reminder: {
           openai: `Create a clear, time-relevant title for this reminder. The title should:
@@ -95,7 +125,17 @@ export const PROMPT_CONFIG = {
     Reminder Details:
     {content}
     
-    Title:`
+    Title:`,
+          llama: `Create a clear, time-relevant title for this reminder. The title should:
+    - Be specific and under 60 characters
+    - Include relevant timing context
+    - Be action-oriented
+    - Be immediately understandable
+    
+    Content:
+    {content}
+    
+    Generated Title:`
         }
       },
       content: {
@@ -118,7 +158,16 @@ export const PROMPT_CONFIG = {
     
     Note Title: {title}
     
-    Description:{context}`
+    Description:{context}`,
+          llama: `Generate detailed, well-structured content for this note. The content should:
+    - Expand on the title's topic
+    - Be informative and clear
+    - Include relevant details
+    - Use proper formatting
+    
+    Title: {title}
+    
+    Content:{context}`
         },
         idea: {
           openai: `Develop this idea with compelling content. The description should:
@@ -139,7 +188,16 @@ export const PROMPT_CONFIG = {
     
     Idea Title: {title}
     
-    Description:{context}`
+    Description:{context}`,
+          llama: `Develop this idea with compelling content. The description should:
+    - Explain the core concept
+    - Highlight potential benefits
+    - Address key considerations
+    - Suggest possible next steps
+    
+    Title: {title}
+    
+    Content:{context}`
         },
         task: {
           openai: `Create a clear task description. The content should:
@@ -160,7 +218,16 @@ export const PROMPT_CONFIG = {
     
     Task Title: {title}
     
-    Description:{context}`
+    Description:{context}`,
+          llama: `Create a clear task description. The content should:
+    - Detail the specific requirements
+    - Include any important steps
+    - Mention relevant dependencies
+    - Set clear success criteria
+    
+    Title: {title}
+    
+    Content:{context}`
         },
         reminder: {
           openai: `Write a helpful reminder description. The content should:
@@ -181,7 +248,16 @@ export const PROMPT_CONFIG = {
     
     Reminder Title: {title}
     
-    Description:{context}`
+    Description:{context}`,
+          llama: `Write a helpful reminder description. The content should:
+    - Specify what needs to be done
+    - Include important details
+    - Mention any prerequisites
+    - Note any related deadlines
+    
+    Title: {title}
+    
+    Content:{context}`
         }
       },
       tags: {
@@ -205,7 +281,17 @@ export const PROMPT_CONFIG = {
     
     {titleSection}{contentSection}{currentTagsSection}
     
-    Tags:`
+    Tags:`,
+          llama: `Generate relevant tags for this note. The tags should:
+    - Be concise and specific
+    - Cover key themes and categories
+    - Be useful for organization
+    - Include 3-5 tags total
+    
+    Content to analyze:
+    {titleSection}{contentSection}{currentTagsSection}
+    
+    Generate tags as a comma-separated list:`
         },
         idea: {
           openai: `Generate relevant tags for this idea. The tags should:
@@ -227,7 +313,17 @@ export const PROMPT_CONFIG = {
     
     {titleSection}{contentSection}{currentTagsSection}
     
-    Tags:`
+    Tags:`,
+          llama: `Generate relevant tags for this idea. The tags should:
+    - Be concise and specific
+    - Cover key themes and categories
+    - Be useful for organization
+    - Include 3-5 tags total
+    
+    Content to analyze:
+    {titleSection}{contentSection}{currentTagsSection}
+    
+    Generate tags as a comma-separated list:`
         },
         task: {
           openai: `Generate relevant tags for this task. The tags should:
@@ -249,7 +345,17 @@ export const PROMPT_CONFIG = {
     
     {titleSection}{contentSection}{currentTagsSection}
     
-    Tags:`
+    Tags:`,
+          llama: `Generate relevant tags for this task. The tags should:
+    - Be concise and specific
+    - Cover key themes and categories
+    - Be useful for organization
+    - Include 3-5 tags total
+    
+    Content to analyze:
+    {titleSection}{contentSection}{currentTagsSection}
+    
+    Generate tags as a comma-separated list:`
         },
         reminder: {
           openai: `Generate relevant tags for this reminder. The tags should:
@@ -271,7 +377,17 @@ export const PROMPT_CONFIG = {
     
     {titleSection}{contentSection}{currentTagsSection}
     
-    Tags:`
+    Tags:`,
+          llama: `Generate relevant tags for this reminder. The tags should:
+    - Be concise and specific
+    - Cover key themes and categories
+    - Be useful for organization
+    - Include 3-5 tags total
+    
+    Content to analyze:
+    {titleSection}{contentSection}{currentTagsSection}
+    
+    Generate tags as a comma-separated list:`
         }
       }
     };

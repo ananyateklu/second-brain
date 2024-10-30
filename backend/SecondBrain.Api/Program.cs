@@ -109,6 +109,9 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+// Register your LlamaService here
+builder.Services.AddScoped<ILlamaService, LlamaService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

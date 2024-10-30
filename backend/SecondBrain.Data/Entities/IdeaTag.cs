@@ -1,11 +1,20 @@
+using System.ComponentModel.DataAnnotations;
+using SecondBrain.Data.Entities;
+
 namespace SecondBrain.Data.Entities
 {
     public class IdeaTag
     {
-        public string IdeaId { get; set; }
-        public Idea Idea { get; set; }
+        [Required]
+        [MaxLength(36)]
+        public string IdeaId { get; set; } = string.Empty;
 
-        public string TagId { get; set; }
-        public Tag Tag { get; set; }
+        public Idea Idea { get; set; } = null!;
+
+        [Required]
+        [MaxLength(36)]
+        public string TagId { get; set; } = string.Empty;
+
+        public Tag Tag { get; set; } = null!;
     }
 }

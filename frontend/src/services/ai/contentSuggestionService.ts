@@ -11,18 +11,20 @@ export class ContentSuggestionService {
 
   // Use a getter to retrieve the modelId whenever needed
   private get modelId(): string {
-    return (
-      localStorage.getItem('content_suggestions_model') ||
-      'gpt-4'
-    );
+    const provider = this.provider;
+    if (provider === 'llama') {
+      return localStorage.getItem('content_suggestions_model') || 'llama3.1:8b';
+    }
+    return localStorage.getItem('content_suggestions_model') || 'gpt-4';
   }
 
-  private get provider(): 'openai' | 'anthropic' | 'gemini' {
+  private get provider(): 'openai' | 'anthropic' | 'gemini' | 'llama' {
     return (
       (localStorage.getItem('content_suggestions_provider') as
         | 'openai'
         | 'anthropic'
-        | 'gemini') || 'openai'
+        | 'gemini'
+        | 'llama') || 'openai'
     );
   }
 

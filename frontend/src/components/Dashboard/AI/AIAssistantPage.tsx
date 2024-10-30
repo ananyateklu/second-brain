@@ -22,7 +22,7 @@ interface Message {
 
 export function AIAssistantPage() {
   const navigate = useNavigate();
-  const { isOpenAIConfigured, availableModels, sendMessage } = useAI();
+  const { isOpenAIConfigured, isGeminiConfigured, isAnthropicConfigured, isLlamaConfigured, availableModels, sendMessage } = useAI();
   const [selectedCategory, setSelectedCategory] = useState<string>('chat');
   const [selectedModel, setSelectedModel] = useState<AIModel | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -35,12 +35,6 @@ export function AIAssistantPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Redirect to settings if OpenAI is not configured
-  React.useEffect(() => {
-    if (!isOpenAIConfigured) {
-      navigate('/dashboard/settings');
-    }
-  }, [isOpenAIConfigured, navigate]);
 
   const handleModelSelect = (model: AIModel) => {
     setSelectedModel(model);
@@ -133,7 +127,7 @@ export function AIAssistantPage() {
     }
   };
 
-  if (!isOpenAIConfigured) {
+  if (!isOpenAIConfigured && !isGeminiConfigured && !isAnthropicConfigured && !isLlamaConfigured) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-12rem)] gap-4">
         <Bot className="w-16 h-16 text-gray-400" />

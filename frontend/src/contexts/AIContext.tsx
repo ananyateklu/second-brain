@@ -1,11 +1,13 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
 import { AIService } from '../services/ai';
 import { AIModel, AIResponse } from '../types/ai';
+import { LlamaService } from '../services/ai/llama';
 
 interface AIContextType {
   isOpenAIConfigured: boolean;
   isAnthropicConfigured: boolean;
   isGeminiConfigured: boolean;
+  isLlamaConfigured: boolean;
   error: string | null;
   sendMessage: (input: string | File, modelId: string) => Promise<AIResponse>;
   configureOpenAI: (apiKey: string) => Promise<void>;
@@ -22,6 +24,7 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
   const [isOpenAIConfigured, setIsOpenAIConfigured] = useState<boolean>(aiService.isOpenAIConfigured());
   const [isAnthropicConfigured, setIsAnthropicConfigured] = useState<boolean>(aiService.isAnthropicConfigured());
   const [isGeminiConfigured, setIsGeminiConfigured] = useState<boolean>(aiService.isGeminiConfigured());
+  const [isLlamaConfigured, setIsLlamaConfigured] = useState<boolean>(aiService.llama.isConfigured());
   const [availableModels, setAvailableModels] = useState<AIModel[]>(aiService.getAvailableModels());
 
 
@@ -43,10 +46,19 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
     checkGeminiConfig();
   }, []);
 
+  // Initialize Llama configuration status
+  useEffect(() => {
+    const checkLlamaConfig = async () => {
+      const isConfigured = aiService.llama.isConfigured();
+      setIsLlamaConfigured(isConfigured);
+    };
+    checkLlamaConfig();
+  }, []);
+
   // Update available models whenever configuration changes
   useEffect(() => {
     setAvailableModels(aiService.getAvailableModels());
-  }, [isOpenAIConfigured, isAnthropicConfigured, isGeminiConfigured]);
+  }, [isOpenAIConfigured, isAnthropicConfigured, isGeminiConfigured, isLlamaConfigured]);
 
   const configureOpenAI = useCallback(async (apiKey: string) => {
     try {
@@ -133,12 +145,13 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
     isOpenAIConfigured,
     isAnthropicConfigured,
     isGeminiConfigured,
+    isLlamaConfigured,
     error,
     sendMessage,
     configureOpenAI,
     configureGemini,
     availableModels
-  }), [isOpenAIConfigured, isAnthropicConfigured, isGeminiConfigured, error, sendMessage, configureOpenAI, configureGemini, availableModels]);
+  }), [isOpenAIConfigured, isAnthropicConfigured, isGeminiConfigured, isLlamaConfigured, error, sendMessage, configureOpenAI, configureGemini, availableModels]);
 
   return <AIContext.Provider value={value}>{children}</AIContext.Provider>;
 }
