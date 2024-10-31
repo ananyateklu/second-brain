@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bot, User } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { AIModel } from '../../../types/ai';
+import { TypewriterEffect } from './TypewriterEffect';
 
 interface Message {
   id: string;
@@ -15,9 +16,10 @@ interface Message {
 interface AIMessageProps {
   message: Message;
   themeColor: string;
+  isStreaming?: boolean;
 }
 
-export function AIMessage({ message, themeColor }: AIMessageProps) {
+export function AIMessage({ message, themeColor, isStreaming }: AIMessageProps) {
   const isUser = message.role === 'user';
   const { user } = useAuth();
 
@@ -30,24 +32,28 @@ export function AIMessage({ message, themeColor }: AIMessageProps) {
           <img
             src={message.content}
             alt="AI Generated"
-            className="max-w-lg rounded-lg shadow-lg"
+            className="max-w-lg rounded-lg shadow-lg animate-fade-in"
             loading="lazy"
           />
         );
       case 'audio':
         return (
-          <audio controls className="max-w-md">
+          <audio controls className="max-w-md animate-fade-in">
             <source src={message.content} type="audio/mpeg" />
             Your browser does not support the audio element.
           </audio>
         );
       default:
-        return <p className="whitespace-pre-wrap">{message.content}</p>;
+        return isUser || !isStreaming ? (
+          <p className="whitespace-pre-wrap animate-fade-in">{message.content}</p>
+        ) : (
+          <TypewriterEffect text={message.content} />
+        );
     }
   };
 
   return (
-    <div className={`flex items-end ${isUser ? 'justify-end' : 'justify-start'} mb-4`}>
+    <div className={`flex items-end ${isUser ? 'justify-end' : 'justify-start'} mb-4 animate-message-slide-in`}>
       <div
         className={`flex flex-col max-w-xs mx-2 ${
           isUser ? 'items-end' : 'items-start'
