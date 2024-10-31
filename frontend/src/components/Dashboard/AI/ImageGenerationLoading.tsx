@@ -1,4 +1,3 @@
-
 interface ImageGenerationLoadingProps {
   progress: number;
 }

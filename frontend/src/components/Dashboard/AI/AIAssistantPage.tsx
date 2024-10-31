@@ -7,6 +7,7 @@ import { ModelSelector } from './ModelSelector';
 import { ChatInterface } from './ChatInterface';
 import { MessageList } from './MessageList';
 import { AudioInterface } from './AudioInterface';
+import { ImageInterface } from './ImageInterface';
 
 interface Message {
   id: string;
@@ -88,6 +89,16 @@ export function AIAssistantPage() {
     }
   };
 
+  const updateMessage = (messageId: string, updatedMessage: Partial<Message>) => {
+    setMessages((prevMessages) =>
+      prevMessages.map((msg) =>
+        msg.id === messageId
+          ? { ...msg, ...updatedMessage }
+          : msg
+      )
+    );
+  };
+
   if (!isOpenAIConfigured && !isGeminiConfigured && !isAnthropicConfigured && !isLlamaConfigured) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-12rem)] gap-4">
@@ -155,6 +166,23 @@ export function AIAssistantPage() {
                   };
                   addMessage(newMessage);
                 }}
+                isLoading={isLoading}
+                setIsLoading={setIsLoading}
+                setError={setError}
+              />
+            ) : selectedModel.category === 'image' ? (
+              <ImageInterface
+                model={selectedModel}
+                addMessage={(message) => {
+                  const newMessage: Message = {
+                    ...message,
+                    id: message.id || Date.now().toString(),
+                    timestamp: message.timestamp || new Date().toISOString(),
+                    model: selectedModel,
+                  };
+                  addMessage(newMessage);
+                }}
+                updateMessage={updateMessage}
                 isLoading={isLoading}
                 setIsLoading={setIsLoading}
                 setError={setError}

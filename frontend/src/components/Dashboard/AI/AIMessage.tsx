@@ -3,6 +3,7 @@ import { Bot, User } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { AIModel } from '../../../types/ai';
 import { TypewriterEffect } from './TypewriterEffect';
+import { ImageGenerationLoading } from './ImageGenerationLoading';
 
 interface Message {
   id: string;
@@ -25,17 +26,40 @@ export function AIMessage({ message, themeColor, isStreaming }: AIMessageProps) 
 
   const assistantThemeColor = message.model?.color || '#6B7280'; // Default to gray if no color
 
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    if (message.type === 'image' && message.isLoading) {
+      const interval = setInterval(() => {
+        setProgress((prevProgress) => {
+          if (prevProgress >= 99) {
+            clearInterval(interval);
+            return 99;
+          }
+          return prevProgress + Math.random() * 5; // Increment progress
+        });
+      }, 500);
+      return () => clearInterval(interval);
+    } else {
+      setProgress(100); // When not loading, progress is complete
+    }
+  }, [message.isLoading, message.type]);
+
   const renderContent = () => {
     switch (message.type) {
       case 'image':
-        return (
-          <img
-            src={message.content}
-            alt="AI Generated"
-            className="max-w-lg rounded-lg shadow-lg animate-fade-in"
-            loading="lazy"
-          />
-        );
+        if (message.isLoading) {
+          return <ImageGenerationLoading progress={progress} />;
+        } else {
+          return (
+            <img
+              src={message.content}
+              alt="AI Generated"
+              className="max-w-lg rounded-lg shadow-lg animate-fade-in"
+              loading="lazy"
+            />
+          );
+        }
       case 'audio':
         return (
           <audio controls className="max-w-md animate-fade-in">

@@ -9,6 +9,7 @@ interface Message {
   type: 'text' | 'image' | 'audio';
   timestamp: string;
   model?: AIModel;
+  isLoading?: boolean;
 }
 
 interface MessageListProps {

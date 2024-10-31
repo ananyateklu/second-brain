@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { Send, Loader, Image } from 'lucide-react';
 import { useAI } from '../../../contexts/AIContext';
 import { AIModel } from '../../../types/ai';
+import { Message } from '../../../types/message';
 
 interface ImageInterfaceProps {
   model: AIModel;
-  onMessageSend: (message: { role: 'user' | 'assistant'; content: string; type: 'text' | 'image' | 'audio' }) => void;
+  addMessage: (message: Message) => void;
+  updateMessage: (messageId: string, updatedMessage: Partial<Message>) => void;
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -13,10 +15,11 @@ interface ImageInterfaceProps {
 
 export function ImageInterface({
   model,
-  onMessageSend,
+  addMessage,
+  updateMessage,
   isLoading,
   setIsLoading,
-  setError
+  setError,
 }: ImageInterfaceProps) {
   const { sendMessage } = useAI();
   const [prompt, setPrompt] = useState('');
@@ -27,27 +30,50 @@ export function ImageInterface({
 
     const userPrompt = prompt.trim();
     setPrompt('');
-    
+
     // Add user message
-    onMessageSend({
+    const userMessage: Message = {
+      id: Date.now().toString(),
       role: 'user',
       content: userPrompt,
-      type: 'text'
-    });
+      type: 'text',
+      timestamp: new Date().toISOString(),
+      model,
+    };
+    addMessage(userMessage);
+
+    const assistantMessageId = (Date.now() + 1).toString();
+
+    // Add placeholder assistant message with isLoading
+    const assistantMessage: Message = {
+      id: assistantMessageId,
+      role: 'assistant',
+      content: '',
+      type: 'image',
+      timestamp: new Date().toISOString(),
+      model,
+      isLoading: true,
+    };
+    addMessage(assistantMessage);
 
     setIsLoading(true);
     setError(null);
 
     try {
       const response = await sendMessage(userPrompt, model.id);
-      
-      // Add AI response with generated image
-      onMessageSend({
-        role: 'assistant',
+
+      // Update the assistant message with the actual image content
+      updateMessage(assistantMessageId, {
         content: response.content,
-        type: 'image'
+        isLoading: false,
       });
     } catch (error: any) {
+      // Update the assistant message to show error
+      updateMessage(assistantMessageId, {
+        content: 'Failed to generate image',
+        type: 'text',
+        isLoading: false,
+      });
       setError(error.message || 'Failed to generate image');
     } finally {
       setIsLoading(false);
