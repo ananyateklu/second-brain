@@ -99,22 +99,33 @@ export class OpenAIService {
     try {
       switch (model.endpoint) {
         case 'chat': {
+          let fullContent = '';
           const response = await this.client.chat.completions.create({
             model: modelId,
             messages: [{ role: 'user', content: message }],
             temperature: 0.7,
             max_tokens: 1000,
-            stream: true, // Enable streaming
+            stream: Boolean(onUpdate), // Only stream if onUpdate is provided
           });
 
-          // Read the stream and invoke onUpdate
-          for await (const part of response) {
-            const content = part.choices[0]?.delta?.content;
-            if (content) {
+          if (response.choices) {
+            // Handle non-streaming response
+            return {
+              content: response.choices[0]?.message?.content || '',
+              type: 'text'
+            };
+          } else {
+            // Handle streaming response
+            for await (const part of response as any) {
+              const content = part.choices[0]?.delta?.content || '';
+              fullContent += content;
               onUpdate?.(content);
             }
+            return {
+              content: fullContent,
+              type: 'text'
+            };
           }
-          break;
         }
 
         case 'embeddings': {
