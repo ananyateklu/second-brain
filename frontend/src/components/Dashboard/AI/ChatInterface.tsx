@@ -1,57 +1,28 @@
 import React, { useState } from 'react';
 import { Send, Loader } from 'lucide-react';
-import { useAI } from '../../../contexts/AIContext';
 import { AIModel } from '../../../types/ai';
 
 interface ChatInterfaceProps {
   model: AIModel;
-  onMessageSend: (message: { role: 'user' | 'assistant'; content: string; type: 'text' | 'image' | 'audio' }) => void;
+  onUserInput: (input: string) => void;
   isLoading: boolean;
-  setIsLoading: (loading: boolean) => void;
-  setError: (error: string | null) => void;
+  themeColor: string;
 }
 
-export function ChatInterface({ 
-  model, 
-  onMessageSend, 
-  isLoading, 
-  setIsLoading, 
-  setError 
+export function ChatInterface({
+  model,
+  onUserInput,
+  isLoading,
+  themeColor,
 }: ChatInterfaceProps) {
-  const { sendMessage } = useAI();
   const [input, setInput] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
-    const userMessage = input.trim();
+    onUserInput(input.trim());
     setInput('');
-    
-    // Add user message
-    onMessageSend({
-      role: 'user',
-      content: userMessage,
-      type: 'text'
-    });
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await sendMessage(userMessage, model.id);
-      
-      // Add AI response
-      onMessageSend({
-        role: 'assistant',
-        content: response.content,
-        type: response.type
-      });
-    } catch (error: any) {
-      setError(error.message || 'Failed to get response');
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   return (
@@ -62,23 +33,21 @@ export function ChatInterface({
         onChange={(e) => setInput(e.target.value)}
         placeholder={`Message ${model.name}...`}
         disabled={isLoading}
-        className="flex-1 px-4 py-2 bg-white dark:bg-dark-bg border border-gray-200 dark:border-dark-border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="flex-1 px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-full focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       />
       <button
         type="submit"
         disabled={isLoading || !input.trim()}
-        className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="flex items-center justify-center w-12 h-12 rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        style={{
+          backgroundColor: themeColor,
+        }}
+        aria-label="Send Message"
       >
         {isLoading ? (
-          <>
-            <Loader className="w-4 h-4 animate-spin" />
-            <span>Sending...</span>
-          </>
+          <Loader className="w-6 h-6 text-white animate-spin" />
         ) : (
-          <>
-            <Send className="w-4 h-4" />
-            <span>Send</span>
-          </>
+          <Send className="w-6 h-6 text-white" />
         )}
       </button>
     </form>

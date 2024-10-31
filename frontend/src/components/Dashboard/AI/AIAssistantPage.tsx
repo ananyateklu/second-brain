@@ -2,14 +2,11 @@ import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bot, Settings } from 'lucide-react';
 import { useAI } from '../../../contexts/AIContext';
-import { AIModel, AIResponse } from '../../../types/ai';
+import { AIModel } from '../../../types/ai';
 import { ModelSelector } from './ModelSelector';
 import { ChatInterface } from './ChatInterface';
-import { ImageInterface } from './ImageInterface';
-import { AudioInterface } from './AudioInterface';
-import { EmbeddingInterface } from './EmbeddingInterface';
-import { DefaultInterface } from './DefaultInterface';
 import { MessageList } from './MessageList';
+import { AudioInterface } from './AudioInterface';
 
 interface Message {
   id: string;
@@ -17,7 +14,7 @@ interface Message {
   content: string;
   type: 'text' | 'image' | 'audio';
   timestamp: string;
-  model?: string;
+  model?: AIModel;
 }
 
 export function AIAssistantPage() {
@@ -30,30 +27,23 @@ export function AIAssistantPage() {
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to bottom when messages change
-  React.useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
+  const themeColor = selectedModel?.color || '#3b82f6'; // Default to blue
 
   const handleModelSelect = (model: AIModel) => {
     setSelectedModel(model);
     setError(null);
+    setMessages([]);
   };
 
   const handleCategoryChange = (category: string) => {
     setSelectedCategory(category);
     setSelectedModel(null);
     setError(null);
+    setMessages([]);
   };
 
-  const addMessage = (message: Omit<Message, 'id' | 'timestamp'>) => {
-    const newMessage = {
-      ...message,
-      id: Date.now().toString(),
-      timestamp: new Date().toISOString(),
-    };
-    setMessages(prev => [...prev, newMessage]);
+  const addMessage = (message: Message) => {
+    setMessages((prevMessages) => [...prevMessages, message]);
   };
 
   const handleUserInput = async (input: string) => {
@@ -72,54 +62,25 @@ export function AIAssistantPage() {
       content: input,
       type: 'text',
       timestamp: new Date().toISOString(),
+      model: selectedModel,
     };
     setMessages((prev) => [...prev, userMessage]);
 
     try {
       // Send the message to the AI service
-      const aiResponse: AIResponse = await sendMessage(input, selectedModel.id);
+      const aiResponse = await sendMessage(input, selectedModel.id);
 
-      // Process the assistant's response content blocks
-      const assistantMessages: Message[] = [];
-      
-      if (aiResponse.contentBlocks) {
-        for (const contentBlock of aiResponse.contentBlocks) {
-          if (contentBlock.type === 'text') {
-            assistantMessages.push({
-              id: (Date.now() + assistantMessages.length + 1).toString(),
-              role: 'assistant',
-              content: contentBlock.text,
-              type: 'text',
-              timestamp: new Date().toISOString(),
-              model: selectedModel.name,
-            });
-          } else if (contentBlock.type === 'image') {
-            // Handle image content
-            assistantMessages.push({
-              id: (Date.now() + assistantMessages.length + 1).toString(),
-              role: 'assistant',
-              content: contentBlock.url, // Assuming image URL is in contentBlock.url
-              type: 'image',
-              timestamp: new Date().toISOString(),
-              model: selectedModel.name,
-            });
-          }
-          // Handle other content types if necessary
-        }
-      } else {
-        // If contentBlocks is not provided, use the content directly
-        assistantMessages.push({
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: aiResponse.content,
-          type: aiResponse.type,
-          timestamp: new Date().toISOString(),
-          model: selectedModel.name,
-        });
-      }
+      // Add the assistant's message to the message list
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: aiResponse.content,
+        type: aiResponse.type,
+        timestamp: new Date().toISOString(),
+        model: selectedModel,
+      };
+      setMessages((prev) => [...prev, assistantMessage]);
 
-      // Add the assistant's messages to the message list
-      setMessages((prev) => [...prev, ...assistantMessages]);
     } catch (e: any) {
       setError(e.message || 'Failed to communicate with the AI assistant.');
     } finally {
@@ -135,7 +96,7 @@ export function AIAssistantPage() {
           AI Assistant Not Configured
         </h2>
         <p className="text-gray-600 dark:text-gray-400 text-center max-w-md">
-          Please configure your OpenAI API key in settings to use the AI assistant.
+          Please configure your API keys in settings to use the AI assistant.
         </p>
         <button
           onClick={() => navigate('/dashboard/settings')}
@@ -167,6 +128,7 @@ export function AIAssistantPage() {
           messages={messages}
           isLoading={isLoading}
           messagesEndRef={messagesEndRef}
+          themeColor={themeColor}
         />
       </div>
 
@@ -181,49 +143,28 @@ export function AIAssistantPage() {
       <div className="glass-morphism p-4 rounded-xl">
         {selectedModel ? (
           <>
-            {selectedModel.category === 'chat' && (
-              <ChatInterface
-                model={selectedModel}
-                onMessageSend={addMessage}
-                isLoading={isLoading}
-                setIsLoading={setIsLoading}
-                setError={setError}
-              />
-            )}
-            {selectedModel.category === 'image' && (
-              <ImageInterface
-                model={selectedModel}
-                onMessageSend={addMessage}
-                isLoading={isLoading}
-                setIsLoading={setIsLoading}
-                setError={setError}
-              />
-            )}
-            {selectedModel.category === 'audio' && (
+            {selectedModel.id === 'whisper-1' ? (
               <AudioInterface
                 model={selectedModel}
-                onMessageSend={addMessage}
+                onMessageSend={(message) => {
+                  const newMessage: Message = {
+                    ...message,
+                    id: Date.now().toString(),
+                    timestamp: new Date().toISOString(),
+                    model: selectedModel,
+                  };
+                  addMessage(newMessage);
+                }}
                 isLoading={isLoading}
                 setIsLoading={setIsLoading}
                 setError={setError}
               />
-            )}
-            {selectedModel.category === 'embedding' && (
-              <EmbeddingInterface
+            ) : (
+              <ChatInterface
                 model={selectedModel}
-                onMessageSend={addMessage}
+                onUserInput={handleUserInput}
                 isLoading={isLoading}
-                setIsLoading={setIsLoading}
-                setError={setError}
-              />
-            )}
-            {!['chat', 'image', 'audio', 'embedding'].includes(selectedModel.category) && (
-              <DefaultInterface
-                model={selectedModel}
-                onMessageSend={addMessage}
-                isLoading={isLoading}
-                setIsLoading={setIsLoading}
-                setError={setError}
+                themeColor={themeColor}
               />
             )}
           </>

@@ -1,4 +1,6 @@
+import React, { useEffect } from 'react';
 import { AIMessage } from './AIMessage';
+import { AIModel } from '../../../types/ai';
 
 interface Message {
   id: string;
@@ -6,27 +8,33 @@ interface Message {
   content: string;
   type: 'text' | 'image' | 'audio';
   timestamp: string;
-  model?: string;
+  model?: AIModel;
 }
 
 interface MessageListProps {
   messages: Message[];
   isLoading: boolean;
   messagesEndRef: React.RefObject<HTMLDivElement>;
+  themeColor: string;
 }
 
-export function MessageList({ messages, isLoading, messagesEndRef }: MessageListProps) {
+export function MessageList({
+  messages,
+  isLoading,
+  messagesEndRef,
+  themeColor,
+}: MessageListProps) {
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isLoading]);
+
   return (
-    <div className="p-4 overflow-y-auto h-full">
+    <div className="p-4 overflow-y-auto h-full custom-scrollbar">
       {messages.map((message) => (
-        <div key={message.id} className={`mb-4 ${message.role === 'assistant' ? 'text-left' : 'text-right'}`}>
-          <div className={`inline-block px-4 py-2 rounded-lg ${message.role === 'assistant' ? 'bg-gray-200 text-gray-800' : 'bg-primary-600 text-white'}`}>
-            {message.content}
-          </div>
-        </div>
+        <AIMessage key={message.id} message={message} themeColor={themeColor} />
       ))}
       {isLoading && (
-        <div className="mb-4 text-center text-gray-500">
+        <div className="mb-4 text-center text-gray-500 dark:text-gray-400">
           The assistant is typing...
         </div>
       )}

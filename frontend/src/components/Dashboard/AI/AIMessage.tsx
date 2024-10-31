@@ -1,4 +1,7 @@
+import React from 'react';
 import { Bot, User } from 'lucide-react';
+import { useAuth } from '../../../contexts/AuthContext';
+import { AIModel } from '../../../types/ai';
 
 interface Message {
   id: string;
@@ -6,15 +9,17 @@ interface Message {
   content: string;
   type: 'text' | 'image' | 'audio';
   timestamp: string;
-  model?: string;
+  model?: AIModel;
 }
 
 interface AIMessageProps {
   message: Message;
+  themeColor: string;
 }
 
-export function AIMessage({ message }: AIMessageProps) {
+export function AIMessage({ message, themeColor }: AIMessageProps) {
   const isUser = message.role === 'user';
+  const { user } = useAuth();
 
   const renderContent = () => {
     switch (message.type) {
@@ -40,26 +45,52 @@ export function AIMessage({ message }: AIMessageProps) {
   };
 
   return (
-    <div className={`flex items-start gap-3 ${isUser ? 'flex-row-reverse' : ''}`}>
-      <div className={`p-2 rounded-lg ${isUser
-          ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
-          : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
-        }`}>
-        {isUser ? <User className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
-      </div>
-
-      <div className={`flex-1 ${isUser ? 'text-right' : ''}`}>
-        <div className={`inline-block max-w-[85%] p-4 rounded-xl ${isUser
-            ? 'bg-primary-600 text-white'
-            : 'bg-white dark:bg-dark-card text-gray-900 dark:text-white'
-          }`}>
+    <div className={`flex items-end ${isUser ? 'justify-end' : 'justify-start'} mb-4`}>
+      <div
+        className={`flex flex-col max-w-xs mx-2 ${
+          isUser ? 'items-end' : 'items-start'
+        }`}
+      >
+        <div
+          className={`flex items-center ${
+            isUser ? 'flex-row-reverse' : ''
+          } mb-1`}
+        >
+          {isUser ? (
+            <>
+              {user?.avatarUrl && (
+                <img
+                  src={user.avatarUrl}
+                  alt={user.name}
+                  className="w-6 h-6 rounded-full ml-2"
+                />
+              )}
+              <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                {user?.name}
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                {message.model?.name || 'Assistant'}
+              </span>
+              <Bot className="w-6 h-6 text-gray-500 dark:text-gray-400 ml-2" />
+            </>
+          )}
+        </div>
+        <div
+          className={`px-4 py-2 rounded-lg ${
+            isUser
+              ? `bg-[${themeColor}] text-white`
+              : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
+          } ${isUser ? 'rounded-br-none' : 'rounded-bl-none'}`}
+          style={{ backgroundColor: isUser ? themeColor : undefined }}
+        >
           {renderContent()}
         </div>
-        {message.model && (
-          <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            via {message.model}
-          </div>
-        )}
+        <span className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          {new Date(message.timestamp).toLocaleTimeString()}
+        </span>
       </div>
     </div>
   );
