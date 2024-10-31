@@ -82,12 +82,16 @@ export class OpenAIService {
     }
   }
 
-  async sendMessage(message: string, modelId: string): Promise<AIResponse> {
+  async sendMessage(
+    message: string,
+    modelId: string,
+    onUpdate?: (newContent: string) => void
+  ): Promise<AIResponse> {
     if (!this.client) {
       throw new Error('OpenAI not configured');
     }
 
-    const model = this.getModels().find(m => m.id === modelId);
+    const model = this.getModels().find((m) => m.id === modelId);
     if (!model) {
       throw new Error('Invalid model selected');
     }
@@ -95,44 +99,22 @@ export class OpenAIService {
     try {
       switch (model.endpoint) {
         case 'chat': {
-          const systemMessage = message.includes('Generate') || message.includes('Create') ? 
-            'You are a direct assistant. Never use quotes or formatting in your responses. Always respond with plain text only.' : 
-            undefined;
-
           const response = await this.client.chat.completions.create({
             model: modelId,
-            messages: [
-              ...(systemMessage ? [{ role: 'system', content: systemMessage }] : []),
-              { role: 'user', content: message }
-            ],
+            messages: [{ role: 'user', content: message }],
             temperature: 0.7,
-            max_tokens: 1000
+            max_tokens: 1000,
+            stream: true, // Enable streaming
           });
 
-          let content = response.choices[0]?.message?.content || '';
-          
-          // Clean the response if it's a title generation request
-          if (message.toLowerCase().includes('title')) {
-            content = this.cleanResponse(content);
+          // Read the stream and invoke onUpdate
+          for await (const part of response) {
+            const content = part.choices[0]?.delta?.content;
+            if (content) {
+              onUpdate?.(content);
+            }
           }
-
-          return {
-            content,
-            type: 'text'
-          };
-        }
-
-        case 'images': {
-          const response = await this.client.images.generate({
-            model: modelId,
-            prompt: message,
-            n: 1,
-            size: '1024x1024'
-          });
-          return {
-            content: response.data[0]?.url || '',
-            type: 'image'
-          };
+          break;
         }
 
         case 'embeddings': {
@@ -144,6 +126,22 @@ export class OpenAIService {
           return {
             content: response.data[0].embedding,
             type: 'embedding'
+          };
+        }
+
+        case 'images': {
+          const response = await this.client.images.generate({
+            model: modelId,
+            prompt: message,
+            n: 1,
+            size: "1024x1024",
+            quality: "standard",
+            style: "natural",
+          });
+
+          return {
+            content: response.data[0].url || '',
+            type: 'image'
           };
         }
 
