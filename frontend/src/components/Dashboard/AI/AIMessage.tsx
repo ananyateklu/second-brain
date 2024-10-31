@@ -21,6 +21,8 @@ export function AIMessage({ message, themeColor }: AIMessageProps) {
   const isUser = message.role === 'user';
   const { user } = useAuth();
 
+  const assistantThemeColor = message.model?.color || '#6B7280'; // Default to gray if no color
+
   const renderContent = () => {
     switch (message.type) {
       case 'image':
@@ -74,7 +76,10 @@ export function AIMessage({ message, themeColor }: AIMessageProps) {
               <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                 {message.model?.name || 'Assistant'}
               </span>
-              <Bot className="w-6 h-6 text-gray-500 dark:text-gray-400 ml-2" />
+              <Bot
+                className="w-6 h-6 ml-2"
+                style={{ color: assistantThemeColor }}
+              />
             </>
           )}
         </div>
