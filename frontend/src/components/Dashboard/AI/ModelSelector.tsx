@@ -84,16 +84,13 @@ export function ModelSelector({
               <div className="mx-4 bg-white dark:bg-dark-card rounded-xl border border-gray-200 dark:border-dark-border shadow-lg p-4">
                 <div className="flex items-start gap-4">
                   {/* Icon Column */}
-                  <div className={`flex-shrink-0 p-2 rounded-lg ${
-                    selectedModel.provider === 'anthropic'
-                      ? 'bg-orange-100 dark:bg-orange-900/30'
-                      : 'bg-primary-100 dark:bg-primary-900/30'
-                  }`}>
-                    <Bot className={`w-5 h-5 ${
-                      selectedModel.provider === 'anthropic'
-                        ? 'text-orange-600 dark:text-orange-400'
-                        : 'text-primary-600 dark:text-primary-400'
-                    }`} />
+                  <div
+                    className="flex-shrink-0 p-2 rounded-lg"
+                    style={{ backgroundColor: selectedModel.color }}
+                  >
+                    <Bot
+                      className="w-5 h-5 text-white"
+                    />
                   </div>
 
                   {/* Content Column */}
@@ -103,11 +100,13 @@ export function ModelSelector({
                       <h3 className="text-base font-semibold text-gray-900 dark:text-white truncate">
                         {selectedModel.name}
                       </h3>
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                        selectedModel.provider === 'anthropic'
-                          ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'
-                          : 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
-                      }`}>
+                      <span
+                        className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                        style={{
+                          backgroundColor: selectedModel.color,
+                          color: '#FFFFFF',
+                        }}
+                      >
                         {selectedModel.provider}
                       </span>
                     </div>

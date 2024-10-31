@@ -104,7 +104,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'image',
     description: 'Advanced image generation',
     isConfigured: true,
-    color: '#6EE7B7',
+    color: '#3B7443',
     endpoint: 'images',
     rateLimits: {
       rpm: 500,
@@ -119,7 +119,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'audio',
     description: 'Speech to text transcription',
     isConfigured: true,
-    color: '#6EE7B7',
+    color: '#3B7443',
     endpoint: 'audio',
     rateLimits: {
       rpm: 500,
@@ -132,7 +132,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'audio',
     description: 'Text to speech conversion',
     isConfigured: true,
-    color: '#6EE7B7',
+    color: '#3B7443',
     endpoint: 'audio',
     rateLimits: {
       rpm: 500,
@@ -146,7 +146,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'Most capable Claude model',
     isConfigured: true,
-    color: '#f97316',
+    color: '#F97316',
     endpoint: 'chat',
   },
   {
@@ -156,7 +156,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: "Claude 3.5 Sonnet - Anthropic's latest language model",
     isConfigured: true,
-    color: '#f97316',
+    color: '#F97316',
     endpoint: 'chat',
   },
   {
@@ -166,7 +166,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'Fastest and most compact Claude 3 model',
     isConfigured: true,
-    color: '#f97316',
+    color: '#F97316',
     endpoint: 'chat',
   },
   // Llama Models (Colored Blue)
