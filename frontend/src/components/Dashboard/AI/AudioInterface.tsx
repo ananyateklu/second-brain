@@ -45,7 +45,7 @@ export function AudioInterface({
 
       try {
         const response = await sendMessage(selectedFile, model.id);
-        
+
         // Add AI response with transcription
         onMessageSend({
           role: 'assistant',
@@ -67,7 +67,7 @@ export function AudioInterface({
 
       const userText = text.trim();
       setText('');
-      
+
       // Add user message
       onMessageSend({
         role: 'user',
@@ -80,7 +80,7 @@ export function AudioInterface({
 
       try {
         const response = await sendMessage(userText, model.id);
-        
+
         // Add AI response with audio
         onMessageSend({
           role: 'assistant',
@@ -121,7 +121,7 @@ export function AudioInterface({
             onChange={handleFileSelect}
             className="hidden"
           />
-          
+
           {selectedFile ? (
             <div className="flex-1 flex items-center gap-2 px-4 py-2 bg-white dark:bg-dark-bg border border-gray-200 dark:border-dark-border rounded-lg">
               <Mic className="w-4 h-4 text-gray-400" />
@@ -144,7 +144,7 @@ export function AudioInterface({
               <span>Select audio file to transcribe</span>
             </button>
           )}
-          
+
           <button
             type="submit"
             disabled={isLoading || !selectedFile}

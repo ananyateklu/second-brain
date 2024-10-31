@@ -9,7 +9,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'Most capable base GPT-4 model',
     isConfigured: true,
-    color: '#6EE7B7',
+    color: '#3B7443',
     endpoint: 'chat',
     rateLimits: {
       tpm: 10000,
@@ -25,7 +25,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'Enhanced GPT-4 with higher rate limits',
     isConfigured: true,
-    color: '#6EE7B7',
+    color: '#3B7443',
     endpoint: 'chat',
     rateLimits: {
       tpm: 30000,
@@ -40,7 +40,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'Optimized version of GPT-4',
     isConfigured: true,
-    color: '#6EE7B7',
+    color: '#3B7443',
     endpoint: 'chat',
     rateLimits: {
       tpm: 30000,
@@ -55,7 +55,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'Lightweight GPT-4 with higher token limits',
     isConfigured: true,
-    color: '#6EE7B7',
+    color: '#3B7443',
     endpoint: 'chat',
     rateLimits: {
       tpm: 200000,
@@ -71,7 +71,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'Fast and cost-effective chat model',
     isConfigured: true,
-    color: '#6EE7B7',
+    color: '#3B7443',
     endpoint: 'chat',
     rateLimits: {
       tpm: 200000,
@@ -88,7 +88,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'embedding',
     description: 'Efficient text embedding generation',
     isConfigured: true,
-    color: '#6EE7B7',
+    color: '#3B7443',
     endpoint: 'embeddings',
     rateLimits: {
       tpm: 1000000,
