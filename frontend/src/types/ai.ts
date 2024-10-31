@@ -25,7 +25,7 @@ export interface AIMessage {
 
 export interface AIResponse {
   content: string;
-  type: 'text' | 'image' | 'audio';
+  type: 'text' | 'image' | 'audio' | 'embedding';
   contentBlocks?: ContentBlock[];
   metadata?: {
     model?: string;

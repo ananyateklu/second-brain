@@ -12,7 +12,7 @@ interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
-  type: 'text' | 'image' | 'audio';
+  type: 'text' | 'image' | 'audio' | 'embedding';
   timestamp: string;
   model?: AIModel;
 }

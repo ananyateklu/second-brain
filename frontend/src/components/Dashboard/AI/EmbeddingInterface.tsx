@@ -45,7 +45,7 @@ export function EmbeddingInterface({
       onMessageSend({
         role: 'assistant',
         content: JSON.stringify(response.content, null, 2),
-        type: 'text'
+        type: 'embedding'
       });
     } catch (error: any) {
       setError(error.message || 'Failed to generate embeddings');

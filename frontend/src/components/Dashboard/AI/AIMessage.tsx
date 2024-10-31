@@ -8,7 +8,7 @@ interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
-  type: 'text' | 'image' | 'audio';
+  type: 'text' | 'image' | 'audio' | 'embedding';
   timestamp: string;
   model?: AIModel;
 }
@@ -43,9 +43,15 @@ export function AIMessage({ message, themeColor, isStreaming }: AIMessageProps) 
             Your browser does not support the audio element.
           </audio>
         );
+      case 'embedding':
+        return (
+          <pre className="whitespace-pre-wrap break-all animate-fade-in text-sm">
+            {message.content}
+          </pre>
+        );
       default:
         return isUser || !isStreaming ? (
-          <p className="whitespace-pre-wrap animate-fade-in">{message.content}</p>
+          <p className="whitespace-pre-wrap break-all animate-fade-in">{message.content}</p>
         ) : (
           <TypewriterEffect text={message.content} />
         );
