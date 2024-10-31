@@ -17,11 +17,11 @@ export interface Reminder {
 }
 
 export interface CreateReminderData {
-  title: string;
-  description?: string;
-  dueDateTime: string;
-  repeatInterval?: 'Daily' | 'Weekly' | 'Monthly' | 'Yearly' | 'Custom';
-  customRepeatPattern?: string;
+  Title: string;
+  Description?: string;
+  DueDateTime: string;
+  RepeatInterval?: number;
+  CustomRepeatPattern?: string;
 }
 
 export const reminderService = {

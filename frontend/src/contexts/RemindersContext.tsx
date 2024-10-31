@@ -41,13 +41,22 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
   const addReminder = useCallback(async (reminderData: Omit<Reminder, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
     try {
       const newReminder = await reminderService.createReminder({
-        title: reminderData.title,
-        description: reminderData.description,
-        dueDateTime: reminderData.dueDateTime,
-        repeatInterval: reminderData.repeatInterval,
-        customRepeatPattern: reminderData.customRepeatPattern,
+        Title: reminderData.title,
+        Description: reminderData.description,
+        DueDateTime: reminderData.dueDateTime,
+        RepeatInterval:
+          reminderData.repeatInterval !== undefined
+            ? repeatIntervalMapping[reminderData.repeatInterval]
+            : undefined,
+        CustomRepeatPattern: reminderData.customRepeatPattern,
       });
-      setReminders(prev => [newReminder, ...prev]);
+
+      const newReminderWithTags: Reminder = {
+        ...newReminder,
+        tags: reminderData.tags || [],
+      };
+
+      setReminders(prev => [newReminderWithTags, ...prev]);
 
       // Record activity
       await addActivity({
@@ -179,3 +188,11 @@ export function useReminders() {
   }
   return context;
 }
+
+const repeatIntervalMapping: { [key: string]: number } = {
+  Daily: 0,
+  Weekly: 1,
+  Monthly: 2,
+  Yearly: 3,
+  Custom: 4,
+};

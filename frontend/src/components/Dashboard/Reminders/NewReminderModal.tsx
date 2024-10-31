@@ -9,12 +9,15 @@ interface NewReminderModalProps {
   onClose: () => void;
 }
 
+// Define the RepeatInterval type for consistency
+type RepeatInterval = 'Daily' | 'Weekly' | 'Monthly' | 'Yearly' | 'Custom';
+
 export function NewReminderModal({ isOpen, onClose }: NewReminderModalProps) {
   const { addReminder } = useReminders();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDateTime, setDueDateTime] = useState('');
-  const [repeatInterval, setRepeatInterval] = useState<'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom' | undefined>();
+  const [repeatInterval, setRepeatInterval] = useState<RepeatInterval | undefined>();
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -170,15 +173,16 @@ export function NewReminderModal({ isOpen, onClose }: NewReminderModalProps) {
                 </label>
                 <select
                   value={repeatInterval || ''}
-                  onChange={(e) => setRepeatInterval(e.target.value as typeof repeatInterval)}
+                  onChange={(e) => setRepeatInterval(e.target.value as RepeatInterval | undefined)}
                   disabled={isLoading}
                   className="w-full px-4 py-2.5 bg-white dark:bg-dark-bg border border-gray-300 dark:border-dark-border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
                 >
                   <option value="">Don't repeat</option>
-                  <option value="daily">Daily</option>
-                  <option value="weekly">Weekly</option>
-                  <option value="monthly">Monthly</option>
-                  <option value="yearly">Yearly</option>
+                  <option value="Daily">Daily</option>
+                  <option value="Weekly">Weekly</option>
+                  <option value="Monthly">Monthly</option>
+                  <option value="Yearly">Yearly</option>
+                  <option value="Custom">Custom</option>
                 </select>
               </div>
             </div>

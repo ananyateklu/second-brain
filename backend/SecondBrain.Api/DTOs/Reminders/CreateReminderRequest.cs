@@ -1,13 +1,21 @@
+using System.Text.Json.Serialization;
 using SecondBrain.Data.Entities;
 
 namespace SecondBrain.Api.DTOs.Reminders
 {
     public class CreateReminderRequest
     {
-        public string Title { get; set; }
-        public string Description { get; set; }
+        [JsonPropertyName("title")]
+        public string Title { get; set; } = null!;
+
+        [JsonPropertyName("description")]
+        public string Description { get; set; } = null!;
+
         public DateTime DueDateTime { get; set; }
-        public RepeatInterval? RepeatInterval { get; set; } // e.g., in days
-        public string CustomRepeatPattern { get; set; }
+
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        public RepeatInterval? RepeatInterval { get; set; }
+
+        public string? CustomRepeatPattern { get; set; }
     }
 }

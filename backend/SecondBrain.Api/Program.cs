@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using SecondBrain.Api.Services;
 using SecondBrain.Api.Configuration;
 using Microsoft.Extensions.Options;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -51,7 +52,14 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddAuthorization();
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    // Accept property names in camelCase (e.g., 'title' instead of 'Title')
+    options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    
+    // Make property name matching case-insensitive
+    options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+});
 
 // Register AnthropicService
 builder.Services.AddHttpClient<IAnthropicService, AnthropicService>();
