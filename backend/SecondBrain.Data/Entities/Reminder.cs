@@ -30,7 +30,5 @@ namespace SecondBrain.Data.Entities
         public string UserId { get; set; } = string.Empty; // Initialized to empty string
         public User User { get; set; } = null!; // Suppress null warning since EF Core sets it
 
-        // Add this
-        public ICollection<ReminderTag> ReminderTags { get; set; }
     }
 }

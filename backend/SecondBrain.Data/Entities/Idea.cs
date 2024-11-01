@@ -6,7 +6,5 @@ namespace SecondBrain.Data.Entities
         public string Content { get; set; }
         // Other properties...
 
-        // Add this
-        public ICollection<IdeaTag> IdeaTags { get; set; }
     }
 }
