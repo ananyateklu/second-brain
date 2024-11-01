@@ -17,7 +17,6 @@ A modern, AI-powered knowledge management system built with React, TypeScript, a
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
-- [Project Structure](#project-structure)
 - [API Integration](#api-integration)
 - [Acknowledgments](#acknowledgments)
 - [Roadmap](#roadmap)
@@ -216,46 +215,6 @@ A modern, AI-powered knowledge management system built with React, TypeScript, a
    ```bash
    dotnet run
    ```
-
-## Project Structure
-
-### Frontend
-frontend/
-├── src/
-│ ├── components/ # React components
-│ │ ├── Dashboard/ # Dashboard-related components
-│ │ ├── shared/ # Reusable components
-│ │ └── auth/ # Authentication components
-│ ├── contexts/ # React contexts for state management
-│ ├── services/ # Service layer (API integration, AI services)
-│ │ └── ai/ # AI-related services and prompt configurations
-│ ├── types/ # TypeScript type definitions
-│ ├── utils/ # Utility functions
-│ ├── index.css # Global CSS
-│ └── main.tsx # Application entry point
-├── public/ # Static assets
-├── index.html # Main HTML file
-├── package.json # NPM scripts and dependencies
-└── tsconfig.json # TypeScript configuration
-
-### Backend
-├── SecondBrain.sln # Visual Studio solution file
-├── SecondBrain.Api/ # ASP.NET Core Web API project
-│ ├── Controllers/ # API Controllers
-│ ├── Models/ # Data models
-│ ├── Services/ # Business logic and services
-│ ├── Configuration/ # Configuration settings and options
-│ ├── Program.cs # Entry point
-│ ├── appsettings.json # Configuration file
-│ └── Properties/
-│ └── launchSettings.json # Launch configurations
-├── SecondBrain.Data/ # Data access layer (Entity Framework)
-│ ├── Entities/ # Database entities
-│ ├── Migrations/ # Database migrations
-│ └── DataContext.cs # EF Core data context
-├── SecondBrain.Services/ # Service layer
-│ ├── Interfaces/ # Service interfaces
-│ └── Implementations/ # Service implementations
 
 ## API Integration
 

@@ -39,7 +39,7 @@ export function Dashboard() {
         <Sidebar isOpen={isSidebarOpen} />
 
         {/* Main Content Area */}
-        <div className="flex-1 min-w-0 lg:ml-64"> {/* Add left margin for sidebar width */}
+        <div className="flex-1 min-w-0 lg:ml-56"> {/* Updated left margin */}
           {/* Fixed Header */}
           <Header
             isSidebarOpen={isSidebarOpen}

@@ -1,14 +1,19 @@
-import { Brain } from 'lucide-react';
+import { useTheme } from '../../contexts/ThemeContext';
+import lightLogo from '../../assets/second-brain-logo-light-mode.png';
+import darkLogo from '../../assets/second-brain-logo-dark-mode.png';   
 
 export function Logo() {
+  const { theme } = useTheme();
+
   return (
     <div className="text-center space-y-4">
       <div className="flex justify-center">
-        <div className="bg-primary/10 p-4 rounded-full">
-          <Brain className="w-12 h-12 text-primary" />
-        </div>
+        <img
+          src={theme === 'dark' ? darkLogo : lightLogo}
+          alt="Second Brain Logo"
+          className="w-30 h-20" 
+        />
       </div>
-      <h1 className="text-3xl font-bold text-gray-900">Second Brain</h1>
     </div>
   );
 }
