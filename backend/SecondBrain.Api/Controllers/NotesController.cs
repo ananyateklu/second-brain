@@ -72,7 +72,9 @@ namespace SecondBrain.Api.Controllers
             var note = await _context.Notes
                 .Where(n => n.Id == id && n.UserId == userId)
                 .Include(n => n.TaskItemNotes)
-                .ThenInclude(tn => tn.TaskItem)
+                    .ThenInclude(tn => tn.TaskItem)
+                .Include(n => n.NoteLinks)
+                    .ThenInclude(nl => nl.LinkedNote)
                 .FirstOrDefaultAsync();
 
             if (note == null)
@@ -80,9 +82,78 @@ namespace SecondBrain.Api.Controllers
                 return NotFound(new { error = "Note not found." });
             }
 
-            return Ok(note);
+            var linkedNoteIds = note.NoteLinks.Select(nl => nl.LinkedNoteId).ToList();
+
+            var response = new NoteResponse
+            {
+                Id = note.Id,
+                Title = note.Title,
+                Content = note.Content,
+                IsPinned = note.IsPinned,
+                IsFavorite = note.IsFavorite,
+                IsArchived = note.IsArchived,
+                ArchivedAt = note.ArchivedAt,
+                CreatedAt = note.CreatedAt,
+                UpdatedAt = note.UpdatedAt,
+                LinkedNoteIds = linkedNoteIds
+            };
+
+            return Ok(response);
         }
 
-        // Additional CRUD actions (Update, Delete)...
+        [HttpDelete("{id}/links/{targetNoteId}")]
+        public async Task<IActionResult> RemoveLink(string id, string targetNoteId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            var links = await _context.NoteLinks
+                .Where(nl => (nl.NoteId == id && nl.LinkedNoteId == targetNoteId) ||
+                             (nl.NoteId == targetNoteId && nl.LinkedNoteId == id))
+                .ToListAsync();
+
+            if (!links.Any())
+            {
+                return NotFound(new { error = "Link not found." });
+            }
+
+            _context.NoteLinks.RemoveRange(links);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Notes unlinked successfully." });
+        }
+
+        [HttpPost("{id}/links")]
+        public async Task<IActionResult> AddLink(string id, [FromBody] AddLinkRequest request)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            // Validate notes
+            var sourceNote = await _context.Notes.FindAsync(id);
+            var targetNote = await _context.Notes.FindAsync(request.TargetNoteId);
+
+            if (sourceNote == null || targetNote == null || sourceNote.UserId != userId || targetNote.UserId != userId)
+            {
+                return NotFound(new { error = "Note not found." });
+            }
+
+            // Check if link already exists
+            var existingLink = await _context.NoteLinks
+                .FirstOrDefaultAsync(nl => nl.NoteId == id && nl.LinkedNoteId == request.TargetNoteId);
+
+            if (existingLink != null)
+            {
+                return BadRequest(new { error = "Notes are already linked." });
+            }
+
+            // Create link in both directions
+            var noteLink = new NoteLink { NoteId = id, LinkedNoteId = request.TargetNoteId };
+            var reverseLink = new NoteLink { NoteId = request.TargetNoteId, LinkedNoteId = id };
+
+            _context.NoteLinks.AddRange(noteLink, reverseLink);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Notes linked successfully." });
+        }
+
     }
 }

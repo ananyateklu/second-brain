@@ -10,12 +10,13 @@ namespace SecondBrain.Data
             : base(options) { }
 
         public DbSet<User> Users { get; set; }
-        public DbSet<Note> Notes { get; set; }
+        public DbSet<Note> Notes { get; set; } = null!;
         public DbSet<TaskItem> Tasks { get; set; }
         public DbSet<Reminder> Reminders { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<TaskItemNote> TaskItemNotes { get; set; }
         public DbSet<Activity> Activities { get; set; }
+        public DbSet<NoteLink> NoteLinks { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -65,6 +66,22 @@ namespace SecondBrain.Data
                 .HasOne(tn => tn.Note)
                 .WithMany(n => n.TaskItemNotes)
                 .HasForeignKey(tn => tn.NoteId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure NoteLink as a join table for many-to-many self-reference
+            modelBuilder.Entity<NoteLink>()
+                .HasKey(nl => new { nl.NoteId, nl.LinkedNoteId });
+
+            modelBuilder.Entity<NoteLink>()
+                .HasOne(nl => nl.Note)
+                .WithMany(n => n.NoteLinks)
+                .HasForeignKey(nl => nl.NoteId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<NoteLink>()
+                .HasOne(nl => nl.LinkedNote)
+                .WithMany()
+                .HasForeignKey(nl => nl.LinkedNoteId)
                 .OnDelete(DeleteBehavior.Restrict);
         }
     }
