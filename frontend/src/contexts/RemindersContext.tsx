@@ -83,21 +83,28 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
 
   const deleteReminder = useCallback(async (id: string) => {
     try {
+      const reminderToDelete = reminders.find(r => r.id === id);
+      if (!reminderToDelete) throw new Error('Reminder not found');
+
+      // Capture the title before deleting
+      const { title } = reminderToDelete;
+
       await reminderService.deleteReminder(id);
       setReminders(prev => prev.filter(reminder => reminder.id !== id));
 
-      // Record activity
+      // Record activity with the reminder's title
       await addActivity({
         actionType: 'delete',
         itemType: 'reminder',
         itemId: id,
-        itemTitle: '',
-        description: `Deleted reminder`,
+        itemTitle: title,
+        description: `Deleted reminder: ${title}`,
+        metadata: { tags: reminderToDelete.tags },
       });
     } catch (error) {
       console.error('Failed to delete reminder:', error);
     }
-  }, [addActivity]);
+  }, [addActivity, reminders]);
 
   const snoozeReminder = useCallback(async (id: string, until: string) => {
     try {

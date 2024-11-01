@@ -6,8 +6,8 @@ using SecondBrain.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
 using System.Linq;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System;
 
 namespace SecondBrain.Api.Controllers
 {
@@ -90,6 +90,99 @@ namespace SecondBrain.Api.Controllers
             return Ok(reminderResponse);
         }
 
-        // Additional CRUD actions (Update, Delete)...
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateReminder(string id, [FromBody] UpdateReminderRequest request)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            var reminder = await _context.Reminders
+                .Where(r => r.Id == id && r.UserId == userId)
+                .FirstOrDefaultAsync();
+
+            if (reminder == null)
+            {
+                return NotFound(new { error = "Reminder not found." });
+            }
+
+            // Update properties if they are provided
+            if (request.Title != null)
+            {
+                reminder.Title = request.Title;
+            }
+
+            if (request.Description != null)
+            {
+                reminder.Description = request.Description;
+            }
+
+            if (request.DueDateTime != null)
+            {
+                reminder.DueDateTime = request.DueDateTime.Value;
+            }
+
+            if (request.RepeatInterval != null)
+            {
+                reminder.RepeatInterval = request.RepeatInterval;
+            }
+
+            if (request.CustomRepeatPattern != null)
+            {
+                reminder.CustomRepeatPattern = request.CustomRepeatPattern;
+            }
+
+            if (request.IsSnoozed != null)
+            {
+                reminder.IsSnoozed = request.IsSnoozed.Value;
+            }
+
+            if (request.SnoozeUntil != null)
+            {
+                reminder.SnoozeUntil = request.SnoozeUntil;
+            }
+
+            if (request.IsCompleted != null)
+            {
+                reminder.IsCompleted = request.IsCompleted.Value;
+            }
+
+            if (request.CompletedAt != null)
+            {
+                reminder.CompletedAt = request.CompletedAt;
+            }
+
+            if (request.Tags != null)
+            {
+                reminder.Tags = string.Join(",", request.Tags);
+            }
+
+            reminder.UpdatedAt = DateTime.UtcNow;
+
+            _context.Reminders.Update(reminder);
+            await _context.SaveChangesAsync();
+
+            var reminderResponse = ReminderResponse.FromEntity(reminder);
+
+            return Ok(reminderResponse);
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteReminder(string id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            var reminder = await _context.Reminders
+                .Where(r => r.Id == id && r.UserId == userId)
+                .FirstOrDefaultAsync();
+
+            if (reminder == null)
+            {
+                return NotFound(new { error = "Reminder not found." });
+            }
+
+            _context.Reminders.Remove(reminder);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Reminder deleted successfully." });
+        }
     }
 }
