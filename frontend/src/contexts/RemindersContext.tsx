@@ -1,9 +1,10 @@
-import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
-import { reminderService, Reminder as ApiReminder } from '../api/services/reminderService';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { reminderService } from '../api/services/reminderService';
 import { useActivities } from './ActivityContext';
+import { Reminder as ApiReminder } from '../api/types/reminder';
 
 export interface Reminder extends ApiReminder {
-  tags: string[]; // Assuming tags are part of the reminder
+  tags: string[];
 }
 
 interface RemindersContextType {
@@ -23,40 +24,27 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const { addActivity } = useActivities();
 
-  // Fetch reminders from the API on component mount
   useEffect(() => {
-    (async () => {
-      try {
-        const fetchedReminders = await reminderService.getReminders();
-        setReminders(fetchedReminders.map(reminder => ({
-          ...reminder,
-          tags: [], // Initialize tags if not provided
-        })));
-      } catch (error) {
-        console.error('Failed to fetch reminders:', error);
-      }
-    })();
+    fetchReminders();
+  }, []);
+
+  const fetchReminders = useCallback(async () => {
+    try {
+      const remindersData = await reminderService.getReminders();
+      const remindersWithTags = remindersData.map(reminder => ({
+        ...reminder,
+        tags: reminder.tags || [],
+      }));
+      setReminders(remindersWithTags);
+    } catch (error) {
+      console.error('Failed to fetch reminders:', error);
+    }
   }, []);
 
   const addReminder = useCallback(async (reminderData: Omit<Reminder, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
     try {
-      const newReminder = await reminderService.createReminder({
-        Title: reminderData.title,
-        Description: reminderData.description,
-        DueDateTime: reminderData.dueDateTime,
-        RepeatInterval:
-          reminderData.repeatInterval !== undefined
-            ? repeatIntervalMapping[reminderData.repeatInterval]
-            : undefined,
-        CustomRepeatPattern: reminderData.customRepeatPattern,
-      });
-
-      const newReminderWithTags: Reminder = {
-        ...newReminder,
-        tags: reminderData.tags || [],
-      };
-
-      setReminders(prev => [newReminderWithTags, ...prev]);
+      const newReminder = await reminderService.createReminder(reminderData);
+      setReminders(prev => [newReminder, ...prev]);
 
       // Record activity
       await addActivity({
@@ -65,7 +53,7 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
         itemId: newReminder.id,
         itemTitle: newReminder.title,
         description: `Created reminder: ${newReminder.title}`,
-        metadata: { tags: reminderData.tags },
+        metadata: { tags: newReminder.tags },
       });
     } catch (error) {
       console.error('Failed to add reminder:', error);
@@ -86,7 +74,7 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
         itemId: updatedReminder.id,
         itemTitle: updatedReminder.title,
         description: `Updated reminder: ${updatedReminder.title}`,
-        metadata: { tags: updates.tags },
+        metadata: { tags: updatedReminder.tags },
       });
     } catch (error) {
       console.error('Failed to update reminder:', error);
@@ -155,30 +143,11 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
     });
   }, [reminders]);
 
-  const value = useMemo(
-    () => ({
-      reminders,
-      addReminder,
-      updateReminder,
-      deleteReminder,
-      snoozeReminder,
-      toggleReminderCompletion,
-      getDueReminders,
-      getUpcomingReminders,
-    }),
-    [
-      reminders,
-      addReminder,
-      updateReminder,
-      deleteReminder,
-      snoozeReminder,
-      toggleReminderCompletion,
-      getDueReminders,
-      getUpcomingReminders,
-    ]
+  return (
+    <RemindersContext.Provider value={{ reminders, addReminder, updateReminder, deleteReminder, snoozeReminder, toggleReminderCompletion, getDueReminders, getUpcomingReminders }}>
+      {children}
+    </RemindersContext.Provider>
   );
-
-  return <RemindersContext.Provider value={value}>{children}</RemindersContext.Provider>;
 }
 
 export function useReminders() {

@@ -88,7 +88,7 @@ export function ReminderCard({ reminder }: ReminderCardProps) {
               )}
             </div>
 
-            {reminder.tags.length > 0 && (
+            {reminder.tags && reminder.tags.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {reminder.tags.map(tag => (
                   <span

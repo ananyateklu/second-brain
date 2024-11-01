@@ -15,5 +15,6 @@ namespace SecondBrain.Api.DTOs.Reminders
         public DateTime? SnoozeUntil { get; set; }
         public bool? IsCompleted { get; set; }
         public DateTime? CompletedAt { get; set; }
+        public List<string>? Tags { get; set; }
     }
 }

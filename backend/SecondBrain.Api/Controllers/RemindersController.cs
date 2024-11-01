@@ -30,7 +30,12 @@ namespace SecondBrain.Api.Controllers
             var reminders = await _context.Reminders
                 .Where(r => r.UserId == userId)
                 .ToListAsync();
-            return Ok(reminders);
+
+            var reminderResponses = reminders
+                .Select(ReminderResponse.FromEntity)
+                .ToList();
+
+            return Ok(reminderResponses);
         }
 
         [HttpPost]
@@ -38,7 +43,6 @@ namespace SecondBrain.Api.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-          
             if (string.IsNullOrEmpty(userId))
             {
                 return Unauthorized(new { error = "User ID not found in token." });
@@ -52,6 +56,7 @@ namespace SecondBrain.Api.Controllers
                 DueDateTime = request.DueDateTime,
                 RepeatInterval = request.RepeatInterval,
                 CustomRepeatPattern = request.CustomRepeatPattern,
+                Tags = request.Tags != null ? string.Join(",", request.Tags) : string.Empty,
                 IsSnoozed = false,
                 IsCompleted = false,
                 CreatedAt = DateTime.UtcNow,
@@ -62,7 +67,9 @@ namespace SecondBrain.Api.Controllers
             _context.Reminders.Add(reminder);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetReminderById), new { id = reminder.Id }, reminder);
+            var reminderResponse = ReminderResponse.FromEntity(reminder);
+
+            return CreatedAtAction(nameof(GetReminderById), new { id = reminder.Id }, reminderResponse);
         }
 
         [HttpGet("{id}")]
@@ -78,7 +85,9 @@ namespace SecondBrain.Api.Controllers
                 return NotFound(new { error = "Reminder not found." });
             }
 
-            return Ok(reminder);
+            var reminderResponse = ReminderResponse.FromEntity(reminder);
+
+            return Ok(reminderResponse);
         }
 
         // Additional CRUD actions (Update, Delete)...

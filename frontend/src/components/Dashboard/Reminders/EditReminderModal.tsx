@@ -18,7 +18,7 @@ export function EditReminderModal({ isOpen, onClose, reminder }: EditReminderMod
   );
   const [repeatInterval, setRepeatInterval] = useState(reminder.repeatInterval);
   const [tagInput, setTagInput] = useState('');
-  const [tags, setTags] = useState(reminder.tags);
+  const [tags, setTags] = useState(reminder.tags || []);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -28,7 +28,7 @@ export function EditReminderModal({ isOpen, onClose, reminder }: EditReminderMod
       setDescription(reminder.description || '');
       setDueDateTime(new Date(reminder.dueDateTime).toISOString().slice(0, 16));
       setRepeatInterval(reminder.repeatInterval);
-      setTags(reminder.tags);
+      setTags(reminder.tags || []);
       setError('');
     }
   }, [reminder]);

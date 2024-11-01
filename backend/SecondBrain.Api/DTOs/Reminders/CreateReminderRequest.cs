@@ -17,5 +17,6 @@ namespace SecondBrain.Api.DTOs.Reminders
         public RepeatInterval? RepeatInterval { get; set; }
 
         public string? CustomRepeatPattern { get; set; }
+        public List<string>? Tags { get; set; }
     }
 }

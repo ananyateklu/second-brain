@@ -1,4 +1,6 @@
 using System;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SecondBrain.Data.Entities
 {
@@ -13,6 +15,8 @@ namespace SecondBrain.Data.Entities
 
     public class Reminder
     {
+        [Key]
+        [MaxLength(50)]
         public string Id { get; set; } = string.Empty; // Initialized to empty string
         public string Title { get; set; } = string.Empty; // Initialized to empty string
         public string Description { get; set; } = string.Empty; // Initialized to empty string
@@ -30,5 +34,6 @@ namespace SecondBrain.Data.Entities
         public string UserId { get; set; } = string.Empty; // Initialized to empty string
         public User User { get; set; } = null!; // Suppress null warning since EF Core sets it
 
+        public string Tags { get; set; } = string.Empty; // Ensure this property exists and is mapped
     }
 }

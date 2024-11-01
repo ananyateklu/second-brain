@@ -9,6 +9,7 @@ export interface Reminder {
   snoozeUntil?: string;
   isCompleted: boolean;
   completedAt?: string;
+  tags: string[];
   createdAt: string;
   updatedAt: string;
   userId: string;

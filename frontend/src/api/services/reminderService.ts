@@ -1,27 +1,13 @@
 import api from '../../services/api/api';
+import { Reminder } from '../types/reminder';
 
-export interface Reminder {
-  id: string;
+export interface CreateReminderData {
   title: string;
   description?: string;
   dueDateTime: string;
   repeatInterval?: 'Daily' | 'Weekly' | 'Monthly' | 'Yearly' | 'Custom';
   customRepeatPattern?: string;
-  isSnoozed: boolean;
-  snoozeUntil?: string;
-  isCompleted: boolean;
-  completedAt?: string;
-  createdAt: string;
-  updatedAt: string;
-  userId: string;
-}
-
-export interface CreateReminderData {
-  Title: string;
-  Description?: string;
-  DueDateTime: string;
-  RepeatInterval?: number;
-  CustomRepeatPattern?: string;
+  tags?: string[];
 }
 
 export const reminderService = {
