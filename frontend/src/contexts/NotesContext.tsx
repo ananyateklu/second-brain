@@ -89,6 +89,10 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
 
   const updateNote = useCallback(async (id: string, updates: Partial<Note>) => {
     try {
+      if (updates.isArchived !== undefined) {
+        return;
+      }
+
       const updatedNote = await notesService.updateNote(id, updates);
       setNotes(prevNotes =>
         prevNotes.map(note => (note.id === id ? updatedNote : note))
@@ -110,10 +114,14 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     }
   }, [addActivity]);
 
-  const deleteNote = useCallback((id: string) => {
-    setNotes(prev => {
-      const noteToDelete = prev.find(note => note.id === id);
-      if (!noteToDelete) return prev;
+  const deleteNote = useCallback(async (id: string) => {
+    try {
+      const noteToDelete = notes.find(note => note.id === id);
+      if (!noteToDelete) return;
+
+      await notesService.deleteNote(id);
+
+      setNotes(prev => prev.filter(note => note.id !== id));
 
       addActivity({
         actionType: 'delete',
@@ -125,10 +133,11 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
           tags: noteToDelete.tags
         }
       });
-
-      return prev.filter(note => note.id !== id);
-    });
-  }, [addActivity]);
+    } catch (error) {
+      console.error('Failed to delete note:', error);
+      throw error;
+    }
+  }, [notes, addActivity]);
 
   const togglePinNote = useCallback(async (id: string) => {
     try {
@@ -188,8 +197,8 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
 
   const archiveNote = useCallback(async (id: string) => {
     try {
-      const note = notes.find(n => n.id === id);
-      if (!note) return;
+      const noteToArchive = notes.find(n => n.id === id);
+      if (!noteToArchive) return;
 
       await notesService.updateNote(id, {
         isArchived: true,
@@ -200,10 +209,10 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
 
       addActivity({
         actionType: 'archive',
-        itemType: note.tags.includes('idea') ? 'idea' : 'note',
+        itemType: noteToArchive.tags.includes('idea') ? 'idea' : 'note',
         itemId: id,
-        itemTitle: note.title,
-        description: `Archived ${note.tags.includes('idea') ? 'idea' : 'note'}: ${note.title}`,
+        itemTitle: noteToArchive.title,
+        description: `Archived ${noteToArchive.tags.includes('idea') ? 'idea' : 'note'}: ${noteToArchive.title}`,
         metadata: {
           isArchived: true,
           archivedAt: new Date().toISOString()
@@ -211,6 +220,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
       });
     } catch (error) {
       console.error('Failed to archive note:', error);
+      throw error;
     }
   }, [notes, addActivity]);
 

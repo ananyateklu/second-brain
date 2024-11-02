@@ -246,13 +246,12 @@ namespace SecondBrain.Api.Controllers
             }
 
             // Only update properties that are explicitly set in the request
-            if (!string.IsNullOrEmpty(request.Title))
+            if (request.Title != null)
                 note.Title = request.Title;
             
-            if (!string.IsNullOrEmpty(request.Content))
+            if (request.Content != null)
                 note.Content = request.Content;
 
-            // Update boolean properties only if they are explicitly set
             if (request.IsPinned.HasValue)
                 note.IsPinned = request.IsPinned.Value;
             
@@ -264,9 +263,11 @@ namespace SecondBrain.Api.Controllers
                 note.IsArchived = request.IsArchived.Value;
                 if (request.IsArchived.Value)
                     note.ArchivedAt = DateTime.UtcNow;
+                else
+                    note.ArchivedAt = null;
             }
 
-            // Only update Tags if they were explicitly provided
+            // Only update Tags if they were explicitly provided in the request
             if (request.Tags != null)
             {
                 note.Tags = request.Tags.Any() 
