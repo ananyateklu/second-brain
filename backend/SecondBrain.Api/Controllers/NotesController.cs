@@ -29,8 +29,20 @@ namespace SecondBrain.Api.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var notes = await _context.Notes
                 .Where(n => n.UserId == userId)
-                .Include(n => n.TaskItemNotes)
-                .ThenInclude(tn => tn.TaskItem)
+                .Select(n => new NoteResponse
+                {
+                    Id = n.Id,
+                    Title = n.Title,
+                    Content = n.Content,
+                    Tags = (n.Tags ?? string.Empty).Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).ToList(),
+                    IsPinned = n.IsPinned,
+                    IsFavorite = n.IsFavorite,
+                    IsArchived = n.IsArchived,
+                    ArchivedAt = n.ArchivedAt,
+                    CreatedAt = n.CreatedAt,
+                    UpdatedAt = n.UpdatedAt,
+                    LinkedNoteIds = n.NoteLinks.Select(nl => nl.LinkedNoteId).ToList()
+                })
                 .ToListAsync();
             return Ok(notes);
         }
@@ -51,6 +63,7 @@ namespace SecondBrain.Api.Controllers
                 Id = Guid.NewGuid().ToString(),
                 Title = request.Title,
                 Content = request.Content,
+                Tags = string.Join(",", request.Tags),
                 IsPinned = request.IsPinned,
                 IsFavorite = request.IsFavorite,
                 IsArchived = false,
@@ -95,7 +108,10 @@ namespace SecondBrain.Api.Controllers
                 ArchivedAt = note.ArchivedAt,
                 CreatedAt = note.CreatedAt,
                 UpdatedAt = note.UpdatedAt,
-                LinkedNoteIds = linkedNoteIds
+                LinkedNoteIds = linkedNoteIds,
+                Tags = !string.IsNullOrEmpty(note.Tags)
+                    ? note.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList()
+                    : new List<string>()
             };
 
             return Ok(response);
@@ -207,6 +223,7 @@ namespace SecondBrain.Api.Controllers
             note.IsPinned = request.IsPinned;
             note.IsFavorite = request.IsFavorite;
             note.UpdatedAt = DateTime.UtcNow;
+            note.Tags = string.Join(",", request.Tags);
 
             await _context.SaveChangesAsync();
 
