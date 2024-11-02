@@ -14,6 +14,7 @@ interface TasksContextType {
   deleteTask: (id: string) => void;
   addTaskLink: (taskId: string, itemId: string, type: 'note' | 'idea') => void;
   removeTaskLink: (taskId: string, itemId: string, type: 'note' | 'idea') => void;
+  toggleTaskStatus: (id: string) => Promise<void>;
 }
 
 const TasksContext = createContext<TasksContextType | null>(null);
@@ -171,8 +172,59 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
+  const toggleTaskStatus = useCallback(async (id: string) => {
+    try {
+      const task = tasks.find(t => t.id === id);
+      if (!task) return;
+
+      const newStatus = task.status === 'completed' ? 'incomplete' : 'completed';
+      
+      // Send update to backend with all existing task data
+      await taskService.updateTask(id, {
+        status: newStatus === 'completed' ? 1 : 0,
+        title: task.title,
+        description: task.description,
+        priority: mapPriorityToNumber(task.priority),
+        dueDate: task.dueDate,
+        tags: task.tags
+      });
+
+      // Update local state
+      setTasks(prev => prev.map(task => 
+        task.id === id 
+          ? { ...task, status: newStatus }
+          : task
+      ));
+
+      // Add activity
+      addActivity({
+        id,
+        actionType: 'edit',
+        itemType: 'task',
+        itemId: id,
+        itemTitle: task.title,
+        timestamp: new Date().toISOString(),
+        description: `Marked task "${task.title}" as ${newStatus}`,
+        metadata: {
+          status: newStatus,
+        },
+      });
+    } catch (err) {
+      console.error('Failed to toggle task status:', err);
+      throw err;
+    }
+  }, [tasks, addActivity]);
+
   return (
-    <TasksContext.Provider value={{ tasks, addTask, updateTask, deleteTask, addTaskLink, removeTaskLink }}>
+    <TasksContext.Provider value={{
+      tasks,
+      addTask,
+      updateTask,
+      deleteTask,
+      addTaskLink,
+      removeTaskLink,
+      toggleTaskStatus,
+    }}>
       {children}
     </TasksContext.Provider>
   );
