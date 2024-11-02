@@ -9,7 +9,7 @@ export interface Note {
   isFavorite: boolean;
   isArchived?: boolean;
   archivedAt?: string;
-  linkedNotes: string[];
+  linkedNoteIds: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -39,29 +39,56 @@ export const notesService = {
       ...response.data,
       tags: Array.isArray(response.data.tags) ? response.data.tags : 
             typeof response.data.tags === 'string' ? response.data.tags.split(',').filter(Boolean) : [],
-      linkedNotes: response.data.linkedNotes || []
+      linkedNoteIds: response.data.linkedNoteIds || []
     };
   },
 
   async getNotes(): Promise<Note[]> {
     const response = await api.get<Note[]>('/api/Notes');
-    return response.data;
+    return response.data.map(note => ({
+      ...note,
+      tags: Array.isArray(note.tags) ? note.tags : [],
+      linkedNoteIds: Array.isArray(note.linkedNoteIds) ? note.linkedNoteIds : [],
+      linkedNotes: Array.isArray(note.linkedNoteIds) ? note.linkedNoteIds : []
+    }));
   },
 
   async updateNote(id: string, data: Partial<CreateNoteData>): Promise<Note> {
     const response = await api.put<Note>(`/api/Notes/${id}`, data);
-    return response.data;
+    return {
+      ...response.data,
+      tags: Array.isArray(response.data.tags) ? response.data.tags : [],
+      linkedNoteIds: Array.isArray(response.data.linkedNoteIds) ? response.data.linkedNoteIds : [],
+      linkedNotes: Array.isArray(response.data.linkedNoteIds) ? response.data.linkedNoteIds : []
+    };
   },
 
   async deleteNote(id: string): Promise<void> {
     await api.delete(`/api/Notes/${id}`);
   },
 
-  async addLink(sourceId: string, targetId: string): Promise<void> {
-    await api.post(`/api/Notes/${sourceId}/links`, { targetNoteId: targetId });
+  async addLink(sourceId: string, targetId: string): Promise<Note> {
+    const response = await api.post<Note>(`/api/Notes/${sourceId}/links`, { targetNoteId: targetId });
+    return {
+      ...response.data,
+      tags: Array.isArray(response.data.tags) ? response.data.tags : [],
+      linkedNoteIds: Array.isArray(response.data.linkedNoteIds) ? response.data.linkedNoteIds : [],
+      linkedNotes: Array.isArray(response.data.linkedNoteIds) ? response.data.linkedNoteIds : []
+    };
   },
 
   async removeLink(sourceId: string, targetId: string): Promise<void> {
-    await api.delete(`/api/Notes/${sourceId}/links/${targetId}`);
+    if (!sourceId || !targetId) {
+      throw new Error('Both sourceId and targetId are required to remove a link');
+    }
+    
+    console.log('Making DELETE request to:', `/api/Notes/${sourceId}/links/${targetId}`);
+    
+    try {
+      await api.delete(`/api/Notes/${sourceId}/links/${targetId}`);
+    } catch (error) {
+      console.error('Error removing link:', error);
+      throw error;
+    }
   }
 };

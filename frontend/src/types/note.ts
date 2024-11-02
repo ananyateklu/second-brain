@@ -10,6 +10,7 @@ export interface Note {
   isArchived?: boolean;
   archivedAt?: string;
   linkedNotes: string[];
+  linkedNoteIds?: string[];
 }
 
 export interface NoteLink {

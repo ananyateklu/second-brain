@@ -186,9 +186,11 @@ namespace SecondBrain.Api.Controllers
 
             // Check if link already exists
             var existingLink = await _context.NoteLinks
-                .FirstOrDefaultAsync(nl => nl.NoteId == id && nl.LinkedNoteId == request.TargetNoteId);
+                .AnyAsync(nl => 
+                    (nl.NoteId == id && nl.LinkedNoteId == request.TargetNoteId) ||
+                    (nl.NoteId == request.TargetNoteId && nl.LinkedNoteId == id));
 
-            if (existingLink != null)
+            if (existingLink)
             {
                 return BadRequest(new { error = "Notes are already linked." });
             }
@@ -200,7 +202,30 @@ namespace SecondBrain.Api.Controllers
             _context.NoteLinks.AddRange(noteLink, reverseLink);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Notes linked successfully." });
+            // Return updated note with links
+            var updatedNote = await _context.Notes
+                .Include(n => n.NoteLinks)
+                .Where(n => n.Id == id)
+                .Select(n => new NoteResponse
+                {
+                    Id = n.Id,
+                    Title = n.Title,
+                    Content = n.Content,
+                    Tags = (n.Tags ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries).ToList(),
+                    IsPinned = n.IsPinned,
+                    IsFavorite = n.IsFavorite,
+                    IsArchived = n.IsArchived,
+                    ArchivedAt = n.ArchivedAt,
+                    CreatedAt = n.CreatedAt,
+                    UpdatedAt = n.UpdatedAt,
+                    LinkedNoteIds = n.NoteLinks
+                        .Where(nl => !nl.IsDeleted)
+                        .Select(nl => nl.LinkedNoteId)
+                        .ToList()
+                })
+                .FirstOrDefaultAsync();
+
+            return Ok(updatedNote);
         }
 
         [HttpDelete("{id}")]

@@ -10,6 +10,19 @@ interface LinkedNotesPanelProps {
 export function LinkedNotesPanel({ linkedNotes, onShowAddLink, currentNoteId }: LinkedNotesPanelProps) {
   const { removeLink } = useNotes();
 
+  const handleUnlink = async (linkedNoteId: string) => {
+    if (!currentNoteId) {
+      console.error('Missing currentNoteId');
+      return;
+    }
+    try {
+      console.log('Unlinking with IDs:', { currentNoteId, linkedNoteId });
+      await removeLink(currentNoteId, linkedNoteId);
+    } catch (error) {
+      console.error('Failed to unlink note:', error);
+    }
+  };
+
   return (
     <div className="border-l border-gray-200 dark:border-dark-border flex flex-col min-h-0">
       <div className="shrink-0 px-4 py-3 border-b border-gray-200 dark:border-dark-border bg-white dark:bg-dark-card">
@@ -51,7 +64,11 @@ export function LinkedNotesPanel({ linkedNotes, onShowAddLink, currentNoteId }: 
                   </p>
                 </div>
                 <button
-                  onClick={() => removeLink(currentNoteId, linkedNote.id)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleUnlink(linkedNote.id);
+                  }}
                   className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 rounded transition-opacity"
                 >
                   <X className="w-4 h-4" />

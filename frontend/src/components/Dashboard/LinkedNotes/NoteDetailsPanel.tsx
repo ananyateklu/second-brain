@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { X, Link2, Calendar, Tag, Plus } from 'lucide-react';
 import { useNotes } from '../../../contexts/NotesContext';
 import { formatDate } from '../../../utils/dateUtils';
 import { AddLinkModal } from './AddLinkModal';
+import { notesService } from '../../../services/api/notes.service';
+import { Note } from '../../../types/note';
 
 interface NoteDetailsPanelProps {
   selectedNoteId: string;
@@ -10,9 +12,44 @@ interface NoteDetailsPanelProps {
 }
 
 export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelProps) {
-  const { notes } = useNotes();
+  const { notes, removeLink } = useNotes();
   const [showAddLinkModal, setShowAddLinkModal] = useState(false);
+  
   const note = notes.find(n => n.id === selectedNoteId);
+  
+  console.log('Selected Note ID:', selectedNoteId);
+  console.log('Found Note:', note);
+  console.log('Linked Notes IDs:', note?.linkedNoteIds);
+  console.log('All Notes:', notes);
+
+  const linkedNotes = useMemo(() => {
+    if (!note?.linkedNoteIds) return [];
+    return note.linkedNoteIds
+      .map(id => notes.find(n => n.id === id))
+      .filter((n): n is Note => n !== undefined);
+  }, [note, notes]);
+
+  console.log('Processed Linked Notes:', linkedNotes);
+
+  const handleUnlink = async (linkedNoteId: string) => {
+    try {
+      console.log('Unlinking notes with params:', {
+        selectedNoteId,
+        linkedNoteId,
+        currentNote: note
+      });
+
+      // First, call the API service directly
+      await notesService.removeLink(selectedNoteId, linkedNoteId);
+      console.log('API call successful');
+
+      // Then, update the local state through context
+      await removeLink(selectedNoteId, linkedNoteId);
+      console.log('Local state updated');
+    } catch (error) {
+      console.error('Failed to unlink note:', error);
+    }
+  };
 
   if (!note) return null;
 
@@ -44,7 +81,7 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Link2 className="w-4 h-4" />
-                  <span>{note.linkedNotes?.length || 0} links</span>
+                  <span>{note.linkedNoteIds?.length || 0} links</span>
                 </div>
               </div>
             </div>
@@ -75,7 +112,7 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
             <div>
               <div className="flex items-center justify-between mb-2">
                 <h5 className="text-sm font-medium text-gray-900 dark:text-white">
-                  Connected Notes
+                  Connected Notes ({linkedNotes.length})
                 </h5>
                 <button
                   onClick={() => setShowAddLinkModal(true)}
@@ -86,23 +123,30 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
                 </button>
               </div>
               <div className="space-y-2">
-                {note.linkedNotes && note.linkedNotes.length > 0 ? (
-                  note.linkedNotes.map(linkedId => {
-                    const linkedNote = notes.find(n => n.id === linkedId);
-                    return linkedNote ? (
-                      <div
-                        key={linkedId}
-                        className="p-3 rounded-lg bg-gray-50 dark:bg-dark-hover hover:bg-gray-100 dark:hover:bg-gray-800/50 cursor-pointer transition-colors"
+                {linkedNotes.length > 0 ? (
+                  linkedNotes.map(linkedNote => (
+                    <div
+                      key={linkedNote.id}
+                      className="group p-3 rounded-lg bg-gray-50 dark:bg-dark-hover hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors relative"
+                    >
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleUnlink(linkedNote.id);
+                        }}
+                        className="absolute right-2 top-2 p-1 rounded-lg bg-white/50 dark:bg-black/50 opacity-0 group-hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 transition-all"
+                        title="Remove link"
                       >
-                        <h6 className="font-medium text-gray-900 dark:text-white mb-1">
-                          {linkedNote.title}
-                        </h6>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
-                          {linkedNote.content}
-                        </p>
-                      </div>
-                    ) : null;
-                  })
+                        <X className="w-4 h-4" />
+                      </button>
+                      <h6 className="font-medium text-gray-900 dark:text-white mb-1">
+                        {linkedNote.title}
+                      </h6>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
+                        {linkedNote.content}
+                      </p>
+                    </div>
+                  ))
                 ) : (
                   <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
                     No connected notes yet
@@ -118,6 +162,7 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
         isOpen={showAddLinkModal}
         onClose={() => setShowAddLinkModal(false)}
         sourceNoteId={selectedNoteId}
+        onLinkAdded={() => setShowAddLinkModal(false)}
       />
     </>
   );

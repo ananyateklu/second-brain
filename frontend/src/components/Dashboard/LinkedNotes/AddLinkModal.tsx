@@ -17,14 +17,14 @@ export function AddLinkModal({ isOpen, onClose, sourceNoteId, onLinkAdded }: Add
 
   if (!isOpen) return null;
 
-  const sourceItem = notes.find(note => note.id === sourceNoteId);
-  if (!sourceItem) return null;
+  const sourceNote = notes.find(note => note.id === sourceNoteId);
+  if (!sourceNote) return null;
 
-  const isSourceIdea = sourceItem.tags.includes('idea');
+  const isSourceIdea = sourceNote.tags.includes('idea');
 
   const filteredItems = notes.filter(note => 
-    note.id !== sourceNoteId && // Don't show the source item
-    !sourceItem.linkedNotes?.includes(note.id) && // Don't show already linked items
+    note.id !== sourceNoteId && // Don't show the source note
+    !sourceNote?.linkedNoteIds?.includes(note.id) && // Don't show already linked notes
     (selectedType === 'all' || 
      (selectedType === 'ideas' && note.tags.includes('idea')) ||
      (selectedType === 'notes' && !note.tags.includes('idea'))) &&
@@ -33,13 +33,11 @@ export function AddLinkModal({ isOpen, onClose, sourceNoteId, onLinkAdded }: Add
   );
 
   const handleAddLink = async (targetNoteId: string) => {
-    setIsLoading(true);
     try {
+      setIsLoading(true);
       await addLink(sourceNoteId, targetNoteId);
-      setTimeout(() => {
-        onLinkAdded?.();
-        onClose();
-      }, 0);
+      onLinkAdded?.();
+      onClose();
     } catch (error) {
       console.error('Failed to add link:', error);
     } finally {
@@ -99,7 +97,11 @@ export function AddLinkModal({ isOpen, onClose, sourceNoteId, onLinkAdded }: Add
                 return (
                   <button
                     key={item.id}
-                    onClick={() => handleAddLink(item.id)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleAddLink(item.id);
+                    }}
                     disabled={isLoading}
                     className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-dark-hover rounded-lg transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
                   >

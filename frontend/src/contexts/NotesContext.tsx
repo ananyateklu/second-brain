@@ -13,12 +13,13 @@ export interface Note {
   isFavorite: boolean;
   isArchived?: boolean;
   archivedAt?: string;
-  linkedNotes: string[];
+  linkedNoteIds: string[];
+  linkedNotes?: string[];
 }
 
 interface NotesContextType {
   notes: Note[];
-  addNote: (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'linkedNotes'>) => void;
+  addNote: (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'linkedNoteIds' | 'linkedNotes'>) => void;
   updateNote: (id: string, updates: Partial<Note>) => void;
   deleteNote: (id: string) => void;
   togglePinNote: (id: string) => void;
@@ -39,6 +40,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     const loadNotes = async () => {
       try {
         const fetchedNotes = await notesService.getNotes();
+        console.log('Fetched notes:', fetchedNotes);
         setNotes(fetchedNotes);
       } catch (error) {
         console.error('Failed to load notes:', error);
@@ -48,7 +50,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     loadNotes();
   }, []);
 
-  const addNote = useCallback(async (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'linkedNotes'>) => {
+  const addNote = useCallback(async (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'linkedNoteIds' | 'linkedNotes'>) => {
     try {
       const noteWithSafeTags = {
         ...note,
@@ -62,7 +64,8 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
       const safeNewNote: Note = {
         ...newNote,
         tags: Array.isArray(newNote.tags) ? newNote.tags : [],
-        linkedNotes: Array.isArray(newNote.linkedNotes) ? newNote.linkedNotes : [],
+        linkedNoteIds: Array.isArray(newNote.linkedNoteIds) ? newNote.linkedNoteIds : [],
+        linkedNotes: Array.isArray(newNote.linkedNoteIds) ? newNote.linkedNoteIds : [],
       };
       
       setNotes(prev => {
@@ -253,46 +256,95 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     }
   }, [notes, addActivity]);
 
-  const addLink = useCallback((sourceId: string, targetId: string) => {
-    setNotes(prev => prev.map(note => {
-      if (note.id === sourceId) {
-        const currentLinks = note.linkedNotes || [];
-        if (!currentLinks.includes(targetId)) {
+  const addLink = useCallback(async (sourceId: string, targetId: string) => {
+    try {
+      const updatedNote = await notesService.addLink(sourceId, targetId);
+      
+      setNotes(prev => prev.map(note => {
+        if (note.id === sourceId) {
           return {
             ...note,
-            linkedNotes: [...currentLinks, targetId],
+            linkedNoteIds: updatedNote.linkedNoteIds,
+            linkedNotes: updatedNote.linkedNoteIds,
+            updatedAt: updatedNote.updatedAt
+          };
+        }
+        if (note.id === targetId) {
+          return {
+            ...note,
+            linkedNoteIds: [...(note.linkedNoteIds || []), sourceId],
+            linkedNotes: [...(note.linkedNoteIds || []), sourceId],
             updatedAt: new Date().toISOString()
           };
         }
-      }
-      if (note.id === targetId) {
-        const currentLinks = note.linkedNotes || [];
-        if (!currentLinks.includes(sourceId)) {
-          return {
-            ...note,
-            linkedNotes: [...currentLinks, sourceId],
-            updatedAt: new Date().toISOString()
-          };
-        }
-      }
-      return note;
-    }));
-  }, []);
+        return note;
+      }));
 
-  const removeLink = useCallback((sourceId: string, targetId: string) => {
-    setNotes(prev => prev.map(note => {
-      if (note.id === sourceId || note.id === targetId) {
-        return {
-          ...note,
-          linkedNotes: (note.linkedNotes || []).filter(id => 
-            id !== (note.id === sourceId ? targetId : sourceId)
-          ),
-          updatedAt: new Date().toISOString()
-        };
-      }
-      return note;
-    }));
-  }, []);
+      addActivity({
+        actionType: 'link',
+        itemType: 'note',
+        itemId: sourceId,
+        itemTitle: notes.find(n => n.id === sourceId)?.title || '',
+        description: `Linked notes: ${notes.find(n => n.id === sourceId)?.title} ↔ ${notes.find(n => n.id === targetId)?.title}`,
+        metadata: {
+          sourceNoteId: sourceId,
+          targetNoteId: targetId,
+          sourceNoteTitle: notes.find(n => n.id === sourceId)?.title,
+          targetNoteTitle: notes.find(n => n.id === targetId)?.title
+        }
+      });
+    } catch (error) {
+      console.error('Failed to add link:', error);
+      throw error;
+    }
+  }, [notes, addActivity]);
+
+  const removeLink = useCallback(async (sourceId: string, targetId: string) => {
+    if (!sourceId || !targetId) {
+      console.error('Missing required IDs:', { sourceId, targetId });
+      return;
+    }
+
+    try {
+      await notesService.removeLink(sourceId, targetId);
+      
+      setNotes(prev => prev.map(note => {
+        if (note.id === sourceId || note.id === targetId) {
+          return {
+            ...note,
+            linkedNoteIds: (note.linkedNoteIds || []).filter(id => 
+              id !== (note.id === sourceId ? targetId : sourceId)
+            ),
+            linkedNotes: (note.linkedNoteIds || []).filter(id => 
+              id !== (note.id === sourceId ? targetId : sourceId)
+            ),
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return note;
+      }));
+
+      const sourceNote = notes.find(n => n.id === sourceId);
+      const targetNote = notes.find(n => n.id === targetId);
+
+      addActivity({
+        actionType: 'unlink',
+        itemType: 'note',
+        itemId: sourceId,
+        itemTitle: sourceNote?.title || '',
+        description: `Unlinked notes: ${sourceNote?.title} ↮ ${targetNote?.title}`,
+        metadata: {
+          sourceNoteId: sourceId,
+          targetNoteId: targetId,
+          sourceNoteTitle: sourceNote?.title,
+          targetNoteTitle: targetNote?.title
+        }
+      });
+    } catch (error) {
+      console.error('Failed to remove link:', error);
+      throw error;
+    }
+  }, [notes, addActivity]);
 
   return (
     <NotesContext.Provider value={{

@@ -43,11 +43,11 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
   useEffect(() => {
     if (currentNote) {
       const linkedNotesList = notes.filter(n =>
-        currentNote.linkedNotes?.includes(n.id)
+        currentNote.linkedNoteIds?.includes(n.id)
       );
       setLinkedNotes(linkedNotesList);
     }
-  }, [currentNote?.linkedNotes, notes]);
+  }, [currentNote, currentNote?.linkedNoteIds, notes]);
 
   if (!isOpen || !currentNote) return null;
 
@@ -134,6 +134,7 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
             <LinkedNotesPanel
               linkedNotes={linkedNotes}
               onShowAddLink={() => setShowAddLinkModal(true)}
+              currentNoteId={currentNote?.id || ''}
             />
           </div>
 
