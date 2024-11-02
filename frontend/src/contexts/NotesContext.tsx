@@ -50,17 +50,28 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
 
   const addNote = useCallback(async (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'linkedNotes'>) => {
     try {
-      const newNote = await notesService.createNote(note);
-      setNotes(prev => [newNote, ...prev]);
+      const noteWithSafeTags = {
+        ...note,
+        tags: Array.isArray(note.tags) ? note.tags : [],
+      };
+      
+      const newNote = await notesService.createNote(noteWithSafeTags);
+      
+      const safeNewNote = {
+        ...newNote,
+        tags: Array.isArray(newNote.tags) ? newNote.tags : [],
+      };
+      
+      setNotes(prev => [safeNewNote, ...prev]);
 
       addActivity({
         actionType: 'create',
-        itemType: note.tags.includes('idea') ? 'idea' : 'note',
-        itemId: newNote.id,
-        itemTitle: newNote.title,
-        description: `Created ${note.tags.includes('idea') ? 'idea' : 'note'}: ${newNote.title}`,
+        itemType: safeNewNote.tags.includes('idea') ? 'idea' : 'note',
+        itemId: safeNewNote.id,
+        itemTitle: safeNewNote.title,
+        description: `Created ${safeNewNote.tags.includes('idea') ? 'idea' : 'note'}: ${safeNewNote.title}`,
         metadata: {
-          tags: newNote.tags
+          tags: safeNewNote.tags
         }
       });
     } catch (error) {

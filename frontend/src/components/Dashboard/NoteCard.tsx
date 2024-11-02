@@ -45,6 +45,8 @@ export function NoteCard({ note, viewMode = 'grid' }: NoteCardProps) {
     togglePinNote(note.id);
   };
 
+  const tags = Array.isArray(note.tags) ? note.tags : [];
+
   return (
     <div className={`
       group relative overflow-hidden bg-white dark:bg-dark-card rounded-xl hover-card
@@ -108,9 +110,9 @@ export function NoteCard({ note, viewMode = 'grid' }: NoteCardProps) {
           </div>
         </div>
 
-        {note.tags && note.tags.length > 0 && (
+        {tags.length > 0 && (
           <div className="mt-4 flex flex-wrap gap-2">
-            {note.tags.map(tag => (
+            {tags.map(tag => (
               <span
                 key={tag}
                 className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 rounded-full text-sm"

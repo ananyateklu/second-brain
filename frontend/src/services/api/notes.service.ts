@@ -26,8 +26,17 @@ export interface CreateNoteData {
 
 export const notesService = {
   async createNote(data: CreateNoteData): Promise<Note> {
-    const response = await api.post<Note>('/api/Notes', data);
-    return response.data;
+    const safeData = {
+      ...data,
+      tags: data.tags || [],
+    };
+    
+    const response = await api.post<Note>('/api/Notes', safeData);
+    
+    return {
+      ...response.data,
+      tags: Array.isArray(response.data.tags) ? response.data.tags : [],
+    };
   },
 
   async getNotes(): Promise<Note[]> {
