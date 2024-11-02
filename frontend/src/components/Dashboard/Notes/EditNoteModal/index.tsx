@@ -111,7 +111,15 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
               isLoading={isLoading}
               onTitleChange={setTitle}
               onContentChange={setContent}
-              onTagInputChange={setTagInput}
+              onTagInputChange={(value) => {
+                // Ensure we're always setting a string
+                if (Array.isArray(value)) {
+                  setTags([...tags, ...value]);
+                  setTagInput('');
+                } else {
+                  setTagInput(value);
+                }
+              }}
               onAddTag={() => {
                 const trimmedTag = tagInput.trim();
                 if (trimmedTag && !tags.includes(trimmedTag)) {

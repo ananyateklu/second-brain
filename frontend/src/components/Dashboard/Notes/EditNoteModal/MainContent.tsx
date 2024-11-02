@@ -104,7 +104,13 @@ export function MainContent({
                 type="tags"
                 itemType="note"
                 input={{ title, content }}
-                onSuggestion={(suggestion) => onTagInputChange(suggestion as string)}
+                onSuggestion={(suggestion) => {
+                  if (Array.isArray(suggestion)) {
+                    // Add suggested tags directly to the tags array
+                    const newTags = suggestion.filter(tag => !tags.includes(tag));
+                    onTagInputChange(newTags);
+                  }
+                }}
                 disabled={isLoading}
                 context={{
                   currentTags: tags

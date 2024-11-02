@@ -33,13 +33,17 @@ export function SuggestionButton({
   const [isLoading, setIsLoading] = useState(false);
 
   const handleGenerateSuggestion = async () => {
-    const combinedContent = [
-      input.description,
-      input.content,
-      input.title
-    ].filter(Boolean).join('\n\n');
+    if (type === 'tags') {
+      if (!input.title && !input.content) return;
+    } else {
+      const combinedContent = [
+        input.description,
+        input.content,
+        input.title
+      ].filter(Boolean).join('\n\n');
 
-    if (!combinedContent.trim() || isLoading) return;
+      if (!combinedContent.trim() || isLoading) return;
+    }
 
     setIsLoading(true);
     try {
@@ -47,7 +51,7 @@ export function SuggestionButton({
       switch (type) {
         case 'title':
           suggestion = await contentSuggestionService.generateTitle(
-            combinedContent,
+            [input.description, input.content, input.title].filter(Boolean).join('\n\n'),
             itemType,
             context
           );
@@ -61,7 +65,10 @@ export function SuggestionButton({
           break;
         case 'tags':
           suggestion = await contentSuggestionService.generateTags(
-            { title: input.title, content: combinedContent },
+            { 
+              title: input.title || '', 
+              content: [input.description, input.content].filter(Boolean).join('\n\n')
+            },
             itemType,
             { currentTags: context?.currentTags }
           );
@@ -75,7 +82,9 @@ export function SuggestionButton({
     }
   };
 
-  const hasContent = Boolean(input.content?.trim() || input.description?.trim() || input.title?.trim());
+  const hasContent = type === 'tags' 
+    ? Boolean(input.title || input.content || input.description)
+    : Boolean(input.content?.trim() || input.description?.trim() || input.title?.trim());
 
   const getButtonText = () => {
     switch (type) {
