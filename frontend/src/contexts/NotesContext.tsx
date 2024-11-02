@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { useActivities } from './ActivityContext';
+import { notesService } from '../services/api/notes.service';
 
 export interface Note {
   id: string;
@@ -34,26 +35,38 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
   const [notes, setNotes] = useState<Note[]>([]);
   const { addActivity } = useActivities();
 
-  const addNote = useCallback((note: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'linkedNotes'>) => {
-    const newNote: Note = {
-      ...note,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      linkedNotes: []
-    };
-    setNotes(prev => [newNote, ...prev]);
-
-    addActivity({
-      actionType: 'create',
-      itemType: note.tags.includes('idea') ? 'idea' : 'note',
-      itemId: newNote.id,
-      itemTitle: newNote.title,
-      description: `Created ${note.tags.includes('idea') ? 'idea' : 'note'}: ${newNote.title}`,
-      metadata: {
-        tags: newNote.tags
+  useEffect(() => {
+    const loadNotes = async () => {
+      try {
+        const fetchedNotes = await notesService.getNotes();
+        setNotes(fetchedNotes);
+      } catch (error) {
+        console.error('Failed to load notes:', error);
       }
-    });
+    };
+    
+    loadNotes();
+  }, []);
+
+  const addNote = useCallback(async (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'linkedNotes'>) => {
+    try {
+      const newNote = await notesService.createNote(note);
+      setNotes(prev => [newNote, ...prev]);
+
+      addActivity({
+        actionType: 'create',
+        itemType: note.tags.includes('idea') ? 'idea' : 'note',
+        itemId: newNote.id,
+        itemTitle: newNote.title,
+        description: `Created ${note.tags.includes('idea') ? 'idea' : 'note'}: ${newNote.title}`,
+        metadata: {
+          tags: newNote.tags
+        }
+      });
+    } catch (error) {
+      console.error('Failed to create note:', error);
+      throw error;
+    }
   }, [addActivity]);
 
   const updateNote = useCallback((id: string, updates: Partial<Note>) => {

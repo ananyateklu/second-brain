@@ -5,7 +5,11 @@ export interface Note {
   title: string;
   content: string;
   tags: string[];
-  reminderDate?: string;
+  isPinned: boolean;
+  isFavorite: boolean;
+  isArchived?: boolean;
+  archivedAt?: string;
+  linkedNotes: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -14,17 +18,13 @@ export interface CreateNoteData {
   title: string;
   content: string;
   tags?: string[];
-  reminderDate?: string;
+  isPinned?: boolean;
+  isFavorite?: boolean;
 }
 
 export const notesService = {
   async createNote(data: CreateNoteData): Promise<Note> {
     const response = await api.post<Note>('/api/Notes', data);
-    return response.data;
-  },
-
-  async getNoteById(id: string): Promise<Note> {
-    const response = await api.get<Note>(`/api/Notes/${id}`);
     return response.data;
   },
 
@@ -40,5 +40,13 @@ export const notesService = {
 
   async deleteNote(id: string): Promise<void> {
     await api.delete(`/api/Notes/${id}`);
+  },
+
+  async addLink(sourceId: string, targetId: string): Promise<void> {
+    await api.post(`/api/Notes/${sourceId}/links`, { targetNoteId: targetId });
+  },
+
+  async removeLink(sourceId: string, targetId: string): Promise<void> {
+    await api.delete(`/api/Notes/${sourceId}/links/${targetId}`);
   }
 };
