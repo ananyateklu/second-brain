@@ -20,6 +20,8 @@ export interface CreateNoteData {
   tags?: string[];
   isPinned?: boolean;
   isFavorite?: boolean;
+  isArchived?: boolean;
+  archivedAt?: string | null;
 }
 
 export const notesService = {

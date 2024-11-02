@@ -222,12 +222,30 @@ namespace SecondBrain.Api.Controllers
             note.Content = request.Content;
             note.IsPinned = request.IsPinned;
             note.IsFavorite = request.IsFavorite;
+            note.IsArchived = request.IsArchived;
+            note.ArchivedAt = request.ArchivedAt;
             note.UpdatedAt = DateTime.UtcNow;
             note.Tags = string.Join(",", request.Tags);
 
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Note updated successfully." });
+            // Map the updated note to a DTO or response object
+            var updatedNote = new NoteResponse
+            {
+                Id = note.Id,
+                Title = note.Title,
+                Content = note.Content,
+                IsPinned = note.IsPinned,
+                IsFavorite = note.IsFavorite,
+                IsArchived = note.IsArchived,
+                ArchivedAt = note.ArchivedAt,
+                CreatedAt = note.CreatedAt,
+                UpdatedAt = note.UpdatedAt,
+                LinkedNoteIds = note.NoteLinks.Select(nl => nl.LinkedNoteId).ToList(),
+                Tags = note.Tags.Split(',').ToList()
+            };
+
+            return Ok(updatedNote);
         }
 
     }

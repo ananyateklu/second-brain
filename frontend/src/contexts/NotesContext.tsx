@@ -69,38 +69,27 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     }
   }, [addActivity]);
 
-  const updateNote = useCallback((id: string, updates: Partial<Note>) => {
-    setNotes(prev => {
-      const noteIndex = prev.findIndex(note => note.id === id);
-      if (noteIndex === -1) return prev;
-
-      const oldNote = prev[noteIndex];
-      const updatedNote = {
-        ...oldNote,
-        ...updates,
-        updatedAt: new Date().toISOString()
-      };
-
-      const newNotes = [...prev];
-      newNotes[noteIndex] = updatedNote;
+  const updateNote = useCallback(async (id: string, updates: Partial<Note>) => {
+    try {
+      const updatedNote = await notesService.updateNote(id, updates);
+      setNotes(prevNotes =>
+        prevNotes.map(note => (note.id === id ? updatedNote : note))
+      );
 
       addActivity({
         actionType: 'edit',
-        itemType: oldNote.tags.includes('idea') ? 'idea' : 'note',
+        itemType: updatedNote.tags.includes('idea') ? 'idea' : 'note',
         itemId: id,
-        itemTitle: updates.title || oldNote.title,
-        description: `Updated ${oldNote.tags.includes('idea') ? 'idea' : 'note'}: ${updates.title || oldNote.title}`,
+        itemTitle: updatedNote.title,
+        description: `Updated ${updatedNote.tags.includes('idea') ? 'idea' : 'note'}: ${updatedNote.title}`,
         metadata: {
-          previousTitle: oldNote.title,
-          newTitle: updates.title,
-          previousContent: oldNote.content,
-          newContent: updates.content,
-          tags: updates.tags || oldNote.tags
+          ...updates
         }
       });
-
-      return newNotes;
-    });
+    } catch (error) {
+      console.error('Failed to update note:', error);
+      throw error;
+    }
   }, [addActivity]);
 
   const deleteNote = useCallback((id: string) => {
@@ -123,97 +112,119 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     });
   }, [addActivity]);
 
-  const togglePinNote = useCallback((id: string) => {
-    setNotes(prev => {
-      const noteIndex = prev.findIndex(note => note.id === id);
-      if (noteIndex === -1) return prev;
+  const togglePinNote = useCallback(async (id: string) => {
+    try {
+      const noteToUpdate = notes.find(note => note.id === id);
+      if (!noteToUpdate) return;
 
-      const note = prev[noteIndex];
-      const newNotes = [...prev];
-      newNotes[noteIndex] = { ...note, isPinned: !note.isPinned };
-
-      addActivity({
-        actionType: note.isPinned ? 'unpin' : 'pin',
-        itemType: note.tags.includes('idea') ? 'idea' : 'note',
-        itemId: id,
-        itemTitle: note.title,
-        description: `${note.isPinned ? 'Unpinned' : 'Pinned'} ${note.tags.includes('idea') ? 'idea' : 'note'}: ${note.title}`
+      const updatedNote = await notesService.updateNote(id, {
+        isPinned: !noteToUpdate.isPinned,
       });
 
-      return newNotes;
-    });
-  }, [addActivity]);
-
-  const toggleFavoriteNote = useCallback((id: string) => {
-    setNotes(prev => {
-      const noteIndex = prev.findIndex(note => note.id === id);
-      if (noteIndex === -1) return prev;
-
-      const note = prev[noteIndex];
-      const newNotes = [...prev];
-      newNotes[noteIndex] = { ...note, isFavorite: !note.isFavorite };
+      setNotes(prevNotes =>
+        prevNotes.map(note => (note.id === id ? updatedNote : note))
+      );
 
       addActivity({
-        actionType: note.isFavorite ? 'unfavorite' : 'favorite',
-        itemType: note.tags.includes('idea') ? 'idea' : 'note',
+        actionType: updatedNote.isPinned ? 'pin' : 'unpin',
+        itemType: updatedNote.tags.includes('idea') ? 'idea' : 'note',
         itemId: id,
-        itemTitle: note.title,
-        description: `${note.isFavorite ? 'Removed from' : 'Added to'} favorites: ${note.title}`
+        itemTitle: updatedNote.title,
+        description: `${updatedNote.isPinned ? 'Pinned' : 'Unpinned'} ${updatedNote.tags.includes('idea') ? 'idea' : 'note'}: ${updatedNote.title}`,
+        metadata: {
+          isPinned: updatedNote.isPinned,
+        },
+      });
+    } catch (error) {
+      console.error('Failed to toggle pin status:', error);
+    }
+  }, [notes, addActivity]);
+
+  const toggleFavoriteNote = useCallback(async (id: string) => {
+    try {
+      const noteToUpdate = notes.find(note => note.id === id);
+      if (!noteToUpdate) return;
+
+      const updatedNote = await notesService.updateNote(id, {
+        isFavorite: !noteToUpdate.isFavorite,
       });
 
-      return newNotes;
-    });
-  }, [addActivity]);
+      setNotes(prevNotes =>
+        prevNotes.map(note => (note.id === id ? updatedNote : note))
+      );
 
-  const archiveNote = useCallback((id: string) => {
-    setNotes(prev => {
-      const noteIndex = prev.findIndex(note => note.id === id);
-      if (noteIndex === -1) return prev;
+      addActivity({
+        actionType: updatedNote.isFavorite ? 'favorite' : 'unfavorite',
+        itemType: updatedNote.tags.includes('idea') ? 'idea' : 'note',
+        itemId: id,
+        itemTitle: updatedNote.title,
+        description: `${updatedNote.isFavorite ? 'Added to' : 'Removed from'} favorites: ${updatedNote.title}`,
+        metadata: {
+          isFavorite: updatedNote.isFavorite,
+        },
+      });
+    } catch (error) {
+      console.error('Failed to toggle favorite status:', error);
+    }
+  }, [notes, addActivity]);
 
-      const note = prev[noteIndex];
-      const newNotes = [...prev];
-      newNotes[noteIndex] = {
-        ...note,
+  const archiveNote = useCallback(async (id: string) => {
+    try {
+      const noteToUpdate = notes.find(note => note.id === id);
+      if (!noteToUpdate) return;
+
+      const updatedNote = await notesService.updateNote(id, {
         isArchived: true,
-        archivedAt: new Date().toISOString()
-      };
+        archivedAt: new Date().toISOString(),
+      });
+
+      setNotes(prevNotes =>
+        prevNotes.map(note => (note.id === id ? updatedNote : note))
+      );
 
       addActivity({
         actionType: 'archive',
-        itemType: note.tags.includes('idea') ? 'idea' : 'note',
+        itemType: updatedNote.tags.includes('idea') ? 'idea' : 'note',
         itemId: id,
-        itemTitle: note.title,
-        description: `Archived ${note.tags.includes('idea') ? 'idea' : 'note'}: ${note.title}`
+        itemTitle: updatedNote.title,
+        description: `Archived ${updatedNote.tags.includes('idea') ? 'idea' : 'note'}: ${updatedNote.title}`,
+        metadata: {
+          isArchived: true,
+        },
+      });
+    } catch (error) {
+      console.error('Failed to archive note:', error);
+    }
+  }, [notes, addActivity]);
+
+  const unarchiveNote = useCallback(async (id: string) => {
+    try {
+      const noteToUpdate = notes.find(note => note.id === id);
+      if (!noteToUpdate) return;
+
+      const updatedNote = await notesService.updateNote(id, {
+        isArchived: false,
+        archivedAt: null,
       });
 
-      return newNotes;
-    });
-  }, [addActivity]);
-
-  const unarchiveNote = useCallback((id: string) => {
-    setNotes(prev => {
-      const noteIndex = prev.findIndex(note => note.id === id);
-      if (noteIndex === -1) return prev;
-
-      const note = prev[noteIndex];
-      const newNotes = [...prev];
-      newNotes[noteIndex] = {
-        ...note,
-        isArchived: false,
-        archivedAt: undefined
-      };
+      setNotes(prevNotes =>
+        prevNotes.map(note => (note.id === id ? updatedNote : note))
+      );
 
       addActivity({
         actionType: 'unarchive',
-        itemType: note.tags.includes('idea') ? 'idea' : 'note',
+        itemType: updatedNote.tags.includes('idea') ? 'idea' : 'note',
         itemId: id,
-        itemTitle: note.title,
-        description: `Unarchived ${note.tags.includes('idea') ? 'idea' : 'note'}: ${note.title}`
+        itemTitle: updatedNote.title,
+        description: `Unarchived ${updatedNote.tags.includes('idea') ? 'idea' : 'note'}: ${updatedNote.title}`,
+        metadata: {
+          isArchived: false,
+        },
       });
-
-      return newNotes;
-    });
-  }, [addActivity]);
+    } catch (error) {
+      console.error('Failed to unarchive note:', error);
+    }
+  }, [notes, addActivity]);
 
   const addLink = useCallback((sourceId: string, targetId: string) => {
     setNotes(prev => prev.map(note => {

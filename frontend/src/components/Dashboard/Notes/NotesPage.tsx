@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Plus, Search, SlidersHorizontal, FileText } from 'lucide-react';
 import { useNotes } from '../../../contexts/NotesContext';
-import { NoteCard } from '../NoteCard';
+import { Note, NoteCard } from '../NoteCard';
 import { NewNoteModal } from './NewNoteModal';
 import { EditNoteModal } from './EditNoteModal';
 import { FilterDropdown } from './FilterDropdown';
@@ -27,7 +27,7 @@ const defaultFilters: Filters = {
 export function NotesPage() {
   const { notes } = useNotes();
   const [showNewNoteModal, setShowNewNoteModal] = useState(false);
-  const [selectedNote, setSelectedNote] = useState(null);
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [showFilters, setShowFilters] = useState(false);
 
@@ -43,7 +43,7 @@ export function NotesPage() {
           note.content.toLowerCase().includes(filters.search.toLowerCase());
         const matchesPinned = !filters.showPinned || note.isPinned;
         const matchesFavorites = !filters.showFavorites || note.isFavorite;
-        const matchesTags = filters.tags.length === 0 || 
+        const matchesTags = filters.tags.length === 0 ||
           filters.tags.some(tag => note.tags.includes(tag));
 
         return matchesSearch && matchesPinned && matchesFavorites && matchesTags;
@@ -51,13 +51,13 @@ export function NotesPage() {
       .sort((a, b) => {
         const aValue = a[filters.sortBy];
         const bValue = b[filters.sortBy];
-        
+
         if (filters.sortBy === 'title') {
-          return filters.sortOrder === 'asc' 
+          return filters.sortOrder === 'asc'
             ? aValue.localeCompare(bValue)
             : bValue.localeCompare(aValue);
         }
-        
+
         return filters.sortOrder === 'asc'
           ? new Date(aValue).getTime() - new Date(bValue).getTime()
           : new Date(bValue).getTime() - new Date(aValue).getTime();
@@ -68,7 +68,7 @@ export function NotesPage() {
     return Array.from(new Set(regularNotes.flatMap(note => note.tags)));
   }, [regularNotes]);
 
-  const handleEditNote = (note) => {
+  const handleEditNote = (note: Note) => {
     setSelectedNote(note);
   };
 
@@ -182,11 +182,13 @@ export function NotesPage() {
         onClose={() => setShowNewNoteModal(false)}
       />
 
-      <EditNoteModal
-        isOpen={selectedNote !== null}
-        onClose={handleCloseEditModal}
-        note={selectedNote}
-      />
+      {selectedNote && (
+        <EditNoteModal
+          isOpen={selectedNote !== null}
+          onClose={handleCloseEditModal}
+          note={selectedNote}
+        />
+      )}
     </div>
   );
 }
