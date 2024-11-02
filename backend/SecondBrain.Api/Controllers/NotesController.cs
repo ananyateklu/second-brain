@@ -127,13 +127,18 @@ namespace SecondBrain.Api.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            // Validate notes
             var sourceNote = await _context.Notes.FindAsync(id);
             var targetNote = await _context.Notes.FindAsync(request.TargetNoteId);
 
             if (sourceNote == null || targetNote == null || sourceNote.UserId != userId || targetNote.UserId != userId)
             {
                 return NotFound(new { error = "Note not found." });
+            }
+
+            // Check if either note is deleted
+            if (_context.Entry(sourceNote).State == EntityState.Deleted || _context.Entry(targetNote).State == EntityState.Deleted)
+            {
+                return BadRequest(new { error = "Cannot link to a deleted note." });
             }
 
             // Check if link already exists
@@ -153,6 +158,59 @@ namespace SecondBrain.Api.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Notes linked successfully." });
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteNoteById(string id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var note = await _context.Notes
+                .Where(n => n.Id == id && n.UserId == userId)
+                .FirstOrDefaultAsync();
+
+            if (note == null)
+            {
+                return NotFound(new { error = "Note not found." });
+            }
+
+            // Remove related NoteLink entries
+            var relatedLinks = await _context.NoteLinks
+                .Where(nl => nl.NoteId == id || nl.LinkedNoteId == id)
+                .ToListAsync();
+
+            _context.NoteLinks.RemoveRange(relatedLinks);
+
+            // Remove the note
+            _context.Notes.Remove(note);
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Note deleted successfully." });
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateNoteById(string id, [FromBody] UpdateNoteRequest request)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var note = await _context.Notes
+                .Where(n => n.Id == id && n.UserId == userId)
+                .FirstOrDefaultAsync();
+
+            if (note == null)
+            {
+                return NotFound(new { error = "Note not found." });
+            }
+
+            // Update note properties
+            note.Title = request.Title;
+            note.Content = request.Content;
+            note.IsPinned = request.IsPinned;
+            note.IsFavorite = request.IsFavorite;
+            note.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Note updated successfully." });
         }
 
     }

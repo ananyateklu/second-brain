@@ -68,21 +68,28 @@ namespace SecondBrain.Data
                 .HasForeignKey(tn => tn.NoteId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Configure NoteLink as a join table for many-to-many self-reference
+            // Configure composite key
             modelBuilder.Entity<NoteLink>()
                 .HasKey(nl => new { nl.NoteId, nl.LinkedNoteId });
 
+            // Configure relationship for NoteId
             modelBuilder.Entity<NoteLink>()
                 .HasOne(nl => nl.Note)
                 .WithMany(n => n.NoteLinks)
                 .HasForeignKey(nl => nl.NoteId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // Configure relationship for LinkedNoteId
             modelBuilder.Entity<NoteLink>()
                 .HasOne(nl => nl.LinkedNote)
                 .WithMany()
                 .HasForeignKey(nl => nl.LinkedNoteId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Set default value for IsDeleted
+            modelBuilder.Entity<NoteLink>()
+                .Property(nl => nl.IsDeleted)
+                .HasDefaultValue(false);
         }
     }
 }
