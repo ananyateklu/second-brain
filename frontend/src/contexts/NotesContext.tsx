@@ -191,14 +191,12 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
       const note = notes.find(n => n.id === id);
       if (!note) return;
 
-      const updatedNote = await notesService.updateNote(id, {
+      await notesService.updateNote(id, {
         isArchived: true,
         archivedAt: new Date().toISOString()
       });
 
-      setNotes(prevNotes =>
-        prevNotes.map(note => (note.id === id ? updatedNote : note))
-      );
+      setNotes(prevNotes => prevNotes.filter(note => note.id !== id));
 
       addActivity({
         actionType: 'archive',
