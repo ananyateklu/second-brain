@@ -61,7 +61,6 @@ namespace SecondBrain.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateNote([FromBody] CreateNoteRequest request)
         {
-
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (string.IsNullOrEmpty(userId))
@@ -74,7 +73,7 @@ namespace SecondBrain.Api.Controllers
                 Id = Guid.NewGuid().ToString(),
                 Title = request.Title,
                 Content = request.Content,
-                Tags = string.Join(",", request.Tags),
+                Tags = string.Join(",", request.Tags ?? new List<string>()),
                 IsPinned = request.IsPinned,
                 IsFavorite = request.IsFavorite,
                 IsArchived = false,
@@ -86,7 +85,24 @@ namespace SecondBrain.Api.Controllers
             _context.Notes.Add(note);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetNoteById), new { id = note.Id }, note);
+            var response = new NoteResponse
+            {
+                Id = note.Id,
+                Title = note.Title,
+                Content = note.Content,
+                Tags = !string.IsNullOrEmpty(note.Tags) 
+                    ? note.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList() 
+                    : new List<string>(),
+                IsPinned = note.IsPinned,
+                IsFavorite = note.IsFavorite,
+                IsArchived = note.IsArchived,
+                ArchivedAt = note.ArchivedAt,
+                CreatedAt = note.CreatedAt,
+                UpdatedAt = note.UpdatedAt,
+                LinkedNoteIds = new List<string>()
+            };
+
+            return CreatedAtAction(nameof(GetNoteById), new { id = note.Id }, response);
         }
 
         [HttpGet("{id}")]

@@ -33,9 +33,13 @@ export const notesService = {
     
     const response = await api.post<Note>('/api/Notes', safeData);
     
+    console.log('Create note response:', response.data);
+    
     return {
       ...response.data,
-      tags: Array.isArray(response.data.tags) ? response.data.tags : [],
+      tags: Array.isArray(response.data.tags) ? response.data.tags : 
+            typeof response.data.tags === 'string' ? response.data.tags.split(',').filter(Boolean) : [],
+      linkedNotes: response.data.linkedNotes || []
     };
   },
 

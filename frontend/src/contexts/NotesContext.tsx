@@ -57,12 +57,19 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
       
       const newNote = await notesService.createNote(noteWithSafeTags);
       
-      const safeNewNote = {
+      console.log('New note before adding to state:', newNote);
+      
+      const safeNewNote: Note = {
         ...newNote,
         tags: Array.isArray(newNote.tags) ? newNote.tags : [],
+        linkedNotes: Array.isArray(newNote.linkedNotes) ? newNote.linkedNotes : [],
       };
       
-      setNotes(prev => [safeNewNote, ...prev]);
+      setNotes(prev => {
+        console.log('Previous notes:', prev);
+        console.log('Adding new note:', safeNewNote);
+        return [safeNewNote, ...prev];
+      });
 
       addActivity({
         actionType: 'create',
