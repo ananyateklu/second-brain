@@ -114,11 +114,11 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
 
   const togglePinNote = useCallback(async (id: string) => {
     try {
-      const noteToUpdate = notes.find(note => note.id === id);
-      if (!noteToUpdate) return;
+      const note = notes.find(n => n.id === id);
+      if (!note) return;
 
       const updatedNote = await notesService.updateNote(id, {
-        isPinned: !noteToUpdate.isPinned,
+        isPinned: !note.isPinned
       });
 
       setNotes(prevNotes =>
@@ -126,14 +126,14 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
       );
 
       addActivity({
-        actionType: updatedNote.isPinned ? 'pin' : 'unpin',
-        itemType: updatedNote.tags.includes('idea') ? 'idea' : 'note',
+        actionType: 'update',
+        itemType: note.tags.includes('idea') ? 'idea' : 'note',
         itemId: id,
-        itemTitle: updatedNote.title,
-        description: `${updatedNote.isPinned ? 'Pinned' : 'Unpinned'} ${updatedNote.tags.includes('idea') ? 'idea' : 'note'}: ${updatedNote.title}`,
+        itemTitle: note.title,
+        description: `${note.isPinned ? 'Unpinned' : 'Pinned'} ${note.tags.includes('idea') ? 'idea' : 'note'}: ${note.title}`,
         metadata: {
-          isPinned: updatedNote.isPinned,
-        },
+          isPinned: !note.isPinned
+        }
       });
     } catch (error) {
       console.error('Failed to toggle pin status:', error);
@@ -142,11 +142,11 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
 
   const toggleFavoriteNote = useCallback(async (id: string) => {
     try {
-      const noteToUpdate = notes.find(note => note.id === id);
-      if (!noteToUpdate) return;
+      const note = notes.find(n => n.id === id);
+      if (!note) return;
 
       const updatedNote = await notesService.updateNote(id, {
-        isFavorite: !noteToUpdate.isFavorite,
+        isFavorite: !note.isFavorite
       });
 
       setNotes(prevNotes =>
@@ -154,14 +154,14 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
       );
 
       addActivity({
-        actionType: updatedNote.isFavorite ? 'favorite' : 'unfavorite',
-        itemType: updatedNote.tags.includes('idea') ? 'idea' : 'note',
+        actionType: 'update',
+        itemType: note.tags.includes('idea') ? 'idea' : 'note',
         itemId: id,
-        itemTitle: updatedNote.title,
-        description: `${updatedNote.isFavorite ? 'Added to' : 'Removed from'} favorites: ${updatedNote.title}`,
+        itemTitle: note.title,
+        description: `${note.isFavorite ? 'Removed from' : 'Added to'} favorites: ${note.title}`,
         metadata: {
-          isFavorite: updatedNote.isFavorite,
-        },
+          isFavorite: !note.isFavorite
+        }
       });
     } catch (error) {
       console.error('Failed to toggle favorite status:', error);
@@ -170,12 +170,12 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
 
   const archiveNote = useCallback(async (id: string) => {
     try {
-      const noteToUpdate = notes.find(note => note.id === id);
-      if (!noteToUpdate) return;
+      const note = notes.find(n => n.id === id);
+      if (!note) return;
 
       const updatedNote = await notesService.updateNote(id, {
         isArchived: true,
-        archivedAt: new Date().toISOString(),
+        archivedAt: new Date().toISOString()
       });
 
       setNotes(prevNotes =>
@@ -184,13 +184,14 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
 
       addActivity({
         actionType: 'archive',
-        itemType: updatedNote.tags.includes('idea') ? 'idea' : 'note',
+        itemType: note.tags.includes('idea') ? 'idea' : 'note',
         itemId: id,
-        itemTitle: updatedNote.title,
-        description: `Archived ${updatedNote.tags.includes('idea') ? 'idea' : 'note'}: ${updatedNote.title}`,
+        itemTitle: note.title,
+        description: `Archived ${note.tags.includes('idea') ? 'idea' : 'note'}: ${note.title}`,
         metadata: {
           isArchived: true,
-        },
+          archivedAt: new Date().toISOString()
+        }
       });
     } catch (error) {
       console.error('Failed to archive note:', error);

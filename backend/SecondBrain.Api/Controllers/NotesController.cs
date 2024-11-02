@@ -27,23 +27,34 @@ namespace SecondBrain.Api.Controllers
         public async Task<IActionResult> GetAllNotes()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { error = "User ID not found in token." });
+            }
+
             var notes = await _context.Notes
-                .Where(n => n.UserId == userId)
+                .Where(n => n.UserId == userId && !n.IsArchived)
+                .Include(n => n.NoteLinks)
                 .Select(n => new NoteResponse
                 {
                     Id = n.Id,
                     Title = n.Title,
                     Content = n.Content,
-                    Tags = (n.Tags ?? string.Empty).Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries).ToList(),
+                    Tags = (n.Tags ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries).ToList(),
                     IsPinned = n.IsPinned,
                     IsFavorite = n.IsFavorite,
                     IsArchived = n.IsArchived,
                     ArchivedAt = n.ArchivedAt,
                     CreatedAt = n.CreatedAt,
                     UpdatedAt = n.UpdatedAt,
-                    LinkedNoteIds = n.NoteLinks.Select(nl => nl.LinkedNoteId).ToList()
+                    LinkedNoteIds = n.NoteLinks
+                        .Where(nl => !nl.IsDeleted)
+                        .Select(nl => nl.LinkedNoteId)
+                        .ToList()
                 })
                 .ToListAsync();
+
             return Ok(notes);
         }
 
@@ -210,6 +221,7 @@ namespace SecondBrain.Api.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var note = await _context.Notes
                 .Where(n => n.Id == id && n.UserId == userId)
+                .Include(n => n.NoteLinks)
                 .FirstOrDefaultAsync();
 
             if (note == null)
@@ -217,19 +229,39 @@ namespace SecondBrain.Api.Controllers
                 return NotFound(new { error = "Note not found." });
             }
 
-            // Update note properties
-            note.Title = request.Title;
-            note.Content = request.Content;
-            note.IsPinned = request.IsPinned;
-            note.IsFavorite = request.IsFavorite;
-            note.IsArchived = request.IsArchived;
-            note.ArchivedAt = request.ArchivedAt;
-            note.UpdatedAt = DateTime.UtcNow;
-            note.Tags = string.Join(",", request.Tags);
+            // Only update properties that are explicitly set in the request
+            if (!string.IsNullOrEmpty(request.Title))
+                note.Title = request.Title;
+            
+            if (!string.IsNullOrEmpty(request.Content))
+                note.Content = request.Content;
 
+            // Update boolean properties only if they are explicitly set
+            if (request.IsPinned.HasValue)
+                note.IsPinned = request.IsPinned.Value;
+            
+            if (request.IsFavorite.HasValue)
+                note.IsFavorite = request.IsFavorite.Value;
+            
+            if (request.IsArchived.HasValue)
+            {
+                note.IsArchived = request.IsArchived.Value;
+                if (request.IsArchived.Value)
+                    note.ArchivedAt = DateTime.UtcNow;
+            }
+
+            // Only update Tags if they were explicitly provided
+            if (request.Tags != null)
+            {
+                note.Tags = request.Tags.Any() 
+                    ? string.Join(",", request.Tags) 
+                    : null;
+            }
+
+            note.UpdatedAt = DateTime.UtcNow;
+            
             await _context.SaveChangesAsync();
 
-            // Map the updated note to a DTO or response object
             var updatedNote = new NoteResponse
             {
                 Id = note.Id,
@@ -241,8 +273,13 @@ namespace SecondBrain.Api.Controllers
                 ArchivedAt = note.ArchivedAt,
                 CreatedAt = note.CreatedAt,
                 UpdatedAt = note.UpdatedAt,
-                LinkedNoteIds = note.NoteLinks.Select(nl => nl.LinkedNoteId).ToList(),
-                Tags = note.Tags.Split(',').ToList()
+                LinkedNoteIds = note.NoteLinks
+                    .Where(nl => !nl.IsDeleted)
+                    .Select(nl => nl.LinkedNoteId)
+                    .ToList(),
+                Tags = !string.IsNullOrEmpty(note.Tags) 
+                    ? note.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList() 
+                    : new List<string>()
             };
 
             return Ok(updatedNote);
