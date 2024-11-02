@@ -2,42 +2,50 @@ import React, { useEffect, useRef, useState } from 'react';
 import CytoscapeComponent from 'react-cytoscapejs';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useNotes } from '../../../contexts/NotesContext';
+import type { Core, NodeSingular } from 'cytoscape';
 
 interface GraphViewProps {
   onNodeSelect: (noteId: string) => void;
-  isDetailsPanelOpen?: boolean;
+  isDetailsPanelOpen: boolean;
 }
 
-export function GraphView({ onNodeSelect, isDetailsPanelOpen = false }: GraphViewProps) {
-  const { theme } = useTheme();
+export function GraphView({ onNodeSelect, isDetailsPanelOpen }: GraphViewProps) {
   const { notes } = useNotes();
-  const cyRef = useRef<any>(null);
+  const { theme } = useTheme();
+  const cyRef = useRef<Core | null>(null);
   const resizeTimeoutRef = useRef<NodeJS.Timeout>();
   const animationFrameRef = useRef<number>();
   const [isInitialized, setIsInitialized] = useState(false);
 
-  const elements = React.useMemo(() => {
-    const nodes = notes.map(note => ({
-      data: {
-        id: note.id,
-        label: note.title,
-        isPinned: note.isPinned,
-        isFavorite: note.isFavorite
-      }
-    }));
+  // Filter notes to only include those with links
+  const notesWithLinks = notes.filter(note => 
+    note.linkedNoteIds && note.linkedNoteIds.length > 0
+  );
 
-    const edges = notes.flatMap(note =>
-      (note.linkedNotes || []).map(linkedNoteId => ({
+  // Create nodes first
+  const elements = notesWithLinks.map(note => ({
+    data: { 
+      id: note.id,
+      label: note.title,
+      isIdea: note.tags.includes('idea')
+    }
+  }));
+
+  // Then create edges only between existing nodes
+  const edges = notesWithLinks.flatMap(note => 
+    (note.linkedNoteIds || [])
+      .filter(targetId => notesWithLinks.some(n => n.id === targetId))
+      .map(targetId => ({
         data: {
-          id: `${note.id}-${linkedNoteId}`,
+          id: `${note.id}-${targetId}`,
           source: note.id,
-          target: linkedNoteId,
+          target: targetId
         }
       }))
-    );
+  );
 
-    return [...nodes, ...edges];
-  }, [notes]);
+  // Combine nodes and edges
+  const graphElements = [...elements, ...edges];
 
   const stylesheet = [
     {
@@ -170,11 +178,13 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen = false }: GraphVie
 
       resizeTimeoutRef.current = setTimeout(() => {
         const cy = cyRef.current;
-        cy.fit(undefined, 50);
-        const targetZoom = cy.zoom();
-        const targetPan = cy.pan();
-        smoothPanAndZoom(targetPan, targetZoom);
-      }, 300); // Match the transition duration
+        if (cy) {
+          cy.fit(undefined, 50);
+          const targetPan = cy.pan();
+          const targetZoom = cy.zoom();
+          smoothPanAndZoom(targetPan, targetZoom);
+        }
+      }, 300);
     }
   };
 
@@ -223,7 +233,7 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen = false }: GraphVie
   return (
     <div className="h-full relative">
       <CytoscapeComponent
-        elements={elements}
+        elements={graphElements}
         stylesheet={stylesheet}
         layout={layout}
         style={{ width: '100%', height: '100%' }}

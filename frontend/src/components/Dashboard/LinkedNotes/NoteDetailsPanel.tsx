@@ -33,19 +33,12 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
 
   const handleUnlink = async (linkedNoteId: string) => {
     try {
-      console.log('Unlinking notes with params:', {
-        selectedNoteId,
-        linkedNoteId,
-        currentNote: note
-      });
-
-      // First, call the API service directly
-      await notesService.removeLink(selectedNoteId, linkedNoteId);
-      console.log('API call successful');
-
-      // Then, update the local state through context
+      if (!selectedNoteId) {
+        console.error('Missing selectedNoteId');
+        return;
+      }
+      console.log('Unlinking with IDs:', { selectedNoteId, linkedNoteId });
       await removeLink(selectedNoteId, linkedNoteId);
-      console.log('Local state updated');
     } catch (error) {
       console.error('Failed to unlink note:', error);
     }
@@ -122,29 +115,36 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
                   Add Link
                 </button>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {linkedNotes.length > 0 ? (
                   linkedNotes.map(linkedNote => (
                     <div
                       key={linkedNote.id}
-                      className="group p-3 rounded-lg bg-gray-50 dark:bg-dark-hover hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors relative"
+                      className="group relative p-3 rounded-lg bg-white dark:bg-dark-card hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                     >
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleUnlink(linkedNote.id);
-                        }}
-                        className="absolute right-2 top-2 p-1 rounded-lg bg-white/50 dark:bg-black/50 opacity-0 group-hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 transition-all"
-                        title="Remove link"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                      <h6 className="font-medium text-gray-900 dark:text-white mb-1">
-                        {linkedNote.title}
-                      </h6>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
-                        {linkedNote.content}
-                      </p>
+                      <div className="flex items-start gap-3">
+                        <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                          <Link2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h6 className="font-medium text-gray-900 dark:text-white truncate">
+                            {linkedNote.title}
+                          </h6>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
+                            {linkedNote.content}
+                          </p>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleUnlink(linkedNote.id);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 rounded transition-opacity"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   ))
                 ) : (
