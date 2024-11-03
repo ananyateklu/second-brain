@@ -63,7 +63,7 @@ export function NoteCard({ note, viewMode = 'grid' }: NoteCardProps) {
   return (
     <>
       <div className={`
-        group relative overflow-hidden bg-white dark:bg-dark-card rounded-xl hover-card
+        group relative overflow-hidden bg-white dark:bg-dark-card rounded-xl hover-card border border-gray-200 dark:border-gray-700
         ${viewMode === 'list' ? 'flex gap-4' : ''}
       `}>
         <div className="absolute inset-0 gradient-border opacity-0 group-hover:opacity-100 transition-opacity duration-300" />

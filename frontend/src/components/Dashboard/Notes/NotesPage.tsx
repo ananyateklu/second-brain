@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Search, SlidersHorizontal, FileText } from 'lucide-react';
+import { Plus, Search, SlidersHorizontal, FileText, Grid, List } from 'lucide-react';
 import { useNotes } from '../../../contexts/NotesContext';
 import { Note, NoteCard } from '../NoteCard';
 import { NewNoteModal } from './NewNoteModal';
@@ -30,6 +30,7 @@ export function NotesPage() {
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   // Filter out ideas from the notes list
   const regularNotes = useMemo(() => {
@@ -118,8 +119,8 @@ export function NotesPage() {
         </div>
       </div>
 
-      <div className="relative">
-        <div className="flex-1 min-w-0">
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
@@ -128,6 +129,31 @@ export function NotesPage() {
             onChange={(e) => handleFilterChange('search', e.target.value)}
             className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-dark-card focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400 focus:border-transparent"
           />
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            onClick={() => setViewMode('grid')}
+            className={`p-2 rounded-lg transition-colors ${
+              viewMode === 'grid'
+                ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+            }`}
+            title="Grid View"
+          >
+            <Grid className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => setViewMode('list')}
+            className={`p-2 rounded-lg transition-colors ${
+              viewMode === 'list'
+                ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+            }`}
+            title="List View"
+          >
+            <List className="w-5 h-5" />
+          </button>
         </div>
       </div>
 
@@ -151,31 +177,31 @@ export function NotesPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredNotes.map(note => (
-          <div
-            key={note.id}
-            onClick={() => handleEditNote(note)}
-            className="cursor-pointer"
-          >
-            <NoteCard note={note} />
-          </div>
-        ))}
-
-        {filteredNotes.length === 0 && (
-          <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
-            <FileText className="w-16 h-16 text-gray-300 dark:text-gray-600 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-              No notes found
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400 max-w-md">
-              {filters.search || filters.tags.length > 0
-                ? "No notes match your current filters. Try adjusting your search or filters."
-                : "Start by creating your first note!"}
-            </p>
-          </div>
-        )}
-      </div>
+      {viewMode === 'grid' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredNotes.map(note => (
+            <div
+              key={note.id}
+              onClick={() => handleEditNote(note)}
+              className="cursor-pointer"
+            >
+              <NoteCard note={note} viewMode="grid" />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {filteredNotes.map(note => (
+            <div
+              key={note.id}
+              onClick={() => handleEditNote(note)}
+              className="cursor-pointer"
+            >
+              <NoteCard note={note} viewMode="list" />
+            </div>
+          ))}
+        </div>
+      )}
 
       <NewNoteModal
         isOpen={showNewNoteModal}

@@ -14,7 +14,7 @@ export function IdeasList({ ideas, onIdeaClick }: IdeasListProps) {
         <div
           key={idea.id}
           onClick={() => onIdeaClick(idea.id)}
-          className="group bg-white dark:bg-dark-card rounded-xl p-4 hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/10 transition-all duration-200 cursor-pointer"
+          className="group bg-white dark:bg-dark-card rounded-xl p-4 hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/10 transition-all duration-200 cursor-pointer border border-gray-200 dark:border-gray-700"
         >
           <div className="flex items-start gap-4">
             <div className="p-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex-shrink-0">

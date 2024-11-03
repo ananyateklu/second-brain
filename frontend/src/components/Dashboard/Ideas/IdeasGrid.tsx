@@ -14,7 +14,7 @@ export function IdeasGrid({ ideas, onIdeaClick }: IdeasGridProps) {
         <div
           key={idea.id}
           onClick={() => onIdeaClick(idea.id)}
-          className="group relative overflow-hidden bg-white dark:bg-dark-card rounded-xl hover-card cursor-pointer"
+          className="group relative overflow-hidden bg-white dark:bg-dark-card rounded-xl hover-card cursor-pointer border border-gray-200 dark:border-gray-700"
         >
           <div className="absolute inset-0 gradient-border opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 

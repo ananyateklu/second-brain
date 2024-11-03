@@ -1,5 +1,7 @@
 import { useTasks } from '../../../contexts/TasksContext';
 import { TaskCard } from './TaskCard';
+import { LayoutGrid, List } from 'lucide-react';
+import { useState } from 'react';
 
 interface TaskListProps {
   searchQuery: string;
@@ -12,6 +14,7 @@ interface TaskListProps {
 
 export function TaskList({ searchQuery, filters }: TaskListProps) {
   const { tasks } = useTasks();
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
 
   const filteredTasks = tasks.filter(task => {
     // Search filter
@@ -65,9 +68,43 @@ export function TaskList({ searchQuery, filters }: TaskListProps) {
 
   return (
     <div className="space-y-4">
-      {filteredTasks.map(task => (
-        <TaskCard key={task.id} task={task} />
-      ))}
+      <div className="flex justify-end">
+        <div className="inline-flex rounded-lg overflow-hidden">
+          <button
+            onClick={() => setViewMode('list')}
+            className={`p-2 ${
+              viewMode === 'list'
+                ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
+                : 'bg-gray-100 dark:bg-dark-card text-gray-600 dark:text-gray-400'
+            }`}
+          >
+            <List className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => setViewMode('grid')}
+            className={`p-2 ${
+              viewMode === 'grid'
+                ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
+                : 'bg-gray-100 dark:bg-dark-card text-gray-600 dark:text-gray-400'
+            }`}
+          >
+            <LayoutGrid className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      <div className={viewMode === 'grid' 
+        ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'
+        : 'space-y-2'
+      }>
+        {filteredTasks.map(task => (
+          <TaskCard 
+            key={task.id} 
+            task={task} 
+            viewMode={viewMode}
+          />
+        ))}
+      </div>
     </div>
   );
 }
