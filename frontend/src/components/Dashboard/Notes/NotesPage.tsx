@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Search, SlidersHorizontal, FileText, Grid, List } from 'lucide-react';
+import { Plus, Search, SlidersHorizontal, FileText, Grid, List, Network } from 'lucide-react';
 import { useNotes } from '../../../contexts/NotesContext';
 import { Note, NoteCard } from '../NoteCard';
 import { NewNoteModal } from './NewNoteModal';
 import { EditNoteModal } from './EditNoteModal';
 import { FilterDropdown } from './FilterDropdown';
+import { NotesGraph } from './NotesGraph';
 
 interface Filters {
   search: string;
@@ -30,7 +31,7 @@ export function NotesPage() {
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [showFilters, setShowFilters] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'graph'>('grid');
 
   // Filter out ideas from the notes list
   const regularNotes = useMemo(() => {
@@ -154,6 +155,17 @@ export function NotesPage() {
           >
             <List className="w-5 h-5" />
           </button>
+          <button
+            onClick={() => setViewMode('graph')}
+            className={`p-2 rounded-lg transition-colors ${
+              viewMode === 'graph'
+                ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+            }`}
+            title="Graph View"
+          >
+            <Network className="w-5 h-5" />
+          </button>
         </div>
       </div>
 
@@ -189,7 +201,7 @@ export function NotesPage() {
             </div>
           ))}
         </div>
-      ) : (
+      ) : viewMode === 'list' ? (
         <div className="space-y-2">
           {filteredNotes.map(note => (
             <div
@@ -201,6 +213,11 @@ export function NotesPage() {
             </div>
           ))}
         </div>
+      ) : (
+        <NotesGraph 
+          notes={filteredNotes} 
+          onNoteClick={(noteId) => handleEditNote(notes.find(n => n.id === noteId)!)} 
+        />
       )}
 
       <NewNoteModal

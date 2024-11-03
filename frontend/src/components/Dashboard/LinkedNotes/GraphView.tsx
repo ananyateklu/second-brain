@@ -28,13 +28,13 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: 
   const cyRef = useRef<Core | null>(null);
 
   // Filter notes to only include those with links
-  const notesWithLinks = notes.filter(note => 
+  const notesWithLinks = notes.filter(note =>
     note.linkedNoteIds && note.linkedNoteIds.length > 0
   );
 
   // Create nodes
   const elements = notesWithLinks.map(note => ({
-    data: { 
+    data: {
       id: note.id,
       label: note.title,
       isIdea: note.tags.includes('idea'),
@@ -46,7 +46,7 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: 
   }));
 
   // Create edges
-  const edges = notesWithLinks.flatMap(note => 
+  const edges = notesWithLinks.flatMap(note =>
     (note.linkedNoteIds || [])
       .filter(targetId => notesWithLinks.some(n => n.id === targetId))
       .map(targetId => ({
@@ -107,26 +107,27 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: 
     {
       selector: ':selected',
       style: {
-        'border-width': 3,
-        'border-color': theme === 'dark' ? '#66BB6A' : '#43A047'
+        'border-color': theme === 'dark' ? '#66BB6A' : '#43A047',
+        'border-width': 2,
+        'background-color': theme === 'dark' ? '#2A332A' : '#F0F7F0',  // Very subtle green tint
+        'transition-property': 'border-color, background-color',
+        'transition-duration': '0.2s'
       }
     },
     {
       selector: 'edge',
       style: {
-        'width': 1.5,
-        'line-color': theme === 'dark' ? '#666666' : '#333333',
-        'target-arrow-color': theme === 'dark' ? '#666666' : '#333333',
-        'target-arrow-shape': 'triangle',
-        'curve-style': 'straight',
+        'target-arrow-shape': 'triangle-tee',
         'arrow-scale': 0.7,
-        'opacity': 0.6,
-        'target-distance-from-node': 8,
-        'source-distance-from-node': 3,
-        'control-point-step-size': 40,
+        'width': 1.4,
         'target-endpoint': '0%',
         'source-endpoint': '100%',
         'edge-distances': 'node-position',
+        'curve-style': 'straight',
+        'opacity': 0.75,
+        'target-distance-from-node': 6,
+        'line-color': theme === 'dark' ? '#5a5a5a' : '#3a3a3a',
+        'target-arrow-color': theme === 'dark' ? '#5a5a5a' : '#3a3a3a'
       }
     }
   ];
@@ -168,19 +169,21 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: 
       }
     };
 
-    const handleBackgroundTap = (event: { target: Core }) => {
+    const handleBackgroundTap = (event: { target: any }) => {
       if (event.target === cy) {
-        cy.elements().unselect();
-        onNodeSelect('');
+        if (selectedNoteId) {
+          cy.elements().unselect();
+          onNodeSelect('');
+        }
       }
     };
 
     cy.on('tap', 'node', handleNodeTap);
-    cy.on('tap', handleBackgroundTap);
+    cy.on('click', handleBackgroundTap);
 
     return () => {
       cy.removeListener('tap', 'node', handleNodeTap);
-      cy.removeListener('tap', handleBackgroundTap);
+      cy.removeListener('click', handleBackgroundTap);
     };
   }, [onNodeSelect, selectedNoteId]);
 
@@ -200,13 +203,13 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: 
         elements={graphElements}
         stylesheet={stylesheet}
         layout={layout}
-        style={{ 
-          width: '100%', 
+        style={{
+          width: '100%',
           height: '100%',
           minHeight: '600px',
           maxHeight: '80vh'
         }}
-        cy={(cy) => { 
+        cy={(cy) => {
           cyRef.current = cy;
           cy.minZoom(0.5);
           cy.maxZoom(2.0);
@@ -214,7 +217,6 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: 
         wheelSensitivity={0.2}
       />
       <div className="absolute bottom-4 right-4 bg-opacity-80 bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg">
-        <div className="text-sm font-medium mb-2">Legend:</div>
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 border-2 border-blue-500 rounded"></div>
@@ -223,6 +225,10 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: 
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 border-2 border-orange-500 rounded"></div>
             <span className="text-sm">Ideas</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 border-2 border-green-500 rounded bg-[#F0F7F0] dark:bg-[#2A332A]"></div>
+            <span className="text-sm">Selected</span>
           </div>
         </div>
       </div>
