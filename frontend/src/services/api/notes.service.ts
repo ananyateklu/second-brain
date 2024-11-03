@@ -90,5 +90,38 @@ export const notesService = {
       console.error('Error removing link:', error);
       throw error;
     }
+  },
+
+  async getArchivedNotes(): Promise<Note[]> {
+    try {
+        console.log('Fetching archived notes...');
+        const response = await api.get<Note[]>('/api/Notes/archived');
+        console.log('Archived notes response:', response.data);
+        
+        return response.data.map(note => ({
+            ...note,
+            tags: Array.isArray(note.tags) ? note.tags : [],
+            linkedNoteIds: Array.isArray(note.linkedNoteIds) ? note.linkedNoteIds : [],
+            linkedNotes: Array.isArray(note.linkedNoteIds) ? note.linkedNoteIds : []
+        }));
+    } catch (error) {
+        console.error('Error fetching archived notes:', error);
+        throw error;
+    }
+  },
+
+  async restoreNote(id: string): Promise<Note> {
+    try {
+      const response = await api.post<Note>(`/api/Notes/${id}/restore`);
+      return {
+        ...response.data,
+        tags: Array.isArray(response.data.tags) ? response.data.tags : [],
+        linkedNoteIds: Array.isArray(response.data.linkedNoteIds) ? response.data.linkedNoteIds : [],
+        linkedNotes: Array.isArray(response.data.linkedNoteIds) ? response.data.linkedNoteIds : []
+      };
+    } catch (error) {
+      console.error('Error restoring note:', error);
+      throw error;
+    }
   }
 };

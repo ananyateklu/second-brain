@@ -19,6 +19,7 @@ export interface Note {
 
 interface NotesContextType {
   notes: Note[];
+  archivedNotes: Note[];
   addNote: (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'linkedNoteIds' | 'linkedNotes'>) => void;
   updateNote: (id: string, updates: Partial<Note>) => void;
   deleteNote: (id: string) => void;
@@ -28,12 +29,15 @@ interface NotesContextType {
   unarchiveNote: (id: string) => void;
   addLink: (sourceId: string, targetId: string) => void;
   removeLink: (sourceId: string, targetId: string) => void;
+  loadArchivedNotes: () => Promise<void>;
+  restoreMultipleNotes: (ids: string[]) => Promise<PromiseSettledResult<Note>[]>;
 }
 
 const NotesContext = createContext<NotesContextType | null>(null);
 
 export function NotesProvider({ children }: { children: React.ReactNode }) {
   const [notes, setNotes] = useState<Note[]>([]);
+  const [archivedNotes, setArchivedNotes] = useState<Note[]>([]);
   const { addActivity } = useActivities();
 
   useEffect(() => {
@@ -229,32 +233,74 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
 
   const unarchiveNote = useCallback(async (id: string) => {
     try {
-      const noteToUpdate = notes.find(note => note.id === id);
-      if (!noteToUpdate) return;
+      const restoredNote = await notesService.restoreNote(id);
+      
+      // Remove from archived notes
+      setArchivedNotes(prev => prev.filter(note => note.id !== id));
+      
+      // Add to active notes
+      setNotes(prev => [...prev, restoredNote]);
 
-      const updatedNote = await notesService.updateNote(id, {
-        isArchived: false,
-        archivedAt: null,
-      });
-
-      setNotes(prevNotes =>
-        prevNotes.map(note => (note.id === id ? updatedNote : note))
-      );
-
+      // Add activity with metadata
       addActivity({
-        actionType: 'unarchive',
-        itemType: updatedNote.tags.includes('idea') ? 'idea' : 'note',
+        actionType: 'restore',
+        itemType: 'note',
         itemId: id,
-        itemTitle: updatedNote.title,
-        description: `Unarchived ${updatedNote.tags.includes('idea') ? 'idea' : 'note'}: ${updatedNote.title}`,
+        itemTitle: restoredNote.title,
+        description: `Restored note from archive: ${restoredNote.title}`,
         metadata: {
-          isArchived: false,
-        },
+          noteId: id,
+          noteTitle: restoredNote.title,
+          restoredAt: new Date().toISOString()
+        }
       });
+
+      return restoredNote;
     } catch (error) {
-      console.error('Failed to unarchive note:', error);
+      console.error('Failed to restore note:', error);
+      throw error;
     }
-  }, [notes, addActivity]);
+  }, [addActivity]);
+
+  // Add a method for restoring multiple notes
+  const restoreMultipleNotes = useCallback(async (ids: string[]) => {
+    try {
+      const results = await Promise.allSettled(
+        ids.map(id => unarchiveNote(id))
+      );
+      
+      // Add activity for bulk restore
+      if (results.length > 1) {
+        const successfulRestores = results.filter(
+          (result): result is PromiseFulfilledResult<Note> => 
+            result.status === 'fulfilled'
+        );
+
+        const restoredNotes = successfulRestores.map(result => result.value);
+
+        addActivity({
+          actionType: 'restore_multiple',
+          itemType: 'notes',
+          itemId: 'bulk',
+          itemTitle: `${results.length} notes`,
+          description: `Restored ${results.length} notes from archive`,
+          metadata: {
+            totalNotes: results.length,
+            successfulRestores: successfulRestores.length,
+            failedRestores: results.length - successfulRestores.length,
+            restoredNoteIds: restoredNotes.map(note => note.id),
+            restoredNoteTitles: restoredNotes.map(note => note.title),
+            restoredAt: new Date().toISOString()
+          }
+        });
+      }
+      
+      return results;
+    } catch (error) {
+      console.error('Failed to restore multiple notes:', error);
+      throw error;
+    }
+  }, [unarchiveNote, addActivity]);
 
   const addLink = useCallback(async (sourceId: string, targetId: string) => {
     try {
@@ -346,9 +392,19 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     }
   }, [notes, addActivity]);
 
+  const loadArchivedNotes = useCallback(async () => {
+    try {
+      const fetchedArchivedNotes = await notesService.getArchivedNotes();
+      setArchivedNotes(fetchedArchivedNotes);
+    } catch (error) {
+      console.error('Failed to load archived notes:', error);
+    }
+  }, []);
+
   return (
     <NotesContext.Provider value={{
       notes,
+      archivedNotes,
       addNote,
       updateNote,
       deleteNote,
@@ -357,7 +413,9 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
       archiveNote,
       unarchiveNote,
       addLink,
-      removeLink
+      removeLink,
+      loadArchivedNotes,
+      restoreMultipleNotes,
     }}>
       {children}
     </NotesContext.Provider>

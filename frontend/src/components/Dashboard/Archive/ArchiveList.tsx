@@ -23,10 +23,10 @@ export function ArchiveList({
   onSelectItem,
   onRestoreSelected
 }: ArchiveListProps) {
-  const { notes } = useNotes();
+  const { archivedNotes } = useNotes();
 
-  const archivedNotes = React.useMemo(() => {
-    let filtered = notes.filter(note => note.isArchived);
+  const filteredNotes = React.useMemo(() => {
+    let filtered = [...archivedNotes];
 
     // Apply search filter
     if (searchQuery) {
@@ -77,9 +77,9 @@ export function ArchiveList({
       if (valueA > valueB) return 1 * sortOrder;
       return 0;
     });
-  }, [notes, searchQuery, filters]);
+  }, [archivedNotes, searchQuery, filters]);
 
-  if (archivedNotes.length === 0) {
+  if (filteredNotes.length === 0) {
     return (
       <div className="text-center py-12">
         <p className="text-gray-500 dark:text-gray-400">
@@ -109,7 +109,7 @@ export function ArchiveList({
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {archivedNotes.map(note => (
+        {filteredNotes.map(note => (
           <ArchiveNoteCard
             key={note.id}
             note={note}

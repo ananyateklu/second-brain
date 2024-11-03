@@ -10,11 +10,17 @@ interface ArchiveNoteCardProps {
 }
 
 export function ArchiveNoteCard({ note, isSelected, onSelect }: ArchiveNoteCardProps) {
-  const { unarchiveNote } = useNotes();
+  const { unarchiveNote, loadArchivedNotes } = useNotes();
 
-  const handleUnarchive = (e: React.MouseEvent) => {
+  const handleUnarchive = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    unarchiveNote(note.id);
+    try {
+      await unarchiveNote(note.id);
+      await loadArchivedNotes(); // Refresh the archive list
+    } catch (error) {
+      console.error('Failed to restore note:', error);
+      // You might want to add error handling UI here
+    }
   };
 
   const isIdea = note.tags.includes('idea');

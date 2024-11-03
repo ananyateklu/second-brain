@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Archive, Search, SlidersHorizontal } from 'lucide-react';
 import { useNotes } from '../../../contexts/NotesContext';
 import { ArchiveList } from './ArchiveList';
 import { ArchiveFilters } from './ArchiveFilters';
 
 export function ArchivePage() {
-  const { notes, unarchiveNote } = useNotes();
+  const { archivedNotes, unarchiveNote, restoreMultipleNotes, loadArchivedNotes } = useNotes();
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
@@ -16,7 +16,10 @@ export function ArchivePage() {
     hasLinks: false
   });
 
-  const archivedItems = notes.filter(note => note.isArchived);
+  // Load archived notes when the page mounts
+  useEffect(() => {
+    loadArchivedNotes();
+  }, [loadArchivedNotes]);
 
   const handleSelectItem = (id: string) => {
     setSelectedItems(prev => 
@@ -27,11 +30,21 @@ export function ArchivePage() {
   };
 
   const handleRestoreSelected = async () => {
-    if (window.confirm(`Are you sure you want to restore ${selectedItems.length} items?`)) {
-      for (const id of selectedItems) {
-        await unarchiveNote(id);
+    if (selectedItems.length === 0) return;
+
+    const message = selectedItems.length === 1
+      ? 'Are you sure you want to restore this note?'
+      : `Are you sure you want to restore ${selectedItems.length} notes?`;
+
+    if (window.confirm(message)) {
+      try {
+        await restoreMultipleNotes(selectedItems);
+        setSelectedItems([]);
+        await loadArchivedNotes();
+      } catch (error) {
+        console.error('Failed to restore selected notes:', error);
+        // You might want to add error handling UI here
       }
-      setSelectedItems([]);
     }
   };
 
@@ -47,7 +60,7 @@ export function ArchivePage() {
             <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Archive</h1>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {archivedItems.length} archived items
+                {archivedNotes.length} archived items
               </p>
             </div>
           </div>

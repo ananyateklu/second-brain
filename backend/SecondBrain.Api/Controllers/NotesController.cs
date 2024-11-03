@@ -327,5 +327,108 @@ namespace SecondBrain.Api.Controllers
             return Ok(updatedNote);
         }
 
+        [HttpGet("archived")]
+        public async Task<IActionResult> GetArchivedNotes()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { error = "User ID not found in token." });
+            }
+
+            // Add logging to check the userId and query
+            Console.WriteLine($"Fetching archived notes for user: {userId}");
+
+            // First, let's check if we can find any archived notes
+            var archivedCount = await _context.Notes
+                .Where(n => n.UserId == userId && n.IsArchived)
+                .CountAsync();
+
+            Console.WriteLine($"Found {archivedCount} archived notes");
+
+            // Get the archived notes with more detailed logging
+            var archivedNotes = await _context.Notes
+                .Where(n => n.UserId == userId && n.IsArchived)
+                .Include(n => n.NoteLinks)
+                .AsNoTracking() // Add this to improve performance for read-only operations
+                .ToListAsync();
+
+            Console.WriteLine($"Retrieved {archivedNotes.Count} notes with their links");
+
+            // Map to response
+            var response = archivedNotes.Select(n => new NoteResponse
+            {
+                Id = n.Id,
+                Title = n.Title,
+                Content = n.Content,
+                Tags = !string.IsNullOrEmpty(n.Tags) 
+                    ? n.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList() 
+                    : new List<string>(),
+                IsPinned = n.IsPinned,
+                IsFavorite = n.IsFavorite,
+                IsArchived = n.IsArchived,
+                ArchivedAt = n.ArchivedAt,
+                CreatedAt = n.CreatedAt,
+                UpdatedAt = n.UpdatedAt,
+                LinkedNoteIds = n.NoteLinks
+                    .Where(nl => !nl.IsDeleted)
+                    .Select(nl => nl.LinkedNoteId)
+                    .ToList()
+            }).ToList();
+
+            Console.WriteLine($"Mapped {response.Count} notes to response");
+
+            return Ok(response);
+        }
+
+        [HttpPost("{id}/restore")]
+        public async Task<IActionResult> RestoreNote(string id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { error = "User ID not found in token." });
+            }
+
+            var note = await _context.Notes
+                .Include(n => n.NoteLinks)
+                .FirstOrDefaultAsync(n => n.Id == id && n.UserId == userId);
+
+            if (note == null)
+            {
+                return NotFound(new { error = "Note not found" });
+            }
+
+            note.IsArchived = false;
+            note.ArchivedAt = null;
+            note.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            var response = new NoteResponse
+            {
+                Id = note.Id,
+                Title = note.Title,
+                Content = note.Content,
+                Tags = !string.IsNullOrEmpty(note.Tags) 
+                    ? note.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList() 
+                    : new List<string>(),
+                IsPinned = note.IsPinned,
+                IsFavorite = note.IsFavorite,
+                IsArchived = note.IsArchived,
+                ArchivedAt = note.ArchivedAt,
+                CreatedAt = note.CreatedAt,
+                UpdatedAt = note.UpdatedAt,
+                LinkedNoteIds = note.NoteLinks
+                    .Where(nl => !nl.IsDeleted)
+                    .Select(nl => nl.LinkedNoteId)
+                    .ToList()
+            };
+
+            return Ok(response);
+        }
+
     }
 }
