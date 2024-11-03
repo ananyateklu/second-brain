@@ -4,17 +4,17 @@ import { Note } from '../../../../contexts/NotesContext';
 import { useNotes } from '../../../../contexts/NotesContext';
 import { Header } from './Header';
 import { MainContent } from './MainContent';
-import { LinkedNotesPanel } from './LinkedNotesPanel';
-import { DeleteConfirmDialog } from './DeleteConfirmDialog';
+import { LinkedNotesPanel } from '../../Notes/EditNoteModal/LinkedNotesPanel';
+import { DeleteConfirmDialog } from '../../Notes/EditNoteModal/DeleteConfirmDialog';
 import { AddLinkModal } from '../../LinkedNotes/AddLinkModal';
 
-interface EditNoteModalProps {
+interface EditIdeaModalProps {
   isOpen: boolean;
   onClose: () => void;
-  note: Note | null;
+  idea: Note | null;
 }
 
-export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
+export function EditIdeaModal({ isOpen, onClose, idea }: EditIdeaModalProps) {
   const navigate = useNavigate();
   const { notes, updateNote, deleteNote } = useNotes();
   const [title, setTitle] = useState('');
@@ -27,38 +27,38 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showAddLinkModal, setShowAddLinkModal] = useState(false);
 
-  // Get current note from context to ensure we have latest data
-  const currentNote = notes.find(n => n.id === note?.id);
+  // Get current idea from context to ensure we have latest data
+  const currentIdea = notes.find(n => n.id === idea?.id);
 
   useEffect(() => {
-    if (currentNote) {
-      setTitle(currentNote.title);
-      setContent(currentNote.content);
-      setTags(currentNote.tags);
+    if (currentIdea) {
+      setTitle(currentIdea.title);
+      setContent(currentIdea.content);
+      setTags(currentIdea.tags);
       setError('');
     }
-  }, [currentNote]);
+  }, [currentIdea]);
 
   // Update linked notes whenever they change
   useEffect(() => {
-    if (currentNote) {
+    if (currentIdea) {
       const linkedNotesList = notes.filter(n =>
-        currentNote.linkedNoteIds?.includes(n.id)
+        currentIdea.linkedNoteIds?.includes(n.id)
       );
       setLinkedNotes(linkedNotesList);
     }
-  }, [currentNote, currentNote?.linkedNoteIds, notes]);
+  }, [currentIdea, currentIdea?.linkedNoteIds, notes]);
 
-  if (!isOpen || !currentNote) return null;
+  if (!isOpen || !currentIdea) return null;
 
   const handleDelete = async () => {
     setIsLoading(true);
     try {
-      await deleteNote(currentNote.id);
-      navigate('/dashboard/notes');
+      await deleteNote(currentIdea.id);
+      navigate('/dashboard/ideas');
       onClose();
     } catch (error) {
-      setError('Failed to delete note');
+      setError('Failed to delete idea');
     } finally {
       setIsLoading(false);
     }
@@ -76,14 +76,14 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
     setError('');
 
     try {
-      await updateNote(currentNote.id, {
+      await updateNote(currentIdea.id, {
         title: title.trim(),
         content: content.trim(),
-        tags
+        tags: tags.includes('idea') ? tags : ['idea', ...tags]
       });
       onClose();
     } catch (error) {
-      setError('Failed to update note. Please try again.');
+      setError('Failed to update idea. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -96,7 +96,7 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
       <div className="relative w-full h-[calc(100vh-4rem)] max-w-5xl mx-auto flex glass-morphism rounded-xl overflow-hidden">
         <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
           <Header 
-            note={currentNote}
+            idea={currentIdea}
             onClose={onClose}
             onShowDeleteConfirm={() => setShowDeleteConfirm(true)}
           />
@@ -112,9 +112,8 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
               onTitleChange={setTitle}
               onContentChange={setContent}
               onTagInputChange={(value) => {
-                // Ensure we're always setting a string
                 if (Array.isArray(value)) {
-                  setTags([...tags, ...value]);
+                  setTags(['idea', ...value]);
                   setTagInput('');
                 } else {
                   setTagInput(value);
@@ -127,15 +126,15 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
                   setTagInput('');
                 }
               }}
-              onRemoveTag={(tag) => setTags(tags.filter(t => t !== tag))}
+              onRemoveTag={(tag) => tag !== 'idea' && setTags(tags.filter(t => t !== tag))}
               setError={setError}
             />
 
             <LinkedNotesPanel
               linkedNotes={linkedNotes}
               onShowAddLink={() => setShowAddLinkModal(true)}
-              currentNoteId={currentNote.id}
-              isIdea={false}
+              currentNoteId={currentIdea?.id || ''}
+              isIdea={true}
             />
           </div>
 
@@ -168,7 +167,7 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
         <AddLinkModal
           isOpen={showAddLinkModal}
           onClose={() => setShowAddLinkModal(false)}
-          sourceNoteId={currentNote.id}
+          sourceNoteId={currentIdea.id}
           onLinkAdded={() => setShowAddLinkModal(false)}
         />
       </div>

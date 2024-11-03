@@ -52,7 +52,7 @@ export function AddLinkModal({ isOpen, onClose, sourceNoteId, onLinkAdded }: Add
       <div className="relative w-full max-w-lg glass-morphism rounded-xl">
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-dark-border">
           <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-            Link to {isSourceIdea ? 'Note or Idea' : 'Note'}
+            Link to Note or Idea
           </h3>
           <button
             onClick={onClose}

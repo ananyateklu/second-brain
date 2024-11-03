@@ -1,11 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { Lightbulb, Plus, Search, Grid, List, Network } from 'lucide-react';
-import { useNotes } from '../../../contexts/NotesContext';
+import { Note, useNotes } from '../../../contexts/NotesContext';
 import { IdeasList } from './IdeasList';
 import { IdeasGrid } from './IdeasGrid';
 import { IdeasMindMap } from './IdeasMindMap';
 import { NewIdeaModal } from './NewIdeaModal';
-import { EditIdeaModal } from './EditIdeaModal';
+import { EditIdeaModal } from '../Ideas/EditIdeaModal/index';
 
 type ViewMode = 'list' | 'grid' | 'mindmap';
 
@@ -14,7 +14,7 @@ export function IdeasPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [showNewIdeaModal, setShowNewIdeaModal] = useState(false);
-  const [selectedIdeaId, setSelectedIdeaId] = useState<string | null>(null);
+  const [selectedIdea, setSelectedIdea] = useState<Note | null>(null);
 
   // Filter ideas (notes tagged with 'idea')
   const ideas = notes.filter(note => 
@@ -26,7 +26,15 @@ export function IdeasPage() {
   );
 
   const handleIdeaClick = (ideaId: string) => {
-    setSelectedIdeaId(ideaId);
+    setSelectedIdea(notes.find(note => note.id === ideaId) || null);
+  };
+
+  const handleEditIdea = (idea: Note) => {
+    setSelectedIdea(idea);
+  };
+
+  const handleCloseEditModal = () => {
+    setSelectedIdea(null);
   };
 
   return (
@@ -141,11 +149,13 @@ export function IdeasPage() {
         onClose={() => setShowNewIdeaModal(false)}
       />
 
-      <EditIdeaModal
-        isOpen={selectedIdeaId !== null}
-        onClose={() => setSelectedIdeaId(null)}
-        ideaId={selectedIdeaId}
-      />
+      {selectedIdea && (
+        <EditIdeaModal
+          isOpen={selectedIdea !== null}
+          onClose={handleCloseEditModal}
+          idea={selectedIdea}
+        />
+      )}
     </div>
   );
 }

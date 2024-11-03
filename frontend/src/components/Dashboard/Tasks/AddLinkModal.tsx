@@ -24,16 +24,16 @@ export function AddLinkModal({ isOpen, onClose, taskId, onLinkAdded }: AddLinkMo
 
   const filteredItems = notes.filter(item => {
     const isIdea = item.tags.includes('idea');
-    const isAlreadyLinked = isIdea 
+    const isAlreadyLinked = isIdea
       ? task.linkedIdeas.includes(item.id)
       : task.linkedNotes.includes(item.id);
 
     return !isAlreadyLinked && // Don't show already linked items
-      (selectedType === 'all' || 
-       (selectedType === 'ideas' && isIdea) ||
-       (selectedType === 'notes' && !isIdea)) &&
+      (selectedType === 'all' ||
+        (selectedType === 'ideas' && isIdea) ||
+        (selectedType === 'notes' && !isIdea)) &&
       (item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-       item.content.toLowerCase().includes(searchQuery.toLowerCase()));
+        item.content.toLowerCase().includes(searchQuery.toLowerCase()));
   });
 
   const handleAddLink = async (itemId: string) => {
@@ -53,7 +53,7 @@ export function AddLinkModal({ isOpen, onClose, taskId, onLinkAdded }: AddLinkMo
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      
+
       <div className="relative w-full max-w-lg glass-morphism rounded-xl">
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-dark-border">
           <h3 className="text-lg font-medium text-gray-900 dark:text-white">
@@ -99,7 +99,7 @@ export function AddLinkModal({ isOpen, onClose, taskId, onLinkAdded }: AddLinkMo
             <div className="max-h-60 overflow-y-auto">
               {filteredItems.map(item => {
                 const isIdea = item.tags.includes('idea');
-                
+
                 return (
                   <button
                     key={item.id}
@@ -107,11 +107,10 @@ export function AddLinkModal({ isOpen, onClose, taskId, onLinkAdded }: AddLinkMo
                     disabled={isLoading}
                     className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-dark-hover rounded-lg transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <div className={`p-1.5 rounded-lg ${
-                      isIdea 
+                    <div className={`p-1.5 rounded-lg ${isIdea
                         ? 'bg-amber-100 dark:bg-amber-900/30'
                         : 'bg-blue-100 dark:bg-blue-900/30'
-                    }`}>
+                      }`}>
                       {isIdea ? (
                         <Lightbulb className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                       ) : (
