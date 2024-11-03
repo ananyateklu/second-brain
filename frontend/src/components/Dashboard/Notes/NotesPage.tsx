@@ -215,8 +215,19 @@ export function NotesPage() {
         </div>
       ) : (
         <NotesGraph 
-          notes={filteredNotes} 
-          onNoteClick={(noteId) => handleEditNote(notes.find(n => n.id === noteId)!)} 
+          notes={filteredNotes.map(note => ({
+            ...note,
+            linkedNotes: note.linkedNotes?.map(n => n.id) || []
+          }))}
+          onNoteClick={(noteId) => {
+            const note = notes.find(n => n.id === noteId);
+            if (note) {
+              handleEditNote({
+                ...note,
+                linkedNotes: note.linkedNotes?.map(n => n.id) || []
+              });
+            }
+          }}
         />
       )}
 
