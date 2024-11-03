@@ -24,39 +24,20 @@ namespace SecondBrain.Api.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAllNotes()
+        public async Task<IActionResult> GetNotes()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
             if (string.IsNullOrEmpty(userId))
             {
                 return Unauthorized(new { error = "User ID not found in token." });
             }
 
             var notes = await _context.Notes
-                .Where(n => n.UserId == userId && !n.IsArchived)
-                .Include(n => n.NoteLinks)
-                .Select(n => new NoteResponse
-                {
-                    Id = n.Id,
-                    Title = n.Title,
-                    Content = n.Content,
-                    Tags = (n.Tags ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries).ToList(),
-                    IsPinned = n.IsPinned,
-                    IsFavorite = n.IsFavorite,
-                    IsArchived = n.IsArchived,
-                    ArchivedAt = n.ArchivedAt,
-                    CreatedAt = n.CreatedAt,
-                    UpdatedAt = n.UpdatedAt,
-                    LinkedNoteIds = n.NoteLinks
-                        .Where(nl => !nl.IsDeleted)
-                        .Select(nl => nl.LinkedNoteId)
-                        .ToList(),
-                    IsIdea = n.IsIdea
-                })
+                .Where(n => n.UserId == userId && !n.IsDeleted)
                 .ToListAsync();
 
-            return Ok(notes);
+            var response = notes.Select(NoteResponse.FromEntity);
+            return Ok(response);
         }
 
         [HttpPost]
@@ -230,9 +211,14 @@ namespace SecondBrain.Api.Controllers
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteNoteById(string id)
+        public async Task<IActionResult> DeleteNote(string id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { error = "User ID not found in token." });
+            }
+
             var note = await _context.Notes
                 .Where(n => n.Id == id && n.UserId == userId)
                 .FirstOrDefaultAsync();
@@ -242,28 +228,92 @@ namespace SecondBrain.Api.Controllers
                 return NotFound(new { error = "Note not found." });
             }
 
-            // Remove related NoteLink entries
-            var relatedLinks = await _context.NoteLinks
-                .Where(nl => nl.NoteId == id || nl.LinkedNoteId == id)
-                .ToListAsync();
-
-            _context.NoteLinks.RemoveRange(relatedLinks);
-
-            // Remove the note
-            _context.Notes.Remove(note);
+            note.IsDeleted = true;
+            note.DeletedAt = DateTime.UtcNow;
+            note.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
+            return NoContent();
+        }
 
-            return Ok(new { message = "Note deleted successfully." });
+        [HttpGet("deleted")]
+        public async Task<IActionResult> GetDeletedNotes()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { error = "User ID not found in token." });
+            }
+
+            var deletedNotes = await _context.Notes
+                .Where(n => n.UserId == userId && n.IsDeleted)
+                .ToListAsync();
+
+            var response = deletedNotes.Select(NoteResponse.FromEntity);
+            return Ok(response);
+        }
+
+        [HttpPost("{id}/restore")]
+        public async Task<IActionResult> RestoreNote(string id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { error = "User ID not found in token." });
+            }
+
+            var note = await _context.Notes
+                .Where(n => n.Id == id && n.UserId == userId && n.IsDeleted)
+                .FirstOrDefaultAsync();
+
+            if (note == null)
+            {
+                return NotFound(new { error = "Note not found." });
+            }
+
+            note.IsDeleted = false;
+            note.DeletedAt = null;
+            note.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return Ok(NoteResponse.FromEntity(note));
+        }
+
+        [HttpDelete("{id}/permanent")]
+        public async Task<IActionResult> DeleteNotePermanently(string id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { error = "User ID not found in token." });
+            }
+
+            var note = await _context.Notes
+                .Where(n => n.Id == id && n.UserId == userId)
+                .FirstOrDefaultAsync();
+
+            if (note == null)
+            {
+                return NotFound(new { error = "Note not found." });
+            }
+
+            _context.Notes.Remove(note);
+            await _context.SaveChangesAsync();
+            
+            return NoContent();
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateNoteById(string id, [FromBody] UpdateNoteRequest request)
+        public async Task<IActionResult> UpdateNote(string id, [FromBody] UpdateNoteRequest request)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { error = "User ID not found in token." });
+            }
+
             var note = await _context.Notes
                 .Where(n => n.Id == id && n.UserId == userId)
-                .Include(n => n.NoteLinks)
                 .FirstOrDefaultAsync();
 
             if (note == null)
@@ -271,61 +321,23 @@ namespace SecondBrain.Api.Controllers
                 return NotFound(new { error = "Note not found." });
             }
 
-            // Only update properties that are explicitly set in the request
-            if (request.Title != null)
-                note.Title = request.Title;
-            
-            if (request.Content != null)
-                note.Content = request.Content;
-
-            if (request.IsPinned.HasValue)
-                note.IsPinned = request.IsPinned.Value;
-            
-            if (request.IsFavorite.HasValue)
-                note.IsFavorite = request.IsFavorite.Value;
-            
-            if (request.IsArchived.HasValue)
+            // Update properties if provided
+            if (request.Title != null) note.Title = request.Title;
+            if (request.Content != null) note.Content = request.Content;
+            if (request.Tags != null) note.Tags = string.Join(",", request.Tags);
+            if (request.IsPinned.HasValue) note.IsPinned = request.IsPinned.Value;
+            if (request.IsFavorite.HasValue) note.IsFavorite = request.IsFavorite.Value;
+            if (request.IsArchived.HasValue) note.IsArchived = request.IsArchived.Value;
+            if (request.IsDeleted.HasValue) 
             {
-                note.IsArchived = request.IsArchived.Value;
-                if (request.IsArchived.Value)
-                    note.ArchivedAt = DateTime.UtcNow;
-                else
-                    note.ArchivedAt = null;
-            }
-
-            // Only update Tags if they were explicitly provided in the request
-            if (request.Tags != null)
-            {
-                note.Tags = request.Tags.Any() 
-                    ? string.Join(",", request.Tags) 
-                    : null;
+                note.IsDeleted = request.IsDeleted.Value;
+                note.DeletedAt = request.IsDeleted.Value ? DateTime.UtcNow : null;
             }
 
             note.UpdatedAt = DateTime.UtcNow;
-            
             await _context.SaveChangesAsync();
 
-            var updatedNote = new NoteResponse
-            {
-                Id = note.Id,
-                Title = note.Title,
-                Content = note.Content,
-                IsPinned = note.IsPinned,
-                IsFavorite = note.IsFavorite,
-                IsArchived = note.IsArchived,
-                ArchivedAt = note.ArchivedAt,
-                CreatedAt = note.CreatedAt,
-                UpdatedAt = note.UpdatedAt,
-                LinkedNoteIds = note.NoteLinks
-                    .Where(nl => !nl.IsDeleted)
-                    .Select(nl => nl.LinkedNoteId)
-                    .ToList(),
-                Tags = !string.IsNullOrEmpty(note.Tags) 
-                    ? note.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList() 
-                    : new List<string>()
-            };
-
-            return Ok(updatedNote);
+            return Ok(NoteResponse.FromEntity(note));
         }
 
         [HttpGet("archived")]
@@ -379,54 +391,6 @@ namespace SecondBrain.Api.Controllers
             }).ToList();
 
             Console.WriteLine($"Mapped {response.Count} notes to response");
-
-            return Ok(response);
-        }
-
-        [HttpPost("{id}/restore")]
-        public async Task<IActionResult> RestoreNote(string id)
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { error = "User ID not found in token." });
-            }
-
-            var note = await _context.Notes
-                .Include(n => n.NoteLinks)
-                .FirstOrDefaultAsync(n => n.Id == id && n.UserId == userId);
-
-            if (note == null)
-            {
-                return NotFound(new { error = "Note not found" });
-            }
-
-            note.IsArchived = false;
-            note.ArchivedAt = null;
-            note.UpdatedAt = DateTime.UtcNow;
-
-            await _context.SaveChangesAsync();
-
-            var response = new NoteResponse
-            {
-                Id = note.Id,
-                Title = note.Title,
-                Content = note.Content,
-                Tags = !string.IsNullOrEmpty(note.Tags) 
-                    ? note.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList() 
-                    : new List<string>(),
-                IsPinned = note.IsPinned,
-                IsFavorite = note.IsFavorite,
-                IsArchived = note.IsArchived,
-                ArchivedAt = note.ArchivedAt,
-                CreatedAt = note.CreatedAt,
-                UpdatedAt = note.UpdatedAt,
-                LinkedNoteIds = note.NoteLinks
-                    .Where(nl => !nl.IsDeleted)
-                    .Select(nl => nl.LinkedNoteId)
-                    .ToList()
-            };
 
             return Ok(response);
         }

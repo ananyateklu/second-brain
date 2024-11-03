@@ -43,28 +43,36 @@ export const notesService = {
     };
   },
 
-  async getNotes(): Promise<Note[]> {
+  async getAllNotes(): Promise<Note[]> {
     const response = await api.get<Note[]>('/api/Notes');
-    return response.data.map(note => ({
-      ...note,
-      tags: Array.isArray(note.tags) ? note.tags : [],
-      linkedNoteIds: Array.isArray(note.linkedNoteIds) ? note.linkedNoteIds : [],
-      linkedNotes: Array.isArray(note.linkedNoteIds) ? note.linkedNoteIds : []
-    }));
+    return response.data
+      .filter(note => !note.isDeleted)  // Filter out deleted notes
+      .map(note => ({
+        ...note,
+        tags: Array.isArray(note.tags) ? note.tags : [],
+        linkedNoteIds: Array.isArray(note.linkedNoteIds) ? note.linkedNoteIds : [],
+        linkedNotes: Array.isArray(note.linkedNotes) ? note.linkedNotes : []
+      }));
   },
 
-  async updateNote(id: string, data: Partial<CreateNoteData>): Promise<Note> {
-    const response = await api.put<Note>(`/api/Notes/${id}`, data);
+  async updateNote(id: string, data: Partial<UpdateNoteData>): Promise<Note> {
+    const response = await api.put<Note>(`/api/Notes/${id}`, {
+        ...data,
+        ...(data.isDeleted && { deletedAt: new Date().toISOString() })
+    });
     return {
-      ...response.data,
-      tags: Array.isArray(response.data.tags) ? response.data.tags : [],
-      linkedNoteIds: Array.isArray(response.data.linkedNoteIds) ? response.data.linkedNoteIds : [],
-      linkedNotes: Array.isArray(response.data.linkedNoteIds) ? response.data.linkedNoteIds : []
+        ...response.data,
+        tags: Array.isArray(response.data.tags) ? response.data.tags : [],
+        linkedNoteIds: Array.isArray(response.data.linkedNoteIds) ? response.data.linkedNoteIds : [],
+        linkedNotes: Array.isArray(response.data.linkedNotes) ? response.data.linkedNotes : []
     };
   },
 
-  async deleteNote(id: string): Promise<void> {
-    await api.delete(`/api/Notes/${id}`);
+  async deleteNote(id: string): Promise<Note> {
+    return await this.updateNote(id, {
+      isDeleted: true,
+      deletedAt: new Date().toISOString()
+    });
   },
 
   async addLink(sourceId: string, targetId: string): Promise<Note> {
@@ -111,17 +119,21 @@ export const notesService = {
   },
 
   async restoreNote(id: string): Promise<Note> {
-    try {
-      const response = await api.post<Note>(`/api/Notes/${id}/restore`);
-      return {
-        ...response.data,
-        tags: Array.isArray(response.data.tags) ? response.data.tags : [],
-        linkedNoteIds: Array.isArray(response.data.linkedNoteIds) ? response.data.linkedNoteIds : [],
-        linkedNotes: Array.isArray(response.data.linkedNoteIds) ? response.data.linkedNoteIds : []
-      };
-    } catch (error) {
-      console.error('Error restoring note:', error);
-      throw error;
-    }
+    const response = await api.post<Note>(`/api/Notes/${id}/restore`);
+    return response.data;
+  },
+
+  async getDeletedNotes(): Promise<Note[]> {
+    const response = await api.get<Note[]>('/api/Notes/deleted');
+    return response.data.map(note => ({
+      ...note,
+      tags: Array.isArray(note.tags) ? note.tags : [],
+      linkedNoteIds: Array.isArray(note.linkedNoteIds) ? note.linkedNoteIds : [],
+      linkedNotes: Array.isArray(note.linkedNotes) ? note.linkedNotes : []
+    }));
+  },
+
+  async deleteNotePermanently(id: string): Promise<void> {
+    await api.delete(`/api/Notes/${id}/permanent`);
   }
 };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Trash2, Search, SlidersHorizontal, RotateCcw, AlertTriangle } from 'lucide-react';
 import { useTrash } from '../../../contexts/TrashContext';
 import { TrashList } from './TrashList';
@@ -6,7 +6,7 @@ import { TrashFilters } from './TrashFilters';
 import { ConfirmationDialog } from './ConfirmationDialog';
 
 export function TrashPage() {
-  const { trashedItems, emptyTrash } = useTrash();
+  const { trashedItems, emptyTrash, refreshTrashItems } = useTrash();
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showEmptyTrashDialog, setShowEmptyTrashDialog] = useState(false);
@@ -15,6 +15,10 @@ export function TrashPage() {
     dateRange: 'all' as 'all' | 'today' | 'week' | 'month',
     tags: [] as string[]
   });
+
+  useEffect(() => {
+    refreshTrashItems();
+  }, [refreshTrashItems]);
 
   const handleEmptyTrash = async () => {
     await emptyTrash();

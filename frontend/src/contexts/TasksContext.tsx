@@ -10,13 +10,15 @@ import { useTrash } from './TrashContext';
 
 interface TasksContextType {
   tasks: Task[];
+  trashTasks: Task[];
   addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => void;
   updateTask: (id: string, updates: Partial<Task>) => void;
-  deleteTask: (id: string) => void;
+  deleteTask: (id: string) => Promise<void>;
   addTaskLink: (taskId: string, itemId: string, type: 'note' | 'idea') => void;
   removeTaskLink: (taskId: string, itemId: string, type: 'note' | 'idea') => void;
   toggleTaskStatus: (id: string) => Promise<void>;
   fetchDeletedTasks: () => Promise<Task[]>;
+  restoreTask: (id: string) => Promise<void>;
 }
 
 const TasksContext = createContext<TasksContextType | null>(null);
@@ -24,6 +26,7 @@ const TasksContext = createContext<TasksContextType | null>(null);
 
 export function TasksProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [trashTasks, setTrashTasks] = useState<Task[]>([]);
   const { user } = useAuth();
   const { addActivity } = useActivities();
   const { moveToTrash } = useTrash();
@@ -255,9 +258,35 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const restoreTask = useCallback(async (id: string) => {
+    try {
+      const taskToRestore = trashTasks.find(task => task.id === id);
+      if (!taskToRestore) return;
+
+      // Update backend
+      await taskService.updateTask(id, {
+        isDeleted: false,
+        deletedAt: null,
+      });
+
+      // Add back to tasks
+      setTasks(prevTasks => [...prevTasks, { ...taskToRestore, isDeleted: false, deletedAt: null }]);
+
+      // Remove from trashTasks
+      setTrashTasks(prevTrashTasks => prevTrashTasks.filter(task => task.id !== id));
+
+      // Add activity (optional)
+      addActivity({ /* ... */ });
+    } catch (error) {
+      console.error('Failed to restore task:', error);
+      throw error;
+    }
+  }, [trashTasks, setTasks, setTrashTasks, addActivity]);
+
   return (
     <TasksContext.Provider value={{
       tasks,
+      trashTasks,
       addTask,
       updateTask,
       deleteTask,
@@ -265,6 +294,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
       removeTaskLink,
       toggleTaskStatus,
       fetchDeletedTasks,
+      restoreTask,
     }}>
       {children}
     </TasksContext.Provider>

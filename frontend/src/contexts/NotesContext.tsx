@@ -8,14 +8,14 @@ export interface Note {
   title: string;
   content: string;
   tags: string[];
-  isIdea: boolean;
-  isPinned: boolean;
   isFavorite: boolean;
   isArchived: boolean;
+  isDeleted: boolean;
+  deletedAt?: string;
   createdAt: string;
   updatedAt: string;
+  linkedNoteIds: string[];
   linkedNotes?: Note[];
-  linkedNoteIds?: string[];
 }
 
 interface NotesContextType {
@@ -40,21 +40,21 @@ const NotesContext = createContext<NotesContextType | null>(null);
 export function NotesProvider({ children }: { children: React.ReactNode }) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [archivedNotes, setArchivedNotes] = useState<Note[]>([]);
+  const [trashNotes, setTrashNotes] = useState<Note[]>([]);
   const { addActivity } = useActivities();
   const { moveToTrash } = useTrash();
 
   useEffect(() => {
-    const loadNotes = async () => {
+    const fetchNotes = async () => {
       try {
-        const fetchedNotes = await notesService.getNotes();
-        console.log('Fetched notes:', fetchedNotes);
-        setNotes(fetchedNotes);
+        const fetchedNotes = await notesService.getAllNotes();
+        setNotes(fetchedNotes.filter(note => !note.isArchived && !note.isDeleted));
       } catch (error) {
-        console.error('Failed to load notes:', error);
+        console.error('Failed to fetch notes:', error);
       }
     };
-    
-    loadNotes();
+
+    fetchNotes();
   }, []);
 
   const addNote = useCallback(async (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'linkedNoteIds' | 'linkedNotes'>) => {
@@ -66,20 +66,18 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
       
       const newNote = await notesService.createNote(noteWithSafeTags);
       
-      console.log('New note before adding to state:', newNote);
+      if (newNote.isDeleted || newNote.isArchived) {
+        return;
+      }
       
       const safeNewNote: Note = {
         ...newNote,
         tags: Array.isArray(newNote.tags) ? newNote.tags : [],
         linkedNoteIds: Array.isArray(newNote.linkedNoteIds) ? newNote.linkedNoteIds : [],
-        linkedNotes: Array.isArray(newNote.linkedNoteIds) ? newNote.linkedNoteIds : [],
+        linkedNotes: Array.isArray(newNote.linkedNotes) ? newNote.linkedNotes : [],
       };
       
-      setNotes(prev => {
-        console.log('Previous notes:', prev);
-        console.log('Adding new note:', safeNewNote);
-        return [safeNewNote, ...prev];
-      });
+      setNotes(prev => [safeNewNote, ...prev]);
 
       addActivity({
         actionType: 'create',
@@ -105,7 +103,9 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
 
       const updatedNote = await notesService.updateNote(id, updates);
       setNotes(prevNotes =>
-        prevNotes.map(note => (note.id === id ? updatedNote : note))
+        prevNotes
+          .map(note => (note.id === id ? updatedNote : note))
+          .filter(note => !note.isDeleted && !note.isArchived)
       );
 
       addActivity({
@@ -129,40 +129,53 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
       const noteToDelete = notes.find(note => note.id === id);
       if (!noteToDelete) return;
 
-      // Update backend with soft delete
+      // Remove from notes list immediately
+      setNotes(prev => prev.filter(note => note.id !== id));
+
+      // Mark as deleted in backend
       await notesService.updateNote(id, {
         isDeleted: true,
         deletedAt: new Date().toISOString(),
         title: noteToDelete.title,
         content: noteToDelete.content,
-        tags: noteToDelete.tags
+        tags: noteToDelete.tags,
+        isFavorite: noteToDelete.isFavorite,
+        linkedNoteIds: noteToDelete.linkedNoteIds
       });
 
       // Move to trash
-      const movedToTrash = await moveToTrash({
+      await moveToTrash({
         id: noteToDelete.id,
         type: noteToDelete.tags.includes('idea') ? 'idea' : 'note',
         title: noteToDelete.title,
         content: noteToDelete.content,
         metadata: {
           tags: noteToDelete.tags,
-          isFavorite: noteToDelete.isFavorite,
-          linkedItems: noteToDelete.linkedNoteIds
+          linkedItems: noteToDelete.linkedNoteIds,
+          isFavorite: noteToDelete.isFavorite
         }
       });
 
-      if (movedToTrash) {
-        setNotes(prev => prev.filter(note => note.id !== id));
-        addActivity({
-          actionType: 'delete',
-          itemType: noteToDelete.tags.includes('idea') ? 'idea' : 'note',
-          itemId: id,
-          itemTitle: noteToDelete.title,
-          description: `Moved ${noteToDelete.tags.includes('idea') ? 'idea' : 'note'} to trash: ${noteToDelete.title}`
-        });
-      }
+      addActivity({
+        actionType: 'delete',
+        itemType: noteToDelete.tags.includes('idea') ? 'idea' : 'note',
+        itemId: id,
+        itemTitle: noteToDelete.title,
+        description: `Moved ${noteToDelete.tags.includes('idea') ? 'idea' : 'note'} to trash: ${noteToDelete.title}`,
+        metadata: {
+          noteId: id,
+          noteTitle: noteToDelete.title,
+          noteTags: noteToDelete.tags,
+          deletedAt: new Date().toISOString()
+        }
+      });
     } catch (error) {
       console.error('Failed to delete note:', error);
+      // Rollback the state change if the API call fails
+      const noteToDelete = notes.find(note => note.id === id);
+      if (noteToDelete) {
+        setNotes(prev => [...prev, noteToDelete]);
+      }
       throw error;
     }
   }, [notes, moveToTrash, addActivity]);
@@ -424,9 +437,13 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
 
   const restoreNote = useCallback(async (restoredNote: Note) => {
     try {
-      // Add back to notes list
-      const newNote = await notesService.createNote(restoredNote);
-      setNotes(prev => [newNote, ...prev]);
+      // Check if note already exists in state
+      setNotes(prevNotes => {
+        if (prevNotes.some(note => note.id === restoredNote.id)) {
+          return prevNotes; // Note already exists, don't add it again
+        }
+        return [...prevNotes, restoredNote];
+      });
 
       // Add activity
       addActivity({

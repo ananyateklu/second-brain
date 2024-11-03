@@ -4,6 +4,7 @@ import { Task } from '../services/api/tasks.service';
 import { Reminder } from '../services/api/reminders.service';
 import { useActivities } from './ActivityContext';
 import { tasksService } from '../services/api/tasks.service';
+import { notesService } from '../services/api/notes.service';
 
 export interface TrashedItem {
   id: string;
@@ -27,6 +28,7 @@ interface TrashContextType {
   deleteItemsPermanently: (itemIds: string[]) => Promise<void>;
   emptyTrash: () => Promise<void>;
   cleanupExpiredItems: () => Promise<void>;
+  refreshTrashItems: () => Promise<void>;
 }
 
 const TrashContext = createContext<TrashContextType | null>(null);
@@ -48,11 +50,15 @@ export function TrashProvider({
 
   const { addActivity } = useActivities();
 
-  // Fetch deleted tasks
+  // Fetch deleted items
   useEffect(() => {
-    const fetchDeletedTasks = async () => {
+    const fetchDeletedItems = async () => {
       try {
-        const deletedTasks = await tasksService.getDeletedTasks();
+        const [deletedTasks, deletedNotes] = await Promise.all([
+          tasksService.getDeletedTasks(),
+          notesService.getDeletedNotes()
+        ]);
+
         const taskItems: TrashedItem[] = deletedTasks.map(task => ({
           id: task.id,
           type: 'task',
@@ -69,13 +75,28 @@ export function TrashProvider({
           expiresAt: new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()
         }));
 
-        setTrashedItems(taskItems);
+        const noteItems: TrashedItem[] = deletedNotes.map(note => ({
+          id: note.id,
+          type: note.tags?.includes('idea') ? 'idea' : 'note',
+          title: note.title,
+          content: note.content,
+          metadata: {
+            tags: note.tags,
+            linkedItems: note.linkedNoteIds,
+            isFavorite: note.isFavorite
+          },
+          deletedAt: note.deletedAt || new Date().toISOString(),
+          expiresAt: new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        }));
+
+        // Set all items at once instead of accumulating
+        setTrashedItems([...taskItems, ...noteItems]);
       } catch (error) {
-        console.error('Failed to fetch deleted tasks:', error);
+        console.error('Failed to fetch deleted items:', error);
       }
     };
 
-    fetchDeletedTasks();
+    fetchDeletedItems();
   }, []);
 
   // Save to localStorage whenever trashedItems changes
@@ -91,16 +112,17 @@ export function TrashProvider({
         return false;
       }
 
-      const now = new Date();
-      const expirationDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-
+      const deletedAt = new Date().toISOString();
       const trashedItem: TrashedItem = {
         ...item,
-        deletedAt: now.toISOString(),
-        expiresAt: expirationDate.toISOString()
+        deletedAt,
+        expiresAt: new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()
       };
 
+      // Update state immediately with the new item
       setTrashedItems(prev => [...prev, trashedItem]);
+      
+      // No need to fetch all items again, as we just added one item
       return true;
     } catch (error) {
       console.error('Failed to move item to trash:', error);
@@ -124,11 +146,51 @@ export function TrashProvider({
   const restoreItems = useCallback(async (itemIds: string[]) => {
     const itemsToRestore = trashedItems.filter(item => itemIds.includes(item.id));
     
+    // Create a map to track restored items
+    const restoredItems = new Map();
+    
     for (const item of itemsToRestore) {
       try {
         switch (item.type) {
+          case 'note':
+          case 'idea':
+            // Remove from trash immediately
+            setTrashedItems(prev => prev.filter(i => i.id !== item.id));
+            
+            // Restore the note
+            const restoredNote = await notesService.restoreNote(item.id);
+            
+            // Track this restoration to prevent duplicates
+            if (!restoredItems.has(item.id)) {
+              restoredItems.set(item.id, restoredNote);
+              
+              if (onRestoreNote) {
+                await onRestoreNote(restoredNote);
+              }
+              
+              addActivity({
+                actionType: 'restore',
+                itemType: item.type,
+                itemId: item.id,
+                itemTitle: item.title,
+                description: `Restored ${item.type} from trash: ${item.title}`,
+                metadata: {
+                  noteId: item.id,
+                  noteTitle: item.title,
+                  noteTags: item.metadata?.tags,
+                  restoredAt: new Date().toISOString()
+                }
+              });
+            }
+            break;
+            
           case 'task':
+            // Remove from trash before restore to prevent state conflicts
+            setTrashedItems(prev => prev.filter(i => i.id !== item.id));
             const restoredTask = await tasksService.restoreTask(item.id);
+            if (onRestoreTask) {
+              await onRestoreTask(restoredTask);
+            }
             addActivity({
               actionType: 'restore',
               itemType: 'task',
@@ -146,27 +208,18 @@ export function TrashProvider({
               }
             });
             break;
-            
-          // Future cases for other types
-          case 'note':
-            // await notesService.restoreNote(item.id);
-            break;
-          case 'idea':
-            // await ideasService.restoreIdea(item.id);
-            break;
           case 'reminder':
             // await remindersService.restoreReminder(item.id);
             break;
         }
       } catch (error) {
         console.error(`Failed to restore ${item.type}:`, error);
+        // If restore fails, we might want to add the item back to trash
+        setTrashedItems(prev => [...prev, item]);
         throw error;
       }
     }
-
-    // Remove restored items from trash
-    setTrashedItems(prev => prev.filter(item => !itemIds.includes(item.id)));
-  }, [trashedItems, addActivity]);
+  }, [trashedItems, onRestoreNote, onRestoreTask, addActivity]);
 
   const deleteItemsPermanently = useCallback(async (itemIds: string[]) => {
     const itemsToDelete = trashedItems.filter(item => itemIds.includes(item.id));
@@ -190,12 +243,22 @@ export function TrashProvider({
             });
             break;
             
-          // Future cases for other types
           case 'note':
-            // await notesService.deleteNotePermanently(item.id);
-            break;
           case 'idea':
-            // await ideasService.deleteIdeaPermanently(item.id);
+            await notesService.deleteNotePermanently(item.id);
+            addActivity({
+                actionType: 'delete',
+                itemType: item.type,
+                itemId: item.id,
+                itemTitle: item.title,
+                description: `Permanently deleted ${item.type}: ${item.title}`,
+                metadata: {
+                    noteId: item.id,
+                    noteTitle: item.title,
+                    noteTags: item.metadata?.tags,
+                    deletedAt: new Date().toISOString()
+                }
+            });
             break;
           case 'reminder':
             // await remindersService.deleteReminderPermanently(item.id);
@@ -221,38 +284,48 @@ export function TrashProvider({
     }
   }, []);
 
-  const restoreTask = useCallback(async (id: string) => {
+  const refreshTrashItems = useCallback(async () => {
     try {
-      // Call the backend to restore the task
-      const restoredTask = await taskService.restoreTask(id);
+      const [deletedTasks, deletedNotes] = await Promise.all([
+        tasksService.getDeletedTasks(),
+        notesService.getDeletedNotes()
+      ]);
 
-      // Remove from trash
-      setTrashedItems(prev => prev.filter(item => item.id !== id));
-
-      // Add activity
-      addActivity({
-        actionType: 'restore',
-        itemType: 'task',
-        itemId: id,
-        itemTitle: restoredTask.title,
-        description: `Restored task from trash: ${restoredTask.title}`,
+      const taskItems: TrashedItem[] = deletedTasks.map(task => ({
+        id: task.id,
+        type: 'task',
+        title: task.title,
+        content: task.description,
         metadata: {
-          taskId: id,
-          taskTitle: restoredTask.title,
-          taskStatus: restoredTask.status,
-          taskPriority: restoredTask.priority,
-          taskDueDate: restoredTask.dueDate,
-          taskTags: restoredTask.tags,
-          restoredAt: new Date().toISOString()
-        }
-      });
+          tags: task.tags,
+          dueDate: task.dueDate,
+          priority: task.priority,
+          status: task.status,
+          deletedAt: task.deletedAt
+        },
+        deletedAt: task.deletedAt || new Date().toISOString(),
+        expiresAt: new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()
+      }));
 
-      return restoredTask;
+      const noteItems: TrashedItem[] = deletedNotes.map(note => ({
+        id: note.id,
+        type: note.tags?.includes('idea') ? 'idea' : 'note',
+        title: note.title,
+        content: note.content,
+        metadata: {
+          tags: note.tags,
+          linkedItems: note.linkedNoteIds,
+          isFavorite: note.isFavorite
+        },
+        deletedAt: note.deletedAt || new Date().toISOString(),
+        expiresAt: new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()
+      }));
+
+      setTrashedItems([...taskItems, ...noteItems]);
     } catch (error) {
-      console.error('Failed to restore task:', error);
-      throw error;
+      console.error('Failed to refresh trash items:', error);
     }
-  }, [setTrashedItems, addActivity]);
+  }, []);
 
   return (
     <TrashContext.Provider value={{
@@ -261,7 +334,8 @@ export function TrashProvider({
       restoreItems,
       deleteItemsPermanently,
       emptyTrash,
-      cleanupExpiredItems
+      cleanupExpiredItems,
+      refreshTrashItems
     }}>
       {children}
     </TrashContext.Provider>

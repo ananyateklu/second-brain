@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { CheckSquare, Square, Calendar, Clock, Tag, Link2, AlertCircle } from 'lucide-react';
 import { Task, useTasks } from '../../../contexts/TasksContext';
 import { EditTaskModal } from './EditTaskModal';
