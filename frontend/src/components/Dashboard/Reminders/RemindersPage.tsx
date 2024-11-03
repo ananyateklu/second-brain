@@ -39,8 +39,8 @@ export function RemindersPage() {
       <div className="glass-morphism p-6 rounded-xl">
         <div className="flex flex-col sm:flex-row gap-6 justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
-              <Bell className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+            <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+              <Bell className="w-6 h-6 text-purple-600 dark:text-purple-400" />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Reminders</h1>

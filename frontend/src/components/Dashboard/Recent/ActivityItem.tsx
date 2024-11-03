@@ -42,10 +42,10 @@ const actionTypeIcons: Record<string, React.ElementType> = {
 };
 
 const itemTypeColors: Record<string, string> = {
-  note: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400',
+  note: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
   task: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400',
-  idea: 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400',
-  reminder: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400',
+  idea: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
+  reminder: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400',
   // Add more item types if needed
 };
 

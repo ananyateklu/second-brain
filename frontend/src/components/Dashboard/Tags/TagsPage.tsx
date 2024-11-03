@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Tag, ChevronRight, Hash, FileText, Lightbulb, CheckSquare, Search, SlidersHorizontal, Grid, List } from 'lucide-react';
+import { Tag, ChevronRight, Hash, FileText, Lightbulb, CheckSquare, Search, SlidersHorizontal, Grid, List, Bell } from 'lucide-react';
 import { useNotes } from '../../../contexts/NotesContext';
 import { useTasks } from '../../../contexts/TasksContext';
+import { useReminders } from '../../../contexts/RemindersContext';
 import { NotesGraph } from '../Notes/NotesGraph';
 
-type ItemType = 'note' | 'task' | 'idea';
+type ItemType = 'note' | 'task' | 'idea' | 'reminder';
 
 interface TaggedItem {
   id: string;
@@ -20,6 +21,7 @@ export function TagsPage() {
   const navigate = useNavigate();
   const { notes } = useNotes();
   const { tasks } = useTasks();
+  const { reminders } = useReminders();
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
@@ -33,14 +35,29 @@ export function TagsPage() {
   // Combine all tagged items
   const allItems = useMemo(() => {
     const items: TaggedItem[] = [
-      ...notes.map(note => ({
-        id: note.id,
-        title: note.title,
-        content: note.content,
-        tags: note.tags,
-        type: 'note' as ItemType,
-        updatedAt: note.updatedAt
-      })),
+      // Regular notes (excluding ideas)
+      ...notes
+        .filter(note => !note.isIdea)
+        .map(note => ({
+          id: note.id,
+          title: note.title,
+          content: note.content,
+          tags: note.tags,
+          type: 'note' as ItemType,
+          updatedAt: note.updatedAt
+        })),
+      // Ideas (notes with isIdea=true)
+      ...notes
+        .filter(note => note.isIdea)
+        .map(note => ({
+          id: note.id,
+          title: note.title,
+          content: note.content,
+          tags: note.tags,
+          type: 'idea' as ItemType,
+          updatedAt: note.updatedAt
+        })),
+      // Tasks
       ...tasks.map(task => ({
         id: task.id,
         title: task.title,
@@ -48,11 +65,20 @@ export function TagsPage() {
         tags: task.tags,
         type: 'task' as ItemType,
         updatedAt: task.updatedAt
+      })),
+      // Reminders
+      ...reminders.map(reminder => ({
+        id: reminder.id,
+        title: reminder.title,
+        content: reminder.description || '',
+        tags: reminder.tags,
+        type: 'reminder' as ItemType,
+        updatedAt: reminder.updatedAt
       }))
     ];
 
     return items;
-  }, [notes, tasks]);
+  }, [notes, tasks, reminders]);
 
   // Calculate tag statistics
   const tagStats = useMemo(() => {
@@ -60,7 +86,10 @@ export function TagsPage() {
     
     allItems.forEach(item => {
       item.tags.forEach(tag => {
-        const current = stats.get(tag) || { count: 0, byType: { note: 0, task: 0, idea: 0 } };
+        const current = stats.get(tag) || { 
+          count: 0, 
+          byType: { note: 0, task: 0, idea: 0, reminder: 0 } 
+        };
         current.count++;
         current.byType[item.type]++;
         stats.set(tag, current);
@@ -113,6 +142,8 @@ export function TagsPage() {
         return <CheckSquare className="w-5 h-5 text-green-600 dark:text-green-400" />;
       case 'idea':
         return <Lightbulb className="w-5 h-5 text-amber-600 dark:text-amber-400" />;
+      case 'reminder':
+        return <Bell className="w-5 h-5 text-purple-600 dark:text-purple-400" />;
       default:
         return <Hash className="w-5 h-5 text-gray-600 dark:text-gray-400" />;
     }
@@ -128,6 +159,9 @@ export function TagsPage() {
         break;
       case 'idea':
         navigate(`/dashboard/ideas/${item.id}`);
+        break;
+      case 'reminder':
+        navigate(`/dashboard/reminders/${item.id}`);
         break;
     }
   };
@@ -196,20 +230,26 @@ export function TagsPage() {
                     <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                       {byType.note > 0 && (
                         <span className="flex items-center gap-1">
-                          <FileText className="w-3 h-3" />
+                          <FileText className="w-3 h-3 text-blue-600 dark:text-blue-400" />
                           {byType.note}
                         </span>
                       )}
                       {byType.task > 0 && (
                         <span className="flex items-center gap-1">
-                          <CheckSquare className="w-3 h-3" />
+                          <CheckSquare className="w-3 h-3 text-green-600 dark:text-green-400" />
                           {byType.task}
                         </span>
                       )}
                       {byType.idea > 0 && (
                         <span className="flex items-center gap-1">
-                          <Lightbulb className="w-3 h-3" />
+                          <Lightbulb className="w-3 h-3 text-amber-600 dark:text-amber-400" />
                           {byType.idea}
+                        </span>
+                      )}
+                      {byType.reminder > 0 && (
+                        <span className="flex items-center gap-1">
+                          <Bell className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                          {byType.reminder}
                         </span>
                       )}
                     </div>

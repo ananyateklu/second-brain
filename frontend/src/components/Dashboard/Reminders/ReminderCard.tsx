@@ -52,7 +52,7 @@ export function ReminderCard({ reminder }: ReminderCardProps) {
                 {reminder.title}
               </h3>
               {isOverdue && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
                   <AlertCircle className="w-3 h-3" />
                   Overdue
                 </span>
