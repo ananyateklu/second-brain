@@ -127,55 +127,89 @@ export function TrashProvider({
     for (const item of itemsToRestore) {
       try {
         switch (item.type) {
-          case 'note':
-            if (onRestoreNote) {
-              const restoredNote = {
-                id: item.id,
-                title: item.title,
-                content: item.content || '',
-                tags: item.metadata?.tags || [],
-                isFavorite: item.metadata?.isFavorite || false,
-                isPinned: false,
-                isArchived: false,
-                linkedNoteIds: item.metadata?.linkedItems || [],
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-              };
-              await onRestoreNote(restoredNote);
-            }
-            break;
           case 'task':
-            if (onRestoreTask) {
-              await onRestoreTask(item);
-            }
+            const restoredTask = await tasksService.restoreTask(item.id);
+            addActivity({
+              actionType: 'restore',
+              itemType: 'task',
+              itemId: item.id,
+              itemTitle: item.title,
+              description: `Restored task from trash: ${item.title}`,
+              metadata: {
+                taskId: item.id,
+                taskTitle: item.title,
+                taskStatus: item.metadata?.status,
+                taskPriority: item.metadata?.priority,
+                taskDueDate: item.metadata?.dueDate,
+                taskTags: item.metadata?.tags,
+                restoredAt: new Date().toISOString()
+              }
+            });
+            break;
+            
+          // Future cases for other types
+          case 'note':
+            // await notesService.restoreNote(item.id);
+            break;
+          case 'idea':
+            // await ideasService.restoreIdea(item.id);
             break;
           case 'reminder':
-            if (onRestoreReminder) {
-              await onRestoreReminder(item);
-            }
+            // await remindersService.restoreReminder(item.id);
             break;
         }
       } catch (error) {
         console.error(`Failed to restore ${item.type}:`, error);
+        throw error;
       }
     }
 
-    // Remove from trash
+    // Remove restored items from trash
     setTrashedItems(prev => prev.filter(item => !itemIds.includes(item.id)));
-  }, [trashedItems, onRestoreNote, onRestoreTask, onRestoreReminder]);
+  }, [trashedItems, addActivity]);
 
   const deleteItemsPermanently = useCallback(async (itemIds: string[]) => {
-    try {
-      setTrashedItems(prev => {
-        const updatedItems = prev.filter(item => !itemIds.includes(item.id));
-        localStorage.setItem('trashedItems', JSON.stringify(updatedItems));
-        return updatedItems;
-      });
-    } catch (error) {
-      console.error('Failed to delete items permanently:', error);
-      throw error;
+    const itemsToDelete = trashedItems.filter(item => itemIds.includes(item.id));
+    
+    for (const item of itemsToDelete) {
+      try {
+        switch (item.type) {
+          case 'task':
+            await tasksService.deleteTaskPermanently(item.id);
+            addActivity({
+              actionType: 'delete',
+              itemType: 'task',
+              itemId: item.id,
+              itemTitle: item.title,
+              description: `Permanently deleted task: ${item.title}`,
+              metadata: {
+                taskId: item.id,
+                taskTitle: item.title,
+                deletedAt: new Date().toISOString()
+              }
+            });
+            break;
+            
+          // Future cases for other types
+          case 'note':
+            // await notesService.deleteNotePermanently(item.id);
+            break;
+          case 'idea':
+            // await ideasService.deleteIdeaPermanently(item.id);
+            break;
+          case 'reminder':
+            // await remindersService.deleteReminderPermanently(item.id);
+            break;
+        }
+      } catch (error) {
+        console.error(`Failed to permanently delete ${item.type}:`, error);
+        throw error;
+      }
     }
-  }, []);
+
+    // Remove deleted items from trash
+    setTrashedItems(prev => prev.filter(item => !itemIds.includes(item.id)));
+  }, [trashedItems, addActivity]);
 
   const emptyTrash = useCallback(async () => {
     try {

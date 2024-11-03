@@ -220,5 +220,30 @@ namespace SecondBrain.Api.Controllers
             var response = TaskResponse.FromEntity(task);
             return Ok(response);
         }
+
+        [HttpDelete("{id}/permanent")]
+        public async Task<IActionResult> DeleteTaskPermanently(string id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { error = "User ID not found in token." });
+            }
+
+            var task = await _context.Tasks
+                .Where(t => t.Id == id && t.UserId == userId)
+                .FirstOrDefaultAsync();
+
+            if (task == null)
+            {
+                return NotFound(new { error = "Task not found." });
+            }
+
+            // Permanently remove the task
+            _context.Tasks.Remove(task);
+            await _context.SaveChangesAsync();
+            
+            return NoContent();
+        }
     }
 }

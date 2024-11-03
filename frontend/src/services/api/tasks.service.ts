@@ -52,5 +52,9 @@ export const tasksService = {
 
   async deleteTask(id: string): Promise<void> {
     await api.delete(`/api/Tasks/${id}`);
-  }
+  },
+
+  async deleteTaskPermanently(id: string): Promise<void> {
+    await api.delete(`/api/Tasks/${id}/permanent`);
+  },
 };
