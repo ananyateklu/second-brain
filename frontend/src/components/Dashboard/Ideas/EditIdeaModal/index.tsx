@@ -55,6 +55,7 @@ export function EditIdeaModal({ isOpen, onClose, idea }: EditIdeaModalProps) {
     setIsLoading(true);
     try {
       await deleteNote(currentIdea.id);
+      setShowDeleteConfirm(false);
       navigate('/dashboard/ideas');
       onClose();
     } catch (error) {
