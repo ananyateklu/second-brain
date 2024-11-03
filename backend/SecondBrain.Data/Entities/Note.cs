@@ -15,6 +15,7 @@ namespace SecondBrain.Data.Entities
         public bool IsPinned { get; set; }
         public bool IsFavorite { get; set; }
         public bool IsArchived { get; set; }
+        public bool IsIdea { get; set; }
         public DateTime? ArchivedAt { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }

@@ -17,6 +17,8 @@ namespace SecondBrain.Data
         public DbSet<TaskItemNote> TaskItemNotes { get; set; }
         public DbSet<Activity> Activities { get; set; }
         public DbSet<NoteLink> NoteLinks { get; set; } = null!;
+        public DbSet<Idea> Ideas { get; set; }
+        public DbSet<IdeaLink> IdeaLinks { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -90,6 +92,15 @@ namespace SecondBrain.Data
             modelBuilder.Entity<NoteLink>()
                 .Property(nl => nl.IsDeleted)
                 .HasDefaultValue(false);
+
+            modelBuilder.Entity<IdeaLink>()
+                .HasKey(il => new { il.IdeaId, il.LinkedItemId });
+
+            modelBuilder.Entity<IdeaLink>()
+                .HasOne(il => il.Idea)
+                .WithMany(i => i.IdeaLinks)
+                .HasForeignKey(il => il.IdeaId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

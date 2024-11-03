@@ -1,19 +1,23 @@
-namespace SecondBrain.Data.Entities
+namespace SecondBrain.Api.DTOs.Ideas
 {
-    public class Idea
+    public class IdeaResponse
     {
         public string Id { get; set; }
         public string Title { get; set; }
         public string Content { get; set; }
-        public string UserId { get; set; }
-        public User User { get; set; }
         public bool IsFavorite { get; set; }
-        public bool IsPinned { get; set; }
         public bool IsArchived { get; set; }
         public DateTime? ArchivedAt { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
-        public string Tags { get; set; }
-        public ICollection<IdeaLink> IdeaLinks { get; set; } = new List<IdeaLink>();
+        public List<string> Tags { get; set; }
+        public List<LinkedItemResponse> LinkedItems { get; set; }
     }
-}
+
+    public class LinkedItemResponse
+    {
+        public string Id { get; set; }
+        public string Type { get; set; }
+        public string Title { get; set; }
+    }
+} 

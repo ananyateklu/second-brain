@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Lightbulb, Plus, Search, Grid, List, Network } from 'lucide-react';
 import { useNotes } from '../../../contexts/NotesContext';
 import { IdeasList } from './IdeasList';
@@ -18,7 +18,7 @@ export function IdeasPage() {
 
   // Filter ideas (notes tagged with 'idea')
   const ideas = notes.filter(note => 
-    note.tags.includes('idea') &&
+    note.isIdea === true && !note.isArchived &&
     (searchQuery
       ? note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         note.content.toLowerCase().includes(searchQuery.toLowerCase())

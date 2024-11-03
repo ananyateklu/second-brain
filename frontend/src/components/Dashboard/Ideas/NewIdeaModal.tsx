@@ -49,9 +49,8 @@ export function NewIdeaModal({ isOpen, onClose }: NewIdeaModalProps) {
       await addNote({
         title: title.trim(),
         content: content.trim(),
-        tags,
-        isPinned: false,
-        isFavorite: false
+        tags: tags,
+        isIdea: true
       });
       
       onClose();

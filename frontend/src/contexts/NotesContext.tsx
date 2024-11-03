@@ -7,14 +7,14 @@ export interface Note {
   title: string;
   content: string;
   tags: string[];
-  createdAt: string;
-  updatedAt: string;
+  isIdea: boolean;
   isPinned: boolean;
   isFavorite: boolean;
-  isArchived?: boolean;
-  archivedAt?: string;
-  linkedNoteIds: string[];
-  linkedNotes?: string[];
+  isArchived: boolean;
+  createdAt: string;
+  updatedAt: string;
+  linkedNotes?: Note[];
+  linkedNoteIds?: string[];
 }
 
 interface NotesContextType {

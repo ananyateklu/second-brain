@@ -51,7 +51,8 @@ namespace SecondBrain.Api.Controllers
                     LinkedNoteIds = n.NoteLinks
                         .Where(nl => !nl.IsDeleted)
                         .Select(nl => nl.LinkedNoteId)
-                        .ToList()
+                        .ToList(),
+                    IsIdea = n.IsIdea
                 })
                 .ToListAsync();
 

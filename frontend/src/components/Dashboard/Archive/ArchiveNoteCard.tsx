@@ -23,7 +23,7 @@ export function ArchiveNoteCard({ note, isSelected, onSelect }: ArchiveNoteCardP
     }
   };
 
-  const isIdea = note.tags.includes('idea');
+  const isIdea = note.isIdea;
 
   return (
     <div
