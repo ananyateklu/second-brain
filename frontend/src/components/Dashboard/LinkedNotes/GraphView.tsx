@@ -1,37 +1,51 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import CytoscapeComponent from 'react-cytoscapejs';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useNotes } from '../../../contexts/NotesContext';
-import type { Core, NodeSingular } from 'cytoscape';
+import type { Core, NodeSingular, LayoutOptions, Stylesheet } from 'cytoscape';
 
 interface GraphViewProps {
   onNodeSelect: (noteId: string) => void;
   isDetailsPanelOpen: boolean;
+  selectedNoteId: string;
 }
 
-export function GraphView({ onNodeSelect, isDetailsPanelOpen }: GraphViewProps) {
+const debounce = <T extends (...args: unknown[]) => unknown>(func: T, wait: number) => {
+  let timeout: NodeJS.Timeout;
+  return function executedFunction(...args: Parameters<T>): void {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+};
+
+export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: GraphViewProps) {
   const { notes } = useNotes();
   const { theme } = useTheme();
   const cyRef = useRef<Core | null>(null);
-  const resizeTimeoutRef = useRef<NodeJS.Timeout>();
-  const animationFrameRef = useRef<number>();
-  const [isInitialized, setIsInitialized] = useState(false);
 
   // Filter notes to only include those with links
   const notesWithLinks = notes.filter(note => 
     note.linkedNoteIds && note.linkedNoteIds.length > 0
   );
 
-  // Create nodes first
+  // Create nodes
   const elements = notesWithLinks.map(note => ({
     data: { 
       id: note.id,
       label: note.title,
-      isIdea: note.tags.includes('idea')
+      isIdea: note.tags.includes('idea'),
+      tags: note.tags,
+      createdAt: note.createdAt,
+      updatedAt: note.updatedAt,
+      preview: note.content?.substring(0, 50) + '...'
     }
   }));
 
-  // Then create edges only between existing nodes
+  // Create edges
   const edges = notesWithLinks.flatMap(note => 
     (note.linkedNoteIds || [])
       .filter(targetId => notesWithLinks.some(n => n.id === targetId))
@@ -47,199 +61,171 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen }: GraphViewProps) 
   // Combine nodes and edges
   const graphElements = [...elements, ...edges];
 
-  const stylesheet = [
+  const layout: LayoutOptions = {
+    name: 'concentric',
+    fit: true,
+    padding: 50,
+    spacingFactor: 0.85,
+    minNodeSpacing: 50,
+    concentric: (node: NodeSingular) => node.connectedEdges().length,
+    levelWidth: () => 2.5,
+    animate: false
+  };
+
+  const stylesheet: Stylesheet[] = [
     {
       selector: 'node',
       style: {
         'background-color': theme === 'dark' ? '#1E1E1E' : '#FFFFFF',
-        'border-color': theme === 'dark' ? '#4a9153' : '#388E3C',
+        'border-color': theme === 'dark' ? '#2196F3' : '#1976D2',
         'border-width': 2,
         'label': 'data(label)',
         'color': theme === 'dark' ? '#E3E3E3' : '#333333',
         'text-valign': 'center',
         'text-halign': 'center',
-        'font-size': '12px',
-        'font-weight': '500',
-        'width': '120px',
-        'height': '40px',
-        'padding': '5px',
+        'font-size': '8px',
+        'width': '60px',
+        'height': '25px',
         'text-wrap': 'wrap',
-        'text-max-width': '100px',
-        'shape': 'roundrectangle',
-        'text-margin-y': '2px',
-        'transition-property': 'background-color, border-color, border-width',
-        'transition-duration': '0.2s',
+        'text-max-width': '85px',
+        'shape': 'round-rectangle',
         'text-outline-color': theme === 'dark' ? '#1E1E1E' : '#FFFFFF',
-        'text-outline-width': 1,
+        'text-outline-width': 1.5,
         'min-zoomed-font-size': 8,
-        'transition-timing-function': 'ease-in-out'
+        'transition-property': 'border-color, border-width',
+        'transition-duration': 200,
       }
     },
     {
-      selector: 'node[?isPinned]',
+      selector: 'node[?isIdea]',
       style: {
-        'border-width': 3,
-        'border-color': theme === 'dark' ? '#66BB6A' : '#43A047',
-      }
-    },
-    {
-      selector: 'node[?isFavorite]',
-      style: {
-        'background-color': theme === 'dark' ? '#2C1810' : '#FFF8E1',
-      }
-    },
-    {
-      selector: 'edge',
-      style: {
-        'width': 2,
-        'line-color': theme === 'dark' ? '#4a9153' : '#388E3C',
-        'target-arrow-color': theme === 'dark' ? '#4a9153' : '#388E3C',
-        'target-arrow-shape': 'triangle',
-        'curve-style': 'bezier',
-        'arrow-scale': 0.8,
-        'opacity': 0.8,
-        'transition-property': 'opacity, line-color',
-        'transition-duration': '0.2s',
-        'transition-timing-function': 'ease-in-out'
+        'border-color': theme === 'dark' ? '#FFA726' : '#FB8C00',
+        'border-width': 2.5,
+        'border-style': 'solid'
       }
     },
     {
       selector: ':selected',
       style: {
         'border-width': 3,
-        'border-color': theme === 'dark' ? '#66BB6A' : '#43A047',
+        'border-color': theme === 'dark' ? '#66BB6A' : '#43A047'
+      }
+    },
+    {
+      selector: 'edge',
+      style: {
+        'width': 1.5,
+        'line-color': theme === 'dark' ? '#666666' : '#333333',
+        'target-arrow-color': theme === 'dark' ? '#666666' : '#333333',
+        'target-arrow-shape': 'triangle',
+        'curve-style': 'straight',
+        'arrow-scale': 0.7,
+        'opacity': 0.6,
+        'target-distance-from-node': 8,
+        'source-distance-from-node': 3,
+        'control-point-step-size': 40,
+        'target-endpoint': '0%',
+        'source-endpoint': '100%',
+        'edge-distances': 'node-position',
       }
     }
   ];
 
-  const layout = {
-    name: 'cose',
-    animate: false,
-    nodeDimensionsIncludeLabels: true,
-    padding: 50,
-    componentSpacing: 100,
-    nodeRepulsion: 8000,
-    idealEdgeLength: 100,
-    edgeElasticity: 0.45,
-    nestingFactor: 0.1,
-    gravity: 0.3,
-    numIter: 1000,
-    initialTemp: 200,
-    coolingFactor: 0.95,
-    minTemp: 1.0,
-    fit: true,
-    spacingFactor: 1.2
-  };
+  const centerGraph = useCallback(() => {
+    if (cyRef.current) {
+      cyRef.current.fit(undefined, 30);
+    }
+  }, []);
 
-  const smoothPanAndZoom = (targetPan: any, targetZoom: number, duration: number = 300) => {
+  // Watch for panel state changes
+  useEffect(() => {
+    if (!cyRef.current) return;
+
+    const timeoutId = setTimeout(() => {
+      centerGraph();
+    }, 100);
+
+    return () => clearTimeout(timeoutId);
+  }, [isDetailsPanelOpen, centerGraph]);
+
+  // Handle node clicks
+  useEffect(() => {
     if (!cyRef.current) return;
 
     const cy = cyRef.current;
-    const startPan = { ...cy.pan() };
-    const startZoom = cy.zoom();
-    const startTime = performance.now();
 
-    const animate = (currentTime: number) => {
-      const elapsed = currentTime - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      
-      // Cubic easing
-      const eased = progress < 0.5
-        ? 4 * progress * progress * progress
-        : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+    const handleNodeTap = (event: { target: NodeSingular }) => {
+      const clickedNode = event.target;
+      const clickedNodeId = clickedNode.id();
 
-      const currentPan = {
-        x: startPan.x + (targetPan.x - startPan.x) * eased,
-        y: startPan.y + (targetPan.y - startPan.y) * eased
-      };
-      const currentZoom = startZoom + (targetZoom - startZoom) * eased;
-
-      cy.viewport({
-        zoom: currentZoom,
-        pan: currentPan
-      });
-
-      if (progress < 1) {
-        animationFrameRef.current = requestAnimationFrame(animate);
+      if (selectedNoteId === clickedNodeId) {
+        cy.elements().unselect();
+        onNodeSelect('');
+      } else {
+        cy.elements().unselect();
+        clickedNode.select();
+        onNodeSelect(clickedNodeId);
       }
     };
 
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-    }
-    animationFrameRef.current = requestAnimationFrame(animate);
-  };
-
-  const centerGraph = () => {
-    if (cyRef.current) {
-      if (resizeTimeoutRef.current) {
-        clearTimeout(resizeTimeoutRef.current);
+    const handleBackgroundTap = (event: { target: Core }) => {
+      if (event.target === cy) {
+        cy.elements().unselect();
+        onNodeSelect('');
       }
+    };
 
-      resizeTimeoutRef.current = setTimeout(() => {
-        const cy = cyRef.current;
-        if (cy) {
-          cy.fit(undefined, 50);
-          const targetPan = cy.pan();
-          const targetZoom = cy.zoom();
-          smoothPanAndZoom(targetPan, targetZoom);
-        }
-      }, 300);
-    }
-  };
+    cy.on('tap', 'node', handleNodeTap);
+    cy.on('tap', handleBackgroundTap);
 
+    return () => {
+      cy.removeListener('tap', 'node', handleNodeTap);
+      cy.removeListener('tap', handleBackgroundTap);
+    };
+  }, [onNodeSelect, selectedNoteId]);
+
+  // Handle window resize
   useEffect(() => {
-    if (isInitialized) {
+    const handleResize = debounce(() => {
       centerGraph();
-    }
-  }, [isDetailsPanelOpen, isInitialized]);
+    }, 250);
 
-  useEffect(() => {
-    if (cyRef.current) {
-      const cy = cyRef.current;
-
-      cy.on('tap', 'node', (event: any) => {
-        const nodeId = event.target.id();
-        onNodeSelect(nodeId);
-      });
-
-      cy.minZoom(0.5);
-      cy.maxZoom(2);
-
-      const resizeObserver = new ResizeObserver(() => {
-        centerGraph();
-      });
-
-      const container = cy.container();
-      if (container) {
-        resizeObserver.observe(container);
-      }
-
-      setIsInitialized(true);
-
-      return () => {
-        cy.removeAllListeners();
-        resizeObserver.disconnect();
-        if (resizeTimeoutRef.current) {
-          clearTimeout(resizeTimeoutRef.current);
-        }
-        if (animationFrameRef.current) {
-          cancelAnimationFrame(animationFrameRef.current);
-        }
-      };
-    }
-  }, [onNodeSelect]);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [centerGraph]);
 
   return (
-    <div className="h-full relative">
+    <div className="h-full w-full relative">
       <CytoscapeComponent
         elements={graphElements}
         stylesheet={stylesheet}
         layout={layout}
-        style={{ width: '100%', height: '100%' }}
-        cy={(cy) => { cyRef.current = cy; }}
+        style={{ 
+          width: '100%', 
+          height: '100%',
+          minHeight: '600px',
+          maxHeight: '80vh'
+        }}
+        cy={(cy) => { 
+          cyRef.current = cy;
+          cy.minZoom(0.5);
+          cy.maxZoom(2.0);
+        }}
         wheelSensitivity={0.2}
       />
+      <div className="absolute bottom-4 right-4 bg-opacity-80 bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg">
+        <div className="text-sm font-medium mb-2">Legend:</div>
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 border-2 border-blue-500 rounded"></div>
+            <span className="text-sm">Notes</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 border-2 border-orange-500 rounded"></div>
+            <span className="text-sm">Ideas</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
