@@ -8,5 +8,6 @@ namespace SecondBrain.Api.DTOs.Tasks
         public DateTime? DueDate { get; set; }
         public TaskStatus? Status { get; set; }
         public List<string>? Tags { get; set; }
+        public bool? IsDeleted { get; set; }
     }
 }

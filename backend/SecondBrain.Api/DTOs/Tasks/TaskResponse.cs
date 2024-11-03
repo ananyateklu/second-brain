@@ -19,6 +19,8 @@ namespace SecondBrain.Api.DTOs.Tasks
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public string UserId { get; set; }
+        public bool IsDeleted { get; set; }
+        public DateTime? DeletedAt { get; set; }
 
         public static TaskResponse FromEntity(TaskItem task)
         {
@@ -36,6 +38,8 @@ namespace SecondBrain.Api.DTOs.Tasks
                 Tags = string.IsNullOrEmpty(task.Tags) ? new List<string>() : task.Tags.Split(',').ToList(),
                 LinkedNotes = task.TaskItemNotes?.Select(tn => tn.NoteId).ToList() ?? new List<string>(),
                 // LinkedIdeas handling if applicable
+                IsDeleted = task.IsDeleted,
+                DeletedAt = task.DeletedAt
             };
         }
     }

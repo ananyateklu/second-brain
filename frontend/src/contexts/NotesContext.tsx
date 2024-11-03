@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { useActivities } from './ActivityContext';
 import { notesService } from '../services/api/notes.service';
+import { useTrash, TrashProvider } from './TrashContext';
 
 export interface Note {
   id: string;
@@ -22,7 +23,7 @@ interface NotesContextType {
   archivedNotes: Note[];
   addNote: (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'linkedNoteIds' | 'linkedNotes'>) => void;
   updateNote: (id: string, updates: Partial<Note>) => void;
-  deleteNote: (id: string) => void;
+  deleteNote: (id: string) => Promise<void>;
   togglePinNote: (id: string) => void;
   toggleFavoriteNote: (id: string) => void;
   archiveNote: (id: string) => void;
@@ -31,6 +32,7 @@ interface NotesContextType {
   removeLink: (sourceId: string, targetId: string) => void;
   loadArchivedNotes: () => Promise<void>;
   restoreMultipleNotes: (ids: string[]) => Promise<PromiseSettledResult<Note>[]>;
+  restoreNote: (restoredNote: Note) => Promise<void>;
 }
 
 const NotesContext = createContext<NotesContextType | null>(null);
@@ -39,6 +41,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [archivedNotes, setArchivedNotes] = useState<Note[]>([]);
   const { addActivity } = useActivities();
+  const { moveToTrash } = useTrash();
 
   useEffect(() => {
     const loadNotes = async () => {
@@ -126,25 +129,43 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
       const noteToDelete = notes.find(note => note.id === id);
       if (!noteToDelete) return;
 
-      await notesService.deleteNote(id);
+      // Update backend with soft delete
+      await notesService.updateNote(id, {
+        isDeleted: true,
+        deletedAt: new Date().toISOString(),
+        title: noteToDelete.title,
+        content: noteToDelete.content,
+        tags: noteToDelete.tags
+      });
 
-      setNotes(prev => prev.filter(note => note.id !== id));
-
-      addActivity({
-        actionType: 'delete',
-        itemType: noteToDelete.tags.includes('idea') ? 'idea' : 'note',
-        itemId: id,
-        itemTitle: noteToDelete.title,
-        description: `Deleted ${noteToDelete.tags.includes('idea') ? 'idea' : 'note'}: ${noteToDelete.title}`,
+      // Move to trash
+      const movedToTrash = await moveToTrash({
+        id: noteToDelete.id,
+        type: noteToDelete.tags.includes('idea') ? 'idea' : 'note',
+        title: noteToDelete.title,
+        content: noteToDelete.content,
         metadata: {
-          tags: noteToDelete.tags
+          tags: noteToDelete.tags,
+          isFavorite: noteToDelete.isFavorite,
+          linkedItems: noteToDelete.linkedNoteIds
         }
       });
+
+      if (movedToTrash) {
+        setNotes(prev => prev.filter(note => note.id !== id));
+        addActivity({
+          actionType: 'delete',
+          itemType: noteToDelete.tags.includes('idea') ? 'idea' : 'note',
+          itemId: id,
+          itemTitle: noteToDelete.title,
+          description: `Moved ${noteToDelete.tags.includes('idea') ? 'idea' : 'note'} to trash: ${noteToDelete.title}`
+        });
+      }
     } catch (error) {
       console.error('Failed to delete note:', error);
       throw error;
     }
-  }, [notes, addActivity]);
+  }, [notes, moveToTrash, addActivity]);
 
   const togglePinNote = useCallback(async (id: string) => {
     try {
@@ -401,23 +422,51 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const restoreNote = useCallback(async (restoredNote: Note) => {
+    try {
+      // Add back to notes list
+      const newNote = await notesService.createNote(restoredNote);
+      setNotes(prev => [newNote, ...prev]);
+
+      // Add activity
+      addActivity({
+        actionType: 'restore',
+        itemType: 'note',
+        itemId: restoredNote.id,
+        itemTitle: restoredNote.title,
+        description: `Restored note from trash: ${restoredNote.title}`,
+        metadata: {
+          tags: restoredNote.tags
+        }
+      });
+    } catch (error) {
+      console.error('Failed to restore note:', error);
+      throw error;
+    }
+  }, [addActivity]);
+
+  const contextValue = {
+    notes,
+    archivedNotes,
+    addNote,
+    updateNote,
+    deleteNote,
+    togglePinNote,
+    toggleFavoriteNote,
+    archiveNote,
+    unarchiveNote,
+    addLink,
+    removeLink,
+    loadArchivedNotes,
+    restoreMultipleNotes,
+    restoreNote
+  };
+
   return (
-    <NotesContext.Provider value={{
-      notes,
-      archivedNotes,
-      addNote,
-      updateNote,
-      deleteNote,
-      togglePinNote,
-      toggleFavoriteNote,
-      archiveNote,
-      unarchiveNote,
-      addLink,
-      removeLink,
-      loadArchivedNotes,
-      restoreMultipleNotes,
-    }}>
-      {children}
+    <NotesContext.Provider value={contextValue}>
+      <TrashProvider onRestoreNote={restoreNote}>
+        {children}
+      </TrashProvider>
     </NotesContext.Provider>
   );
 }

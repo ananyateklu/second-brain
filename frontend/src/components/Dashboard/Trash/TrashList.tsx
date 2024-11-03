@@ -70,6 +70,14 @@ export function TrashList({ filters, searchQuery }: TrashListProps) {
     setShowDeleteDialog(false);
   };
 
+  const handleItemClick = (itemId: string) => {
+    setSelectedItems(prev =>
+      prev.includes(itemId)
+        ? prev.filter(id => id !== itemId)
+        : [...prev, itemId]
+    );
+  };
+
   if (filteredItems.length === 0) {
     return (
       <div className="text-center py-12">
@@ -112,18 +120,17 @@ export function TrashList({ filters, searchQuery }: TrashListProps) {
       {/* Items Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredItems.map(item => (
-          <TrashItemCard
+          <div
             key={item.id}
-            item={item}
-            isSelected={selectedItems.includes(item.id)}
-            onSelect={() => {
-              setSelectedItems(prev =>
-                prev.includes(item.id)
-                  ? prev.filter(id => id !== item.id)
-                  : [...prev, item.id]
-              );
-            }}
-          />
+            onClick={() => handleItemClick(item.id)}
+            className="cursor-pointer"
+          >
+            <TrashItemCard
+              item={item}
+              isSelected={selectedItems.includes(item.id)}
+              onSelect={() => handleItemClick(item.id)}
+            />
+          </div>
         ))}
       </div>
 

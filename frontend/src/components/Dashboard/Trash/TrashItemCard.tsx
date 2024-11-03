@@ -47,6 +47,11 @@ export function TrashItemCard({ item, isSelected, onSelect }: TrashItemCardProps
     (new Date(item.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
   );
 
+  const handleCheckboxClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent event from bubbling up to parent
+    onSelect();
+  };
+
   return (
     <div className={`
       group relative bg-white dark:bg-dark-card rounded-lg border-2 transition-all duration-200
@@ -55,11 +60,11 @@ export function TrashItemCard({ item, isSelected, onSelect }: TrashItemCardProps
         : 'border-transparent hover:border-gray-200 dark:hover:border-gray-700'
       }
     `}>
-      <div className="absolute top-4 left-4">
+      <div className="absolute top-4 left-4" onClick={handleCheckboxClick}>
         <input
           type="checkbox"
           checked={isSelected}
-          onChange={onSelect}
+          onChange={() => {}} // Add empty onChange to suppress React warning
           className="w-4 h-4 text-primary-600 bg-white dark:bg-dark-bg border-gray-300 dark:border-gray-600 rounded focus:ring-primary-500"
         />
       </div>

@@ -35,8 +35,18 @@ export const tasksService = {
     return response.data;
   },
 
+  async getDeletedTasks(): Promise<Task[]> {
+    const response = await api.get<Task[]>('/api/Tasks/deleted');
+    return response.data;
+  },
+
   async updateTask(id: string, updates: UpdateTaskDto): Promise<Task> {
     const response = await api.patch<Task>(`/api/Tasks/${id}`, updates);
+    return response.data;
+  },
+
+  async restoreTask(id: string): Promise<Task> {
+    const response = await api.post<Task>(`/api/Tasks/${id}/restore`);
     return response.data;
   },
 

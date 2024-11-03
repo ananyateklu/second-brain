@@ -5,6 +5,7 @@ import { useAuth } from './AuthContext';
 import { mapPriorityToNumber } from '../utils/priorityMapping';
 import { UpdateTaskDto } from '../api/types/task';
 import { useActivities } from './ActivityContext';
+import { useTrash } from './TrashContext';
 
 
 interface TasksContextType {
@@ -15,6 +16,7 @@ interface TasksContextType {
   addTaskLink: (taskId: string, itemId: string, type: 'note' | 'idea') => void;
   removeTaskLink: (taskId: string, itemId: string, type: 'note' | 'idea') => void;
   toggleTaskStatus: (id: string) => Promise<void>;
+  fetchDeletedTasks: () => Promise<Task[]>;
 }
 
 const TasksContext = createContext<TasksContextType | null>(null);
@@ -24,6 +26,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const { user } = useAuth();
   const { addActivity } = useActivities();
+  const { moveToTrash } = useTrash();
 
   // Fetch tasks from the backend API when the component mounts
   useEffect(() => {
@@ -35,7 +38,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
   const fetchTasks = async () => {
     try {
       const response = await taskService.getTasks();
-      const fetchedTasks = response.data;
+      const fetchedTasks = response.data.filter(task => !task.isDeleted);
       setTasks(fetchedTasks);
     } catch (error) {
       console.error('Failed to fetch tasks:', error);
@@ -115,31 +118,58 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
   const deleteTask = useCallback(async (id: string) => {
     try {
       const taskToDelete = tasks.find(task => task.id === id);
-      if (!taskToDelete) throw new Error('Task not found');
+      if (!taskToDelete) return;
 
-      await taskService.deleteTask(id);
+      // First mark as deleted in backend
+      await taskService.updateTask(id, {
+        isDeleted: true,
+        deletedAt: new Date().toISOString(),
+        title: taskToDelete.title,
+        description: taskToDelete.description,
+        priority: mapPriorityToNumber(taskToDelete.priority),
+        dueDate: taskToDelete.dueDate,
+        tags: taskToDelete.tags
+      });
+
+      // Remove from active tasks list
       setTasks(prev => prev.filter(task => task.id !== id));
 
-      // Add activity
-      addActivity({
-        id,
-        actionType: 'delete',
-        itemType: 'task',
-        itemId: taskToDelete.id,
-        itemTitle: taskToDelete.title,
-        timestamp: new Date().toISOString(),
-        description: `Deleted task "${taskToDelete.title}"`,
+      // Move to trash
+      await moveToTrash({
+        id: taskToDelete.id,
+        type: 'task',
+        title: taskToDelete.title,
+        content: taskToDelete.description,
         metadata: {
           tags: taskToDelete.tags,
-          priority: taskToDelete.priority,
           dueDate: taskToDelete.dueDate,
-        },
+          priority: taskToDelete.priority,
+          status: taskToDelete.status,
+          deletedAt: new Date().toISOString()
+        }
       });
-    } catch (err) {
-      console.error('Failed to delete task:', err);
-      throw err;
+
+      addActivity({
+        actionType: 'delete',
+        itemType: 'task',
+        itemId: id,
+        itemTitle: taskToDelete.title,
+        description: `Moved task to trash: ${taskToDelete.title}`,
+        metadata: {
+          taskId: id,
+          taskTitle: taskToDelete.title,
+          taskStatus: taskToDelete.status,
+          taskPriority: taskToDelete.priority,
+          taskDueDate: taskToDelete.dueDate,
+          taskTags: taskToDelete.tags,
+          deletedAt: new Date().toISOString()
+        }
+      });
+    } catch (error) {
+      console.error('Failed to delete task:', error);
+      throw error;
     }
-  }, [tasks]);
+  }, [tasks, moveToTrash, addActivity]);
 
   const addTaskLink = useCallback((taskId: string, itemId: string, type: 'note' | 'idea') => {
     setTasks(prev => prev.map(task => {
@@ -215,6 +245,16 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     }
   }, [tasks, addActivity]);
 
+  const fetchDeletedTasks = async () => {
+    try {
+      const deletedTasks = await taskService.getDeletedTasks();
+      return deletedTasks;
+    } catch (error) {
+      console.error('Failed to fetch deleted tasks:', error);
+      throw error;
+    }
+  };
+
   return (
     <TasksContext.Provider value={{
       tasks,
@@ -224,6 +264,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
       addTaskLink,
       removeTaskLink,
       toggleTaskStatus,
+      fetchDeletedTasks,
     }}>
       {children}
     </TasksContext.Provider>

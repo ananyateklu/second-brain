@@ -32,13 +32,27 @@ namespace SecondBrain.Api.Controllers
             }
 
             var tasks = await _context.Tasks
-                .Where(t => t.UserId == userId)
-                .Include(t => t.TaskItemNotes)
-                    .ThenInclude(tn => tn.Note)
+                .Where(t => t.UserId == userId && !t.IsDeleted)
                 .ToListAsync();
 
             var response = tasks.Select(TaskResponse.FromEntity);
+            return Ok(response);
+        }
 
+        [HttpGet("deleted")]
+        public async Task<IActionResult> GetDeletedTasks()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { error = "User ID not found in token." });
+            }
+
+            var deletedTasks = await _context.Tasks
+                .Where(t => t.UserId == userId && t.IsDeleted)
+                .ToListAsync();
+
+            var response = deletedTasks.Select(TaskResponse.FromEntity);
             return Ok(response);
         }
 
@@ -138,12 +152,18 @@ namespace SecondBrain.Api.Controllers
             if (request.Tags != null)
                 task.Tags = string.Join(",", request.Tags);
 
+            // Add handling for isDeleted and deletedAt
+            if (request.IsDeleted.HasValue)
+            {
+                task.IsDeleted = request.IsDeleted.Value;
+                task.DeletedAt = request.IsDeleted.Value ? DateTime.UtcNow : null;
+            }
+
             task.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
 
             var response = TaskResponse.FromEntity(task);
-
             return Ok(response);
         }
 
@@ -165,10 +185,40 @@ namespace SecondBrain.Api.Controllers
                 return NotFound(new { error = "Task not found." });
             }
 
-            _context.Tasks.Remove(task);
+            task.IsDeleted = true;
+            task.DeletedAt = DateTime.UtcNow;
+            task.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+
+        [HttpPost("{id}/restore")]
+        public async Task<IActionResult> RestoreTask(string id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { error = "User ID not found in token." });
+            }
+
+            var task = await _context.Tasks
+                .Where(t => t.Id == id && t.UserId == userId && t.IsDeleted)
+                .FirstOrDefaultAsync();
+
+            if (task == null)
+            {
+                return NotFound(new { error = "Task not found." });
+            }
+
+            task.IsDeleted = false;
+            task.DeletedAt = null;
+            task.UpdatedAt = DateTime.UtcNow;
+
             await _context.SaveChangesAsync();
 
-            return NoContent();
+            var response = TaskResponse.FromEntity(task);
+            return Ok(response);
         }
     }
 }

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import { reminderService } from '../api/services/reminderService';
 import { useActivities } from './ActivityContext';
 import { Reminder as ApiReminder } from '../api/types/reminder';
+import { useTrash } from './TrashContext';
 
 export interface Reminder extends ApiReminder {
   tags: string[];
@@ -23,6 +24,7 @@ const RemindersContext = createContext<RemindersContextType | null>(null);
 export function RemindersProvider({ children }: { children: React.ReactNode }) {
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const { addActivity } = useActivities();
+  const { moveToTrash } = useTrash();
 
   useEffect(() => {
     fetchReminders();
@@ -83,28 +85,36 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
 
   const deleteReminder = useCallback(async (id: string) => {
     try {
-      const reminderToDelete = reminders.find(r => r.id === id);
-      if (!reminderToDelete) throw new Error('Reminder not found');
+      const reminderToDelete = reminders.find(reminder => reminder.id === id);
+      if (!reminderToDelete) return;
 
-      // Capture the title before deleting
-      const { title } = reminderToDelete;
+      // Move to trash first
+      await moveToTrash({
+        id: reminderToDelete.id,
+        type: 'reminder',
+        title: reminderToDelete.title,
+        content: reminderToDelete.description,
+        metadata: {
+          dueDate: reminderToDelete.dueDate,
+          tags: reminderToDelete.tags
+        }
+      });
 
-      await reminderService.deleteReminder(id);
+      // Remove from active reminders list AFTER successful trash move
       setReminders(prev => prev.filter(reminder => reminder.id !== id));
 
-      // Record activity with the reminder's title
-      await addActivity({
+      addActivity({
         actionType: 'delete',
         itemType: 'reminder',
         itemId: id,
-        itemTitle: title,
-        description: `Deleted reminder: ${title}`,
-        metadata: { tags: reminderToDelete.tags },
+        itemTitle: reminderToDelete.title,
+        description: `Moved reminder to trash: ${reminderToDelete.title}`
       });
     } catch (error) {
       console.error('Failed to delete reminder:', error);
+      throw error;
     }
-  }, [addActivity, reminders]);
+  }, [reminders, moveToTrash, addActivity]);
 
   const snoozeReminder = useCallback(async (id: string, until: string) => {
     try {
