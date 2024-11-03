@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Clock, Tag as TagIcon, Star, Pin, FileText, Lightbulb, Archive } from 'lucide-react';
+import { Clock, Tag as TagIcon, Star, Pin, FileText, Lightbulb, Archive, Link2 } from 'lucide-react';
 import { useNotes } from '../../contexts/NotesContext';
 import { WarningModal } from '../shared/WarningModal';
 
@@ -12,6 +12,8 @@ export interface Note {
   updatedAt: string;
   isPinned: boolean;
   isFavorite: boolean;
+  linkedNoteIds?: string[];
+  linkedNotes?: string[];
 }
 
 interface NoteCardProps {
@@ -32,6 +34,7 @@ export function NoteCard({ note, viewMode = 'grid' }: NoteCardProps) {
   });
 
   const isIdea = note.tags.includes('idea');
+  const hasLinks = note.linkedNoteIds?.length > 0 || note.linkedNotes?.length > 0;
 
   const handleArchiveClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -124,6 +127,20 @@ export function NoteCard({ note, viewMode = 'grid' }: NoteCardProps) {
             </div>
           </div>
 
+          <div className="mt-4 flex flex-wrap items-center gap-4 text-sm">
+            <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+              <Clock className="w-4 h-4" />
+              <span>Last edited {formattedDate}</span>
+            </div>
+
+            {hasLinks && (
+              <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                <Link2 className="w-4 h-4" />
+                <span>{note.linkedNoteIds?.length || note.linkedNotes?.length} links</span>
+              </div>
+            )}
+          </div>
+
           {tags.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-2">
               {tags.map(tag => (
@@ -137,11 +154,6 @@ export function NoteCard({ note, viewMode = 'grid' }: NoteCardProps) {
               ))}
             </div>
           )}
-
-          <div className="mt-4 flex items-center text-sm text-gray-500 dark:text-gray-400">
-            <Clock className="w-4 h-4 mr-1.5 flex-shrink-0" />
-            <span>Last edited {formattedDate}</span>
-          </div>
         </div>
       </div>
 
