@@ -1,13 +1,14 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SecondBrain.Data;
-using SecondBrain.Data.Entities;
-using System.Security.Claims;
-using System.Threading.Tasks;
-using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using SecondBrain.Api.DTOs.Activities;
+using SecondBrain.Data;
+using SecondBrain.Data.Entities;
+using System;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace SecondBrain.Api.Controllers
 {
@@ -20,20 +21,26 @@ namespace SecondBrain.Api.Controllers
 
         public ActivitiesController(DataContext context)
         {
-            _context = context;
+            _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        // GET: api/Activities
+        /// <summary>
+        /// Gets all activities for the authenticated user
+        /// </summary>
+        /// <returns>List of activities ordered by timestamp</returns>
         [HttpGet]
-        public async Task<IActionResult> GetActivities()
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult<IEnumerable<Activity>>> GetActivities()
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
+            var userId = GetUserId();
+            if (userId == null)
             {
                 return Unauthorized(new { error = "User ID not found in token." });
             }
 
             var activities = await _context.Activities
+                .AsNoTracking()
                 .Where(a => a.UserId == userId)
                 .OrderByDescending(a => a.Timestamp)
                 .ToListAsync();
@@ -41,12 +48,24 @@ namespace SecondBrain.Api.Controllers
             return Ok(activities);
         }
 
-        // POST: api/Activities
+        /// <summary>
+        /// Creates a new activity for the authenticated user
+        /// </summary>
+        /// <param name="request">Activity details</param>
+        /// <returns>Created activity</returns>
         [HttpPost]
-        public async Task<IActionResult> CreateActivity([FromBody] CreateActivityRequest request)
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<ActionResult<Activity>> CreateActivity([FromBody] CreateActivityRequest request)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var userId = GetUserId();
+            if (userId == null)
             {
                 return Unauthorized(new { error = "User ID not found in token." });
             }
@@ -63,10 +82,27 @@ namespace SecondBrain.Api.Controllers
                 Timestamp = DateTime.UtcNow
             };
 
-            _context.Activities.Add(activity);
-            await _context.SaveChangesAsync();
+            try
+            {
+                _context.Activities.Add(activity);
+                await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetActivities), new { id = activity.Id }, activity);
+                return CreatedAtAction(
+                    nameof(GetActivities),
+                    new { id = activity.Id },
+                    activity);
+            }
+            catch (Exception ex)
+            {
+                // Log the exception here
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new { error = "An error occurred while creating the activity." });
+            }
+        }
+
+        private string? GetUserId()
+        {
+            return User.FindFirstValue(ClaimTypes.NameIdentifier);
         }
     }
 }

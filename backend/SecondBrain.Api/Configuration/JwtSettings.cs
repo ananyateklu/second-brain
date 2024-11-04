@@ -1,11 +1,10 @@
-namespace SecondBrain.Api.Configuration
+namespace SecondBrain.Api.Configuration;
+
+public sealed record JwtSettings
 {
-    public class JwtSettings
-    {
-        public string Secret { get; set; }
-        public string Issuer { get; set; }
-        public string Audience { get; set; }
-        public double AccessTokenExpirationMinutes { get; set; }
-        public double RefreshTokenExpirationDays { get; set; }
-    }
+    public required string Secret { get; init; }
+    public required string Issuer { get; init; }
+    public required string Audience { get; init; }
+    public required double AccessTokenExpirationMinutes { get; init; }
+    public required double RefreshTokenExpirationDays { get; init; }
 }
