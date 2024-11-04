@@ -137,5 +137,20 @@ export const notesService = {
 
   async deleteNotePermanently(id: string): Promise<void> {
     await api.delete(`/api/Notes/${id}/permanent`);
+  },
+
+  async unarchiveNote(id: string): Promise<Note> {
+    try {
+        const response = await api.post<Note>(`/api/Notes/${id}/unarchive`);
+        return {
+            ...response.data,
+            tags: Array.isArray(response.data.tags) ? response.data.tags : [],
+            linkedNoteIds: Array.isArray(response.data.linkedNoteIds) ? response.data.linkedNoteIds : [],
+            linkedNotes: Array.isArray(response.data.linkedNotes) ? response.data.linkedNotes : []
+        };
+    } catch (error) {
+        console.error('Error unarchiving note:', error);
+        throw error;
+    }
   }
 };

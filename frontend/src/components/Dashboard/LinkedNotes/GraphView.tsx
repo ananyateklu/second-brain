@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import CytoscapeComponent from 'react-cytoscapejs';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useNotes } from '../../../contexts/NotesContext';
@@ -22,7 +22,7 @@ const debounce = <T extends (...args: unknown[]) => unknown>(func: T, wait: numb
   };
 };
 
-export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: GraphViewProps) {
+export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: Readonly<GraphViewProps>) {
   const { notes } = useNotes();
   const { theme } = useTheme();
   const cyRef = useRef<Core | null>(null);
@@ -111,7 +111,7 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: 
         'border-width': 2,
         'background-color': theme === 'dark' ? '#2A332A' : '#F0F7F0',  // Very subtle green tint
         'transition-property': 'border-color, background-color',
-        'transition-duration': '0.2s'
+        'transition-duration': 200
       }
     },
     {
@@ -169,7 +169,7 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: 
       }
     };
 
-    const handleBackgroundTap = (event: { target: any }) => {
+    const handleBackgroundTap = (event: { target: cytoscape.Core }) => {
       if (event.target === cy) {
         if (selectedNoteId) {
           cy.elements().unselect();

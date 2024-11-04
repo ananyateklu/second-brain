@@ -18,7 +18,7 @@ export function ArchiveNoteCard({ note, isSelected, onSelect }: ArchiveNoteCardP
       await unarchiveNote(note.id);
       await loadArchivedNotes(); // Refresh the archive list
     } catch (error) {
-      console.error('Failed to restore note:', error);
+      console.error('Failed to unarchive note:', error);
       // You might want to add error handling UI here
     }
   };

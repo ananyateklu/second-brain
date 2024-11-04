@@ -396,5 +396,31 @@ namespace SecondBrain.Api.Controllers
             return Ok(response);
         }
 
+        [HttpPost("{id}/unarchive")]
+        public async Task<IActionResult> UnarchiveNote(string id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { error = "User ID not found in token." });
+            }
+
+            var note = await _context.Notes
+                .Where(n => n.Id == id && n.UserId == userId && n.IsArchived)
+                .FirstOrDefaultAsync();
+
+            if (note == null)
+            {
+                return NotFound(new { error = "Note not found." });
+            }
+
+            note.IsArchived = false;
+            note.ArchivedAt = null;
+            note.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return Ok(NoteResponse.FromEntity(note));
+        }
+
     }
 }
