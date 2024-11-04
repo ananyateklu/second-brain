@@ -47,7 +47,7 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: 
 
   // Create edges
   const edges = notesWithLinks.flatMap(note =>
-    (note.linkedNoteIds || [])
+    note.linkedNoteIds
       .filter(targetId => notesWithLinks.some(n => n.id === targetId))
       .map(targetId => ({
         data: {

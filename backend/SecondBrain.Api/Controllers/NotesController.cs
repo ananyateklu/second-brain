@@ -33,6 +33,7 @@ namespace SecondBrain.Api.Controllers
             }
 
             var notes = await _context.Notes
+                .Include(n => n.NoteLinks)
                 .Where(n => n.UserId == userId && !n.IsDeleted)
                 .ToListAsync();
 

@@ -9,7 +9,8 @@ export interface Note {
   isFavorite: boolean;
   isArchived?: boolean;
   archivedAt?: string;
-  linkedNotes: string[];
+  isDeleted?: boolean;
+  deletedAt?: string;
   linkedNoteIds?: string[];
 }
 

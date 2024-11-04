@@ -34,7 +34,7 @@ export function NoteCard({ note, viewMode = 'grid' }: NoteCardProps) {
   });
 
   const isIdea = note.tags.includes('idea');
-  const hasLinks = note.linkedNoteIds?.length > 0 || note.linkedNotes?.length > 0;
+  const hasLinks = note.linkedNoteIds?.length > 0;
 
   const handleArchiveClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -136,7 +136,7 @@ export function NoteCard({ note, viewMode = 'grid' }: NoteCardProps) {
             {hasLinks && (
               <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
                 <Link2 className="w-4 h-4" />
-                <span>{note.linkedNoteIds?.length || note.linkedNotes?.length} links</span>
+                <span>{note.linkedNoteIds.length} links</span>
               </div>
             )}
           </div>
