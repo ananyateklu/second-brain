@@ -4,6 +4,7 @@ import { useNotes } from './NotesContext';
 import { useTasks } from './TasksContext';
 import { Note } from '../types/note';
 import { Task } from '../types/task';
+import { useActivities } from './ActivityContext';
 
 // Helper functions first
 const calculateWeeklyChange = (notes: Note[], type: 'created' | 'updated') => {
@@ -166,7 +167,7 @@ const DEFAULT_STATS: DashboardStat[] = [
     id: 'daily-activity',
     type: 'activity',
     title: 'Today\'s Activity',
-    icon: 'Edit3',
+    icon: 'Activity',
     enabled: true,
     order: 10,
     size: 'medium'
@@ -176,6 +177,7 @@ const DEFAULT_STATS: DashboardStat[] = [
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const { notes, isLoading: notesLoading } = useNotes();
   const { tasks } = useTasks();
+  const { activities } = useActivities();
   const [isLoading, setIsLoading] = useState(true);
 
   // Define stats state
@@ -287,12 +289,26 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         
       case 'daily-activity':
         const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        // Count all activities for today
+        const todayActivities = activities.filter(activity => {
+          const activityDate = new Date(activity.timestamp);
+          return activityDate >= today;
+        });
+
         return {
-          value: notes.filter(note => {
-            const updateDate = new Date(note.updatedAt);
-            return updateDate.toDateString() === today.toDateString();
-          }).length,
-          timeframe: 'Today'
+          value: todayActivities.length,
+          timeframe: 'Today',
+          // Add metadata for tooltip
+          metadata: {
+            breakdown: {
+              created: todayActivities.filter(a => a.actionType === 'create').length,
+              edited: todayActivities.filter(a => a.actionType === 'edit').length,
+              deleted: todayActivities.filter(a => a.actionType === 'delete').length,
+              // Add other action types as needed
+            }
+          }
         };
         
       default:

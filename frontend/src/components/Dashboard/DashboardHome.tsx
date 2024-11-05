@@ -183,6 +183,32 @@ const StatCard = ({
                 {statValue.timeframe}
               </span>
             )}
+            {stat.type === 'activity' && statValue.metadata?.breakdown && (
+              <div className="absolute left-0 right-0 -bottom-24 hidden group-hover:block">
+                <div className="bg-white dark:bg-dark-card rounded-lg shadow-lg p-2 text-xs">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="text-center">
+                      <span className="block font-medium text-gray-900 dark:text-white">
+                        {statValue.metadata.breakdown.created}
+                      </span>
+                      <span className="text-gray-500 dark:text-gray-400">Created</span>
+                    </div>
+                    <div className="text-center">
+                      <span className="block font-medium text-gray-900 dark:text-white">
+                        {statValue.metadata.breakdown.edited}
+                      </span>
+                      <span className="text-gray-500 dark:text-gray-400">Edited</span>
+                    </div>
+                    <div className="text-center">
+                      <span className="block font-medium text-gray-900 dark:text-white">
+                        {statValue.metadata.breakdown.deleted}
+                      </span>
+                      <span className="text-gray-500 dark:text-gray-400">Deleted</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
