@@ -28,7 +28,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [trashTasks, setTrashTasks] = useState<Task[]>([]);
   const { user } = useAuth();
-  const { addActivity } = useActivities();
+  const { createActivity } = useActivities();
   const { moveToTrash } = useTrash();
 
   // Fetch tasks from the backend API when the component mounts
@@ -58,26 +58,33 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
       const newTask = response.data;
       setTasks(prev => [newTask, ...prev]);
 
-      // Add activity
-      addActivity({
-        id: newTask.id,
-        actionType: 'create',
-        itemType: 'task',
-        itemId: newTask.id,
-        itemTitle: newTask.title,
-        timestamp: new Date().toISOString(),
-        description: `Created task "${newTask.title}"`,
-        metadata: {
-          tags: newTask.tags,
-          priority: newTask.priority,
-          dueDate: newTask.dueDate,
-        },
-      });
+      // Wrap addActivity in a try-catch and check if it exists
+      try {
+        if (createActivity) {
+          createActivity({
+            id: newTask.id,
+            actionType: 'create',
+            itemType: 'task',
+            itemId: newTask.id,
+            itemTitle: newTask.title,
+            timestamp: new Date().toISOString(),
+            description: `Created task "${newTask.title}"`,
+            metadata: {
+              tags: newTask.tags,
+              priority: newTask.priority,
+              dueDate: newTask.dueDate,
+            },
+          });
+        }
+      } catch (activityError) {
+        console.error('Failed to add activity for new task:', activityError);
+        // Don't throw the error since the task was still created successfully
+      }
     } catch (err) {
       console.error('Failed to create task:', err);
       throw err;
     }
-  }, []);
+  }, [createActivity]);
 
   const updateTask = useCallback(async (id: string, updates: Partial<Task>) => {
     try {
@@ -92,31 +99,39 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         updatesToSend.priority = mapPriorityToNumber(updates.priority);
       }
 
-
       const response = await taskService.updateTask(id, updatesToSend);
       const updatedTask = response.data;
       setTasks(prev => prev.map(task => task.id === id ? updatedTask : task));
 
-      // Add activity
-      addActivity({
-        id,
-        actionType: 'edit',
-        itemType: 'task',
-        itemId: updatedTask.id,
-        itemTitle: updatedTask.title,
-        timestamp: new Date().toISOString(),
-        description: `Updated task "${updatedTask.title}"`,
-        metadata: {
-          tags: updatedTask.tags,
-          priority: updatedTask.priority,
-          dueDate: updatedTask.dueDate,
-        },
-      });
+      // Wrap addActivity in a try-catch and check if it exists
+      try {
+        if (createActivity) {
+          createActivity({
+            id,
+            actionType: 'edit',
+            itemType: 'task',
+            itemId: updatedTask.id,
+            itemTitle: updatedTask.title,
+            timestamp: new Date().toISOString(),
+            description: `Updated task "${updatedTask.title}"`,
+            metadata: {
+              tags: updatedTask.tags,
+              priority: updatedTask.priority,
+              dueDate: updatedTask.dueDate,
+            },
+          });
+        }
+      } catch (activityError) {
+        console.error('Failed to add activity for task update:', activityError);
+        // Don't throw the error since the task was still updated successfully
+      }
+
+      return updatedTask;
     } catch (err) {
       console.error('Failed to update task:', err);
       throw err;
     }
-  }, []);
+  }, [createActivity]);
 
   const deleteTask = useCallback(async (id: string) => {
     try {
@@ -152,7 +167,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         }
       });
 
-      addActivity({
+      createActivity({
         actionType: 'delete',
         itemType: 'task',
         itemId: id,
@@ -172,7 +187,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
       console.error('Failed to delete task:', error);
       throw error;
     }
-  }, [tasks, moveToTrash, addActivity]);
+  }, [tasks, moveToTrash, createActivity]);
 
   const addTaskLink = useCallback((taskId: string, itemId: string, type: 'note' | 'idea') => {
     setTasks(prev => prev.map(task => {
@@ -230,7 +245,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
       ));
 
       // Add activity
-      addActivity({
+      createActivity({
         id,
         actionType: 'edit',
         itemType: 'task',
@@ -246,7 +261,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
       console.error('Failed to toggle task status:', err);
       throw err;
     }
-  }, [tasks, addActivity]);
+  }, [tasks, createActivity]);
 
   const fetchDeletedTasks = async () => {
     try {
@@ -260,28 +275,32 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
 
   const restoreTask = useCallback(async (id: string) => {
     try {
-      const taskToRestore = trashTasks.find(task => task.id === id);
-      if (!taskToRestore) return;
-
-      // Update backend
+      // Update task in backend
       await taskService.updateTask(id, {
         isDeleted: false,
         deletedAt: null,
       });
 
-      // Add back to tasks
-      setTasks(prevTasks => [...prevTasks, { ...taskToRestore, isDeleted: false, deletedAt: null }]);
+      // Fetch all tasks to refresh the list
+      await fetchTasks();
 
-      // Remove from trashTasks
-      setTrashTasks(prevTrashTasks => prevTrashTasks.filter(task => task.id !== id));
-
-      // Add activity (optional)
-      addActivity({ /* ... */ });
+      // Record activity
+      await createActivity({
+        actionType: 'restore',
+        itemType: 'task',
+        itemId: id,
+        itemTitle: tasks.find(t => t.id === id)?.title || '',
+        description: `Restored task from trash`,
+        metadata: {
+          taskId: id,
+          restoredAt: new Date().toISOString()
+        }
+      });
     } catch (error) {
       console.error('Failed to restore task:', error);
       throw error;
     }
-  }, [trashTasks, setTasks, setTrashTasks, addActivity]);
+  }, [tasks, createActivity, fetchTasks]);
 
   return (
     <TasksContext.Provider value={{

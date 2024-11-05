@@ -17,13 +17,15 @@ interface RemindersContextType {
   toggleReminderCompletion: (id: string) => Promise<void>;
   getDueReminders: () => Reminder[];
   getUpcomingReminders: () => Reminder[];
+  restoreReminder: (reminder: Reminder) => Promise<void>;
+  fetchReminders: () => Promise<void>;
 }
 
 const RemindersContext = createContext<RemindersContextType | null>(null);
 
 export function RemindersProvider({ children }: { children: React.ReactNode }) {
   const [reminders, setReminders] = useState<Reminder[]>([]);
-  const { addActivity } = useActivities();
+  const { createActivity } = useActivities();
   const { moveToTrash } = useTrash();
 
   useEffect(() => {
@@ -49,7 +51,7 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
       setReminders(prev => [newReminder, ...prev]);
 
       // Record activity
-      await addActivity({
+      await createActivity({
         actionType: 'create',
         itemType: 'reminder',
         itemId: newReminder.id,
@@ -60,7 +62,7 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Failed to add reminder:', error);
     }
-  }, [addActivity]);
+  }, [createActivity]);
 
   const updateReminder = useCallback(async (id: string, updates: Partial<Reminder>) => {
     try {
@@ -70,7 +72,7 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
       );
 
       // Record activity
-      await addActivity({
+      await createActivity({
         actionType: 'edit',
         itemType: 'reminder',
         itemId: updatedReminder.id,
@@ -81,40 +83,59 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       console.error('Failed to update reminder:', error);
     }
-  }, [addActivity]);
+  }, [createActivity]);
 
   const deleteReminder = useCallback(async (id: string) => {
     try {
       const reminderToDelete = reminders.find(reminder => reminder.id === id);
       if (!reminderToDelete) return;
 
-      // Move to trash first
+      // Soft delete in backend by updating isDeleted flag
+      await reminderService.updateReminder(id, {
+        isDeleted: true,
+        deletedAt: new Date().toISOString(),
+        title: reminderToDelete.title,
+        description: reminderToDelete.description,
+        dueDateTime: reminderToDelete.dueDateTime,
+        tags: reminderToDelete.tags,
+        isCompleted: reminderToDelete.isCompleted
+      });
+
+      // Move to trash
       await moveToTrash({
         id: reminderToDelete.id,
         type: 'reminder',
         title: reminderToDelete.title,
         content: reminderToDelete.description,
         metadata: {
-          dueDate: reminderToDelete.dueDate,
+          dueDate: reminderToDelete.dueDateTime,
           tags: reminderToDelete.tags
         }
       });
 
-      // Remove from active reminders list AFTER successful trash move
+      // Remove from active reminders list AFTER successful deletion and trash move
       setReminders(prev => prev.filter(reminder => reminder.id !== id));
 
-      addActivity({
+      await createActivity({
         actionType: 'delete',
         itemType: 'reminder',
         itemId: id,
         itemTitle: reminderToDelete.title,
-        description: `Moved reminder to trash: ${reminderToDelete.title}`
+        description: `Moved reminder to trash: ${reminderToDelete.title}`,
+        metadata: {
+          reminderId: id,
+          reminderTitle: reminderToDelete.title,
+          reminderDueDate: reminderToDelete.dueDateTime,
+          reminderTags: reminderToDelete.tags,
+          reminderStatus: reminderToDelete.isCompleted ? 'completed' : 'pending',
+          deletedAt: new Date().toISOString()
+        }
       });
     } catch (error) {
       console.error('Failed to delete reminder:', error);
       throw error;
     }
-  }, [reminders, moveToTrash, addActivity]);
+  }, [reminders, moveToTrash, createActivity]);
 
   const snoozeReminder = useCallback(async (id: string, until: string) => {
     try {
@@ -160,8 +181,42 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
     });
   }, [reminders]);
 
+  const restoreReminder = useCallback(async (reminder: Reminder) => {
+    try {
+      await reminderService.updateReminder(reminder.id, {
+        isDeleted: false,
+        deletedAt: null
+      });
+
+      await fetchReminders();
+
+      await createActivity({
+        actionType: 'restore',
+        itemType: 'reminder',
+        itemId: reminder.id,
+        itemTitle: reminder.title,
+        description: `Restored reminder: ${reminder.title}`,
+        metadata: { tags: reminder.tags }
+      });
+    } catch (error) {
+      console.error('Failed to restore reminder:', error);
+      throw error;
+    }
+  }, [createActivity, fetchReminders]);
+
   return (
-    <RemindersContext.Provider value={{ reminders, addReminder, updateReminder, deleteReminder, snoozeReminder, toggleReminderCompletion, getDueReminders, getUpcomingReminders }}>
+    <RemindersContext.Provider value={{
+      reminders,
+      addReminder,
+      updateReminder,
+      deleteReminder,
+      snoozeReminder,
+      toggleReminderCompletion,
+      getDueReminders,
+      getUpcomingReminders,
+      restoreReminder,
+      fetchReminders
+    }}>
       {children}
     </RemindersContext.Provider>
   );

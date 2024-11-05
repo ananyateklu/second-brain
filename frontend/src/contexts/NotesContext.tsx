@@ -48,7 +48,7 @@ export function NotesProvider({ children }: NotesProviderProps) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [archivedNotes, setArchivedNotes] = useState<Note[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { addActivity } = useActivities();
+  const { createActivity } = useActivities();
   const { moveToTrash } = useTrash();
   const { user } = useAuth();
 
@@ -99,21 +99,28 @@ export function NotesProvider({ children }: NotesProviderProps) {
       
       setNotes(prev => [safeNewNote, ...prev]);
 
-      addActivity({
-        actionType: 'create',
-        itemType: safeNewNote.tags.includes('idea') ? 'idea' : 'note',
-        itemId: safeNewNote.id,
-        itemTitle: safeNewNote.title,
-        description: `Created ${safeNewNote.tags.includes('idea') ? 'idea' : 'note'}: ${safeNewNote.title}`,
-        metadata: {
-          tags: safeNewNote.tags
+      try {
+        if (createActivity) {
+          createActivity({
+            actionType: 'create',
+            itemType: safeNewNote.tags.includes('idea') ? 'idea' : 'note',
+            itemId: safeNewNote.id,
+            itemTitle: safeNewNote.title,
+            description: `Created ${safeNewNote.tags.includes('idea') ? 'idea' : 'note'}: ${safeNewNote.title}`,
+            metadata: {
+              tags: safeNewNote.tags
+            }
+          });
         }
-      });
+      } catch (activityError) {
+        console.error('Failed to add activity:', activityError);
+        // Don't throw the error since the note was still created successfully
+      }
     } catch (error) {
       console.error('Failed to create note:', error);
       throw error;
     }
-  }, [addActivity]);
+  }, [createActivity]);
 
   const updateNote = useCallback(async (id: string, updates: Partial<Note>) => {
     try {
@@ -128,21 +135,30 @@ export function NotesProvider({ children }: NotesProviderProps) {
           .filter(note => !note.isDeleted && !note.isArchived)
       );
 
-      addActivity({
-        actionType: 'edit',
-        itemType: updatedNote.tags.includes('idea') ? 'idea' : 'note',
-        itemId: id,
-        itemTitle: updatedNote.title,
-        description: `Updated ${updatedNote.tags.includes('idea') ? 'idea' : 'note'}: ${updatedNote.title}`,
-        metadata: {
-          ...updates
+      try {
+        if (createActivity) {
+          createActivity({
+            actionType: 'edit',
+            itemType: updatedNote.tags.includes('idea') ? 'idea' : 'note',
+            itemId: id,
+            itemTitle: updatedNote.title,
+            description: `Updated ${updatedNote.tags.includes('idea') ? 'idea' : 'note'}: ${updatedNote.title}`,
+            metadata: {
+              ...updates
+            }
+          });
         }
-      });
+      } catch (activityError) {
+        console.error('Failed to add activity for note update:', activityError);
+        // Don't throw the error since the note was still updated successfully
+      }
+
+      return updatedNote;
     } catch (error) {
       console.error('Failed to update note:', error);
       throw error;
     }
-  }, [addActivity]);
+  }, [createActivity]);
 
   const deleteNote = useCallback(async (id: string) => {
     try {
@@ -176,7 +192,7 @@ export function NotesProvider({ children }: NotesProviderProps) {
         }
       });
 
-      addActivity({
+      createActivity({
         actionType: 'delete',
         itemType: noteToDelete.tags.includes('idea') ? 'idea' : 'note',
         itemId: id,
@@ -198,7 +214,7 @@ export function NotesProvider({ children }: NotesProviderProps) {
       }
       throw error;
     }
-  }, [notes, moveToTrash, addActivity]);
+  }, [notes, moveToTrash, createActivity]);
 
   const togglePinNote = useCallback(async (id: string) => {
     try {
@@ -213,7 +229,7 @@ export function NotesProvider({ children }: NotesProviderProps) {
         prevNotes.map(note => (note.id === id ? updatedNote : note))
       );
 
-      addActivity({
+      createActivity({
         actionType: 'update',
         itemType: note.tags.includes('idea') ? 'idea' : 'note',
         itemId: id,
@@ -226,7 +242,7 @@ export function NotesProvider({ children }: NotesProviderProps) {
     } catch (error) {
       console.error('Failed to toggle pin status:', error);
     }
-  }, [notes, addActivity]);
+  }, [notes, createActivity]);
 
   const toggleFavoriteNote = useCallback(async (id: string) => {
     try {
@@ -241,7 +257,7 @@ export function NotesProvider({ children }: NotesProviderProps) {
         prevNotes.map(note => (note.id === id ? updatedNote : note))
       );
 
-      addActivity({
+      createActivity({
         actionType: 'update',
         itemType: note.tags.includes('idea') ? 'idea' : 'note',
         itemId: id,
@@ -254,7 +270,7 @@ export function NotesProvider({ children }: NotesProviderProps) {
     } catch (error) {
       console.error('Failed to toggle favorite status:', error);
     }
-  }, [notes, addActivity]);
+  }, [notes, createActivity]);
 
   const archiveNote = useCallback(async (id: string) => {
     try {
@@ -268,7 +284,7 @@ export function NotesProvider({ children }: NotesProviderProps) {
 
       setNotes(prevNotes => prevNotes.filter(note => note.id !== id));
 
-      addActivity({
+      createActivity({
         actionType: 'archive',
         itemType: noteToArchive.tags.includes('idea') ? 'idea' : 'note',
         itemId: id,
@@ -283,7 +299,7 @@ export function NotesProvider({ children }: NotesProviderProps) {
       console.error('Failed to archive note:', error);
       throw error;
     }
-  }, [notes, addActivity]);
+  }, [notes, createActivity]);
 
   const unarchiveNote = async (id: string) => {
     try {
@@ -313,7 +329,7 @@ export function NotesProvider({ children }: NotesProviderProps) {
 
         const restoredNotes = successfulRestores.map(result => result.value);
 
-        addActivity({
+        createActivity({
           actionType: 'restore_multiple',
           itemType: 'notes',
           itemId: 'bulk',
@@ -335,7 +351,7 @@ export function NotesProvider({ children }: NotesProviderProps) {
       console.error('Failed to restore multiple notes:', error);
       throw error;
     }
-  }, [unarchiveNote, addActivity]);
+  }, [unarchiveNote, createActivity]);
 
   const addLink = useCallback(async (sourceId: string, targetId: string) => {
     try {
@@ -361,7 +377,7 @@ export function NotesProvider({ children }: NotesProviderProps) {
         return note;
       }));
 
-      addActivity({
+      createActivity({
         actionType: 'link',
         itemType: 'note',
         itemId: sourceId,
@@ -378,7 +394,7 @@ export function NotesProvider({ children }: NotesProviderProps) {
       console.error('Failed to add link:', error);
       throw error;
     }
-  }, [notes, addActivity]);
+  }, [notes, createActivity]);
 
   const removeLink = useCallback(async (sourceId: string, targetId: string) => {
     if (!sourceId || !targetId) {
@@ -408,7 +424,7 @@ export function NotesProvider({ children }: NotesProviderProps) {
       const sourceNote = notes.find(n => n.id === sourceId);
       const targetNote = notes.find(n => n.id === targetId);
 
-      addActivity({
+      createActivity({
         actionType: 'unlink',
         itemType: 'note',
         itemId: sourceId,
@@ -425,7 +441,7 @@ export function NotesProvider({ children }: NotesProviderProps) {
       console.error('Failed to remove link:', error);
       throw error;
     }
-  }, [notes, addActivity]);
+  }, [notes, createActivity]);
 
   const loadArchivedNotes = useCallback(async () => {
     try {
@@ -447,7 +463,7 @@ export function NotesProvider({ children }: NotesProviderProps) {
       });
 
       // Add activity
-      addActivity({
+      createActivity({
         actionType: 'restore',
         itemType: 'note',
         itemId: restoredNote.id,
@@ -461,7 +477,7 @@ export function NotesProvider({ children }: NotesProviderProps) {
       console.error('Failed to restore note:', error);
       throw error;
     }
-  }, [addActivity]);
+  }, [createActivity]);
 
   const contextValue = {
     notes,

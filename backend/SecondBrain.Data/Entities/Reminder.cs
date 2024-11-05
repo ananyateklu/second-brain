@@ -35,5 +35,9 @@ namespace SecondBrain.Data.Entities
         public User User { get; set; } = null!; // Suppress null warning since EF Core sets it
 
         public string Tags { get; set; } = string.Empty; // Ensure this property exists and is mapped
+
+        // Add these properties
+        public bool IsDeleted { get; set; }
+        public DateTime? DeletedAt { get; set; }
     }
 }

@@ -21,16 +21,19 @@ export function TrashList({ filters, searchQuery }: TrashListProps) {
 
   const filteredItems = trashedItems.filter(item => {
     // Search filter
-    const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.content?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = 
+      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.content?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.type === 'reminder' && item.metadata?.dueDate && 
+       new Date(item.metadata.dueDate).toLocaleDateString().toLowerCase().includes(searchQuery.toLowerCase()));
 
     // Type filter
-    const matchesType = filters.types.length === 0 ||
-      filters.types.includes(item.type);
+    const matchesType = filters.types.length === 0 || filters.types.includes(item.type);
 
-    // Tag filter
+    // Tag filter - handle both direct tags and metadata tags
+    const itemTags = item.metadata?.tags || [];
     const matchesTags = filters.tags.length === 0 ||
-      filters.tags.some(tag => item.metadata?.tags?.includes(tag));
+      filters.tags.some(tag => itemTags.includes(tag));
 
     // Date range filter
     let matchesDateRange = true;
@@ -58,6 +61,11 @@ export function TrashList({ filters, searchQuery }: TrashListProps) {
     return matchesSearch && matchesType && matchesTags && matchesDateRange;
   });
 
+  // Sort items by deletion date, newest first
+  const sortedItems = [...filteredItems].sort((a, b) => 
+    new Date(b.deletedAt).getTime() - new Date(a.deletedAt).getTime()
+  );
+
   const handleRestore = async () => {
     await restoreItems(selectedItems);
     setSelectedItems([]);
@@ -78,7 +86,7 @@ export function TrashList({ filters, searchQuery }: TrashListProps) {
     );
   };
 
-  if (filteredItems.length === 0) {
+  if (sortedItems.length === 0) {
     return (
       <div className="text-center py-12">
         <Trash2 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
@@ -119,18 +127,14 @@ export function TrashList({ filters, searchQuery }: TrashListProps) {
 
       {/* Items Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredItems.map(item => (
-          <div
+        {sortedItems.map(item => (
+          <TrashItemCard
             key={item.id}
-            onClick={() => handleItemClick(item.id)}
-            className="cursor-pointer"
-          >
-            <TrashItemCard
-              item={item}
-              isSelected={selectedItems.includes(item.id)}
-              onSelect={() => handleItemClick(item.id)}
-            />
-          </div>
+            item={item}
+            isSelected={selectedItems.includes(item.id)}
+            onSelect={() => handleItemClick(item.id)}
+            showMetadata={item.type === 'reminder'}
+          />
         ))}
       </div>
 

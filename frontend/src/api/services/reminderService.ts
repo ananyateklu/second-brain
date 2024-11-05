@@ -26,12 +26,17 @@ export const reminderService = {
     return response.data;
   },
 
-  async updateReminder(id: string, data: Partial<CreateReminderData>): Promise<Reminder> {
+  async updateReminder(id: string, data: Partial<Reminder>): Promise<Reminder> {
     const response = await api.put<Reminder>(`/api/Reminders/${id}`, data);
     return response.data;
   },
 
   async deleteReminder(id: string): Promise<void> {
     await api.delete(`/api/Reminders/${id}`);
+  },
+
+  async getDeletedReminders(): Promise<Reminder[]> {
+    const response = await api.get<Reminder[]>('/api/Reminders/deleted');
+    return response.data;
   },
 };

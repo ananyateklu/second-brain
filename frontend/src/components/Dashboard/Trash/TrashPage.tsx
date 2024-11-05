@@ -20,6 +20,14 @@ export function TrashPage() {
     refreshTrashItems();
   }, [refreshTrashItems]);
 
+  // Calculate counts for different item types
+  const counts = {
+    notes: trashedItems.filter(item => item.type === 'note').length,
+    tasks: trashedItems.filter(item => item.type === 'task').length,
+    reminders: trashedItems.filter(item => item.type === 'reminder').length,
+    ideas: trashedItems.filter(item => item.type === 'idea').length
+  };
+
   const handleEmptyTrash = async () => {
     await emptyTrash();
     setShowEmptyTrashDialog(false);
@@ -39,6 +47,9 @@ export function TrashPage() {
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 {trashedItems.length} items • Items are automatically deleted after 30 days
               </p>
+              <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                {counts.notes} notes • {counts.tasks} tasks • {counts.reminders} reminders • {counts.ideas} ideas
+              </div>
             </div>
           </div>
 
@@ -84,6 +95,7 @@ export function TrashPage() {
             onFilterChange={(key, value) => 
               setFilters(prev => ({ ...prev, [key]: value }))
             }
+            availableTypes={['note', 'task', 'reminder', 'idea']}
           />
         </div>
       )}

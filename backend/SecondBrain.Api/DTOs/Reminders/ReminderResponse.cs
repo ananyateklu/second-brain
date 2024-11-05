@@ -17,10 +17,12 @@ namespace SecondBrain.Api.DTOs.Reminders
         public DateTime? CompletedAt { get; set; }
         public string RepeatInterval { get; set; }
         public string CustomRepeatPattern { get; set; }
-        public List<string> Tags { get; set; } // New property
+        public List<string> Tags { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public string UserId { get; set; }
+        public bool IsDeleted { get; set; }
+        public DateTime? DeletedAt { get; set; }
 
         public static ReminderResponse FromEntity(Reminder reminder)
         {
@@ -41,7 +43,9 @@ namespace SecondBrain.Api.DTOs.Reminders
                 UserId = reminder.UserId,
                 Tags = string.IsNullOrEmpty(reminder.Tags)
                     ? new List<string>()
-                    : reminder.Tags.Split(',').ToList()
+                    : reminder.Tags.Split(',').ToList(),
+                IsDeleted = reminder.IsDeleted,
+                DeletedAt = reminder.DeletedAt
             };
         }
     }

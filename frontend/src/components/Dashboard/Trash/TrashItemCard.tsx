@@ -9,7 +9,8 @@ import {
   RotateCcw,
   Trash2,
   Clock,
-  Link2
+  Link2,
+  Calendar
 } from 'lucide-react';
 import { TrashedItem } from '../../../contexts/TrashContext';
 import { formatTimeAgo } from '../Recent/utils';
@@ -18,9 +19,10 @@ interface TrashItemCardProps {
   item: TrashedItem;
   isSelected: boolean;
   onSelect: () => void;
+  showMetadata?: boolean;
 }
 
-export function TrashItemCard({ item, isSelected, onSelect }: TrashItemCardProps) {
+export function TrashItemCard({ item, isSelected, onSelect, showMetadata }: TrashItemCardProps) {
   const getIcon = () => {
     const icons: Record<string, React.ReactNode> = {
       note: <FileText className="w-4 h-4" />,
@@ -123,6 +125,24 @@ export function TrashItemCard({ item, isSelected, onSelect }: TrashItemCardProps
             </span>
           </div>
         </div>
+
+        {showMetadata && item.type === 'reminder' && (
+          <div className="mt-2 text-sm text-gray-500">
+            <div className="flex items-center gap-1">
+              <Calendar className="w-4 h-4" />
+              <span>Due: {new Date(item.metadata?.dueDate).toLocaleDateString()}</span>
+            </div>
+            {item.metadata?.tags?.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-1">
+                {item.metadata.tags.map(tag => (
+                  <span key={tag} className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 rounded-full">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

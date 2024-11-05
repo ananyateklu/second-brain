@@ -28,7 +28,7 @@ namespace SecondBrain.Api.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var reminders = await _context.Reminders
-                .Where(r => r.UserId == userId)
+                .Where(r => r.UserId == userId && !r.IsDeleted)
                 .ToListAsync();
 
             var reminderResponses = reminders
@@ -155,6 +155,16 @@ namespace SecondBrain.Api.Controllers
                 reminder.Tags = string.Join(",", request.Tags);
             }
 
+            if (request.IsDeleted != null)
+            {
+                reminder.IsDeleted = request.IsDeleted.Value;
+            }
+
+            if (request.DeletedAt != null)
+            {
+                reminder.DeletedAt = request.DeletedAt;
+            }
+
             reminder.UpdatedAt = DateTime.UtcNow;
 
             _context.Reminders.Update(reminder);
@@ -183,6 +193,21 @@ namespace SecondBrain.Api.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Reminder deleted successfully." });
+        }
+
+        [HttpGet("deleted")]
+        public async Task<IActionResult> GetDeletedReminders()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var reminders = await _context.Reminders
+                .Where(r => r.UserId == userId && r.IsDeleted)
+                .ToListAsync();
+
+            var reminderResponses = reminders
+                .Select(ReminderResponse.FromEntity)
+                .ToList();
+
+            return Ok(reminderResponses);
         }
     }
 }

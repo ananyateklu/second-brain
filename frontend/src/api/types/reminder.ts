@@ -13,4 +13,6 @@ export interface Reminder {
   createdAt: string;
   updatedAt: string;
   userId: string;
+  isDeleted: boolean;
+  deletedAt?: string;
 }

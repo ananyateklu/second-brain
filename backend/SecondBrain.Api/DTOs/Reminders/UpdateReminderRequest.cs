@@ -16,5 +16,7 @@ namespace SecondBrain.Api.DTOs.Reminders
         public bool? IsCompleted { get; set; }
         public DateTime? CompletedAt { get; set; }
         public List<string>? Tags { get; set; }
+        public bool? IsDeleted { get; set; }
+        public DateTime? DeletedAt { get; set; }
     }
 }

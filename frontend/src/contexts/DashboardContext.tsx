@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { DashboardStat } from '../types/dashboard';
 import { useNotes } from './NotesContext';
 import { useTasks } from './TasksContext';
+import { useReminders } from './RemindersContext';
 import { Note } from '../types/note';
 import { Task } from '../types/task';
 import { useActivities } from './ActivityContext';
@@ -177,6 +178,7 @@ const DEFAULT_STATS: DashboardStat[] = [
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const { notes, isLoading: notesLoading } = useNotes();
   const { tasks } = useTasks();
+  const { reminders } = useReminders();
   const { activities } = useActivities();
   const [isLoading, setIsLoading] = useState(true);
 
@@ -218,12 +220,21 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       };
     }
 
+    // Filter regular notes and ideas
+    const regularNotes = notes.filter(note => !note.isIdea);
+    const ideas = notes.filter(note => note.isIdea);
+
     switch (statId) {
       case 'categories':
-        const uniqueTags = new Set(notes.flatMap(note => note.tags));
-        return { 
+        const allTags = [
+          ...regularNotes.flatMap(note => note.tags),
+          ...tasks.flatMap(task => task.tags),
+          ...reminders.flatMap(reminder => reminder.tags)
+        ];
+        const uniqueTags = new Set(allTags);
+        return {
           value: uniqueTags.size,
-          timeframe: 'Total'
+          timeframe: 'Total Categories'
         };
 
       case 'active-tasks':
@@ -240,16 +251,16 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
       case 'total-notes':
         return { 
-          value: notes.length,
-          change: calculateWeeklyChange(notes, 'created'),
+          value: regularNotes.length,
+          change: calculateWeeklyChange(regularNotes, 'created'),
           timeframe: 'This week'
         };
         
       case 'new-notes':
-        const newNotes = getNewNotesCount(notes);
+        const newRegularNotes = getNewNotesCount(regularNotes);
         return { 
-          value: newNotes,
-          change: calculateWeeklyChange(notes, 'created'),
+          value: newRegularNotes,
+          change: calculateWeeklyChange(regularNotes, 'created'),
           timeframe: 'vs last week'
         };
         
@@ -270,8 +281,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         
       case 'ideas-count':
         return {
-          value: notes.filter(note => note.tags.includes('idea')).length,
-          timeframe: 'Total'
+          value: ideas.length,
+          timeframe: 'Total',
+          change: calculateWeeklyChange(ideas, 'created')
         };
         
       case 'shared-notes':

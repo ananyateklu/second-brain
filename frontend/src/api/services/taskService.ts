@@ -21,8 +21,9 @@ export const taskService = {
     });
   },
 
-  updateTask: (id: string, updates: UpdateTaskDto) => {
-    return api.patch<Task>(`/api/Tasks/${id}`, updates);
+  async updateTask(id: string, updates: UpdateTaskDto): Promise<Task> {
+    const response = await api.patch<Task>(`/api/Tasks/${id}`, updates);
+    return response.data;
   },
 
   deleteTask: (id: string) => api.delete(`/api/Tasks/${id}`),
