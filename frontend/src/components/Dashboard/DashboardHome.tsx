@@ -85,25 +85,28 @@ const cardVariants = {
 // Define size-related classes
 const sizeClasses = {
   small: {
-    colSpan: 'col-span-3', // Smaller span
-    aspect: 'aspect-square',
+    colSpan: 'col-span-1',
     fontSize: 'text-sm',
     iconSize: 'w-4 h-4',
     padding: 'p-3',
+    titleSize: 'text-xs',
+    valueSize: 'text-sm',
   },
   medium: {
-    colSpan: 'col-span-4', // Proportional larger span
-    aspect: 'aspect-[4/3]',
+    colSpan: 'col-span-2',
     fontSize: 'text-base',
     iconSize: 'w-5 h-5',
-    padding: 'p-4',
+    padding: 'p-3',
+    titleSize: 'text-xs',
+    valueSize: 'text-sm',
   },
   large: {
-    colSpan: 'col-span-6', // Largest span
-    aspect: 'aspect-[16/9]',
+    colSpan: 'col-span-3',
     fontSize: 'text-lg',
     iconSize: 'w-6 h-6',
-    padding: 'p-6',
+    padding: 'p-3',
+    titleSize: 'text-xs',
+    valueSize: 'text-sm',
   },
 };
 
@@ -137,7 +140,7 @@ const StatCard = ({
       animate="visible"
       exit="exit"
       whileHover={showStatsEditor ? 'hover' : undefined}
-      className={`transform origin-center relative w-full ${size.colSpan} ${size.aspect}`}
+      className={`transform origin-center relative w-full h-[100px]`}
       style={{
         position: showStatsEditor ? 'relative' : 'static',
       }}
@@ -156,7 +159,7 @@ const StatCard = ({
                 />
               )}
             </div>
-            <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
+            <p className={`${size.titleSize} font-medium text-gray-700 dark:text-gray-300`}>
               {stat.title}
             </p>
           </div>
@@ -164,9 +167,7 @@ const StatCard = ({
           {/* Value and Change */}
           <div className="mt-1">
             <div className="flex items-baseline gap-1">
-              <span
-                className={`${size.fontSize} font-semibold text-gray-900 dark:text-white`}
-              >
+              <span className={`${size.valueSize} font-semibold text-gray-900 dark:text-white`}>
                 {value}
               </span>
               {getStatValue(stat.id).change && (
@@ -321,7 +322,6 @@ export function DashboardHome() {
         if (stat.id === 'total-notes') return stats.totalNotes;
         if (stat.id === 'new-notes') return stats.newThisWeek;
         if (stat.id === 'word-count') return '24.5k';
-        if (stat.id === 'attachments') return 34;
         return 0;
       case 'tags':
         return new Set(notes.flatMap(note => note.tags)).size;
@@ -436,18 +436,19 @@ export function DashboardHome() {
             axis="x"
             values={enabledStats}
             onReorder={handleReorder}
-            className="grid grid-cols-10 gap-2"
+            className="grid grid-cols-8 gap-2"
           >
             <AnimatePresence mode="popLayout">
               {enabledStats.map((stat, index) => (
                 <Reorder.Item
                   key={stat.id}
                   value={stat}
-                  className={`group relative w-full ${stat.size === 'small' ? 'col-span-1' :
-                    stat.size === 'medium' ? 'col-span-2' :
-                      stat.size === 'large' ? 'col-span-3' :
-                        'col-span-1'
-                    }`}
+                  className={`group relative w-full ${
+                    stat.size === 'small' ? 'col-span-1' :   // Base size (1/8)
+                    stat.size === 'medium' ? 'col-span-2' :  // Double width (2/8)
+                    stat.size === 'large' ? 'col-span-3' :   // Triple width (3/8)
+                    'col-span-1'
+                  }`}
                   initial={false}
                   whileDrag={{
                     scale: 1.05,

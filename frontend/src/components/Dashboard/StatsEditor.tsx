@@ -140,34 +140,29 @@ export function StatsEditor({ isOpen }: { isOpen: boolean }) {
                   className="transform origin-center cursor-pointer col-span-1"
                 >
                   <motion.div
-                    className="w-full aspect-square glass-morphism p-4 rounded-lg border border-gray-100 dark:border-dark-border hover:border-primary-400 dark:hover:border-primary-400 transition-all"
+                    className="w-full h-[100px] glass-morphism p-3 rounded-lg border border-gray-100 dark:border-dark-border hover:border-primary-400 dark:hover:border-primary-400 transition-all"
                     whileTap={{ scale: 0.95 }}
                   >
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col h-full justify-between">
                       <motion.div 
                         className="flex items-center gap-2"
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.1 }}
                       >
-                        <div className={`p-1.5 rounded-md ${getIconBg(stat.type)} backdrop-blur-sm`}>
-                          <IconComponent className={`w-4 h-4 ${getIconColor(stat.type)}`} />
+                        <div className={`p-1 rounded-md ${getIconBg(stat.type)} backdrop-blur-sm`}>
+                          <IconComponent className="w-4 h-4 ${getIconColor(stat.type)}" />
                         </div>
                         <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
                           {stat.title}
                         </p>
                       </motion.div>
 
-                      <motion.div 
-                        className="flex flex-col gap-1"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.2 }}
-                      >
-                        <span className="text-lg font-semibold text-gray-900 dark:text-white">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-sm font-semibold text-gray-900 dark:text-white">
                           {renderStat(stat)}
                         </span>
-                      </motion.div>
+                      </div>
 
                       <motion.div 
                         className="flex items-center gap-1 group"

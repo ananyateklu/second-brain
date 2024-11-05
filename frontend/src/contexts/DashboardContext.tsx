@@ -110,26 +110,17 @@ const DEFAULT_STATS: DashboardStat[] = [
     size: 'small'
   },
   {
-    id: 'attachments',
-    type: 'notes',
-    title: 'Attachments',
-    icon: 'Paperclip',
-    enabled: false,
-    order: 10,
-    size: 'small'
-  },
-  {
     id: 'completed-tasks',
     type: 'tasks',
     title: 'Completed Tasks',
     icon: 'CheckCircle',
     enabled: false,
-    order: 11,
+    order: 10,
     size: 'small'
   }
 ];
 
-export function DashboardProvider({ children }: { children: React.ReactNode }) {
+export function DashboardProvider({ children }: Readonly<{ children: React.ReactNode }>) {
   const [stats, setStats] = useState<DashboardStat[]>(() => {
     const saved = localStorage.getItem('dashboard_stats');
     return saved ? JSON.parse(saved) : DEFAULT_STATS;
@@ -196,8 +187,6 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         return { value: 15, change: 5, timeframe: 'Today' };
       case 'word-count':
         return { value: '24.5k', change: 1200, timeframe: 'This week' };
-      case 'attachments':
-        return { value: 34, change: 6, timeframe: 'This week' };
       case 'completed-tasks':
         return { value: 28, change: 8, timeframe: 'This week' };
       default:
