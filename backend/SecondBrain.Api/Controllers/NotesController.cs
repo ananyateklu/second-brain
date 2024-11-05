@@ -60,6 +60,7 @@ namespace SecondBrain.Api.Controllers
                 IsPinned = request.IsPinned,
                 IsFavorite = request.IsFavorite,
                 IsArchived = false,
+                IsIdea = request.IsIdea,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
                 UserId = userId
@@ -79,6 +80,7 @@ namespace SecondBrain.Api.Controllers
                 IsPinned = note.IsPinned,
                 IsFavorite = note.IsFavorite,
                 IsArchived = note.IsArchived,
+                IsIdea = note.IsIdea,
                 ArchivedAt = note.ArchivedAt,
                 CreatedAt = note.CreatedAt,
                 UpdatedAt = note.UpdatedAt,

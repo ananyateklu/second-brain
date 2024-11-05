@@ -24,16 +24,9 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
     setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
     try {
       const response: AuthResponse = await authService.login({ email, password });
-
-      console.log('Login response:', response);
-
       // Store tokens in localStorage
       localStorage.setItem('access_token', response.accessToken);
       localStorage.setItem('refresh_token', response.refreshToken);
-      console.log('Tokens stored in localStorage:', {
-        accessToken: localStorage.getItem('access_token'),
-        refreshToken: localStorage.getItem('refresh_token'),
-      });
 
       // Optional: Call fetchCurrentUser if needed
       // await fetchCurrentUser();
@@ -61,7 +54,6 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
       // Store tokens in localStorage
       localStorage.setItem('access_token', response.accessToken);
       localStorage.setItem('refresh_token', response.refreshToken);
-      console.log('Login successful, response:', response);
 
       setAuthState({
         isLoading: false,
@@ -119,7 +111,6 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
 
   const fetchCurrentUser = useCallback(async () => {
     const accessToken = localStorage.getItem('access_token');
-    console.log('Access token in fetchCurrentUser:', accessToken);
 
     if (!accessToken) {
       setAuthState(prev => ({ ...prev, isLoading: false }));
@@ -129,7 +120,6 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
     setAuthState(prev => ({ ...prev, isLoading: true }));
     try {
       const user = await authService.getCurrentUser();
-      console.log('Fetched user:', user);
 
       setAuthState({
         isLoading: false,

@@ -11,6 +11,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { LoginPage } from './components/LoginPage';
 import { RegistrationPage } from './components/RegistrationPage';
 import { Dashboard } from './components/Dashboard';
+import { DashboardProvider } from './contexts/DashboardContext';
 
 export function App() {
   return (
@@ -18,29 +19,31 @@ export function App() {
       <AuthProvider>
         <ActivityProvider>
           <TrashProvider>
-            <BrowserRouter>
-              <Routes>
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/register" element={<RegistrationPage />} />
-                <Route
-                  path="/dashboard/*"
-                  element={
-                    <ProtectedRoute>
-                      <NotesProvider>
-                        <TasksProvider>
-                          <RemindersProvider>
-                            <AIProvider>
-                              <Dashboard />
-                            </AIProvider>
-                          </RemindersProvider>
-                        </TasksProvider>
-                      </NotesProvider>
-                    </ProtectedRoute>
-                  }
-                />
-                <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              </Routes>
-            </BrowserRouter>
+            <DashboardProvider>
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/register" element={<RegistrationPage />} />
+                  <Route
+                    path="/dashboard/*"
+                    element={
+                      <ProtectedRoute>
+                        <NotesProvider>
+                          <TasksProvider>
+                            <RemindersProvider>
+                              <AIProvider>
+                                <Dashboard />
+                              </AIProvider>
+                            </RemindersProvider>
+                          </TasksProvider>
+                        </NotesProvider>
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                </Routes>
+              </BrowserRouter>
+            </DashboardProvider>
           </TrashProvider>
         </ActivityProvider>
       </AuthProvider>

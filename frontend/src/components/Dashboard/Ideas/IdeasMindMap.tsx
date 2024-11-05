@@ -23,7 +23,7 @@ export function IdeasMindMap({ ideas, onIdeaClick }: IdeasMindMapProps) {
     }));
 
     const edges = ideas.flatMap(idea =>
-      (idea.linkedNotes || [])
+      (idea.linkedNoteIds || [])
         .filter(linkedId => ideas.some(i => i.id === linkedId))
         .map(linkedId => ({
           data: {

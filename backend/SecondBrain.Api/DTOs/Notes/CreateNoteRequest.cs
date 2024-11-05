@@ -2,11 +2,11 @@ namespace SecondBrain.Api.DTOs.Notes
 {
     public class CreateNoteRequest
     {
-        public string Title { get; set; }
-        public string Content { get; set; }
-        public bool IsPinned { get; set; } = false;
-        public bool IsFavorite { get; set; } = false;
-        public List<string> Tags { get; set; } = new List<string>();
-        public List<string> LinkedNoteIds { get; set; } = new List<string>();
+        public string Title { get; set; } = string.Empty;
+        public string Content { get; set; } = string.Empty;
+        public List<string>? Tags { get; set; }
+        public bool IsPinned { get; set; }
+        public bool IsFavorite { get; set; }
+        public bool IsIdea { get; set; }
     }
 }

@@ -7,9 +7,10 @@ namespace SecondBrain.Api.DTOs.Notes
 {
     public class NoteResponse
     {
-        public string Id { get; set; }
-        public string Title { get; set; }
-        public string Content { get; set; }
+        public string Id { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Content { get; set; } = string.Empty;
+        public List<string> Tags { get; set; } = new List<string>();
         public bool IsPinned { get; set; }
         public bool IsFavorite { get; set; }
         public bool IsArchived { get; set; }
@@ -18,9 +19,8 @@ namespace SecondBrain.Api.DTOs.Notes
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public DateTime? ArchivedAt { get; set; }
-        public List<string> Tags { get; set; }
         public bool IsIdea { get; set; }
-        public List<string> LinkedNoteIds { get; set; }
+        public List<string> LinkedNoteIds { get; set; } = new List<string>();
 
         public static NoteResponse FromEntity(Note note)
         {
@@ -29,6 +29,9 @@ namespace SecondBrain.Api.DTOs.Notes
                 Id = note.Id,
                 Title = note.Title,
                 Content = note.Content,
+                Tags = !string.IsNullOrEmpty(note.Tags) 
+                    ? note.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList() 
+                    : new List<string>(),
                 IsPinned = note.IsPinned,
                 IsFavorite = note.IsFavorite,
                 IsArchived = note.IsArchived,
@@ -36,9 +39,12 @@ namespace SecondBrain.Api.DTOs.Notes
                 DeletedAt = note.DeletedAt,
                 CreatedAt = note.CreatedAt,
                 UpdatedAt = note.UpdatedAt,
-                Tags = string.IsNullOrEmpty(note.Tags) ? new List<string>() : note.Tags.Split(',').ToList(),
+                ArchivedAt = note.ArchivedAt,
                 IsIdea = note.IsIdea,
-                LinkedNoteIds = note.NoteLinks?.Select(nl => nl.LinkedNoteId).ToList() ?? new List<string>()
+                LinkedNoteIds = note.NoteLinks
+                    .Where(nl => !nl.IsDeleted)
+                    .Select(nl => nl.LinkedNoteId)
+                    .ToList()
             };
         }
     }

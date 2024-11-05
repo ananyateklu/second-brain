@@ -109,7 +109,7 @@ export function IdeaCard({ idea, onClick }: IdeaCardProps) {
         <div className="mt-3 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
           <div className="flex items-center gap-2">
             <Link2 className="w-4 h-4" />
-            <span>{idea.linkedNotes?.length || 0} connections</span>
+            <span>{idea.linkedNoteIds?.length || 0} connections</span>
           </div>
           <span>{formatDate(idea.updatedAt)}</span>
         </div>

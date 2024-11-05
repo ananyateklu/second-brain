@@ -108,7 +108,6 @@ export function TrashProvider({
     try {
       const existingItem = trashedItems.find(trashedItem => trashedItem.id === item.id);
       if (existingItem) {
-        console.log('Item already in trash:', item.id);
         return false;
       }
 

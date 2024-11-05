@@ -12,6 +12,7 @@ export interface Note {
   isDeleted?: boolean;
   deletedAt?: string;
   linkedNoteIds?: string[];
+  isIdea?: boolean;
 }
 
 export interface NoteLink {
