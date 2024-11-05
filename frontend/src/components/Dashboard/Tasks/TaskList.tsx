@@ -2,6 +2,7 @@ import { useTasks } from '../../../contexts/TasksContext';
 import { TaskCard } from './TaskCard';
 import { LayoutGrid, List } from 'lucide-react';
 import { useState } from 'react';
+import { Task } from '../../../api/types/task';
 
 interface TaskListProps {
   searchQuery: string;
@@ -16,9 +17,15 @@ export function TaskList({ searchQuery, filters }: TaskListProps) {
   const { tasks } = useTasks();
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
 
-  const filteredTasks = tasks.filter(task => {
+  const filteredTasks = tasks.filter((task): task is Task => {
+    // First check if task exists and has required properties
+    if (!task || typeof task.title !== 'string' || typeof task.description !== 'string') {
+      return false;
+    }
+
     // Search filter
-    const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const matchesSearch = 
+      task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       task.description.toLowerCase().includes(searchQuery.toLowerCase());
 
     // Status filter
@@ -54,13 +61,23 @@ export function TaskList({ searchQuery, filters }: TaskListProps) {
     return matchesSearch && matchesStatus && matchesPriority && matchesDueDate;
   });
 
+  if (!tasks || tasks.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-500 dark:text-gray-400">
+          No tasks found. Create your first task!
+        </p>
+      </div>
+    );
+  }
+
   if (filteredTasks.length === 0) {
     return (
       <div className="text-center py-12">
         <p className="text-gray-500 dark:text-gray-400">
           {searchQuery
             ? "No tasks match your search criteria"
-            : "No tasks found. Create your first task!"}
+            : "No tasks found"}
         </p>
       </div>
     );

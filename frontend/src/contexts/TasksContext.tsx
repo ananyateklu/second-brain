@@ -107,7 +107,6 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
       try {
         if (createActivity) {
           createActivity({
-            id,
             actionType: 'edit',
             itemType: 'task',
             itemId: updatedTask.id,

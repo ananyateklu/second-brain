@@ -22,8 +22,16 @@ export const taskService = {
   },
 
   async updateTask(id: string, updates: UpdateTaskDto): Promise<Task> {
-    const response = await api.patch<Task>(`/api/Tasks/${id}`, updates);
-    return response.data;
+    try {
+      const response = await api.patch<Task>(`/api/Tasks/${id}`, updates);
+      if (!response.data) {
+        throw new Error('No data received from server');
+      }
+      return response.data;
+    } catch (error) {
+      console.error('Task update API error:', error);
+      throw error;
+    }
   },
 
   deleteTask: (id: string) => api.delete(`/api/Tasks/${id}`),
