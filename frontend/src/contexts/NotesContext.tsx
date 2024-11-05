@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import { useActivities } from './ActivityContext';
 import { notesService } from '../services/api/notes.service';
 import { useTrash, TrashProvider } from './TrashContext';
+import { useAuth } from './AuthContext';
 
 export interface Note {
   id: string;
@@ -21,6 +22,7 @@ export interface Note {
 interface NotesContextType {
   notes: Note[];
   archivedNotes: Note[];
+  isLoading: boolean;
   addNote: (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'linkedNoteIds' | 'linkedNotes'>) => void;
   updateNote: (id: string, updates: Partial<Note>) => void;
   deleteNote: (id: string) => Promise<void>;
@@ -33,29 +35,47 @@ interface NotesContextType {
   loadArchivedNotes: () => Promise<void>;
   restoreMultipleNotes: (ids: string[]) => Promise<PromiseSettledResult<Note>[]>;
   restoreNote: (restoredNote: Note) => Promise<void>;
+  fetchNotes: () => Promise<void>;
 }
 
 const NotesContext = createContext<NotesContextType | null>(null);
 
-export function NotesProvider({ children }: { children: React.ReactNode }) {
+interface NotesProviderProps {
+  children: React.ReactNode;
+}
+
+export function NotesProvider({ children }: NotesProviderProps) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [archivedNotes, setArchivedNotes] = useState<Note[]>([]);
-  const [trashNotes, setTrashNotes] = useState<Note[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { addActivity } = useActivities();
   const { moveToTrash } = useTrash();
+  const { user } = useAuth();
+
+  const fetchNotes = useCallback(async () => {
+    try {
+      console.log('Fetching notes...');
+      setIsLoading(true);
+      const fetchedNotes = await notesService.getAllNotes();
+      console.log('Fetched notes:', fetchedNotes);
+      setNotes(fetchedNotes.filter(note => !note.isArchived && !note.isDeleted));
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Failed to fetch notes:', error);
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchNotes = async () => {
-      try {
-        const fetchedNotes = await notesService.getAllNotes();
-        setNotes(fetchedNotes.filter(note => !note.isArchived && !note.isDeleted));
-      } catch (error) {
-        console.error('Failed to fetch notes:', error);
-      }
-    };
+    if (user) {
+      console.log('User authenticated, fetching notes');
+      fetchNotes();
+    }
+  }, [user, fetchNotes]);
 
-    fetchNotes();
-  }, []);
+  useEffect(() => {
+    console.log('Notes updated:', notes);
+  }, [notes]);
 
   const addNote = useCallback(async (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'linkedNoteIds' | 'linkedNotes'>) => {
     try {
@@ -446,6 +466,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
   const contextValue = {
     notes,
     archivedNotes,
+    isLoading,
     addNote,
     updateNote,
     deleteNote,
@@ -457,7 +478,8 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     removeLink,
     loadArchivedNotes,
     restoreMultipleNotes,
-    restoreNote
+    restoreNote,
+    fetchNotes
   };
 
   return (

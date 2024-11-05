@@ -19,31 +19,31 @@ export function App() {
       <AuthProvider>
         <ActivityProvider>
           <TrashProvider>
-            <DashboardProvider>
-              <BrowserRouter>
-                <Routes>
-                  <Route path="/login" element={<LoginPage />} />
-                  <Route path="/register" element={<RegistrationPage />} />
-                  <Route
-                    path="/dashboard/*"
-                    element={
-                      <ProtectedRoute>
-                        <NotesProvider>
-                          <TasksProvider>
+            <NotesProvider>
+              <TasksProvider>
+                <DashboardProvider>
+                  <BrowserRouter>
+                    <Routes>
+                      <Route path="/login" element={<LoginPage />} />
+                      <Route path="/register" element={<RegistrationPage />} />
+                      <Route
+                        path="/dashboard/*"
+                        element={
+                          <ProtectedRoute>
                             <RemindersProvider>
                               <AIProvider>
                                 <Dashboard />
                               </AIProvider>
                             </RemindersProvider>
-                          </TasksProvider>
-                        </NotesProvider>
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                </Routes>
-              </BrowserRouter>
-            </DashboardProvider>
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                    </Routes>
+                  </BrowserRouter>
+                </DashboardProvider>
+              </TasksProvider>
+            </NotesProvider>
           </TrashProvider>
         </ActivityProvider>
       </AuthProvider>

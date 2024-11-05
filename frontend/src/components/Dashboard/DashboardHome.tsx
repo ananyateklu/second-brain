@@ -129,7 +129,7 @@ const StatCard = ({
 
   // Use the IconMap to get the correct icon component
   const IconComponent = IconMap[stat.icon as keyof typeof IconMap];
-  const value = renderStat(stat);
+  const statValue = getStatValue(stat.id);
   const size = sizeClasses[stat.size || 'medium'];
 
   return (
@@ -167,18 +167,20 @@ const StatCard = ({
           {/* Value and Change */}
           <div className="mt-1">
             <div className="flex items-baseline gap-1">
-              <span className={`${size.valueSize} font-semibold text-gray-900 dark:text-white`}>
-                {value}
+              <span className={`${size.valueSize} font-semibold text-gray-900 dark:text-white ${
+                statValue.value === '-' ? 'animate-pulse' : ''
+              }`}>
+                {statValue.value}
               </span>
-              {getStatValue(stat.id).change && (
+              {statValue.change && statValue.value !== '-' && (
                 <span className="text-xs text-green-600 dark:text-green-400">
-                  +{getStatValue(stat.id).change}
+                  +{statValue.change}
                 </span>
               )}
             </div>
-            {getStatValue(stat.id).timeframe && (
+            {statValue.timeframe && (
               <span className="text-[10px] text-gray-500 dark:text-gray-400 block">
-                {getStatValue(stat.id).timeframe}
+                {statValue.timeframe}
               </span>
             )}
           </div>
@@ -321,25 +323,58 @@ export function DashboardHome() {
       case 'notes':
         if (stat.id === 'total-notes') return stats.totalNotes;
         if (stat.id === 'new-notes') return stats.newThisWeek;
-        if (stat.id === 'word-count') return '24.5k';
+        if (stat.id === 'word-count') {
+          // Calculate total word count across all notes
+          return notes.reduce((total, note) => {
+            const wordCount = note.content.trim().split(/\s+/).length;
+            return total + wordCount;
+          }, 0).toLocaleString();
+        }
         return 0;
+        
       case 'tags':
+        // Get unique tags count
         return new Set(notes.flatMap(note => note.tags)).size;
+        
       case 'time':
         if (!stats.lastUpdated) return 'No notes yet';
         return formatTimeAgo(stats.lastUpdated);
+        
       case 'ideas':
+        // Count notes tagged with 'idea'
         return notes.filter(note => note.tags.includes('idea')).length;
+        
       case 'tasks':
-        if (stat.id === 'active-tasks') return 12;
-        if (stat.id === 'completed-tasks') return 28;
+        if (stat.id === 'active-tasks') {
+          return notes.filter(note => 
+            note.content.includes('[ ]') || 
+            note.content.includes('[]')
+          ).length;
+        }
+        if (stat.id === 'completed-tasks') {
+          return notes.filter(note => 
+            note.content.includes('[x]') || 
+            note.content.includes('[X]')
+          ).length;
+        }
         return 0;
+        
       case 'collaboration':
-        return 8;
+        // Count shared notes
+        return notes.filter(note => note.shared?.length > 0).length;
+        
       case 'search':
-        return 'productivity';
+        // This would need integration with search history
+        return '';
+        
       case 'activity':
-        return 15;
+        // Count notes modified today
+        const today = new Date();
+        return notes.filter(note => {
+          const updateDate = new Date(note.updatedAt);
+          return updateDate.toDateString() === today.toDateString();
+        }).length;
+        
       default:
         return 0;
     }
@@ -443,12 +478,11 @@ export function DashboardHome() {
                 <Reorder.Item
                   key={stat.id}
                   value={stat}
-                  className={`group relative w-full ${
-                    stat.size === 'small' ? 'col-span-1' :   // Base size (1/8)
-                    stat.size === 'medium' ? 'col-span-2' :  // Double width (2/8)
-                    stat.size === 'large' ? 'col-span-3' :   // Triple width (3/8)
-                    'col-span-1'
-                  }`}
+                  className={`group relative w-full ${stat.size === 'small' ? 'col-span-1' :   // Base size (1/8)
+                      stat.size === 'medium' ? 'col-span-2' :  // Double width (2/8)
+                        stat.size === 'large' ? 'col-span-3' :   // Triple width (3/8)
+                          'col-span-1'
+                    }`}
                   initial={false}
                   whileDrag={{
                     scale: 1.05,
