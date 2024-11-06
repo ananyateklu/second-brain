@@ -28,4 +28,6 @@ export interface UpdateTaskDto {
   dueDate?: string | null;
   tags?: string[];
   status?: number;
+  isDeleted?: boolean;
+  deletedAt?: string | null;
 }

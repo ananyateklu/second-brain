@@ -89,33 +89,33 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
 
   const updateTask = useCallback(async (id: string, updates: Partial<Task>) => {
     try {
-      const updatesToSend: UpdateTaskDto = {};
-
-      if (updates.title !== undefined) updatesToSend.title = updates.title;
-      if (updates.description !== undefined) updatesToSend.description = updates.description;
-      if (updates.dueDate !== undefined) updatesToSend.dueDate = updates.dueDate;
-      if (updates.tags !== undefined) updatesToSend.tags = updates.tags;
-
-      if (updates.priority !== undefined) {
-        updatesToSend.priority = mapPriorityToNumber(updates.priority);
-      }
+      const updatesToSend: UpdateTaskDto = {
+        title: updates.title,
+        description: updates.description,
+        dueDate: updates.dueDate,
+        tags: updates.tags ?? [],
+        priority: updates.priority !== undefined ? mapPriorityToNumber(updates.priority) : undefined
+      };
 
       const response = await taskService.updateTask(id, updatesToSend);
-      const updatedTask = response.data;
-      setTasks(prev => prev.map(task => task.id === id ? updatedTask : task));
+      const updatedTask = response;  // response is already the task object
 
-      // Wrap addActivity in a try-catch and check if it exists
+      setTasks(prev => prev.map(task => 
+        task.id === id ? { ...task, ...updatedTask } : task
+      ));
+
+      // Create activity with proper error handling
       try {
         if (createActivity) {
-          createActivity({
+          await createActivity({
             actionType: 'edit',
             itemType: 'task',
-            itemId: updatedTask.id,
-            itemTitle: updatedTask.title,
+            itemId: id,  // Use the passed id instead of response.id
+            itemTitle: updatedTask.title || '',
             timestamp: new Date().toISOString(),
-            description: `Updated task "${updatedTask.title}"`,
+            description: `Updated task "${updatedTask.title || 'Untitled'}"`,
             metadata: {
-              tags: updatedTask.tags,
+              tags: updatedTask.tags || [],
               priority: updatedTask.priority,
               dueDate: updatedTask.dueDate,
             },
