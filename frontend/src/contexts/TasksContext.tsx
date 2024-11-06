@@ -19,6 +19,7 @@ interface TasksContextType {
   toggleTaskStatus: (id: string) => Promise<void>;
   fetchDeletedTasks: () => Promise<Task[]>;
   restoreTask: (id: string) => Promise<void>;
+  isLoading: boolean;
 }
 
 const TasksContext = createContext<TasksContextType | null>(null);

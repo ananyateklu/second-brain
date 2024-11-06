@@ -2,6 +2,7 @@ import { OpenAIService } from './ai/openai';
 import { AnthropicService } from './ai/anthropic';
 import { GeminiService } from './ai/gemini';
 import { LlamaService } from './ai/llama';
+import { GrokService } from './ai/grok';
 import { AIModel, AIResponse } from '../types/ai';
 
 export class AIService {
@@ -9,12 +10,14 @@ export class AIService {
   private readonly anthropic: AnthropicService;
   private readonly gemini: GeminiService;
   public readonly llama: LlamaService;
+  public readonly grokService: GrokService;
 
   constructor() {
     this.openai = new OpenAIService();
     this.anthropic = new AnthropicService();
     this.gemini = new GeminiService();
     this.llama = new LlamaService();
+    this.grokService = new GrokService();
   }
 
   async sendMessage(message: string, modelId: string): Promise<AIResponse> {
@@ -32,6 +35,8 @@ export class AIService {
         return this.gemini.sendMessage(message, modelId);
       case 'llama':
         return this.llama.sendMessage(message, modelId);
+      case 'grok':
+        return this.grokService.sendMessage(message, modelId);
       default:
         throw new Error('Unsupported AI provider');
     }
@@ -63,6 +68,7 @@ export class AIService {
       ...this.anthropic.getModels(),
       ...this.gemini.getModels(),
       ...this.llama.getModels(),
+      ...this.grokService.getModels(),
     ];
   }
 
@@ -76,5 +82,9 @@ export class AIService {
 
   isGeminiConfigured(): boolean {
     return this.gemini.isConfigured();
+  }
+
+  async isGrokConfigured(): Promise<boolean> {
+    return this.grokService.checkConfiguration();
   }
 }

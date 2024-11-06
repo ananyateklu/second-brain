@@ -4,22 +4,26 @@ import { GeminiService } from './gemini';
 import { AIModel, AIResponse } from '../../types/ai';
 import { AI_MODELS } from './models';
 import { LlamaService } from './llama';
+import { GrokService } from './grok';
+
 export class AIService {
   private openai: OpenAIService;
   private anthropic: AnthropicService;
   private geminiService: GeminiService;
   private llamaService: LlamaService;
+  private grokService: GrokService;
 
   constructor() {
     this.openai = new OpenAIService();
     this.anthropic = new AnthropicService();
     this.geminiService = new GeminiService();
     this.llamaService = new LlamaService();
+    this.grokService = new GrokService();
   }
 
   async sendMessage(message: string, modelId: string): Promise<AIResponse> {
-    if (modelId.startsWith('models/gemini-')) {
-      return this.geminiService.sendMessage(message, modelId);
+    if (modelId.startsWith('grok-')) {
+      return this.grokService.sendMessage(message, modelId);
     }
 
     const model = this.getAvailableModels().find(m => m.id === modelId);
@@ -45,6 +49,10 @@ export class AIService {
     return this.openai.transcribeAudio(file);
   }
 
+  async textToSpeech(text: string): Promise<AIResponse> {
+    return this.openai.textToSpeech(text);
+  }
+
   async setOpenAIKey(apiKey: string): Promise<boolean> {
     return this.openai.setApiKey(apiKey);
   }
@@ -53,20 +61,44 @@ export class AIService {
     return this.anthropic.setApiKey(apiKey);
   }
 
+  async setGeminiKey(apiKey: string): Promise<boolean> {
+    return this.geminiService.setApiKey(apiKey);
+  }
+
   getAvailableModels(): AIModel[] {
-    return AI_MODELS.filter(model => model.provider === 'openai' || model.provider === 'anthropic' || model.provider === 'llama' || model.provider === 'gemini');
+    return [
+      ...this.openai.getModels(),
+      ...this.anthropic.getModels(),
+      ...this.geminiService.getModels(),
+      ...this.llamaService.getModels(),
+      ...this.grokService.getModels(),
+    ];
   }
 
   isOpenAIConfigured(): boolean {
     return this.openai.isConfigured();
   }
 
-  async isAnthropicConfigured(): Promise<boolean> {
-    try {
-      return await this.anthropic.testConnection();
-    } catch (error) {
-      console.error('Error checking Anthropic configuration:', error);
-      return false;
+  isAnthropicConfigured(): boolean {
+    return this.anthropic.isConfigured();
+  }
+
+  isGeminiConfigured(): boolean {
+    return this.geminiService.isConfigured();
+  }
+
+  isLlamaConfigured(): boolean {
+    return this.llamaService.isConfigured();
+  }
+
+  isGrokConfigured(): boolean {
+    return this.grokService.isConfigured();
+  }
+
+  async executeFunctionCall(message: string, modelId: string, functions: any[]): Promise<AIResponse> {
+    if (modelId.startsWith('grok-')) {
+      return this.grokService.executeFunctionCall(message, modelId, functions);
     }
+    throw new Error('Function calling is only supported for Grok models');
   }
 }

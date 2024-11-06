@@ -9,7 +9,7 @@ export interface RateLimits {
 export interface AIModel {
   id: string;
   name: string;
-  provider: 'openai' | 'anthropic' | 'gemini' | 'llama';
+  provider: 'openai' | 'anthropic' | 'gemini' | 'llama' | 'grok';
   category: 'chat' | 'completion' | 'embedding' | 'image' | 'audio';
   description: string;
   isConfigured: boolean;
@@ -41,4 +41,18 @@ interface ContentBlock {
   text?: string;
   url?: string;
   // Add other properties as needed
+}
+
+export interface Message {
+  id: string;
+  role: 'user' | 'assistant' | 'system' | 'function';
+  content: string;
+  timestamp: string;
+  model: AIModel;
+  functionCall?: {
+    name: string;
+    arguments: Record<string, any>;
+    result?: string;
+  };
+  isLoading?: boolean;
 }

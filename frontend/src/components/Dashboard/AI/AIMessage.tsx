@@ -85,14 +85,12 @@ export function AIMessage({ message, themeColor, isStreaming }: AIMessageProps) 
   return (
     <div className={`flex items-end ${isUser ? 'justify-end' : 'justify-start'} mb-4 animate-message-slide-in`}>
       <div
-        className={`flex flex-col max-w-xs mx-2 ${
-          isUser ? 'items-end' : 'items-start'
-        }`}
+        className={`flex flex-col max-w-xs mx-2 ${isUser ? 'items-end' : 'items-start'
+          }`}
       >
         <div
-          className={`flex items-center ${
-            isUser ? 'flex-row-reverse' : ''
-          } mb-1`}
+          className={`flex items-center ${isUser ? 'flex-row-reverse' : ''
+            } mb-1`}
         >
           {isUser ? (
             <>
@@ -120,11 +118,10 @@ export function AIMessage({ message, themeColor, isStreaming }: AIMessageProps) 
           )}
         </div>
         <div
-          className={`px-4 py-2 rounded-lg ${
-            isUser
+          className={`px-4 py-2 rounded-lg ${isUser
               ? `bg-[${themeColor}] text-white`
               : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
-          } ${isUser ? 'rounded-br-none' : 'rounded-bl-none'}`}
+            } ${isUser ? 'rounded-br-none' : 'rounded-bl-none'}`}
           style={{ backgroundColor: isUser ? themeColor : undefined }}
         >
           {renderContent()}

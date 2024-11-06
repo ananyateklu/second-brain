@@ -1,6 +1,6 @@
 import { AIModel, AIResponse } from '../../types/ai';
 import { AI_MODELS } from './models';
-import api from '../../services/api/api';
+import api from '../api/api';
 
 export class AnthropicService {
   private isEnabled = false;
@@ -23,100 +23,105 @@ export class AnthropicService {
 
   async sendMessage(message: string, modelId: string): Promise<AIResponse> {
     try {
+      const isContentSuggestion = this.isContentSuggestionContext();
+      
+      const tools = isContentSuggestion ? [
+        {
+          name: "generate_content",
+          description: "Generates detailed content based on the provided title and/or tags.",
+          input_schema: {
+            type: "object",
+            properties: {
+              title: { type: "string" },
+              tags: {
+                type: "array",
+                items: { type: "string" }
+              }
+            }
+          }
+        },
+        {
+          name: "generate_title",
+          description: "Generates a title based on the provided content and/or tags.",
+          input_schema: {
+            type: "object",
+            properties: {
+              content: { type: "string" },
+              tags: {
+                type: "array",
+                items: { type: "string" }
+              }
+            }
+          }
+        },
+        {
+          name: "generate_tags",
+          description: "Generates relevant tags based on the title and/or content.",
+          input_schema: {
+            type: "object",
+            properties: {
+              title: { type: "string" },
+              content: { type: "string" }
+            }
+          }
+        }
+      ] : [];
+
       const request = {
         model: modelId,
         max_tokens: 1024,
-        messages: [
-          {
-            role: "user",
-            content: message
-          }
-        ],
-        tools: [
-          {
-            name: "generate_content",
-            description: "Generates detailed content (description) based on the provided title and/or tags. Use this tool whenever you need to expand a title or tags into full content.",
-            input_schema: {
-              type: "object",
-              properties: {
-                title: {
-                  type: "string",
-                  description: "The title of the note, idea, task, or reminder."
-                },
-                tags: {
-                  type: "array",
-                  items: {
-                    type: "string"
-                  },
-                  description: "A list of tags associated with the item."
-                }
-              },
-              required: []
-            }
-          },
-          {
-            name: "generate_title",
-            description: "Generates a concise and relevant title based on the provided content and/or tags. Use this tool whenever you need to create a title from content or tags.",
-            input_schema: {
-              type: "object",
-              properties: {
-                content: {
-                  type: "string",
-                  description: "The content (description) of the note, idea, task, or reminder."
-                },
-                tags: {
-                  type: "array",
-                  items: {
-                    type: "string"
-                  },
-                  description: "A list of tags associated with the item."
-                }
-              },
-              required: []
-            }
-          },
-          {
-            name: "generate_tags",
-            description: "Generates a list of relevant tags based on the provided title and/or content. Use this tool whenever you need to identify key themes or topics.",
-            input_schema: {
-              type: "object",
-              properties: {
-                title: {
-                  type: "string",
-                  description: "The title of the note, idea, task, or reminder."
-                },
-                content: {
-                  type: "string",
-                  description: "The content (description) of the item."
-                }
-              },
-              required: []
-            }
-          }
-        ]
+        messages: [{
+          role: "user",
+          content: message
+        }],
+        tools: tools,
+        tool_choice: "auto"
       };
 
-      console.log('Sending request to backend:', request);
-
+      console.log('Sending request to Claude:', request);
       const response = await api.post('/api/Claude/send', request);
+      console.log('Received response from Claude:', response.data);
 
-      console.log('Received response from backend:', response.data);
-
-      // Process the response to extract the assistant's reply
-      const assistantContent = response.data.content;
       let finalContent = '';
+      const toolResults: any[] = [];
 
-      // Process content blocks
-      for (const contentBlock of assistantContent) {
-        console.log('Processing content block:', contentBlock);
+      for (const contentBlock of response.data.content) {
         if (contentBlock.type === 'text') {
           finalContent += contentBlock.text;
-        } else if (contentBlock.type === 'tool_use') {
-          console.log('Assistant is attempting to use a tool:', contentBlock.name);
-        } else if (contentBlock.type === 'tool_result') {
-          console.log('Received tool result:', contentBlock);
+        } 
+        else if (contentBlock.type === 'tool_use' && isContentSuggestion) {
+          console.log('Tool use requested:', contentBlock);
+          
+          const toolResult = await this.executeTool(
+            contentBlock.name,
+            contentBlock.input,
+            contentBlock.id
+          );
+          toolResults.push(toolResult);
+
+          const toolResponse = await api.post('/api/Claude/send', {
+            ...request,
+            messages: [
+              ...request.messages,
+              {
+                role: "user",
+                content: [{
+                  type: "tool_result",
+                  tool_use_id: contentBlock.id,
+                  content: toolResult
+                }]
+              }
+            ]
+          });
+
+          if (toolResponse.data.content) {
+            for (const block of toolResponse.data.content) {
+              if (block.type === 'text') {
+                finalContent += block.text;
+              }
+            }
+          }
         }
-        // Handle other content types if necessary
       }
 
       return {
@@ -124,16 +129,61 @@ export class AnthropicService {
         type: 'text',
         metadata: {
           model: modelId,
-          usage: {
-            input_tokens: response.data.usage?.input_tokens || 0,
-            output_tokens: response.data.usage?.output_tokens || 0,
-          },
+          usage: response.data.usage || {},
+          toolResults: isContentSuggestion ? toolResults : undefined
         },
       };
     } catch (error) {
-      console.error('Error communicating with Claude API:', error);
+      console.error('Error communicating with Claude:', error);
       throw new Error('Failed to get response from Claude.');
     }
+  }
+
+  private isContentSuggestionContext(): boolean {
+    // Check if the call is coming from ContentSuggestionService
+    const stack = new Error().stack;
+    return stack?.includes('ContentSuggestionService') || false;
+  }
+
+  private async executeTool(name: string, input: any, toolUseId: string): Promise<any> {
+    try {
+      // Execute the appropriate tool based on name
+      switch (name) {
+        case 'generate_content':
+          return await this.generateContent(input.title, input.tags);
+        case 'generate_title':
+          return await this.generateTitle(input.content, input.tags);
+        case 'generate_tags':
+          return await this.generateTags(input.title, input.content);
+        default:
+          throw new Error(`Unknown tool: ${name}`);
+      }
+    } catch (error) {
+      console.error(`Error executing tool ${name}:`, error);
+      // Return error result
+      return {
+        type: "tool_result",
+        tool_use_id: toolUseId,
+        content: `Error executing ${name}: ${error.message}`,
+        is_error: true
+      };
+    }
+  }
+
+  // Implement actual tool functions
+  private async generateContent(title?: string, tags?: string[]): Promise<string> {
+    // Implementation for content generation
+    return "Generated content...";
+  }
+
+  private async generateTitle(content?: string, tags?: string[]): Promise<string> {
+    // Implementation for title generation
+    return "Generated title...";
+  }
+
+  private async generateTags(title?: string, content?: string): Promise<string[]> {
+    // Implementation for tag generation
+    return ["tag1", "tag2"];
   }
 
   async generateMissingFields(modelId: string, contextData: any): Promise<AIResponse> {

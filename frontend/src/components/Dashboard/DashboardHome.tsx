@@ -12,7 +12,8 @@ import {
   X,
   LayoutGrid,
   Layout,
-  Lightbulb as LightbulbIcon,
+  Lightbulb,
+  LightbulbIcon,
   Share2,
   CheckSquare,
   Edit3,
@@ -31,6 +32,7 @@ import { useDashboard } from '../../contexts/DashboardContext';
 import { DashboardStat } from '../../types/dashboard';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { getIconColor, getIconBg } from '../../utils/styleUtils';
+import { useTasks } from '../../contexts/TasksContext';
 
 // Create an icon map
 const IconMap = {
@@ -86,25 +88,25 @@ const cardVariants = {
 const sizeClasses = {
   small: {
     colSpan: 'col-span-1',
-    fontSize: 'text-sm',
-    iconSize: 'w-4 h-4',
-    padding: 'p-3',
+    fontSize: 'text-xs',
+    iconSize: 'w-3.5 h-3.5',
+    padding: 'p-2.5',
     titleSize: 'text-xs',
     valueSize: 'text-sm',
   },
   medium: {
     colSpan: 'col-span-2',
-    fontSize: 'text-base',
-    iconSize: 'w-5 h-5',
-    padding: 'p-3',
+    fontSize: 'text-sm',
+    iconSize: 'w-4 h-4',
+    padding: 'p-2.5',
     titleSize: 'text-xs',
     valueSize: 'text-sm',
   },
   large: {
     colSpan: 'col-span-3',
-    fontSize: 'text-lg',
-    iconSize: 'w-6 h-6',
-    padding: 'p-3',
+    fontSize: 'text-base',
+    iconSize: 'w-5 h-5',
+    padding: 'p-2.5',
     titleSize: 'text-xs',
     valueSize: 'text-sm',
   },
@@ -140,7 +142,7 @@ const StatCard = ({
       animate="visible"
       exit="exit"
       whileHover={showStatsEditor ? 'hover' : undefined}
-      className={`transform origin-center relative w-full h-[100px]`}
+      className={`transform origin-center relative w-full h-[80px]`}
       style={{
         position: showStatsEditor ? 'relative' : 'static',
       }}
@@ -292,6 +294,7 @@ export function DashboardHome() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { notes } = useNotes();
+  const { tasks } = useTasks();
   const [showNewNoteModal, setShowNewNoteModal] = useState(false);
   const [selectedNote, setSelectedNote] = useState(null);
   const [showStatsEditor, setShowStatsEditor] = useState(false);
@@ -444,37 +447,117 @@ export function DashboardHome() {
 
   return (
     <div className="space-y-8">
-      {/* Welcome Section */}
-      <div className="glass-morphism p-6 rounded-xl">
+      {/* Enhanced Welcome Section */}
+      <div className="glass-morphism p-6 rounded-xl border border-gray-100/20 dark:border-white/5 relative overflow-hidden">
+        {/* Decorative Background Elements */}
+        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-gradient-to-br from-primary-500/20 to-transparent rounded-full blur-3xl -z-10" />
+        <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-gradient-to-tr from-amber-500/10 to-transparent rounded-full blur-3xl -z-10" />
+
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
-              {getGreeting()}, {user?.name}
-            </h1>
-            <p className="mt-1 text-gray-600 dark:text-gray-400">
-              Here's what's happening with your notes today
-            </p>
+          {/* Left Section */}
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {getGreeting()}, {user?.name}
+                </h1>
+                <span className="animate-wave">👋</span>
+              </div>
+              <p className="text-base text-gray-600 dark:text-gray-400">
+                Ready to capture your thoughts and ideas?
+              </p>
+            </div>
+            
+            {/* Quick Actions - More Compact */}
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setShowNewNoteModal(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-all duration-200 shadow-lg shadow-primary-600/20 hover:shadow-primary-600/30 hover:-translate-y-0.5"
+              >
+                <Plus className="w-4 h-4" />
+                <span className="font-medium text-sm">New Note</span>
+              </button>
+              <button
+                onClick={() => navigate('/dashboard/tasks')}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-200 shadow-lg shadow-green-600/20 hover:shadow-green-600/30 hover:-translate-y-0.5"
+              >
+                <CheckSquare className="w-4 h-4" />
+                <span className="font-medium text-sm">New Task</span>
+              </button>
+              <button
+                onClick={() => navigate('/dashboard/ideas')}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-all duration-200 shadow-lg shadow-amber-600/20 hover:shadow-amber-600/30 hover:-translate-y-0.5"
+              >
+                <Lightbulb className="w-4 h-4" />
+                <span className="font-medium text-sm">Capture Idea</span>
+              </button>
+            </div>
           </div>
-          <div className="flex gap-3">
-            <button
-              onClick={() => setShowNewNoteModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              <span>New Note</span>
-            </button>
-            <button
-              onClick={() => {
-                const searchInput = document.querySelector('input[type="search"]') as HTMLInputElement;
-                if (searchInput) searchInput.focus();
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-dark-card hover:bg-gray-200 dark:hover:bg-dark-hover text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
-            >
-              <Search className="w-4 h-4" />
-              <span>Search</span>
-            </button>
+
+          {/* Right Side - More Compact Summary */}
+          <div className="bg-white/50 dark:bg-white/5 backdrop-blur-sm rounded-lg p-3 space-y-2 min-w-[260px] border border-gray-100/20 dark:border-white/5">
+            <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+              <div className="p-1.5 bg-gray-100/50 dark:bg-white/10 rounded-lg">
+                <Clock className="w-3.5 h-3.5" />
+              </div>
+              <span className="text-sm font-medium">
+                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+              </span>
+            </div>
+            <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+              <div className="p-1.5 bg-green-100/50 dark:bg-green-500/10 rounded-lg">
+                <CheckCircle className="w-3.5 h-3.5 text-green-600 dark:text-green-500" />
+              </div>
+              <div>
+                <span className="text-sm font-semibold text-green-600 dark:text-green-500">
+                  {tasks.filter(task => task.status === 'completed').length}
+                </span>
+                <span className="ml-1 text-sm">tasks completed today</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+              <div className="p-1.5 bg-blue-100/50 dark:bg-blue-500/10 rounded-lg">
+                <Edit3 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-500" />
+              </div>
+              <div>
+                <span className="text-sm font-semibold text-blue-600 dark:text-blue-500">
+                  {notes.filter(note => {
+                    const today = new Date();
+                    return new Date(note.updatedAt).toDateString() === today.toDateString();
+                  }).length}
+                </span>
+                <span className="ml-1 text-sm">notes updated today</span>
+              </div>
+            </div>
           </div>
         </div>
+
+        {/* Compact Focus Mode Prompt */}
+        {tasks.filter(task => task.status === 'incomplete').length > 0 && (
+          <div className="mt-4 p-3 bg-gradient-to-r from-amber-50 to-amber-100/50 dark:from-amber-900/20 dark:to-amber-800/10 rounded-lg border border-amber-100 dark:border-amber-800/20">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+                  <AlignLeft className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                    Ready to focus?
+                  </h3>
+                  <p className="text-xs text-amber-700 dark:text-amber-300">
+                    You have {tasks.filter(task => task.status === 'incomplete').length} tasks pending for today
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => navigate('/dashboard/focus')}
+                className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-sm rounded-lg transition-all duration-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 font-medium"
+              >
+                Start Focus Session
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Quick Stats */}

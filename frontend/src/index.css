@@ -81,3 +81,43 @@
          border border-gray-200/50 dark:border-dark-border/50
          shadow-lg shadow-black/5 dark:shadow-black/20;
 }
+
+.stat-card {
+  @apply p-3 rounded-lg bg-white dark:bg-dark-card border border-gray-100 dark:border-gray-800 transition-all duration-300 hover:shadow-sm;
+}
+
+.stat-item {
+  @apply flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors duration-200;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes wave {
+  0% { transform: rotate(0deg); }
+  20% { transform: rotate(-10deg); }
+  40% { transform: rotate(12deg); }
+  60% { transform: rotate(-10deg); }
+  80% { transform: rotate(9deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.animate-wave {
+  animation: wave 1.5s ease infinite;
+  display: inline-block;
+  transform-origin: 70% 70%;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.stat-card-compact {
+  @apply p-2 rounded-lg bg-white dark:bg-dark-card border border-gray-100 dark:border-gray-800 transition-all duration-300 hover:shadow-sm;
+}
+
+.stat-item-compact {
+  @apply flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors duration-200;
+}

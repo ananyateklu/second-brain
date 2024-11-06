@@ -15,14 +15,27 @@ import { TrashPage } from './Dashboard/Trash/TrashPage';
 import { TasksPage } from './Dashboard/Tasks/TasksPage';
 import { RemindersPage } from './Dashboard/Reminders/RemindersPage';
 import { RecentPage } from './Dashboard/Recent/RecentPage';
-import { FocusPage } from './Dashboard/Focus/FocusPage';
+import { DailyFocus } from './Dashboard/Focus/FocusPage';
 import { AIAssistantPage } from './Dashboard/AI/AIAssistantPage';
 import { SearchPage } from './Dashboard/Search/SearchPage';
 import { HelpPage } from './Dashboard/Help/HelpPage';
+import { LoadingScreen } from './shared/LoadingScreen';
+import { useNotes } from '../contexts/NotesContext';
+import { useTasks } from '../contexts/TasksContext';
+import { useReminders } from '../contexts/RemindersContext';
 
 export function Dashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const { isLoading: notesLoading } = useNotes();
+  const { isLoading: tasksLoading } = useTasks();
+  const { isLoading: remindersLoading } = useReminders();
+
+  const isLoading = notesLoading || tasksLoading || remindersLoading;
+
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-bg">
@@ -64,7 +77,7 @@ export function Dashboard() {
                 <Route path="tasks" element={<TasksPage />} />
                 <Route path="reminders" element={<RemindersPage />} />
                 <Route path="recent" element={<RecentPage />} />
-                <Route path="focus" element={<FocusPage />} />
+                <Route path="focus" element={<DailyFocus />} />
                 <Route path="ai" element={<AIAssistantPage />} />
                 <Route path="search" element={<SearchPage />} />
                 <Route path="settings" element={<SettingsPage />} />

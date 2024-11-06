@@ -19,6 +19,7 @@ interface RemindersContextType {
   getUpcomingReminders: () => Reminder[];
   restoreReminder: (reminder: Reminder) => Promise<void>;
   fetchReminders: () => Promise<void>;
+  isLoading: boolean;
 }
 
 const RemindersContext = createContext<RemindersContextType | null>(null);

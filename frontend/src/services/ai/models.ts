@@ -311,4 +311,31 @@ export const AI_MODELS: AIModel[] = [
     color: '#8B5CF6',
     endpoint: 'chat',
   },
+  {
+    id: 'gemma2:2b',
+    name: 'Gemma 2 (2b)',
+    provider: 'llama',
+    category: 'chat',
+    description: 'Local Gemma 2 model (2b parameters) from Google via Ollama',
+    isConfigured: true,
+    color: '#8B5CF6',
+    endpoint: 'chat',
+  },
+  // Grok Models (Colored Blue)
+  {
+    id: 'grok-beta',
+    name: 'Grok Beta',
+    provider: 'grok',
+    category: 'chat',
+    description: 'Comparable performance to Grok 2 but with improved efficiency, speed and capabilities',
+    isConfigured: true,
+    color: '#1DA1F2', // X/Twitter blue color
+    endpoint: 'chat',
+    rateLimits: {
+      tpm: 100000,
+      rpm: 500,
+      rpd: 10000,
+      tpd: 1000000,
+    },
+  }
 ];

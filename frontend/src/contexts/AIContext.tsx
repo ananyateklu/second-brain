@@ -8,6 +8,7 @@ interface AIContextType {
   isAnthropicConfigured: boolean;
   isGeminiConfigured: boolean;
   isLlamaConfigured: boolean;
+  isGrokConfigured: boolean;
   error: string | null;
   sendMessage: (input: string | File, modelId: string) => Promise<AIResponse>;
   configureOpenAI: (apiKey: string) => Promise<void>;
@@ -25,6 +26,7 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
   const [isAnthropicConfigured, setIsAnthropicConfigured] = useState<boolean>(aiService.isAnthropicConfigured());
   const [isGeminiConfigured, setIsGeminiConfigured] = useState<boolean>(aiService.isGeminiConfigured());
   const [isLlamaConfigured, setIsLlamaConfigured] = useState<boolean>(aiService.llama.isConfigured());
+  const [isGrokConfigured, setIsGrokConfigured] = useState<boolean>(false);
   const [availableModels, setAvailableModels] = useState<AIModel[]>(aiService.getAvailableModels());
 
 
@@ -55,10 +57,19 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
     checkLlamaConfig();
   }, []);
 
+  // Initialize Grok configuration status
+  useEffect(() => {
+    const checkGrokConfig = async () => {
+      const isConfigured = await aiService.grokService.checkConfiguration();
+      setIsGrokConfigured(isConfigured);
+    };
+    checkGrokConfig();
+  }, []);
+
   // Update available models whenever configuration changes
   useEffect(() => {
     setAvailableModels(aiService.getAvailableModels());
-  }, [isOpenAIConfigured, isAnthropicConfigured, isGeminiConfigured, isLlamaConfigured]);
+  }, [isOpenAIConfigured, isAnthropicConfigured, isGeminiConfigured, isLlamaConfigured, isGrokConfigured]);
 
   const configureOpenAI = useCallback(async (apiKey: string) => {
     try {
@@ -146,12 +157,13 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
     isAnthropicConfigured,
     isGeminiConfigured,
     isLlamaConfigured,
+    isGrokConfigured,
     error,
     sendMessage,
     configureOpenAI,
     configureGemini,
     availableModels
-  }), [isOpenAIConfigured, isAnthropicConfigured, isGeminiConfigured, isLlamaConfigured, error, sendMessage, configureOpenAI, configureGemini, availableModels]);
+  }), [isOpenAIConfigured, isAnthropicConfigured, isGeminiConfigured, isLlamaConfigured, isGrokConfigured, error, sendMessage, configureOpenAI, configureGemini, availableModels]);
 
   return <AIContext.Provider value={value}>{children}</AIContext.Provider>;
 }

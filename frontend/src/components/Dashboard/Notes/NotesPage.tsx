@@ -6,6 +6,8 @@ import { NewNoteModal } from './NewNoteModal';
 import { EditNoteModal } from './EditNoteModal';
 import { FilterDropdown } from './FilterDropdown';
 import { NotesGraph } from './NotesGraph';
+import { LoadingScreen } from '../../shared/LoadingScreen';
+
 
 interface Filters {
   search: string;
@@ -26,12 +28,16 @@ const defaultFilters: Filters = {
 };
 
 export function NotesPage() {
-  const { notes } = useNotes();
+  const { notes, isLoading } = useNotes();
   const [showNewNoteModal, setShowNewNoteModal] = useState(false);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'graph'>('grid');
+
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
 
   // Filter out ideas from the notes list
   const regularNotes = useMemo(() => {
