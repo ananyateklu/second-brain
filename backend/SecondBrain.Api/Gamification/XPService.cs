@@ -47,7 +47,7 @@ namespace SecondBrain.Api.Gamification
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // Use tracking and include necessary properties
+                // Use tracking query to get user
                 var user = await _context.Users
                     .FirstOrDefaultAsync(u => u.Id == userId);
 
@@ -59,59 +59,28 @@ namespace SecondBrain.Api.Gamification
                 int xpToAward = customXP ?? GetXPForAction(action);
                 int oldLevel = user.Level;
                 int oldXP = user.ExperiencePoints;
-                
+
                 // Award XP
                 user.ExperiencePoints += xpToAward;
                 
                 // Calculate new level
                 int newLevel = CalculateLevel(user.ExperiencePoints);
                 bool leveledUp = newLevel > oldLevel;
-                
-                if (leveledUp)
-                {
-                    // Explicitly update user's level
-                    user.Level = newLevel;
-                    
-                    // Create SQL update command
-                    var updateCommand = $@"
-                        UPDATE Users 
-                        SET Level = {newLevel},
-                            ExperiencePoints = {user.ExperiencePoints}
-                        WHERE Id = '{userId}'";
 
-                    await _context.Database.ExecuteSqlRawAsync(updateCommand);
-
-                    _logger.LogInformation(
-                        "User {UserId} leveled up! Old Level: {OldLevel}, New Level: {NewLevel}, " +
-                        "Old XP: {OldXP}, New XP: {NewXP}",
-                        userId, oldLevel, newLevel, oldXP, user.ExperiencePoints
-                    );
-                }
-                else
-                {
-                    // Just update XP
-                    var updateCommand = $@"
-                        UPDATE Users 
-                        SET ExperiencePoints = {user.ExperiencePoints}
-                        WHERE Id = '{userId}'";
-
-                    await _context.Database.ExecuteSqlRawAsync(updateCommand);
-                }
-
-                // Commit the transaction
+                // Let the database trigger handle the level update
+                // Only update ExperiencePoints through EF Core
+                await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                // Verify the update
-                var updatedUser = await _context.Users.FindAsync(userId);
-                if (updatedUser != null)
-                {
-                    _logger.LogInformation(
-                        "After update - User {UserId}: Level {Level}, XP {XP}",
-                        userId, updatedUser.Level, updatedUser.ExperiencePoints
-                    );
-                }
+                // Reload the entity to get the updated level from the trigger
+                await _context.Entry(user).ReloadAsync();
 
-                return (user.ExperiencePoints, newLevel, leveledUp);
+                _logger.LogInformation(
+                    "XP Award - User {UserId}: Old XP: {OldXP}, New XP: {NewXP}, Old Level: {OldLevel}, New Level: {NewLevel}",
+                    userId, oldXP, user.ExperiencePoints, oldLevel, user.Level
+                );
+
+                return (user.ExperiencePoints, user.Level, leveledUp);
             }
             catch (Exception ex)
             {

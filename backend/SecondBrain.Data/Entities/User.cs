@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SecondBrain.Data.Entities
 {
@@ -11,9 +12,12 @@ namespace SecondBrain.Data.Entities
         public string PasswordHash { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
         
-        // New gamification properties
+        // Gamification properties
         public int ExperiencePoints { get; set; } = 0;
-        public int Level { get; set; } = 1;
+
+        [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
+        public int Level { get; set; }
+
         public string Avatar { get; set; } = string.Empty;
 
         // Navigation Properties

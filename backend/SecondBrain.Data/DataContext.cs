@@ -1,5 +1,6 @@
 // SecondBrain.Data/DataContext.cs
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using SecondBrain.Data.Entities;
 
 namespace SecondBrain.Data
@@ -24,6 +25,21 @@ namespace SecondBrain.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            base.OnModelCreating(modelBuilder);
+
+            // Configure User entity
+            modelBuilder.Entity<User>(entity =>
+            {
+                // Configure ExperiencePoints for concurrency checking
+                entity.Property(u => u.ExperiencePoints)
+                    .IsConcurrencyToken();
+
+                // Configure Level as computed by the database
+                entity.Property(u => u.Level)
+                    .ValueGeneratedOnAddOrUpdate()
+                    .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
+            });
+
             // Configure User entity
             modelBuilder.Entity<User>()
                 .HasKey(u => u.Id);
@@ -152,11 +168,6 @@ namespace SecondBrain.Data
             modelBuilder.Entity<User>()
                 .Property(u => u.ExperiencePoints)
                 .HasDefaultValue(0)
-                .IsConcurrencyToken();
-
-            modelBuilder.Entity<User>()
-                .Property(u => u.Level)
-                .HasDefaultValue(1)
                 .IsConcurrencyToken();
 
             modelBuilder.Entity<User>()
