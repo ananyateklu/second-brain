@@ -23,6 +23,7 @@ import { LoadingScreen } from './shared/LoadingScreen';
 import { useNotes } from '../contexts/NotesContext';
 import { useTasks } from '../contexts/TasksContext';
 import { useReminders } from '../contexts/RemindersContext';
+import { PersonalPage } from './Dashboard/Personal/PersonalPage';
 
 export function Dashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -41,7 +42,7 @@ export function Dashboard() {
     <div className="min-h-screen bg-gray-50 dark:bg-dark-bg">
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-gray-900/50 lg:hidden z-30"
           onClick={() => setIsSidebarOpen(false)}
         />
@@ -79,9 +80,11 @@ export function Dashboard() {
                 <Route path="recent" element={<RecentPage />} />
                 <Route path="focus" element={<DailyFocus />} />
                 <Route path="ai" element={<AIAssistantPage />} />
+                <Route path="profile" element={<PersonalPage />} />
                 <Route path="search" element={<SearchPage />} />
                 <Route path="settings" element={<SettingsPage />} />
                 <Route path="help" element={<HelpPage />} />
+
               </Routes>
             </div>
           </main>

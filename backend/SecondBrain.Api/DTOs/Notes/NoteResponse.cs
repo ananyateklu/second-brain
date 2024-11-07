@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using SecondBrain.Data.Entities;
+using SecondBrain.Api.Gamification;
+using SecondBrain.Services.Gamification;
 
 namespace SecondBrain.Api.DTOs.Notes
 {
@@ -21,6 +23,11 @@ namespace SecondBrain.Api.DTOs.Notes
         public DateTime? ArchivedAt { get; set; }
         public bool IsIdea { get; set; }
         public List<string> LinkedNoteIds { get; set; } = new List<string>();
+        public int? XPAwarded { get; set; }
+        public int? NewTotalXP { get; set; }
+        public bool? LeveledUp { get; set; }
+        public int? NewLevel { get; set; }
+        public List<UnlockedAchievement>? UnlockedAchievements { get; set; }
 
         public static NoteResponse FromEntity(Note note)
         {

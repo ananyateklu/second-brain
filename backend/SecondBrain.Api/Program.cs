@@ -9,6 +9,8 @@ using SecondBrain.Api.Services;
 using SecondBrain.Api.Configuration;
 using Microsoft.Extensions.Options;
 using System.Text.Json;
+using SecondBrain.Services.Gamification;
+using SecondBrain.Api.Gamification;  // Updated namespace
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -119,6 +121,10 @@ builder.Services.AddSwaggerGen(c =>
 
 // Register your LlamaService here
 builder.Services.AddScoped<ILlamaService, LlamaService>();
+
+// Add these before building the app
+builder.Services.AddScoped<IXPService, XPService>();
+builder.Services.AddScoped<IAchievementService, AchievementService>();
 
 var app = builder.Build();
 

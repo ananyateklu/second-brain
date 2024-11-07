@@ -1,6 +1,5 @@
 using SecondBrain.Data.Entities;
 using SecondBrain.Api.DTOs.Auth;
-using System.Threading.Tasks;
 
 namespace SecondBrain.Api.Services
 {

@@ -16,7 +16,8 @@ import {
   HelpCircle,
   History,
   Quote,
-  LogOut
+  LogOut,
+  User
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -69,10 +70,10 @@ export function Sidebar({ isOpen }: SidebarProps) {
   ];
 
   return (
-    <aside className={`fixed top-0 left-0 z-40 h-screen w-56 bg-white dark:bg-dark-card border-r border-gray-200 dark:border-dark-border transition-transform duration-200 ease-in-out lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+    <aside className={`fixed top-0 left-0 z-40 h-screen w-60 bg-white dark:bg-dark-card border-r border-gray-200 dark:border-dark-border transition-transform duration-200 ease-in-out lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
       <div className="flex flex-col h-full">
         {/* Logo */}
-        <div className="flex justify-center items-center px-4 h-16 border-b border-gray-200 dark:border-dark-border">
+        <div className="flex justify-center items-center px-4 h-20 border-b border-gray-200 dark:border-dark-border">
           <img
             src={theme === 'dark' ? darkLogo : lightLogo}
             alt="Second Brain Logo"
@@ -81,7 +82,7 @@ export function Sidebar({ isOpen }: SidebarProps) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-7">
           {navigationItems.map((section) => (
             <div key={section.section}>
               <h3 className="px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">

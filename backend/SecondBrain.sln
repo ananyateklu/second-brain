@@ -7,8 +7,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SecondBrain.Api", "SecondBr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SecondBrain.Data", "SecondBrain.Data\SecondBrain.Data.csproj", "{BF5B48B5-3F11-4EA0-80D8-CE597D4C3584}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SecondBrain.Services", "SecondBrain.Services\SecondBrain.Services.csproj", "{A94E61D3-CA25-4578-BFCB-49BD60AA4CD9}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,9 +24,5 @@ Global
 		{BF5B48B5-3F11-4EA0-80D8-CE597D4C3584}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BF5B48B5-3F11-4EA0-80D8-CE597D4C3584}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BF5B48B5-3F11-4EA0-80D8-CE597D4C3584}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A94E61D3-CA25-4578-BFCB-49BD60AA4CD9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A94E61D3-CA25-4578-BFCB-49BD60AA4CD9}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A94E61D3-CA25-4578-BFCB-49BD60AA4CD9}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A94E61D3-CA25-4578-BFCB-49BD60AA4CD9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

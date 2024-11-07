@@ -4,10 +4,8 @@ using SecondBrain.Api.DTOs.Notes;
 using SecondBrain.Data;
 using SecondBrain.Data.Entities;
 using Microsoft.EntityFrameworkCore;
-using System.Threading.Tasks;
-using System.Linq;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using SecondBrain.Api.Gamification;
 
 namespace SecondBrain.Api.Controllers
 {
@@ -17,10 +15,14 @@ namespace SecondBrain.Api.Controllers
     public class NotesController : ControllerBase
     {
         private readonly DataContext _context;
+        private readonly IXPService _xpService;
+        private readonly IAchievementService _achievementService;
 
-        public NotesController(DataContext context)
+        public NotesController(DataContext context, IXPService xpService, IAchievementService achievementService)
         {
             _context = context;
+            _xpService = xpService;
+            _achievementService = achievementService;
         }
 
         [HttpGet]
@@ -69,6 +71,12 @@ namespace SecondBrain.Api.Controllers
             _context.Notes.Add(note);
             await _context.SaveChangesAsync();
 
+            // Award XP for creating a note
+            var (newXP, newLevel, leveledUp) = await _xpService.AwardXPAsync(userId, "createnote");
+
+            // Check for achievements
+            var unlockedAchievements = await _achievementService.CheckAndUnlockAchievementsAsync(userId, "createnote");
+
             var response = new NoteResponse
             {
                 Id = note.Id,
@@ -84,7 +92,12 @@ namespace SecondBrain.Api.Controllers
                 ArchivedAt = note.ArchivedAt,
                 CreatedAt = note.CreatedAt,
                 UpdatedAt = note.UpdatedAt,
-                LinkedNoteIds = new List<string>()
+                LinkedNoteIds = new List<string>(),
+                XPAwarded = XPValues.CreateNote,
+                NewTotalXP = newXP,
+                LeveledUp = leveledUp,
+                NewLevel = newLevel,
+                UnlockedAchievements = unlockedAchievements
             };
 
             return CreatedAtAction(nameof(GetNoteById), new { id = note.Id }, response);
@@ -186,6 +199,9 @@ namespace SecondBrain.Api.Controllers
 
             _context.NoteLinks.AddRange(noteLink, reverseLink);
             await _context.SaveChangesAsync();
+
+            // Award XP for creating a link
+            await _xpService.AwardXPAsync(userId, "createlink");
 
             // Return updated note with links
             var updatedNote = await _context.Notes

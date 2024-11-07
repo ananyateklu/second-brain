@@ -8,11 +8,10 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using System.Security.Claims;
 using System.Security.Cryptography;
-using System.Threading.Tasks;
 using SecondBrain.Data;
 using Microsoft.EntityFrameworkCore;
 using SecondBrain.Api.Configuration;
-using Microsoft.Extensions.Logging;
+using SecondBrain.Api.Gamification;
 
 namespace SecondBrain.Api.Services
 {
@@ -21,12 +20,18 @@ namespace SecondBrain.Api.Services
         private readonly JwtSettings _jwtSettings;
         private readonly DataContext _context;
         private readonly ILogger<TokenService> _logger;
+        private readonly IXPService _xpService;
 
-        public TokenService(IOptions<JwtSettings> jwtSettings, DataContext context, ILogger<TokenService> logger)
+        public TokenService(
+            IOptions<JwtSettings> jwtSettings, 
+            DataContext context, 
+            ILogger<TokenService> logger,
+            IXPService xpService)
         {
             _jwtSettings = jwtSettings.Value;
             _context = context;
             _logger = logger;
+            _xpService = xpService;
         }
 
         public async Task<TokenResponse> GenerateTokensAsync(User user)
@@ -39,26 +44,17 @@ namespace SecondBrain.Api.Services
                 throw new InvalidOperationException("Invalid or missing Secret in configuration.");
             }
 
-            if (_jwtSettings.AccessTokenExpirationMinutes <= 0)
-            {
-                _logger.LogError("Invalid AccessTokenExpirationMinutes: {Expiration}", _jwtSettings.AccessTokenExpirationMinutes);
-                throw new InvalidOperationException("Invalid AccessTokenExpirationMinutes in configuration.");
-            }
-
-            if (_jwtSettings.RefreshTokenExpirationDays <= 0)
-            {
-                _logger.LogError("Invalid RefreshTokenExpirationDays: {Expiration}", _jwtSettings.RefreshTokenExpirationDays);
-                throw new InvalidOperationException("Invalid RefreshTokenExpirationDays in configuration.");
-            }
-
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
+            // Add level and XP claims
             var claims = new[]
             {
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id),
                 new Claim(JwtRegisteredClaimNames.Email, user.Email),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim("level", user.Level.ToString()),
+                new Claim("xp", user.ExperiencePoints.ToString())
             };
 
             var accessToken = new JwtSecurityToken(
@@ -73,8 +69,6 @@ namespace SecondBrain.Api.Services
 
             // Generate Refresh Token
             var refreshToken = GenerateRefreshToken();
-
-            // Save Refresh Token to Database
             var refreshTokenEntity = new RefreshToken
             {
                 Id = $"rt_{Guid.NewGuid()}",
@@ -88,7 +82,8 @@ namespace SecondBrain.Api.Services
             _context.RefreshTokens.Add(refreshTokenEntity);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Tokens generated successfully for user {UserId}", user.Id);
+            // Get level progress
+            var (currentXP, xpForNextLevel, progress) = await _xpService.GetLevelProgressAsync(user.Id);
 
             return new TokenResponse
             {
@@ -99,7 +94,12 @@ namespace SecondBrain.Api.Services
                     Id = user.Id,
                     Email = user.Email,
                     Name = user.Name,
-                    CreatedAt = user.CreatedAt
+                    CreatedAt = user.CreatedAt,
+                    ExperiencePoints = user.ExperiencePoints,
+                    Level = user.Level,
+                    Avatar = user.Avatar,
+                    XpForNextLevel = xpForNextLevel,
+                    LevelProgress = progress
                 }
             };
         }

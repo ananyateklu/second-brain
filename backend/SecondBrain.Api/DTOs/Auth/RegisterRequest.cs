@@ -9,10 +9,12 @@ namespace SecondBrain.Api.DTOs.Auth
         public string Email { get; set; }
 
         [Required]
-        [MinLength(6, ErrorMessage = "Password must be at least 6 characters.")]
+        [MinLength(6)]
         public string Password { get; set; }
 
         [Required]
         public string Name { get; set; }
+
+        public string? Avatar { get; set; }
     }
 }

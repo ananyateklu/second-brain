@@ -17,6 +17,13 @@ export interface AuthState {
     id: string;
     email: string;
     name: string;
-    createdAt?: string; 
+    createdAt?: string;
+    experiencePoints: number;
+    level: number;
+    avatar: string;
+    xpForNextLevel: number;
+    levelProgress: number;
+    achievementCount: number;
+    totalXPFromAchievements: number;
   };
 }

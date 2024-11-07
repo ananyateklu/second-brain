@@ -28,7 +28,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SecondBrain.Data\SecondBrain.Data.csproj" />
-    <ProjectReference Include="..\SecondBrain.Services\SecondBrain.Services.csproj" />
   </ItemGroup>
 
 </Project>

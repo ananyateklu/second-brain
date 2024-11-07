@@ -4,6 +4,20 @@ import { authService, AuthResponse } from '../services/api/auth.service';
 import { useNavigate } from 'react-router-dom';
 import { LoadingScreen } from '../components/shared/LoadingScreen';
 
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  createdAt: string;
+  experiencePoints: number;
+  level: number;
+  avatar: string;
+  xpForNextLevel: number;
+  levelProgress: number;
+  achievementCount: number;
+  totalXPFromAchievements: number;
+}
+
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
@@ -27,7 +41,6 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
     setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
     try {
       const response: AuthResponse = await authService.login({ email, password });
-      // Store tokens in localStorage
       localStorage.setItem('access_token', response.accessToken);
       localStorage.setItem('refresh_token', response.refreshToken);
 
@@ -51,7 +64,6 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
     try {
       const response: AuthResponse = await authService.register({ email, password, name });
 
-      // Store tokens in localStorage
       localStorage.setItem('access_token', response.accessToken);
       localStorage.setItem('refresh_token', response.refreshToken);
 
@@ -73,7 +85,6 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
   const resetPassword = useCallback(async (email: string) => {
     setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
     try {
-      // Implement your password reset logic here
       await authService.resetPassword(email);
       setAuthState(prev => ({
         ...prev,
@@ -124,7 +135,6 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
       });
     } catch (error) {
       console.error('Error fetching current user:', error);
-      // If the token is invalid, clear everything
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
       setAuthState({
@@ -136,27 +146,25 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
     }
   }, [navigate]);
 
-  // Initialize Auth State on Mount
-  useEffect(() => {
-    fetchCurrentUser();
-  }, [fetchCurrentUser]);
+    useEffect(() => {
+      fetchCurrentUser();
+    }, [fetchCurrentUser]);
 
-  // Only show loading screen during actual authentication operations
-  if (authState.isLoading) {
-    return <LoadingScreen message="Authenticating..." />;
+    if (authState.isLoading) {
+      return <LoadingScreen message="Authenticating..." />;
+    }
+
+    return (
+      <AuthContext.Provider value={{ ...authState, login, register, resetPassword, logout, fetchCurrentUser }}>
+        {children}
+      </AuthContext.Provider>
+    );
   }
 
-  return (
-    <AuthContext.Provider value={{ ...authState, login, register, resetPassword, logout, fetchCurrentUser }}>
-      {children}
-    </AuthContext.Provider>
-  );
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+  export function useAuth() {
+    const context = useContext(AuthContext);
+    if (!context) {
+      throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
   }
-  return context;
-}

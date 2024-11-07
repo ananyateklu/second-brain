@@ -19,6 +19,8 @@ namespace SecondBrain.Data
         public DbSet<NoteLink> NoteLinks { get; set; } = null!;
         public DbSet<Idea> Ideas { get; set; }
         public DbSet<IdeaLink> IdeaLinks { get; set; }
+        public DbSet<Achievement> Achievements { get; set; }
+        public DbSet<UserAchievement> UserAchievements { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -101,6 +103,63 @@ namespace SecondBrain.Data
                 .WithMany(i => i.IdeaLinks)
                 .HasForeignKey(il => il.IdeaId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Configure Achievement entity
+            modelBuilder.Entity<Achievement>()
+                .HasKey(a => a.Id);
+
+            modelBuilder.Entity<Achievement>()
+                .Property(a => a.Name)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            modelBuilder.Entity<Achievement>()
+                .Property(a => a.Description)
+                .HasMaxLength(500);
+
+            modelBuilder.Entity<Achievement>()
+                .Property(a => a.Icon)
+                .HasMaxLength(255);
+
+            modelBuilder.Entity<Achievement>()
+                .Property(a => a.Type)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            // Configure UserAchievement composite key
+            modelBuilder.Entity<UserAchievement>()
+                .HasKey(ua => new { ua.UserId, ua.AchievementId });
+
+            // Configure UserAchievement relationships
+            modelBuilder.Entity<UserAchievement>()
+                .HasOne(ua => ua.User)
+                .WithMany(u => u.UserAchievements)
+                .HasForeignKey(ua => ua.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<UserAchievement>()
+                .HasOne(ua => ua.Achievement)
+                .WithMany(a => a.UserAchievements)
+                .HasForeignKey(ua => ua.AchievementId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure DateAchieved to use UTC time
+            modelBuilder.Entity<UserAchievement>()
+                .Property(ua => ua.DateAchieved)
+                .HasDefaultValueSql("GETUTCDATE()");
+
+            // Configure User gamification properties
+            modelBuilder.Entity<User>()
+                .Property(u => u.ExperiencePoints)
+                .HasDefaultValue(0);
+
+            modelBuilder.Entity<User>()
+                .Property(u => u.Level)
+                .HasDefaultValue(1);
+
+            modelBuilder.Entity<User>()
+                .Property(u => u.Avatar)
+                .HasMaxLength(1000); // Adjust max length based on your needs
         }
     }
 }

@@ -11,15 +11,24 @@ export interface LoginData {
   password: string;
 }
 
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  createdAt: string;
+  experiencePoints: number;
+  level: number;
+  avatar: string;
+  xpForNextLevel: number;
+  levelProgress: number;
+  achievementCount: number;
+  totalXPFromAchievements: number;
+}
+
 export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
-  user: {
-    id: string;
-    email: string;
-    name: string;
-    createdAt: string;
-  };
+  user: User;
 }
 
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -41,8 +50,8 @@ export const authService = {
     return response.data;
   },
 
-  getCurrentUser: async (): Promise<AuthResponse['user']> => {
-    const response = await api.get('/auth/me');
+  getCurrentUser: async (): Promise<User> => {
+    const response = await api.get<User>('/auth/me');
     return response.data;
   },
 
