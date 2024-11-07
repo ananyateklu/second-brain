@@ -23,6 +23,24 @@ interface ValidationErrors {
   general?: string;
 }
 
+const formFieldVariants = {
+  hidden: { 
+    opacity: 0,
+    y: 20,
+    scale: 0.95
+  },
+  visible: (custom: number) => ({
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      delay: custom * 0.1,
+      duration: 0.3,
+      ease: "easeOut"
+    }
+  })
+};
+
 export function RegistrationPage() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
@@ -88,7 +106,12 @@ export function RegistrationPage() {
     <div className="min-h-screen bg-gradient-to-br from-primary-600 via-primary-500 to-primary-700 flex">
       {/* Left Panel - Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
-        <div className="w-full max-w-md">
+        <motion.div 
+          className="w-full max-w-md"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+        >
           <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20">
             <div className="mb-8">
               <Logo />
@@ -107,61 +130,89 @@ export function RegistrationPage() {
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-4">
-                <Input
-                  id="fullName"
-                  name="fullName"
-                  type="text"
-                  label="Full Name"
-                  icon={User}
-                  value={formData.fullName}
-                  onChange={handleChange}
-                  placeholder="Enter your full name"
-                  error={errors.fullName}
-                  disabled={isLoading}
-                  className="bg-white/10 border-white/20 focus:border-primary-400 text-white placeholder:text-white/50"
-                />
+                <motion.div
+                  variants={formFieldVariants}
+                  initial="hidden"
+                  animate="visible"
+                  custom={0}
+                >
+                  <Input
+                    id="fullName"
+                    name="fullName"
+                    type="text"
+                    label="Full Name"
+                    icon={User}
+                    value={formData.fullName}
+                    onChange={handleChange}
+                    placeholder="Enter your full name"
+                    error={errors.fullName}
+                    disabled={isLoading}
+                    className="bg-white/10 border-white/20 focus:border-primary-400 text-white placeholder:text-white/50"
+                  />
+                </motion.div>
 
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  label="Email"
-                  icon={Mail}
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="Enter your email"
-                  error={errors.email}
-                  disabled={isLoading}
-                  className="bg-white/10 border-white/20 focus:border-primary-400 text-white placeholder:text-white/50"
-                />
+                <motion.div
+                  variants={formFieldVariants}
+                  initial="hidden"
+                  animate="visible"
+                  custom={1}
+                >
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    label="Email"
+                    icon={Mail}
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="Enter your email"
+                    error={errors.email}
+                    disabled={isLoading}
+                    className="bg-white/10 border-white/20 focus:border-primary-400 text-white placeholder:text-white/50"
+                  />
+                </motion.div>
 
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  label="Password"
-                  icon={Lock}
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="Create a password"
-                  error={errors.password}
-                  disabled={isLoading}
-                  className="bg-white/10 border-white/20 focus:border-primary-400 text-white placeholder:text-white/50"
-                />
+                <motion.div
+                  variants={formFieldVariants}
+                  initial="hidden"
+                  animate="visible"
+                  custom={2}
+                >
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    label="Password"
+                    icon={Lock}
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="Create a password"
+                    error={errors.password}
+                    disabled={isLoading}
+                    className="bg-white/10 border-white/20 focus:border-primary-400 text-white placeholder:text-white/50"
+                  />
+                </motion.div>
 
-                <Input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  label="Confirm Password"
-                  icon={ShieldCheck}
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  placeholder="Confirm your password"
-                  error={errors.confirmPassword}
-                  disabled={isLoading}
-                  className="bg-white/10 border-white/20 focus:border-primary-400 text-white placeholder:text-white/50"
-                />
+                <motion.div
+                  variants={formFieldVariants}
+                  initial="hidden"
+                  animate="visible"
+                  custom={3}
+                >
+                  <Input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type="password"
+                    label="Confirm Password"
+                    icon={ShieldCheck}
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    placeholder="Confirm your password"
+                    error={errors.confirmPassword}
+                    disabled={isLoading}
+                    className="bg-white/10 border-white/20 focus:border-primary-400 text-white placeholder:text-white/50"
+                  />
+                </motion.div>
               </div>
 
               <motion.button
@@ -202,7 +253,7 @@ export function RegistrationPage() {
               </div>
             </form>
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* Right Panel - Decorative */}

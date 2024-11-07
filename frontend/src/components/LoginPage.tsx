@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { ForgotPasswordModal } from './shared/ForgotPasswordModal';
 import { validateEmail, validatePassword } from '../utils/validation';
 import { motion } from 'framer-motion';
+import { LoadingScreen } from './shared/LoadingScreen';
 
 interface LoginFormData {
   email: string;
@@ -28,6 +29,7 @@ export function LoginPage() {
   const { theme, toggleTheme } = useTheme();
   const { login, isLoading, error: authError } = useAuth();
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [formData, setFormData] = useState<LoginFormData>({
     email: '',
     password: '',
@@ -64,11 +66,11 @@ export function LoginPage() {
     if (!validateForm()) return;
 
     try {
+      setIsRedirecting(true);
       await login(formData.email, formData.password);
-      // After successful login and state update, redirect to the intended destination
       navigate(from, { replace: true });
     } catch (error) {
-      // Handle login errors if needed
+      setIsRedirecting(false);
     }
   };
 
@@ -82,6 +84,11 @@ export function LoginPage() {
       setErrors(prev => ({ ...prev, [name]: undefined }));
     }
   };
+
+  // Only show loading screen when actually redirecting after successful login
+  if (isRedirecting) {
+    return <LoadingScreen message="Logging you in..." />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-600 via-primary-500 to-primary-700 flex">

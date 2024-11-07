@@ -116,14 +116,12 @@ const StatCard = ({
   stat,
   showStatsEditor,
   onRemove,
-  renderStat,
   getStatValue,
   index,
 }: {
   stat: DashboardStat;
   showStatsEditor: boolean;
   onRemove: (id: string) => void;
-  renderStat: (stat: DashboardStat) => number | string;
   getStatValue: (id: string) => { value: number | string; change?: number; timeframe?: string };
   index: number;
 }) => {
@@ -370,8 +368,8 @@ export function DashboardHome() {
         return formatTimeAgo(stats.lastUpdated);
         
       case 'ideas':
-        // Count notes tagged with 'idea'
-        return notes.filter(note => note.tags.includes('idea')).length;
+        // Remove this case entirely as it's now handled by the getStatValue function
+        return '';
         
       case 'tasks':
         if (stat.id === 'active-tasks') {
@@ -614,7 +612,6 @@ export function DashboardHome() {
                     stat={stat}
                     showStatsEditor={showStatsEditor}
                     onRemove={toggleStat}
-                    renderStat={renderStat}
                     getStatValue={getStatValue}
                     index={index}
                   />

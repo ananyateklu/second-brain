@@ -22,6 +22,8 @@ export interface AuthResponse {
   };
 }
 
+const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 export const authService = {
   async register(data: RegisterData): Promise<AuthResponse> {
     const response = await api.post<AuthResponse>('/auth/register', data);
@@ -30,6 +32,7 @@ export const authService = {
 
   async login(data: LoginData): Promise<AuthResponse> {
     const response = await api.post<AuthResponse>('/auth/login', data);
+    await wait(3000);
     return response.data;
   },
 

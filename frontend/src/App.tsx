@@ -13,40 +13,47 @@ import { LoginPage } from './components/LoginPage';
 import { RegistrationPage } from './components/RegistrationPage';
 import { Dashboard } from './components/Dashboard';
 
+// Create a separate component for the authenticated routes
+function AuthenticatedApp() {
+  return (
+    <ActivityProvider>
+      <TrashProvider>
+        <NotesProvider>
+          <TasksProvider>
+            <RemindersProvider>
+              <AIProvider>
+                <DashboardProvider>
+                  <Routes>
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/register" element={<RegistrationPage />} />
+                    <Route
+                      path="/dashboard/*"
+                      element={
+                        <ProtectedRoute>
+                          <Dashboard />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                  </Routes>
+                </DashboardProvider>
+              </AIProvider>
+            </RemindersProvider>
+          </TasksProvider>
+        </NotesProvider>
+      </TrashProvider>
+    </ActivityProvider>
+  );
+}
+
 export function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <ActivityProvider>
-          <TrashProvider>
-            <NotesProvider>
-              <TasksProvider>
-                <RemindersProvider>
-                  <AIProvider>
-                    <DashboardProvider>
-                      <BrowserRouter>
-                        <Routes>
-                          <Route path="/login" element={<LoginPage />} />
-                          <Route path="/register" element={<RegistrationPage />} />
-                          <Route
-                            path="/dashboard/*"
-                            element={
-                              <ProtectedRoute>
-                                <Dashboard />
-                              </ProtectedRoute>
-                            }
-                          />
-                          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                        </Routes>
-                      </BrowserRouter>
-                    </DashboardProvider>
-                  </AIProvider>
-                </RemindersProvider>
-              </TasksProvider>
-            </NotesProvider>
-          </TrashProvider>
-        </ActivityProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <BrowserRouter>
+      <ThemeProvider>
+        <AuthProvider>
+          <AuthenticatedApp />
+        </AuthProvider>
+      </ThemeProvider>
+    </BrowserRouter>
   );
 }

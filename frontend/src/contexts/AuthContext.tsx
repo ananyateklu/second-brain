@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { AuthState } from '../types/auth';
 import { authService, AuthResponse } from '../services/api/auth.service';
+import { useNavigate } from 'react-router-dom';
+import { LoadingScreen } from '../components/shared/LoadingScreen';
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
@@ -19,6 +21,8 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
     user: null,
   });
 
+  const navigate = useNavigate();
+
   const login = useCallback(async (email: string, password: string) => {
     setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
     try {
@@ -26,9 +30,6 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
       // Store tokens in localStorage
       localStorage.setItem('access_token', response.accessToken);
       localStorage.setItem('refresh_token', response.refreshToken);
-
-      // Optional: Call fetchCurrentUser if needed
-      // await fetchCurrentUser();
 
       setAuthState({
         isLoading: false,
@@ -89,10 +90,10 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
   }, []);
 
   const logout = useCallback(async () => {
+    setAuthState(prev => ({ ...prev, isLoading: true }));
     try {
       await authService.logout();
     } catch (error) {
-      // Handle logout error if necessary
       console.error('Logout error:', error);
     } finally {
       localStorage.removeItem('access_token');
@@ -102,11 +103,9 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
         error: null,
         user: null,
       });
-      window.location.href = '/login'; // Redirect to login
+      navigate('/login');
     }
-  }, []);
-
-  // AuthContext.tsx
+  }, [navigate]);
 
   const fetchCurrentUser = useCallback(async () => {
     const accessToken = localStorage.getItem('access_token');
@@ -116,18 +115,16 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
       return;
     }
 
-    setAuthState(prev => ({ ...prev, isLoading: true }));
     try {
       const user = await authService.getCurrentUser();
-
       setAuthState({
         isLoading: false,
         error: null,
-        user: user, // Set the user directly
+        user: user,
       });
     } catch (error) {
       console.error('Error fetching current user:', error);
-      // Clear tokens and state on error
+      // If the token is invalid, clear everything
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
       setAuthState({
@@ -135,13 +132,19 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
         error: null,
         user: null,
       });
+      navigate('/login');
     }
-  }, []);
+  }, [navigate]);
 
-  // **Initialize Auth State on Mount**
+  // Initialize Auth State on Mount
   useEffect(() => {
     fetchCurrentUser();
   }, [fetchCurrentUser]);
+
+  // Only show loading screen during actual authentication operations
+  if (authState.isLoading) {
+    return <LoadingScreen message="Authenticating..." />;
+  }
 
   return (
     <AuthContext.Provider value={{ ...authState, login, register, resetPassword, logout, fetchCurrentUser }}>
