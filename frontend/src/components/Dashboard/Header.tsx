@@ -3,6 +3,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
 interface HeaderProps {
   isSidebarOpen: boolean;
@@ -10,6 +11,20 @@ interface HeaderProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
 }
+
+// Add level thresholds constant (or move to a shared constants file)
+const LevelThresholds = [
+  0,      // Level 1: 0-99
+  100,    // Level 2: 100-249
+  250,    // Level 3: 250-449
+  450,    // Level 4: 450-699
+  700,    // Level 5: 700-999
+  1000,   // Level 6: 1000-1349
+  1350,   // Level 7: 1350-1749
+  1750,   // Level 8: 1750-2199
+  2200,   // Level 9: 2200-2699
+  2700    // Level 10: 2700+
+];
 
 export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQuery }: HeaderProps) {
   const { theme, toggleTheme } = useTheme();
@@ -28,6 +43,26 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Calculate XP values
+  const calculateXPProgress = (user: any) => {
+    if (!user) return { currentLevelXP: 0, nextLevelXP: 100, progress: 0 };
+
+    const currentLevelThreshold = LevelThresholds[user.level - 1] || 0;
+    const nextLevelThreshold = LevelThresholds[user.level] || LevelThresholds[user.level - 1] + 100;
+    
+    const xpInCurrentLevel = user.experiencePoints - currentLevelThreshold;
+    const xpNeededForNextLevel = nextLevelThreshold - currentLevelThreshold;
+    const progress = (xpInCurrentLevel / xpNeededForNextLevel) * 100;
+
+    return {
+      currentLevelXP: xpInCurrentLevel,
+      nextLevelXP: xpNeededForNextLevel,
+      progress: Math.min(100, Math.max(0, progress))
+    };
+  };
+
+  const xpProgress = calculateXPProgress(user);
 
   return (
     <header className="fixed top-0 right-0 left-0 lg:left-60 z-20 bg-white/80 dark:bg-dark-card/80 backdrop-blur-md">
@@ -100,7 +135,7 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
                     stroke="currentColor"
                     strokeWidth="2"
                     fill="none"
-                    strokeDasharray={`${user?.levelProgress * 100.5 || 0} 100`}
+                    strokeDasharray={`${user?.levelProgress * 100} 100`}
                     className="text-primary-500"
                     transform="rotate(-90 18 18)"
                   />
@@ -137,19 +172,23 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
                   </div>
                   <div className="mt-3">
                     <div className="flex justify-between text-xs mb-1">
-                      <span className="text-gray-600 dark:text-gray-400">Level {user?.level || 1}</span>
                       <span className="text-gray-600 dark:text-gray-400">
-                        {Math.round((user?.levelProgress || 0) * 100)}%
+                        Level {user?.level || 1}
+                      </span>
+                      <span className="text-gray-600 dark:text-gray-400">
+                        {xpProgress.currentLevelXP.toLocaleString()} / {xpProgress.nextLevelXP.toLocaleString()} XP
                       </span>
                     </div>
                     <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                      <div
+                      <motion.div
                         className="h-full bg-primary-500 rounded-full transition-all duration-300"
-                        style={{ width: `${(user?.levelProgress || 0) * 100}%` }}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${xpProgress.progress}%` }}
+                        transition={{ duration: 0.5, ease: "easeOut" }}
                       />
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      {user?.experiencePoints || 0} / {user?.xpForNextLevel || 100} XP
+                    <div className="mt-1 text-xs text-gray-500 dark:text-gray-400 text-right">
+                      {Math.round(xpProgress.progress)}% to Level {(user?.level || 1) + 1}
                     </div>
                   </div>
                 </div>

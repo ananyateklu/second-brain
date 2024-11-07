@@ -8,6 +8,17 @@ interface ExperienceBarProps {
 }
 
 export function ExperienceBar({ currentXP, nextLevelXP, progress }: ExperienceBarProps) {
+  // Calculate progress percentage based on current and next level XP
+  const calculatedProgress = Math.min(100, (currentXP / nextLevelXP) * 100);
+  
+  console.log('Progress Bar Values:', {
+    currentXP,
+    nextLevelXP,
+    passedProgress: progress,
+    calculatedProgress,
+    normalizedProgress: calculatedProgress
+  });
+
   return (
     <div className="space-y-2">
       <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
@@ -18,12 +29,12 @@ export function ExperienceBar({ currentXP, nextLevelXP, progress }: ExperienceBa
         <motion.div
           className="h-full bg-primary-500 dark:bg-primary-600"
           initial={{ width: 0 }}
-          animate={{ width: `${progress}%` }}
+          animate={{ width: `${calculatedProgress}%` }}
           transition={{ duration: 0.5, ease: "easeOut" }}
         />
       </div>
       <div className="text-right text-sm text-gray-600 dark:text-gray-400">
-        {progress}% to next level
+        {Math.round(calculatedProgress)}% to next level
       </div>
     </div>
   );

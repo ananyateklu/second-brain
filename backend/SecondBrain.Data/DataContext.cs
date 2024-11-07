@@ -151,11 +151,13 @@ namespace SecondBrain.Data
             // Configure User gamification properties
             modelBuilder.Entity<User>()
                 .Property(u => u.ExperiencePoints)
-                .HasDefaultValue(0);
+                .HasDefaultValue(0)
+                .IsConcurrencyToken();
 
             modelBuilder.Entity<User>()
                 .Property(u => u.Level)
-                .HasDefaultValue(1);
+                .HasDefaultValue(1)
+                .IsConcurrencyToken();
 
             modelBuilder.Entity<User>()
                 .Property(u => u.Avatar)

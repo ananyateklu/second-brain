@@ -144,4 +144,11 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+// Add this after building the app
+using (var scope = app.Services.CreateScope())
+{
+    var achievementService = scope.ServiceProvider.GetRequiredService<IAchievementService>();
+    await achievementService.InitializeAchievementsAsync();
+}
+
 await app.RunAsync();

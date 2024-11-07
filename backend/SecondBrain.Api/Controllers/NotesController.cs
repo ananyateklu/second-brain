@@ -17,12 +17,14 @@ namespace SecondBrain.Api.Controllers
         private readonly DataContext _context;
         private readonly IXPService _xpService;
         private readonly IAchievementService _achievementService;
+        private readonly ILogger<NotesController> _logger;
 
-        public NotesController(DataContext context, IXPService xpService, IAchievementService achievementService)
+        public NotesController(DataContext context, IXPService xpService, IAchievementService achievementService, ILogger<NotesController> logger)
         {
             _context = context;
             _xpService = xpService;
             _achievementService = achievementService;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -46,61 +48,74 @@ namespace SecondBrain.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateNote([FromBody] CreateNoteRequest request)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (string.IsNullOrEmpty(userId))
+            try
             {
-                return Unauthorized(new { error = "User ID not found in token." });
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized(new { error = "User ID not found in token." });
+                }
+
+                var note = new Note
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Title = request.Title,
+                    Content = request.Content,
+                    Tags = string.Join(",", request.Tags ?? new List<string>()),
+                    IsPinned = request.IsPinned,
+                    IsFavorite = request.IsFavorite,
+                    IsArchived = false,
+                    IsIdea = request.IsIdea,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                    UserId = userId
+                };
+
+                _context.Notes.Add(note);
+                await _context.SaveChangesAsync();
+
+                // Award XP for creating a note
+                var (newXP, newLevel, leveledUp) = await _xpService.AwardXPAsync(userId, "createnote");
+
+                // Check for achievements
+                var unlockedAchievements = await _achievementService.CheckAndUnlockAchievementsAsync(userId, "createnote");
+
+                _logger.LogInformation(
+                    "Note created: {NoteId}, XP awarded: {XP}, Level: {Level}, Achievements: {AchievementCount}",
+                    note.Id, newXP, newLevel, unlockedAchievements.Count
+                );
+
+                var response = new NoteResponse
+                {
+                    Id = note.Id,
+                    Title = note.Title,
+                    Content = note.Content,
+                    Tags = !string.IsNullOrEmpty(note.Tags) 
+                        ? note.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList() 
+                        : new List<string>(),
+                    IsPinned = note.IsPinned,
+                    IsFavorite = note.IsFavorite,
+                    IsArchived = note.IsArchived,
+                    IsIdea = note.IsIdea,
+                    ArchivedAt = note.ArchivedAt,
+                    CreatedAt = note.CreatedAt,
+                    UpdatedAt = note.UpdatedAt,
+                    LinkedNoteIds = new List<string>(),
+                    XPAwarded = XPValues.CreateNote,
+                    NewTotalXP = newXP,
+                    LeveledUp = leveledUp,
+                    NewLevel = newLevel,
+                    UnlockedAchievements = unlockedAchievements
+                };
+
+                return CreatedAtAction(nameof(GetNoteById), new { id = note.Id }, response);
             }
-
-            var note = new Note
+            catch (Exception ex)
             {
-                Id = Guid.NewGuid().ToString(),
-                Title = request.Title,
-                Content = request.Content,
-                Tags = string.Join(",", request.Tags ?? new List<string>()),
-                IsPinned = request.IsPinned,
-                IsFavorite = request.IsFavorite,
-                IsArchived = false,
-                IsIdea = request.IsIdea,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-                UserId = userId
-            };
-
-            _context.Notes.Add(note);
-            await _context.SaveChangesAsync();
-
-            // Award XP for creating a note
-            var (newXP, newLevel, leveledUp) = await _xpService.AwardXPAsync(userId, "createnote");
-
-            // Check for achievements
-            var unlockedAchievements = await _achievementService.CheckAndUnlockAchievementsAsync(userId, "createnote");
-
-            var response = new NoteResponse
-            {
-                Id = note.Id,
-                Title = note.Title,
-                Content = note.Content,
-                Tags = !string.IsNullOrEmpty(note.Tags) 
-                    ? note.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList() 
-                    : new List<string>(),
-                IsPinned = note.IsPinned,
-                IsFavorite = note.IsFavorite,
-                IsArchived = note.IsArchived,
-                IsIdea = note.IsIdea,
-                ArchivedAt = note.ArchivedAt,
-                CreatedAt = note.CreatedAt,
-                UpdatedAt = note.UpdatedAt,
-                LinkedNoteIds = new List<string>(),
-                XPAwarded = XPValues.CreateNote,
-                NewTotalXP = newXP,
-                LeveledUp = leveledUp,
-                NewLevel = newLevel,
-                UnlockedAchievements = unlockedAchievements
-            };
-
-            return CreatedAtAction(nameof(GetNoteById), new { id = note.Id }, response);
+                _logger.LogError(ex, "Error creating note");
+                return StatusCode(500, new { error = "An error occurred while creating the note." });
+            }
         }
 
         [HttpGet("{id}")]

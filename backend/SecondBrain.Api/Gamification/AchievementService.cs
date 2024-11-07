@@ -189,6 +189,11 @@ namespace SecondBrain.Api.Gamification
             var achievement = await GetAchievementByTypeAsync(achievementType);
             if (achievement == null) return null;
 
+            _logger.LogInformation(
+                "Checking achievement {Type} for user {UserId}",
+                achievementType, user.Id
+            );
+
             var existingUnlock = await _context.UserAchievements
                 .FirstOrDefaultAsync(ua => ua.UserId == user.Id && ua.AchievementId == achievement.Id);
 
@@ -209,6 +214,8 @@ namespace SecondBrain.Api.Gamification
                 "achievement", 
                 achievement.XPValue
             );
+
+            await _context.SaveChangesAsync();
 
             return new UnlockedAchievement
             {

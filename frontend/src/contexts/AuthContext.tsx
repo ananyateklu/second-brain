@@ -9,11 +9,11 @@ interface User {
   email: string;
   name: string;
   createdAt: string;
-  experiencePoints: number;
+  experiencePoints: number;  // Total XP
   level: number;
   avatar: string;
-  xpForNextLevel: number;
-  levelProgress: number;
+  xpForNextLevel: number;    // XP needed for next level from current position
+  levelProgress: number;     // Progress percentage (0-1)
   achievementCount: number;
   totalXPFromAchievements: number;
 }

@@ -11,7 +11,7 @@ namespace SecondBrain.Api.DTOs.Auth
         public int Level { get; set; }
         public string Avatar { get; set; }
         public int XpForNextLevel { get; set; }
-        public int LevelProgress { get; set; }
+        public float LevelProgress { get; set; }
         public int AchievementCount { get; set; }
         public int TotalXPFromAchievements { get; set; }
     }

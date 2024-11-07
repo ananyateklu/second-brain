@@ -120,11 +120,9 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: 
         'target-arrow-shape': 'triangle-tee',
         'arrow-scale': 0.7,
         'width': 1.4,
-        'target-endpoint': '0%',
-        'source-endpoint': '100%',
-        'edge-distances': 'node-position',
         'curve-style': 'straight',
         'opacity': 0.75,
+        'source-distance-from-node': 0,
         'target-distance-from-node': 6,
         'line-color': theme === 'dark' ? '#5a5a5a' : '#3a3a3a',
         'target-arrow-color': theme === 'dark' ? '#5a5a5a' : '#3a3a3a'
@@ -214,7 +212,6 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: 
           cy.minZoom(0.5);
           cy.maxZoom(2.0);
         }}
-        wheelSensitivity={0.2}
       />
       <div className="absolute bottom-4 right-4 bg-opacity-80 bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg">
         <div className="flex flex-col gap-2">
