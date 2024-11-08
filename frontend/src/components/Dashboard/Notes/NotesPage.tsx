@@ -7,6 +7,7 @@ import { EditNoteModal } from './EditNoteModal';
 import { FilterDropdown } from './FilterDropdown';
 import { NotesGraph } from './NotesGraph';
 import { LoadingScreen } from '../../shared/LoadingScreen';
+import { Input } from '../../shared/Input';
 
 
 interface Filters {
@@ -127,24 +128,24 @@ export function NotesPage() {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
+        <div className="flex-1">
+          <Input
+            label=""
+            icon={Search}
             type="text"
             placeholder="Search notes..."
             value={filters.search}
             onChange={(e) => handleFilterChange('search', e.target.value)}
-            className="w-full pl-10 pr-4 py-2 glass-morphism rounded-lg border border-gray-200/20 dark:border-gray-700/30 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
           />
         </div>
 
         <div className="flex gap-2">
           <button
             onClick={() => setViewMode('grid')}
-            className={`p-2 rounded-lg transition-colors ${
+            className={`p-2 rounded-lg glass-morphism transition-colors ${
               viewMode === 'grid'
                 ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                : 'hover:bg-gray-50 dark:hover:bg-gray-800'
             }`}
             title="Grid View"
           >
@@ -152,10 +153,10 @@ export function NotesPage() {
           </button>
           <button
             onClick={() => setViewMode('list')}
-            className={`p-2 rounded-lg transition-colors ${
+            className={`p-2 rounded-lg glass-morphism transition-colors ${
               viewMode === 'list'
                 ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                : 'hover:bg-gray-50 dark:hover:bg-gray-800'
             }`}
             title="List View"
           >
@@ -163,10 +164,10 @@ export function NotesPage() {
           </button>
           <button
             onClick={() => setViewMode('graph')}
-            className={`p-2 rounded-lg transition-colors ${
+            className={`p-2 rounded-lg glass-morphism transition-colors ${
               viewMode === 'graph'
                 ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                : 'hover:bg-gray-50 dark:hover:bg-gray-800'
             }`}
             title="Graph View"
           >
@@ -176,7 +177,7 @@ export function NotesPage() {
       </div>
 
       {showFilters && (
-        <div className="p-4 rounded-lg bg-white dark:bg-dark-card border border-gray-200 dark:border-gray-700">
+        <div className="p-4 rounded-lg glass-morphism">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">Filters</h3>
             <button

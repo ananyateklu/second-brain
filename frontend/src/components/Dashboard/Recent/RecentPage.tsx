@@ -3,6 +3,7 @@ import { History, Search, SlidersHorizontal } from 'lucide-react';
 import { ActivityFeed } from './ActivityFeed';
 import { ActivityFilters } from './ActivityFilters';
 import { useActivities } from '../../../contexts/ActivityContext';
+import { Input } from '../../shared/Input';
 
 export function RecentPage() {
   const { activities } = useActivities();
@@ -17,7 +18,7 @@ export function RecentPage() {
   return (
     <div className="space-y-6">
       {/* Header Section */}
-      <div className="backdrop-blur-sm bg-white/30 dark:bg-gray-800/30 border border-gray-200/50 dark:border-gray-700/50 shadow-lg p-6 rounded-xl">
+      <div className="glass-morphism p-6 rounded-xl">
         <div className="flex flex-col sm:flex-row gap-6 justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
@@ -35,20 +36,20 @@ export function RecentPage() {
 
       {/* Search and Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
+        <div className="flex-1">
+          <Input
+            label=""
+            icon={Search}
             type="text"
             placeholder="Search activities..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-dark-bg border border-gray-200 dark:border-dark-border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
           />
         </div>
 
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-dark-card border border-gray-200 dark:border-dark-border rounded-lg hover:bg-gray-50 dark:hover:bg-dark-hover transition-colors"
+          className="flex items-center gap-2 px-4 py-2 glass-morphism rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
         >
           <SlidersHorizontal className="w-5 h-5" />
           <span>Filters</span>
@@ -57,7 +58,7 @@ export function RecentPage() {
 
       {/* Filters Panel */}
       {showFilters && (
-        <div className="backdrop-blur-sm bg-white/30 dark:bg-gray-800/30 border border-gray-200/50 dark:border-gray-700/50 shadow-lg p-4 rounded-xl">
+        <div className="glass-morphism p-4 rounded-xl">
           <ActivityFilters
             filters={filters}
             onFilterChange={(key, value) => 

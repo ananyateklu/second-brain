@@ -5,6 +5,7 @@ import { useNotes } from '../../../contexts/NotesContext';
 import { useTasks } from '../../../contexts/TasksContext';
 import { useReminders } from '../../../contexts/RemindersContext';
 import { NotesGraph } from '../Notes/NotesGraph';
+import { Input } from '../../shared/Input';
 
 type ItemType = 'note' | 'task' | 'idea' | 'reminder';
 
@@ -167,9 +168,9 @@ export function TagsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center gap-2 mb-8">
+      <div className="shrink-0 flex items-center gap-2 mb-6">
         <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
           <Tag className="w-6 h-6 text-primary-600 dark:text-primary-400" />
         </div>
@@ -182,44 +183,44 @@ export function TagsPage() {
       </div>
 
       {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="shrink-0 flex flex-col sm:flex-row gap-4 mb-6">
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
+          <Input
+            label="Search"
+            icon={Search}
             type="text"
-            placeholder="Search tags..."
+            placeholder="Search by title or content..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-dark-bg border border-gray-200 dark:border-dark-border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+            className="mb-4"
           />
         </div>
-
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-dark-card border border-gray-200 dark:border-dark-border rounded-lg hover:bg-gray-50 dark:hover:bg-dark-hover transition-colors"
+          className="flex items-center gap-2 px-4 py-2 backdrop-blur-sm bg-white/50 dark:bg-gray-800/50 border border-gray-200/50 dark:border-gray-700/50 rounded-lg hover:bg-white/70 dark:hover:bg-gray-800/70 transition-colors"
         >
           <SlidersHorizontal className="w-5 h-5" />
           <span>Filters</span>
         </button>
       </div>
 
-      {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Tags List */}
-        <div className="lg:col-span-1">
-          <div className="bg-white dark:bg-dark-card rounded-lg shadow-sm border border-gray-200 dark:border-dark-border">
-            <div className="p-4 border-b border-gray-200 dark:border-dark-border">
+      {/* Main Content Area */}
+      <div className="flex-1 min-h-0">
+        <div className="h-full grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Tags List Column */}
+          <div className="lg:col-span-1 h-full flex flex-col backdrop-blur-sm bg-white/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+            <div className="shrink-0 p-4 border-b border-gray-200/50 dark:border-gray-700/50">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">All Tags</h2>
             </div>
-            <div className="divide-y divide-gray-200 dark:divide-dark-border">
+            <div className="flex-1 overflow-y-auto">
               {tagStats.map(({ tag, count, byType }) => (
                 <button
                   key={tag}
                   onClick={() => setSelectedTag(tag)}
-                  className={`w-full px-4 py-3 flex items-center justify-between transition-colors ${
+                  className={`w-full px-4 py-3 flex items-center justify-between transition-all duration-200 border-b border-gray-200/30 dark:border-gray-700/30 backdrop-blur-sm ${
                     selectedTag === tag
-                      ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                      : 'hover:bg-gray-50 dark:hover:bg-dark-hover text-gray-700 dark:text-gray-300'
+                      ? 'bg-primary-50/70 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 shadow-lg'
+                      : 'bg-white/30 dark:bg-gray-800/30 hover:bg-white/50 dark:hover:bg-gray-800/50 text-gray-700 dark:text-gray-300'
                   }`}
                 >
                   <div className="flex items-center gap-2">
@@ -259,125 +260,126 @@ export function TagsPage() {
               ))}
             </div>
           </div>
-        </div>
 
-        {/* Tagged Items */}
-        <div className="lg:col-span-2">
-          {selectedTag ? (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Items tagged with "{selectedTag}"
-                </h2>
-                
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setViewMode('grid')}
-                    className={`p-2 rounded-lg transition-colors ${
-                      viewMode === 'grid'
-                        ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
-                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                    }`}
-                    title="Grid View"
-                  >
-                    <Grid className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode('list')}
-                    className={`p-2 rounded-lg transition-colors ${
-                      viewMode === 'list'
-                        ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
-                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                    }`}
-                    title="List View"
-                  >
-                    <List className="w-5 h-5" />
-                  </button>
+          {/* Tagged Items Column */}
+          <div className="lg:col-span-2 h-full flex flex-col backdrop-blur-sm bg-white/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+            {selectedTag ? (
+              <div className="h-full flex flex-col">
+                <div className="shrink-0 flex justify-between items-center p-4 border-b border-gray-200/50 dark:border-gray-700/50">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Items tagged with "{selectedTag}"
+                  </h2>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setViewMode('grid')}
+                      className={`p-2 rounded-lg transition-colors ${
+                        viewMode === 'grid'
+                          ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
+                          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                      }`}
+                      title="Grid View"
+                    >
+                      <Grid className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => setViewMode('list')}
+                      className={`p-2 rounded-lg transition-colors ${
+                        viewMode === 'list'
+                          ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
+                          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                      }`}
+                      title="List View"
+                    >
+                      <List className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-4">
+                  {viewMode === 'grid' ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {filteredItems.map(item => (
+                        <div
+                          key={item.id}
+                          onClick={() => handleItemClick(item)}
+                          className="backdrop-blur-sm bg-white/50 dark:bg-gray-800/50 rounded-lg shadow-sm border border-gray-200/50 dark:border-gray-700/50 p-4 hover:bg-white/70 dark:hover:bg-gray-800/70 cursor-pointer transition-all duration-200"
+                        >
+                          <div className="flex items-center gap-2 mb-2">
+                            {getItemIcon(item.type)}
+                            <h3 className="text-lg font-medium text-gray-900 dark:text-white truncate">
+                              {item.title}
+                            </h3>
+                          </div>
+                          <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-3 mb-3">
+                            {item.content}
+                          </p>
+                          <div className="flex items-center gap-2">
+                            {item.tags.map(tag => (
+                              <span
+                                key={tag}
+                                className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary-50/70 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : viewMode === 'list' ? (
+                    <div className="divide-y divide-gray-200/50 dark:divide-gray-700/50">
+                      {filteredItems.map(item => (
+                        <div
+                          key={item.id}
+                          onClick={() => handleItemClick(item)}
+                          className="p-4 hover:bg-gray-50 dark:hover:bg-dark-hover cursor-pointer"
+                        >
+                          <div className="flex items-center gap-2 mb-2">
+                            {getItemIcon(item.type)}
+                            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                              {item.title}
+                            </h3>
+                          </div>
+                          <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-2 ml-6">
+                            {item.content}
+                          </p>
+                          <div className="mt-3 flex items-center gap-2 ml-6">
+                            {item.tags.map(tag => (
+                              <span
+                                key={tag}
+                                className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="h-full">
+                      <NotesGraph 
+                        notes={filteredItems.filter(item => item.type === 'note')} 
+                        onNoteClick={(noteId) => {
+                          const item = filteredItems.find(item => item.id === noteId);
+                          if (item) handleItemClick(item);
+                        }} 
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
-
-              {viewMode === 'grid' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {filteredItems.map(item => (
-                    <div
-                      key={item.id}
-                      onClick={() => handleItemClick(item)}
-                      className="bg-white dark:bg-dark-card rounded-lg shadow-sm border border-gray-200 dark:border-dark-border p-4 hover:bg-gray-50 dark:hover:bg-dark-hover cursor-pointer"
-                    >
-                      <div className="flex items-center gap-2 mb-2">
-                        {getItemIcon(item.type)}
-                        <h3 className="text-lg font-medium text-gray-900 dark:text-white truncate">
-                          {item.title}
-                        </h3>
-                      </div>
-                      <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-3 mb-3">
-                        {item.content}
-                      </p>
-                      <div className="flex items-center gap-2">
-                        {item.tags.map(tag => (
-                          <span
-                            key={tag}
-                            className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+            ) : (
+              <div className="flex items-center justify-center h-full min-h-[200px] backdrop-blur-sm bg-white/50 dark:bg-gray-800/50 rounded-lg border border-gray-200/50 dark:border-gray-700/50 transition-all duration-200">
+                <div className="text-center">
+                  <Tag className="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
+                  <p className="text-gray-500 dark:text-gray-400">
+                    Select a tag to view related items
+                  </p>
                 </div>
-              ) : viewMode === 'list' ? (
-                <div className="bg-white dark:bg-dark-card rounded-lg shadow-sm border border-gray-200 dark:border-dark-border divide-y divide-gray-200 dark:divide-dark-border">
-                  {filteredItems.map(item => (
-                    <div
-                      key={item.id}
-                      onClick={() => handleItemClick(item)}
-                      className="p-4 hover:bg-gray-50 dark:hover:bg-dark-hover cursor-pointer"
-                    >
-                      <div className="flex items-center gap-2 mb-2">
-                        {getItemIcon(item.type)}
-                        <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                          {item.title}
-                        </h3>
-                      </div>
-                      <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-2 ml-6">
-                        {item.content}
-                      </p>
-                      <div className="mt-3 flex items-center gap-2 ml-6">
-                        {item.tags.map(tag => (
-                          <span
-                            key={tag}
-                            className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="bg-white dark:bg-dark-card rounded-lg shadow-sm border border-gray-200 dark:border-dark-border p-4 min-h-[500px]">
-                  <NotesGraph 
-                    notes={filteredItems.filter(item => item.type === 'note')} 
-                    onNoteClick={(noteId) => {
-                      const item = filteredItems.find(item => item.id === noteId);
-                      if (item) handleItemClick(item);
-                    }} 
-                  />
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="flex items-center justify-center h-full min-h-[200px] bg-white dark:bg-dark-card rounded-lg shadow-sm border border-gray-200 dark:border-dark-border">
-              <div className="text-center">
-                <Tag className="w-12 h-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
-                <p className="text-gray-500 dark:text-gray-400">
-                  Select a tag to view related items
-                </p>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>

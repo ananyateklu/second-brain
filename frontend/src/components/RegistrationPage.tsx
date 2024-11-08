@@ -102,8 +102,19 @@ export function RegistrationPage() {
     }
   };
 
+  // Add dark mode class effect
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+      document.body.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.body.classList.remove('dark');
+    }
+  }, [theme]);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-600 via-primary-500 to-primary-700 flex">
+    <div className="min-h-screen bg-gradient-to-br from-primary-600 via-primary-500 to-primary-700 dark:from-gray-900 dark:via-gray-800 dark:to-primary-900/50 flex">
       {/* Left Panel - Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
         <motion.div 
@@ -112,7 +123,7 @@ export function RegistrationPage() {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
         >
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20">
+          <div className="bg-white/10 dark:bg-gray-900/50 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20 dark:border-gray-700/30">
             <div className="mb-8">
               <Logo />
             </div>
@@ -147,7 +158,7 @@ export function RegistrationPage() {
                     placeholder="Enter your full name"
                     error={errors.fullName}
                     disabled={isLoading}
-                    className="bg-white/10 border-white/20 focus:border-primary-400 text-white placeholder:text-white/50"
+                    className="bg-white/10 dark:bg-gray-900/50 border-white/20 dark:border-gray-700/30 focus:border-primary-400 text-white placeholder:text-white/50"
                   />
                 </motion.div>
 
@@ -168,7 +179,7 @@ export function RegistrationPage() {
                     placeholder="Enter your email"
                     error={errors.email}
                     disabled={isLoading}
-                    className="bg-white/10 border-white/20 focus:border-primary-400 text-white placeholder:text-white/50"
+                    className="bg-white/10 dark:bg-gray-900/50 border-white/20 dark:border-gray-700/30 focus:border-primary-400 text-white placeholder:text-white/50"
                   />
                 </motion.div>
 
@@ -189,7 +200,7 @@ export function RegistrationPage() {
                     placeholder="Create a password"
                     error={errors.password}
                     disabled={isLoading}
-                    className="bg-white/10 border-white/20 focus:border-primary-400 text-white placeholder:text-white/50"
+                    className="bg-white/10 dark:bg-gray-900/50 border-white/20 dark:border-gray-700/30 focus:border-primary-400 text-white placeholder:text-white/50"
                   />
                 </motion.div>
 
@@ -210,7 +221,7 @@ export function RegistrationPage() {
                     placeholder="Confirm your password"
                     error={errors.confirmPassword}
                     disabled={isLoading}
-                    className="bg-white/10 border-white/20 focus:border-primary-400 text-white placeholder:text-white/50"
+                    className="bg-white/10 dark:bg-gray-900/50 border-white/20 dark:border-gray-700/30 focus:border-primary-400 text-white placeholder:text-white/50"
                   />
                 </motion.div>
               </div>
@@ -218,7 +229,7 @@ export function RegistrationPage() {
               <motion.button
                 type="submit"
                 disabled={isLoading}
-                className="w-full relative overflow-hidden group bg-white text-primary-600 py-3 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200"
+                className="w-full relative overflow-hidden group bg-white dark:bg-primary-500 text-primary-600 dark:text-white py-3 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200"
                 whileTap={{ scale: 0.98 }}
               >
                 <span className="relative z-10">
@@ -232,7 +243,7 @@ export function RegistrationPage() {
                   )}
                 </span>
                 <motion.div
-                  className="absolute inset-0 bg-primary-100"
+                  className="absolute inset-0 bg-primary-100 dark:bg-primary-400"
                   initial={false}
                   animate={{ scale: isLoading ? 1 : 0 }}
                   transition={{ duration: 0.2 }}
@@ -240,12 +251,12 @@ export function RegistrationPage() {
               </motion.button>
 
               <div className="text-center">
-                <p className="text-white/90">
+                <p className="text-white/90 dark:text-white/80">
                   Already have an account?{' '}
                   <button
                     type="button"
                     onClick={() => navigate('/login')}
-                    className="text-white font-medium hover:text-primary-200 transition-colors"
+                    className="text-white font-medium hover:text-primary-200 dark:hover:text-primary-300 transition-colors"
                   >
                     Log In
                   </button>
@@ -258,23 +269,23 @@ export function RegistrationPage() {
 
       {/* Right Panel - Decorative */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
-        <div className="absolute inset-0 bg-black/10 backdrop-blur-sm z-10" />
+        <div className="absolute inset-0 bg-black/10 dark:bg-black/30 backdrop-blur-sm z-10" />
         <div className="absolute inset-0 flex flex-col items-center justify-center text-white z-20 p-12">
-          <h1 className="text-4xl font-bold mb-6">Join Second Brain</h1>
-          <p className="text-xl text-center text-white/90 max-w-md">
+          <h1 className="text-4xl font-bold mb-6 text-white dark:text-white/90">Join Second Brain</h1>
+          <p className="text-xl text-center text-white/90 dark:text-white/80 max-w-md">
             Start organizing your thoughts, boosting productivity, and achieving more with Second Brain.
           </p>
           
           {/* Decorative Elements */}
-          <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
-          <div className="absolute top-20 -right-20 w-96 h-96 bg-primary-400/20 rounded-full blur-3xl" />
+          <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-white/10 dark:bg-white/5 rounded-full blur-3xl" />
+          <div className="absolute top-20 -right-20 w-96 h-96 bg-primary-400/20 dark:bg-primary-600/10 rounded-full blur-3xl" />
         </div>
       </div>
 
       {/* Theme Toggle */}
       <button
         onClick={toggleTheme}
-        className="fixed top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all duration-200 backdrop-blur-sm"
+        className="fixed top-4 right-4 p-2 rounded-full bg-white/10 dark:bg-gray-800/30 hover:bg-white/20 dark:hover:bg-gray-800/50 text-white transition-all duration-200 backdrop-blur-sm"
         aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
       >
         {theme === 'dark' ? (

@@ -44,62 +44,64 @@ export function Input({
           transition={{ duration: 0.2 }}
         />
 
-        {Icon && (
-          <motion.div 
-            className="absolute inset-y-0 left-3 flex items-center pointer-events-none"
+        <div className="relative">
+          {Icon && (
+            <motion.div 
+              className="absolute inset-y-0 left-3 flex items-center pointer-events-none z-10"
+              animate={{
+                scale: isFocused ? 1.1 : 1,
+                x: isFocused ? 2 : 0
+              }}
+              transition={{ duration: 0.2 }}
+            >
+              <Icon className={`h-5 w-5 ${
+                isFocused 
+                  ? 'text-primary-600 dark:text-primary-400' 
+                  : 'text-gray-500 dark:text-gray-400'
+              }`} />
+            </motion.div>
+          )}
+
+          <motion.div
+            className="relative"
             animate={{
-              scale: isFocused ? 1.1 : 1,
-              x: isFocused ? 2 : 0
+              y: isFocused ? -1 : 0
             }}
             transition={{ duration: 0.2 }}
           >
-            <Icon className={`h-5 w-5 ${
-              isFocused 
-                ? 'text-primary-600 dark:text-primary-400' 
-                : 'text-gray-500 dark:text-gray-400'
-            }`} />
+            <input
+              {...props}
+              onFocus={(e) => {
+                setIsFocused(true);
+                props.onFocus?.(e);
+              }}
+              onBlur={(e) => {
+                setIsFocused(false);
+                props.onBlur?.(e);
+              }}
+              className={`
+                w-full
+                px-4 py-2
+                ${Icon ? 'pl-10' : ''}
+                glass-morphism
+                rounded-lg
+                border border-gray-200/20 dark:border-gray-700/30
+                text-gray-900 dark:text-white
+                placeholder-gray-500 dark:placeholder-gray-400
+                focus:outline-none
+                focus:ring-2
+                focus:ring-primary-500/50
+                focus:border-transparent
+                transition-all
+                duration-200
+                disabled:opacity-50
+                disabled:cursor-not-allowed
+                ${error ? 'border-red-500 focus:border-red-500' : ''}
+                ${className}
+              `}
+            />
           </motion.div>
-        )}
-
-        <motion.div
-          className="relative"
-          animate={{
-            y: isFocused ? -1 : 0
-          }}
-          transition={{ duration: 0.2 }}
-        >
-          <input
-            {...props}
-            onFocus={(e) => {
-              setIsFocused(true);
-              props.onFocus?.(e);
-            }}
-            onBlur={(e) => {
-              setIsFocused(false);
-              props.onBlur?.(e);
-            }}
-            className={`
-              w-full
-              px-4 py-2
-              ${Icon ? 'pl-10' : ''}
-              glass-morphism
-              rounded-lg
-              border border-gray-200/20 dark:border-gray-700/30
-              text-gray-900 dark:text-white
-              placeholder-gray-500 dark:placeholder-gray-400
-              focus:outline-none
-              focus:ring-2
-              focus:ring-primary-500/50
-              focus:border-transparent
-              transition-all
-              duration-200
-              disabled:opacity-50
-              disabled:cursor-not-allowed
-              ${error ? 'border-red-500 focus:border-red-500' : ''}
-              ${className}
-            `}
-          />
-        </motion.div>
+        </div>
 
         <AnimatePresence>
           {isFocused && (

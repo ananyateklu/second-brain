@@ -6,6 +6,7 @@ import { IdeasGrid } from './IdeasGrid';
 import { IdeasMindMap } from './IdeasMindMap';
 import { NewIdeaModal } from './NewIdeaModal';
 import { EditIdeaModal } from '../Ideas/EditIdeaModal/index';
+import { Input } from '../../shared/Input';
 
 type ViewMode = 'list' | 'grid' | 'mindmap';
 
@@ -70,14 +71,14 @@ export function IdeasPage() {
 
       {/* Search and View Controls */}
       <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
+        <div className="flex-1">
+          <Input
+            label=""
+            icon={Search}
             type="text"
             placeholder="Search ideas..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-dark-bg border border-gray-200 dark:border-dark-border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
           />
         </div>
 

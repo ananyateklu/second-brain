@@ -50,7 +50,7 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
 
     const currentLevelThreshold = LevelThresholds[user.level - 1] || 0;
     const nextLevelThreshold = LevelThresholds[user.level] || LevelThresholds[user.level - 1] + 100;
-    
+
     const xpInCurrentLevel = user.experiencePoints - currentLevelThreshold;
     const xpNeededForNextLevel = nextLevelThreshold - currentLevelThreshold;
     const progress = (xpInCurrentLevel / xpNeededForNextLevel) * 100;
@@ -160,7 +160,7 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
             </button>
 
             {showProfileMenu && (
-              <div className="absolute right-0 mt-2 w-64 glass-morphism rounded-lg shadow-lg border border-gray-100/20 dark:border-white/5 py-1">
+              <div className="absolute right-0 mt-2 w-64 glass-morphism rounded-lg shadow-lg border border-gray-100/20 dark:border-white/5 py-1 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md">
                 <div className="px-4 py-3 border-b border-gray-200 dark:border-dark-border">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center overflow-hidden">

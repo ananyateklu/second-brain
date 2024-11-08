@@ -121,8 +121,8 @@ export function AIAssistantPage() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-12rem)]">
-      {/* Model Selection */}
+    <div className="h-full flex flex-col">
+      {/* Model Selection - Fixed height */}
       <div className="backdrop-blur-sm bg-white/30 dark:bg-gray-800/30 border border-gray-200/30 dark:border-gray-700/30 shadow-lg p-4 rounded-xl mb-4">
         <ModelSelector
           models={availableModels}
@@ -133,8 +133,8 @@ export function AIAssistantPage() {
         />
       </div>
 
-      {/* Messages List */}
-      <div className="flex-1 backdrop-blur-sm bg-white/30 dark:bg-gray-800/30 border border-gray-200/30 dark:border-gray-700/30 shadow-lg rounded-xl mb-4 overflow-hidden">
+      {/* Messages Container - Flexible height with overflow */}
+      <div className="flex-1 overflow-y-auto backdrop-blur-sm bg-white/30 dark:bg-gray-800/30 border border-gray-200/30 dark:border-gray-700/30 shadow-lg rounded-xl mb-4">
         <MessageList
           messages={messages}
           isLoading={isLoading}
@@ -143,15 +143,15 @@ export function AIAssistantPage() {
         />
       </div>
 
-      {/* Error Display */}
+      {/* Error Display - Fixed position above input */}
       {error && (
         <div className="mb-4 p-4 backdrop-blur-sm bg-red-50/50 dark:bg-red-900/30 border border-red-200/30 dark:border-red-700/30 text-red-600 dark:text-red-400 rounded-xl flex items-center gap-2">
           <p>{error}</p>
         </div>
       )}
 
-      {/* Input Interface */}
-      <div className="backdrop-blur-sm bg-white/30 dark:bg-gray-800/30 border border-gray-200/30 dark:border-gray-700/30 shadow-lg p-4 rounded-xl">
+      {/* Input Interface - Fixed at bottom */}
+      <div className="sticky bottom-0 backdrop-blur-sm bg-white/30 dark:bg-gray-800/30 border border-gray-200/30 dark:border-gray-700/30 shadow-lg p-4 rounded-xl">
         {selectedModel ? (
           <>
             {selectedModel.id === 'whisper-1' ? (

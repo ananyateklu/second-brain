@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bot, Key, TestTube, EyeOff, Eye, AlertCircle, CheckCircle, Loader, Save } from 'lucide-react';
+import { Bot, Key, TestTube, EyeOff, Eye, AlertCircle, CheckCircle, Loader, Save, Settings2 } from 'lucide-react';
 import { useAI } from '../../../contexts/AIContext';
 
 interface AISettings {
@@ -154,46 +154,91 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
     }
   };
 
+  const inputClasses = `
+    w-full
+    pl-10 pr-4 py-2
+    glass-morphism
+    rounded-lg
+    text-gray-900 dark:text-white
+    placeholder-gray-500/70 dark:placeholder-gray-400/70
+    border border-gray-200/20 dark:border-gray-700/30
+    focus:ring-2
+    focus:ring-primary-500/50
+    focus:border-transparent
+    transition-all duration-200
+  `;
+
+  const selectClasses = `
+    w-full
+    pl-10 pr-4 py-2
+    glass-morphism
+    rounded-lg
+    text-gray-900 dark:text-white
+    border border-gray-200/20 dark:border-gray-700/30
+    focus:ring-2
+    focus:ring-primary-500/50
+    focus:border-transparent
+    bg-transparent
+    transition-all duration-200
+  `;
+
+  const iconClasses = "h-5 w-5 text-gray-600 dark:text-gray-300";
+
+  const buttonClasses = `
+    flex items-center gap-2 
+    px-4 py-2 
+    text-sm font-medium 
+    text-white 
+    bg-primary-600 hover:bg-primary-700 
+    rounded-lg 
+    disabled:opacity-50 disabled:cursor-not-allowed 
+    transition-colors
+  `;
+
+  const iconButtonClasses = `
+    absolute inset-y-0 right-0 pr-3 
+    flex items-center 
+    text-gray-500 dark:text-gray-400 
+    hover:text-gray-700 dark:hover:text-gray-200
+    transition-colors
+  `;
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3 mb-6">
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
         <Bot className="w-6 h-6 text-primary-600 dark:text-primary-500" />
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-          AI Settings
-        </h2>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white">AI Settings</h3>
       </div>
 
       {/* OpenAI Configuration */}
       <div className="space-y-4">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-          OpenAI Configuration
-        </h3>
-        <div className="glass-morphism p-6 rounded-xl space-y-4">
+        <h4 className="text-base font-medium text-gray-900 dark:text-white">OpenAI Configuration</h4>
+        <div className="glass-morphism p-6 rounded-lg space-y-4">
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label className="block text-sm font-medium text-gray-900 dark:text-white">
               API Key
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Key className="h-5 w-5 text-gray-400" />
+                <Key className="h-5 w-5 text-gray-500 dark:text-gray-400" />
               </div>
               <input
                 type={showOpenAIKey ? 'text' : 'password'}
                 name="openaiApiKey"
                 value={settings.openaiApiKey}
                 onChange={handleInputChange}
-                className="block w-full pl-10 pr-12 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-dark-bg text-gray-900 dark:text-white"
+                className={inputClasses}
                 placeholder="sk-..."
               />
               <button
                 type="button"
                 onClick={() => setShowOpenAIKey(!showOpenAIKey)}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                className={iconButtonClasses}
               >
                 {showOpenAIKey ? (
-                  <EyeOff className="h-5 w-5 text-gray-400" />
+                  <EyeOff className="h-5 w-5" />
                 ) : (
-                  <Eye className="h-5 w-5 text-gray-400" />
+                  <Eye className="h-5 w-5" />
                 )}
               </button>
             </div>
@@ -204,7 +249,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
               type="button"
               onClick={() => testConnection('openai')}
               disabled={isTestingOpenAI || !settings.openaiApiKey}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className={buttonClasses}
             >
               {isTestingOpenAI ? (
                 <>
@@ -236,37 +281,35 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
         </div>
       </div>
 
-            {/* Gemini Configuration */}
-            <div className="space-y-4">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-          Google Gemini Configuration
-        </h3>
-        <div className="glass-morphism p-6 rounded-xl space-y-4">
+      {/* Gemini Configuration */}
+      <div className="space-y-4">
+        <h4 className="text-base font-medium text-gray-900 dark:text-white">Google Gemini Configuration</h4>
+        <div className="glass-morphism p-6 rounded-lg space-y-4">
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label className="block text-sm font-medium text-gray-900 dark:text-white">
               API Key
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Key className="h-5 w-5 text-gray-400" />
+                <Key className="h-5 w-5 text-gray-500 dark:text-gray-400" />
               </div>
               <input
                 type={showGeminiApiKey ? 'text' : 'password'}
                 name="geminiApiKey"
                 value={settings.geminiApiKey}
                 onChange={handleInputChange}
-                className="block w-full pl-10 pr-12 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-dark-bg text-gray-900 dark:text-white"
+                className={inputClasses}
                 placeholder="Your Gemini API Key"
               />
               <button
                 type="button"
                 onClick={() => setShowGeminiApiKey(!showGeminiApiKey)}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                className={iconButtonClasses}
               >
                 {showGeminiApiKey ? (
-                  <EyeOff className="h-5 w-5 text-gray-400" />
+                  <EyeOff className="h-5 w-5" />
                 ) : (
-                  <Eye className="h-5 w-5 text-gray-400" />
+                  <Eye className="h-5 w-5" />
                 )}
               </button>
             </div>
@@ -277,7 +320,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
               type="button"
               onClick={() => testConnection('gemini')}
               disabled={isTestingGemini || !settings.geminiApiKey}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className={buttonClasses}
             >
               {isTestingGemini ? (
                 <>
@@ -314,49 +357,57 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
 
       {/* Content Suggestions Configuration */}
       <div className="space-y-4">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-          Content Suggestions
-        </h3>
-        <div className="glass-morphism p-6 rounded-xl space-y-4">
+        <h4 className="text-base font-medium text-gray-900 dark:text-white">Content Suggestions</h4>
+        <div className="glass-morphism p-6 rounded-lg space-y-4">
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label className="block text-sm font-medium text-gray-900 dark:text-white">
               AI Provider
             </label>
-            <select
-              name="contentSuggestionsProvider"
-              value={settings.contentSuggestions?.provider}
-              onChange={handleInputChange}
-              className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-dark-bg text-gray-900 dark:text-white"
-            >
-              {isOpenAIConfigured && <option value="openai">OpenAI</option>}
-              {isGeminiConfigured && <option value="gemini">Google Gemini</option>}
-              {<option value="anthropic">Anthropic (Claude)</option>}
-              {isLlamaConfigured && <option value="llama">Llama</option>}
-            </select>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Bot className={iconClasses} />
+              </div>
+              <select
+                name="contentSuggestionsProvider"
+                value={settings.contentSuggestions?.provider}
+                onChange={handleInputChange}
+                className={selectClasses}
+              >
+                {isOpenAIConfigured && <option value="openai">OpenAI</option>}
+                {isGeminiConfigured && <option value="gemini">Google Gemini</option>}
+                {<option value="anthropic">Anthropic (Claude)</option>}
+                {isLlamaConfigured && <option value="llama">Llama</option>}
+              </select>
+            </div>
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label className="block text-sm font-medium text-gray-900 dark:text-white">
               Model
             </label>
-            <select
-              name="contentSuggestionsModel"
-              value={settings.contentSuggestions?.modelId}
-              onChange={handleInputChange}
-              className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-dark-bg text-gray-900 dark:text-white"
-            >
-              {contentGenerationModels
-                .filter(model => model.provider === settings.contentSuggestions?.provider)
-                .map(model => (
-                  <option key={model.id} value={model.id}>
-                    {model.name}
-                  </option>
-                ))}
-            </select>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Settings2 className={iconClasses} />
+              </div>
+              <select
+                name="contentSuggestionsModel"
+                value={settings.contentSuggestions?.modelId}
+                onChange={handleInputChange}
+                className={selectClasses}
+              >
+                {contentGenerationModels
+                  .filter(model => model.provider === settings.contentSuggestions?.provider)
+                  .map(model => (
+                    <option key={model.id} value={model.id}>
+                      {model.name}
+                    </option>
+                  ))}
+              </select>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-            <Bot className="w-4 h-4" />
+          <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+            <Bot className="w-4 h-4 text-gray-600 dark:text-gray-300" />
             <span>These settings will be used for generating titles, content, and tags.</span>
           </div>
 
@@ -365,7 +416,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
               type="button"
               onClick={handleSave}
               disabled={isSaving}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className={buttonClasses}
             >
               {isSaving ? (
                 <>
@@ -381,10 +432,11 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
             </button>
 
             {saveResult && (
-              <div className={`flex items-center gap-2 text-sm ${saveResult.success
+              <div className={`flex items-center gap-2 text-sm ${
+                saveResult.success
                   ? 'text-green-600 dark:text-green-400'
                   : 'text-red-600 dark:text-red-400'
-                }`}>
+              }`}>
                 {saveResult.success ? (
                   <CheckCircle className="w-4 h-4" />
                 ) : (

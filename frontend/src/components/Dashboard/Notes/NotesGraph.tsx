@@ -136,14 +136,15 @@ export function NotesGraph({ notes, onNoteClick }: NotesGraphProps) {
   ];
 
   return (
-    <div className="h-[calc(100vh-12rem)] glass-morphism rounded-xl overflow-hidden relative">
+    <div className="relative h-full backdrop-blur-sm bg-white/30 dark:bg-gray-800/30 border border-gray-200/30 dark:border-gray-700/30 rounded-xl overflow-hidden">
       <CytoscapeComponent
         elements={elements}
         stylesheet={stylesheet}
         layout={layout}
         style={{
           width: '100%',
-          height: '100%'
+          height: '100%',
+          minHeight: '400px'
         }}
         cy={(cy) => {
           cyRef.current = cy;
@@ -160,19 +161,19 @@ export function NotesGraph({ notes, onNoteClick }: NotesGraphProps) {
         wheelSensitivity={0.2}
       />
       
-      <div className="absolute bottom-4 right-4 bg-opacity-80 bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg">
+      <div className="absolute bottom-4 right-4 backdrop-blur-sm bg-white/50 dark:bg-gray-800/50 border border-gray-200/30 dark:border-gray-700/30 p-3 rounded-lg shadow-lg">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 border-2 border-blue-500 rounded"></div>
-            <span className="text-sm">Notes</span>
+            <div className="w-4 h-4 border-2 border-blue-500 rounded bg-white/50 dark:bg-gray-800/50"></div>
+            <span className="text-sm text-gray-700 dark:text-gray-300">Notes</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 border-2 border-orange-500 rounded"></div>
-            <span className="text-sm">Ideas</span>
+            <div className="w-4 h-4 border-2 border-orange-500 rounded bg-white/50 dark:bg-gray-800/50"></div>
+            <span className="text-sm text-gray-700 dark:text-gray-300">Ideas</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 border-2 border-green-500 rounded bg-[#F0F7F0] dark:bg-[#2A332A]"></div>
-            <span className="text-sm">Selected</span>
+            <span className="text-sm text-gray-700 dark:text-gray-300">Selected</span>
           </div>
         </div>
       </div>
