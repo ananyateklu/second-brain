@@ -218,47 +218,49 @@ const StatCard = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute bottom-2 right-2 flex items-center gap-1 bg-white dark:bg-dark-card rounded-lg shadow-lg p-1"
+            className="absolute bottom-2 right-2 flex items-center gap-1.5 glass-morphism rounded-lg p-1.5 border border-gray-100/20 dark:border-white/5"
           >
-            {/* Size buttons */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 updateStatSize(stat.id, 'small');
               }}
-              className={`p-1 rounded ${stat.size === 'small'
-                ? 'bg-primary-100 dark:bg-primary-900/30'
-                : 'hover:bg-gray-100 dark:hover:bg-dark-hover'
-                }`}
+              className={`p-0.5 rounded-md transition-all duration-200 ${
+                stat.size === 'small'
+                  ? 'bg-primary-100/50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
+                  : 'hover:bg-gray-100/50 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400'
+              }`}
               title="Small"
             >
-              <LayoutGrid className="w-3 h-3" />
+              <LayoutGrid className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 updateStatSize(stat.id, 'medium');
               }}
-              className={`p-1 rounded ${stat.size === 'medium'
-                ? 'bg-primary-100 dark:bg-primary-900/30'
-                : 'hover:bg-gray-100 dark:hover:bg-dark-hover'
-                }`}
+              className={`p-0.5 rounded-md transition-all duration-200 ${
+                stat.size === 'medium'
+                  ? 'bg-primary-100/50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
+                  : 'hover:bg-gray-100/50 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400'
+              }`}
               title="Medium"
             >
-              <Columns className="w-3 h-3" />
+              <Columns className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 updateStatSize(stat.id, 'large');
               }}
-              className={`p-1 rounded ${stat.size === 'large'
-                ? 'bg-primary-100 dark:bg-primary-900/30'
-                : 'hover:bg-gray-100 dark:hover:bg-dark-hover'
-                }`}
+              className={`p-0.5 rounded-md transition-all duration-200 ${
+                stat.size === 'large'
+                  ? 'bg-primary-100/50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
+                  : 'hover:bg-gray-100/50 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400'
+              }`}
               title="Large"
             >
-              <Layout className="w-3 h-3" />
+              <Layout className="w-3.5 h-3.5" />
             </button>
           </motion.div>
         )}
@@ -559,7 +561,7 @@ export function DashboardHome() {
       </div>
 
       {/* Quick Stats */}
-      <div className="relative" ref={quickStatsRef}>
+      <div className="glass-morphism p-4 rounded-xl">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
             Quick Stats
@@ -644,36 +646,34 @@ export function DashboardHome() {
       </div>
 
       {/* Pinned Notes */}
-      {stats.pinnedNotes.length > 0 && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <PinIcon className="w-5 h-5 text-primary-600 dark:text-primary-500" />
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Pinned Notes
-              </h2>
-            </div>
-            <button
-              onClick={() => navigate('/dashboard/notes')}
-              className="flex items-center gap-1 text-sm text-primary-600 dark:text-primary-500 hover:text-primary-700 dark:hover:text-primary-400"
-            >
-              View all
-              <ChevronRight className="w-4 h-4" />
-            </button>
+      <div className="glass-morphism p-6 rounded-xl">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <PinIcon className="w-5 h-5 text-primary-600 dark:text-primary-500" />
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Pinned Notes
+            </h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {stats.pinnedNotes.map(note => (
-              <div
-                key={note.id}
-                onClick={() => handleEditNote(note)}
-                className="cursor-pointer"
-              >
-                <NoteCard note={note} />
-              </div>
-            ))}
-          </div>
+          <button
+            onClick={() => navigate('/dashboard/notes')}
+            className="flex items-center gap-1 text-sm text-primary-600 dark:text-primary-500 hover:text-primary-700 dark:hover:text-primary-400"
+          >
+            View all
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
-      )}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {stats.pinnedNotes.map(note => (
+            <div
+              key={note.id}
+              onClick={() => handleEditNote(note)}
+              className="cursor-pointer"
+            >
+              <NoteCard note={note} />
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Recent Activity */}
       <div className="space-y-4">

@@ -39,7 +39,7 @@ export function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-dark-bg">
+    <div className="min-h-screen dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-800 dark:to-primary-900/50 bg-gradient-to-br from-white to-gray-100">
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
         <div

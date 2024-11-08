@@ -48,7 +48,7 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
 
   return (
     <>
-      <div className="h-full flex flex-col bg-white dark:bg-dark-card">
+      <div className="h-full flex flex-col glass-morphism">
         <div className="p-4 border-b border-gray-200 dark:border-dark-border flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             Note Details
@@ -120,7 +120,7 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
                   linkedNotes.map(linkedNote => (
                     <div
                       key={linkedNote.id}
-                      className="group relative p-3 rounded-lg bg-white dark:bg-dark-card hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                      className="group relative p-3 rounded-lg glass-morphism hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors"
                     >
                       <div className="flex items-start gap-3">
                         <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">

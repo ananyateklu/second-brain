@@ -126,10 +126,7 @@ export function EditReminderModal({ isOpen, onClose, reminder }: EditReminderMod
               label="Title"
               icon={Type}
               value={title}
-              onChange={(e) => {
-                setTitle(e.target.value);
-                setError('');
-              }}
+              onChange={(e) => setTitle(e.target.value)}
               placeholder="Enter reminder title"
               error={error}
               disabled={isLoading}
@@ -145,7 +142,7 @@ export function EditReminderModal({ isOpen, onClose, reminder }: EditReminderMod
                 placeholder="Add a description..."
                 rows={4}
                 disabled={isLoading}
-                className="w-full px-4 py-3 bg-white dark:bg-dark-bg border border-gray-300 dark:border-dark-border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                className="w-full px-4 py-3 glass-morphism border border-gray-100/20 dark:border-white/5 rounded-lg focus:ring-2 focus:ring-primary-500/50 focus:border-transparent transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400"
               />
             </div>
 
@@ -172,7 +169,7 @@ export function EditReminderModal({ isOpen, onClose, reminder }: EditReminderMod
                   value={repeatInterval || ''}
                   onChange={(e) => setRepeatInterval(e.target.value as typeof repeatInterval)}
                   disabled={isLoading}
-                  className="w-full px-4 py-2.5 bg-white dark:bg-dark-bg border border-gray-300 dark:border-dark-border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                  className="w-full px-4 py-2.5 glass-morphism border border-gray-100/20 dark:border-white/5 rounded-lg focus:ring-2 focus:ring-primary-500/50 focus:border-transparent transition-all"
                 >
                   <option value="">Don't repeat</option>
                   <option value="daily">Daily</option>

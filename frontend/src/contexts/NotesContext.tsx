@@ -58,7 +58,11 @@ export function NotesProvider({ children }: NotesProviderProps) {
       setIsLoading(true);
       const fetchedNotes = await notesService.getAllNotes();
       console.log('Fetched notes:', fetchedNotes);
-      setNotes(fetchedNotes.filter(note => !note.isArchived && !note.isDeleted));
+      setNotes(fetchedNotes.filter(note => !note.isArchived && !note.isDeleted).map(note => ({
+        ...note,
+        isArchived: note.isArchived || false,
+        isDeleted: note.isDeleted || false
+      })));
       setIsLoading(false);
     } catch (error) {
       console.error('Failed to fetch notes:', error);
@@ -83,20 +87,21 @@ export function NotesProvider({ children }: NotesProviderProps) {
         ...note,
         tags: Array.isArray(note.tags) ? note.tags : [],
       };
-      
+
       const newNote = await notesService.createNote(noteWithSafeTags);
-      
+
       if (newNote.isDeleted || newNote.isArchived) {
         return;
       }
-      
+
       const safeNewNote: Note = {
         ...newNote,
         tags: Array.isArray(newNote.tags) ? newNote.tags : [],
         linkedNoteIds: Array.isArray(newNote.linkedNoteIds) ? newNote.linkedNoteIds : [],
-        linkedNotes: Array.isArray(newNote.linkedNotes) ? newNote.linkedNotes : [],
+        isArchived: false,
+        isDeleted: false
       };
-      
+
       setNotes(prev => [safeNewNote, ...prev]);
 
       try {
@@ -127,11 +132,18 @@ export function NotesProvider({ children }: NotesProviderProps) {
       if (updates.isArchived !== undefined) {
         return;
       }
-
       const updatedNote = await notesService.updateNote(id, updates);
+      const safeUpdatedNote: Note = {
+        ...updatedNote,
+        isArchived: false,
+        isDeleted: false,
+        tags: Array.isArray(updatedNote.tags) ? updatedNote.tags : [],
+        linkedNoteIds: Array.isArray(updatedNote.linkedNoteIds) ? updatedNote.linkedNoteIds : []
+      };
+
       setNotes(prevNotes =>
         prevNotes
-          .map(note => (note.id === id ? updatedNote : note))
+          .map(note => (note.id === id ? safeUpdatedNote : note))
           .filter(note => !note.isDeleted && !note.isArchived)
       );
 
@@ -226,7 +238,7 @@ export function NotesProvider({ children }: NotesProviderProps) {
       });
 
       setNotes(prevNotes =>
-        prevNotes.map(note => (note.id === id ? updatedNote : note))
+        prevNotes.map(note => (note.id === id ? { ...note, ...updatedNote } : note))
       );
 
       createActivity({
@@ -254,7 +266,7 @@ export function NotesProvider({ children }: NotesProviderProps) {
       });
 
       setNotes(prevNotes =>
-        prevNotes.map(note => (note.id === id ? updatedNote : note))
+        prevNotes.map(note => (note.id === id ? { ...note, ...updatedNote } : note))
       );
 
       createActivity({
@@ -301,17 +313,33 @@ export function NotesProvider({ children }: NotesProviderProps) {
     }
   }, [notes, createActivity]);
 
-  const unarchiveNote = async (id: string) => {
+  const unarchiveNote = useCallback(async (id: string) => {
     try {
       const updatedNote = await notesService.unarchiveNote(id);
-      setNotes(prevNotes => [...prevNotes, updatedNote]);
+      const noteToUnarchive = archivedNotes.find(n => n.id === id);
+      if (!noteToUnarchive) return;
+
+      setNotes(prevNotes => [...prevNotes, { ...noteToUnarchive, ...updatedNote, isArchived: false }]);
       setArchivedNotes(prevNotes => prevNotes.filter(note => note.id !== id));
+
+      createActivity({
+        actionType: 'restore',
+        itemType: noteToUnarchive.tags.includes('idea') ? 'idea' : 'note', 
+        itemId: id,
+        itemTitle: noteToUnarchive.title,
+        description: `Restored ${noteToUnarchive.tags.includes('idea') ? 'idea' : 'note'}: ${noteToUnarchive.title}`,
+        metadata: {
+          isArchived: false,
+          restoredAt: new Date().toISOString()
+        }
+      });
+
       return updatedNote;
     } catch (error) {
       console.error('Error unarchiving note:', error);
       throw error;
     }
-  };
+  });
 
   // Add a method for restoring multiple notes
   const restoreMultipleNotes = useCallback(async (ids: string[]) => {
@@ -319,15 +347,15 @@ export function NotesProvider({ children }: NotesProviderProps) {
       const results = await Promise.allSettled(
         ids.map(id => unarchiveNote(id))
       );
-      
+
       // Add activity for bulk restore
       if (results.length > 1) {
         const successfulRestores = results.filter(
-          (result): result is PromiseFulfilledResult<Note> => 
+          (result): result is PromiseSettledResult<Note | undefined> =>
             result.status === 'fulfilled'
-        );
+        ) as PromiseFulfilledResult<Note | undefined>[];
 
-        const restoredNotes = successfulRestores.map(result => result.value);
+        const restoredNotes = successfulRestores.map(result => result.value).filter((note): note is Note => note !== undefined);
 
         createActivity({
           actionType: 'restore_multiple',
@@ -345,7 +373,7 @@ export function NotesProvider({ children }: NotesProviderProps) {
           }
         });
       }
-      
+
       return results;
     } catch (error) {
       console.error('Failed to restore multiple notes:', error);
@@ -356,13 +384,13 @@ export function NotesProvider({ children }: NotesProviderProps) {
   const addLink = useCallback(async (sourceId: string, targetId: string) => {
     try {
       const updatedNote = await notesService.addLink(sourceId, targetId);
-      
+
       setNotes(prev => prev.map(note => {
         if (note.id === sourceId) {
           return {
             ...note,
             linkedNoteIds: updatedNote.linkedNoteIds,
-            linkedNotes: updatedNote.linkedNoteIds,
+            linkedNotes: prev.filter(n => updatedNote.linkedNoteIds.includes(n.id)),
             updatedAt: updatedNote.updatedAt
           };
         }
@@ -370,7 +398,7 @@ export function NotesProvider({ children }: NotesProviderProps) {
           return {
             ...note,
             linkedNoteIds: [...(note.linkedNoteIds || []), sourceId],
-            linkedNotes: [...(note.linkedNoteIds || []), sourceId],
+            linkedNotes: [...(note.linkedNotes || []), prev.find(n => n.id === sourceId)!],
             updatedAt: new Date().toISOString()
           };
         }
@@ -404,17 +432,17 @@ export function NotesProvider({ children }: NotesProviderProps) {
 
     try {
       await notesService.removeLink(sourceId, targetId);
-      
+
       setNotes(prev => prev.map(note => {
         if (note.id === sourceId || note.id === targetId) {
           return {
             ...note,
-            linkedNoteIds: (note.linkedNoteIds || []).filter(id => 
+            linkedNoteIds: (note.linkedNoteIds || []).filter(id =>
               id !== (note.id === sourceId ? targetId : sourceId)
             ),
-            linkedNotes: (note.linkedNoteIds || []).filter(id => 
+            linkedNotes: (note.linkedNoteIds || []).filter(id =>
               id !== (note.id === sourceId ? targetId : sourceId)
-            ),
+            ).map(id => prev.find(n => n.id === id)!),
             updatedAt: new Date().toISOString()
           };
         }

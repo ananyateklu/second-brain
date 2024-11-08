@@ -20,21 +20,23 @@ export function Input({
 
   return (
     <div className="space-y-1">
-      <motion.label 
-        htmlFor={props.id} 
-        className="block text-sm font-medium text-white"
-        animate={{
-          scale: isFocused ? 1.05 : 1,
-          color: isFocused ? 'rgb(255, 255, 255)' : 'rgba(255, 255, 255, 0.9)'
-        }}
-        transition={{ duration: 0.2 }}
-      >
-        {label}
-      </motion.label>
+      {label && (
+        <motion.label 
+          htmlFor={props.id} 
+          className="block text-sm font-medium text-gray-900 dark:text-white"
+          animate={{
+            scale: isFocused ? 1.05 : 1,
+            color: isFocused ? 'var(--color-primary-600)' : 'currentColor'
+          }}
+          transition={{ duration: 0.2 }}
+        >
+          {label}
+        </motion.label>
+      )}
       
       <div className="relative">
         <motion.div
-          className="absolute inset-0 bg-white/5 rounded-lg -z-10"
+          className="absolute inset-0 bg-gray-100 dark:bg-gray-800/50 rounded-lg -z-10"
           animate={{
             scale: isFocused ? 1.02 : 1,
             opacity: isFocused ? 1 : 0
@@ -51,7 +53,11 @@ export function Input({
             }}
             transition={{ duration: 0.2 }}
           >
-            <Icon className="h-5 w-5 text-white" />
+            <Icon className={`h-5 w-5 ${
+              isFocused 
+                ? 'text-primary-600 dark:text-primary-400' 
+                : 'text-gray-500 dark:text-gray-400'
+            }`} />
           </motion.div>
         )}
 
@@ -76,16 +82,20 @@ export function Input({
               w-full
               px-4 py-2
               ${Icon ? 'pl-10' : ''}
+              glass-morphism
               rounded-lg
-              border
+              border border-gray-200/20 dark:border-gray-700/30
+              text-gray-900 dark:text-white
+              placeholder-gray-500 dark:placeholder-gray-400
               focus:outline-none
               focus:ring-2
               focus:ring-primary-500/50
+              focus:border-transparent
               transition-all
               duration-200
               disabled:opacity-50
               disabled:cursor-not-allowed
-              ${error ? 'border-red-500 focus:border-red-500' : 'border-white/20'}
+              ${error ? 'border-red-500 focus:border-red-500' : ''}
               ${className}
             `}
           />
@@ -94,7 +104,7 @@ export function Input({
         <AnimatePresence>
           {isFocused && (
             <motion.div
-              className="absolute inset-0 border-2 border-white/20 rounded-lg pointer-events-none"
+              className="absolute inset-0 border-2 border-primary-500/20 dark:border-primary-400/20 rounded-lg pointer-events-none"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 1.05 }}
@@ -107,7 +117,7 @@ export function Input({
       <AnimatePresence>
         {error && (
           <motion.p 
-            className="text-sm text-red-400 mt-1 flex items-center gap-1"
+            className="text-sm text-red-600 dark:text-red-400 mt-1 flex items-center gap-1"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}

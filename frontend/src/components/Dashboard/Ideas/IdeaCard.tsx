@@ -3,6 +3,7 @@ import { Note } from '../../../contexts/NotesContext';
 import { formatDate } from '../../../utils/dateUtils';
 import { useNotes } from '../../../contexts/NotesContext';
 import { useState } from 'react';
+import { WarningModal } from '../../shared/WarningModal';
 
 interface IdeaCardProps {
   idea: Note;
@@ -42,7 +43,7 @@ export function IdeaCard({ idea, onClick }: IdeaCardProps) {
     <>
       <div
         onClick={() => onClick(idea.id)}
-        className="group bg-white dark:bg-dark-card rounded-xl p-4 hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/10 transition-all duration-200 cursor-pointer border border-gray-200 dark:border-gray-700"
+        className="glass-morphism p-4 rounded-xl border border-gray-200/20 dark:border-gray-700/30 hover:border-primary-400 dark:hover:border-primary-400 transition-all duration-200 cursor-pointer"
       >
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3">
@@ -64,7 +65,7 @@ export function IdeaCard({ idea, onClick }: IdeaCardProps) {
               className={`p-1.5 rounded-lg transition-colors ${
                 idea.isPinned
                   ? 'text-primary-600 dark:text-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                  : 'text-gray-400 hover:text-primary-600 dark:text-gray-500 dark:hover:text-primary-500 hover:bg-gray-100 dark:hover:bg-dark-hover'
+                  : 'text-gray-400 hover:text-primary-600 dark:text-gray-500 dark:hover:text-primary-500 hover:bg-gray-100 dark:hover:bg-gray-800/50'
               }`}
               title={idea.isPinned ? 'Unpin idea' : 'Pin idea'}
             >
@@ -76,7 +77,7 @@ export function IdeaCard({ idea, onClick }: IdeaCardProps) {
               className={`p-1.5 rounded-lg transition-colors ${
                 idea.isFavorite
                   ? 'text-amber-500 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20'
-                  : 'text-gray-400 hover:text-amber-500 dark:text-gray-500 dark:hover:text-amber-400 hover:bg-gray-100 dark:hover:bg-dark-hover'
+                  : 'text-gray-400 hover:text-amber-500 dark:text-gray-500 dark:hover:text-amber-400 hover:bg-gray-100 dark:hover:bg-gray-800/50'
               }`}
               title={idea.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
             >
@@ -85,7 +86,7 @@ export function IdeaCard({ idea, onClick }: IdeaCardProps) {
 
             <button
               onClick={handleArchiveClick}
-              className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 dark:text-gray-500 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-dark-hover transition-colors"
+              className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 dark:text-gray-500 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
               title="Archive idea"
             >
               <Archive className="w-4 h-4" />
@@ -93,7 +94,7 @@ export function IdeaCard({ idea, onClick }: IdeaCardProps) {
           </div>
         </div>
 
-        {/* Tags and metadata section */}
+        {/* Tags section */}
         <div className="mt-3 flex flex-wrap gap-2">
           {idea.tags.map(tag => (
             <span
@@ -106,6 +107,7 @@ export function IdeaCard({ idea, onClick }: IdeaCardProps) {
           ))}
         </div>
 
+        {/* Metadata section */}
         <div className="mt-3 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
           <div className="flex items-center gap-2">
             <Link2 className="w-4 h-4" />
@@ -117,30 +119,13 @@ export function IdeaCard({ idea, onClick }: IdeaCardProps) {
 
       {/* Archive Warning Modal */}
       {showArchiveWarning && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="bg-white dark:bg-dark-card rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              Archive Idea?
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
-              Are you sure you want to archive this idea? You can access it later in the archive.
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setShowArchiveWarning(false)}
-                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-hover rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleArchiveConfirm}
-                className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
-              >
-                Archive
-              </button>
-            </div>
-          </div>
-        </div>
+              <WarningModal
+                isOpen={showArchiveWarning}
+                onClose={() => setShowArchiveWarning(false)}
+                onConfirm={handleArchiveConfirm}
+                type="archive"
+                title={idea.title}
+              />
       )}
     </>
   );

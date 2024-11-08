@@ -136,7 +136,7 @@ export function NewIdeaModal({ isOpen, onClose }: NewIdeaModalProps) {
                 placeholder="Describe your idea..."
                 rows={6}
                 disabled={isLoading}
-                className="w-full px-4 py-3 bg-white dark:bg-dark-bg border border-gray-300 dark:border-dark-border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                className="w-full px-4 py-3 glass-morphism border border-gray-100/20 dark:border-white/5 rounded-lg focus:ring-2 focus:ring-primary-500/50 focus:border-transparent transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400"
               />
             </div>
 
@@ -184,12 +184,6 @@ export function NewIdeaModal({ isOpen, onClose }: NewIdeaModalProps) {
                   icon={TagIcon}
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAddTag();
-                    }
-                  }}
                   placeholder="Add a tag"
                   disabled={isLoading}
                 />

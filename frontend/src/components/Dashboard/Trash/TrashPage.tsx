@@ -36,7 +36,7 @@ export function TrashPage() {
   return (
     <div className="space-y-6">
       {/* Header Section */}
-      <div className="glass-morphism p-6 rounded-xl">
+      <div className="backdrop-blur-sm bg-white/30 dark:bg-gray-800/30 border border-gray-200/30 dark:border-gray-700/30 shadow-lg p-6 rounded-xl">
         <div className="flex flex-col sm:flex-row gap-6 justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
@@ -74,13 +74,13 @@ export function TrashPage() {
             placeholder="Search deleted items..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-dark-bg border border-gray-200 dark:border-dark-border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+            className="w-full pl-10 pr-4 py-2 backdrop-blur-sm bg-white/50 dark:bg-gray-800/50 border border-gray-200/30 dark:border-gray-700/30 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
           />
         </div>
 
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-dark-card border border-gray-200 dark:border-dark-border rounded-lg hover:bg-gray-50 dark:hover:bg-dark-hover transition-colors"
+          className="flex items-center gap-2 px-4 py-2 backdrop-blur-sm bg-white/50 dark:bg-gray-800/50 border border-gray-200/30 dark:border-gray-700/30 rounded-lg hover:bg-white/60 dark:hover:bg-gray-800/60 transition-colors"
         >
           <SlidersHorizontal className="w-5 h-5" />
           <span>Filters</span>
@@ -89,7 +89,7 @@ export function TrashPage() {
 
       {/* Filters Panel */}
       {showFilters && (
-        <div className="glass-morphism p-4 rounded-xl">
+        <div className="backdrop-blur-sm bg-white/30 dark:bg-gray-800/30 border border-gray-200/30 dark:border-gray-700/30 shadow-lg p-4 rounded-xl">
           <TrashFilters
             filters={filters}
             onFilterChange={(key, value) => 

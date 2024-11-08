@@ -21,17 +21,17 @@ export function ReminderCard({ reminder }: ReminderCardProps) {
 
   return (
     <>
-      <div className={`group relative bg-white dark:bg-dark-card rounded-lg border border-gray-200 dark:border-dark-border hover:border-primary-500 dark:hover:border-primary-500 transition-colors ${
+      <div className={`glass-morphism p-4 rounded-xl border border-gray-200/20 dark:border-gray-700/30 hover:border-primary-400 dark:hover:border-primary-400 transition-all duration-200 ${
         reminder.isCompleted ? 'opacity-75' : ''
       }`}>
-        <div className="flex items-start p-4 gap-3">
+        <div className="flex items-start gap-3">
           {/* Completion Toggle */}
           <button
             onClick={() => toggleReminderCompletion(reminder.id)}
             className={`flex-shrink-0 p-1.5 rounded-lg transition-colors ${
               reminder.isCompleted
-                ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
-                : 'text-gray-400 hover:text-primary-600 dark:text-gray-500 dark:hover:text-primary-400'
+                ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
+                : 'text-gray-400 hover:text-primary-600 dark:text-gray-500 dark:hover:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-800/50'
             }`}
           >
             {reminder.isCompleted ? (
@@ -111,7 +111,7 @@ export function ReminderCard({ reminder }: ReminderCardProps) {
                   e.stopPropagation();
                   handleSnooze(5 * 60 * 1000);
                 }}
-                className="px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-hover rounded transition-colors"
+                className="px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50 rounded transition-colors"
               >
                 5m
               </button>
@@ -120,7 +120,7 @@ export function ReminderCard({ reminder }: ReminderCardProps) {
                   e.stopPropagation();
                   handleSnooze(60 * 60 * 1000);
                 }}
-                className="px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-hover rounded transition-colors"
+                className="px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50 rounded transition-colors"
               >
                 1h
               </button>
@@ -129,7 +129,7 @@ export function ReminderCard({ reminder }: ReminderCardProps) {
                   e.stopPropagation();
                   handleSnooze(24 * 60 * 60 * 1000);
                 }}
-                className="px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-hover rounded transition-colors"
+                className="px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50 rounded transition-colors"
               >
                 1d
               </button>

@@ -103,7 +103,7 @@ export function TrashList({ filters, searchQuery }: TrashListProps) {
     <div className="space-y-6">
       {/* Bulk Actions */}
       {selectedItems.length > 0 && (
-        <div className="flex items-center gap-4 p-4 bg-white dark:bg-dark-card rounded-lg border border-gray-200 dark:border-dark-border">
+        <div className="flex items-center gap-4 p-4 backdrop-blur-sm bg-white/30 dark:bg-gray-800/30 border border-gray-200/30 dark:border-gray-700/30 rounded-lg">
           <span className="text-sm text-gray-600 dark:text-gray-400">
             {selectedItems.length} items selected
           </span>

@@ -22,7 +22,7 @@ export function LinkTypeSelector({ linkTypes, onLinkTypeChange }: LinkTypeSelect
         {linkTypes.map(type => (
           <div
             key={type.id}
-            className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-dark-card border border-gray-200 dark:border-dark-border rounded-lg"
+            className="flex items-center gap-2 px-3 py-1.5 backdrop-blur-sm bg-white/30 dark:bg-gray-800/30 border border-gray-200/30 dark:border-gray-700/30 rounded-lg hover:bg-white/40 dark:hover:bg-gray-800/40 transition-colors"
           >
             <Circle
               className="w-4 h-4"

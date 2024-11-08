@@ -59,15 +59,15 @@ export function ModelSelector({
             <button
               key={category}
               onClick={() => onCategoryChange(category)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors backdrop-blur-sm ${
                 selectedCategory === category
-                  ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                  : 'bg-white dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-hover'
-              }`}
+                  ? 'bg-primary-100/70 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
+                  : 'bg-white/50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300 hover:bg-white/60 dark:hover:bg-gray-800/60'
+              } border border-gray-200/30 dark:border-gray-700/30`}
             >
               <Icon className="w-4 h-4" />
               <span className="capitalize">{category}</span>
-              <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-800">
+              <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-gray-100/70 dark:bg-gray-800/70">
                 {count}
               </span>
             </button>
@@ -75,89 +75,8 @@ export function ModelSelector({
         })}
       </div>
 
-      {/* Model Selection with Notification */}
-      <div className="w-full max-w-xl mx-auto relative">
-        {/* Model Info Notification */}
-        {selectedModel && showModelInfo && (
-          <div className="absolute bottom-full mb-4 left-0 right-0 flex justify-center">
-            <div className="w-full animate-slideDown">
-              <div className="mx-4 bg-white dark:bg-dark-card rounded-xl border border-gray-200 dark:border-dark-border shadow-lg p-4">
-                <div className="flex items-start gap-4">
-                  {/* Icon Column */}
-                  <div
-                    className="flex-shrink-0 p-2 rounded-lg"
-                    style={{ backgroundColor: selectedModel.color }}
-                  >
-                    <Bot
-                      className="w-5 h-5 text-white"
-                    />
-                  </div>
-
-                  {/* Content Column */}
-                  <div className="flex-1 min-w-0">
-                    {/* Header */}
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="text-base font-semibold text-gray-900 dark:text-white truncate">
-                        {selectedModel.name}
-                      </h3>
-                      <span
-                        className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
-                        style={{
-                          backgroundColor: selectedModel.color,
-                          color: '#FFFFFF',
-                        }}
-                      >
-                        {selectedModel.provider}
-                      </span>
-                    </div>
-
-                    {/* Description */}
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                      {selectedModel.description}
-                    </p>
-
-                    {/* Rate Limits */}
-                    {selectedModel.rateLimits && (
-                      <div className="space-y-1">
-                        <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                          Rate Limits
-                        </p>
-                        <div className="grid grid-cols-2 gap-2">
-                          {selectedModel.rateLimits.tpm && (
-                            <div className="text-xs text-gray-600 dark:text-gray-400">
-                              <span className="font-medium">TPM:</span> {selectedModel.rateLimits.tpm.toLocaleString()}
-                            </div>
-                          )}
-                          {selectedModel.rateLimits.rpm && (
-                            <div className="text-xs text-gray-600 dark:text-gray-400">
-                              <span className="font-medium">RPM:</span> {selectedModel.rateLimits.rpm.toLocaleString()}
-                            </div>
-                          )}
-                          {selectedModel.rateLimits.tpd && (
-                            <div className="text-xs text-gray-600 dark:text-gray-400">
-                              <span className="font-medium">TPD:</span> {selectedModel.rateLimits.tpd.toLocaleString()}
-                            </div>
-                          )}
-                          {selectedModel.rateLimits.rpd && (
-                            <div className="text-xs text-gray-600 dark:text-gray-400">
-                              <span className="font-medium">RPD:</span> {selectedModel.rateLimits.rpd.toLocaleString()}
-                            </div>
-                          )}
-                          {selectedModel.rateLimits.imagesPerMinute && (
-                            <div className="text-xs text-gray-600 dark:text-gray-400">
-                              <span className="font-medium">Images/min:</span> {selectedModel.rateLimits.imagesPerMinute}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
+      {/* Model Selection with Details */}
+      <div className="w-full max-w-xl mx-auto">
         {/* Model Selection Dropdown */}
         <select
           value={selectedModel?.id || ''}
@@ -165,7 +84,7 @@ export function ModelSelector({
             const model = filteredModels.find(m => m.id === e.target.value);
             if (model) onModelSelect(model);
           }}
-          className="w-full px-4 py-2.5 bg-white dark:bg-dark-bg border border-gray-200 dark:border-dark-border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+          className="w-full px-4 py-2.5 backdrop-blur-sm bg-gray-100/50 dark:bg-gray-800/50 border border-gray-200/30 dark:border-gray-700/30 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors text-gray-900 dark:text-white"
         >
           <option value="">Select a {selectedCategory} model</option>
           {filteredModels.map(model => (
@@ -174,6 +93,58 @@ export function ModelSelector({
             </option>
           ))}
         </select>
+
+        {/* Model Details */}
+        {selectedModel && (
+          <div className="mt-2 p-3 backdrop-blur-sm bg-white/50 dark:bg-gray-800/50 border border-gray-200/30 dark:border-gray-700/30 rounded-lg animate-fadeIn">
+            <div className="flex items-center gap-3">
+              <div
+                className="flex-shrink-0 p-2 rounded-lg"
+                style={{ backgroundColor: selectedModel?.color }}
+              >
+                <Bot className="w-4 h-4 text-white" />
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                    {selectedModel?.name}
+                  </h3>
+                  <span
+                    className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium text-white"
+                    style={{ backgroundColor: `${selectedModel?.color}dd` }}
+                  >
+                    {selectedModel?.provider}
+                  </span>
+                </div>
+
+                <p className="text-xs text-gray-600 dark:text-gray-400">
+                  {selectedModel?.description}
+                </p>
+
+                {selectedModel?.rateLimits && (
+                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-gray-400">
+                    {selectedModel.rateLimits.tpm && (
+                      <span><span className="font-medium">TPM:</span> {selectedModel.rateLimits.tpm.toLocaleString()}</span>
+                    )}
+                    {selectedModel.rateLimits.rpm && (
+                      <span><span className="font-medium">RPM:</span> {selectedModel.rateLimits.rpm.toLocaleString()}</span>
+                    )}
+                    {selectedModel.rateLimits.tpd && (
+                      <span><span className="font-medium">TPD:</span> {selectedModel.rateLimits.tpd.toLocaleString()}</span>
+                    )}
+                    {selectedModel.rateLimits.rpd && (
+                      <span><span className="font-medium">RPD:</span> {selectedModel.rateLimits.rpd.toLocaleString()}</span>
+                    )}
+                    {selectedModel.rateLimits.imagesPerMinute && (
+                      <span><span className="font-medium">Images/min:</span> {selectedModel.rateLimits.imagesPerMinute}</span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

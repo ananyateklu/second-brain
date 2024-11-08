@@ -16,7 +16,7 @@ export function LinkedItemsPanel({
   onUnlink
 }: LinkedItemsPanelProps) {
   return (
-    <div className="border-l border-gray-200 dark:border-dark-border p-4 space-y-4">
+    <div className="border-l border-gray-100/20 dark:border-white/5 p-4 space-y-4 glass-morphism">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-gray-900 dark:text-white">
           Linked Items
@@ -33,7 +33,7 @@ export function LinkedItemsPanel({
         {linkedItems.map(item => (
           <div
             key={item.id}
-            className="flex items-start gap-2 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-hover group"
+            className="flex items-start gap-2 p-2 rounded-lg glass-morphism hover:bg-gray-50/50 dark:hover:bg-gray-800/50 group"
           >
             <div className="p-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/30">
               <Link2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />

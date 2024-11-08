@@ -10,17 +10,50 @@
   }
 
   body {
-    @apply bg-gray-50 dark:bg-dark-bg text-gray-900 dark:text-dark-text-primary transition-colors duration-200;
+    @apply bg-gray-50 text-gray-900 transition-colors duration-200;
+  }
+
+  body.dark {
+    @apply bg-gradient-to-br from-gray-900 via-gray-800 to-primary-900/50;
+    background-attachment: fixed;
+  }
+
+  html, body {
+    @apply min-h-screen;
   }
 }
 
 @layer components {
   .glass-effect {
-    @apply bg-white/90 dark:bg-dark-card/90 backdrop-blur-md;
+    @apply bg-white/90 dark:bg-gray-900/50 backdrop-blur-md border border-white/20 dark:border-gray-700/30;
   }
   
   .gradient-border {
-    @apply border border-transparent bg-gradient-to-r from-primary-500/20 to-primary-600/20 dark:from-dark-accent/20 dark:to-dark-accent/10;
+    @apply border border-transparent bg-gradient-to-r from-primary-500/20 to-primary-600/20 dark:from-primary-900/20 dark:to-primary-800/10;
+  }
+
+  .glass-morphism {
+    @apply bg-white/90 dark:bg-gray-900/50 
+           backdrop-blur-md 
+           border border-gray-200/50 dark:border-gray-700/30
+           shadow-lg dark:shadow-dark
+           rounded-lg;
+  }
+
+  .card {
+    @apply bg-white dark:bg-gray-900/50 
+           backdrop-blur-md 
+           border border-gray-200 dark:border-gray-700/30
+           shadow-lg dark:shadow-dark
+           rounded-lg;
+  }
+
+  .container-dark {
+    @apply bg-gradient-to-br from-gray-900 via-gray-800 to-primary-900/50;
+  }
+
+  .panel-dark {
+    @apply bg-gray-900/50 backdrop-blur-md border border-gray-700/30 shadow-dark;
   }
 }
 
@@ -72,14 +105,6 @@
 /* Theme transition */
 .theme-transition {
   @apply transition-colors duration-200;
-}
-
-/* Glass morphism */
-.glass-morphism {
-  @apply bg-white/90 dark:bg-dark-card/90 
-         backdrop-blur-md 
-         border border-gray-200/50 dark:border-dark-border/50
-         shadow-lg shadow-black/5 dark:shadow-black/20;
 }
 
 .stat-card {

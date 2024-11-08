@@ -123,7 +123,7 @@ export function AIAssistantPage() {
   return (
     <div className="flex flex-col h-[calc(100vh-12rem)]">
       {/* Model Selection */}
-      <div className="glass-morphism p-4 rounded-xl mb-4">
+      <div className="backdrop-blur-sm bg-white/30 dark:bg-gray-800/30 border border-gray-200/30 dark:border-gray-700/30 shadow-lg p-4 rounded-xl mb-4">
         <ModelSelector
           models={availableModels}
           selectedModel={selectedModel}
@@ -134,7 +134,7 @@ export function AIAssistantPage() {
       </div>
 
       {/* Messages List */}
-      <div className="flex-1 glass-morphism rounded-xl mb-4 overflow-hidden">
+      <div className="flex-1 backdrop-blur-sm bg-white/30 dark:bg-gray-800/30 border border-gray-200/30 dark:border-gray-700/30 shadow-lg rounded-xl mb-4 overflow-hidden">
         <MessageList
           messages={messages}
           isLoading={isLoading}
@@ -145,13 +145,13 @@ export function AIAssistantPage() {
 
       {/* Error Display */}
       {error && (
-        <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl flex items-center gap-2">
+        <div className="mb-4 p-4 backdrop-blur-sm bg-red-50/50 dark:bg-red-900/30 border border-red-200/30 dark:border-red-700/30 text-red-600 dark:text-red-400 rounded-xl flex items-center gap-2">
           <p>{error}</p>
         </div>
       )}
 
       {/* Input Interface */}
-      <div className="glass-morphism p-4 rounded-xl">
+      <div className="backdrop-blur-sm bg-white/30 dark:bg-gray-800/30 border border-gray-200/30 dark:border-gray-700/30 shadow-lg p-4 rounded-xl">
         {selectedModel ? (
           <>
             {selectedModel.id === 'whisper-1' ? (

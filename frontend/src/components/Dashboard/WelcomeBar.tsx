@@ -8,28 +8,40 @@ import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { useDashboard } from '../../contexts/DashboardContext';
 import { StatsEditor } from './StatsEditor';
 
-// Add animation variants
+// Updated animation variants
 const cardVariants = {
   hidden: { 
     opacity: 0,
-    y: 20,
-    scale: 0.8
+    scale: 0.8,
+    y: 20
   },
   visible: { 
     opacity: 1,
-    y: 0,
     scale: 1,
+    y: 0,
     transition: {
       type: "spring",
-      stiffness: 200,
-      damping: 20
+      bounce: 0.4,
+      duration: 0.6
     }
   },
   exit: {
     opacity: 0,
-    scale: 0.5,
+    scale: 0.9,
+    y: -20,
     transition: {
-      duration: 0.2
+      type: "spring",
+      bounce: 0.2,
+      duration: 0.4
+    }
+  },
+  hover: {
+    scale: 1.02,
+    y: -5,
+    transition: {
+      type: "spring",
+      bounce: 0.4,
+      duration: 0.3
     }
   }
 };
@@ -121,8 +133,20 @@ export function WelcomeBar() {
   const [showStatsEditor, setShowStatsEditor] = useState(false);
   const { enabledStats, toggleStat, reorderStats } = useDashboard();
 
-  // Don't show on main dashboard
-  if (location.pathname === '/dashboard') return null;
+  // Add check for specific paths that should hide the welcome bar
+  const hideOnPaths = [
+    '/dashboard',           // existing check
+    '/dashboard/ai',        // AI Assistant page
+    '/dashboard/linked',    // Linked Notes page
+    '/dashboard/settings',   // Settings page
+    '/dashboard/trash',     // Trash page
+    '/dashboard/recent',   // Recents page
+    
+
+  ];
+
+  // Don't show on specified paths
+  if (hideOnPaths.includes(location.pathname)) return null;
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -228,7 +252,7 @@ export function WelcomeBar() {
 
   return (
     <>
-      <div className="glass-morphism p-4 rounded-lg mb-4">
+      <div className="glass-morphism p-4 rounded-xl mb-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-start gap-4 w-full">
             <div className="w-full">
@@ -271,7 +295,7 @@ export function WelcomeBar() {
                           initial="hidden"
                           animate="visible"
                           exit="exit"
-                          className="stat-card-compact relative"
+                          className="glass-morphism p-2 rounded-lg border border-gray-200/20 dark:border-gray-700/30"
                         >
                           <div className="flex items-center gap-2">
                             <div className={`p-1.5 ${getIconBg(stat.type)} rounded-md`}>
@@ -291,10 +315,9 @@ export function WelcomeBar() {
                             </div>
                           </div>
 
-                          {/* Remove button - only show when editing */}
                           {showStatsEditor && (
                             <motion.button
-                              className="absolute -top-1.5 -right-1.5 p-1 rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-dark-card dark:hover:bg-dark-hover shadow-lg"
+                              className="absolute -top-1.5 -right-1.5 p-1 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 shadow-lg"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 toggleStat(stat.id);
@@ -314,21 +337,21 @@ export function WelcomeBar() {
               </Reorder.Group>
 
               {/* Updated Secondary Stats with better descriptions */}
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-2 border-t border-gray-200 dark:border-gray-700">
-                <div className="stat-item-compact">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-2 border-t border-gray-200/20 dark:border-gray-700/30">
+                <div className="stat-item-compact text-gray-600 dark:text-gray-400">
                   <Files className="w-3.5 h-3.5" />
                   <span>{stats.totalNotes} total notes</span>
                 </div>
-                <div className="stat-item-compact">
+                <div className="stat-item-compact text-gray-600 dark:text-gray-400">
                   <Hash className="w-3.5 h-3.5" />
                   <span>{stats.tagsCount} unique tags</span>
                 </div>
-                <div className="stat-item-compact">
+                <div className="stat-item-compact text-gray-600 dark:text-gray-400">
                   <Archive className="w-3.5 h-3.5" />
                   <span>{stats.archivedCount} archived</span>
                 </div>
                 {stats.lastEditedNote && (
-                  <div className="stat-item-compact">
+                  <div className="stat-item-compact text-gray-600 dark:text-gray-400">
                     <Edit className="w-3.5 h-3.5" />
                     <span title={stats.lastEditedNote.title}>
                       Last edited: {stats.lastEditedNote.title.length > 15 
@@ -345,7 +368,7 @@ export function WelcomeBar() {
           <div className="flex gap-2 self-start sm:self-center">
             <button
               onClick={() => setShowNewNoteModal(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-md text-sm transition-all duration-200 hover:shadow-md active:transform active:scale-95"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-all duration-200"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>New</span>
@@ -355,7 +378,7 @@ export function WelcomeBar() {
                 const searchInput = document.querySelector('input[type="search"]') as HTMLInputElement;
                 if (searchInput) searchInput.focus();
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-dark-card hover:bg-gray-200 dark:hover:bg-dark-hover text-gray-700 dark:text-gray-300 rounded-md text-sm transition-all duration-200 hover:shadow-md active:transform active:scale-95"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-all duration-200"
             >
               <Search className="w-3.5 h-3.5" />
               <span>Search</span>
@@ -371,7 +394,7 @@ export function WelcomeBar() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="mt-4"
+            className="glass-morphism mt-4 p-4 rounded-xl"
           >
             <StatsEditor isOpen={showStatsEditor} />
           </motion.div>

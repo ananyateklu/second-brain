@@ -29,11 +29,12 @@ export function ArchiveNoteCard({ note, isSelected, onSelect }: ArchiveNoteCardP
     <div
       onClick={onSelect}
       className={`
-        group bg-white dark:bg-dark-card rounded-xl p-4 hover:shadow-md 
+        group backdrop-blur-sm bg-white/30 dark:bg-gray-800/30 
+        rounded-xl p-4 hover:shadow-md 
         dark:hover:shadow-lg dark:hover:shadow-black/10 transition-all duration-200
         border-2 ${isSelected
-          ? 'border-primary-500 dark:border-primary-400'
-          : 'border-transparent hover:border-gray-200 dark:hover:border-gray-700'
+          ? 'border-primary-500/70 dark:border-primary-400/70'
+          : 'border-gray-200/30 dark:border-gray-700/30 hover:border-gray-200/50 dark:hover:border-gray-700/50'
         }
       `}
     >

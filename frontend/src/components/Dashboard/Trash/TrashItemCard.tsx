@@ -55,13 +55,18 @@ export function TrashItemCard({ item, isSelected, onSelect, showMetadata }: Tras
   };
 
   return (
-    <div className={`
-      group relative bg-white dark:bg-dark-card rounded-lg border-2 transition-all duration-200
-      ${isSelected
-        ? 'border-primary-500 dark:border-primary-400'
-        : 'border-transparent hover:border-gray-200 dark:hover:border-gray-700'
-      }
-    `}>
+    <div
+      onClick={handleCheckboxClick}
+      className={`
+        group backdrop-blur-sm bg-white/30 dark:bg-gray-800/30 
+        rounded-xl p-4 hover:shadow-md 
+        dark:hover:shadow-lg dark:hover:shadow-black/10 transition-all duration-200
+        border-2 ${isSelected
+          ? 'border-primary-500/70 dark:border-primary-400/70'
+          : 'border-gray-200/30 dark:border-gray-700/30 hover:border-gray-200/50 dark:hover:border-gray-700/50'
+        }
+      `}
+    >
       <div className="absolute top-4 left-4" onClick={handleCheckboxClick}>
         <input
           type="checkbox"

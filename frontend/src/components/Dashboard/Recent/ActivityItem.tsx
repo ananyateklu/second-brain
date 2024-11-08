@@ -77,8 +77,10 @@ export function ActivityItem({ activity, onClick }: ActivityItemProps) {
     <div
       onClick={onClick}
       className={`
-        group bg-white dark:bg-dark-card rounded-lg p-4
-        hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/10
+        group backdrop-blur-sm bg-white/30 dark:bg-gray-800/30 
+        border border-gray-200/50 dark:border-gray-700/50 
+        shadow-lg rounded-lg p-4
+        hover:shadow-xl dark:hover:shadow-lg dark:hover:shadow-black/10
         transition-all duration-200
         ${onClick ? 'cursor-pointer' : ''}
       `}

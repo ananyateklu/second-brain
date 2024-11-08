@@ -82,28 +82,38 @@ export function ImageInterface({
 
   return (
     <form onSubmit={handleSubmit} className="flex gap-2">
-      <input
-        type="text"
-        value={prompt}
-        onChange={(e) => setPrompt(e.target.value)}
-        placeholder="Describe the image you want to generate..."
-        disabled={isLoading}
-        className="flex-1 px-4 py-2 bg-white dark:bg-dark-bg border border-gray-200 dark:border-dark-border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-      />
+      <div className="flex-1 relative">
+        <input
+          type="text"
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          placeholder="Describe the image you want to generate..."
+          disabled={isLoading}
+          className="w-full px-4 h-11 backdrop-blur-sm bg-white/50 dark:bg-gray-800/50 
+          border border-gray-200/30 dark:border-gray-700/30 rounded-lg 
+          focus:ring-2 focus:ring-primary-500 focus:border-transparent 
+          transition-all duration-200 
+          disabled:opacity-50 disabled:cursor-not-allowed
+          text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+        />
+      </div>
       <button
         type="submit"
         disabled={isLoading || !prompt.trim()}
-        className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="flex items-center gap-2 px-6 h-11 backdrop-blur-sm 
+        bg-primary-600/90 hover:bg-primary-600 text-white rounded-lg 
+        disabled:opacity-50 disabled:cursor-not-allowed 
+        transition-all duration-200 shadow-sm hover:shadow-md"
       >
         {isLoading ? (
           <>
             <Loader className="w-4 h-4 animate-spin" />
-            <span>Generating...</span>
+            <span className="font-medium">Generating...</span>
           </>
         ) : (
           <>
             <Image className="w-4 h-4" />
-            <span>Generate</span>
+            <span className="font-medium">Generate</span>
           </>
         )}
       </button>

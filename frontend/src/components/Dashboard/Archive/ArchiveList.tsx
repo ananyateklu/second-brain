@@ -94,7 +94,7 @@ export function ArchiveList({
   return (
     <div className="space-y-4">
       {selectedItems.length > 0 && (
-        <div className="flex items-center justify-between p-4 bg-white dark:bg-dark-card rounded-lg border border-gray-200 dark:border-dark-border">
+        <div className="flex items-center justify-between p-4 backdrop-blur-sm bg-white/30 dark:bg-gray-800/30 rounded-lg border border-gray-200/30 dark:border-gray-700/30">
           <span className="text-sm text-gray-600 dark:text-gray-400">
             {selectedItems.length} items selected
           </span>

@@ -90,28 +90,39 @@ export function LoginPage() {
     return <LoadingScreen message="Logging you in..." />;
   }
 
+  // Make sure the dark class is being applied to the html element
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+      document.body.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.body.classList.remove('dark');
+    }
+  }, [theme]);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-600 via-primary-500 to-primary-700 flex">
+    <div className="min-h-screen bg-gradient-to-br from-primary-600 via-primary-500 to-primary-700 dark:from-gray-900 dark:via-gray-800 dark:to-primary-900/50 flex">
       {/* Left Panel - Decorative */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
-        <div className="absolute inset-0 bg-black/10 backdrop-blur-sm z-10" />
+        <div className="absolute inset-0 bg-black/10 dark:bg-black/30 backdrop-blur-sm z-10" />
         <div className="absolute inset-0 flex flex-col items-center justify-center text-white z-20 p-12">
-          <h1 className="text-4xl font-bold mb-6">Welcome to Second Brain</h1>
-          <p className="text-xl text-center text-white/90 max-w-md">
+          <h1 className="text-4xl font-bold mb-6 text-white dark:text-white/90">Welcome to Second Brain</h1>
+          <p className="text-xl text-center text-white/90 dark:text-white/80 max-w-md">
             Your personal workspace for better focus, organization, and productivity.
           </p>
           
           {/* Decorative Elements */}
-          <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
-          <div className="absolute top-20 -right-20 w-96 h-96 bg-primary-400/20 rounded-full blur-3xl" />
+          <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-white/10 dark:bg-white/5 rounded-full blur-3xl" />
+          <div className="absolute top-20 -right-20 w-96 h-96 bg-primary-400/20 dark:bg-primary-600/10 rounded-full blur-3xl" />
         </div>
         
-        {/* Floating Cards Animation */}
+        {/* Floating Cards */}
         <div className="absolute inset-0 z-0">
           {[...Array(3)].map((_, i) => (
             <motion.div
               key={i}
-              className="absolute bg-white/5 backdrop-blur-lg rounded-2xl p-4 shadow-lg"
+              className="absolute bg-white/5 dark:bg-white/3 backdrop-blur-lg rounded-2xl p-4 shadow-lg"
               initial={{ 
                 x: Math.random() * 100, 
                 y: Math.random() * 100,
@@ -142,7 +153,7 @@ export function LoginPage() {
       {/* Right Panel - Login Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
         <div className="w-full max-w-md">
-          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20">
+          <div className="bg-white/10 dark:bg-gray-900/50 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20 dark:border-gray-700/30">
             <div className="mb-8">
               <Logo />
             </div>
@@ -254,10 +265,10 @@ export function LoginPage() {
         </div>
       </div>
 
-      {/* Theme Toggle */}
+      {/* Theme Toggle Button */}
       <button
         onClick={toggleTheme}
-        className="fixed top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all duration-200 backdrop-blur-sm"
+        className="fixed top-4 right-4 p-2 rounded-full bg-white/10 dark:bg-gray-800/30 hover:bg-white/20 dark:hover:bg-gray-800/50 text-white transition-all duration-200 backdrop-blur-sm"
         aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
       >
         {theme === 'dark' ? (

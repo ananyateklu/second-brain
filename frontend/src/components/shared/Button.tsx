@@ -15,8 +15,8 @@ export function Button({
 }: ButtonProps) {
   const baseStyles = "w-full py-3 rounded-lg transition-colors flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed";
   const variants = {
-    primary: `bg-primary text-white ${!disabled && 'hover:bg-primary/90'}`,
-    secondary: `bg-white text-primary border-2 border-primary ${!disabled && 'hover:bg-primary/10'}`
+    primary: `bg-primary text-white dark:bg-primary/90 ${!disabled && 'hover:bg-primary/90 dark:hover:bg-primary/80'}`,
+    secondary: `bg-white dark:bg-gray-800 text-primary dark:text-primary-400 border-2 border-primary dark:border-primary-400 ${!disabled && 'hover:bg-primary/10 dark:hover:bg-primary-400/10'}`
   };
 
   return (

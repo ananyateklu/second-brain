@@ -22,6 +22,9 @@ namespace SecondBrain.Api.Gamification
             public const string NoteMaster = "NOTE_MASTER";
             public const string FirstNoteLink = "FIRST_NOTE_LINK";
             public const string NoteLinkMaster = "NOTE_LINK_MASTER";
+            public const string FirstBookmark = "FIRST_BOOKMARK";
+            public const string BookmarkMaster = "BOOKMARK_MASTER";
+            
         }
 
         public AchievementService(

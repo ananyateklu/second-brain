@@ -70,7 +70,7 @@ export function Sidebar({ isOpen }: SidebarProps) {
   ];
 
   return (
-    <aside className={`fixed top-0 left-0 z-40 h-screen w-60 bg-white dark:bg-dark-card border-r border-gray-200 dark:border-dark-border transition-transform duration-200 ease-in-out lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+    <aside className="fixed top-0 left-0 z-40 h-screen w-60 bg-white dark:bg-gray-900/50 backdrop-blur-md border-r border-gray-200 dark:border-gray-700/30 transition-transform duration-200 ease-in-out lg:translate-x-0">
       <div className="flex flex-col h-full">
         {/* Logo */}
         <div className="flex justify-center items-center px-4 h-20 border-b border-gray-200 dark:border-dark-border">

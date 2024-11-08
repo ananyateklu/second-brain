@@ -65,11 +65,10 @@ export function NoteCard({ note, viewMode = 'grid' }: NoteCardProps) {
   return (
     <>
       <div className={`
-        group relative overflow-hidden bg-white dark:bg-dark-card rounded-xl hover-card border border-gray-200 dark:border-gray-700
+        group relative glass-morphism border border-gray-200/20 dark:border-gray-700/30 rounded-xl
+        hover:border-primary-400 dark:hover:border-primary-400 transition-all duration-200
         ${viewMode === 'list' ? 'flex gap-4' : ''}
       `}>
-        <div className="absolute inset-0 gradient-border opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
         <div className="relative p-5 sm:p-6 flex-1">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
@@ -84,7 +83,7 @@ export function NoteCard({ note, viewMode = 'grid' }: NoteCardProps) {
                     <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                   )}
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-500 transition-colors duration-300">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-300">
                   {note.title}
                 </h3>
               </div>
@@ -97,8 +96,8 @@ export function NoteCard({ note, viewMode = 'grid' }: NoteCardProps) {
               <button
                 onClick={handlePin}
                 className={`p-1.5 rounded-lg transition-colors ${note.isPinned
-                  ? 'text-primary-600 dark:text-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                  : 'text-gray-400 hover:text-primary-600 dark:text-gray-500 dark:hover:text-primary-500 hover:bg-gray-100 dark:hover:bg-dark-hover'
+                  ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20'
+                  : 'text-gray-400 hover:text-primary-600 dark:text-gray-500 dark:hover:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-800/50'
                 }`}
                 title={note.isPinned ? 'Unpin note' : 'Pin note'}
               >
@@ -109,7 +108,7 @@ export function NoteCard({ note, viewMode = 'grid' }: NoteCardProps) {
                 onClick={handleFavorite}
                 className={`p-1.5 rounded-lg transition-colors ${note.isFavorite
                   ? 'text-amber-500 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20'
-                  : 'text-gray-400 hover:text-amber-500 dark:text-gray-500 dark:hover:text-amber-400 hover:bg-gray-100 dark:hover:bg-dark-hover'
+                  : 'text-gray-400 hover:text-amber-500 dark:text-gray-500 dark:hover:text-amber-400 hover:bg-gray-100 dark:hover:bg-gray-800/50'
                 }`}
                 title={note.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
               >
@@ -118,7 +117,7 @@ export function NoteCard({ note, viewMode = 'grid' }: NoteCardProps) {
 
               <button
                 onClick={handleArchiveClick}
-                className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 dark:text-gray-500 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-dark-hover transition-colors"
+                className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 dark:text-gray-500 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
                 title="Archive note"
               >
                 <Archive className="w-4 h-4" />

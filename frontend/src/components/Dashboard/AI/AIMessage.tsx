@@ -118,11 +118,12 @@ export function AIMessage({ message, themeColor, isStreaming }: AIMessageProps) 
           )}
         </div>
         <div
-          className={`px-4 py-2 rounded-lg ${isUser
-              ? `bg-[${themeColor}] text-white`
-              : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
-            } ${isUser ? 'rounded-br-none' : 'rounded-bl-none'}`}
-          style={{ backgroundColor: isUser ? themeColor : undefined }}
+          className={`px-4 py-2 rounded-lg backdrop-blur-sm ${
+            isUser
+              ? `bg-[${themeColor}]/90 text-white`
+              : 'bg-white/50 dark:bg-gray-800/50 text-gray-800 dark:text-gray-200'
+          } ${isUser ? 'rounded-br-none' : 'rounded-bl-none'} border border-gray-200/30 dark:border-gray-700/30`}
+          style={{ backgroundColor: isUser ? `${themeColor}90` : undefined }}
         >
           {renderContent()}
         </div>

@@ -139,12 +139,6 @@ export function MainContent({
                 icon={TagIcon}
                 value={tagInput}
                 onChange={(e) => onTagInputChange(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    onAddTag();
-                  }
-                }}
                 placeholder="Add a tag"
                 disabled={isLoading}
               />
