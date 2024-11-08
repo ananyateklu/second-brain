@@ -69,42 +69,12 @@ const cardVariants = {
 };
 
 export function StatsEditor({ isOpen }: { isOpen: boolean }) {
-  const { availableStats, toggleStat } = useDashboard();
+  const { availableStats, toggleStat, getStatValue } = useDashboard();
   const { notes } = useNotes();
 
   const unusedStats = availableStats.filter(stat => !stat.enabled);
 
   if (!isOpen) return null;
-
-  const stats = {
-    totalNotes: notes.length,
-    newThisWeek: notes.filter(note => {
-      const noteDate = new Date(note.createdAt);
-      const weekAgo = new Date();
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      return noteDate > weekAgo;
-    }).length,
-    lastUpdated: notes.length > 0
-      ? new Date(Math.max(...notes.map(note => new Date(note.updatedAt).getTime())))
-      : null
-  };
-
-  const renderStat = (stat: DashboardStat) => {
-    switch (stat.type) {
-      case 'notes':
-        return stat.id === 'total-notes' ? stats.totalNotes : stats.newThisWeek;
-      case 'tags':
-        return new Set(notes.flatMap(note => note.tags)).size;
-      case 'time':
-        return stats.lastUpdated
-          ? stats.lastUpdated.toLocaleDateString()
-          : 'No notes yet';
-      case 'ideas':
-        return notes.filter(note => note.tags.includes('idea')).length;
-      default:
-        return 0;
-    }
-  };
 
   return (
     <motion.div
@@ -126,6 +96,7 @@ export function StatsEditor({ isOpen }: { isOpen: boolean }) {
           <AnimatePresence mode="popLayout">
             {unusedStats.map((stat) => {
               const IconComponent = Icons[stat.icon as keyof typeof Icons];
+              const statValue = getStatValue(stat.id);
 
               return (
                 <motion.div
@@ -160,7 +131,7 @@ export function StatsEditor({ isOpen }: { isOpen: boolean }) {
 
                       <div className="flex flex-col gap-1">
                         <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                          {renderStat(stat)}
+                          {statValue.value}
                         </span>
                       </div>
 
