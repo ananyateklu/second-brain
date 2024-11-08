@@ -17,17 +17,17 @@ export function FilterDropdown({ filters, allTags, onFilterChange }: FilterDropd
     <div className="space-y-4">
       {/* Sort Options */}
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label className="block text-sm font-medium text-gray-900 dark:text-white">
           Sort by
         </label>
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => onFilterChange('sortBy', 'title')}
             className={`
-              flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm
+              flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass transition-all
               ${filters.sortBy === 'title'
-                ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                : 'bg-gray-100 dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-dark-hover'
+                ? 'bg-primary-50/90 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium'
+                : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/80 dark:hover:bg-gray-800/80 text-gray-900 dark:text-gray-100'
               }
             `}
           >
@@ -42,10 +42,10 @@ export function FilterDropdown({ filters, allTags, onFilterChange }: FilterDropd
           <button
             onClick={() => onFilterChange('sortBy', 'updatedAt')}
             className={`
-              flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm
+              flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass transition-all
               ${filters.sortBy === 'updatedAt'
-                ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                : 'bg-gray-100 dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-dark-hover'
+                ? 'bg-primary-50/90 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium'
+                : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/80 dark:hover:bg-gray-800/80 text-gray-900 dark:text-gray-100'
               }
             `}
           >
@@ -58,10 +58,10 @@ export function FilterDropdown({ filters, allTags, onFilterChange }: FilterDropd
           <button
             onClick={() => onFilterChange('sortOrder', 'asc')}
             className={`
-              flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm
+              flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass transition-all
               ${filters.sortOrder === 'asc'
-                ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                : 'bg-gray-100 dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-dark-hover'
+                ? 'bg-primary-50/90 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium'
+                : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/80 dark:hover:bg-gray-800/80 text-gray-900 dark:text-gray-100'
               }
             `}
           >
@@ -72,10 +72,10 @@ export function FilterDropdown({ filters, allTags, onFilterChange }: FilterDropd
           <button
             onClick={() => onFilterChange('sortOrder', 'desc')}
             className={`
-              flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm
+              flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass transition-all
               ${filters.sortOrder === 'desc'
-                ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                : 'bg-gray-100 dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-dark-hover'
+                ? 'bg-primary-50/90 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium'
+                : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/80 dark:hover:bg-gray-800/80 text-gray-900 dark:text-gray-100'
               }
             `}
           >
@@ -87,17 +87,17 @@ export function FilterDropdown({ filters, allTags, onFilterChange }: FilterDropd
 
       {/* Filter Options */}
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label className="block text-sm font-medium text-gray-900 dark:text-white">
           Show only
         </label>
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => onFilterChange('showPinned', !filters.showPinned)}
             className={`
-              flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm
+              flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass transition-all
               ${filters.showPinned
-                ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                : 'bg-gray-100 dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-dark-hover'
+                ? 'bg-primary-50/90 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium'
+                : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/80 dark:hover:bg-gray-800/80 text-gray-900 dark:text-gray-100'
               }
             `}
           >
@@ -108,10 +108,10 @@ export function FilterDropdown({ filters, allTags, onFilterChange }: FilterDropd
           <button
             onClick={() => onFilterChange('showFavorites', !filters.showFavorites)}
             className={`
-              flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm
+              flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass transition-all
               ${filters.showFavorites
-                ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                : 'bg-gray-100 dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-dark-hover'
+                ? 'bg-primary-50/90 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium'
+                : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/80 dark:hover:bg-gray-800/80 text-gray-900 dark:text-gray-100'
               }
             `}
           >
@@ -124,7 +124,7 @@ export function FilterDropdown({ filters, allTags, onFilterChange }: FilterDropd
       {/* Tags Filter */}
       {allTags.length > 0 && (
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label className="block text-sm font-medium text-gray-900 dark:text-white">
             Filter by tags
           </label>
           <div className="flex flex-wrap gap-2">
@@ -138,10 +138,10 @@ export function FilterDropdown({ filters, allTags, onFilterChange }: FilterDropd
                   onFilterChange('tags', newTags);
                 }}
                 className={`
-                  px-3 py-1.5 rounded-lg text-sm
+                  px-3 py-1.5 rounded-lg text-sm border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass transition-all
                   ${filters.tags.includes(tag)
-                    ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                    : 'bg-gray-100 dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-dark-hover'
+                    ? 'bg-primary-50/90 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium'
+                    : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/80 dark:hover:bg-gray-800/80 text-gray-900 dark:text-gray-100'
                   }
                 `}
               >

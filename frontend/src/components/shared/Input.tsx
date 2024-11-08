@@ -36,7 +36,7 @@ export function Input({
       
       <div className="relative">
         <motion.div
-          className="absolute inset-0 bg-gray-100 dark:bg-gray-800/50 rounded-lg -z-10"
+          className="absolute inset-0 backdrop-blur-sm bg-white/50 dark:bg-gray-800/50 rounded-lg -z-10"
           animate={{
             scale: isFocused ? 1.02 : 1,
             opacity: isFocused ? 1 : 0
@@ -62,45 +62,38 @@ export function Input({
             </motion.div>
           )}
 
-          <motion.div
-            className="relative"
-            animate={{
-              y: isFocused ? -1 : 0
+          <input
+            {...props}
+            onFocus={(e) => {
+              setIsFocused(true);
+              props.onFocus?.(e);
             }}
-            transition={{ duration: 0.2 }}
-          >
-            <input
-              {...props}
-              onFocus={(e) => {
-                setIsFocused(true);
-                props.onFocus?.(e);
-              }}
-              onBlur={(e) => {
-                setIsFocused(false);
-                props.onBlur?.(e);
-              }}
-              className={`
-                w-full
-                px-4 py-2
-                ${Icon ? 'pl-10' : ''}
-                glass-morphism
-                rounded-lg
-                border border-gray-200/20 dark:border-gray-700/30
-                text-gray-900 dark:text-white
-                placeholder-gray-500 dark:placeholder-gray-400
-                focus:outline-none
-                focus:ring-2
-                focus:ring-primary-500/50
-                focus:border-transparent
-                transition-all
-                duration-200
-                disabled:opacity-50
-                disabled:cursor-not-allowed
-                ${error ? 'border-red-500 focus:border-red-500' : ''}
-                ${className}
-              `}
-            />
-          </motion.div>
+            onBlur={(e) => {
+              setIsFocused(false);
+              props.onBlur?.(e);
+            }}
+            className={`
+              w-full
+              px-4 py-2
+              ${Icon ? 'pl-10' : ''}
+              backdrop-blur-glass
+              bg-white/70 dark:bg-gray-800/70
+              rounded-lg
+              border border-gray-200/50 dark:border-gray-700/50
+              text-gray-900 dark:text-gray-100
+              placeholder-gray-500 dark:placeholder-gray-400
+              focus:outline-none
+              focus:ring-2
+              focus:ring-primary-500/30
+              focus:border-transparent
+              transition-all
+              duration-200
+              disabled:opacity-50
+              disabled:cursor-not-allowed
+              ${error ? 'border-red-500 focus:border-red-500' : ''}
+              ${className}
+            `}
+          />
         </div>
 
         <AnimatePresence>

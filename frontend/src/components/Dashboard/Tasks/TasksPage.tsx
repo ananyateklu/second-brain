@@ -32,7 +32,7 @@ export function TasksPage() {
   return (
     <div className="space-y-6">
       {/* Header Section */}
-      <div className="glass-morphism p-6 rounded-xl">
+      <div className="backdrop-blur-sm bg-white/50 dark:bg-gray-800/50 border border-gray-200/50 dark:border-gray-700/50 p-6 rounded-xl">
         <div className="flex flex-col sm:flex-row gap-6 justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
@@ -75,12 +75,13 @@ export function TasksPage() {
             placeholder="Search tasks..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            className="bg-white/70 dark:bg-gray-800/70 border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
           />
         </div>
 
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className="flex items-center gap-2 px-4 py-2 glass-morphism rounded-lg hover:bg-gray-50 dark:hover:bg-dark-hover transition-colors"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200/50 dark:border-gray-700/50 bg-white/70 dark:bg-gray-800/70 backdrop-blur-glass hover:bg-white/80 dark:hover:bg-gray-800/80 transition-all text-gray-900 dark:text-gray-100"
         >
           <SlidersHorizontal className="w-5 h-5" />
           <span>Filters</span>
@@ -89,7 +90,16 @@ export function TasksPage() {
 
       {/* Filters Panel */}
       {showFilters && (
-        <div className="glass-morphism p-4 rounded-xl">
+        <div className="backdrop-blur-sm bg-white/50 dark:bg-gray-800/50 border border-gray-200/50 dark:border-gray-700/50 p-4 rounded-xl shadow-lg">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Filters</h3>
+            <button
+              onClick={() => setFilters({ status: 'all', priority: 'all', dueDate: 'all' })}
+              className="text-sm text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+            >
+              Clear all
+            </button>
+          </div>
           <TaskFilters
             filters={filters}
             onFilterChange={(key, value) => 

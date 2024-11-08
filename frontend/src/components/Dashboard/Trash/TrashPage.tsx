@@ -4,6 +4,7 @@ import { useTrash } from '../../../contexts/TrashContext';
 import { TrashList } from './TrashList';
 import { TrashFilters } from './TrashFilters';
 import { ConfirmationDialog } from './ConfirmationDialog';
+import { Input } from '../../shared/Input';
 
 export function TrashPage() {
   const { trashedItems, emptyTrash, refreshTrashItems } = useTrash();
@@ -36,7 +37,7 @@ export function TrashPage() {
   return (
     <div className="space-y-6">
       {/* Header Section */}
-      <div className="backdrop-blur-sm bg-white/30 dark:bg-gray-800/30 border border-gray-200/30 dark:border-gray-700/30 shadow-lg p-6 rounded-xl">
+      <div className="backdrop-blur-sm bg-white/50 dark:bg-gray-800/50 border border-gray-200/50 dark:border-gray-700/50 p-6 rounded-xl">
         <div className="flex flex-col sm:flex-row gap-6 justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
@@ -67,20 +68,21 @@ export function TrashPage() {
 
       {/* Search and Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
+        <div className="flex-1">
+          <Input
+            label=""
+            icon={Search}
             type="text"
             placeholder="Search deleted items..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 backdrop-blur-sm bg-white/50 dark:bg-gray-800/50 border border-gray-200/30 dark:border-gray-700/30 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+            className="bg-white/70 dark:bg-gray-800/70 border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
           />
         </div>
 
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className="flex items-center gap-2 px-4 py-2 backdrop-blur-sm bg-white/50 dark:bg-gray-800/50 border border-gray-200/30 dark:border-gray-700/30 rounded-lg hover:bg-white/60 dark:hover:bg-gray-800/60 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200/50 dark:border-gray-700/50 bg-white/70 dark:bg-gray-800/70 backdrop-blur-glass hover:bg-white/80 dark:hover:bg-gray-800/80 transition-all text-gray-900 dark:text-gray-100"
         >
           <SlidersHorizontal className="w-5 h-5" />
           <span>Filters</span>
@@ -89,7 +91,7 @@ export function TrashPage() {
 
       {/* Filters Panel */}
       {showFilters && (
-        <div className="backdrop-blur-sm bg-white/30 dark:bg-gray-800/30 border border-gray-200/30 dark:border-gray-700/30 shadow-lg p-4 rounded-xl">
+        <div className="backdrop-blur-sm bg-white/50 dark:bg-gray-800/50 border border-gray-200/50 dark:border-gray-700/50 p-4 rounded-xl shadow-lg">
           <TrashFilters
             filters={filters}
             onFilterChange={(key, value) => 

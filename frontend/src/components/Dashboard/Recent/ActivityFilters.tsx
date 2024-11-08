@@ -65,7 +65,7 @@ export function ActivityFilters({ filters, onFilterChange }: ActivityFiltersProp
     <div className="space-y-6">
       {/* Action Type Filters */}
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label className="block text-sm font-medium text-gray-900 dark:text-white">
           Filter by Action
         </label>
         <div className="flex flex-wrap gap-2">
@@ -73,10 +73,13 @@ export function ActivityFilters({ filters, onFilterChange }: ActivityFiltersProp
             <button
               key={id}
               onClick={() => toggleActionType(id)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${filters.actionTypes.includes(id)
-                  ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                  : 'bg-gray-100 dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-dark-hover'
-                }`}
+              className={`
+                flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass transition-all
+                ${filters.actionTypes.includes(id)
+                  ? 'bg-primary-50/90 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium'
+                  : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/80 dark:hover:bg-gray-800/80 text-gray-900 dark:text-gray-100'
+                }
+              `}
             >
               <Icon className="w-4 h-4" />
               {label}
@@ -87,7 +90,7 @@ export function ActivityFilters({ filters, onFilterChange }: ActivityFiltersProp
 
       {/* Item Type Filters */}
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label className="block text-sm font-medium text-gray-900 dark:text-white">
           Filter by Type
         </label>
         <div className="flex flex-wrap gap-2">
@@ -95,10 +98,13 @@ export function ActivityFilters({ filters, onFilterChange }: ActivityFiltersProp
             <button
               key={id}
               onClick={() => toggleItemType(id)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${filters.itemTypes.includes(id)
-                  ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                  : 'bg-gray-100 dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-dark-hover'
-                }`}
+              className={`
+                flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass transition-all
+                ${filters.itemTypes.includes(id)
+                  ? 'bg-primary-50/90 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium'
+                  : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/80 dark:hover:bg-gray-800/80 text-gray-900 dark:text-gray-100'
+                }
+              `}
             >
               <Icon className="w-4 h-4" />
               {label}
@@ -109,7 +115,7 @@ export function ActivityFilters({ filters, onFilterChange }: ActivityFiltersProp
 
       {/* Date Range Filter */}
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label className="block text-sm font-medium text-gray-900 dark:text-white">
           Time Period
         </label>
         <div className="flex flex-wrap gap-2">
@@ -117,10 +123,13 @@ export function ActivityFilters({ filters, onFilterChange }: ActivityFiltersProp
             <button
               key={id}
               onClick={() => onFilterChange('dateRange', id)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${filters.dateRange === id
-                  ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                  : 'bg-gray-100 dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-dark-hover'
-                }`}
+              className={`
+                flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass transition-all
+                ${filters.dateRange === id
+                  ? 'bg-primary-50/90 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium'
+                  : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/80 dark:hover:bg-gray-800/80 text-gray-900 dark:text-gray-100'
+                }
+              `}
             >
               <Calendar className="w-4 h-4" />
               {label}

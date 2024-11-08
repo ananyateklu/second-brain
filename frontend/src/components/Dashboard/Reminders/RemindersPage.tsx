@@ -36,7 +36,7 @@ export function RemindersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="glass-morphism p-6 rounded-xl">
+      <div className="backdrop-blur-sm bg-white/50 dark:bg-gray-800/50 border border-gray-200/50 dark:border-gray-700/50 p-6 rounded-xl">
         <div className="flex flex-col sm:flex-row gap-6 justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">

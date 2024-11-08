@@ -184,20 +184,21 @@ export function TagsPage() {
 
       {/* Search and Filters */}
       <div className="shrink-0 flex flex-col sm:flex-row gap-4 mb-6">
-        <div className="flex-1 relative">
+        <div className="flex-1">
           <Input
-            label="Search"
+            label=""
             icon={Search}
             type="text"
-            placeholder="Search by title or content..."
+            placeholder="Search tags..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="mb-4"
+            className="bg-white/70 dark:bg-gray-800/70 border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
           />
         </div>
+        
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className="flex items-center gap-2 px-4 py-2 backdrop-blur-sm bg-white/50 dark:bg-gray-800/50 border border-gray-200/50 dark:border-gray-700/50 rounded-lg hover:bg-white/70 dark:hover:bg-gray-800/70 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200/50 dark:border-gray-700/50 bg-white/70 dark:bg-gray-800/70 backdrop-blur-glass hover:bg-white/80 dark:hover:bg-gray-800/80 transition-all text-gray-900 dark:text-gray-100"
         >
           <SlidersHorizontal className="w-5 h-5" />
           <span>Filters</span>
@@ -272,21 +273,22 @@ export function TagsPage() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => setViewMode('grid')}
-                      className={`p-2 rounded-lg transition-colors ${
+                      className={`p-2 rounded-lg border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass transition-all ${
                         viewMode === 'grid'
-                          ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
-                          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                          ? 'bg-primary-50/90 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
+                          : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/80 dark:hover:bg-gray-800/80 text-gray-900 dark:text-gray-100'
                       }`}
                       title="Grid View"
                     >
                       <Grid className="w-5 h-5" />
                     </button>
+                    
                     <button
                       onClick={() => setViewMode('list')}
-                      className={`p-2 rounded-lg transition-colors ${
+                      className={`p-2 rounded-lg border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass transition-all ${
                         viewMode === 'list'
-                          ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
-                          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                          ? 'bg-primary-50/90 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
+                          : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/80 dark:hover:bg-gray-800/80 text-gray-900 dark:text-gray-100'
                       }`}
                       title="List View"
                     >

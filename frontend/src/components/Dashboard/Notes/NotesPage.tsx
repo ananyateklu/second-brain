@@ -111,7 +111,7 @@ export function NotesPage() {
         <div className="flex gap-2 w-full sm:w-auto">
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-dark-card hover:bg-gray-50 dark:hover:bg-dark-hover transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200/50 dark:border-gray-700/50 bg-white/70 dark:bg-gray-800/70 backdrop-blur-glass hover:bg-white/80 dark:hover:bg-gray-800/80 transition-all text-gray-900 dark:text-gray-100"
           >
             <SlidersHorizontal className="w-5 h-5" />
             <span>Filters</span>
@@ -142,32 +142,34 @@ export function NotesPage() {
         <div className="flex gap-2">
           <button
             onClick={() => setViewMode('grid')}
-            className={`p-2 rounded-lg glass-morphism transition-colors ${
+            className={`p-2 rounded-lg border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass transition-all ${
               viewMode === 'grid'
-                ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
-                : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+                ? 'bg-primary-50/90 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
+                : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/80 dark:hover:bg-gray-800/80 text-gray-900 dark:text-gray-100'
             }`}
             title="Grid View"
           >
             <Grid className="w-5 h-5" />
           </button>
+          
           <button
             onClick={() => setViewMode('list')}
-            className={`p-2 rounded-lg glass-morphism transition-colors ${
+            className={`p-2 rounded-lg border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass transition-all ${
               viewMode === 'list'
-                ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
-                : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+                ? 'bg-primary-50/90 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
+                : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/80 dark:hover:bg-gray-800/80 text-gray-900 dark:text-gray-100'
             }`}
             title="List View"
           >
             <List className="w-5 h-5" />
           </button>
+          
           <button
             onClick={() => setViewMode('graph')}
-            className={`p-2 rounded-lg glass-morphism transition-colors ${
+            className={`p-2 rounded-lg border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass transition-all ${
               viewMode === 'graph'
-                ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
-                : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+                ? 'bg-primary-50/90 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
+                : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/80 dark:hover:bg-gray-800/80 text-gray-900 dark:text-gray-100'
             }`}
             title="Graph View"
           >
@@ -177,12 +179,12 @@ export function NotesPage() {
       </div>
 
       {showFilters && (
-        <div className="p-4 rounded-lg glass-morphism">
+        <div className="p-4 rounded-lg border border-gray-200/50 dark:border-gray-700/50 bg-white/70 dark:bg-gray-800/70 backdrop-blur-glass shadow-lg">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">Filters</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Filters</h3>
             <button
               onClick={clearFilters}
-              className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              className="text-sm text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
             >
               Clear all
             </button>

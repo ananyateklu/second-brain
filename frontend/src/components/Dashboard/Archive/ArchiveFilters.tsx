@@ -15,17 +15,17 @@ export function ArchiveFilters({ filters, onFilterChange }: ArchiveFiltersProps)
     <div className="space-y-6">
       {/* Sort Options */}
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label className="block text-sm font-medium text-gray-900 dark:text-white">
           Sort by
         </label>
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => onFilterChange('sortBy', 'title')}
             className={`
-              flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm
+              flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass transition-all
               ${filters.sortBy === 'title'
-                ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                : 'bg-gray-100 dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-dark-hover'
+                ? 'bg-primary-50/90 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium'
+                : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/80 dark:hover:bg-gray-800/80 text-gray-900 dark:text-gray-100'
               }
             `}
           >
@@ -40,10 +40,10 @@ export function ArchiveFilters({ filters, onFilterChange }: ArchiveFiltersProps)
           <button
             onClick={() => onFilterChange('sortBy', 'archivedAt')}
             className={`
-              flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm
+              flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass transition-all
               ${filters.sortBy === 'archivedAt'
-                ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                : 'bg-gray-100 dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-dark-hover'
+                ? 'bg-primary-50/90 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium'
+                : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/80 dark:hover:bg-gray-800/80 text-gray-900 dark:text-gray-100'
               }
             `}
           >
@@ -54,10 +54,10 @@ export function ArchiveFilters({ filters, onFilterChange }: ArchiveFiltersProps)
           <button
             onClick={() => onFilterChange('sortBy', 'updatedAt')}
             className={`
-              flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm
+              flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass transition-all
               ${filters.sortBy === 'updatedAt'
-                ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                : 'bg-gray-100 dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-dark-hover'
+                ? 'bg-primary-50/90 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium'
+                : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/80 dark:hover:bg-gray-800/80 text-gray-900 dark:text-gray-100'
               }
             `}
           >
@@ -70,10 +70,10 @@ export function ArchiveFilters({ filters, onFilterChange }: ArchiveFiltersProps)
           <button
             onClick={() => onFilterChange('sortOrder', 'asc')}
             className={`
-              flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm
+              flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass transition-all
               ${filters.sortOrder === 'asc'
-                ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                : 'bg-gray-100 dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-dark-hover'
+                ? 'bg-primary-50/90 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium'
+                : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/80 dark:hover:bg-gray-800/80 text-gray-900 dark:text-gray-100'
               }
             `}
           >
@@ -84,10 +84,10 @@ export function ArchiveFilters({ filters, onFilterChange }: ArchiveFiltersProps)
           <button
             onClick={() => onFilterChange('sortOrder', 'desc')}
             className={`
-              flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm
+              flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass transition-all
               ${filters.sortOrder === 'desc'
-                ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                : 'bg-gray-100 dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-dark-hover'
+                ? 'bg-primary-50/90 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium'
+                : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/80 dark:hover:bg-gray-800/80 text-gray-900 dark:text-gray-100'
               }
             `}
           >
@@ -99,17 +99,17 @@ export function ArchiveFilters({ filters, onFilterChange }: ArchiveFiltersProps)
 
       {/* Filter Options */}
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label className="block text-sm font-medium text-gray-900 dark:text-white">
           Show only
         </label>
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => onFilterChange('hasLinks', !filters.hasLinks)}
             className={`
-              flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm
+              flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass transition-all
               ${filters.hasLinks
-                ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                : 'bg-gray-100 dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-dark-hover'
+                ? 'bg-primary-50/90 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium'
+                : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/80 dark:hover:bg-gray-800/80 text-gray-900 dark:text-gray-100'
               }
             `}
           >
@@ -121,13 +121,12 @@ export function ArchiveFilters({ filters, onFilterChange }: ArchiveFiltersProps)
 
       {/* Tags Filter */}
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label className="block text-sm font-medium text-gray-900 dark:text-white">
           Filter by tags
         </label>
         <div className="flex flex-wrap gap-2">
-          {/* Add tag filtering UI here */}
           <button
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm bg-gray-100 dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-dark-hover"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass transition-all bg-white/70 dark:bg-gray-800/70 hover:bg-white/80 dark:hover:bg-gray-800/80 text-gray-900 dark:text-gray-100"
           >
             <Tag className="w-4 h-4" />
             Add Tag Filter

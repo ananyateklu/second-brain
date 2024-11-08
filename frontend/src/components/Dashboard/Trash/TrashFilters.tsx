@@ -1,12 +1,4 @@
-;
-import {
-  FileText,
-  CheckSquare,
-  Lightbulb,
-  Bell,
-  Tag,
-  Calendar
-} from 'lucide-react';
+import { FileText, CheckSquare, Bell, Lightbulb, Calendar, Tag } from 'lucide-react';
 
 interface TrashFiltersProps {
   filters: {
@@ -15,16 +7,16 @@ interface TrashFiltersProps {
     tags: string[];
   };
   onFilterChange: (key: string, value: any) => void;
+  availableTypes: string[];
 }
 
-export function TrashFilters({ filters, onFilterChange }: TrashFiltersProps) {
-  const itemTypes = [
-    { id: 'note', label: 'Notes', icon: FileText },
-    { id: 'task', label: 'Tasks', icon: CheckSquare },
-    { id: 'idea', label: 'Ideas', icon: Lightbulb },
-    { id: 'reminder', label: 'Reminders', icon: Bell },
-    { id: 'tag', label: 'Tags', icon: Tag }
-  ];
+export function TrashFilters({ filters, onFilterChange, availableTypes }: TrashFiltersProps) {
+  const typeIcons = {
+    note: FileText,
+    task: CheckSquare,
+    reminder: Bell,
+    idea: Lightbulb
+  };
 
   const dateRanges = [
     { id: 'all', label: 'All Time' },
@@ -44,45 +36,69 @@ export function TrashFilters({ filters, onFilterChange }: TrashFiltersProps) {
     <div className="space-y-6">
       {/* Item Type Filters */}
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        <label className="block text-sm font-medium text-gray-900 dark:text-white">
           Filter by Type
         </label>
         <div className="flex flex-wrap gap-2">
-          {itemTypes.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              onClick={() => toggleType(id)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${filters.types.includes(id)
-                  ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                  : 'bg-gray-100 dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-dark-hover'
-                }`}
-            >
-              <Icon className="w-4 h-4" />
-              {label}
-            </button>
-          ))}
+          {availableTypes.map(type => {
+            const Icon = typeIcons[type as keyof typeof typeIcons];
+            return (
+              <button
+                key={type}
+                onClick={() => toggleType(type)}
+                className={`
+                  flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass transition-all
+                  ${filters.types.includes(type)
+                    ? 'bg-primary-50/90 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium'
+                    : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/80 dark:hover:bg-gray-800/80 text-gray-900 dark:text-gray-100'
+                  }
+                `}
+              >
+                <Icon className="w-4 h-4" />
+                {type.charAt(0).toUpperCase() + type.slice(1)}s
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* Date Range Filter */}
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-          Filter by Date
+        <label className="block text-sm font-medium text-gray-900 dark:text-white">
+          Time Period
         </label>
         <div className="flex flex-wrap gap-2">
           {dateRanges.map(({ id, label }) => (
             <button
               key={id}
               onClick={() => onFilterChange('dateRange', id)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${filters.dateRange === id
-                  ? 'bg-primary-100 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                  : 'bg-gray-100 dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-dark-hover'
-                }`}
+              className={`
+                flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass transition-all
+                ${filters.dateRange === id
+                  ? 'bg-primary-50/90 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium'
+                  : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/80 dark:hover:bg-gray-800/80 text-gray-900 dark:text-gray-100'
+                }
+              `}
             >
               <Calendar className="w-4 h-4" />
               {label}
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* Tags Filter */}
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-900 dark:text-white">
+          Filter by Tags
+        </label>
+        <div className="flex flex-wrap gap-2">
+          <button
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass transition-all bg-white/70 dark:bg-gray-800/70 hover:bg-white/80 dark:hover:bg-gray-800/80 text-gray-900 dark:text-gray-100"
+          >
+            <Tag className="w-4 h-4" />
+            Add Tag Filter
+          </button>
         </div>
       </div>
     </div>
