@@ -9,5 +9,12 @@ namespace SecondBrain.Api.DTOs.Llama
 
         [JsonPropertyName("arguments")]
         public Dictionary<string, string> Arguments { get; set; } = new();
+
+        public string OriginalPrompt { get; set; } = string.Empty;
+
+        public override string ToString()
+        {
+            return OriginalPrompt;
+        }
     }
 } 

@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { Database, Save, Search, Edit, Tags } from 'lucide-react';
+import { Database, Save, Search, Edit, Tags, Link, Archive, Trash2 } from 'lucide-react';
 import { AIModel } from '../../../types/ai';
 import { textStyles, combineTextStyles } from '../../../utils/textUtils';
+import { useAuth } from '../../../contexts/AuthContext';
 
 interface FunctionInterfaceProps {
   model: AIModel;
@@ -19,11 +20,12 @@ export function FunctionInterface({
   const [input, setInput] = useState('');
   const [showExamples, setShowExamples] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { user } = useAuth();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (input.trim() && !isLoading) {
-      onUserInput(input);
+    if (input.trim() && !isLoading && user) {
+      onUserInput(`[USER:${user.id}] ${input}`);
       setInput('');
     }
   };
@@ -31,11 +33,12 @@ export function FunctionInterface({
   const examples = [
     {
       icon: <Save size={18} style={{ color: themeColor }} />,
-      title: "Store",
+      title: "Create",
       examples: [
-        "Save meeting notes from today's project sync",
-        "Remember to review Q2 budget next week",
-        "Store documentation about API endpoints"
+        "Create a note about today's project meeting with tags project and planning",
+        "Make a new idea for improving user authentication",
+        "Save meeting notes from the design review",
+        "Create a pinned note about upcoming deadlines"
       ]
     },
     {
@@ -43,26 +46,49 @@ export function FunctionInterface({
       title: "Find",
       examples: [
         "Find all project-related notes",
-        "Show meeting notes from March 15th",
-        "Get items tagged with 'budget'"
+        "Show me pinned notes about design",
+        "Search for notes with tag 'urgent'",
+        "Find all my ideas about authentication"
       ]
     },
     {
       icon: <Edit size={18} style={{ color: themeColor }} />,
       title: "Update",
       examples: [
-        "Update today's meeting notes to include action items",
-        "Change the reminder about Q2 planning",
-        "Add budget details to yesterday's meeting notes"
+        "Update the project meeting note to include action items",
+        "Make the design review note pinned and add tag important",
+        "Update the authentication idea with new security considerations",
+        "Mark the roadmap note as favorite"
       ]
     },
     {
-      icon: <Tags size={18} style={{ color: themeColor }} />,
-      title: "Tags",
+      icon: <Link size={18} style={{ color: themeColor }} />,
+      title: "Link",
       examples: [
-        "Find items tagged with project and budget",
-        "Show all meeting notes from March",
-        "Get tasks tagged as urgent"
+        "Link the project meeting note to the roadmap note",
+        "Connect the authentication idea to the security notes",
+        "Remove link between design notes",
+        "Link this week's meeting notes together"
+      ]
+    },
+    {
+      icon: <Archive size={18} style={{ color: themeColor }} />,
+      title: "Archive",
+      examples: [
+        "Archive the old project notes",
+        "Archive all completed task notes",
+        "Archive notes from last year",
+        "Archive notes tagged as 'completed'"
+      ]
+    },
+    {
+      icon: <Trash2 size={18} style={{ color: themeColor }} />,
+      title: "Delete",
+      examples: [
+        "Delete the draft note",
+        "Remove the outdated meeting notes",
+        "Delete notes tagged as 'temporary'",
+        "Delete the duplicate idea"
       ]
     }
   ];
@@ -76,9 +102,9 @@ export function FunctionInterface({
         <div className="flex items-center gap-2">
           <Database size={20} style={{ color: themeColor }} className="opacity-90" />
           <div>
-            <h3 className={combineTextStyles('h3')}>Database Assistant</h3>
+            <h3 className={combineTextStyles('h3')}>Notes Assistant</h3>
             <p className={`${textStyles.caption} mt-0.5 opacity-90`}>
-              Store, find, and manage your information naturally
+              Create, find, and manage your notes and ideas naturally
             </p>
           </div>
         </div>
@@ -99,7 +125,7 @@ export function FunctionInterface({
           shadow-lg relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-transparent 
             via-white/10 to-white/20 dark:via-gray-800/10 dark:to-gray-800/20" />
-          <div className="relative p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="relative p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {examples.map((category) => (
               <div key={category.title} 
                 className="space-y-2 bg-white/30 dark:bg-gray-900/30 
@@ -147,7 +173,7 @@ export function FunctionInterface({
           ref={textareaRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="What would you like to do? (e.g., 'Save notes from today's team meeting')"
+          placeholder="What would you like to do with your notes? (e.g., 'Create a note about today's meeting')"
           className={`w-full min-h-[80px] p-3 rounded-lg
             bg-white/70 dark:bg-gray-800/70 
             backdrop-blur-xl
@@ -194,7 +220,8 @@ export function FunctionInterface({
           border border-gray-200/30 dark:border-gray-700/30`}>
           <span className="p-1 rounded-full bg-white/50 dark:bg-gray-700/50">💡</span>
           <span className="opacity-90">
-            Use natural language and be specific with dates and tags. The assistant understands commands like "save", "find", "update", and "delete".
+            Use natural language to manage your notes and ideas. You can create, update, link, search, archive, and delete notes.
+            Try to be specific with titles, tags, and content.
           </span>
         </div>
       )}

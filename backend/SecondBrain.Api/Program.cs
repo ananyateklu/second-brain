@@ -130,6 +130,10 @@ builder.Services.AddScoped<IAchievementService, AchievementService>();
 // Register NexusStorageService
 builder.Services.AddScoped<INexusStorageService, NexusStorageService>();
 
+// Add these before building the app
+builder.Services.AddScoped<INoteToolService, NoteToolService>();
+builder.Services.AddScoped<IActivityLogger, ActivityLogger>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
