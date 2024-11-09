@@ -48,7 +48,13 @@ export default {
             primary: '#4a9153',
             secondary: '#64ab6f'
           },
-          overlay: 'rgba(0, 0, 0, 0.4)'
+          overlay: 'rgba(0, 0, 0, 0.4)',
+          text: {
+            primary: '#F3F4F6',
+            secondary: '#D1D5DB',
+            tertiary: '#9CA3AF',
+            muted: '#6B7280',
+          },
         }
       },
       boxShadow: {

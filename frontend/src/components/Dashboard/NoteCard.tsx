@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Clock, Tag as TagIcon, Star, Pin, FileText, Lightbulb, Archive, Link2 } from 'lucide-react';
 import { useNotes } from '../../contexts/NotesContext';
 import { WarningModal } from '../shared/WarningModal';
+import { textStyles } from '../../utils/textUtils';
 
 export interface Note {
   id: string;
@@ -83,11 +84,11 @@ export function NoteCard({ note, viewMode = 'grid' }: NoteCardProps) {
                     <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                   )}
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-300">
+                <h3 className={textStyles.cardTitle}>
                   {note.title}
                 </h3>
               </div>
-              <p className="mt-2 text-gray-600 dark:text-gray-300 line-clamp-2 text-sm sm:text-base">
+              <p className={textStyles.cardDescription}>
                 {note.content}
               </p>
             </div>

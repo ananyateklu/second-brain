@@ -23,6 +23,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import lightLogo from '../../assets/second-brain-logo-light-mode.png'; 
 import darkLogo from '../../assets/second-brain-logo-dark-mode.png';
+import { textStyles } from '../../utils/textUtils';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -95,10 +96,10 @@ export function Sidebar({ isOpen }: SidebarProps) {
                     to={item.to}
                     end={item.exact}
                     className={({ isActive }) =>
-                      `flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors duration-200
-                      ${isActive
-                        ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-hover'
+                      `flex items-center gap-2 px-3 py-2 rounded-lg transition-colors duration-200 ${
+                        isActive
+                          ? textStyles.navLinkActive
+                          : textStyles.navLink
                       }`
                     }
                   >

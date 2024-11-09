@@ -14,6 +14,7 @@ interface AIContextType {
   configureOpenAI: (apiKey: string) => Promise<void>;
   configureGemini: (apiKey: string) => Promise<void>;
   availableModels: AIModel[];
+  llamaService: LlamaService;
 }
 
 const AIContext = createContext<AIContextType | null>(null);
@@ -162,7 +163,8 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
     sendMessage,
     configureOpenAI,
     configureGemini,
-    availableModels
+    availableModels,
+    llamaService: aiService.llama,
   }), [isOpenAIConfigured, isAnthropicConfigured, isGeminiConfigured, isLlamaConfigured, isGrokConfigured, error, sendMessage, configureOpenAI, configureGemini, availableModels]);
 
   return <AIContext.Provider value={value}>{children}</AIContext.Provider>;

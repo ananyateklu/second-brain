@@ -10,7 +10,7 @@ export interface AIModel {
   id: string;
   name: string;
   provider: 'openai' | 'anthropic' | 'gemini' | 'llama' | 'grok';
-  category: 'chat' | 'completion' | 'embedding' | 'image' | 'audio';
+  category: 'chat' | 'completion' | 'embedding' | 'image' | 'audio' | 'function';
   description: string;
   isConfigured: boolean;
   color: string;

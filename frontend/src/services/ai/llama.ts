@@ -135,8 +135,8 @@ export class LlamaService {
         id: 'nexusraven',
         name: 'Nexus Raven (Tool Calling)',
         provider: 'llama',
-        category: 'chat',
-        description: 'Nexus Raven is a model designed to excel in function calling, and is optimized for tool calling.',
+        category: 'function',
+        description: 'Nexus Raven is a model designed to excel in function calling, and is optimized for database operations.',
         isConfigured: this.isConfigured(),
         color: '#D3C5E5',
         endpoint: 'chat',
@@ -182,5 +182,29 @@ export class LlamaService {
         endpoint: 'chat',
       }
     ];
+  }
+
+  async executeDatabaseOperation(prompt: string): Promise<AIResponse> {
+    try {
+      // First try the test endpoint to see raw response
+      const testResponse = await api.post('/api/nexusstorage/test', prompt);
+      console.log('Raw model response:', testResponse.data.rawResponse);
+
+      // Then try the actual operation
+      const response = await api.post('/api/nexusstorage/execute', prompt);
+
+      return {
+        content: response.data.content,
+        type: 'text',
+        metadata: {
+          model: 'nexusraven',
+          rawResponse: testResponse.data.rawResponse // Include raw response for debugging
+        },
+      };
+    } catch (error) {
+      console.error('Error executing database operation:', error);
+      const errorMessage = error.response?.data?.error || 'Failed to execute database operation.';
+      throw new Error(`${errorMessage} Raw response: ${error.response?.data?.rawResponse || 'N/A'}`);
+    }
   }
 } 

@@ -11,6 +11,7 @@ using Microsoft.Extensions.Options;
 using System.Text.Json;
 using SecondBrain.Services.Gamification;
 using SecondBrain.Api.Gamification;  // Updated namespace
+using SecondBrain.Api.DTOs.Nexus;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -125,6 +126,9 @@ builder.Services.AddScoped<ILlamaService, LlamaService>();
 // Add these before building the app
 builder.Services.AddScoped<IXPService, XPService>();
 builder.Services.AddScoped<IAchievementService, AchievementService>();
+
+// Register NexusStorageService
+builder.Services.AddScoped<INexusStorageService, NexusStorageService>();
 
 var app = builder.Build();
 

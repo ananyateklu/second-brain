@@ -33,6 +33,7 @@ import { DashboardStat } from '../../types/dashboard';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { getIconColor, getIconBg } from '../../utils/styleUtils';
 import { useTasks } from '../../contexts/TasksContext';
+import { textStyles } from '../../utils/textUtils';
 
 // Create an icon map
 const IconMap = {
@@ -458,12 +459,12 @@ export function DashboardHome() {
           <div className="space-y-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                <h1 className={textStyles.h1}>
                   {getGreeting()}, {user?.name}
                 </h1>
                 <span className="animate-wave">👋</span>
               </div>
-              <p className="text-base text-gray-600 dark:text-gray-400">
+              <p className={textStyles.bodySmall}>
                 Ready to capture your thoughts and ideas?
               </p>
             </div>

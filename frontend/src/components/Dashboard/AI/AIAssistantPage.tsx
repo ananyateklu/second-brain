@@ -8,6 +8,7 @@ import { ChatInterface } from './ChatInterface';
 import { MessageList } from './MessageList';
 import { AudioInterface } from './AudioInterface';
 import { ImageInterface } from './ImageInterface';
+import { FunctionInterface } from './FunctionInterface';
 
 interface Message {
   id: string;
@@ -20,7 +21,7 @@ interface Message {
 
 export function AIAssistantPage() {
   const navigate = useNavigate();
-  const { isOpenAIConfigured, isGeminiConfigured, isAnthropicConfigured, isLlamaConfigured, availableModels, sendMessage } = useAI();
+  const { isOpenAIConfigured, isGeminiConfigured, isAnthropicConfigured, isLlamaConfigured, availableModels, sendMessage, llamaService } = useAI();
   const [selectedCategory, setSelectedCategory] = useState<string>('chat');
   const [selectedModel, setSelectedModel] = useState<AIModel | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -56,7 +57,6 @@ export function AIAssistantPage() {
     setIsLoading(true);
     setError(null);
 
-    // Add the user's message to the message list
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
@@ -68,10 +68,10 @@ export function AIAssistantPage() {
     setMessages((prev) => [...prev, userMessage]);
 
     try {
-      // Send the message to the AI service
-      const aiResponse = await sendMessage(input, selectedModel.id);
+      const aiResponse = selectedModel.category === 'function'
+        ? await llamaService.executeDatabaseOperation(input)
+        : await sendMessage(input, selectedModel.id);
 
-      // Add the assistant's message to the message list
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
@@ -154,7 +154,14 @@ export function AIAssistantPage() {
       <div className="sticky bottom-0 backdrop-blur-sm bg-white/30 dark:bg-gray-800/30 border border-gray-200/30 dark:border-gray-700/30 shadow-lg p-4 rounded-xl">
         {selectedModel ? (
           <>
-            {selectedModel.id === 'whisper-1' ? (
+            {selectedModel.category === 'function' ? (
+              <FunctionInterface
+                model={selectedModel}
+                onUserInput={handleUserInput}
+                isLoading={isLoading}
+                themeColor={themeColor}
+              />
+            ) : selectedModel.id === 'whisper-1' ? (
               <AudioInterface
                 model={selectedModel}
                 onMessageSend={(message) => {

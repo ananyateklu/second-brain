@@ -1,6 +1,7 @@
 import React from 'react';
 import { LucideIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { textStyles } from '../../utils/textUtils';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
@@ -23,7 +24,7 @@ export function Input({
       {label && (
         <motion.label 
           htmlFor={props.id} 
-          className="block text-sm font-medium text-gray-900 dark:text-white"
+          className={textStyles.label}
           animate={{
             scale: isFocused ? 1.05 : 1,
             color: isFocused ? 'var(--color-primary-600)' : 'currentColor'
@@ -112,13 +113,12 @@ export function Input({
       <AnimatePresence>
         {error && (
           <motion.p 
-            className="text-sm text-red-600 dark:text-red-400 mt-1 flex items-center gap-1"
+            className={textStyles.error}
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
           >
-            <span className="inline-block w-1 h-1 bg-red-400 rounded-full" />
             {error}
           </motion.p>
         )}

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Bot, MessageSquare, Image, Mic } from 'lucide-react';
+import { Bot, MessageSquare, Image, Mic, Settings2 } from 'lucide-react';
 import { AIModel } from '../../../types/ai';
 
 interface ModelSelectorProps {
@@ -40,6 +40,8 @@ export function ModelSelector({
         return Image;
       case 'audio':
         return Mic;
+      case 'function':
+        return Settings2;
       default:
         return Bot;
     }

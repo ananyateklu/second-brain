@@ -22,6 +22,7 @@ namespace SecondBrain.Data
         public DbSet<IdeaLink> IdeaLinks { get; set; }
         public DbSet<Achievement> Achievements { get; set; }
         public DbSet<UserAchievement> UserAchievements { get; set; }
+        public DbSet<NexusStorage> NexusStorage { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
