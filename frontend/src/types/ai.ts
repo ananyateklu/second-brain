@@ -23,10 +23,18 @@ export interface AIMessage {
   content: string;
 }
 
+export interface ExecutionStep {
+  type: 'processing' | 'thinking' | 'function_call' | 'database_operation' | 'result';
+  content: string;
+  timestamp: string;
+  metadata?: Record<string, any>;
+}
+
 export interface AIResponse {
   content: string;
   type: 'text' | 'image' | 'audio' | 'embedding';
   contentBlocks?: ContentBlock[];
+  executionSteps?: ExecutionStep[];
   metadata?: {
     model?: string;
     usage?: {

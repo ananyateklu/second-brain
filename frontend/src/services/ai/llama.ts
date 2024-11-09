@@ -1,4 +1,4 @@
-import { AIModel, AIResponse } from '../../types/ai';
+import { AIModel, AIResponse, ExecutionStep } from '../../types/ai';
 import api from '../api/api';
 
 export class LlamaService {
@@ -6,21 +6,129 @@ export class LlamaService {
 
   async sendMessage(message: string, modelId: string): Promise<AIResponse> {
     try {
-      const response = await api.post('/api/llama/send', {
-        prompt: message,
-        modelName: modelId
+      const messageId = Date.now().toString();
+      let finalContent = '';
+
+      const eventSource = new EventSource(
+        `${api.defaults.baseURL}/api/llama/stream?prompt=${encodeURIComponent(message)}&modelId=${modelId}`
+      );
+
+      return new Promise((resolve, reject) => {
+        eventSource.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            
+            if (data.Type === 'content') {
+              finalContent += data.Content;
+            } else if (data.Type === 'step' && data.Content && !data.Content.includes('Processing request')) {
+              if (!data.Metadata?.type?.includes('processing') && 
+                  !data.Metadata?.type?.includes('thinking') &&
+                  !data.Metadata?.type?.includes('function_call') &&
+                  !data.Metadata?.type?.includes('database_operation')) {
+                finalContent += data.Content;
+              }
+            }
+          } catch (error) {
+            if (!event.data.includes('"Type":"step"')) {
+              finalContent += event.data;
+            }
+          }
+        };
+
+        eventSource.onerror = (error) => {
+          eventSource.close();
+          if (finalContent) {
+            resolve({
+              content: finalContent.trim(),
+              type: 'text',
+              metadata: {
+                model: modelId,
+                messageId
+              }
+            });
+          } else {
+            reject(new Error('Stream ended without content'));
+          }
+        };
+
+        eventSource.addEventListener('complete', () => {
+          eventSource.close();
+          resolve({
+            content: finalContent.trim(),
+            type: 'text',
+            metadata: {
+              model: modelId,
+              messageId
+            }
+          });
+        });
+      });
+
+    } catch (error) {
+      console.error('Error communicating with Llama API:', error);
+      throw new Error('Failed to get response from Llama.');
+    }
+  }
+
+  async executeDatabaseOperation(prompt: string, messageId: string): Promise<AIResponse> {
+    try {
+      const steps: ExecutionStep[] = [];
+
+      // Add initial processing step
+      steps.push({
+        type: 'processing',
+        content: 'Processing request...',
+        timestamp: new Date().toISOString()
+      });
+
+      // Get raw response first
+      const testResponse = await api.post('/api/nexusstorage/test', prompt);
+      console.log('Raw model response:', testResponse.data.rawResponse);
+
+      // Add thinking step
+      steps.push({
+        type: 'thinking',
+        content: testResponse.data.rawResponse,
+        timestamp: new Date().toISOString()
+      });
+
+      // Add function call step
+      steps.push({
+        type: 'function_call',
+        content: `Executing function: ${testResponse.data.rawResponse.split('\n')[0]}`,
+        timestamp: new Date().toISOString()
+      });
+
+      // Execute the actual operation
+      const response = await api.post('/api/nexusstorage/execute', prompt);
+
+      // Add database operation step
+      steps.push({
+        type: 'database_operation',
+        content: 'Executing database operation...',
+        timestamp: new Date().toISOString()
+      });
+
+      // Add result step
+      steps.push({
+        type: 'result',
+        content: response.data.content,
+        timestamp: new Date().toISOString()
       });
 
       return {
         content: response.data.content,
         type: 'text',
+        executionSteps: steps,
         metadata: {
-          model: response.data.model,
+          model: 'nexusraven',
+          rawResponse: testResponse.data.rawResponse
         },
       };
     } catch (error) {
-      console.error('Error communicating with Llama API:', error);
-      throw new Error('Failed to get response from Llama.');
+      console.error('Error executing database operation:', error);
+      const errorMessage = error.response?.data?.error || 'Failed to execute database operation.';
+      throw new Error(`${errorMessage} Raw response: ${error.response?.data?.rawResponse || 'N/A'}`);
     }
   }
 
@@ -182,29 +290,5 @@ export class LlamaService {
         endpoint: 'chat',
       }
     ];
-  }
-
-  async executeDatabaseOperation(prompt: string): Promise<AIResponse> {
-    try {
-      // First try the test endpoint to see raw response
-      const testResponse = await api.post('/api/nexusstorage/test', prompt);
-      console.log('Raw model response:', testResponse.data.rawResponse);
-
-      // Then try the actual operation
-      const response = await api.post('/api/nexusstorage/execute', prompt);
-
-      return {
-        content: response.data.content,
-        type: 'text',
-        metadata: {
-          model: 'nexusraven',
-          rawResponse: testResponse.data.rawResponse // Include raw response for debugging
-        },
-      };
-    } catch (error) {
-      console.error('Error executing database operation:', error);
-      const errorMessage = error.response?.data?.error || 'Failed to execute database operation.';
-      throw new Error(`${errorMessage} Raw response: ${error.response?.data?.rawResponse || 'N/A'}`);
-    }
   }
 } 

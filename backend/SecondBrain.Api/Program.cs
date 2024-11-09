@@ -12,6 +12,8 @@ using System.Text.Json;
 using SecondBrain.Services.Gamification;
 using SecondBrain.Api.Gamification;  // Updated namespace
 using SecondBrain.Api.DTOs.Nexus;
+using Microsoft.AspNetCore.SignalR;
+using SecondBrain.Api.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -134,6 +136,9 @@ builder.Services.AddScoped<INexusStorageService, NexusStorageService>();
 builder.Services.AddScoped<INoteToolService, NoteToolService>();
 builder.Services.AddScoped<IActivityLogger, ActivityLogger>();
 
+// Add SignalR services
+builder.Services.AddSignalR();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -158,5 +163,7 @@ using (var scope = app.Services.CreateScope())
     var achievementService = scope.ServiceProvider.GetRequiredService<IAchievementService>();
     await achievementService.InitializeAchievementsAsync();
 }
+
+app.MapHub<ToolHub>("/toolHub");
 
 await app.RunAsync();

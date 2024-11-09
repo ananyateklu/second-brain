@@ -10,4 +10,5 @@ public interface INoteToolService
     Task<NoteToolResponse> DeleteNoteAsync(string noteId, string userId);
     Task<NoteToolResponse> SearchNotesAsync(NoteToolSearchCriteria criteria);
     Task<List<Note>> FindNotesByDescriptionAsync(string description, string userId);
+    Task<Note?> GetNoteByIdAsync(string noteId, string userId);
 } 

@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
 import { AIService } from '../services/ai';
-import { AIModel, AIResponse } from '../types/ai';
+import { AIModel, AIResponse, ExecutionStep } from '../types/ai';
 import { LlamaService } from '../services/ai/llama';
+import { signalRService } from '../services/signalR';
 
 interface AIContextType {
   isOpenAIConfigured: boolean;
@@ -15,6 +16,7 @@ interface AIContextType {
   configureGemini: (apiKey: string) => Promise<void>;
   availableModels: AIModel[];
   llamaService: LlamaService;
+  executionSteps: Record<string, ExecutionStep[]>;
 }
 
 const AIContext = createContext<AIContextType | null>(null);
@@ -29,7 +31,37 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
   const [isLlamaConfigured, setIsLlamaConfigured] = useState<boolean>(aiService.llama.isConfigured());
   const [isGrokConfigured, setIsGrokConfigured] = useState<boolean>(false);
   const [availableModels, setAvailableModels] = useState<AIModel[]>(aiService.getAvailableModels());
+  const [executionSteps, setExecutionSteps] = useState<Record<string, ExecutionStep[]>>({});
 
+  useEffect(() => {
+    // Initialize SignalR connection
+    signalRService.start();
+
+    // Subscribe to execution steps
+    signalRService.onExecutionStep((update) => {
+      if (update.metadata.type === 'processing' || 
+          update.metadata.type === 'thinking' ||
+          update.metadata.type === 'function_call' ||
+          update.metadata.type === 'database_operation' ||
+          update.metadata.type === 'result') {
+        const step: ExecutionStep = {
+          type: update.metadata.type,
+          content: update.content,
+          timestamp: update.metadata.timestamp,
+          metadata: update.metadata
+        };
+
+        setExecutionSteps(prev => ({
+          ...prev,
+          [update.metadata.messageId]: [...(prev[update.metadata.messageId] || []), step]
+        }));
+      }
+    });
+
+    return () => {
+      signalRService.stopConnection();
+    };
+  }, []);
 
   // Initialize Anthropic configuration status
   useEffect(() => {
@@ -165,7 +197,8 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
     configureGemini,
     availableModels,
     llamaService: aiService.llama,
-  }), [isOpenAIConfigured, isAnthropicConfigured, isGeminiConfigured, isLlamaConfigured, isGrokConfigured, error, sendMessage, configureOpenAI, configureGemini, availableModels]);
+    executionSteps,
+  }), [isOpenAIConfigured, isAnthropicConfigured, isGeminiConfigured, isLlamaConfigured, isGrokConfigured, error, sendMessage, configureOpenAI, configureGemini, availableModels, executionSteps]);
 
   return <AIContext.Provider value={value}>{children}</AIContext.Provider>;
 }

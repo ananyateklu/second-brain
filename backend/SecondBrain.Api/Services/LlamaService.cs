@@ -8,6 +8,13 @@ using SecondBrain.Api.DTOs.Nexus;
 using SecondBrain.Api.Services;
 using System.Text.Json;
 using SecondBrain.Data.Entities;
+using SecondBrain.Api.Models;
+using System.Runtime.CompilerServices;
+using System.Collections.Generic;
+using System.Threading;
+using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.SignalR;
+using SecondBrain.Api.Hubs;
 
 namespace SecondBrain.Api.Services
 {
@@ -17,6 +24,7 @@ namespace SecondBrain.Api.Services
         private readonly OllamaApiClient _ollamaClient;
         private readonly INexusStorageService _nexusStorage;
         private readonly INoteToolService _noteToolService;
+        private readonly IHubContext<ToolHub> _hubContext;
 
         private readonly string systemPrompt = @"You are a natural language interface for a Notes database with the following schema:
 
@@ -102,11 +110,12 @@ Note: For tags, always use comma-separated strings (e.g., tags='project,planning
 User context must be preserved in [USER:id] format
 All operations require valid user authentication";
 
-        public LlamaService(IConfiguration configuration, ILogger<LlamaService> logger, INexusStorageService nexusStorage, INoteToolService noteToolService)
+        public LlamaService(IConfiguration configuration, ILogger<LlamaService> logger, INexusStorageService nexusStorage, INoteToolService noteToolService, IHubContext<ToolHub> hubContext)
         {
             _logger = logger;
             _nexusStorage = nexusStorage;
             _noteToolService = noteToolService;
+            _hubContext = hubContext;
             var ollamaUri = new Uri(configuration["Llama:OllamaUri"] ?? "http://localhost:11434");
             _ollamaClient = new OllamaApiClient(ollamaUri);
         }
@@ -141,15 +150,15 @@ All operations require valid user authentication";
 
             try
             {
-                // Store the original prompt for user context
-                var originalPrompt = prompt; // Keep this for user ID extraction
-
-                // Extract user ID for logging
+                // Extract user ID and emit initial step
                 var userIdMatch = System.Text.RegularExpressions.Regex.Match(prompt, @"\[USER:([^\]]+)\]");
-                if (userIdMatch.Success)
+                var userId = userIdMatch.Success ? userIdMatch.Groups[1].Value : "unknown";
+                
+                await EmitExecutionStep("processing", $"Processing request for user: {userId}", new Dictionary<string, object>
                 {
-                    _logger.LogInformation("Processing request for user: {UserId}", userIdMatch.Groups[1].Value);
-                }
+                    { "userId", userId },
+                    { "timestamp", DateTime.UtcNow }
+                });
 
                 // Combine system prompt and user prompt
                 var fullPrompt = $"{systemPrompt}\n\nUser Input: {prompt}";
@@ -169,7 +178,7 @@ All operations require valid user authentication";
                         if (operation != null)
                         {
                             // Add the original prompt to the operation for user context
-                            operation.OriginalPrompt = originalPrompt;
+                            operation.OriginalPrompt = prompt;
                             return await ExecuteOperation(operation);
                         }
                     }
@@ -184,7 +193,7 @@ All operations require valid user authentication";
                 if (functionCall != null)
                 {
                     // Add the original prompt to the operation for user context
-                    functionCall.OriginalPrompt = originalPrompt;
+                    functionCall.OriginalPrompt = prompt;
                     return await ExecuteOperation(functionCall);
                 }
 
@@ -316,23 +325,48 @@ All operations require valid user authentication";
                         return JsonSerializer.Serialize(createResponse);
 
                     case "update_note":
-                        var noteId = operation.Arguments.GetValueOrDefault("id", "");
-                        if (string.IsNullOrEmpty(noteId))
+                        var rawIdOrTitle = operation.Arguments.GetValueOrDefault("id", "");
+                        var cleanIdOrTitle = System.Text.RegularExpressions.Regex.Replace(rawIdOrTitle, @"\[(?:NOTE|USER):(.*?)\]", "$1");
+                        
+                        if (string.IsNullOrEmpty(cleanIdOrTitle))
                         {
-                            throw new Exception("Note ID is required for update operation");
+                            throw new Exception("Note ID or title is required for update operation");
+                        }
+
+                        // First try to find by exact ID
+                        var note = await _noteToolService.GetNoteByIdAsync(cleanIdOrTitle, userId);
+                        
+                        // If not found by ID, try to find by title
+                        if (note == null)
+                        {
+                            // Extract title from arguments or use the cleanIdOrTitle
+                            var searchTitle = operation.Arguments.GetValueOrDefault("title", cleanIdOrTitle);
+                            var matchingNotes = await _noteToolService.FindNotesByDescriptionAsync(searchTitle, userId);
+                            
+                            if (!matchingNotes.Any())
+                            {
+                                throw new Exception($"Could not find note matching '{searchTitle}'");
+                            }
+                            
+                            // If multiple notes found, prefer exact title match first
+                            note = matchingNotes.FirstOrDefault(n => 
+                                n.Title.Equals(searchTitle, StringComparison.OrdinalIgnoreCase)) 
+                                ?? ChooseBestNoteMatch(matchingNotes, searchTitle);
                         }
 
                         var updateRequest = new NoteToolRequest
                         {
-                            Title = operation.Arguments.GetValueOrDefault("title", ""),
-                            Content = operation.Arguments.GetValueOrDefault("content", ""),
-                            IsPinned = bool.Parse(operation.Arguments.GetValueOrDefault("isPinned", "false")),
-                            IsFavorite = bool.Parse(operation.Arguments.GetValueOrDefault("isFavorite", "false")),
-                            IsArchived = bool.Parse(operation.Arguments.GetValueOrDefault("isArchived", "false")),
-                            Tags = operation.Arguments.GetValueOrDefault("tags", ""),
+                            Title = operation.Arguments.GetValueOrDefault("title", note.Title),
+                            Content = operation.Arguments.GetValueOrDefault("content", note.Content),
+                            IsPinned = bool.Parse(operation.Arguments.GetValueOrDefault("isPinned", note.IsPinned.ToString())),
+                            IsFavorite = bool.Parse(operation.Arguments.GetValueOrDefault("isFavorite", note.IsFavorite.ToString())),
+                            IsArchived = bool.Parse(operation.Arguments.GetValueOrDefault("isArchived", note.IsArchived.ToString())),
+                            Tags = operation.Arguments.GetValueOrDefault("tags", note.Tags ?? ""),
                             UserId = userId
                         };
-                        var updateResponse = await _noteToolService.UpdateNoteAsync(noteId, updateRequest);
+
+                        _logger.LogInformation("Updating note: {NoteId} - {Title}", note.Id, note.Title);
+                        var updateResponse = await _noteToolService.UpdateNoteAsync(note.Id, updateRequest);
                         return JsonSerializer.Serialize(updateResponse);
 
                     case "link_notes":
@@ -347,13 +381,13 @@ All operations require valid user authentication";
                         return await HandleNoteLinking(sourceDesc, targetDesc, userId);
 
                     case "unlink_notes":
-                        var sourceId = operation.Arguments.GetValueOrDefault("sourceId", "");
-                        var targetIdsStr = operation.Arguments.GetValueOrDefault("targetIds", "");
+                        var rawSourceId = operation.Arguments.GetValueOrDefault("sourceId", "");
+                        var sourceId = System.Text.RegularExpressions.Regex.Replace(rawSourceId, @"\[NOTE:(.*?)\]", "$1");
                         
-                        // Parse comma-separated string into array
+                        var targetIdsStr = operation.Arguments.GetValueOrDefault("targetIds", "");
                         var targetIds = targetIdsStr.Split(',', StringSplitOptions.RemoveEmptyEntries)
-                                                   .Select(id => id.Trim())
-                                                   .ToArray();
+                                                  .Select(id => System.Text.RegularExpressions.Regex.Replace(id.Trim(), @"\[NOTE:(.*?)\]", "$1"))
+                                                  .ToArray();
                         
                         if (string.IsNullOrEmpty(sourceId) || !targetIds.Any())
                         {
@@ -368,31 +402,53 @@ All operations require valid user authentication";
                         {
                             Query = operation.Arguments.GetValueOrDefault("query", ""),
                             Tags = operation.Arguments.GetValueOrDefault("tags", ""),
-                            IsPinned = bool.Parse(operation.Arguments.GetValueOrDefault("isPinned", "null")),
-                            IsFavorite = bool.Parse(operation.Arguments.GetValueOrDefault("isFavorite", "null")),
-                            IsArchived = bool.Parse(operation.Arguments.GetValueOrDefault("isArchived", "null")),
-                            IsIdea = bool.Parse(operation.Arguments.GetValueOrDefault("isIdea", "null")),
                             UserId = userId
                         };
+
+                        // Only parse boolean values if they're not "null"
+                        if (operation.Arguments.TryGetValue("isPinned", out var isPinnedStr) && isPinnedStr.ToLower() != "null")
+                        {
+                            searchCriteria.IsPinned = bool.Parse(isPinnedStr);
+                        }
+                        
+                        if (operation.Arguments.TryGetValue("isFavorite", out var isFavoriteStr) && isFavoriteStr.ToLower() != "null")
+                        {
+                            searchCriteria.IsFavorite = bool.Parse(isFavoriteStr);
+                        }
+                        
+                        if (operation.Arguments.TryGetValue("isArchived", out var isArchivedStr) && isArchivedStr.ToLower() != "null")
+                        {
+                            searchCriteria.IsArchived = bool.Parse(isArchivedStr);
+                        }
+                        
+                        if (operation.Arguments.TryGetValue("isIdea", out var isIdeaStr) && isIdeaStr.ToLower() != "null")
+                        {
+                            searchCriteria.IsIdea = bool.Parse(isIdeaStr);
+                        }
+
                         var searchResponse = await _noteToolService.SearchNotesAsync(searchCriteria);
                         return JsonSerializer.Serialize(searchResponse);
 
                     case "archive_note":
-                        noteId = operation.Arguments.GetValueOrDefault("id", "");
-                        if (string.IsNullOrEmpty(noteId))
+                        var rawArchiveId = operation.Arguments.GetValueOrDefault("id", "");
+                        var archiveNoteId = System.Text.RegularExpressions.Regex.Replace(rawArchiveId, @"\[NOTE:(.*?)\]", "$1");
+                        
+                        if (string.IsNullOrEmpty(archiveNoteId))
                         {
                             throw new Exception("Note ID is required for archive operation");
                         }
-                        var archiveResponse = await _noteToolService.ArchiveNoteAsync(noteId, userId);
+                        var archiveResponse = await _noteToolService.ArchiveNoteAsync(archiveNoteId, userId);
                         return JsonSerializer.Serialize(archiveResponse);
 
                     case "delete_note":
-                        noteId = operation.Arguments.GetValueOrDefault("id", "");
-                        if (string.IsNullOrEmpty(noteId))
+                        var rawDeleteId = operation.Arguments.GetValueOrDefault("id", "");
+                        var deleteNoteId = System.Text.RegularExpressions.Regex.Replace(rawDeleteId, @"\[NOTE:(.*?)\]", "$1");
+                        
+                        if (string.IsNullOrEmpty(deleteNoteId))
                         {
                             throw new Exception("Note ID is required for delete operation");
                         }
-                        var deleteResponse = await _noteToolService.DeleteNoteAsync(noteId, userId);
+                        var deleteResponse = await _noteToolService.DeleteNoteAsync(deleteNoteId, userId);
                         return JsonSerializer.Serialize(deleteResponse);
 
                     // Keep existing operations
@@ -538,6 +594,111 @@ All operations require valid user authentication";
 
             // Title matches are weighted more heavily
             return (titleMatches * 2.0) + contentMatches;
+        }
+
+        public async IAsyncEnumerable<ModelUpdate> StreamResponseAsync(string prompt, string modelId)
+        {
+            // Initial processing step
+            yield return new ModelUpdate(
+                "step",
+                "Processing request...",
+                new Dictionary<string, object>
+                {
+                    { "type", "processing" },
+                    { "timestamp", DateTime.UtcNow.ToString("o") }
+                }
+            );
+
+            // Thinking/Analysis step
+            yield return new ModelUpdate(
+                "step",
+                "Analyzing request...",
+                new Dictionary<string, object>
+                {
+                    { "type", "thinking" },
+                    { "timestamp", DateTime.UtcNow.ToString("o") }
+                }
+            );
+
+            var rawResponse = await GetRawModelResponse(prompt);
+            _logger.LogInformation($"Raw model response: {rawResponse}");
+
+            // Function call step
+            yield return new ModelUpdate(
+                "step",
+                $"Extracted function call: {rawResponse}",
+                new Dictionary<string, object>
+                {
+                    { "type", "function_call" },
+                    { "timestamp", DateTime.UtcNow.ToString("o") },
+                    { "rawResponse", rawResponse }
+                }
+            );
+
+            // When database operation starts
+            yield return new ModelUpdate(
+                "step",
+                "Executing database operation...",
+                new Dictionary<string, object>
+                {
+                    { "type", "database_operation" },
+                    { "timestamp", DateTime.UtcNow.ToString("o") }
+                }
+            );
+
+            var functionCall = await ExtractFunctionCall(rawResponse);
+            // Execute the function call...
+
+            // Result step
+            yield return new ModelUpdate(
+                "step",
+                "Operation completed successfully",
+                new Dictionary<string, object>
+                {
+                    { "type", "result" },
+                    { "timestamp", DateTime.UtcNow.ToString("o") }
+                }
+            );
+        }
+
+        private string ExtractUserId(string prompt)
+        {
+            var match = Regex.Match(prompt, @"\[USER:([^\]]+)\]");
+            return match.Success ? match.Groups[1].Value : "unknown";
+        }
+
+        private async Task<string> GetRawModelResponse(string prompt)
+        {
+            await Task.Delay(500); // Simulate API call
+            return "Sample raw response";
+        }
+
+        private async Task<(string Name, Dictionary<string, object> Arguments)> ExtractFunctionCall(string rawResponse)
+        {
+            _logger.LogInformation($"Parsing function call from: {rawResponse}");
+            
+            await Task.Delay(100); // Simulate processing
+            return ("create_note", new Dictionary<string, object>
+            {
+                { "title", "Sample Note" },
+                { "content", "Sample Content" },
+                { "tags", "sample,test" }
+            });
+        }
+
+        private async Task<string> ExecuteOperation((string Name, Dictionary<string, object> Arguments) functionCall)
+        {
+            _logger.LogInformation($"Executing operation: {JsonSerializer.Serialize(functionCall)}");
+            
+            await Task.Delay(500);
+            return "Operation completed successfully";
+        }
+
+        private async Task EmitExecutionStep(string type, string content, Dictionary<string, object>? metadata = null)
+        {
+            var step = new ModelUpdate(type, content, metadata);
+            await _hubContext.Clients.All.SendAsync("ReceiveExecutionStep", step);
+            _logger.LogInformation($"Emitted step: {type} - {content}");
         }
     }
 }

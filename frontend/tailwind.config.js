@@ -77,6 +77,10 @@ export default {
         slideDown: {
           '0%': { transform: 'translateY(-10px)', opacity: '0' },
           '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        spin: {
+          '0%': { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(360deg)' },
         }
       },
       animation: {
@@ -84,6 +88,7 @@ export default {
         'message-slide-in': 'message-slide-in 0.3s ease-out forwards',
         slideDown: 'slideDown 0.2s ease-out',
         float: 'float 3s ease-in-out infinite',
+        'spin': 'spin 1s linear infinite',
       }
     },
   },

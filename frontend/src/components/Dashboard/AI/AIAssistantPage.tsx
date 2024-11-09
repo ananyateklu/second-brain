@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bot, Settings } from 'lucide-react';
 import { useAI } from '../../../contexts/AIContext';
-import { AIModel } from '../../../types/ai';
+import { AIModel, ExecutionStep } from '../../../types/ai';
 import { ModelSelector } from './ModelSelector';
 import { ChatInterface } from './ChatInterface';
 import { MessageList } from './MessageList';
@@ -17,6 +17,8 @@ interface Message {
   type: 'text' | 'image' | 'audio' | 'embedding';
   timestamp: string;
   model?: AIModel;
+  isLoading?: boolean;
+  executionSteps?: ExecutionStep[];
 }
 
 export function AIAssistantPage() {
@@ -57,8 +59,10 @@ export function AIAssistantPage() {
     setIsLoading(true);
     setError(null);
 
+    const messageId = Date.now().toString();
+    
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: `user-${messageId}`,
       role: 'user',
       content: input,
       type: 'text',
@@ -67,23 +71,39 @@ export function AIAssistantPage() {
     };
     setMessages((prev) => [...prev, userMessage]);
 
+    const assistantMessageId = `assistant-${messageId}`;
+    const assistantMessage: Message = {
+      id: assistantMessageId,
+      role: 'assistant',
+      content: '',
+      type: 'text',
+      timestamp: new Date().toISOString(),
+      model: selectedModel,
+      isLoading: true,
+    };
+    setMessages((prev) => [...prev, assistantMessage]);
+
     try {
       const aiResponse = selectedModel.category === 'function'
-        ? await llamaService.executeDatabaseOperation(input)
-        : await sendMessage(input, selectedModel.id);
+        ? await llamaService.executeDatabaseOperation(input, assistantMessageId)
+        : await sendMessage(input, selectedModel.id, assistantMessageId);
 
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: aiResponse.content,
-        type: aiResponse.type,
-        timestamp: new Date().toISOString(),
-        model: selectedModel,
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
+      setMessages((prev) => prev.map(msg => 
+        msg.id === assistantMessageId
+          ? {
+              ...msg,
+              content: aiResponse.content,
+              type: aiResponse.type,
+              isLoading: false,
+              executionSteps: aiResponse.executionSteps
+            }
+          : msg
+      ));
 
     } catch (e: any) {
+      console.error('Error in handleUserInput:', e);
       setError(e.message || 'Failed to communicate with the AI assistant.');
+      setMessages((prev) => prev.filter(msg => msg.id !== assistantMessageId));
     } finally {
       setIsLoading(false);
     }

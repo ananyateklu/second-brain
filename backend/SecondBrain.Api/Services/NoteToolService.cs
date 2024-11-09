@@ -465,5 +465,14 @@ namespace SecondBrain.Api.Services
                 return new List<Note>();
             }
         }
+
+        public async Task<Note?> GetNoteByIdAsync(string noteId, string userId)
+        {
+            return await _context.Notes
+                .FirstOrDefaultAsync(n => 
+                    n.Id == noteId && 
+                    n.UserId == userId && 
+                    !n.IsDeleted);
+        }
     }
 } 

@@ -1,8 +1,10 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using SecondBrain.Api.DTOs.Llama;
+using Microsoft.AspNetCore.SignalR;
+using SecondBrain.Api.Hubs;
 using SecondBrain.Api.Services;
+using SecondBrain.Api.Models;
+using System.Text.Json;
 
 namespace SecondBrain.Api.Controllers
 {
@@ -11,37 +13,61 @@ namespace SecondBrain.Api.Controllers
     public class LlamaController : ControllerBase
     {
         private readonly ILlamaService _llamaService;
+        private readonly IHubContext<ToolHub> _hubContext;
         private readonly ILogger<LlamaController> _logger;
 
-        public LlamaController(ILlamaService llamaService, ILogger<LlamaController> logger)
+        public LlamaController(
+            ILlamaService llamaService,
+            IHubContext<ToolHub> hubContext,
+            ILogger<LlamaController> logger)
         {
             _llamaService = llamaService;
+            _hubContext = hubContext;
             _logger = logger;
         }
 
-        [HttpPost("send")]
-        public async Task<IActionResult> SendMessage([FromBody] LlamaRequest request)
+        [HttpGet("stream")]
+        public async Task StreamResponse([FromQuery] string prompt, [FromQuery] string modelId)
         {
-            if (string.IsNullOrEmpty(request.Prompt))
-            {
-                return BadRequest("Prompt is required.");
-            }
+            Response.Headers.Add("Content-Type", "text/event-stream");
+            Response.Headers.Add("Cache-Control", "no-cache");
+            Response.Headers.Add("Connection", "keep-alive");
 
             try
             {
-                var responseText = await _llamaService.GenerateTextAsync(request.Prompt, request.ModelName);
-                var response = new LlamaResponse
+                if (modelId.Contains("function"))  // or whatever identifier you use for function-calling models
                 {
-                    Content = responseText,
-                    Model = _llamaService.GetType().Name
-                };
+                    // Existing function-calling logic
+                    await foreach (var update in _llamaService.StreamResponseAsync(prompt, modelId))
+                    {
+                        var json = JsonSerializer.Serialize(update);
+                        await Response.WriteAsync($"data: {json}\n\n");
+                        await Response.Body.FlushAsync();
+                    }
+                }
+                else
+                {
+                    // Direct model response for local models
+                    var response = await _llamaService.GenerateTextAsync(prompt, modelId);
+                    var update = new
+                    {
+                        Type = "content",
+                        Content = response,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    
+                    var json = JsonSerializer.Serialize(update);
+                    await Response.WriteAsync($"data: {json}\n\n");
+                    await Response.Body.FlushAsync();
+                }
 
-                return Ok(response);
+                await Response.WriteAsync($"event: complete\ndata: {{}}\n\n");
+                await Response.Body.FlushAsync();
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                _logger.LogError(ex, "Error in LlamaController.SendMessage");
-                return StatusCode(500, "Failed to process the request.");
+                _logger.LogError(ex, "Error processing stream request");
+                throw;
             }
         }
     }

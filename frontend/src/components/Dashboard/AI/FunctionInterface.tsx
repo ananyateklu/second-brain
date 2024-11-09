@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Database, Save, Search, Edit, Tags, Link, Archive, Trash2 } from 'lucide-react';
 import { AIModel } from '../../../types/ai';
-import { textStyles, combineTextStyles } from '../../../utils/textUtils';
+import { textStyles } from '../../../utils/textUtils';
 import { useAuth } from '../../../contexts/AuthContext';
 
 interface FunctionInterfaceProps {
@@ -55,128 +55,65 @@ export function FunctionInterface({
       icon: <Edit size={18} style={{ color: themeColor }} />,
       title: "Update",
       examples: [
-        "Update the project meeting note to include action items",
-        "Make the design review note pinned and add tag important",
-        "Update the authentication idea with new security considerations",
-        "Mark the roadmap note as favorite"
+        "Update the project timeline note",
+        "Edit my authentication ideas",
+        "Modify the meeting notes from yesterday",
+        "Update tags on my design notes"
+      ]
+    },
+    {
+      icon: <Tags size={18} style={{ color: themeColor }} />,
+      title: "Tags",
+      examples: [
+        "Add tags to my project notes",
+        "Remove tags from old notes",
+        "Update tags on design documents",
+        "Find notes with specific tags"
       ]
     },
     {
       icon: <Link size={18} style={{ color: themeColor }} />,
       title: "Link",
       examples: [
-        "Link the project meeting note to the roadmap note",
-        "Connect the authentication idea to the security notes",
-        "Remove link between design notes",
-        "Link this week's meeting notes together"
+        "Link related project notes",
+        "Connect design notes to implementation",
+        "Add references between notes",
+        "Link meeting notes to action items"
       ]
     },
     {
       icon: <Archive size={18} style={{ color: themeColor }} />,
       title: "Archive",
       examples: [
-        "Archive the old project notes",
-        "Archive all completed task notes",
-        "Archive notes from last year",
-        "Archive notes tagged as 'completed'"
+        "Archive old project notes",
+        "Move completed tasks to archive",
+        "Archive last month's meeting notes"
       ]
     },
     {
       icon: <Trash2 size={18} style={{ color: themeColor }} />,
       title: "Delete",
       examples: [
-        "Delete the draft note",
-        "Remove the outdated meeting notes",
-        "Delete notes tagged as 'temporary'",
-        "Delete the duplicate idea"
+        "Delete timeline",
+        "Remove notes",
+        "Delete reminders"
       ]
     }
   ];
 
   return (
-    <div className="space-y-3 relative z-10">
-      <div className="flex items-center justify-between p-3 rounded-lg
-        bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl
-        border border-gray-200/30 dark:border-gray-700/30
-        shadow-sm hover:shadow-md transition-all duration-200">
-        <div className="flex items-center gap-2">
-          <Database size={20} style={{ color: themeColor }} className="opacity-90" />
-          <div>
-            <h3 className={combineTextStyles('h3')}>Notes Assistant</h3>
-            <p className={`${textStyles.caption} mt-0.5 opacity-90`}>
-              Create, find, and manage your notes and ideas naturally
-            </p>
-          </div>
-        </div>
-        <button
-          onClick={() => setShowExamples(!showExamples)}
-          className={`${textStyles.link} text-sm flex items-center gap-1 
-            hover:bg-white/30 dark:hover:bg-gray-700/30 
-            px-2 py-1 rounded-md transition-all duration-200`}
-          style={{ color: themeColor }}
-        >
-          {showExamples ? '✕ Hide Examples' : '✨ Show Examples'}
-        </button>
-      </div>
-
-      {showExamples && (
-        <div className="bg-white/50 dark:bg-gray-800/50 rounded-lg 
-          backdrop-blur-xl border border-gray-200/30 dark:border-gray-700/30 
-          shadow-lg relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-transparent 
-            via-white/10 to-white/20 dark:via-gray-800/10 dark:to-gray-800/20" />
-          <div className="relative p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {examples.map((category) => (
-              <div key={category.title} 
-                className="space-y-2 bg-white/30 dark:bg-gray-900/30 
-                  rounded-lg p-3 backdrop-blur-xl
-                  border border-gray-200/30 dark:border-gray-700/30
-                  hover:shadow-md transition-all duration-200
-                  hover:bg-white/40 dark:hover:bg-gray-900/40">
-                <div className="flex items-center gap-1.5">
-                  <span className="p-1 rounded-md bg-white/50 dark:bg-gray-800/50 
-                    shadow-sm backdrop-blur-sm">{category.icon}</span>
-                  <h4 className={textStyles.cardTitle} style={{ color: themeColor }}>
-                    {category.title}
-                  </h4>
-                </div>
-                <ul className="space-y-1">
-                  {category.examples.map((example) => (
-                    <li 
-                      key={example}
-                      className={`${textStyles.bodySmall} cursor-pointer 
-                        bg-white/20 dark:bg-gray-800/20 
-                        hover:bg-white/40 dark:hover:bg-gray-700/40 
-                        p-2 rounded-md transition-all duration-200
-                        backdrop-blur-xl
-                        border border-transparent
-                        hover:border-gray-200/30 dark:hover:border-gray-600/30
-                        hover:shadow-sm`}
-                      onClick={() => {
-                        setInput(example);
-                        setShowExamples(false);
-                        textareaRef.current?.focus();
-                      }}
-                    >
-                      {example}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
+    <div className="space-y-4">
       <form onSubmit={handleSubmit} className="relative">
         <textarea
           ref={textareaRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="What would you like to do with your notes? (e.g., 'Create a note about today's meeting')"
-          className={`w-full min-h-[80px] p-3 rounded-lg
-            bg-white/70 dark:bg-gray-800/70 
-            backdrop-blur-xl
+          placeholder="Describe what you want to do with your notes..."
+          rows={3}
+          disabled={isLoading}
+          className={`w-full p-3 rounded-lg
+            resize-none
+            bg-white/50 dark:bg-gray-800/50
             border border-gray-200/30 dark:border-gray-700/30
             shadow-sm
             focus:shadow-md
@@ -212,17 +149,43 @@ export function FunctionInterface({
         </button>
       </form>
 
-      {!showExamples && (
-        <div className={`${textStyles.caption} flex items-center gap-1.5 
-          p-2 rounded-lg
-          bg-white/30 dark:bg-gray-800/30 
-          backdrop-blur-xl
-          border border-gray-200/30 dark:border-gray-700/30`}>
-          <span className="p-1 rounded-full bg-white/50 dark:bg-gray-700/50">💡</span>
-          <span className="opacity-90">
-            Use natural language to manage your notes and ideas. You can create, update, link, search, archive, and delete notes.
-            Try to be specific with titles, tags, and content.
-          </span>
+      <button
+        onClick={() => setShowExamples(!showExamples)}
+        className={`${textStyles.link} text-sm flex items-center gap-1`}
+        style={{ color: themeColor }}
+      >
+        {showExamples ? 'Hide Examples' : 'Show Examples'}
+      </button>
+
+      {showExamples && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+          {examples.map((category) => (
+            <div
+              key={category.title}
+              className="p-4 rounded-lg bg-white/30 dark:bg-gray-800/30 
+                border border-gray-200/30 dark:border-gray-700/30
+                backdrop-blur-sm"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                {category.icon}
+                <span className="font-medium">{category.title}</span>
+              </div>
+              <ul className="space-y-2">
+                {category.examples.map((example, index) => (
+                  <li
+                    key={index}
+                    className="text-sm cursor-pointer hover:opacity-75"
+                    onClick={() => {
+                      setInput(example);
+                      textareaRef.current?.focus();
+                    }}
+                  >
+                    {example}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
       )}
     </div>

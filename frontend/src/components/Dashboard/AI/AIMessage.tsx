@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Bot, User } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
-import { AIModel } from '../../../types/ai';
+import { AIModel, ExecutionStep } from '../../../types/ai';
 import { TypewriterEffect } from './TypewriterEffect';
 import { ImageGenerationLoading } from './ImageGenerationLoading';
+import { ThoughtProcess } from './ThoughtProcess';
+import { useAI } from '../../../contexts/AIContext';
 
 interface Message {
   id: string;
@@ -12,6 +14,8 @@ interface Message {
   type: 'text' | 'image' | 'audio' | 'embedding';
   timestamp: string;
   model?: AIModel;
+  isLoading?: boolean;
+  executionSteps?: ExecutionStep[];
 }
 
 interface AIMessageProps {
@@ -23,11 +27,16 @@ interface AIMessageProps {
 export function AIMessage({ message, themeColor, isStreaming }: AIMessageProps) {
   const isUser = message.role === 'user';
   const { user } = useAuth();
-
-  const assistantThemeColor = message.model?.color || '#6B7280'; // Default to gray if no color
-
+  const assistantThemeColor = message.model?.color || '#6B7280';
   const [progress, setProgress] = useState(0);
 
+  // Show thought process only for function category and when steps exist
+  const shouldShowThoughtProcess = !isUser && 
+    message.model?.category === 'function' && 
+    message.executionSteps && 
+    message.executionSteps.length > 0;
+
+  // Image generation progress effect
   useEffect(() => {
     if (message.type === 'image' && message.isLoading) {
       const interval = setInterval(() => {
@@ -36,12 +45,12 @@ export function AIMessage({ message, themeColor, isStreaming }: AIMessageProps) 
             clearInterval(interval);
             return 99;
           }
-          return prevProgress + Math.random() * 5; // Increment progress
+          return prevProgress + Math.random() * 5;
         });
       }, 500);
       return () => clearInterval(interval);
     } else {
-      setProgress(100); // When not loading, progress is complete
+      setProgress(100);
     }
   }, [message.isLoading, message.type]);
 
@@ -50,16 +59,15 @@ export function AIMessage({ message, themeColor, isStreaming }: AIMessageProps) 
       case 'image':
         if (message.isLoading) {
           return <ImageGenerationLoading progress={progress} />;
-        } else {
-          return (
-            <img
-              src={message.content}
-              alt="AI Generated"
-              className="max-w-lg rounded-lg shadow-lg animate-fade-in"
-              loading="lazy"
-            />
-          );
         }
+        return (
+          <img
+            src={message.content}
+            alt="AI Generated"
+            className="max-w-lg rounded-lg shadow-lg animate-fade-in"
+            loading="lazy"
+          />
+        );
       case 'audio':
         return (
           <audio controls className="max-w-md animate-fade-in">
@@ -75,23 +83,20 @@ export function AIMessage({ message, themeColor, isStreaming }: AIMessageProps) 
         );
       default:
         return isUser || !isStreaming ? (
-          <p className="whitespace-pre-wrap break-all animate-fade-in">{message.content}</p>
+          <p className="whitespace-pre-wrap break-all animate-fade-in">
+            {message.content || 'Thinking...'}
+          </p>
         ) : (
-          <TypewriterEffect text={message.content} />
+          <TypewriterEffect text={message.content || 'Thinking...'} />
         );
     }
   };
 
   return (
     <div className={`flex items-end ${isUser ? 'justify-end' : 'justify-start'} mb-4 animate-message-slide-in`}>
-      <div
-        className={`flex flex-col max-w-xs mx-2 ${isUser ? 'items-end' : 'items-start'
-          }`}
-      >
-        <div
-          className={`flex items-center ${isUser ? 'flex-row-reverse' : ''
-            } mb-1`}
-        >
+      <div className={`flex flex-col max-w-xs mx-2 ${isUser ? 'items-end' : 'items-start'}`}>
+        {/* User/Bot Header */}
+        <div className={`flex items-center ${isUser ? 'flex-row-reverse' : ''} mb-1`}>
           {isUser ? (
             <>
               {user?.avatarUrl && (
@@ -117,6 +122,8 @@ export function AIMessage({ message, themeColor, isStreaming }: AIMessageProps) 
             </>
           )}
         </div>
+
+        {/* Message Content */}
         <div
           className={`px-4 py-2 rounded-lg backdrop-blur-sm ${
             isUser
@@ -127,10 +134,23 @@ export function AIMessage({ message, themeColor, isStreaming }: AIMessageProps) 
         >
           {renderContent()}
         </div>
+
+        {/* Timestamp */}
         <span className="mt-1 text-xs text-gray-500 dark:text-gray-400">
           {new Date(message.timestamp).toLocaleTimeString()}
         </span>
       </div>
+
+      {/* Show thought process only for function-calling messages */}
+      {shouldShowThoughtProcess && (
+        <div className="ml-4 flex-1 max-w-2xl">
+          <ThoughtProcess
+            steps={message.executionSteps || []}
+            isComplete={!isStreaming}
+            themeColor={themeColor}
+          />
+        </div>
+      )}
     </div>
   );
 }
