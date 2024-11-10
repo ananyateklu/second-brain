@@ -107,6 +107,9 @@ export function FunctionInterface({
     }
   ];
 
+  // Use this color for both components
+  const adjustedThemeColor = '#8B5CF6'; // Tailwind violet-500 - vibrant but not too bright
+
   return (
     <div className="space-y-4">
       <form onSubmit={handleSubmit} className="relative">
@@ -124,11 +127,12 @@ export function FunctionInterface({
             shadow-sm
             focus:shadow-md
             transition-all duration-200
-            ${textStyles.input}
-            focus:bg-white/80 dark:focus:bg-gray-800/80`}
+            ${textStyles.bodySmall}
+            focus:bg-white/80 dark:focus:bg-gray-800/80
+            focus:outline-none focus:ring-2 focus:ring-opacity-50`}
           style={{ 
-            focusRingColor: themeColor,
-          }}
+            '--tw-ring-color': adjustedThemeColor,
+          } as React.CSSProperties}
         />
         
         <button
@@ -141,7 +145,7 @@ export function FunctionInterface({
             hover:shadow-md active:scale-95
             border border-white/30`}
           style={{ 
-            backgroundColor: `${themeColor}cc`,
+            backgroundColor: `${adjustedThemeColor}cc`,
           }}
         >
           {isLoading ? (
@@ -157,8 +161,8 @@ export function FunctionInterface({
 
       <button
         onClick={() => setShowExamples(!showExamples)}
-        className={`${textStyles.link} text-sm flex items-center gap-1`}
-        style={{ color: themeColor }}
+        className={`${textStyles.muted} flex items-center gap-1 hover:opacity-80`}
+        style={{ color: adjustedThemeColor }}
       >
         {showExamples ? 'Hide Examples' : 'Show Examples'}
       </button>
@@ -174,13 +178,14 @@ export function FunctionInterface({
             >
               <div className="flex items-center gap-2 mb-2">
                 {category.icon}
-                <span className="font-medium">{category.title}</span>
+                <span className={textStyles.bodySmall}>{category.title}</span>
               </div>
               <ul className="space-y-2">
                 {category.examples.map((example, index) => (
                   <li
                     key={index}
-                    className="text-sm cursor-pointer hover:opacity-75"
+                    className={`cursor-pointer transition-opacity duration-200
+                      hover:opacity-75 ${textStyles.muted}`}
                     onClick={() => handleExampleClick(example)}
                   >
                     {example}

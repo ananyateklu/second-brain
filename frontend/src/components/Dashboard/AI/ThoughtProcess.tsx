@@ -1,89 +1,96 @@
 import React from 'react';
 import { Brain, Terminal, Database, Check, Loader2 } from 'lucide-react';
 import { ExecutionStep } from '../../../types/ai';
+import { textStyles } from '../../../utils/textUtils';
 
 interface ThoughtProcessProps {
   steps: ExecutionStep[];
   isComplete: boolean;
-  themeColor?: string;
+  themeColor: string;
 }
 
 export function ThoughtProcess({ steps, isComplete, themeColor }: ThoughtProcessProps) {
   const getStepIcon = (type: ExecutionStep['type'], isActiveStep: boolean) => {
-    // If it's the active step, show the loading spinner
     if (isActiveStep) {
-      return <Loader2 className="w-4 h-4 animate-spin" />;
+      return <Loader2 className="w-3 h-3 animate-spin" style={{ color: '#8B5CF6' }} />;
     }
 
-    // For completed steps, show their respective icons
-    switch (type) {
-      case 'processing':
-        return <Terminal className="w-4 h-4" />;
-      case 'thinking':
-        return <Brain className="w-4 h-4" />;
-      case 'function_call':
-        return <Terminal className="w-4 h-4" />;
-      case 'database_operation':
-        return <Database className="w-4 h-4" />;
-      case 'result':
-        return <Check className="w-4 h-4" />;
-      default:
-        return <Loader2 className="w-4 h-4 animate-spin" />;
-    }
+    const icons = {
+      processing: Terminal,
+      thinking: Brain,
+      function_call: Terminal,
+      database_operation: Database,
+      result: Check,
+    };
+
+    const Icon = icons[type as keyof typeof icons] || Loader2;
+    return <Icon className="w-3 h-3" style={{ color: '#8B5CF6' }} />;
   };
 
-  // Filter out any duplicate steps (based on type and content)
-  const uniqueSteps = steps.filter((step, index, self) =>
-    index === self.findIndex((s) => 
-      s.type === step.type && s.content === step.content
-    )
-  );
-
-  // Get the current active step index
-  const activeStepIndex = !isComplete ? uniqueSteps.length - 1 : -1;
-
   return (
-    <div className="space-y-2 animate-fade-in">
-      {uniqueSteps.map((step, index) => (
+    <div className="space-y-1.5 animate-fade-in text-xs">
+      {steps.map((step, index) => (
         <div
           key={index}
           className={`
-            flex items-start gap-2 p-2 rounded-lg
-            ${index === steps.length - 1 ? 'bg-white/50 dark:bg-gray-800/50' : 'bg-white/30 dark:bg-gray-800/30'}
+            flex items-start gap-1.5 p-1.5 rounded-md
+            bg-white/50 dark:bg-gray-800/50
             border border-gray-200/30 dark:border-gray-700/30
-            transition-all duration-300
+            backdrop-blur-sm
+            ${!isComplete && index === steps.length - 1 ? 'animate-pulse' : ''}
           `}
         >
-          <div className="flex-shrink-0 mt-1" style={{ color: themeColor }}>
-            {getStepIcon(step.type, index === activeStepIndex)}
+          <div className="flex-shrink-0 mt-0.5">
+            {getStepIcon(step.type, !isComplete && index === steps.length - 1)}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium uppercase" style={{ color: themeColor }}>
+            <div className="flex items-center gap-1.5">
+              <span 
+                className="text-[10px] font-medium uppercase tracking-wider text-violet-600 dark:text-violet-400"
+              >
                 {step.type.replace('_', ' ')}
               </span>
-              <span className="text-xs text-gray-500">
+              <span className="text-[10px] text-gray-500 dark:text-gray-400">
                 {new Date(step.timestamp).toLocaleTimeString()}
               </span>
             </div>
-            <div className="mt-1 text-sm whitespace-pre-wrap">
+            <div className="text-gray-600 dark:text-gray-300 text-[11px]">
               {step.content}
             </div>
             {step.metadata && Object.keys(step.metadata).length > 0 && (
-              <pre className="mt-2 text-xs bg-gray-100 dark:bg-gray-900 p-2 rounded overflow-x-auto">
-                {JSON.stringify(step.metadata, null, 2)}
-              </pre>
+              <div className="mt-1">
+                <div className="text-[10px] bg-gray-100/50 dark:bg-gray-900/50 rounded p-1 overflow-x-auto">
+                  <pre className="font-mono text-gray-600 dark:text-gray-300">
+                    {JSON.stringify(step.metadata, null, 2)}
+                  </pre>
+                </div>
+              </div>
             )}
           </div>
         </div>
       ))}
       
-      {!isComplete && (
-        <div className="flex items-center justify-center gap-2 text-gray-500 p-2">
-          <Loader2 className="w-4 h-4 animate-spin" />
-          <span className="text-sm">Processing...</span>
-        </div>
-      )}
+      {/* Status Indicator */}
+      <div className="flex items-center justify-center gap-1.5 py-1">
+        {!isComplete ? (
+          <>
+            <div 
+              className="w-2 h-2 border border-gray-300 dark:border-gray-600 rounded-full animate-spin"
+              style={{ borderTopColor: '#8B5CF6' }}
+            />
+            <span className="text-[10px] text-gray-500 dark:text-gray-400">
+              Processing...
+            </span>
+          </>
+        ) : steps.length > 0 && (
+          <>
+            <Check className="w-2 h-2" style={{ color: '#8B5CF6' }} />
+            <span className="text-[10px] text-gray-500 dark:text-gray-400">
+              Complete
+            </span>
+          </>
+        )}
+      </div>
     </div>
   );
 } 

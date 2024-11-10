@@ -177,7 +177,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: "Llama 3.1 - Meta's latest 8b parameter model",
     isConfigured: true,
-    color: '#3B1667',
+    color: '#8B5CF6',
     endpoint: 'chat',
   },
   {
@@ -187,7 +187,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: "Llama 3.2 - Meta's latest 3b parameter model",
     isConfigured: true,
-    color: '#3B1667',
+    color: '#8B5CF6',
     endpoint: 'chat',
   },
   {
@@ -197,7 +197,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'A commercial-friendly small language model by NVIDIA optimized for roleplay, RAG QA, and function calling.',
     isConfigured: true,
-    color: '#3B1667',
+    color: '#8B5CF6',
     endpoint: 'chat',
   },
   {
@@ -207,7 +207,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'A state-of-the-art 12B model with 128k context length, built by Mistral AI in collaboration with NVIDIA.',
     isConfigured: true,
-    color: '#3B1667',
+    color: '#8B5CF6',
     endpoint: 'chat',
   },
   {
@@ -217,7 +217,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'StarCoder2 is the next generation of transparently trained open code LLMs that comes in three sizes: 3B, 7B and 15B parameters.',
     isConfigured: true,
-    color: '#3B1667',
+    color: '#8B5CF6',
     endpoint: 'chat',
   },
   {
@@ -227,7 +227,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: "Orca 2 is built by Microsoft research, and are a fine-tuned version of Meta's Llama 2 models. The model is designed to excel particularly in reasoning.",
     isConfigured: true,
-    color: '#3B1667',
+    color: '#8B5CF6',
     endpoint: 'chat',
   },
   {
@@ -237,7 +237,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'A companion assistant trained in philosophy, psychology, and personal relationships. Based on Mistral.',
     isConfigured: true,
-    color: '#3B1667',
+    color: '#8B5CF6',
     endpoint: 'chat',
   },
   {
@@ -247,7 +247,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'Nexus Raven is a model designed to excel in function calling, and is optimized for tool calling.',
     isConfigured: true,
-    color: '#3B1667',
+    color: '#8B5CF6',
     endpoint: 'chat',
   },
   {
@@ -257,7 +257,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'The IBM Granite 2B and 8B models are designed to support tool-based use cases and support for retrieval augmented generation (RAG), streamlining code generation, translation and bug fixing.',
     isConfigured: true,
-    color: '#3B1667',
+    color: '#8B5CF6',
     endpoint: 'chat',
   },
   {
@@ -267,7 +267,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'The IBM Granite 1B and 3B models are the first mixture of experts (MoE) Granite models from IBM designed for low latency usage.',
     isConfigured: true,
-    color: '#3B1667',
+    color: '#8B5CF6',
     endpoint: 'chat',
   },
   {
@@ -277,7 +277,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'The latest series of Code-Specific Qwen models, with significant improvements in code generation, code reasoning, and code fixing.',
     isConfigured: true,
-    color: '#3B1667',
+    color: '#8B5CF6',
     endpoint: 'chat',
   },
   {
@@ -287,7 +287,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'A lightweight AI model with 3.8 billion parameters with performance overtaking similarly and larger sized models.',
     isConfigured: true,
-    color: '#3B1667',
+    color: '#8B5CF6',
     endpoint: 'chat',
   },
   // Gemini Models (Colored Purple)

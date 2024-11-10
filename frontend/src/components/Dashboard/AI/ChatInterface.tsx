@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Send, Loader } from 'lucide-react';
+import { Send, Loader, MessageSquare } from 'lucide-react';
 import { AIModel } from '../../../types/ai';
+import { textStyles } from '../../../utils/textUtils';
+import { Input } from '../../shared/Input';
 
 interface ChatInterfaceProps {
   model: AIModel;
@@ -26,36 +28,40 @@ export function ChatInterface({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex items-center gap-2">
-      {/* Input Field */}
-      <div className="flex-1">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder={`Message ${model.name}...`}
-          disabled={isLoading}
-          className="w-full px-4 h-9 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-        />
-      </div>
-
-      {/* Send Button */}
+    <form onSubmit={handleSubmit} className="relative">
+      <Input
+        type="text"
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        placeholder={`Message ${model.name}...`}
+        disabled={isLoading}
+        icon={MessageSquare}
+        label="" // Empty label to hide it but maintain spacing
+      />
+      
       <button
         type="submit"
         disabled={isLoading || !input.trim()}
-        style={{ backgroundColor: themeColor }}
-        className="flex items-center justify-center gap-2 w-24 h-9 px-3 rounded-lg hover:opacity-90 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-        aria-label="Send Message"
+        className={`absolute right-2 top-1/2 -translate-y-1/2 
+          px-3 py-1.5 rounded-lg
+          text-white backdrop-blur-xl
+          transition-all duration-200 flex items-center gap-2
+          disabled:opacity-50 disabled:cursor-not-allowed
+          hover:shadow-md active:scale-95
+          border border-white/30`}
+        style={{ 
+          backgroundColor: `${themeColor}cc`,
+        }}
       >
         {isLoading ? (
           <>
             <Loader className="w-4 h-4 animate-spin" />
-            <span>Wait</span>
+            <span className={textStyles.button}>Wait</span>
           </>
         ) : (
           <>
             <Send className="w-4 h-4" />
-            <span>Send</span>
+            <span className={textStyles.button}>Send</span>
           </>
         )}
       </button>
