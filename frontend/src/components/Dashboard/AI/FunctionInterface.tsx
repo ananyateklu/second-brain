@@ -175,35 +175,39 @@ export function FunctionInterface({
       </button>
 
       {showExamples && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {examples.map((category) => (
-            <div
-              key={category.title}
-              className="p-3 rounded-lg bg-white/50 dark:bg-gray-800/50 
-                border border-gray-200/30 dark:border-gray-700/30
-                backdrop-blur-sm"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                {category.icon}
-                <span className="text-sm font-medium text-gray-900 dark:text-white">
-                  {category.title}
-                </span>
-              </div>
-              <ul className="space-y-1.5">
-                {category.examples.map((example, index) => (
-                  <li
-                    key={index}
-                    onClick={() => handleExampleClick(example)}
-                    className="text-xs text-gray-600 dark:text-gray-300 
-                      cursor-pointer hover:text-gray-900 dark:hover:text-white 
-                      transition-colors"
-                  >
-                    {example}
-                  </li>
-                ))}
-              </ul>
+        <div className="relative">
+          <div className="max-h-[30vh] overflow-y-auto custom-scrollbar">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pb-1">
+              {examples.map((category) => (
+                <div
+                  key={category.title}
+                  className="p-3 rounded-lg bg-white/50 dark:bg-gray-800/50 
+                    border border-gray-200/30 dark:border-gray-700/30
+                    backdrop-blur-sm"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    {category.icon}
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">
+                      {category.title}
+                    </span>
+                  </div>
+                  <ul className="space-y-1.5">
+                    {category.examples.map((example, index) => (
+                      <li
+                        key={index}
+                        onClick={() => handleExampleClick(example)}
+                        className="text-xs text-gray-600 dark:text-gray-300 
+                          cursor-pointer hover:text-gray-900 dark:hover:text-white 
+                          transition-colors"
+                      >
+                        {example}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
       )}
     </div>

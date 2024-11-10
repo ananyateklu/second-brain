@@ -10,6 +10,7 @@ interface ModelSelectorProps {
   selectedCategory: string;
   onModelSelect: (model: AIModel | null) => void;
   onCategoryChange: (category: string) => void;
+  onDetailsToggle: (isOpen: boolean) => void;
 }
 
 export function ModelSelector({
@@ -18,6 +19,7 @@ export function ModelSelector({
   selectedCategory,
   onModelSelect,
   onCategoryChange,
+  onDetailsToggle,
 }: ModelSelectorProps) {
   const [showDetails, setShowDetails] = useState(false);
 
@@ -60,11 +62,13 @@ export function ModelSelector({
 
   const toggleDetails = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setShowDetails(!showDetails);
+    const newDetailsState = !showDetails;
+    setShowDetails(newDetailsState);
+    onDetailsToggle(newDetailsState); // Notify parent of state change
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {/* Category Tabs - More compact */}
       <div className="flex justify-center flex-wrap gap-1">
         <AnimatePresence mode="wait">
@@ -114,13 +118,13 @@ export function ModelSelector({
       </div>
 
       {/* Model Selection Grid - More compact */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-1.5">
         {Object.entries(groupedModels).map(([provider, providerModels]) => (
           <div key={provider} className="flex flex-col">
             {/* Provider Header - More compact */}
-            <div className="sticky top-0 z-10 pb-1">
+            <div className="sticky top-0 z-10 pb-0.5">
               <div className="flex items-center gap-1 px-1">
-                <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                <span className="text-[10px] font-medium text-gray-600 dark:text-gray-300">
                   {provider}
                 </span>
                 <div className="h-px flex-1 bg-gray-200/50 dark:bg-gray-700/50" />
@@ -128,54 +132,40 @@ export function ModelSelector({
             </div>
 
             {/* Provider Models - Reduced height */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-1 max-h-[240px]">
+            <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-0.5 max-h-[180px]">
               {providerModels.map(model => (
-                <motion.button
+                <button
                   key={model.id}
                   onClick={() => onModelSelect(model)}
-                  className={`relative w-full p-1.5 rounded-lg transition-all
-                    ${selectedModel?.id === model.id
-                      ? 'bg-white dark:bg-gray-800 shadow-md'
-                      : 'bg-white/50 dark:bg-gray-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80'
-                    } border border-gray-200/30 dark:border-gray-700/30
-                    flex items-center gap-1.5`}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                  className={`w-full text-left p-1.5 rounded-md text-xs transition-all ${
+                    selectedModel?.id === model.id
+                      ? 'bg-white dark:bg-gray-800 shadow-sm'
+                      : 'hover:bg-white/50 dark:hover:bg-gray-800/50'
+                  }`}
                 >
-                  {/* Selected indicator */}
-                  {selectedModel?.id === model.id && (
-                    <motion.div
-                      layoutId="selectedModel"
-                      className="absolute inset-0 border-2 border-primary-500/50 rounded-lg"
-                      initial={false}
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                    />
-                  )}
-
-                  {/* Model Icon - More compact */}
-                  <div
-                    className="p-1 rounded-md"
-                    style={{ backgroundColor: `${model.color}20` }}
-                  >
-                    {model.category === 'function' ? (
-                      <Settings2 className="w-3.5 h-3.5" style={{ color: model.color }} />
-                    ) : model.provider === 'anthropic' ? (
-                      <Sparkles className="w-3.5 h-3.5" style={{ color: model.color }} />
-                    ) : (
-                      <Zap className="w-3.5 h-3.5" style={{ color: model.color }} />
-                    )}
+                  <div className="flex items-start gap-1.5">
+                    <div
+                      className="p-1 rounded-md shrink-0"
+                      style={{ backgroundColor: `${model.color}20` }}
+                    >
+                      {model.category === 'function' ? (
+                        <Settings2 className="w-3.5 h-3.5" style={{ color: model.color }} />
+                      ) : model.provider === 'anthropic' ? (
+                        <Sparkles className="w-3.5 h-3.5" style={{ color: model.color }} />
+                      ) : (
+                        <Zap className="w-3.5 h-3.5" style={{ color: model.color }} />
+                      )}
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-900 dark:text-white line-clamp-1">
+                        {model.name}
+                      </div>
+                      <div className="text-[10px] text-gray-500 dark:text-gray-400 line-clamp-1">
+                        {model.description}
+                      </div>
+                    </div>
                   </div>
-
-                  {/* Model Info - More compact */}
-                  <div className="flex-1 text-left min-w-0">
-                    <span className="font-medium text-gray-900 dark:text-white text-xs truncate">
-                      {model.name}
-                    </span>
-                    <p className="text-[10px] text-gray-500 dark:text-gray-400 line-clamp-1 truncate">
-                      {model.description}
-                    </p>
-                  </div>
-                </motion.button>
+                </button>
               ))}
             </div>
           </div>

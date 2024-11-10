@@ -1,23 +1,15 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { AIMessage } from './AIMessage';
-import { AIModel, ExecutionStep } from '../../../types/ai';
-
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  type: 'text' | 'image' | 'audio';
-  timestamp: string;
-  model?: AIModel;
-  isLoading?: boolean;
-  executionSteps?: ExecutionStep[];
-}
+import { EmptyState } from './EmptyState';
+import { Message } from '../../../types/message';
+import { AIModel } from '../../../types/ai';
 
 interface MessageListProps {
   messages: Message[];
   isLoading: boolean;
   messagesEndRef: React.RefObject<HTMLDivElement>;
   themeColor: string;
+  selectedModel: AIModel | null;
 }
 
 export function MessageList({
@@ -25,22 +17,28 @@ export function MessageList({
   isLoading,
   messagesEndRef,
   themeColor,
+  selectedModel,
 }: MessageListProps) {
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isLoading]);
-
   return (
-    <div className="p-4 overflow-y-auto h-full custom-scrollbar">
-      {messages.map((message) => (
-        <AIMessage 
-          key={message.id}
-          message={message}
-          themeColor={themeColor}
-          isStreaming={message.isLoading}
+    <div className="h-full relative">
+      {messages.length === 0 ? (
+        <EmptyState 
+          selectedModel={selectedModel} 
+          themeColor={themeColor} 
         />
-      ))}
-      <div ref={messagesEndRef} />
+      ) : (
+        <div className="h-full overflow-y-auto px-4 py-4">
+          {messages.map((message) => (
+            <AIMessage
+              key={message.id}
+              message={message}
+              themeColor={themeColor}
+              isStreaming={isLoading && message.role === 'assistant'}
+            />
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
+      )}
     </div>
   );
 }
