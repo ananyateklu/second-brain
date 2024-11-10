@@ -52,9 +52,9 @@ export function SettingsPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   {theme === 'dark' ? (
-                    <Moon className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                    <Moon className="w-5 h-5 text-[#3B7443]" />
                   ) : (
-                    <Sun className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                    <Sun className="w-5 h-5 text-[#3B7443]" />
                   )}
                   <div>
                     <p className="font-medium text-gray-900 dark:text-white">Theme</p>
@@ -79,7 +79,7 @@ export function SettingsPage() {
             <div className="glass-morphism p-4 rounded-lg">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Bell className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                  <Bell className="w-5 h-5 text-[#3B7443]" />
                   <div>
                     <p className="font-medium text-gray-900 dark:text-white">Push Notifications</p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -101,7 +101,7 @@ export function SettingsPage() {
             <div className="glass-morphism p-4 rounded-lg">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Shield className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                  <Shield className="w-5 h-5 text-[#3B7443]" />
                   <div>
                     <p className="font-medium text-gray-900 dark:text-white">Two-Factor Authentication</p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -122,7 +122,7 @@ export function SettingsPage() {
             <div className="glass-morphism p-4 rounded-lg">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Database className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                  <Database className="w-5 h-5 text-[#3B7443]" />
                   <div>
                     <p className="font-medium text-gray-900 dark:text-white">Export Data</p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">

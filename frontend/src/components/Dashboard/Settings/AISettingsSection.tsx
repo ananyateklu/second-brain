@@ -157,13 +157,13 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
   const inputClasses = `
     w-full
     pl-10 pr-4 py-2
-    glass-morphism
+    bg-transparent
     rounded-lg
     text-gray-900 dark:text-white
     placeholder-gray-500/70 dark:placeholder-gray-400/70
     border border-gray-200/20 dark:border-gray-700/30
     focus:ring-2
-    focus:ring-primary-500/50
+    focus:ring-[#3B7443]/50
     focus:border-transparent
     transition-all duration-200
   `;
@@ -188,9 +188,10 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
     flex items-center gap-2 
     px-4 py-2 
     text-sm font-medium 
+    bg-[#3B7443] 
     text-white 
-    bg-primary-600 hover:bg-primary-700 
     rounded-lg 
+    hover:bg-[#2D5A34] 
     disabled:opacity-50 disabled:cursor-not-allowed 
     transition-colors
   `;
@@ -203,10 +204,17 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
     transition-colors
   `;
 
+  const iconWrapperClasses = `
+    absolute inset-y-0 left-0 pl-3 
+    flex items-center 
+    pointer-events-none
+    z-10
+  `;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
-        <Bot className="w-6 h-6 text-primary-600 dark:text-primary-500" />
+        <Bot className="w-6 h-6 text-[#3B7443]" />
         <h3 className="text-lg font-medium text-gray-900 dark:text-white">AI Settings</h3>
       </div>
 
@@ -219,8 +227,8 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
               API Key
             </label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Key className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+              <div className={iconWrapperClasses}>
+                <Key className="h-5 w-5 text-[#3B7443]" />
               </div>
               <input
                 type={showOpenAIKey ? 'text' : 'password'}
@@ -290,8 +298,8 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
               API Key
             </label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Key className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+              <div className={iconWrapperClasses}>
+                <Key className="h-5 w-5 text-[#3B7443]" />
               </div>
               <input
                 type={showGeminiApiKey ? 'text' : 'password'}
@@ -364,14 +372,14 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
               AI Provider
             </label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Bot className={iconClasses} />
+              <div className={iconWrapperClasses}>
+                <Bot className="h-5 w-5 text-[#3B7443]" />
               </div>
               <select
                 name="contentSuggestionsProvider"
                 value={settings.contentSuggestions?.provider}
                 onChange={handleInputChange}
-                className={selectClasses}
+                className={inputClasses}
               >
                 {isOpenAIConfigured && <option value="openai">OpenAI</option>}
                 {isGeminiConfigured && <option value="gemini">Google Gemini</option>}
@@ -381,19 +389,20 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
             </div>
           </div>
 
+          {/* Model select */}
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-900 dark:text-white">
               Model
             </label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Settings2 className={iconClasses} />
+              <div className={iconWrapperClasses}>
+                <Settings2 className="h-5 w-5 text-[#3B7443]" />
               </div>
               <select
                 name="contentSuggestionsModel"
                 value={settings.contentSuggestions?.modelId}
                 onChange={handleInputChange}
-                className={selectClasses}
+                className={inputClasses}
               >
                 {contentGenerationModels
                   .filter(model => model.provider === settings.contentSuggestions?.provider)
@@ -407,7 +416,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
           </div>
 
           <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
-            <Bot className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+            <Bot className="w-4 h-4 text-[#3B7443]" />
             <span>These settings will be used for generating titles, content, and tags.</span>
           </div>
 

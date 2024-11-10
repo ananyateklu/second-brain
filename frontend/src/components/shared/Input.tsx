@@ -55,11 +55,7 @@ export function Input({
               }}
               transition={{ duration: 0.2 }}
             >
-              <Icon className={`h-5 w-5 ${
-                isFocused 
-                  ? 'text-primary-600 dark:text-primary-400' 
-                  : 'text-gray-500 dark:text-gray-400'
-              }`} />
+              <Icon className="h-5 w-5 text-[#3B7443]" />
             </motion.div>
           )}
 
