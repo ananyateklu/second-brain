@@ -49,6 +49,25 @@ export function ModelSelector({
 
   const filteredModels = models.filter(model => model.category === selectedCategory);
 
+  const modelSelectClasses = `
+    w-full
+    px-4 pr-10 py-2.5
+    backdrop-blur-sm
+    bg-gray-100/50 dark:bg-gray-800/50
+    border border-gray-200/30 dark:border-gray-700/30
+    rounded-lg
+    focus:ring-2
+    focus:ring-primary-500
+    focus:border-transparent
+    transition-colors
+    text-gray-900 dark:text-white
+    appearance-none
+    bg-[url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")]
+    bg-no-repeat
+    bg-[right_0.5rem_center]
+    bg-[length:1.5em_1.5em]
+  `;
+
   return (
     <div className="flex flex-col items-center space-y-4">
       {/* Category Tabs */}
@@ -80,21 +99,28 @@ export function ModelSelector({
       {/* Model Selection with Details */}
       <div className="w-full max-w-xl mx-auto">
         {/* Model Selection Dropdown */}
-        <select
-          value={selectedModel?.id || ''}
-          onChange={(e) => {
-            const model = filteredModels.find(m => m.id === e.target.value);
-            if (model) onModelSelect(model);
-          }}
-          className="w-full px-4 py-2.5 backdrop-blur-sm bg-gray-100/50 dark:bg-gray-800/50 border border-gray-200/30 dark:border-gray-700/30 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors text-gray-900 dark:text-white"
-        >
-          <option value="">Select a {selectedCategory} model</option>
-          {filteredModels.map(model => (
-            <option key={model.id} value={model.id}>
-              {model.name} ({model.provider})
-            </option>
-          ))}
-        </select>
+        <div className="relative w-full">
+          <select
+            value={selectedModel?.id || ''}
+            onChange={(e) => {
+              const model = filteredModels.find(m => m.id === e.target.value);
+              if (model) onModelSelect(model);
+            }}
+            className={modelSelectClasses}
+          >
+            <option value="">Select a {selectedCategory} model</option>
+            {filteredModels.map(model => (
+              <option key={model.id} value={model.id}>
+                {model.name} ({model.provider})
+              </option>
+            ))}
+          </select>
+          <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+            <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </div>
+        </div>
 
         {/* Model Details */}
         {selectedModel && (

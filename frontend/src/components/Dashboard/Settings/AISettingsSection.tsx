@@ -170,16 +170,17 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
 
   const selectClasses = `
     w-full
-    pl-10 pr-4 py-2
-    glass-morphism
+    pl-10 pr-10 py-2
+    bg-transparent
     rounded-lg
     text-gray-900 dark:text-white
+    placeholder-gray-500/70 dark:placeholder-gray-400/70
     border border-gray-200/20 dark:border-gray-700/30
     focus:ring-2
-    focus:ring-primary-500/50
+    focus:ring-[#3B7443]/50
     focus:border-transparent
-    bg-transparent
     transition-all duration-200
+    appearance-none
   `;
 
   const iconClasses = "h-5 w-5 text-gray-600 dark:text-gray-300";
@@ -379,13 +380,18 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
                 name="contentSuggestionsProvider"
                 value={settings.contentSuggestions?.provider}
                 onChange={handleInputChange}
-                className={inputClasses}
+                className={selectClasses}
               >
                 {isOpenAIConfigured && <option value="openai">OpenAI</option>}
                 {isGeminiConfigured && <option value="gemini">Google Gemini</option>}
                 {<option value="anthropic">Anthropic (Claude)</option>}
                 {isLlamaConfigured && <option value="llama">Llama</option>}
               </select>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </div>
             </div>
           </div>
 
@@ -402,7 +408,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
                 name="contentSuggestionsModel"
                 value={settings.contentSuggestions?.modelId}
                 onChange={handleInputChange}
-                className={inputClasses}
+                className={selectClasses}
               >
                 {contentGenerationModels
                   .filter(model => model.provider === settings.contentSuggestions?.provider)
@@ -412,6 +418,11 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
                     </option>
                   ))}
               </select>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </div>
             </div>
           </div>
 
