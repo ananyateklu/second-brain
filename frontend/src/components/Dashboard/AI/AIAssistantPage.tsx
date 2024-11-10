@@ -33,10 +33,12 @@ export function AIAssistantPage() {
 
   const themeColor = selectedModel?.color || '#3b82f6'; // Default to blue
 
-  const handleModelSelect = (model: AIModel) => {
+  const handleModelSelect = (model: AIModel | null) => {
     setSelectedModel(model);
     setError(null);
-    setMessages([]);
+    if (!model) {
+      setMessages([]);
+    }
   };
 
   const handleCategoryChange = (category: string) => {

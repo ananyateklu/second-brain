@@ -61,14 +61,11 @@ export function ImageInterface({
 
     try {
       const response = await sendMessage(userPrompt, model.id);
-
-      // Update the assistant message with the actual image content
       updateMessage(assistantMessageId, {
         content: response.content,
         isLoading: false,
       });
     } catch (error: any) {
-      // Update the assistant message to show error
       updateMessage(assistantMessageId, {
         content: 'Failed to generate image',
         type: 'text',
@@ -81,42 +78,59 @@ export function ImageInterface({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2">
-      <div className="flex-1 relative">
+    <form onSubmit={handleSubmit} className="relative">
+      <div className="relative">
         <input
           type="text"
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="Describe the image you want to generate..."
           disabled={isLoading}
-          className="w-full px-4 h-11 backdrop-blur-sm bg-white/50 dark:bg-gray-800/50 
-          border border-gray-200/30 dark:border-gray-700/30 rounded-lg 
-          focus:ring-2 focus:ring-primary-500 focus:border-transparent 
-          transition-all duration-200 
-          disabled:opacity-50 disabled:cursor-not-allowed
-          text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+          className="w-full px-4 py-2.5 pr-24
+            bg-white/50 dark:bg-gray-800/50
+            border border-gray-200/30 dark:border-gray-700/30
+            rounded-lg
+            text-gray-900 dark:text-white
+            placeholder-gray-500 dark:placeholder-gray-400
+            transition-all duration-200
+            focus:outline-none focus:ring-2 focus:ring-primary-500/50
+            disabled:opacity-50 disabled:cursor-not-allowed"
         />
+        
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
+          {/* Model Icon */}
+          <div className="p-1.5 rounded-md"
+            style={{ backgroundColor: `${model.color}10` }}>
+            <Image className="w-4 h-4" style={{ color: model.color }} />
+          </div>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={isLoading || !prompt.trim()}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md
+              text-white text-sm font-medium
+              transition-all duration-200
+              disabled:opacity-50 disabled:cursor-not-allowed
+              hover:shadow-md active:scale-95"
+            style={{ 
+              backgroundColor: `${model.color}cc`,
+            }}
+          >
+            {isLoading ? (
+              <>
+                <Loader className="w-4 h-4 animate-spin" />
+                <span>Generating...</span>
+              </>
+            ) : (
+              <>
+                <Image className="w-4 h-4" />
+                <span>Generate</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
-      <button
-        type="submit"
-        disabled={isLoading || !prompt.trim()}
-        className="flex items-center gap-2 px-6 h-11 backdrop-blur-sm 
-        bg-primary-600/90 hover:bg-primary-600 text-white rounded-lg 
-        disabled:opacity-50 disabled:cursor-not-allowed 
-        transition-all duration-200 shadow-sm hover:shadow-md"
-      >
-        {isLoading ? (
-          <>
-            <Loader className="w-4 h-4 animate-spin" />
-            <span className="font-medium">Generating...</span>
-          </>
-        ) : (
-          <>
-            <Image className="w-4 h-4" />
-            <span className="font-medium">Generate</span>
-          </>
-        )}
-      </button>
     </form>
   );
 }

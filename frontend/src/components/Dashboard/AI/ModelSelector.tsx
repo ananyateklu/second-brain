@@ -1,12 +1,14 @@
-import React, { useEffect } from 'react';
-import { Bot, MessageSquare, Image, Mic, Settings2 } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Bot, MessageSquare, Image, Mic, Settings2, Sparkles, Zap, 
+  ChevronDown, Gauge, Cpu, Clock, Info } from 'lucide-react';
 import { AIModel } from '../../../types/ai';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface ModelSelectorProps {
   models: AIModel[];
   selectedModel: AIModel | null;
   selectedCategory: string;
-  onModelSelect: (model: AIModel) => void;
+  onModelSelect: (model: AIModel | null) => void;
   onCategoryChange: (category: string) => void;
 }
 
@@ -17,163 +19,310 @@ export function ModelSelector({
   onModelSelect,
   onCategoryChange,
 }: ModelSelectorProps) {
-  const categories = Array.from(new Set(models.map(model => model.category)));
-  const [showModelInfo, setShowModelInfo] = React.useState(false);
+  const [showDetails, setShowDetails] = useState(false);
 
-  // Auto-hide model info after selection
-  useEffect(() => {
-    if (selectedModel) {
-      setShowModelInfo(true);
-      const timer = setTimeout(() => {
-        setShowModelInfo(false);
-      }, 5000); // Hide after 5 seconds
-
-      return () => clearTimeout(timer);
-    }
-  }, [selectedModel]);
+  // Memoize categories to prevent unnecessary recalculations
+  const categories = useMemo(() => 
+    Array.from(new Set(models.map(model => model.category))),
+    [models]
+  );
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
-      case 'chat':
-        return MessageSquare;
-      case 'image':
-        return Image;
-      case 'audio':
-        return Mic;
-      case 'function':
-        return Settings2;
-      default:
-        return Bot;
+      case 'chat': return MessageSquare;
+      case 'image': return Image;
+      case 'audio': return Mic;
+      case 'function': return Settings2;
+      default: return Bot;
     }
   };
 
-  const filteredModels = models.filter(model => model.category === selectedCategory);
+  // Memoize filtered models for performance
+  const filteredModels = useMemo(() => 
+    models.filter(model => model.category === selectedCategory),
+    [models, selectedCategory]
+  );
 
-  const modelSelectClasses = `
-    w-full
-    px-4 pr-10 py-2.5
-    backdrop-blur-sm
-    bg-gray-100/50 dark:bg-gray-800/50
-    border border-gray-200/30 dark:border-gray-700/30
-    rounded-lg
-    focus:ring-2
-    focus:ring-primary-500
-    focus:border-transparent
-    transition-colors
-    text-gray-900 dark:text-white
-    appearance-none
-    bg-[url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")]
-    bg-no-repeat
-    bg-[right_0.5rem_center]
-    bg-[length:1.5em_1.5em]
-  `;
+  // Group models by provider for better organization
+  const groupedModels = useMemo(() => {
+    return filteredModels.reduce((acc, model) => {
+      const provider = model.provider.charAt(0).toUpperCase() + model.provider.slice(1);
+      if (!acc[provider]) acc[provider] = [];
+      acc[provider].push(model);
+      return acc;
+    }, {} as Record<string, AIModel[]>);
+  }, [filteredModels]);
+
+  const handleChangeModel = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent event bubbling
+    onModelSelect(null); // Clear the selection
+  };
+
+  const toggleDetails = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowDetails(!showDetails);
+  };
 
   return (
-    <div className="flex flex-col items-center space-y-4">
-      {/* Category Tabs */}
-      <div className="flex justify-center flex-wrap gap-2">
-        {categories.map(category => {
-          const Icon = getCategoryIcon(category);
-          const count = models.filter(m => m.category === category).length;
-          
-          return (
-            <button
-              key={category}
-              onClick={() => onCategoryChange(category)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors backdrop-blur-sm ${
-                selectedCategory === category
-                  ? 'bg-primary-100/70 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
-                  : 'bg-white/50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300 hover:bg-white/60 dark:hover:bg-gray-800/60'
-              } border border-gray-200/30 dark:border-gray-700/30`}
-            >
-              <Icon className="w-4 h-4" />
-              <span className="capitalize">{category}</span>
-              <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-gray-100/70 dark:bg-gray-800/70">
-                {count}
-              </span>
-            </button>
-          );
-        })}
+    <div className="space-y-3">
+      {/* Category Tabs - More compact */}
+      <div className="flex justify-center flex-wrap gap-1">
+        <AnimatePresence mode="wait">
+          {categories.map(category => {
+            const Icon = getCategoryIcon(category);
+            const count = models.filter(m => m.category === category).length;
+            const isSelected = selectedCategory === category;
+            
+            return (
+              <motion.button
+                key={category}
+                onClick={() => onCategoryChange(category)}
+                className={`relative flex items-center gap-1 px-2.5 py-1 rounded-lg text-sm
+                  ${isSelected 
+                    ? 'bg-white dark:bg-gray-800 shadow-sm' 
+                    : 'bg-white/50 dark:bg-gray-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80'
+                  } border border-gray-200/30 dark:border-gray-700/30`}
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <Icon className={`w-3 h-3 ${isSelected ? 'text-primary-500' : 'text-gray-500'}`} />
+                <span className={`capitalize ${isSelected ? 'text-primary-500 font-medium' : 'text-gray-600 dark:text-gray-300'}`}>
+                  {category}
+                </span>
+                <span className={`ml-0.5 px-1.5 py-0.5 text-xs rounded-full 
+                  ${isSelected 
+                    ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' 
+                    : 'bg-gray-100/70 dark:bg-gray-800/70 text-gray-600 dark:text-gray-400'
+                  }`}>
+                  {count}
+                </span>
+                {isSelected && (
+                  <motion.div
+                    className="absolute inset-0 border-2 border-primary-500/50 rounded-lg"
+                    layoutId="categoryOutline"
+                    initial={false}
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                  />
+                )}
+              </motion.button>
+            );
+          })}
+        </AnimatePresence>
       </div>
 
-      {/* Model Selection with Details */}
-      <div className="w-full max-w-xl mx-auto">
-        {/* Model Selection Dropdown */}
-        <div className="relative w-full">
-          <select
-            value={selectedModel?.id || ''}
-            onChange={(e) => {
-              const model = filteredModels.find(m => m.id === e.target.value);
-              if (model) onModelSelect(model);
-            }}
-            className={modelSelectClasses}
-          >
-            <option value="">Select a {selectedCategory} model</option>
-            {filteredModels.map(model => (
-              <option key={model.id} value={model.id}>
-                {model.name} ({model.provider})
-              </option>
-            ))}
-          </select>
-          <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-            <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-            </svg>
-          </div>
-        </div>
-
-        {/* Model Details */}
-        {selectedModel && (
-          <div className="mt-2 p-3 backdrop-blur-sm bg-white/50 dark:bg-gray-800/50 border border-gray-200/30 dark:border-gray-700/30 rounded-lg animate-fadeIn">
-            <div className="flex items-center gap-3">
-              <div
-                className="flex-shrink-0 p-2 rounded-lg"
-                style={{ backgroundColor: selectedModel?.color }}
-              >
-                <Bot className="w-4 h-4 text-white" />
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                    {selectedModel?.name}
-                  </h3>
-                  <span
-                    className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium text-white"
-                    style={{ backgroundColor: `${selectedModel?.color}dd` }}
-                  >
-                    {selectedModel?.provider}
-                  </span>
-                </div>
-
-                <p className="text-xs text-gray-600 dark:text-gray-400">
-                  {selectedModel?.description}
-                </p>
-
-                {selectedModel?.rateLimits && (
-                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-gray-400">
-                    {selectedModel.rateLimits.tpm && (
-                      <span><span className="font-medium">TPM:</span> {selectedModel.rateLimits.tpm.toLocaleString()}</span>
-                    )}
-                    {selectedModel.rateLimits.rpm && (
-                      <span><span className="font-medium">RPM:</span> {selectedModel.rateLimits.rpm.toLocaleString()}</span>
-                    )}
-                    {selectedModel.rateLimits.tpd && (
-                      <span><span className="font-medium">TPD:</span> {selectedModel.rateLimits.tpd.toLocaleString()}</span>
-                    )}
-                    {selectedModel.rateLimits.rpd && (
-                      <span><span className="font-medium">RPD:</span> {selectedModel.rateLimits.rpd.toLocaleString()}</span>
-                    )}
-                    {selectedModel.rateLimits.imagesPerMinute && (
-                      <span><span className="font-medium">Images/min:</span> {selectedModel.rateLimits.imagesPerMinute}</span>
-                    )}
-                  </div>
-                )}
+      {/* Model Selection Grid - More compact */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+        {Object.entries(groupedModels).map(([provider, providerModels]) => (
+          <div key={provider} className="flex flex-col">
+            {/* Provider Header - More compact */}
+            <div className="sticky top-0 z-10 pb-1">
+              <div className="flex items-center gap-1 px-1">
+                <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                  {provider}
+                </span>
+                <div className="h-px flex-1 bg-gray-200/50 dark:bg-gray-700/50" />
               </div>
             </div>
+
+            {/* Provider Models - Reduced height */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-1 max-h-[240px]">
+              {providerModels.map(model => (
+                <motion.button
+                  key={model.id}
+                  onClick={() => onModelSelect(model)}
+                  className={`relative w-full p-1.5 rounded-lg transition-all
+                    ${selectedModel?.id === model.id
+                      ? 'bg-white dark:bg-gray-800 shadow-md'
+                      : 'bg-white/50 dark:bg-gray-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80'
+                    } border border-gray-200/30 dark:border-gray-700/30
+                    flex items-center gap-1.5`}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  {/* Selected indicator */}
+                  {selectedModel?.id === model.id && (
+                    <motion.div
+                      layoutId="selectedModel"
+                      className="absolute inset-0 border-2 border-primary-500/50 rounded-lg"
+                      initial={false}
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
+
+                  {/* Model Icon - More compact */}
+                  <div
+                    className="p-1 rounded-md"
+                    style={{ backgroundColor: `${model.color}20` }}
+                  >
+                    {model.category === 'function' ? (
+                      <Settings2 className="w-3.5 h-3.5" style={{ color: model.color }} />
+                    ) : model.provider === 'anthropic' ? (
+                      <Sparkles className="w-3.5 h-3.5" style={{ color: model.color }} />
+                    ) : (
+                      <Zap className="w-3.5 h-3.5" style={{ color: model.color }} />
+                    )}
+                  </div>
+
+                  {/* Model Info - More compact */}
+                  <div className="flex-1 text-left min-w-0">
+                    <span className="font-medium text-gray-900 dark:text-white text-xs truncate">
+                      {model.name}
+                    </span>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-400 line-clamp-1 truncate">
+                      {model.description}
+                    </p>
+                  </div>
+                </motion.button>
+              ))}
+            </div>
           </div>
-        )}
+        ))}
       </div>
+
+      {/* Selected Model Display - Updated to be more compact */}
+      <AnimatePresence mode="wait">
+        {selectedModel && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="rounded-lg bg-white dark:bg-gray-800 
+              border border-gray-200/30 dark:border-gray-700/30 shadow-sm
+              overflow-hidden text-sm"
+          >
+            {/* Model Summary - More compact */}
+            <div className="px-3 py-2 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div
+                  className="p-1.5 rounded-md"
+                  style={{ backgroundColor: `${selectedModel.color}20` }}
+                >
+                  {selectedModel.category === 'function' ? (
+                    <Settings2 className="w-4 h-4" style={{ color: selectedModel.color }} />
+                  ) : selectedModel.provider === 'anthropic' ? (
+                    <Sparkles className="w-4 h-4" style={{ color: selectedModel.color }} />
+                  ) : (
+                    <Zap className="w-4 h-4" style={{ color: selectedModel.color }} />
+                  )}
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="font-medium text-gray-900 dark:text-white text-sm">
+                      {selectedModel.name}
+                    </h3>
+                    <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-gray-100 dark:bg-gray-700 
+                      text-gray-600 dark:text-gray-300 capitalize">
+                      {selectedModel.provider}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">
+                    {selectedModel.description}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={toggleDetails}
+                className="group relative px-2 py-1 rounded-md 
+                  text-xs font-medium
+                  text-primary-600 dark:text-primary-400 
+                  hover:text-primary-700 dark:hover:text-primary-300
+                  transition-colors"
+              >
+                <span className="absolute inset-0 rounded-md bg-primary-50 dark:bg-primary-900/20 
+                  opacity-0 group-hover:opacity-100 transition-opacity" 
+                />
+                <span className="relative flex items-center gap-1">
+                  <span>{showDetails ? 'Hide' : 'Details'}</span>
+                  <motion.span
+                    animate={{ rotate: showDetails ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  </motion.span>
+                </span>
+              </button>
+            </div>
+
+            {/* Expanded Details Section - More compact */}
+            <AnimatePresence>
+              {showDetails && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="border-t border-gray-200/30 dark:border-gray-700/30"
+                >
+                  <div className="px-3 py-2 space-y-3">
+                    {/* Rate Limits Section */}
+                    {selectedModel.rateLimits && (
+                      <div className="space-y-1.5">
+                        <h4 className="text-xs font-medium text-gray-900 dark:text-white flex items-center gap-1.5">
+                          <Gauge className="w-3.5 h-3.5" />
+                          Rate Limits
+                        </h4>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                          {selectedModel.rateLimits.tpm && (
+                            <div className="p-1.5 rounded-md bg-gray-50 dark:bg-gray-800/50">
+                              <div className="text-[10px] text-gray-500 dark:text-gray-400">TPM</div>
+                              <div className="text-xs font-medium text-gray-900 dark:text-white">
+                                {selectedModel.rateLimits.tpm.toLocaleString()}
+                              </div>
+                            </div>
+                          )}
+                          {/* Repeat for rpm, tpd, rpd with same styling */}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Model Information */}
+                    <div className="space-y-1.5">
+                      <h4 className="text-xs font-medium text-gray-900 dark:text-white flex items-center gap-1.5">
+                        <Info className="w-3.5 h-3.5" />
+                        Model Information
+                      </h4>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-0.5">
+                          <div className="text-[10px] text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                            <Cpu className="w-3 h-3" />
+                            Provider
+                          </div>
+                          <div className="text-xs text-gray-900 dark:text-white capitalize">
+                            {selectedModel.provider}
+                          </div>
+                        </div>
+                        <div className="space-y-0.5">
+                          <div className="text-[10px] text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                            <MessageSquare className="w-3 h-3" />
+                            Category
+                          </div>
+                          <div className="text-xs text-gray-900 dark:text-white capitalize">
+                            {selectedModel.category}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Full Description */}
+                    <div className="space-y-1.5">
+                      <h4 className="text-xs font-medium text-gray-900 dark:text-white flex items-center gap-1.5">
+                        <Bot className="w-3.5 h-3.5" />
+                        Description
+                      </h4>
+                      <p className="text-xs text-gray-600 dark:text-gray-300">
+                        {selectedModel.description}
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

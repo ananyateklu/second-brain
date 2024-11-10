@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Database, Save, Search, Edit, Tags, Link, Archive, Trash2 } from 'lucide-react';
+import { Settings2, Save, Search, Edit, Tags, Link, Archive, Trash2, Loader } from 'lucide-react';
 import { AIModel } from '../../../types/ai';
 import { textStyles } from '../../../utils/textUtils';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -107,86 +107,96 @@ export function FunctionInterface({
     }
   ];
 
-  // Use this color for both components
-  const adjustedThemeColor = '#8B5CF6'; // Tailwind violet-500 - vibrant but not too bright
-
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <form onSubmit={handleSubmit} className="relative">
-        <textarea
-          ref={textareaRef}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Describe what you want to do with your notes..."
-          rows={3}
-          disabled={isLoading}
-          className={`w-full p-3 rounded-lg
-            resize-none
-            bg-white/50 dark:bg-gray-800/50
-            border border-gray-200/30 dark:border-gray-700/30
-            shadow-sm
-            focus:shadow-md
-            transition-all duration-200
-            ${textStyles.bodySmall}
-            focus:bg-white/80 dark:focus:bg-gray-800/80
-            focus:outline-none focus:ring-2 focus:ring-opacity-50`}
-          style={{ 
-            '--tw-ring-color': adjustedThemeColor,
-          } as React.CSSProperties}
-        />
-        
-        <button
-          type="submit"
-          disabled={!input.trim() || isLoading}
-          className={`absolute bottom-3 right-3 px-3 py-1.5 rounded-lg
-            text-white backdrop-blur-xl
-            transition-all duration-200 flex items-center gap-2
-            disabled:opacity-50 disabled:cursor-not-allowed
-            hover:shadow-md active:scale-95
-            border border-white/30`}
-          style={{ 
-            backgroundColor: `${adjustedThemeColor}cc`,
-          }}
-        >
-          {isLoading ? (
-            <>
-              <span className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"/>
-              <span className={textStyles.button}>Processing</span>
-            </>
-          ) : (
-            <span className={textStyles.button}>Execute</span>
-          )}
-        </button>
+        <div className="relative">
+          <textarea
+            ref={textareaRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Describe what you want to do with your notes..."
+            rows={3}
+            disabled={isLoading}
+            className="w-full px-4 py-2.5 pr-24
+              bg-white/50 dark:bg-gray-800/50
+              border border-gray-200/30 dark:border-gray-700/30
+              rounded-lg
+              text-gray-900 dark:text-white
+              placeholder-gray-500 dark:placeholder-gray-400
+              transition-all duration-200
+              focus:outline-none focus:ring-2 focus:ring-primary-500/50
+              disabled:opacity-50 disabled:cursor-not-allowed
+              resize-none"
+          />
+          
+          <div className="absolute right-2 bottom-2 flex items-center gap-2">
+            {/* Model Icon */}
+            <div className="p-1.5 rounded-md"
+              style={{ backgroundColor: `${model.color}10` }}>
+              <Settings2 className="w-4 h-4" style={{ color: model.color }} />
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isLoading || !input.trim()}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md
+                text-white text-sm font-medium
+                transition-all duration-200
+                disabled:opacity-50 disabled:cursor-not-allowed
+                hover:shadow-md active:scale-95"
+              style={{ 
+                backgroundColor: `${model.color}cc`,
+              }}
+            >
+              {isLoading ? (
+                <>
+                  <Loader className="w-4 h-4 animate-spin" />
+                  <span>Processing...</span>
+                </>
+              ) : (
+                <>
+                  <Settings2 className="w-4 h-4" />
+                  <span>Execute</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
       </form>
 
       <button
         onClick={() => setShowExamples(!showExamples)}
-        className={`${textStyles.muted} flex items-center gap-1 hover:opacity-80`}
-        style={{ color: adjustedThemeColor }}
+        className="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 
+          dark:hover:text-primary-300 transition-colors flex items-center gap-1.5"
       >
         {showExamples ? 'Hide Examples' : 'Show Examples'}
       </button>
 
       {showExamples && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {examples.map((category) => (
             <div
               key={category.title}
-              className="p-4 rounded-lg bg-white/30 dark:bg-gray-800/30 
+              className="p-3 rounded-lg bg-white/50 dark:bg-gray-800/50 
                 border border-gray-200/30 dark:border-gray-700/30
                 backdrop-blur-sm"
             >
               <div className="flex items-center gap-2 mb-2">
                 {category.icon}
-                <span className={textStyles.bodySmall}>{category.title}</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                  {category.title}
+                </span>
               </div>
-              <ul className="space-y-2">
+              <ul className="space-y-1.5">
                 {category.examples.map((example, index) => (
                   <li
                     key={index}
-                    className={`cursor-pointer transition-opacity duration-200
-                      hover:opacity-75 ${textStyles.muted}`}
                     onClick={() => handleExampleClick(example)}
+                    className="text-xs text-gray-600 dark:text-gray-300 
+                      cursor-pointer hover:text-gray-900 dark:hover:text-white 
+                      transition-colors"
                   >
                     {example}
                   </li>
