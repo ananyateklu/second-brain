@@ -20,13 +20,17 @@
     "framer-motion": "^11.11.11",
     "lucide-react": "^0.344.0",
     "openai": "^4.28.0",
+    "prismjs": "^1.29.0",
     "react": "^18.3.1",
     "react-beautiful-dnd": "^13.1.1",
     "react-circular-progressbar": "^2.1.0",
     "react-cytoscapejs": "^2.0.0",
     "react-dom": "^18.3.1",
+    "react-h5-audio-player": "^3.9.3",
+    "react-markdown": "^9.0.1",
     "react-router-dom": "^6.22.3",
     "react-select": "^5.8.2",
+    "remark-gfm": "^4.0.0",
     "uuid": "^11.0.2"
   },
   "devDependencies": {
