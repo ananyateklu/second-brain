@@ -18,6 +18,7 @@ interface AIContextType {
   llamaService: LlamaService;
   executionSteps: Record<string, ExecutionStep[]>;
   handleExecutionStep: (step: ExecutionStep) => void;
+  transcribeAudio: (audioFile: File) => Promise<AIResponse>;
 }
 
 const AIContext = createContext<AIContextType | null>(null);
@@ -143,6 +144,15 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
       console.error('Failed to configure Gemini:', errorMessage);
       setError(errorMessage);
       setIsGeminiConfigured(false);
+      throw error;
+    }
+  }, []);
+
+  const transcribeAudio = useCallback(async (audioFile: File): Promise<AIResponse> => {
+    try {
+      return await aiService.openai.transcribeAudio(audioFile);
+    } catch (error) {
+      console.error('Error in transcribeAudio:', error);
       throw error;
     }
   }, []);
@@ -301,8 +311,9 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
     availableModels,
     llamaService: aiService.llama,
     executionSteps,
-    handleExecutionStep
-  }), [isOpenAIConfigured, isAnthropicConfigured, isGeminiConfigured, isLlamaConfigured, isGrokConfigured, error, sendMessage, configureOpenAI, configureGemini, availableModels, executionSteps, handleExecutionStep]);
+    handleExecutionStep,
+    transcribeAudio
+  }), [isOpenAIConfigured, isAnthropicConfigured, isGeminiConfigured, isLlamaConfigured, isGrokConfigured, error, sendMessage, configureOpenAI, configureGemini, availableModels, executionSteps, handleExecutionStep, transcribeAudio]);
 
   return <AIContext.Provider value={value}>{children}</AIContext.Provider>;
 }

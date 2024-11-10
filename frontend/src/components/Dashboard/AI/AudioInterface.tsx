@@ -18,7 +18,7 @@ export function AudioInterface({
   setIsLoading,
   setError
 }: AudioInterfaceProps) {
-  const { sendMessage } = useAI();
+  const { sendMessage, transcribeAudio } = useAI();
   const [text, setText] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -33,20 +33,21 @@ export function AudioInterface({
         return;
       }
 
-      // Add user message showing the file name
-      onMessageSend({
-        role: 'user',
-        content: `Transcribe audio: ${selectedFile.name}`,
-        type: 'text'
-      });
-
       setIsLoading(true);
       setError(null);
 
       try {
-        const response = await sendMessage(selectedFile, model.id);
+        // Add user message showing the audio file
+        onMessageSend({
+          role: 'user',
+          content: `Transcribing: ${selectedFile.name}`,
+          type: 'text'
+        });
 
-        // Add AI response with transcription
+        // Use transcribeAudio instead of sendMessage for Whisper
+        const response = await transcribeAudio(selectedFile);
+
+        // Add AI response with transcription text
         onMessageSend({
           role: 'assistant',
           content: response.content,
@@ -54,6 +55,9 @@ export function AudioInterface({
         });
 
         setSelectedFile(null);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
       } catch (error: any) {
         setError(error.message || 'Failed to transcribe audio');
       } finally {

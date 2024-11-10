@@ -221,6 +221,13 @@ export function AIAssistantPage() {
                     setIsLoading={setIsLoading}
                     setError={setError}
                   />
+                ) : selectedModel.category === 'audio' ? (
+                  <ChatInterface
+                    model={selectedModel}
+                    onUserInput={handleUserInput}
+                    isLoading={isLoading}
+                    themeColor={themeColor}
+                  />
                 ) : selectedModel.category === 'image' ? (
                   <ImageInterface
                     model={selectedModel}
