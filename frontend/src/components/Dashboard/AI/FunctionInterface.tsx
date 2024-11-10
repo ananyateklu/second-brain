@@ -30,6 +30,12 @@ export function FunctionInterface({
     }
   };
 
+  const handleExampleClick = (example: string) => {
+    setInput(example);
+    setShowExamples(false);
+    textareaRef.current?.focus();
+  };
+
   const examples = [
     {
       icon: <Save size={18} style={{ color: themeColor }} />,
@@ -175,10 +181,7 @@ export function FunctionInterface({
                   <li
                     key={index}
                     className="text-sm cursor-pointer hover:opacity-75"
-                    onClick={() => {
-                      setInput(example);
-                      textareaRef.current?.focus();
-                    }}
+                    onClick={() => handleExampleClick(example)}
                   >
                     {example}
                   </li>

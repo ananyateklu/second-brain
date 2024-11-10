@@ -9,10 +9,16 @@ interface ThoughtProcessProps {
 }
 
 export function ThoughtProcess({ steps, isComplete, themeColor }: ThoughtProcessProps) {
-  const getStepIcon = (type: ExecutionStep['type']) => {
+  const getStepIcon = (type: ExecutionStep['type'], isActiveStep: boolean) => {
+    // If it's the active step, show the loading spinner
+    if (isActiveStep) {
+      return <Loader2 className="w-4 h-4 animate-spin" />;
+    }
+
+    // For completed steps, show their respective icons
     switch (type) {
       case 'processing':
-        return <Loader2 className="w-4 h-4 animate-spin" />;
+        return <Terminal className="w-4 h-4" />;
       case 'thinking':
         return <Brain className="w-4 h-4" />;
       case 'function_call':
@@ -33,6 +39,9 @@ export function ThoughtProcess({ steps, isComplete, themeColor }: ThoughtProcess
     )
   );
 
+  // Get the current active step index
+  const activeStepIndex = !isComplete ? uniqueSteps.length - 1 : -1;
+
   return (
     <div className="space-y-2 animate-fade-in">
       {uniqueSteps.map((step, index) => (
@@ -46,7 +55,7 @@ export function ThoughtProcess({ steps, isComplete, themeColor }: ThoughtProcess
           `}
         >
           <div className="flex-shrink-0 mt-1" style={{ color: themeColor }}>
-            {getStepIcon(step.type)}
+            {getStepIcon(step.type, index === activeStepIndex)}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">

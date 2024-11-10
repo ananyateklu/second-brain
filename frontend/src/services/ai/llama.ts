@@ -117,7 +117,7 @@ export class LlamaService {
         category: 'chat',
         description: 'Local Llama 3.1 model via Ollama',
         isConfigured: this.isConfigured(),
-        color: '#D3C5E5',
+        color: '#3B1667',
         endpoint: 'chat',
       },
       {
@@ -127,7 +127,7 @@ export class LlamaService {
         category: 'chat',
         description: 'Local Llama 3.2 model via Ollama',
         isConfigured: this.isConfigured(),
-        color: '#D3C5E5',
+        color: '#3B1667',
         endpoint: 'chat',
       },
       {
@@ -137,7 +137,7 @@ export class LlamaService {
         category: 'chat',
         description: 'Local Code Gemma model (7b parameters) from Google via Ollama',
         isConfigured: this.isConfigured(),
-        color: '#D3C5E5',
+        color: '#3B1667',
         endpoint: 'chat',
 
       },
@@ -148,7 +148,7 @@ export class LlamaService {
         category: 'chat',
         description: 'Local Gemma 2 model (9b parameters) from Google via Ollama',
         isConfigured: this.isConfigured(),
-        color: '#D3C5E5',
+        color: '#3B1667',
         endpoint: 'chat',
       },
       {
@@ -158,7 +158,7 @@ export class LlamaService {
         category: 'chat',
         description: 'Local Gemma 2 model (2b parameters) from Google via Ollama',
         isConfigured: this.isConfigured(),
-        color: '#D3C5E5',
+        color: '#3B1667',
         endpoint: 'chat',
       },
       {
@@ -168,7 +168,7 @@ export class LlamaService {
         category: 'chat',
         description: 'Local Nemotron Mini model (1.3b parameters) from Nvidia via Ollama',
         isConfigured: this.isConfigured(),
-        color: '#D3C5E5',
+        color: '#3B1667',
         endpoint: 'chat',
       },
       {
@@ -178,7 +178,7 @@ export class LlamaService {
         category: 'chat',
         description: 'Mistral Nemo - Mistral\'s latest 7b parameter model',
         isConfigured: this.isConfigured(),
-        color: '#D3C5E5',
+        color: '#3B1667',
         endpoint: 'chat',
       },
       {
@@ -188,7 +188,7 @@ export class LlamaService {
         category: 'chat',
         description: 'Mistral Nemo - Mistral\'s latest 7b parameter model',
         isConfigured: this.isConfigured(),
-        color: '#D3C5E5',
+        color: '#3B1667',
         endpoint: 'chat',
       },
       {
@@ -198,7 +198,7 @@ export class LlamaService {
         category: 'chat',
         description: 'Orca 2 is built by Microsoft research, and are a fine-tuned version of Meta\'s Llama 2 models. The model is designed to excel particularly in reasoning.',
         isConfigured: this.isConfigured(),
-        color: '#D3C5E5',
+        color: '#3B1667',
         endpoint: 'chat',
       },
       {
@@ -208,7 +208,7 @@ export class LlamaService {
         category: 'chat',
         description: 'A companion assistant trained in philosophy, psychology, and personal relationships. Based on Mistral.',
         isConfigured: this.isConfigured(),
-        color: '#D3C5E5',
+        color: '#3B1667',
         endpoint: 'chat',
       },
       {
@@ -218,7 +218,7 @@ export class LlamaService {
         category: 'function',
         description: 'Nexus Raven is a model designed to excel in function calling, and is optimized for database operations.',
         isConfigured: this.isConfigured(),
-        color: '#D3C5E5',
+        color: '#3B1667',
         endpoint: 'chat',
       },
       {
@@ -228,7 +228,7 @@ export class LlamaService {
         category: 'chat',
         description: 'The IBM Granite 2B and 8B models are designed to support tool-based use cases and support for retrieval augmented generation (RAG), streamlining code generation, translation and bug fixing.',
         isConfigured: this.isConfigured(),
-        color: '#D3C5E5',
+        color: '#3B1667',
         endpoint: 'chat',
       },
       {
@@ -238,7 +238,7 @@ export class LlamaService {
         category: 'chat',
         description: 'The IBM Granite 1B and 3B models are the first mixture of experts (MoE) Granite models from IBM designed for low latency usage.',
         isConfigured: this.isConfigured(),
-        color: '#D3C5E5',
+        color: '#3B1667',
         endpoint: 'chat',
       },
       {
@@ -248,7 +248,7 @@ export class LlamaService {
         category: 'chat',
         description: 'The latest series of Code-Specific Qwen models, with significant improvements in code generation, code reasoning, and code fixing.',
         isConfigured: this.isConfigured(),
-        color: '#D3C5E5',
+        color: '#3B1667',
         endpoint: 'chat',
       },
       {
@@ -258,7 +258,7 @@ export class LlamaService {
         category: 'chat',
         description: 'A lightweight AI model with 3.8 billion parameters with performance overtaking similarly and larger sized models.',
         isConfigured: this.isConfigured(),
-        color: '#D3C5E5',
+        color: '#3B1667',
         endpoint: 'chat',
       }
     ];
