@@ -118,7 +118,7 @@ export function ModelSelector({
       </div>
 
       {/* Model Selection Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-1.5 px-1 pt-1">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-1.5 px-1 pt-1 pb-2">
         {Object.entries(groupedModels).map(([provider, providerModels]) => (
           <div key={provider} className="flex flex-col">
             {/* Provider Header */}
@@ -132,12 +132,12 @@ export function ModelSelector({
             </div>
 
             {/* Provider Models */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-1 pr-1 pl-0.5 max-h-[180px] pt-0.5">
+            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-1 pr-1 pl-0.5 max-h-[200px] pt-0.5 pb-1">
               {providerModels.map(model => (
                 <button
                   key={model.id}
                   onClick={() => onModelSelect(model)}
-                  className={`w-full text-left p-1.5 rounded-md text-xs transition-all ${
+                  className={`w-full text-left p-1.5 rounded-md text-xs transition-all mb-0.5 ${
                     selectedModel?.id === model.id
                       ? 'bg-white dark:bg-gray-800 shadow-sm ring-1 ring-primary-500/50 dark:ring-primary-400/50'
                       : 'hover:bg-white/50 dark:hover:bg-gray-800/50'
