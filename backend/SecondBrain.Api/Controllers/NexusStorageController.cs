@@ -18,11 +18,11 @@ namespace SecondBrain.Api.Controllers
         }
 
         [HttpPost("execute")]
-        public async Task<IActionResult> ExecuteOperation([FromBody] string prompt)
+        public async Task<IActionResult> ExecuteOperation([FromBody] ExecuteOperationRequest request)
         {
             try
             {
-                var result = await _llamaService.ExecuteDatabaseOperationAsync(prompt);
+                var result = await _llamaService.ExecuteDatabaseOperationAsync(request.Prompt, request.MessageId);
                 return Ok(new { content = result });
             }
             catch (Exception ex)
@@ -46,5 +46,11 @@ namespace SecondBrain.Api.Controllers
                 return BadRequest(new { error = ex.Message, details = ex.ToString() });
             }
         }
+    }
+
+    public class ExecuteOperationRequest
+    {
+        public string Prompt { get; set; } = string.Empty;
+        public string MessageId { get; set; } = string.Empty;
     }
 } 

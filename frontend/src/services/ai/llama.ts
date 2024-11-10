@@ -1,5 +1,6 @@
 import { AIModel, AIResponse, ExecutionStep } from '../../types/ai';
 import api from '../api/api';
+import { signalRService } from '../../services/signalR';
 
 export class LlamaService {
   private isEnabled = true;
@@ -74,47 +75,19 @@ export class LlamaService {
     try {
       const steps: ExecutionStep[] = [];
 
-      // Add initial processing step
-      steps.push({
-        type: 'processing',
-        content: 'Processing request...',
-        timestamp: new Date().toISOString()
+      // Subscribe to execution steps for this messageId
+      const unsubscribe = signalRService.onExecutionStep((step: ExecutionStep) => {
+        if (step.metadata?.messageId === messageId) {
+          steps.push(step);
+          // Optionally, trigger UI updates here if necessary
+        }
       });
 
-      // Get raw response first
-      const testResponse = await api.post('/api/nexusstorage/test', prompt);
-      console.log('Raw model response:', testResponse.data.rawResponse);
+      // Send prompt and messageId to backend
+      const response = await api.post('/api/nexusstorage/execute', { prompt, messageId });
 
-      // Add thinking step
-      steps.push({
-        type: 'thinking',
-        content: testResponse.data.rawResponse,
-        timestamp: new Date().toISOString()
-      });
-
-      // Add function call step
-      steps.push({
-        type: 'function_call',
-        content: `Executing function: ${testResponse.data.rawResponse.split('\n')[0]}`,
-        timestamp: new Date().toISOString()
-      });
-
-      // Execute the actual operation
-      const response = await api.post('/api/nexusstorage/execute', prompt);
-
-      // Add database operation step
-      steps.push({
-        type: 'database_operation',
-        content: 'Executing database operation...',
-        timestamp: new Date().toISOString()
-      });
-
-      // Add result step
-      steps.push({
-        type: 'result',
-        content: response.data.content,
-        timestamp: new Date().toISOString()
-      });
+      // Unsubscribe after operation completes
+      unsubscribe();
 
       return {
         content: response.data.content,
@@ -122,10 +95,9 @@ export class LlamaService {
         executionSteps: steps,
         metadata: {
           model: 'nexusraven',
-          rawResponse: testResponse.data.rawResponse
         },
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error executing database operation:', error);
       const errorMessage = error.response?.data?.error || 'Failed to execute database operation.';
       throw new Error(`${errorMessage} Raw response: ${error.response?.data?.rawResponse || 'N/A'}`);

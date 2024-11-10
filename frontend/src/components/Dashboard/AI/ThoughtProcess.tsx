@@ -26,9 +26,16 @@ export function ThoughtProcess({ steps, isComplete, themeColor }: ThoughtProcess
     }
   };
 
+  // Filter out any duplicate steps (based on type and content)
+  const uniqueSteps = steps.filter((step, index, self) =>
+    index === self.findIndex((s) => 
+      s.type === step.type && s.content === step.content
+    )
+  );
+
   return (
     <div className="space-y-2 animate-fade-in">
-      {steps.map((step, index) => (
+      {uniqueSteps.map((step, index) => (
         <div
           key={index}
           className={`
@@ -38,12 +45,12 @@ export function ThoughtProcess({ steps, isComplete, themeColor }: ThoughtProcess
             transition-all duration-300
           `}
         >
-          <div className="flex-shrink-0 mt-1">
+          <div className="flex-shrink-0 mt-1" style={{ color: themeColor }}>
             {getStepIcon(step.type)}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-medium uppercase">
+              <span className="text-xs font-medium uppercase" style={{ color: themeColor }}>
                 {step.type.replace('_', ' ')}
               </span>
               <span className="text-xs text-gray-500">
@@ -53,7 +60,7 @@ export function ThoughtProcess({ steps, isComplete, themeColor }: ThoughtProcess
             <div className="mt-1 text-sm whitespace-pre-wrap">
               {step.content}
             </div>
-            {step.metadata && (
+            {step.metadata && Object.keys(step.metadata).length > 0 && (
               <pre className="mt-2 text-xs bg-gray-100 dark:bg-gray-900 p-2 rounded overflow-x-auto">
                 {JSON.stringify(step.metadata, null, 2)}
               </pre>

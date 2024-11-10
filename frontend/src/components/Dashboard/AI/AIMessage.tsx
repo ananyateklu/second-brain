@@ -29,12 +29,13 @@ export function AIMessage({ message, themeColor, isStreaming }: AIMessageProps) 
   const { user } = useAuth();
   const assistantThemeColor = message.model?.color || '#6B7280';
   const [progress, setProgress] = useState(0);
+  const { executionSteps } = useAI();
+  const messageSteps = executionSteps[message.id] || [];
 
   // Show thought process only for function category and when steps exist
-  const shouldShowThoughtProcess = !isUser && 
-    message.model?.category === 'function' && 
-    message.executionSteps && 
-    message.executionSteps.length > 0;
+  const shouldShowThoughtProcess = !isUser &&
+    message.model?.category === 'function' &&
+    messageSteps.length > 0;
 
   // Image generation progress effect
   useEffect(() => {
@@ -82,6 +83,13 @@ export function AIMessage({ message, themeColor, isStreaming }: AIMessageProps) 
           </pre>
         );
       default:
+        if (message.model?.category === 'function' && messageSteps.length > 0) {
+          return (
+            <p className="whitespace-pre-wrap break-all animate-fade-in">
+              {message.isLoading ? 'Processing...' : 'Operation completed'}
+            </p>
+          );
+        }
         return isUser || !isStreaming ? (
           <p className="whitespace-pre-wrap break-all animate-fade-in">
             {message.content || 'Thinking...'}
@@ -112,40 +120,57 @@ export function AIMessage({ message, themeColor, isStreaming }: AIMessageProps) 
             </>
           ) : (
             <>
-              <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                {message.model?.name || 'Assistant'}
-              </span>
-              <Bot
-                className="w-6 h-6 ml-2"
-                style={{ color: assistantThemeColor }}
-              />
+            {!shouldShowThoughtProcess && (
+              <>
+                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  {message.model?.name || 'Assistant'}
+                </span>
+                <Bot
+                  className="w-6 h-6 ml-2"
+                  style={{ color: assistantThemeColor }}
+                />
+              </>
+            )}
             </>
           )}
         </div>
 
-        {/* Message Content */}
-        <div
-          className={`px-4 py-2 rounded-lg backdrop-blur-sm ${
-            isUser
-              ? `bg-[${themeColor}]/90 text-white`
-              : 'bg-white/50 dark:bg-gray-800/50 text-gray-800 dark:text-gray-200'
-          } ${isUser ? 'rounded-br-none' : 'rounded-bl-none'} border border-gray-200/30 dark:border-gray-700/30`}
-          style={{ backgroundColor: isUser ? `${themeColor}90` : undefined }}
-        >
-          {renderContent()}
-        </div>
+        {!shouldShowThoughtProcess && (
+          <>
+            {/* Message Content */}
+            <div
+              className={`px-4 py-2 rounded-lg backdrop-blur-sm ${
+                isUser
+                  ? `bg-[${themeColor}]/90 text-white`
+                  : 'bg-white/50 dark:bg-gray-800/50 text-gray-800 dark:text-gray-200'
+              } ${isUser ? 'rounded-br-none' : 'rounded-bl-none'} border border-gray-200/30 dark:border-gray-700/30`}
+              style={{ backgroundColor: isUser ? `${themeColor}90` : undefined }}
+            >
+              {renderContent()}
+            </div>
 
-        {/* Timestamp */}
-        <span className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-          {new Date(message.timestamp).toLocaleTimeString()}
-        </span>
+            {/* Timestamp */}
+            <span className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              {new Date(message.timestamp).toLocaleTimeString()}
+            </span>
+          </>
+        )}
       </div>
 
       {/* Show thought process only for function-calling messages */}
       {shouldShowThoughtProcess && (
         <div className="ml-4 flex-1 max-w-2xl">
+          <div className="flex items-center mb-1">
+            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              {message.model?.name || 'Assistant'}
+            </span>
+            <Bot
+              className="w-6 h-6 ml-2"
+              style={{ color: assistantThemeColor }}
+            />
+          </div>
           <ThoughtProcess
-            steps={message.executionSteps || []}
+            steps={messageSteps}
             isComplete={!isStreaming}
             themeColor={themeColor}
           />

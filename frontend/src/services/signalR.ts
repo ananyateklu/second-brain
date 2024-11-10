@@ -13,6 +13,7 @@ class SignalRService {
       .build();
 
     this.connection.on('ReceiveExecutionStep', (step: ExecutionStep) => {
+      console.log('[SignalR] Received step:', step);
       this.executionStepCallbacks.forEach(callback => callback(step));
     });
 

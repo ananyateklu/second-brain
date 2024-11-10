@@ -143,7 +143,7 @@ All operations require valid user authentication";
             }
         }
 
-        public async Task<string> ExecuteDatabaseOperationAsync(string prompt)
+        public async Task<string> ExecuteDatabaseOperationAsync(string prompt, string messageId)
         {
             const string MODEL_NAME = "nexusraven";
             string response = string.Empty;
@@ -151,19 +151,37 @@ All operations require valid user authentication";
             try
             {
                 // Extract user ID and emit initial step
-                var userIdMatch = System.Text.RegularExpressions.Regex.Match(prompt, @"\[USER:([^\]]+)\]");
+                var userIdMatch = Regex.Match(prompt, @"\[USER:([^\]]+)\]");
                 var userId = userIdMatch.Success ? userIdMatch.Groups[1].Value : "unknown";
-                
+
+                // Initial processing step
                 await EmitExecutionStep("processing", $"Processing request for user: {userId}", new Dictionary<string, object>
                 {
+                    { "messageId", messageId },
                     { "userId", userId },
-                    { "timestamp", DateTime.UtcNow }
+                    { "timestamp", DateTime.UtcNow.ToString("o") }
                 });
 
                 // Combine system prompt and user prompt
                 var fullPrompt = $"{systemPrompt}\n\nUser Input: {prompt}";
+                
+                // Thinking step
+                await EmitExecutionStep("thinking", "Analyzing request and determining required operation...", new Dictionary<string, object>
+                {
+                    { "messageId", messageId },
+                    { "timestamp", DateTime.UtcNow.ToString("o") }
+                });
+
                 response = await GenerateTextAsync(fullPrompt, MODEL_NAME);
                 _logger.LogInformation("Raw model response: {Response}", response);
+
+                // Function call step
+                await EmitExecutionStep("function_call", $"Extracted operation from model response: {response}", new Dictionary<string, object>
+                {
+                    { "messageId", messageId },
+                    { "rawResponse", response },
+                    { "timestamp", DateTime.UtcNow.ToString("o") }
+                });
 
                 // Try to parse as JSON first
                 try
@@ -177,9 +195,26 @@ All operations require valid user authentication";
                         var operation = JsonSerializer.Deserialize<DatabaseOperation>(jsonPart);
                         if (operation != null)
                         {
-                            // Add the original prompt to the operation for user context
+                            // Database operation step
+                            await EmitExecutionStep("database_operation", "Executing database operation...", new Dictionary<string, object>
+                            {
+                                { "messageId", messageId },
+                                { "operation", operation },
+                                { "timestamp", DateTime.UtcNow.ToString("o") }
+                            });
+
                             operation.OriginalPrompt = prompt;
-                            return await ExecuteOperation(operation);
+                            var result = await ExecuteOperation(operation);
+
+                            // Result step
+                            await EmitExecutionStep("result", "Operation completed successfully", new Dictionary<string, object>
+                            {
+                                { "messageId", messageId },
+                                { "result", result },
+                                { "timestamp", DateTime.UtcNow.ToString("o") }
+                            });
+
+                            return result;
                         }
                     }
                 }
@@ -192,9 +227,27 @@ All operations require valid user authentication";
                 var functionCall = ParseFunctionCall(response);
                 if (functionCall != null)
                 {
+                    // Add database operation step
+                    await EmitExecutionStep("database_operation", "Executing database operation...", new Dictionary<string, object>
+                    {
+                        { "messageId", messageId },
+                        { "operation", functionCall },
+                        { "timestamp", DateTime.UtcNow.ToString("o") }
+                    });
+
                     // Add the original prompt to the operation for user context
                     functionCall.OriginalPrompt = prompt;
-                    return await ExecuteOperation(functionCall);
+                    var result = await ExecuteOperation(functionCall);
+
+                    // Add result step
+                    await EmitExecutionStep("result", "Operation completed successfully", new Dictionary<string, object>
+                    {
+                        { "messageId", messageId },
+                        { "result", result },
+                        { "timestamp", DateTime.UtcNow.ToString("o") }
+                    });
+
+                    return result;
                 }
 
                 throw new Exception($"Could not parse response in either JSON or function call format: {response}");
@@ -202,6 +255,15 @@ All operations require valid user authentication";
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error executing database operation. Raw response: {Response}", response);
+                
+                // Error step
+                await EmitExecutionStep("result", $"Error: {ex.Message}", new Dictionary<string, object>
+                {
+                    { "messageId", messageId },
+                    { "error", ex.Message },
+                    { "timestamp", DateTime.UtcNow.ToString("o") }
+                });
+
                 throw new Exception($"Invalid model response format. Details: {ex.Message}. Raw response: {response}");
             }
         }
@@ -596,109 +658,11 @@ All operations require valid user authentication";
             return (titleMatches * 2.0) + contentMatches;
         }
 
-        public async IAsyncEnumerable<ModelUpdate> StreamResponseAsync(string prompt, string modelId)
-        {
-            // Initial processing step
-            yield return new ModelUpdate(
-                "step",
-                "Processing request...",
-                new Dictionary<string, object>
-                {
-                    { "type", "processing" },
-                    { "timestamp", DateTime.UtcNow.ToString("o") }
-                }
-            );
-
-            // Thinking/Analysis step
-            yield return new ModelUpdate(
-                "step",
-                "Analyzing request...",
-                new Dictionary<string, object>
-                {
-                    { "type", "thinking" },
-                    { "timestamp", DateTime.UtcNow.ToString("o") }
-                }
-            );
-
-            var rawResponse = await GetRawModelResponse(prompt);
-            _logger.LogInformation($"Raw model response: {rawResponse}");
-
-            // Function call step
-            yield return new ModelUpdate(
-                "step",
-                $"Extracted function call: {rawResponse}",
-                new Dictionary<string, object>
-                {
-                    { "type", "function_call" },
-                    { "timestamp", DateTime.UtcNow.ToString("o") },
-                    { "rawResponse", rawResponse }
-                }
-            );
-
-            // When database operation starts
-            yield return new ModelUpdate(
-                "step",
-                "Executing database operation...",
-                new Dictionary<string, object>
-                {
-                    { "type", "database_operation" },
-                    { "timestamp", DateTime.UtcNow.ToString("o") }
-                }
-            );
-
-            var functionCall = await ExtractFunctionCall(rawResponse);
-            // Execute the function call...
-
-            // Result step
-            yield return new ModelUpdate(
-                "step",
-                "Operation completed successfully",
-                new Dictionary<string, object>
-                {
-                    { "type", "result" },
-                    { "timestamp", DateTime.UtcNow.ToString("o") }
-                }
-            );
-        }
-
-        private string ExtractUserId(string prompt)
-        {
-            var match = Regex.Match(prompt, @"\[USER:([^\]]+)\]");
-            return match.Success ? match.Groups[1].Value : "unknown";
-        }
-
-        private async Task<string> GetRawModelResponse(string prompt)
-        {
-            await Task.Delay(500); // Simulate API call
-            return "Sample raw response";
-        }
-
-        private async Task<(string Name, Dictionary<string, object> Arguments)> ExtractFunctionCall(string rawResponse)
-        {
-            _logger.LogInformation($"Parsing function call from: {rawResponse}");
-            
-            await Task.Delay(100); // Simulate processing
-            return ("create_note", new Dictionary<string, object>
-            {
-                { "title", "Sample Note" },
-                { "content", "Sample Content" },
-                { "tags", "sample,test" }
-            });
-        }
-
-        private async Task<string> ExecuteOperation((string Name, Dictionary<string, object> Arguments) functionCall)
-        {
-            _logger.LogInformation($"Executing operation: {JsonSerializer.Serialize(functionCall)}");
-            
-            await Task.Delay(500);
-            return "Operation completed successfully";
-        }
-
-        private async Task EmitExecutionStep(string type, string content, Dictionary<string, object>? metadata = null)
+        private async Task EmitExecutionStep(string type, string content, Dictionary<string, object> metadata)
         {
             var step = new ModelUpdate(type, content, metadata);
             await _hubContext.Clients.All.SendAsync("ReceiveExecutionStep", step);
-            _logger.LogInformation($"Emitted step: {type} - {content}");
+            _logger.LogInformation($"[SignalR] Emitted step: {type} - {content}");
         }
     }
 }

@@ -37,13 +37,20 @@ namespace SecondBrain.Api.Controllers
             {
                 if (modelId.Contains("function"))  // or whatever identifier you use for function-calling models
                 {
-                    // Existing function-calling logic
-                    await foreach (var update in _llamaService.StreamResponseAsync(prompt, modelId))
+                    // Generate a message ID for this request
+                    var messageId = Guid.NewGuid().ToString();
+                    var response = await _llamaService.ExecuteDatabaseOperationAsync(prompt, messageId);
+                    
+                    var update = new
                     {
-                        var json = JsonSerializer.Serialize(update);
-                        await Response.WriteAsync($"data: {json}\n\n");
-                        await Response.Body.FlushAsync();
-                    }
+                        Type = "content",
+                        Content = response,
+                        Timestamp = DateTime.UtcNow
+                    };
+                    
+                    var json = JsonSerializer.Serialize(update);
+                    await Response.WriteAsync($"data: {json}\n\n");
+                    await Response.Body.FlushAsync();
                 }
                 else
                 {

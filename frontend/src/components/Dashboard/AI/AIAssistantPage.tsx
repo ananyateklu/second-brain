@@ -88,17 +88,32 @@ export function AIAssistantPage() {
         ? await llamaService.executeDatabaseOperation(input, assistantMessageId)
         : await sendMessage(input, selectedModel.id, assistantMessageId);
 
-      setMessages((prev) => prev.map(msg => 
-        msg.id === assistantMessageId
-          ? {
-              ...msg,
-              content: aiResponse.content,
-              type: aiResponse.type,
-              isLoading: false,
-              executionSteps: aiResponse.executionSteps
-            }
-          : msg
-      ));
+      if (selectedModel.category === 'function' && aiResponse.executionSteps?.length) {
+        const lastStep = aiResponse.executionSteps[aiResponse.executionSteps.length - 1];
+        setMessages((prev) => prev.map(msg => 
+          msg.id === assistantMessageId
+            ? {
+                ...msg,
+                content: lastStep.content,
+                type: aiResponse.type,
+                isLoading: false,
+                executionSteps: aiResponse.executionSteps
+              }
+            : msg
+        ));
+      } else {
+        setMessages((prev) => prev.map(msg => 
+          msg.id === assistantMessageId
+            ? {
+                ...msg,
+                content: aiResponse.content,
+                type: aiResponse.type,
+                isLoading: false,
+                executionSteps: aiResponse.executionSteps
+              }
+            : msg
+        ));
+      }
 
     } catch (e: any) {
       console.error('Error in handleUserInput:', e);

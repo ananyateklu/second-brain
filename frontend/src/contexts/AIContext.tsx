@@ -39,27 +39,15 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
 
     // Subscribe to execution steps
     signalRService.onExecutionStep((update) => {
-      if (update.metadata.type === 'processing' || 
-          update.metadata.type === 'thinking' ||
-          update.metadata.type === 'function_call' ||
-          update.metadata.type === 'database_operation' ||
-          update.metadata.type === 'result') {
-        const step: ExecutionStep = {
-          type: update.metadata.type,
-          content: update.content,
-          timestamp: update.metadata.timestamp,
-          metadata: update.metadata
-        };
-
-        setExecutionSteps(prev => ({
-          ...prev,
-          [update.metadata.messageId]: [...(prev[update.metadata.messageId] || []), step]
-        }));
-      }
+      console.log('[AIContext] Received step:', update);
+      setExecutionSteps(prev => ({
+        ...prev,
+        [update.metadata.messageId]: [...(prev[update.metadata.messageId] || []), update]
+      }));
     });
 
     return () => {
-      signalRService.stopConnection();
+      signalRService.stop();
     };
   }, []);
 
