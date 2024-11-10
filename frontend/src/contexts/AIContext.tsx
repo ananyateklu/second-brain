@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { AIService } from '../services/ai';
 import { AIModel, AIResponse, ExecutionStep } from '../types/ai';
 import { LlamaService } from '../services/ai/llama';
@@ -17,6 +17,7 @@ interface AIContextType {
   availableModels: AIModel[];
   llamaService: LlamaService;
   executionSteps: Record<string, ExecutionStep[]>;
+  handleExecutionStep: (step: ExecutionStep) => void;
 }
 
 const AIContext = createContext<AIContextType | null>(null);
@@ -31,23 +32,41 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
   const [isLlamaConfigured, setIsLlamaConfigured] = useState<boolean>(aiService.llama.isConfigured());
   const [isGrokConfigured, setIsGrokConfigured] = useState<boolean>(false);
   const [availableModels, setAvailableModels] = useState<AIModel[]>(aiService.getAvailableModels());
+  const [messages, setMessages] = useState<Message[]>([]);
   const [executionSteps, setExecutionSteps] = useState<Record<string, ExecutionStep[]>>({});
+  const latestMessageIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     // Initialize SignalR connection
     signalRService.start();
 
     // Subscribe to execution steps
-    signalRService.onExecutionStep((update) => {
-      console.log('[AIContext] Received step:', update);
-      setExecutionSteps(prev => ({
-        ...prev,
-        [update.metadata.messageId]: [...(prev[update.metadata.messageId] || []), update]
-      }));
+    const unsubscribe = signalRService.onExecutionStep((step) => {
+      console.log('[AIContext] Received step:', step);
+      
+      // Get message ID from metadata
+      const messageId = step.metadata?.messageId;
+      if (!messageId) {
+        console.warn('[AIContext] Step received without messageId:', step);
+        return;
+      }
+
+      setExecutionSteps(prev => {
+        const currentSteps = [...(prev[messageId] || []), step];
+        console.log('[AIContext] Updating steps for message:', {
+          messageId,
+          steps: currentSteps
+        });
+        return {
+          ...prev,
+          [messageId]: currentSteps
+        };
+      });
     });
 
     return () => {
       signalRService.stop();
+      unsubscribe();
     };
   }, []);
 
@@ -128,48 +147,144 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const sendMessage = useCallback(async (input: string | File, modelId: string): Promise<AIResponse> => {
+  const sendMessage = useCallback(async (input: string, modelId: string): Promise<AIResponse> => {
     try {
-      setError(null);
-      const model = aiService.getAvailableModels().find(m => m.id === modelId);
+      const model = availableModels.find(m => m.id === modelId);
+      if (!model) throw new Error('Model not found');
+
+      const messageId = Date.now().toString();
       
-      if (!model) {
-        throw new Error(`Model ${modelId} not found or not supported`);
+      // Create user message
+      const userMessage: Message = {
+        id: `user-${messageId}`,
+        role: 'user',
+        content: input,
+        type: 'text',
+        timestamp: new Date().toISOString(),
+        model: model
+      };
+
+      // Create assistant message for function models
+      if (model.category === 'function') {
+        const assistantMessageId = `assistant-${messageId}`;
+        const assistantMessage: Message = {
+          id: assistantMessageId,
+          role: 'assistant',
+          content: '',
+          type: 'function',
+          timestamp: new Date().toISOString(),
+          model: model,
+          executionSteps: [],
+          isStreaming: true
+        };
+
+        // Add both messages
+        setMessages(prev => [...prev, userMessage, assistantMessage]);
+        
+        // Initialize steps array for this message
+        setExecutionSteps(prev => ({
+          ...prev,
+          [assistantMessageId]: []
+        }));
+
+        // Start the function call
+        return await aiService.sendMessage(input, modelId);
       }
 
-      if (!model.isConfigured) {
-        throw new Error(`${model.provider.toUpperCase()} is not configured. Please add your API key in settings.`);
-      }
-
-      // Handle different types of inputs based on model
-      if (model.id === 'whisper-1') {
-        if (!(input instanceof File)) {
-          throw new Error('Audio transcription requires an audio file');
-        }
-        return await aiService.transcribeAudio(input);
-      }
-      
-      if (model.id === 'tts-1') {
-        if (typeof input !== 'string') {
-          throw new Error('Text-to-speech requires text input');
-        }
-        return await aiService.textToSpeech(input);
-      }
-      
-      if (typeof input !== 'string') {
-        throw new Error('Invalid input type for selected model');
-      }
-
+      // For non-function models...
+      setMessages(prev => [...prev, userMessage]);
       return await aiService.sendMessage(input, modelId);
-    } catch (error: any) {
-      const errorMessage = error?.message || 'An unexpected error occurred';
-      console.error('Failed to send message:', {
-        error: errorMessage,
-        modelId,
-        inputType: input instanceof File ? 'File' : typeof input
-      });
-      setError(errorMessage);
+    } catch (error) {
+      console.error('Error in sendMessage:', error);
       throw error;
+    }
+  }, [availableModels]);
+
+  // Track the latest assistant message ID
+  useEffect(() => {
+    const lastAssistantMessage = [...messages].reverse().find(m => m.role === 'assistant');
+    if (lastAssistantMessage) {
+      latestMessageIdRef.current = lastAssistantMessage.id;
+      console.log('[AIContext] Updated latest message ID:', lastAssistantMessage.id);
+    }
+  }, [messages]);
+
+  const handleExecutionStep = useCallback((step: ExecutionStep) => {
+    console.log('[AIContext] Received new step:', step);
+    
+    const messageId = latestMessageIdRef.current;
+    if (!messageId) {
+      console.log('[AIContext] No message ID available for step:', step);
+      return;
+    }
+
+    setExecutionSteps(prev => {
+      const currentSteps = [...(prev[messageId] || []), step];
+      console.log('[AIContext] Updating steps for message:', {
+        messageId,
+        steps: currentSteps,
+        isComplete: step.type === 'result'
+      });
+
+      return {
+        ...prev,
+        [messageId]: currentSteps
+      };
+    });
+
+    // Update message with new step and streaming state
+    setMessages(prev => {
+      const index = prev.findIndex(m => m.id === messageId);
+      if (index === -1) return prev;
+
+      const updatedMessage = {
+        ...prev[index],
+        executionSteps: [...(prev[index].executionSteps || []), step],
+        isStreaming: step.type !== 'result' // Set streaming false when we get result
+      };
+
+      return [
+        ...prev.slice(0, index),
+        updatedMessage,
+        ...prev.slice(index + 1)
+      ];
+    });
+  }, []);
+
+  // Initialize assistant message for function calls
+  const addMessage = useCallback((message: Message) => {
+    if (message.role === 'user') {
+      setMessages(prev => {
+        const userMessage = { ...message };
+        
+        // For function models, immediately create assistant message
+        if (message.model?.category === 'function') {
+          const assistantId = `assistant-${Date.now()}`;
+          const assistantMessage: Message = {
+            id: assistantId,
+            role: 'assistant',
+            content: '',
+            type: 'function',
+            timestamp: new Date().toISOString(),
+            model: message.model,
+            executionSteps: [], // Initialize empty array
+            isStreaming: true
+          };
+
+          // Initialize steps array for new message
+          setExecutionSteps(prev => ({
+            ...prev,
+            [assistantId]: []
+          }));
+
+          latestMessageIdRef.current = assistantId;
+          return [...prev, userMessage, assistantMessage];
+        }
+        
+        return [...prev, userMessage];
+      });
+    } else {
+      setMessages(prev => [...prev, message]);
     }
   }, []);
 
@@ -186,7 +301,8 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
     availableModels,
     llamaService: aiService.llama,
     executionSteps,
-  }), [isOpenAIConfigured, isAnthropicConfigured, isGeminiConfigured, isLlamaConfigured, isGrokConfigured, error, sendMessage, configureOpenAI, configureGemini, availableModels, executionSteps]);
+    handleExecutionStep
+  }), [isOpenAIConfigured, isAnthropicConfigured, isGeminiConfigured, isLlamaConfigured, isGrokConfigured, error, sendMessage, configureOpenAI, configureGemini, availableModels, executionSteps, handleExecutionStep]);
 
   return <AIContext.Provider value={value}>{children}</AIContext.Provider>;
 }

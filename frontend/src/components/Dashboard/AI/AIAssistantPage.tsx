@@ -13,12 +13,14 @@ import { FunctionInterface } from './FunctionInterface';
 interface Message {
   id: string;
   role: 'user' | 'assistant';
-  content: string;
-  type: 'text' | 'image' | 'audio' | 'embedding';
+  content: string | Blob;
+  type: 'text' | 'image' | 'audio' | 'embedding' | 'code';
   timestamp: string;
   model?: AIModel;
   isLoading?: boolean;
   executionSteps?: ExecutionStep[];
+  language?: string;
+  transcription?: string;
 }
 
 export function AIAssistantPage() {
@@ -72,40 +74,27 @@ export function AIAssistantPage() {
       timestamp: new Date().toISOString(),
       model: selectedModel,
     };
-    setMessages((prev) => [...prev, userMessage]);
-
+    
     const assistantMessageId = `assistant-${messageId}`;
     const assistantMessage: Message = {
       id: assistantMessageId,
       role: 'assistant',
       content: '',
-      type: 'text',
+      type: selectedModel.category === 'function' ? 'function' : 'text',
       timestamp: new Date().toISOString(),
       model: selectedModel,
       isLoading: true,
+      executionSteps: [],
     };
-    setMessages((prev) => [...prev, assistantMessage]);
+
+    setMessages(prev => [...prev, userMessage, assistantMessage]);
 
     try {
-      const aiResponse = selectedModel.category === 'function'
-        ? await llamaService.executeDatabaseOperation(input, assistantMessageId)
-        : await sendMessage(input, selectedModel.id, assistantMessageId);
-
-      if (selectedModel.category === 'function' && aiResponse.executionSteps?.length) {
-        const lastStep = aiResponse.executionSteps[aiResponse.executionSteps.length - 1];
-        setMessages((prev) => prev.map(msg => 
-          msg.id === assistantMessageId
-            ? {
-                ...msg,
-                content: lastStep.content,
-                type: aiResponse.type,
-                isLoading: false,
-                executionSteps: aiResponse.executionSteps
-              }
-            : msg
-        ));
+      if (selectedModel.category === 'function') {
+        await llamaService.executeDatabaseOperation(input, assistantMessageId);
       } else {
-        setMessages((prev) => prev.map(msg => 
+        const aiResponse = await sendMessage(input, selectedModel.id, assistantMessageId);
+        setMessages(prev => prev.map(msg => 
           msg.id === assistantMessageId
             ? {
                 ...msg,
@@ -117,11 +106,10 @@ export function AIAssistantPage() {
             : msg
         ));
       }
-
     } catch (e: any) {
       console.error('Error in handleUserInput:', e);
       setError(e.message || 'Failed to communicate with the AI assistant.');
-      setMessages((prev) => prev.filter(msg => msg.id !== assistantMessageId));
+      setMessages(prev => prev.filter(msg => msg.id !== assistantMessageId));
     } finally {
       setIsLoading(false);
     }
@@ -164,7 +152,7 @@ export function AIAssistantPage() {
 
   return (
     <div className="fixed top-20 left-0 lg:left-60 right-0 bottom-0 overflow-hidden px-4 pt-4 pb-4">
-      <div className="h-full grid grid-rows-[auto,1fr,auto]">
+      <div className="h-full grid grid-rows-[auto,1fr,auto] max-w-full overflow-hidden">
         {/* Model Selection */}
         <div className={`backdrop-blur-sm bg-white/30 dark:bg-gray-800/30 
           border border-gray-200/30 dark:border-gray-700/30 

@@ -2,6 +2,7 @@ import React from 'react';
 import { Brain, Terminal, Database, Check, Loader2 } from 'lucide-react';
 import { ExecutionStep } from '../../../types/ai';
 import { textStyles } from '../../../utils/textUtils';
+import { motion } from 'framer-motion';
 
 interface ThoughtProcessProps {
   steps: ExecutionStep[];
@@ -28,7 +29,7 @@ export function ThoughtProcess({ steps, isComplete, themeColor }: ThoughtProcess
   };
 
   return (
-    <div className="space-y-1.5 animate-fade-in text-xs">
+    <div className="space-y-1.5 animate-fade-in text-xs max-h-[60vh] overflow-y-auto custom-scrollbar">
       {steps.map((step, index) => (
         <div
           key={index}
@@ -37,6 +38,7 @@ export function ThoughtProcess({ steps, isComplete, themeColor }: ThoughtProcess
             bg-white/50 dark:bg-gray-800/50
             border border-gray-200/30 dark:border-gray-700/30
             backdrop-blur-sm
+            max-w-[600px] overflow-hidden
             ${!isComplete && index === steps.length - 1 ? 'animate-pulse' : ''}
           `}
         >
@@ -45,25 +47,25 @@ export function ThoughtProcess({ steps, isComplete, themeColor }: ThoughtProcess
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5">
-              <span 
-                className="text-[10px] font-medium uppercase tracking-wider text-violet-600 dark:text-violet-400"
-              >
+              <span className="text-[10px] font-medium uppercase tracking-wider text-violet-600 dark:text-violet-400">
                 {step.type.replace('_', ' ')}
               </span>
               <span className="text-[10px] text-gray-500 dark:text-gray-400">
                 {new Date(step.timestamp).toLocaleTimeString()}
               </span>
             </div>
-            <div className="text-gray-600 dark:text-gray-300 text-[11px]">
+            <div className="overflow-x-auto custom-scrollbar">
               {step.content}
             </div>
             {step.metadata && Object.keys(step.metadata).length > 0 && (
               <div className="mt-1">
-                <div className="text-[10px] bg-gray-100/50 dark:bg-gray-900/50 rounded p-1 overflow-x-auto">
-                  <pre className="font-mono text-gray-600 dark:text-gray-300">
-                    {JSON.stringify(step.metadata, null, 2)}
-                  </pre>
-                </div>
+                <pre className="bg-gray-100/50 dark:bg-gray-900/50 rounded p-1 overflow-hidden">
+                  <code className="block text-[10px] font-mono custom-scrollbar overflow-x-auto whitespace-pre">
+                    {typeof step.metadata === 'string' 
+                      ? step.metadata
+                      : JSON.stringify(step.metadata, null, 2)}
+                  </code>
+                </pre>
               </div>
             )}
           </div>
@@ -76,7 +78,7 @@ export function ThoughtProcess({ steps, isComplete, themeColor }: ThoughtProcess
           <>
             <div 
               className="w-2 h-2 border border-gray-300 dark:border-gray-600 rounded-full animate-spin"
-              style={{ borderTopColor: '#8B5CF6' }}
+              style={{ borderTopColor: themeColor }}
             />
             <span className="text-[10px] text-gray-500 dark:text-gray-400">
               Processing...
@@ -84,7 +86,7 @@ export function ThoughtProcess({ steps, isComplete, themeColor }: ThoughtProcess
           </>
         ) : steps.length > 0 && (
           <>
-            <Check className="w-2 h-2" style={{ color: '#8B5CF6' }} />
+            <Check className="w-2 h-2" style={{ color: themeColor }} />
             <span className="text-[10px] text-gray-500 dark:text-gray-400">
               Complete
             </span>

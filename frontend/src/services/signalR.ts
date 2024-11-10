@@ -1,15 +1,20 @@
 import * as signalR from '@microsoft/signalr';
 import { ExecutionStep } from '../types/ai';
 
-class SignalRService {
+export class SignalRService {
   private connection: signalR.HubConnection;
   private executionStepCallbacks: ((step: ExecutionStep) => void)[] = [];
   private isStarting: boolean = false;
+  private autoReconnect: boolean = true;
 
   constructor() {
     this.connection = new signalR.HubConnectionBuilder()
       .withUrl('http://localhost:5127/toolHub')
-      .withAutomaticReconnect()
+      .withAutomaticReconnect({
+        nextRetryDelayInMilliseconds: retryContext => {
+          return 1000; // Retry every second
+        }
+      })
       .build();
 
     this.connection.on('ReceiveExecutionStep', (step: ExecutionStep) => {
@@ -17,50 +22,34 @@ class SignalRService {
       this.executionStepCallbacks.forEach(callback => callback(step));
     });
 
-    // Handle reconnection
     this.connection.onreconnecting(() => {
-      console.log('SignalR Reconnecting...');
+      console.log('[SignalR] Reconnecting...');
     });
 
     this.connection.onreconnected(() => {
-      console.log('SignalR Reconnected');
+      console.log('[SignalR] Reconnected');
     });
 
-    this.connection.onclose(() => {
-      console.log('SignalR Connection Closed');
+    this.connection.onclose((error) => {
+      console.log('[SignalR] Connection Closed', error);
+      if (this.autoReconnect) {
+        this.start();
+      }
     });
   }
 
   async start() {
+    if (this.isStarting || this.connection.state === signalR.HubConnectionState.Connected) {
+      return;
+    }
+
     try {
-      // Check if already starting
-      if (this.isStarting) {
-        console.log('SignalR connection start already in progress');
-        return;
-      }
-
-      // Check current state
-      if (this.connection.state === signalR.HubConnectionState.Connected) {
-        console.log('SignalR already connected');
-        return;
-      }
-
-      if (this.connection.state !== signalR.HubConnectionState.Disconnected) {
-        console.log('SignalR connection is not in Disconnected state');
-        return;
-      }
-
       this.isStarting = true;
-
       await this.connection.start();
-      console.log('SignalR Connected');
+      console.log('[SignalR] Connected successfully');
     } catch (err) {
-      console.error('SignalR Connection Error:', err);
-      // Wait before trying to reconnect
-      setTimeout(() => {
-        this.isStarting = false;
-        this.start();
-      }, 5000);
+      console.error('[SignalR] Connection Error:', err);
+      setTimeout(() => this.start(), 1000);
     } finally {
       this.isStarting = false;
     }

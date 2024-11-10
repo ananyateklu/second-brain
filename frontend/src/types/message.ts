@@ -1,11 +1,14 @@
-import { AIModel } from './ai';
+import { AIModel, ExecutionStep } from './ai';
 
 export interface Message {
   id: string;
-  role: 'system' | 'user' | 'assistant';
-  content: string;
-  type: 'text' | 'image' | 'audio' | 'embedding';
+  role: 'user' | 'assistant';
+  content: string | Blob;
+  type: 'text' | 'image' | 'audio' | 'embedding' | 'code';
   timestamp: string;
-  model: AIModel;
+  model?: AIModel;
   isLoading?: boolean;
+  executionSteps?: ExecutionStep[];
+  language?: string;
+  inputText?: string;
 } 

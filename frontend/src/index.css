@@ -169,3 +169,99 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: rgba(156, 163, 175, 0.5);
 }
+
+/* Custom Audio Player Styles */
+.custom-audio-player.rhap_container {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  padding: 10px;
+  width: 100%;
+  max-width: 500px;
+}
+
+.custom-audio-player .rhap_main-controls-button,
+.custom-audio-player .rhap_time,
+.custom-audio-player .rhap_current-time,
+.custom-audio-player .rhap_total-time {
+  color: var(--text-color, #374151);
+}
+
+.dark .custom-audio-player .rhap_main-controls-button,
+.dark .custom-audio-player .rhap_time,
+.dark .custom-audio-player .rhap_current-time,
+.dark .custom-audio-player .rhap_total-time {
+  color: var(--dark-text-color, #E5E7EB);
+}
+
+.custom-audio-player .rhap_progress-filled,
+.custom-audio-player .rhap_progress-indicator {
+  background-color: var(--theme-color, #6B7280);
+}
+
+.custom-audio-player .rhap_progress-bar,
+.custom-audio-player .rhap_volume-bar {
+  background-color: var(--progress-bg, #E5E7EB);
+}
+
+.dark .custom-audio-player .rhap_progress-bar,
+.dark .custom-audio-player .rhap_volume-bar {
+  background-color: var(--dark-progress-bg, #4B5563);
+}
+
+.custom-audio-player .rhap_progress-indicator {
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  top: -4px;
+}
+
+.custom-audio-player .rhap_progress-filled,
+.custom-audio-player .rhap_progress-bar {
+  height: 4px;
+}
+
+.custom-audio-player .rhap_controls-section {
+  margin-top: 0;
+}
+
+.custom-audio-player .rhap_additional-controls {
+  flex: 0;
+}
+
+.custom-audio-player .rhap_main-controls {
+  flex: 0 1 auto;
+}
+
+.custom-audio-player .rhap_progress-section {
+  flex: 1 1 auto;
+}
+
+/* Additional Audio Player Styles for Chat */
+.custom-audio-player.rhap_container {
+  padding: 8px;
+}
+
+.custom-audio-player .rhap_main-controls-button {
+  width: 32px;
+  height: 32px;
+}
+
+.custom-audio-player .rhap_play-pause-button {
+  font-size: 32px;
+  width: 32px;
+  height: 32px;
+}
+
+.custom-audio-player .rhap_volume-controls {
+  justify-content: center;
+}
+
+.custom-audio-player .rhap_time {
+  font-size: 12px;
+}
+
+.dark .custom-audio-player {
+  --rhap-theme-color: var(--theme-color, #6B7280);
+  --rhap-bar-color: #4B5563;
+  --rhap-background-color: transparent;
+}

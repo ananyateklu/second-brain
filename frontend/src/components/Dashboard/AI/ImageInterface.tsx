@@ -43,8 +43,9 @@ export function ImageInterface({
     addMessage(userMessage);
 
     const assistantMessageId = (Date.now() + 1).toString();
+    let progress = 0;
 
-    // Add placeholder assistant message with isLoading
+    // Add placeholder assistant message
     const assistantMessage: Message = {
       id: assistantMessageId,
       role: 'assistant',
@@ -53,19 +54,33 @@ export function ImageInterface({
       timestamp: new Date().toISOString(),
       model,
       isLoading: true,
+      progress: progress,
     };
     addMessage(assistantMessage);
 
     setIsLoading(true);
     setError(null);
 
+    // Start progress updates
+    const progressInterval = setInterval(() => {
+      progress = Math.min(progress + Math.random() * 10, 99);
+      updateMessage(assistantMessageId, {
+        progress: progress,
+      });
+    }, 500);
+
     try {
       const response = await sendMessage(userPrompt, model.id);
+      clearInterval(progressInterval);
+      
+      // Update with final image
       updateMessage(assistantMessageId, {
         content: response.content,
         isLoading: false,
+        progress: 100,
       });
     } catch (error: any) {
+      clearInterval(progressInterval);
       updateMessage(assistantMessageId, {
         content: 'Failed to generate image',
         type: 'text',

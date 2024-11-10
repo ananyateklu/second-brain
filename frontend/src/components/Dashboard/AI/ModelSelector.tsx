@@ -71,7 +71,7 @@ export function ModelSelector({
     <div className="space-y-2">
       {/* Category Tabs - More compact */}
       <div className="flex justify-center flex-wrap gap-1">
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="popLayout">
           {categories.map(category => {
             const Icon = getCategoryIcon(category);
             const count = models.filter(m => m.category === category).length;
@@ -185,7 +185,7 @@ export function ModelSelector({
       </div>
 
       {/* Selected Model Display - Updated to be more compact */}
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="sync">
         {selectedModel && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -249,7 +249,7 @@ export function ModelSelector({
             </div>
 
             {/* Expanded Details Section - More compact */}
-            <AnimatePresence>
+            <AnimatePresence mode="sync">
               {showDetails && (
                 <motion.div
                   initial={{ height: 0, opacity: 0 }}
