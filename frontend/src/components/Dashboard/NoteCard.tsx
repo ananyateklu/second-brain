@@ -67,51 +67,49 @@ export function NoteCard({ note, viewMode = 'grid' }: NoteCardProps) {
     <>
       <div 
         className={`
-          group relative border border-gray-200/20 dark:border-gray-700/30 rounded-xl
-          hover:border-primary-400 dark:hover:border-primary-400 
-          transition-all duration-200
-          bg-white/90 dark:bg-gray-900/90
+          bg-white/20 dark:bg-gray-800/20
+          border border-gray-200/30 dark:border-gray-700/30 
+          shadow-sm hover:shadow-md
+          p-4 rounded-xl
+          hover:border-primary-400/50 dark:hover:border-primary-400/50 
+          transition-colors duration-200 cursor-pointer
+          ${note.isPinned && note.isFavorite ? 'ring-1 ring-purple-500/20 ring-amber-500/20' : ''}
+          ${note.isPinned ? 'ring-1 ring-primary-500/20' : ''}
+          ${note.isFavorite ? 'ring-1 ring-amber-500/20' : ''}
           ${viewMode === 'list' ? 'flex gap-4' : ''}
         `}
         style={{
-          transform: 'translate3d(0, 0, 0)',
-          backfaceVisibility: 'hidden',
-          WebkitBackfaceVisibility: 'hidden',
-          willChange: 'transform',
+          isolation: 'isolate',
         }}
       >
-        {/* Pin indicator if pinned */}
-        {note.isPinned && (
-          <div className="absolute -top-2 -right-2 bg-primary-500 rounded-full p-1 shadow-lg z-10">
-            <Pin className="w-3 h-3 text-white" />
-          </div>
-        )}
 
-        <div className="relative p-5 sm:p-6 flex-1">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 min-w-0"> {/* Added min-w-0 for text truncation */}
-              <div className="flex items-center gap-2 mb-2">
-                <div className={`p-1.5 rounded-lg ${
-                  isIdea
-                    ? 'bg-amber-100 dark:bg-amber-900/30'
-                    : 'bg-blue-100 dark:bg-blue-900/30'
-                }`}>
-                  {isIdea ? (
-                    <Lightbulb className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                  ) : (
-                    <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                  )}
-                </div>
-                <h3 className="text-base font-semibold text-gray-900 dark:text-white truncate">
+        <div className="relative flex-1 flex flex-col min-h-[120px]">
+          {/* Main content section */}
+          <div className="flex items-start justify-between gap-4 flex-grow">
+            <div className="flex items-start gap-3">
+              <div className={`p-1.5 rounded-lg ${
+                isIdea
+                  ? 'bg-amber-100 dark:bg-amber-900/30'
+                  : 'bg-blue-100 dark:bg-blue-900/30'
+              }`}>
+                {isIdea ? (
+                  <Lightbulb className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                ) : (
+                  <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                )}
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-500 transition-colors">
                   {note.title}
                 </h3>
+                <p className="mt-1 text-gray-600 dark:text-gray-300 line-clamp-2">
+                  {note.content}
+                </p>
               </div>
-              <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 min-h-[2.5rem]">
-                {note.content}
-              </p>
             </div>
 
-            <div className="flex flex-col gap-2 flex-shrink-0">
+            {/* Action buttons */}
+            <div className="flex flex-col gap-2">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -151,38 +149,41 @@ export function NoteCard({ note, viewMode = 'grid' }: NoteCardProps) {
             </div>
           </div>
 
-          <div className="mt-4 flex flex-wrap gap-y-2 items-center justify-between text-sm">
-            <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
-              <Clock className="w-4 h-4" />
-              <span className="text-xs">{formattedDate}</span>
-            </div>
-
-            {hasLinks && (
-              <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
-                <Link2 className="w-4 h-4" />
-                <span className="text-xs">{note.linkedNoteIds?.length} links</span>
-              </div>
-            )}
-          </div>
-
-          {tags.length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-2 max-h-[1.75rem] overflow-hidden">
-              {tags.slice(0, 2).map(tag => (
-                <span
-                  key={tag}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 rounded-full text-xs"
-                >
-                  <TagIcon className="w-3 h-3" />
-                  {tag}
-                </span>
-              ))}
-              {tags.length > 2 && (
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  +{tags.length - 2} more
-                </span>
+          {/* Bottom section with consistent spacing */}
+          <div className="mt-auto space-y-3">
+            {/* Tags section - wrapped in a div with consistent height */}
+            <div className="min-h-[28px]">
+              {tags.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {tags.slice(0, 2).map(tag => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 rounded-full text-sm"
+                    >
+                      <TagIcon className="w-3 h-3" />
+                      {tag}
+                    </span>
+                  ))}
+                  {tags.length > 2 && (
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      +{tags.length - 2} more
+                    </span>
+                  )}
+                </div>
               )}
             </div>
-          )}
+
+            {/* Metadata section */}
+            <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+              {hasLinks && (
+                <div className="flex items-center gap-2">
+                  <Link2 className="w-4 h-4" />
+                  <span>{note.linkedNoteIds?.length || 0} connections</span>
+                </div>
+              )}
+              <span>{formattedDate}</span>
+            </div>
+          </div>
         </div>
       </div>
 

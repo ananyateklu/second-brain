@@ -456,11 +456,7 @@ export function DashboardHome() {
   }
 
 // First, let's separate the welcome section into its own memoized component
-const WelcomeSection = React.memo(({ user, onNewNote, onNavigate }: {
-  user: any;
-  onNewNote: () => void;
-  onNavigate: (path: string) => void;
-}) => {
+const WelcomeSection = React.memo(({ user, onNewNote, onNavigate, stats, tasks }: WelcomeSectionProps) => {
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good morning';
@@ -469,31 +465,18 @@ const WelcomeSection = React.memo(({ user, onNewNote, onNavigate }: {
   };
 
   return (
-    <div 
-      className="glass-morphism p-6 rounded-xl border border-gray-100/20 dark:border-white/5 relative"
-      style={{
-        transform: 'translateZ(0)', // Force GPU acceleration
-        backfaceVisibility: 'hidden',
-        perspective: '1000px',
-        willChange: 'transform',
-        isolation: 'isolate' // Create new stacking context
-      }}
-    >
-      {/* Optimize gradient overlays */}
+    <div className="relative overflow-hidden">
+      {/* Gradient overlays */}
       <div 
-        className="absolute top-0 right-0 w-[400px] h-[400px] opacity-50"
+        className="absolute top-0 right-0 w-[400px] h-[400px] opacity-30"
         style={{
           background: 'radial-gradient(circle, var(--primary-500-alpha) 0%, transparent 70%)',
-          transform: 'translateZ(0)',
-          willChange: 'transform',
         }}
       />
       <div 
-        className="absolute bottom-0 left-0 w-[300px] h-[300px] opacity-50"
+        className="absolute bottom-0 left-0 w-[300px] h-[300px] opacity-30"
         style={{
           background: 'radial-gradient(circle, var(--amber-500-alpha) 0%, transparent 70%)',
-          transform: 'translateZ(0)',
-          willChange: 'transform',
         }}
       />
 
@@ -544,13 +527,7 @@ const WelcomeSection = React.memo(({ user, onNewNote, onNavigate }: {
         </div>
 
         {/* Right Section - Summary */}
-        <div 
-          className="relative bg-white/50 dark:bg-white/5 rounded-lg p-3 space-y-2 min-w-[260px] border border-gray-100/20 dark:border-white/5"
-          style={{
-            transform: 'translateZ(0)',
-            backfaceVisibility: 'hidden'
-          }}
-        >
+        <div className="relative bg-white/10 dark:bg-white/5 rounded-lg p-3 space-y-2 min-w-[260px] border border-gray-200/30 dark:border-gray-700/30">
           <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
             <div className="p-1.5 bg-gray-100/50 dark:bg-white/10 rounded-lg">
               <Clock className="w-3.5 h-3.5" />
@@ -594,27 +571,34 @@ const WelcomeSection = React.memo(({ user, onNewNote, onNavigate }: {
     <div 
       className="space-y-8"
       style={{
-        contain: 'content',
-        transform: 'translateZ(0)'
+        contain: 'content'
       }}
     >
-      <WelcomeSection 
-        user={user}
-        onNewNote={() => setShowNewNoteModal(true)}
-        onNavigate={navigate}
-        stats={stats}
-        tasks={tasks}
-      />
+      {/* Welcome Section - With data-type attribute to differentiate it */}
+      <div 
+        className="bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm rounded-xl"
+        data-type="welcome-section"
+      >
+        <div className="p-6">
+          <WelcomeSection 
+            user={user}
+            onNewNote={() => setShowNewNoteModal(true)}
+            onNavigate={navigate}
+            stats={stats}
+            tasks={tasks}
+          />
+        </div>
+      </div>
 
       {/* Quick Stats */}
-      <div className="glass-morphism p-4 rounded-xl">
+      <div className="bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm p-6 rounded-xl">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
             Quick Stats
           </h2>
           <button
             onClick={() => setShowStatsEditor(!showStatsEditor)}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-dark-hover rounded-lg text-gray-600 dark:text-gray-400"
+            className="p-2 hover:bg-gray-100/50 dark:hover:bg-gray-700/50 rounded-lg text-gray-600 dark:text-gray-400 transition-colors"
             title="Customize stats"
           >
             <Settings className="w-5 h-5" />
@@ -691,9 +675,9 @@ const WelcomeSection = React.memo(({ user, onNewNote, onNavigate }: {
         </AnimatePresence>
       </div>
 
-      {/* Pinned Notes - Only show if there are pinned notes */}
+      {/* Pinned Notes */}
       {stats.pinnedNotes.length > 0 && (
-        <div className="glass-morphism supports-[backdrop-filter]:glass-morphism-backdrop p-6 rounded-xl">
+        <div className="bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm p-6 rounded-xl">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <PinIcon className="w-5 h-5 text-primary-600 dark:text-primary-500" />
@@ -711,18 +695,12 @@ const WelcomeSection = React.memo(({ user, onNewNote, onNavigate }: {
           </div>
           <div 
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-            style={{
-              transform: 'translate3d(0, 0, 0)',
-              backfaceVisibility: 'hidden',
-              WebkitBackfaceVisibility: 'hidden',
-              willChange: 'transform',
-            }}
           >
             {stats.pinnedNotes.map(note => (
               <div
                 key={note.id}
                 onClick={() => handleEditNote(note)}
-                className="transform-gpu transition-transform duration-200 hover:-translate-y-0.5"
+                className="cursor-pointer transition-transform duration-200 hover:-translate-y-0.5"
               >
                 <NoteCard note={note} />
               </div>
@@ -732,7 +710,7 @@ const WelcomeSection = React.memo(({ user, onNewNote, onNavigate }: {
       )}
 
       {/* Recent Activity */}
-      <div className="space-y-4">
+      <div className="bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm p-6 rounded-xl">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Clock className="w-5 h-5 text-primary-600 dark:text-primary-500" />
@@ -753,7 +731,7 @@ const WelcomeSection = React.memo(({ user, onNewNote, onNavigate }: {
             <div
               key={note.id}
               onClick={() => handleEditNote(note)}
-              className="cursor-pointer"
+              className="cursor-pointer transition-transform duration-200 hover:-translate-y-0.5"
             >
               <NoteCard note={note} />
             </div>

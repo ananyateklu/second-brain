@@ -61,15 +61,40 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: 
   // Combine nodes and edges
   const graphElements = [...elements, ...edges];
 
+  // Select the initial node in the graph
+  useEffect(() => {
+    if (!cyRef.current || !selectedNoteId) return;
+
+    const cy = cyRef.current;
+    const selectedNode = cy.$id(selectedNoteId);
+    
+    if (selectedNode.length) {
+      cy.elements().unselect();
+      selectedNode.select();
+    }
+  }, [selectedNoteId]);
+
+  // Update layout to allow free movement with animation
   const layout: LayoutOptions = {
     name: 'concentric',
     fit: true,
     padding: 50,
-    spacingFactor: 0.85,
-    minNodeSpacing: 50,
-    concentric: (node: NodeSingular) => node.connectedEdges().length,
-    levelWidth: () => 2.5,
-    animate: false
+    spacingFactor: 0.4,
+    minNodeSpacing: 100,
+    animate: true,
+    animationDuration: 800,
+    animationEasing: 'ease-in-out-cubic',
+    animationThreshold: 250,
+    refresh: 20,
+    // Animate on drag
+    boundingBox: undefined,
+    randomize: false,
+    componentSpacing: 100,
+    nodeRepulsion: function(node: any) { return 4500; },
+    gravity: 0.2,
+    // Prevent overlap during animation
+    avoidOverlap: true,
+    nodeDimensionsIncludeLabels: true
   };
 
   const stylesheet: Stylesheet[] = [

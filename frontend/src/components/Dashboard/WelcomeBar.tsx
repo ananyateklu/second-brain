@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { Plus, Search, Clock, Star, Pin, Hash, Archive, Files, Edit, CheckSquare, Bell, Settings, X, FileText, Lightbulb, Share2, Activity, FolderPlus, Tags, AlignLeft, FolderIcon, TagIcon } from 'lucide-react';
+import { Plus, Search, Clock, Star, Pin, Hash, Archive, Files, Edit, CheckSquare, Bell, Settings, X, FileText, Lightbulb, Share2, Activity, FolderPlus, Tags, AlignLeft, FolderIcon, TagIcon, LayoutGrid, Layout, Columns } from 'lucide-react';
 import { NewNoteModal } from './Notes/NewNoteModal';
 import { useNotes } from '../../contexts/NotesContext';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
@@ -125,13 +125,41 @@ const IconMap = {
   // Add any other icons you need
 };
 
+// Add these size classes
+const sizeClasses = {
+  small: {
+    colSpan: 'col-span-1',
+    fontSize: 'text-xs',
+    iconSize: 'w-3.5 h-3.5',
+    padding: 'p-2.5',
+    titleSize: 'text-xs',
+    valueSize: 'text-sm',
+  },
+  medium: {
+    colSpan: 'col-span-2',
+    fontSize: 'text-sm',
+    iconSize: 'w-4 h-4',
+    padding: 'p-2.5',
+    titleSize: 'text-xs',
+    valueSize: 'text-sm',
+  },
+  large: {
+    colSpan: 'col-span-3',
+    fontSize: 'text-base',
+    iconSize: 'w-5 h-5',
+    padding: 'p-2.5',
+    titleSize: 'text-xs',
+    valueSize: 'text-sm',
+  },
+};
+
 export function WelcomeBar() {
   const location = useLocation();
   const { user } = useAuth();
   const { notes } = useNotes();
   const [showNewNoteModal, setShowNewNoteModal] = useState(false);
   const [showStatsEditor, setShowStatsEditor] = useState(false);
-  const { enabledStats, toggleStat, reorderStats } = useDashboard();
+  const { enabledStats, toggleStat, reorderStats, getStatValue } = useDashboard();
 
   // Add check for specific paths that should hide the welcome bar
   const hideOnPaths = [
@@ -190,74 +218,41 @@ export function WelcomeBar() {
 
   // Add renderStat function
   const renderStat = (stat: DashboardStat) => {
-    switch (stat.type) {
-      case 'notes':
-        return notes.filter(note => !note.isArchived && !note.isDeleted).length;
-      
-      case 'tags':
-        return [...new Set(notes.flatMap(note => note.tags))].length;
-      
-      case 'time':
-        const lastEdited = notes.sort((a, b) => 
-          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-        )[0];
-        if (!lastEdited) return 'No notes';
-        const timeAgo = formatTimeAgo(new Date(lastEdited.updatedAt));
-        return timeAgo;
-      
-      case 'ideas':
-        return notes.filter(note => note.tags.includes('idea')).length;
-      
-      case 'tasks':
-        return notes.filter(note => 
-          note.content.includes('[ ]') || 
-          note.content.includes('[]')
-        ).length;
-      
-      case 'activity':
-        const today = new Date();
-        return notes.filter(note => {
-          const updateDate = new Date(note.updatedAt);
-          return updateDate.toDateString() === today.toDateString();
-        }).length;
-      
-      case 'search':
-        return ''; // Implement based on your search functionality
-      
-      case 'collaboration':
-        return notes.filter(note => note.shared?.length > 0).length;
-      
-      default:
-        return 0;
-    }
+    const statValue = getStatValue(stat.id);
+    return (
+      <div className="min-w-0 flex-1">
+        <div className="text-lg font-semibold text-gray-900 dark:text-white truncate">
+          {statValue.value}
+          {statValue.change && (
+            <span className="ml-1 text-xs text-green-600 dark:text-green-400">
+              +{statValue.change}
+            </span>
+          )}
+        </div>
+        <div className="text-xs text-gray-600 dark:text-gray-400 truncate">
+          {stat.title}
+          {statValue.timeframe && (
+            <span className="ml-1 opacity-75">• {statValue.timeframe}</span>
+          )}
+        </div>
+      </div>
+    );
   };
 
-  // Add helper function for time formatting
-  const formatTimeAgo = (date: Date) => {
-    const now = new Date();
-    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    const diffInDays = Math.floor(diffInHours / 24);
-
-    if (diffInMinutes < 1) return 'Just now';
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    if (diffInHours < 24) return `${diffInHours}h ago`;
-    if (diffInDays < 7) return `${diffInDays}d ago`;
-
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric'
+  const handleSizeChange = (statId: string, size: 'small' | 'medium' | 'large') => {
+    const updatedStats = enabledStats.map(stat => {
+      if (stat.id === statId) {
+        return { ...stat, size };
+      }
+      return stat;
     });
+    reorderStats(0, 0, updatedStats);
   };
 
   return (
     <>
       <div 
-        className="relative glass-morphism p-4 rounded-xl mb-4 transform-gpu"
-        style={{
-          willChange: 'transform', // Hint to browser about animations
-          contain: 'content' // Improve rendering performance
-        }}
+        className="bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm rounded-xl p-6 mb-6"
       >
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-start gap-4 w-full">
@@ -271,7 +266,7 @@ export function WelcomeBar() {
                 </h1>
                 <button
                   onClick={() => setShowStatsEditor(!showStatsEditor)}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-dark-hover rounded-lg text-gray-600 dark:text-gray-400"
+                  className="p-2 hover:bg-gray-100/50 dark:hover:bg-gray-700/50 rounded-lg text-gray-600 dark:text-gray-400 transition-colors"
                   title="Customize stats"
                 >
                   <Settings className="w-5 h-5" />
@@ -283,124 +278,213 @@ export function WelcomeBar() {
                 axis="x"
                 values={enabledStats}
                 onReorder={handleReorder}
-                className="grid grid-cols-5 gap-2 mt-3 mb-3"
+                className="grid grid-cols-8 gap-2"
               >
                 <AnimatePresence mode="popLayout">
-                  {enabledStats.map((stat) => {
-                    const IconComponent = IconMap[stat.icon as keyof typeof IconMap];
-                    
+                  {enabledStats.map((stat, index) => {
+                    // Get the icon component from the IconMap
+                    const StatIcon = IconMap[stat.icon as keyof typeof IconMap];
+                    // Get the stat value here
+                    const statValue = getStatValue(stat.id);
+                    const size = sizeClasses[stat.size || 'medium'];
+
                     return (
                       <Reorder.Item
                         key={stat.id}
                         value={stat}
-                        className="col-span-1"
+                        className={`group relative w-full ${
+                          stat.size === 'small' ? 'col-span-1' :
+                          stat.size === 'medium' ? 'col-span-2' :
+                          stat.size === 'large' ? 'col-span-3' :
+                          'col-span-1'
+                        }`}
+                        initial={false}
+                        whileDrag={{
+                          scale: 1.05,
+                          boxShadow: "0 10px 30px -10px rgba(0,0,0,0.2)",
+                          cursor: "grabbing",
+                          zIndex: 50
+                        }}
+                        style={{
+                          position: showStatsEditor ? 'relative' : 'static',
+                        }}
+                        layout
+                        dragConstraints={{
+                          top: 0,
+                          bottom: 0
+                        }}
+                        dragElastic={0.1}
                         drag={showStatsEditor}
                       >
                         <motion.div
+                          layout
                           variants={cardVariants}
                           initial="hidden"
                           animate="visible"
                           exit="exit"
-                          className="glass-morphism p-2 rounded-lg border border-gray-200/20 dark:border-gray-700/30"
+                          whileHover={showStatsEditor ? 'hover' : undefined}
+                          className={`transform origin-center relative w-full h-[80px]`}
                         >
-                          <div className="flex items-center gap-2">
-                            <div className={`p-1.5 ${getIconBg(stat.type)} rounded-md`}>
-                              {IconComponent && (
-                                <IconComponent 
-                                  className={`w-4 h-4 ${getIconColor(stat.type)}`}
-                                />
-                              )}
-                            </div>
-                            <div>
-                              <div className="text-lg font-semibold text-gray-900 dark:text-white">
-                                {renderStat(stat)}
+                          <motion.div
+                            className={`w-full h-full glass-morphism ${size.padding} rounded-lg border border-gray-100 dark:border-dark-border hover:border-primary-400 dark:hover:border-primary-400 transition-all cursor-pointer`}
+                            whileTap={showStatsEditor ? { scale: 0.95 } : undefined}
+                          >
+                            <div className="flex flex-col h-full justify-between">
+                              {/* Icon and Title */}
+                              <div className="flex items-center gap-2">
+                                <div className={`p-1 rounded-md ${getIconBg(stat.type)} backdrop-blur-sm`}>
+                                  {StatIcon && (
+                                    <StatIcon
+                                      className={`${size.iconSize} ${getIconColor(stat.type)}`}
+                                    />
+                                  )}
+                                </div>
+                                <p className={`${size.titleSize} font-medium text-gray-700 dark:text-gray-300`}>
+                                  {stat.title}
+                                </p>
                               </div>
-                              <div className="text-xs text-gray-600 dark:text-gray-400">
-                                {stat.title}
-                              </div>
-                            </div>
-                          </div>
 
-                          {showStatsEditor && (
-                            <motion.button
-                              className="absolute -top-1.5 -right-1.5 p-1 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 shadow-lg"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleStat(stat.id);
-                              }}
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              exit={{ opacity: 0 }}
-                            >
-                              <X className="w-3 h-3 text-gray-500 dark:text-gray-400" />
-                            </motion.button>
-                          )}
+                              {/* Value and Change */}
+                              <div className="mt-1">
+                                <div className="flex items-baseline gap-1">
+                                  <span className={`${size.valueSize} font-semibold text-gray-900 dark:text-white ${
+                                    statValue.value === '-' ? 'animate-pulse' : ''
+                                  }`}>
+                                    {statValue.value}
+                                  </span>
+                                  {statValue.change && statValue.value !== '-' && (
+                                    <span className="text-xs text-green-600 dark:text-green-400">
+                                      +{statValue.change}
+                                    </span>
+                                  )}
+                                </div>
+                                {statValue.timeframe && (
+                                  <span className="text-[10px] text-gray-500 dark:text-gray-400 block">
+                                    {statValue.timeframe}
+                                  </span>
+                                )}
+                                {stat.type === 'activity' && statValue.metadata?.breakdown && (
+                                  <div className="absolute left-0 right-0 -bottom-24 hidden group-hover:block">
+                                    <div className="bg-white dark:bg-dark-card rounded-lg shadow-lg p-2 text-xs">
+                                      <div className="grid grid-cols-3 gap-2">
+                                        <div className="text-center">
+                                          <span className="block font-medium text-gray-900 dark:text-white">
+                                            {statValue.metadata.breakdown.created}
+                                          </span>
+                                          <span className="text-gray-500 dark:text-gray-400">Created</span>
+                                        </div>
+                                        <div className="text-center">
+                                          <span className="block font-medium text-gray-900 dark:text-white">
+                                            {statValue.metadata.breakdown.edited}
+                                          </span>
+                                          <span className="text-gray-500 dark:text-gray-400">Edited</span>
+                                        </div>
+                                        <div className="text-center">
+                                          <span className="block font-medium text-gray-900 dark:text-white">
+                                            {statValue.metadata.breakdown.deleted}
+                                          </span>
+                                          <span className="text-gray-500 dark:text-gray-400">Deleted</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Size controls */}
+                            {showStatsEditor && (
+                              <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="absolute bottom-2 right-2 flex items-center gap-1.5 glass-morphism rounded-lg p-1.5 border border-gray-100/20 dark:border-white/5"
+                              >
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSizeChange(stat.id, 'small');
+                                  }}
+                                  className={`p-0.5 rounded-md transition-all duration-200 ${
+                                    stat.size === 'small'
+                                      ? 'bg-primary-100/50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
+                                      : 'hover:bg-gray-100/50 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400'
+                                  }`}
+                                  title="Small"
+                                >
+                                  <LayoutGrid className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSizeChange(stat.id, 'medium');
+                                  }}
+                                  className={`p-0.5 rounded-md transition-all duration-200 ${
+                                    stat.size === 'medium'
+                                      ? 'bg-primary-100/50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
+                                      : 'hover:bg-gray-100/50 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400'
+                                  }`}
+                                  title="Medium"
+                                >
+                                  <Columns className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSizeChange(stat.id, 'large');
+                                  }}
+                                  className={`p-0.5 rounded-md transition-all duration-200 ${
+                                    stat.size === 'large'
+                                      ? 'bg-primary-100/50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
+                                      : 'hover:bg-gray-100/50 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400'
+                                  }`}
+                                  title="Large"
+                                >
+                                  <Layout className="w-3.5 h-3.5" />
+                                </button>
+                              </motion.div>
+                            )}
+
+                            {/* Remove button */}
+                            {showStatsEditor && (
+                              <motion.button
+                                style={{
+                                  position: 'absolute',
+                                  top: '-0.375rem',
+                                  right: '-0.375rem',
+                                }}
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleStat(stat.id);
+                                }}
+                              >
+                                <div className="p-1 rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-dark-card dark:hover:bg-dark-hover shadow-lg">
+                                  <X className="w-3 h-3 text-gray-500 dark:text-gray-400" />
+                                </div>
+                              </motion.button>
+                            )}
+                          </motion.div>
                         </motion.div>
                       </Reorder.Item>
                     );
                   })}
                 </AnimatePresence>
               </Reorder.Group>
-
-              {/* Updated Secondary Stats with better descriptions */}
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-2 border-t border-gray-200/20 dark:border-gray-700/30">
-                <div className="stat-item-compact text-gray-600 dark:text-gray-400">
-                  <Files className="w-3.5 h-3.5" />
-                  <span>{stats.totalNotes} total notes</span>
-                </div>
-                <div className="stat-item-compact text-gray-600 dark:text-gray-400">
-                  <Hash className="w-3.5 h-3.5" />
-                  <span>{stats.tagsCount} unique tags</span>
-                </div>
-                <div className="stat-item-compact text-gray-600 dark:text-gray-400">
-                  <Archive className="w-3.5 h-3.5" />
-                  <span>{stats.archivedCount} archived</span>
-                </div>
-                {stats.lastEditedNote && (
-                  <div className="stat-item-compact text-gray-600 dark:text-gray-400">
-                    <Edit className="w-3.5 h-3.5" />
-                    <span title={stats.lastEditedNote.title}>
-                      Last edited: {stats.lastEditedNote.title.length > 15 
-                        ? `${stats.lastEditedNote.title.substring(0, 15)}...` 
-                        : stats.lastEditedNote.title}
-                    </span>
-                  </div>
-                )}
-              </div>
             </div>
-          </div>
-
-          {/* Smaller Action Buttons */}
-          <div className="flex gap-2 self-start sm:self-center">
-            <button
-              onClick={() => setShowNewNoteModal(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-all duration-200"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>New</span>
-            </button>
-            <button
-              onClick={() => {
-                const searchInput = document.querySelector('input[type="search"]') as HTMLInputElement;
-                if (searchInput) searchInput.focus();
-              }}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition-all duration-200"
-            >
-              <Search className="w-3.5 h-3.5" />
-              <span>Search</span>
-            </button>
           </div>
         </div>
       </div>
 
-      {/* Stats Editor Modal */}
+      {/* Stats Editor */}
       <AnimatePresence>
         {showStatsEditor && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="glass-morphism mt-4 p-4 rounded-xl"
+            className="bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm mt-4 mb-6 p-6 rounded-xl"
           >
             <StatsEditor isOpen={showStatsEditor} />
           </motion.div>

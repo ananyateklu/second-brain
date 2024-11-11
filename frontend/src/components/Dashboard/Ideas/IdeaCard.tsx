@@ -7,10 +7,10 @@ import { WarningModal } from '../../shared/WarningModal';
 
 interface IdeaCardProps {
   idea: Note;
-  onClick: (ideaId: string) => void;
+  viewMode?: 'grid' | 'list';
 }
 
-export function IdeaCard({ idea, onClick }: IdeaCardProps) {
+export function IdeaCard({ idea, viewMode }: IdeaCardProps) {
   const { toggleFavoriteNote, togglePinNote, archiveNote } = useNotes();
   const [showArchiveWarning, setShowArchiveWarning] = useState(false);
 
@@ -45,28 +45,23 @@ export function IdeaCard({ idea, onClick }: IdeaCardProps) {
 
   return (
     <>
-      <div
-        onClick={() => onClick(idea.id)}
+      <div 
         className={`
-          glass-morphism supports-[backdrop-filter]:glass-morphism-backdrop
-          p-4 rounded-xl border border-gray-200/20 dark:border-gray-700/30 
-          hover:border-primary-400 dark:hover:border-primary-400 
-          transition-all duration-200 cursor-pointer
-          transform-gpu hover:-translate-y-0.5
-          ${idea.isPinned ? 'ring-2 ring-primary-500/20' : ''}
+          bg-white/20 dark:bg-gray-800/20
+          border border-gray-200/30 dark:border-gray-700/30 
+          shadow-sm hover:shadow-md
+          p-4 rounded-xl
+          hover:border-primary-400/50 dark:hover:border-primary-400/50 
+          transition-colors duration-200 cursor-pointer
+          ${idea.isPinned && idea.isFavorite ? 'ring-1 ring-purple-500/20 ring-amber-500/20' : ''}
+          ${idea.isPinned ? 'ring-1 ring-primary-500/20' : ''}
+          ${idea.isFavorite ? 'ring-1 ring-amber-500/20' : ''}
+          ${viewMode === 'list' ? 'flex gap-4' : ''}
         `}
         style={{
-          transform: 'translate3d(0, 0, 0)',
-          backfaceVisibility: 'hidden',
-          WebkitBackfaceVisibility: 'hidden',
-          willChange: 'transform',
+          isolation: 'isolate',
         }}
       >
-        {idea.isPinned && (
-          <div className="absolute -top-2 -right-2 bg-primary-500 rounded-full p-1 shadow-lg">
-            <Pin className="w-3 h-3 text-white" />
-          </div>
-        )}
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3">
             <div className="p-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/30">

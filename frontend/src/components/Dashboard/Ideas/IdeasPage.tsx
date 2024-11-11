@@ -1,30 +1,87 @@
-import React, { useState, useMemo } from 'react';
-import { Lightbulb, Plus, Search, Grid, List, Network } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Lightbulb, Plus, Search, SlidersHorizontal, Grid, List, Network } from 'lucide-react';
 import { Note, useNotes } from '../../../contexts/NotesContext';
 import { IdeasList } from './IdeasList';
 import { IdeasGrid } from './IdeasGrid';
 import { IdeasMindMap } from './IdeasMindMap';
 import { NewIdeaModal } from './NewIdeaModal';
-import { EditIdeaModal } from '../Ideas/EditIdeaModal/index';
+import { EditIdeaModal } from './EditIdeaModal';
+import { FilterDropdown } from '../Notes/FilterDropdown'; // Reuse the Notes filter component
 import { Input } from '../../shared/Input';
 
 type ViewMode = 'list' | 'grid' | 'mindmap';
 
+interface Filters {
+  search: string;
+  sortBy: 'createdAt' | 'updatedAt' | 'title';
+  sortOrder: 'asc' | 'desc';
+  showPinned: boolean;
+  showFavorites: boolean;
+  tags: string[];
+}
+
+const defaultFilters: Filters = {
+  search: '',
+  sortBy: 'updatedAt',
+  sortOrder: 'desc',
+  showPinned: false,
+  showFavorites: false,
+  tags: []
+};
+
 export function IdeasPage() {
   const { notes } = useNotes();
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState<Filters>(defaultFilters);
+  const [showFilters, setShowFilters] = useState(false);
   const [showNewIdeaModal, setShowNewIdeaModal] = useState(false);
   const [selectedIdea, setSelectedIdea] = useState<Note | null>(null);
 
-  // Filter ideas (notes tagged with 'idea')
-  const ideas = notes.filter(note => 
-    note.isIdea === true && !note.isArchived &&
-    (searchQuery
-      ? note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        note.content.toLowerCase().includes(searchQuery.toLowerCase())
-      : true)
-  );
+  // Get all ideas and their tags
+  const allIdeas = useMemo(() => {
+    return notes.filter(note => note.isIdea === true && !note.isArchived);
+  }, [notes]);
+
+  const allTags = useMemo(() => {
+    return Array.from(new Set(allIdeas.flatMap(idea => idea.tags)));
+  }, [allIdeas]);
+
+  // Filter ideas based on current filters
+  const filteredIdeas = useMemo(() => {
+    return allIdeas
+      .filter(idea => {
+        const matchesSearch = idea.title.toLowerCase().includes(filters.search.toLowerCase()) ||
+          idea.content.toLowerCase().includes(filters.search.toLowerCase());
+        const matchesPinned = !filters.showPinned || idea.isPinned;
+        const matchesFavorites = !filters.showFavorites || idea.isFavorite;
+        const matchesTags = filters.tags.length === 0 ||
+          filters.tags.some(tag => idea.tags.includes(tag));
+
+        return matchesSearch && matchesPinned && matchesFavorites && matchesTags;
+      })
+      .sort((a, b) => {
+        const aValue = a[filters.sortBy];
+        const bValue = b[filters.sortBy];
+
+        if (filters.sortBy === 'title') {
+          return filters.sortOrder === 'asc'
+            ? aValue.localeCompare(bValue)
+            : bValue.localeCompare(aValue);
+        }
+
+        return filters.sortOrder === 'asc'
+          ? new Date(aValue).getTime() - new Date(bValue).getTime()
+          : new Date(bValue).getTime() - new Date(aValue).getTime();
+      });
+  }, [allIdeas, filters]);
+
+  const handleFilterChange = (key: keyof Filters, value: any) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+  };
+
+  const clearFilters = () => {
+    setFilters(defaultFilters);
+  };
 
   const handleIdeaClick = (ideaId: string) => {
     setSelectedIdea(notes.find(note => note.id === ideaId) || null);
@@ -40,11 +97,11 @@ export function IdeasPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header Section */}
-      <div className="glass-morphism p-6 rounded-xl">
+      {/* Header Section - Updated styling */}
+      <div className="bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm rounded-xl p-6">
         <div className="flex flex-col sm:flex-row gap-6 justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+            <div className="p-2 bg-amber-100/50 dark:bg-amber-900/30 rounded-lg">
               <Lightbulb className="w-6 h-6 text-amber-600 dark:text-amber-400" />
             </div>
             <div>
@@ -52,12 +109,20 @@ export function IdeasPage() {
                 Idea Incubator
               </h1>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Capture and develop your creative ideas
+                {allIdeas.length} ideas captured
               </p>
             </div>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200/30 dark:border-gray-700/30 bg-white/20 dark:bg-gray-800/20 hover:bg-white/30 dark:hover:bg-gray-800/30 transition-all text-gray-900 dark:text-gray-100"
+            >
+              <SlidersHorizontal className="w-5 h-5" />
+              <span>Filters</span>
+            </button>
+            
             <button
               onClick={() => setShowNewIdeaModal(true)}
               className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
@@ -69,7 +134,7 @@ export function IdeasPage() {
         </div>
       </div>
 
-      {/* Search and View Controls */}
+      {/* Search and View Controls - Updated styling */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1">
           <Input
@@ -77,18 +142,18 @@ export function IdeasPage() {
             icon={Search}
             type="text"
             placeholder="Search ideas..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={filters.search}
+            onChange={(e) => handleFilterChange('search', e.target.value)}
           />
         </div>
 
         <div className="flex gap-2">
           <button
             onClick={() => setViewMode('grid')}
-            className={`p-2 rounded-lg transition-colors ${
+            className={`p-2 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${
               viewMode === 'grid'
-                ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                ? 'bg-primary-100/20 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
+                : 'bg-white/20 dark:bg-gray-800/20 hover:bg-white/30 dark:hover:bg-gray-800/30 text-gray-900 dark:text-gray-100'
             }`}
             title="Grid View"
           >
@@ -96,10 +161,10 @@ export function IdeasPage() {
           </button>
           <button
             onClick={() => setViewMode('list')}
-            className={`p-2 rounded-lg transition-colors ${
+            className={`p-2 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${
               viewMode === 'list'
-                ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                ? 'bg-primary-100/20 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
+                : 'bg-white/20 dark:bg-gray-800/20 hover:bg-white/30 dark:hover:bg-gray-800/30 text-gray-900 dark:text-gray-100'
             }`}
             title="List View"
           >
@@ -107,10 +172,10 @@ export function IdeasPage() {
           </button>
           <button
             onClick={() => setViewMode('mindmap')}
-            className={`p-2 rounded-lg transition-colors ${
+            className={`p-2 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${
               viewMode === 'mindmap'
-                ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
-                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                ? 'bg-primary-100/20 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
+                : 'bg-white/20 dark:bg-gray-800/20 hover:bg-white/30 dark:hover:bg-gray-800/30 text-gray-900 dark:text-gray-100'
             }`}
             title="Mind Map View"
           >
@@ -119,26 +184,49 @@ export function IdeasPage() {
         </div>
       </div>
 
+      {/* Filters Panel - Updated styling */}
+      {showFilters && (
+        <div className="bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm rounded-xl p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Filters</h3>
+            <button
+              onClick={clearFilters}
+              className="text-sm text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+            >
+              Clear all
+            </button>
+          </div>
+          
+          <FilterDropdown
+            filters={filters}
+            allTags={allTags}
+            onFilterChange={handleFilterChange}
+          />
+        </div>
+      )}
+
       {/* Ideas Content */}
       <div className="min-h-[500px]">
         {viewMode === 'list' && (
-          <IdeasList ideas={ideas} onIdeaClick={handleIdeaClick} />
+          <IdeasList ideas={filteredIdeas} onIdeaClick={handleIdeaClick} />
         )}
         {viewMode === 'grid' && (
-          <IdeasGrid ideas={ideas} onIdeaClick={handleIdeaClick} />
+          <IdeasGrid ideas={filteredIdeas} onIdeaClick={handleIdeaClick} />
         )}
         {viewMode === 'mindmap' && (
-          <IdeasMindMap ideas={ideas} onIdeaClick={handleIdeaClick} />
+          <IdeasMindMap ideas={filteredIdeas} onIdeaClick={handleIdeaClick} />
         )}
 
-        {ideas.length === 0 && (
+        {filteredIdeas.length === 0 && (
           <div className="flex flex-col items-center justify-center h-[400px] text-center">
             <Lightbulb className="w-16 h-16 text-gray-300 dark:text-gray-600 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-              No ideas yet
+              No ideas found
             </h3>
             <p className="text-gray-600 dark:text-gray-400 max-w-md">
-              Start capturing your ideas! Click the "New Idea" button to create your first idea.
+              {filters.search || filters.tags.length > 0
+                ? "Try adjusting your filters to find what you're looking for."
+                : "Start capturing your ideas! Click the 'New Idea' button to create your first idea."}
             </p>
           </div>
         )}
@@ -153,7 +241,7 @@ export function IdeasPage() {
       {selectedIdea && (
         <EditIdeaModal
           isOpen={selectedIdea !== null}
-          onClose={handleCloseEditModal}
+          onClose={() => setSelectedIdea(null)}
           idea={selectedIdea}
         />
       )}

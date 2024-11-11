@@ -7,19 +7,48 @@
 @layer base {
   html {
     font-family: 'Inter', system-ui, sans-serif;
+    @apply overflow-x-hidden;
   }
 
   body {
-    @apply bg-gray-50 text-gray-900 transition-colors duration-200;
+    @apply overflow-x-hidden;
+    background-color: rgb(15, 23, 42);
   }
 
   body.dark {
-    @apply bg-gradient-to-br from-gray-900 via-gray-800 to-primary-900/50 text-gray-100;
+    @apply bg-gradient-to-br from-gray-900 via-slate-900 to-slate-800;
     background-attachment: fixed;
   }
 
   html, body {
-    @apply min-h-screen;
+    @apply min-h-screen overflow-x-hidden;
+  }
+
+  /* Add overscroll behavior for modern browsers */
+  @supports (overscroll-behavior: none) {
+    html, body {
+      overscroll-behavior: none;
+    }
+  }
+
+  /* Handle stretching in Safari */
+  @supports (-webkit-overflow-scrolling: touch) {
+    html, body {
+      @apply bg-gray-950; /* Dark background for stretching in dark mode */
+    }
+  }
+
+  /* Add overscroll color matching */
+  @supports (overscroll-behavior-y: contain) {
+    html {
+      overscroll-behavior-y: contain;
+      background-color: rgb(15, 23, 42);
+    }
+  }
+
+  /* For Safari and other browsers */
+  ::selection {
+    @apply bg-primary-500/20 text-primary-500;
   }
 }
 
@@ -33,7 +62,8 @@
   }
 
   .glass-morphism {
-    @apply bg-white/90 dark:bg-gray-900/90 backdrop-blur-md;
+    @apply bg-white/90 dark:bg-gray-900/90;
+    isolation: isolate;
   }
 
   .glass-morphism-backdrop {
@@ -89,6 +119,11 @@
 @layer utilities {
   .text-shadow {
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+
+  .overscroll-background {
+    background-color: rgb(17, 24, 39);
+    transition: background-color 0.2s ease;
   }
 }
 
@@ -309,5 +344,33 @@
     -webkit-backface-visibility: hidden;
     perspective: 1000;
     -webkit-perspective: 1000;
+  }
+}
+
+/* Update the glass-morphism related styles */
+.glass-morphism {
+  @apply bg-white/90 dark:bg-gray-900/90;
+  isolation: isolate;
+}
+
+.glass-morphism-backdrop {
+  @apply bg-white/50 dark:bg-gray-900/50;
+}
+
+/* Remove or update problematic backdrop-filter styles */
+@supports (backdrop-filter: blur(12px)) {
+  .glass-morphism {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+}
+
+/* Add performance optimizations for high refresh rate displays */
+@media screen and (min-refresh-rate: 120hz) {
+  .glass-morphism {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+    contain: paint;
   }
 }

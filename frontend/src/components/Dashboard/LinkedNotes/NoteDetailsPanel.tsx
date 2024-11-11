@@ -48,22 +48,27 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
 
   return (
     <>
-      <div className="h-full flex flex-col glass-morphism">
-        <div className="p-4 border-b border-gray-200 dark:border-dark-border flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Note Details
-          </h3>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-hover transition-colors"
-          >
-            <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-          </button>
+      <div className="h-full flex flex-col bg-white/20 dark:bg-gray-800/20 border-l border-gray-200/50 dark:border-gray-700/30 overflow-hidden shadow-lg backdrop-blur-sm">
+        {/* Header */}
+        <div className="p-4 border-b border-gray-200/50 dark:border-gray-700/30">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Note Details
+            </h3>
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg hover:bg-gray-100/50 dark:hover:bg-gray-800/50 transition-colors"
+            >
+              <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+            </button>
+          </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4">
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-4 relative">
           <div className="space-y-6">
-            <div>
+            {/* Title and Metadata */}
+            <div className="bg-white/20 dark:bg-gray-800/20 border border-gray-200/50 dark:border-gray-700/30 p-4 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.05)] hover:shadow-[0_2px_4px_rgba(0,0,0,0.08)] hover:border-primary-400/50 dark:hover:border-primary-400/50 transition-all">
               <h4 className="text-xl font-medium text-gray-900 dark:text-white">
                 {note.title}
               </h4>
@@ -79,12 +84,16 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
               </div>
             </div>
 
-            <div className="prose dark:prose-invert max-w-none">
-              <p className="text-gray-700 dark:text-gray-300">{note.content}</p>
+            {/* Content */}
+            <div className="bg-white/20 dark:bg-gray-800/20 border border-gray-200/50 dark:border-gray-700/30 p-4 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.05)] hover:shadow-[0_2px_4px_rgba(0,0,0,0.08)] hover:border-primary-400/50 dark:hover:border-primary-400/50 transition-all">
+              <div className="prose dark:prose-invert max-w-none">
+                <p className="text-gray-700 dark:text-gray-300">{note.content}</p>
+              </div>
             </div>
 
+            {/* Tags */}
             {note.tags && note.tags.length > 0 && (
-              <div>
+              <div className="bg-white/20 dark:bg-gray-800/20 border border-gray-200/50 dark:border-gray-700/30 p-4 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.05)] hover:shadow-[0_2px_4px_rgba(0,0,0,0.08)] hover:border-primary-400/50 dark:hover:border-primary-400/50 transition-all">
                 <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
                   Tags
                 </h5>
@@ -102,8 +111,9 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
               </div>
             )}
 
-            <div>
-              <div className="flex items-center justify-between mb-2">
+            {/* Connected Notes */}
+            <div className="bg-white/20 dark:bg-gray-800/20 border border-gray-200/50 dark:border-gray-700/30 p-4 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.05)] hover:shadow-[0_2px_4px_rgba(0,0,0,0.08)] hover:border-primary-400/50 dark:hover:border-primary-400/50 transition-all">
+              <div className="flex items-center justify-between mb-4">
                 <h5 className="text-sm font-medium text-gray-900 dark:text-white">
                   Connected Notes ({linkedNotes.length})
                 </h5>
@@ -120,7 +130,8 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
                   linkedNotes.map(linkedNote => (
                     <div
                       key={linkedNote.id}
-                      className="group relative p-3 rounded-lg glass-morphism hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors"
+                      className="group relative p-3 rounded-lg bg-white/20 dark:bg-gray-800/20 border border-gray-200/50 dark:border-gray-700/30 shadow-[0_1px_2px_rgba(0,0,0,0.05)] hover:shadow-[0_2px_4px_rgba(0,0,0,0.08)] hover:border-primary-400/50 dark:hover:border-primary-400/50 transition-all cursor-pointer"
+                      style={{ isolation: 'isolate' }}
                     >
                       <div className="flex items-start gap-3">
                         <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
@@ -148,9 +159,12 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
-                    No connected notes yet
-                  </p>
+                  <div className="text-center py-6">
+                    <Link2 className="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      No connected notes yet
+                    </p>
+                  </div>
                 )}
               </div>
             </div>

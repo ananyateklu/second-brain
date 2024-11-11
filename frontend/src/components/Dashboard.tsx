@@ -42,15 +42,15 @@ export function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-fixed dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-800 dark:to-primary-900/50 bg-gradient-to-br from-white to-gray-100">
+    <div className="min-h-screen overflow-x-hidden bg-fixed dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-slate-800 bg-gradient-to-br from-white to-gray-100">
       {/* Fixed background */}
-      <div className="fixed inset-0 bg-fixed dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-800 dark:to-primary-900/50 bg-gradient-to-br from-white to-gray-100 -z-10" />
+      <div className="fixed inset-0 bg-fixed dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-slate-800 bg-gradient-to-br from-white to-gray-100 -z-10" />
 
-      <div className="flex">
+      <div className="flex overflow-x-hidden min-h-screen">
         <Sidebar isOpen={isSidebarOpen} />
 
-        {/* Main Content Area */}
-        <div className="flex-1 min-w-0 lg:ml-56">
+        {/* Main Content Area - Adjusted padding */}
+        <div className="flex-1 min-w-0 lg:ml-56 flex flex-col">
           <Header
             isSidebarOpen={isSidebarOpen}
             toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -58,18 +58,15 @@ export function Dashboard() {
             setSearchQuery={setSearchQuery}
           />
 
-          {/* Optimized Scrolling Container */}
+          {/* Optimized Scrolling Container - Adjusted max-width and padding */}
           <main 
-            className="pt-16 scroll-container"
+            className="flex-1 overflow-y-auto overflow-x-hidden mt-20"
             style={{
-              transform: 'translate3d(0, 0, 0)',
-              backfaceVisibility: 'hidden',
-              WebkitBackfaceVisibility: 'hidden',
-              willChange: 'transform',
-              contain: 'content'
+              overscrollBehavior: 'none',
+              backgroundColor: 'transparent'
             }}
           >
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="max-w-[1920px] mx-auto px-6 sm:px-8 lg:px-20 py-8">
               <WelcomeBar />
               <Routes>
                 <Route index element={<DashboardHome />} />
@@ -96,7 +93,6 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* Move EditNoteModal here, outside of the scrollable area */}
       <EditNoteModal
         isOpen={selectedNote !== null}
         onClose={() => setSelectedNote(null)}
