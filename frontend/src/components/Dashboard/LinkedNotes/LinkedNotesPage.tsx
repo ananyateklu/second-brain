@@ -229,6 +229,7 @@ export function LinkedNotesPage() {
               <Type className="shrink-0 w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
               <div className="text-xs truncate">
                 <span className="text-gray-500 dark:text-gray-400 font-medium">{stats.isolatedNotes}</span>
+                <span className="text-gray-700 dark:text-gray-300"> Unconnected Notes</span>
               </div>
             </div>
 
@@ -236,6 +237,7 @@ export function LinkedNotesPage() {
               <Lightbulb className="shrink-0 w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
               <div className="text-xs truncate">
                 <span className="text-gray-500 dark:text-gray-400 font-medium">{stats.isolatedIdeas}</span>
+                <span className="text-gray-700 dark:text-gray-300"> Unconnected Ideas</span>
               </div>
             </div>
 
