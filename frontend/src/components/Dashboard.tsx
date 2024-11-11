@@ -24,6 +24,8 @@ import { useNotes } from '../contexts/NotesContext';
 import { useTasks } from '../contexts/TasksContext';
 import { useReminders } from '../contexts/RemindersContext';
 import { PersonalPage } from './Dashboard/Personal/PersonalPage';
+import { EditNoteModal } from './Dashboard/Notes/EditNoteModal';
+import { useModal } from '../contexts/ModalContext';
 
 export function Dashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -31,6 +33,7 @@ export function Dashboard() {
   const { isLoading: notesLoading } = useNotes();
   const { isLoading: tasksLoading } = useTasks();
   const { isLoading: remindersLoading } = useReminders();
+  const { selectedNote, setSelectedNote } = useModal();
 
   const isLoading = notesLoading || tasksLoading || remindersLoading;
 
@@ -39,22 +42,15 @@ export function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-800 dark:to-primary-900/50 bg-gradient-to-br from-white to-gray-100">
-      {/* Mobile Sidebar Overlay */}
-      {isSidebarOpen && (
-        <div
-          className="fixed inset-0 bg-gray-900/50 lg:hidden z-30"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
+    <div className="min-h-screen bg-fixed dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-800 dark:to-primary-900/50 bg-gradient-to-br from-white to-gray-100">
+      {/* Fixed background */}
+      <div className="fixed inset-0 bg-fixed dark:bg-gradient-to-br dark:from-gray-900 dark:via-gray-800 dark:to-primary-900/50 bg-gradient-to-br from-white to-gray-100 -z-10" />
 
       <div className="flex">
-        {/* Sidebar */}
         <Sidebar isOpen={isSidebarOpen} />
 
         {/* Main Content Area */}
-        <div className="flex-1 min-w-0 lg:ml-56"> {/* Updated left margin */}
-          {/* Fixed Header */}
+        <div className="flex-1 min-w-0 lg:ml-56">
           <Header
             isSidebarOpen={isSidebarOpen}
             toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -62,8 +58,17 @@ export function Dashboard() {
             setSearchQuery={setSearchQuery}
           />
 
-          {/* Scrollable Content Area */}
-          <main className="pt-16"> {/* Add padding-top for header height */}
+          {/* Optimized Scrolling Container */}
+          <main 
+            className="pt-16 scroll-container"
+            style={{
+              transform: 'translate3d(0, 0, 0)',
+              backfaceVisibility: 'hidden',
+              WebkitBackfaceVisibility: 'hidden',
+              willChange: 'transform',
+              contain: 'content'
+            }}
+          >
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
               <WelcomeBar />
               <Routes>
@@ -90,6 +95,13 @@ export function Dashboard() {
           </main>
         </div>
       </div>
+
+      {/* Move EditNoteModal here, outside of the scrollable area */}
+      <EditNoteModal
+        isOpen={selectedNote !== null}
+        onClose={() => setSelectedNote(null)}
+        note={selectedNote}
+      />
     </div>
   );
 }

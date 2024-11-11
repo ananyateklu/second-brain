@@ -80,7 +80,7 @@ export function FunctionCallMessage({ message, themeColor, isStreaming }: Functi
 
       {/* Thought Process */}
       {!isUser && (messageSteps.length > 0 || message.isLoading) && (
-        <div className="ml-4 flex-1 max-w-2xl">
+        <div className="ml-4 flex-1 max-w-xl">
           <ThoughtProcess
             steps={messageSteps}
             isComplete={!message.isLoading}

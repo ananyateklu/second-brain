@@ -55,7 +55,7 @@ export function Header({ note, onClose }: HeaderProps) {
 
   return (
     <>
-      <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-dark-border bg-white dark:bg-dark-card">
+      <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-gray-200/30 dark:border-gray-700/30 bg-white/50 dark:bg-gray-900/50 backdrop-blur-md">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
             <Type className="w-6 h-6 text-blue-600 dark:text-blue-400" />

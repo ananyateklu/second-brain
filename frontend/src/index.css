@@ -33,12 +33,32 @@
   }
 
   .glass-morphism {
-    @apply bg-white/90 dark:bg-gray-900/50 
-           backdrop-blur-md 
-           border border-gray-200/50 dark:border-gray-700/30
-           shadow-lg dark:shadow-dark
-           rounded-lg
-           text-gray-900 dark:text-gray-100;
+    @apply bg-white/90 dark:bg-gray-900/90 backdrop-blur-md;
+  }
+
+  .glass-morphism-backdrop {
+    @apply bg-white/50 dark:bg-gray-900/50;
+  }
+
+  .dark .glass-morphism-backdrop {
+    background-color: rgba(17, 24, 39, 0.5);
+  }
+
+  .glass-card {
+    @apply bg-white/90 dark:bg-gray-900/90
+           motion-safe:transition-[background-color,border-color,opacity,box-shadow]
+           motion-safe:duration-200
+           transform-gpu;
+  }
+
+  .glass-card-backdrop {
+    background-color: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .dark .glass-card-backdrop {
+    background-color: rgba(17, 24, 39, 0.5);
   }
 
   .card {
@@ -55,6 +75,14 @@
 
   .panel-dark {
     @apply bg-gray-900/50 backdrop-blur-md border border-gray-700/30 shadow-dark;
+  }
+
+  .scroll-container {
+    @apply overflow-auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    contain: content;
   }
 }
 
@@ -122,18 +150,24 @@
 }
 
 @keyframes wave {
-  0% { transform: rotate(0deg); }
-  20% { transform: rotate(-10deg); }
-  40% { transform: rotate(12deg); }
-  60% { transform: rotate(-10deg); }
-  80% { transform: rotate(9deg); }
-  100% { transform: rotate(0deg); }
+  0% { transform: rotate(0deg) translateZ(0); }
+  10% { transform: rotate(14deg) translateZ(0); }
+  20% { transform: rotate(-8deg) translateZ(0); }
+  30% { transform: rotate(14deg) translateZ(0); }
+  40% { transform: rotate(-4deg) translateZ(0); }
+  50% { transform: rotate(10deg) translateZ(0); }
+  60% { transform: rotate(0deg) translateZ(0); }
+  100% { transform: rotate(0deg) translateZ(0); }
 }
 
 .animate-wave {
-  animation: wave 1.5s ease infinite;
-  display: inline-block;
+  animation: wave 2.5s ease infinite;
   transform-origin: 70% 70%;
+  display: inline-block;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+  will-change: transform;
 }
 
 .animate-fade-in {
@@ -264,4 +298,16 @@
   --rhap-theme-color: var(--theme-color, #6B7280);
   --rhap-bar-color: #4B5563;
   --rhap-background-color: transparent;
+}
+
+/* High refresh rate optimizations */
+@media (min-resolution: 120dpi) {
+  .glass-card,
+  .glass-morphism {
+    transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    perspective: 1000;
+    -webkit-perspective: 1000;
+  }
 }

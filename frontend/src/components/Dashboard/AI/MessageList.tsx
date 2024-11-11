@@ -1,8 +1,22 @@
 import React, { useMemo } from 'react';
 import { AIMessage } from './AIMessage';
 import { EmptyState } from './EmptyState';
-import { Message } from '../../../types/message';
-import { AIModel } from '../../../types/ai';
+import { AIModel, ExecutionStep } from '../../../types/ai';
+
+// Define a complete Message interface here
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string | Blob;
+  type: 'text' | 'image' | 'audio' | 'embedding' | 'code' | 'function';
+  timestamp: string;
+  model?: AIModel;
+  isLoading?: boolean;
+  executionSteps?: ExecutionStep[];
+  language?: string;
+  transcription?: string;
+  progress?: number;
+}
 
 interface MessageListProps {
   messages: Message[];
@@ -59,7 +73,7 @@ export function MessageList({
           themeColor={themeColor} 
         />
       ) : (
-        <div className="h-full overflow-y-auto overflow-x-hidden px-4 py-4 space-y-6">
+        <div className="h-full overflow-y-auto overflow-x-hidden px-2 py-2 space-y-4">
           {groupedMessages.map((group, groupIndex) => {
             const date = new Date(group[0].timestamp);
             const showDateDivider = groupIndex === 0 || 
@@ -67,10 +81,10 @@ export function MessageList({
             const groupKey = `group-${group[0].id}-${groupIndex}`;
 
             return (
-              <div key={groupKey} className="space-y-2 max-w-full">
+              <div key={groupKey} className="space-y-1 max-w-full">
                 {showDateDivider && (
-                  <div className="flex items-center justify-center my-4">
-                    <div className="px-3 py-1 rounded-full text-xs font-medium 
+                  <div className="flex items-center justify-center my-1">
+                    <div className="px-3 py-0.5 rounded-full text-xs font-medium 
                       bg-gray-100/50 dark:bg-gray-800/50 
                       text-gray-500 dark:text-gray-400
                       backdrop-blur-sm border border-gray-200/30 dark:border-gray-700/30">

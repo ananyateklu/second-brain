@@ -8,6 +8,7 @@ import { FilterDropdown } from './FilterDropdown';
 import { NotesGraph } from './NotesGraph';
 import { LoadingScreen } from '../../shared/LoadingScreen';
 import { Input } from '../../shared/Input';
+import { useModal } from '../../../contexts/ModalContext';
 
 
 interface Filters {
@@ -30,8 +31,8 @@ const defaultFilters: Filters = {
 
 export function NotesPage() {
   const { notes, isLoading } = useNotes();
+  const { setSelectedNote } = useModal();
   const [showNewNoteModal, setShowNewNoteModal] = useState(false);
-  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'graph'>('grid');
@@ -79,10 +80,6 @@ export function NotesPage() {
 
   const handleEditNote = (note: Note) => {
     setSelectedNote(note);
-  };
-
-  const handleCloseEditModal = () => {
-    setSelectedNote(null);
   };
 
   const handleFilterChange = (key: keyof Filters, value: any) => {
@@ -244,14 +241,6 @@ export function NotesPage() {
         isOpen={showNewNoteModal}
         onClose={() => setShowNewNoteModal(false)}
       />
-
-      {selectedNote && (
-        <EditNoteModal
-          isOpen={selectedNote !== null}
-          onClose={handleCloseEditModal}
-          note={selectedNote}
-        />
-      )}
     </div>
   );
 }

@@ -29,8 +29,8 @@ export function LinkedNotesPanel({
   };
 
   return (
-    <div className="border-l border-gray-200 dark:border-dark-border flex flex-col min-h-0">
-      <div className="shrink-0 px-4 py-3 border-b border-gray-200 dark:border-dark-border bg-white dark:bg-dark-card">
+    <div className="border-l border-gray-200/30 dark:border-gray-700/30 flex flex-col min-h-0">
+      <div className="shrink-0 px-4 py-3 border-b border-gray-200/30 dark:border-gray-700/30 bg-white/50 dark:bg-gray-900/50 backdrop-blur-md">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Link2 className="w-4 h-4 text-gray-500 dark:text-gray-400" />
@@ -49,12 +49,12 @@ export function LinkedNotesPanel({
         </div>
       </div>
       
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 dark:bg-dark-hover">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50/50 dark:bg-gray-800/50">
         {linkedNotes.length > 0 ? (
           linkedNotes.map(linkedNote => (
             <div
               key={linkedNote.id}
-              className="group relative p-3 rounded-lg bg-white dark:bg-dark-card hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+              className="group relative p-3 rounded-lg bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
               <div className="flex items-start gap-3">
                 {linkedNote.tags.includes('idea') ? (

@@ -19,9 +19,13 @@ export function IdeaCard({ idea, onClick }: IdeaCardProps) {
     toggleFavoriteNote(idea.id);
   };
 
-  const handlePin = (e: React.MouseEvent) => {
+  const handlePin = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    togglePinNote(idea.id);
+    try {
+      await togglePinNote(idea.id);
+    } catch (error) {
+      console.error('Failed to toggle pin:', error);
+    }
   };
 
   const handleArchiveClick = (e: React.MouseEvent) => {
@@ -43,8 +47,26 @@ export function IdeaCard({ idea, onClick }: IdeaCardProps) {
     <>
       <div
         onClick={() => onClick(idea.id)}
-        className="glass-morphism p-4 rounded-xl border border-gray-200/20 dark:border-gray-700/30 hover:border-primary-400 dark:hover:border-primary-400 transition-all duration-200 cursor-pointer"
+        className={`
+          glass-morphism supports-[backdrop-filter]:glass-morphism-backdrop
+          p-4 rounded-xl border border-gray-200/20 dark:border-gray-700/30 
+          hover:border-primary-400 dark:hover:border-primary-400 
+          transition-all duration-200 cursor-pointer
+          transform-gpu hover:-translate-y-0.5
+          ${idea.isPinned ? 'ring-2 ring-primary-500/20' : ''}
+        `}
+        style={{
+          transform: 'translate3d(0, 0, 0)',
+          backfaceVisibility: 'hidden',
+          WebkitBackfaceVisibility: 'hidden',
+          willChange: 'transform',
+        }}
       >
+        {idea.isPinned && (
+          <div className="absolute -top-2 -right-2 bg-primary-500 rounded-full p-1 shadow-lg">
+            <Pin className="w-3 h-3 text-white" />
+          </div>
+        )}
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3">
             <div className="p-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/30">
@@ -64,12 +86,18 @@ export function IdeaCard({ idea, onClick }: IdeaCardProps) {
               onClick={handlePin}
               className={`p-1.5 rounded-lg transition-colors ${
                 idea.isPinned
-                  ? 'text-primary-600 dark:text-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                  ? 'text-primary-600 dark:text-primary-500 bg-primary-50 dark:bg-primary-900/20 ring-2 ring-primary-500/20'
                   : 'text-gray-400 hover:text-primary-600 dark:text-gray-500 dark:hover:text-primary-500 hover:bg-gray-100 dark:hover:bg-gray-800/50'
               }`}
               title={idea.isPinned ? 'Unpin idea' : 'Pin idea'}
             >
-              <Pin className="w-4 h-4" fill={idea.isPinned ? 'currentColor' : 'none'} />
+              <Pin 
+                className="w-4 h-4 transform-gpu transition-transform duration-200" 
+                fill={idea.isPinned ? 'currentColor' : 'none'}
+                style={{
+                  transform: idea.isPinned ? 'rotate(45deg)' : 'none'
+                }}
+              />
             </button>
 
             <button

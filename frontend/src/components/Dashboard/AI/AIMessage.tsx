@@ -566,8 +566,8 @@ export function AIMessage({
                 disabled={copyState !== 'idle'}
                 className={`absolute 
                   ${isUser 
-                    ? '-left-2 top-1/2 -translate-y-1/2' 
-                    : '-right-3 -bottom-3'
+                    ? '-left-3 top-4 -translate-y-1/2' 
+                    : '-right-3 -bottom-2'
                   }
                   opacity-0 group-hover:opacity-100
                   rounded-full shadow-lg p-2
@@ -596,13 +596,13 @@ export function AIMessage({
 
       {/* Thought process section */}
       {shouldShowThoughtProcess && (
-        <div className="ml-4 flex-1 max-w-2xl max-h-[60vh] overflow-hidden">
-          <div className="flex items-center mb-1">
-            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+        <div className="ml-4 flex-1 max-w-lg max-h-[40vh] overflow-hidden">
+          <div className="flex items-center mb-0.5">
+            <span className="text-[10px] font-semibold text-gray-700 dark:text-gray-300">
               {message.model?.name || 'Assistant'}
             </span>
             <Bot
-              className="w-6 h-6 ml-2"
+              className="w-2.5 h-2.5 ml-2.5"
               style={{ color: assistantThemeColor }}
             />
           </div>

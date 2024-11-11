@@ -252,7 +252,13 @@ export function WelcomeBar() {
 
   return (
     <>
-      <div className="glass-morphism p-4 rounded-xl mb-4">
+      <div 
+        className="relative glass-morphism p-4 rounded-xl mb-4 transform-gpu"
+        style={{
+          willChange: 'transform', // Hint to browser about animations
+          contain: 'content' // Improve rendering performance
+        }}
+      >
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-start gap-4 w-full">
             <div className="w-full">

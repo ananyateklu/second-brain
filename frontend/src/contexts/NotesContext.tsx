@@ -54,10 +54,8 @@ export function NotesProvider({ children }: NotesProviderProps) {
 
   const fetchNotes = useCallback(async () => {
     try {
-      console.log('Fetching notes...');
       setIsLoading(true);
       const fetchedNotes = await notesService.getAllNotes();
-      console.log('Fetched notes:', fetchedNotes);
       setNotes(fetchedNotes.filter(note => !note.isArchived && !note.isDeleted).map(note => ({
         ...note,
         isArchived: note.isArchived || false,
@@ -72,13 +70,11 @@ export function NotesProvider({ children }: NotesProviderProps) {
 
   useEffect(() => {
     if (user) {
-      console.log('User authenticated, fetching notes');
       fetchNotes();
     }
   }, [user, fetchNotes]);
 
   useEffect(() => {
-    console.log('Notes updated:', notes);
   }, [notes]);
 
   const addNote = useCallback(async (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'linkedNoteIds' | 'linkedNotes'>) => {

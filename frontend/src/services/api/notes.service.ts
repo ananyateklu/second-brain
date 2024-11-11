@@ -46,9 +46,7 @@ export const notesService = {
   },
 
   async getAllNotes(): Promise<Note[]> {
-    console.log('Making API call to fetch notes');
     const response = await api.get<Note[]>('/api/Notes');
-    console.log('API response for notes:', response.data);
     return response.data
       .filter(note => !note.isDeleted)
       .map(note => ({

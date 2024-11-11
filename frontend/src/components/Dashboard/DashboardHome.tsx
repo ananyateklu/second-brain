@@ -34,6 +34,8 @@ import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { getIconColor, getIconBg } from '../../utils/styleUtils';
 import { useTasks } from '../../contexts/TasksContext';
 import { textStyles } from '../../utils/textUtils';
+import { useModal } from '../../contexts/ModalContext';
+import { Note } from '../../types/note';
 
 // Create an icon map
 const IconMap = {
@@ -297,7 +299,7 @@ export function DashboardHome() {
   const { notes } = useNotes();
   const { tasks } = useTasks();
   const [showNewNoteModal, setShowNewNoteModal] = useState(false);
-  const [selectedNote, setSelectedNote] = useState(null);
+  const { setSelectedNote } = useModal();
   const [showStatsEditor, setShowStatsEditor] = useState(false);
   const { enabledStats, toggleStat, reorderStats, getStatValue } = useDashboard();
   const quickStatsRef = useRef<HTMLDivElement>(null);
@@ -330,17 +332,12 @@ export function DashboardHome() {
     pinnedNotes: notes.filter(note => note.isPinned),
     lastUpdated: notes.length > 0
       ? new Date(Math.max(...notes.map(note => new Date(note.updatedAt).getTime())))
-      : null
+      : null,
+    totalTasks: tasks.length,
+    completedTasks: tasks.filter(task => task.completed).length
   };
 
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 18) return 'Good afternoon';
-    return 'Good evening';
-  };
-
-  const handleEditNote = (note) => {
+  const handleEditNote = (note: Note) => {
     setSelectedNote(note);
   };
 
@@ -446,120 +443,168 @@ export function DashboardHome() {
     });
   };
 
+  interface WelcomeSectionProps {
+    user: any;
+    onNewNote: () => void;
+    onNavigate: (path: string) => void;
+    stats: {
+      totalNotes: number;
+      totalTasks: number;
+      completedTasks: number;
+    };
+    tasks: any[];
+  }
+
+// First, let's separate the welcome section into its own memoized component
+const WelcomeSection = React.memo(({ user, onNewNote, onNavigate }: {
+  user: any;
+  onNewNote: () => void;
+  onNavigate: (path: string) => void;
+}) => {
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  };
+
   return (
-    <div className="space-y-8">
-      {/* Enhanced Welcome Section */}
-      <div className="glass-morphism p-6 rounded-xl border border-gray-100/20 dark:border-white/5 relative overflow-hidden">
-        {/* Decorative Background Elements */}
-        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-gradient-to-br from-primary-500/20 to-transparent rounded-full blur-3xl -z-10" />
-        <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-gradient-to-tr from-amber-500/10 to-transparent rounded-full blur-3xl -z-10" />
+    <div 
+      className="glass-morphism p-6 rounded-xl border border-gray-100/20 dark:border-white/5 relative"
+      style={{
+        transform: 'translateZ(0)', // Force GPU acceleration
+        backfaceVisibility: 'hidden',
+        perspective: '1000px',
+        willChange: 'transform',
+        isolation: 'isolate' // Create new stacking context
+      }}
+    >
+      {/* Optimize gradient overlays */}
+      <div 
+        className="absolute top-0 right-0 w-[400px] h-[400px] opacity-50"
+        style={{
+          background: 'radial-gradient(circle, var(--primary-500-alpha) 0%, transparent 70%)',
+          transform: 'translateZ(0)',
+          willChange: 'transform',
+        }}
+      />
+      <div 
+        className="absolute bottom-0 left-0 w-[300px] h-[300px] opacity-50"
+        style={{
+          background: 'radial-gradient(circle, var(--amber-500-alpha) 0%, transparent 70%)',
+          transform: 'translateZ(0)',
+          willChange: 'transform',
+        }}
+      />
 
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
-          {/* Left Section */}
-          <div className="space-y-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <h1 className={textStyles.h1}>
-                  {getGreeting()}, {user?.name}
-                </h1>
-                <span className="animate-wave">👋</span>
-              </div>
-              <p className={textStyles.bodySmall}>
-                Ready to capture your thoughts and ideas?
-              </p>
-            </div>
-            
-            {/* Quick Actions - More Compact */}
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => setShowNewNoteModal(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-all duration-200 shadow-lg shadow-primary-600/20 hover:shadow-primary-600/30 hover:-translate-y-0.5"
+      <div className="relative flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
+        {/* Left Section */}
+        <div className="space-y-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <h1 className={textStyles.h1}>
+                {getGreeting()}, {user?.name}
+              </h1>
+              <span 
+                className="inline-block animate-wave"
+                style={{ transformOrigin: '70% 70%' }}
               >
-                <Plus className="w-4 h-4" />
-                <span className="font-medium text-sm">New Note</span>
-              </button>
-              <button
-                onClick={() => navigate('/dashboard/tasks')}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-200 shadow-lg shadow-green-600/20 hover:shadow-green-600/30 hover:-translate-y-0.5"
-              >
-                <CheckSquare className="w-4 h-4" />
-                <span className="font-medium text-sm">New Task</span>
-              </button>
-              <button
-                onClick={() => navigate('/dashboard/ideas')}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-all duration-200 shadow-lg shadow-amber-600/20 hover:shadow-amber-600/30 hover:-translate-y-0.5"
-              >
-                <Lightbulb className="w-4 h-4" />
-                <span className="font-medium text-sm">Capture Idea</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Right Side - More Compact Summary */}
-          <div className="bg-white/50 dark:bg-white/5 backdrop-blur-sm rounded-lg p-3 space-y-2 min-w-[260px] border border-gray-100/20 dark:border-white/5">
-            <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
-              <div className="p-1.5 bg-gray-100/50 dark:bg-white/10 rounded-lg">
-                <Clock className="w-3.5 h-3.5" />
-              </div>
-              <span className="text-sm font-medium">
-                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                👋
               </span>
             </div>
-            <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
-              <div className="p-1.5 bg-green-100/50 dark:bg-green-500/10 rounded-lg">
-                <CheckCircle className="w-3.5 h-3.5 text-green-600 dark:text-green-500" />
-              </div>
-              <div>
-                <span className="text-sm font-semibold text-green-600 dark:text-green-500">
-                  {tasks.filter(task => task.status === 'completed').length}
-                </span>
-                <span className="ml-1 text-sm">tasks completed today</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
-              <div className="p-1.5 bg-blue-100/50 dark:bg-blue-500/10 rounded-lg">
-                <Edit3 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-500" />
-              </div>
-              <div>
-                <span className="text-sm font-semibold text-blue-600 dark:text-blue-500">
-                  {notes.filter(note => {
-                    const today = new Date();
-                    return new Date(note.updatedAt).toDateString() === today.toDateString();
-                  }).length}
-                </span>
-                <span className="ml-1 text-sm">notes updated today</span>
-              </div>
-            </div>
+            <p className={textStyles.bodySmall}>
+              Ready to capture your thoughts and ideas?
+            </p>
+          </div>
+          
+          {/* Quick Actions */}
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={onNewNote}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-all duration-200 shadow-lg shadow-primary-600/20 hover:shadow-primary-600/30 hover:-translate-y-0.5"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="font-medium text-sm">New Note</span>
+            </button>
+            <button
+              onClick={() => onNavigate('/dashboard/tasks')}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-200 shadow-lg shadow-green-600/20 hover:shadow-green-600/30 hover:-translate-y-0.5"
+            >
+              <CheckSquare className="w-4 h-4" />
+              <span className="font-medium text-sm">New Task</span>
+            </button>
+            <button
+              onClick={() => onNavigate('/dashboard/ideas')}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-all duration-200 shadow-lg shadow-amber-600/20 hover:shadow-amber-600/30 hover:-translate-y-0.5"
+            >
+              <Lightbulb className="w-4 h-4" />
+              <span className="font-medium text-sm">Capture Idea</span>
+            </button>
           </div>
         </div>
 
-        {/* Compact Focus Mode Prompt */}
-        {tasks.filter(task => task.status === 'incomplete').length > 0 && (
-          <div className="mt-4 p-3 bg-gradient-to-r from-amber-50 to-amber-100/50 dark:from-amber-900/20 dark:to-amber-800/10 rounded-lg border border-amber-100 dark:border-amber-800/20">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
-                  <AlignLeft className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-amber-900 dark:text-amber-100">
-                    Ready to focus?
-                  </h3>
-                  <p className="text-xs text-amber-700 dark:text-amber-300">
-                    You have {tasks.filter(task => task.status === 'incomplete').length} tasks pending for today
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => navigate('/dashboard/focus')}
-                className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-sm rounded-lg transition-all duration-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 font-medium"
-              >
-                Start Focus Session
-              </button>
+        {/* Right Section - Summary */}
+        <div 
+          className="relative bg-white/50 dark:bg-white/5 rounded-lg p-3 space-y-2 min-w-[260px] border border-gray-100/20 dark:border-white/5"
+          style={{
+            transform: 'translateZ(0)',
+            backfaceVisibility: 'hidden'
+          }}
+        >
+          <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+            <div className="p-1.5 bg-gray-100/50 dark:bg-white/10 rounded-lg">
+              <Clock className="w-3.5 h-3.5" />
+            </div>
+            <span className="text-sm font-medium">
+              {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+            </span>
+          </div>
+          <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+            <div className="p-1.5 bg-green-100/50 dark:bg-green-500/10 rounded-lg">
+              <CheckCircle className="w-3.5 h-3.5 text-green-600 dark:text-green-500" />
+            </div>
+            <div>
+              <span className="text-sm font-semibold text-green-600 dark:text-green-500">
+                {tasks.filter(task => task.status === 'completed').length}
+              </span>
+              <span className="ml-1 text-sm">tasks completed today</span>
             </div>
           </div>
-        )}
+          <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+            <div className="p-1.5 bg-blue-100/50 dark:bg-blue-500/10 rounded-lg">
+              <Edit3 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-500" />
+            </div>
+            <div>
+              <span className="text-sm font-semibold text-blue-600 dark:text-blue-500">
+                {notes.filter(note => {
+                  const today = new Date();
+                  return new Date(note.updatedAt).toDateString() === today.toDateString();
+                }).length}
+              </span>
+              <span className="ml-1 text-sm">notes updated today</span>
+            </div>
+          </div>
+        </div>
       </div>
+    </div>
+  );
+});
+
+  return (
+    <div 
+      className="space-y-8"
+      style={{
+        contain: 'content',
+        transform: 'translateZ(0)'
+      }}
+    >
+      <WelcomeSection 
+        user={user}
+        onNewNote={() => setShowNewNoteModal(true)}
+        onNavigate={navigate}
+        stats={stats}
+        tasks={tasks}
+      />
 
       {/* Quick Stats */}
       <div className="glass-morphism p-4 rounded-xl">
@@ -646,35 +691,45 @@ export function DashboardHome() {
         </AnimatePresence>
       </div>
 
-      {/* Pinned Notes */}
-      <div className="glass-morphism p-6 rounded-xl">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <PinIcon className="w-5 h-5 text-primary-600 dark:text-primary-500" />
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Pinned Notes
-            </h2>
-          </div>
-          <button
-            onClick={() => navigate('/dashboard/notes')}
-            className="flex items-center gap-1 text-sm text-primary-600 dark:text-primary-500 hover:text-primary-700 dark:hover:text-primary-400"
-          >
-            View all
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {stats.pinnedNotes.map(note => (
-            <div
-              key={note.id}
-              onClick={() => handleEditNote(note)}
-              className="cursor-pointer"
-            >
-              <NoteCard note={note} />
+      {/* Pinned Notes - Only show if there are pinned notes */}
+      {stats.pinnedNotes.length > 0 && (
+        <div className="glass-morphism supports-[backdrop-filter]:glass-morphism-backdrop p-6 rounded-xl">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <PinIcon className="w-5 h-5 text-primary-600 dark:text-primary-500" />
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Pinned Notes
+              </h2>
             </div>
-          ))}
+            <button
+              onClick={() => navigate('/dashboard/notes')}
+              className="flex items-center gap-1 text-sm text-primary-600 dark:text-primary-500 hover:text-primary-700 dark:hover:text-primary-400"
+            >
+              View all
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+          <div 
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+            style={{
+              transform: 'translate3d(0, 0, 0)',
+              backfaceVisibility: 'hidden',
+              WebkitBackfaceVisibility: 'hidden',
+              willChange: 'transform',
+            }}
+          >
+            {stats.pinnedNotes.map(note => (
+              <div
+                key={note.id}
+                onClick={() => handleEditNote(note)}
+                className="transform-gpu transition-transform duration-200 hover:-translate-y-0.5"
+              >
+                <NoteCard note={note} />
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Recent Activity */}
       <div className="space-y-4">
@@ -709,12 +764,6 @@ export function DashboardHome() {
       <NewNoteModal
         isOpen={showNewNoteModal}
         onClose={() => setShowNewNoteModal(false)}
-      />
-
-      <EditNoteModal
-        isOpen={selectedNote !== null}
-        onClose={handleCloseEditModal}
-        note={selectedNote}
       />
     </div>
   );
