@@ -34,26 +34,22 @@ export function ReminderFilters({
       <div className="flex gap-2">
         <button
           onClick={() => onFilterChange('all')}
-          className={`
-            flex items-center gap-2 px-3 py-2 rounded-lg text-sm border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass transition-all
-            ${selectedFilter === 'all'
-              ? 'bg-primary-50/90 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium'
-              : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/80 dark:hover:bg-gray-800/80 text-gray-900 dark:text-gray-100'
-            }
-          `}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${
+            selectedFilter === 'all'
+              ? 'bg-primary-100/20 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
+              : 'bg-white/20 dark:bg-gray-800/20 hover:bg-white/30 dark:hover:bg-gray-800/30 text-gray-900 dark:text-gray-100'
+          }`}
         >
           All
         </button>
 
         <button
           onClick={() => onFilterChange('due')}
-          className={`
-            flex items-center gap-2 px-3 py-2 rounded-lg text-sm border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass transition-all
-            ${selectedFilter === 'due'
-              ? 'bg-primary-50/90 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium'
-              : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/80 dark:hover:bg-gray-800/80 text-gray-900 dark:text-gray-100'
-            }
-          `}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${
+            selectedFilter === 'due'
+              ? 'bg-primary-100/20 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
+              : 'bg-white/20 dark:bg-gray-800/20 hover:bg-white/30 dark:hover:bg-gray-800/30 text-gray-900 dark:text-gray-100'
+          }`}
         >
           <Bell className="w-4 h-4" />
           Due Now
@@ -61,13 +57,11 @@ export function ReminderFilters({
 
         <button
           onClick={() => onFilterChange('upcoming')}
-          className={`
-            flex items-center gap-2 px-3 py-2 rounded-lg text-sm border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass transition-all
-            ${selectedFilter === 'upcoming'
-              ? 'bg-primary-50/90 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium'
-              : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/80 dark:hover:bg-gray-800/80 text-gray-900 dark:text-gray-100'
-            }
-          `}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${
+            selectedFilter === 'upcoming'
+              ? 'bg-primary-100/20 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
+              : 'bg-white/20 dark:bg-gray-800/20 hover:bg-white/30 dark:hover:bg-gray-800/30 text-gray-900 dark:text-gray-100'
+          }`}
         >
           <Calendar className="w-4 h-4" />
           Upcoming

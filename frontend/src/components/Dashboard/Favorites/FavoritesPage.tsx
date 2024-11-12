@@ -8,7 +8,7 @@ export function FavoritesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="glass-morphism p-6 rounded-xl">
+      <div className="bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm p-6 rounded-xl">
         <div className="flex items-center gap-2 mb-6">
           <Star className="w-6 h-6 text-amber-500" />
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">

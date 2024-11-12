@@ -36,27 +36,31 @@ export function RemindersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="backdrop-blur-sm bg-white/50 dark:bg-gray-800/50 border border-gray-200/50 dark:border-gray-700/50 p-6 rounded-xl">
+      <div className="bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm rounded-xl p-6">
         <div className="flex flex-col sm:flex-row gap-6 justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+            <div className="p-2 bg-purple-100/50 dark:bg-purple-900/30 rounded-lg">
               <Bell className="w-6 h-6 text-purple-600 dark:text-purple-400" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Reminders</h1>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                Reminders
+              </h1>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                 {dueCount} due now • {upcomingCount} upcoming
               </p>
             </div>
           </div>
-          
-          <button
-            onClick={() => setShowNewReminderModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            <span>New Reminder</span>
-          </button>
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowNewReminderModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              <span>New Reminder</span>
+            </button>
+          </div>
         </div>
       </div>
 

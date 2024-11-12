@@ -31,29 +31,32 @@ export function TasksPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header Section */}
-      <div className="backdrop-blur-sm bg-white/50 dark:bg-gray-800/50 border border-gray-200/50 dark:border-gray-700/50 p-6 rounded-xl">
+      {/* Header Section - Updated to match IdeasPage styling */}
+      <div className="bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm rounded-xl p-6">
         <div className="flex flex-col sm:flex-row gap-6 justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
+            <div className="p-2 bg-primary-100/50 dark:bg-primary-900/30 rounded-lg">
               <CheckSquare className="w-6 h-6 text-primary-600 dark:text-primary-400" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Tasks</h1>
-              <div className="flex items-center gap-4 mt-1">
-                <div className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400">
-                  <CheckSquare className="w-3.5 h-3.5" />
-                  <span>{completedTasks} completed</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400">
-                  <Calendar className="w-3.5 h-3.5" />
-                  <span>{dueTodayTasks} due today</span>
-                </div>
-              </div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                Tasks
+              </h1>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                {completedTasks} of {tasks.length} tasks completed
+              </p>
             </div>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200/30 dark:border-gray-700/30 bg-white/20 dark:bg-gray-800/20 hover:bg-white/30 dark:hover:bg-gray-800/30 transition-all text-gray-900 dark:text-gray-100"
+            >
+              <SlidersHorizontal className="w-5 h-5" />
+              <span>Filters</span>
+            </button>
+            
             <button
               onClick={() => setShowNewTaskModal(true)}
               className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"

@@ -28,7 +28,7 @@ export function TaskCard({ task, viewMode }: TaskCardProps) {
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'completed';
 
   const ListViewCard = () => (
-    <div className="glass-morphism p-4 rounded-xl border border-gray-200/20 dark:border-gray-700/30 hover:border-primary-400 dark:hover:border-primary-400 transition-all duration-200">
+    <div className="bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm p-4 rounded-xl hover:border-primary-400/50 dark:hover:border-primary-400/50 transition-all duration-200">
       <div className="flex items-center gap-3">
         <button
           onClick={() => toggleTaskStatus(task.id)}
@@ -95,7 +95,7 @@ export function TaskCard({ task, viewMode }: TaskCardProps) {
   );
 
   const GridViewCard = () => (
-    <div className="glass-morphism p-4 rounded-xl border border-gray-200/20 dark:border-gray-700/30 hover:border-primary-400 dark:hover:border-primary-400 transition-all duration-200">
+    <div className="bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm p-4 rounded-xl hover:border-primary-400/50 dark:hover:border-primary-400/50 transition-all duration-200">
       <div className="flex items-start gap-4">
         <button
           onClick={() => toggleTaskStatus(task.id)}

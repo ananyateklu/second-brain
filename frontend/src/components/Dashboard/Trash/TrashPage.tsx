@@ -37,24 +37,23 @@ export function TrashPage() {
   return (
     <div className="space-y-6">
       {/* Header Section */}
-      <div className="backdrop-blur-sm bg-white/50 dark:bg-gray-800/50 border border-gray-200/50 dark:border-gray-700/50 p-6 rounded-xl">
+      <div className="bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm rounded-xl p-6">
         <div className="flex flex-col sm:flex-row gap-6 justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-lg">
+            <div className="p-2 bg-red-100/50 dark:bg-red-900/30 rounded-lg">
               <Trash2 className="w-6 h-6 text-red-600 dark:text-red-400" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Trash</h1>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                {trashedItems.length} items • Items are automatically deleted after 30 days
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                Trash
+              </h1>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Items will be permanently deleted after 30 days
               </p>
-              <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                {counts.notes} notes • {counts.tasks} tasks • {counts.reminders} reminders • {counts.ideas} ideas
-              </div>
             </div>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex gap-2">
             <button
               onClick={() => setShowEmptyTrashDialog(true)}
               className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
@@ -76,13 +75,16 @@ export function TrashPage() {
             placeholder="Search deleted items..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="bg-white/70 dark:bg-gray-800/70 border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
           />
         </div>
 
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200/50 dark:border-gray-700/50 bg-white/70 dark:bg-gray-800/70 backdrop-blur-glass hover:bg-white/80 dark:hover:bg-gray-800/80 transition-all text-gray-900 dark:text-gray-100"
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${
+            showFilters
+              ? 'bg-primary-100/20 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
+              : 'bg-white/20 dark:bg-gray-800/20 hover:bg-white/30 dark:hover:bg-gray-800/30 text-gray-900 dark:text-gray-100'
+          }`}
         >
           <SlidersHorizontal className="w-5 h-5" />
           <span>Filters</span>
@@ -91,12 +93,10 @@ export function TrashPage() {
 
       {/* Filters Panel */}
       {showFilters && (
-        <div className="backdrop-blur-sm bg-white/50 dark:bg-gray-800/50 border border-gray-200/50 dark:border-gray-700/50 p-4 rounded-xl shadow-lg">
+        <div className="bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm rounded-xl p-6">
           <TrashFilters
             filters={filters}
-            onFilterChange={(key, value) => 
-              setFilters(prev => ({ ...prev, [key]: value }))
-            }
+            onFilterChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
             availableTypes={['note', 'task', 'reminder', 'idea']}
           />
         </div>

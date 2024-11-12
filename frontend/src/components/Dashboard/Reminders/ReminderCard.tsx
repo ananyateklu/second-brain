@@ -21,7 +21,7 @@ export function ReminderCard({ reminder }: ReminderCardProps) {
 
   return (
     <>
-      <div className={`glass-morphism p-4 rounded-xl border border-gray-200/20 dark:border-gray-700/30 hover:border-primary-400 dark:hover:border-primary-400 transition-all duration-200 ${
+      <div className={`bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm p-4 rounded-xl hover:border-primary-400/50 dark:hover:border-primary-400/50 transition-all duration-200 ${
         reminder.isCompleted ? 'opacity-75' : ''
       }`}>
         <div className="flex items-start gap-3">
