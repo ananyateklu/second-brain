@@ -169,7 +169,7 @@ export function WelcomeBar() {
     '/dashboard/settings',   // Settings page
     '/dashboard/trash',     // Trash page
     '/dashboard/recent',   // Recents page
-    
+    '/dashboard/tags',     // Tags page
 
   ];
 

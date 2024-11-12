@@ -10,6 +10,8 @@ export interface Note {
   content: string;
   tags: string[];
   isFavorite: boolean;
+  isPinned: boolean;
+  isIdea: boolean;
   isArchived: boolean;
   isDeleted: boolean;
   deletedAt?: string;
@@ -59,7 +61,8 @@ export function NotesProvider({ children }: NotesProviderProps) {
       setNotes(fetchedNotes.filter(note => !note.isArchived && !note.isDeleted).map(note => ({
         ...note,
         isArchived: note.isArchived || false,
-        isDeleted: note.isDeleted || false
+        isDeleted: note.isDeleted || false,
+        isIdea: note.isIdea || false
       })));
       setIsLoading(false);
     } catch (error) {
@@ -104,10 +107,10 @@ export function NotesProvider({ children }: NotesProviderProps) {
         if (createActivity) {
           createActivity({
             actionType: 'create',
-            itemType: safeNewNote.tags.includes('idea') ? 'idea' : 'note',
+            itemType: safeNewNote.isIdea ? 'idea' : 'note',
             itemId: safeNewNote.id,
             itemTitle: safeNewNote.title,
-            description: `Created ${safeNewNote.tags.includes('idea') ? 'idea' : 'note'}: ${safeNewNote.title}`,
+            description: `Created ${safeNewNote.isIdea ? 'idea' : 'note'}: ${safeNewNote.title}`,
             metadata: {
               tags: safeNewNote.tags
             }
@@ -147,10 +150,10 @@ export function NotesProvider({ children }: NotesProviderProps) {
         if (createActivity) {
           createActivity({
             actionType: 'edit',
-            itemType: updatedNote.tags.includes('idea') ? 'idea' : 'note',
+            itemType: updatedNote.isIdea ? 'idea' : 'note',
             itemId: id,
             itemTitle: updatedNote.title,
-            description: `Updated ${updatedNote.tags.includes('idea') ? 'idea' : 'note'}: ${updatedNote.title}`,
+            description: `Updated ${updatedNote.isIdea ? 'idea' : 'note'}: ${updatedNote.title}`,
             metadata: {
               ...updates
             }
@@ -239,10 +242,10 @@ export function NotesProvider({ children }: NotesProviderProps) {
 
       createActivity({
         actionType: 'update',
-        itemType: note.tags.includes('idea') ? 'idea' : 'note',
+        itemType: note.isIdea ? 'idea' : 'note',
         itemId: id,
         itemTitle: note.title,
-        description: `${note.isPinned ? 'Unpinned' : 'Pinned'} ${note.tags.includes('idea') ? 'idea' : 'note'}: ${note.title}`,
+        description: `${note.isPinned ? 'Unpinned' : 'Pinned'} ${note.isIdea ? 'idea' : 'note'}: ${note.title}`,
         metadata: {
           isPinned: !note.isPinned
         }
@@ -267,7 +270,7 @@ export function NotesProvider({ children }: NotesProviderProps) {
 
       createActivity({
         actionType: 'update',
-        itemType: note.tags.includes('idea') ? 'idea' : 'note',
+        itemType: note.isIdea ? 'idea' : 'note',
         itemId: id,
         itemTitle: note.title,
         description: `${note.isFavorite ? 'Removed from' : 'Added to'} favorites: ${note.title}`,

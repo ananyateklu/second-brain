@@ -25,6 +25,7 @@ import { useTasks } from '../contexts/TasksContext';
 import { useReminders } from '../contexts/RemindersContext';
 import { PersonalPage } from './Dashboard/Personal/PersonalPage';
 import { EditNoteModal } from './Dashboard/Notes/EditNoteModal';
+import { EditIdeaModal } from './Dashboard/Ideas/EditIdeaModal';
 import { useModal } from '../contexts/ModalContext';
 
 export function Dashboard() {
@@ -33,7 +34,7 @@ export function Dashboard() {
   const { isLoading: notesLoading } = useNotes();
   const { isLoading: tasksLoading } = useTasks();
   const { isLoading: remindersLoading } = useReminders();
-  const { selectedNote, setSelectedNote } = useModal();
+  const { selectedNote, selectedIdea, setSelectedNote, setSelectedIdea } = useModal();
 
   const isLoading = notesLoading || tasksLoading || remindersLoading;
 
@@ -59,7 +60,7 @@ export function Dashboard() {
           />
 
           {/* Optimized Scrolling Container - Adjusted max-width and padding */}
-          <main 
+          <main
             className="flex-1 overflow-y-auto overflow-x-hidden mt-20"
             style={{
               overscrollBehavior: 'none',
@@ -97,6 +98,12 @@ export function Dashboard() {
         isOpen={selectedNote !== null}
         onClose={() => setSelectedNote(null)}
         note={selectedNote}
+      />
+
+      <EditIdeaModal
+        isOpen={selectedIdea !== null}
+        onClose={() => setSelectedIdea(null)}
+        idea={selectedIdea}
       />
     </div>
   );

@@ -26,7 +26,6 @@ import { useNotes } from '../../contexts/NotesContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { NoteCard } from './NoteCard';
 import { NewNoteModal } from './Notes/NewNoteModal';
-import { EditNoteModal } from './Notes/EditNoteModal';
 import { StatsEditor } from './StatsEditor';
 import { useDashboard } from '../../contexts/DashboardContext';
 import { DashboardStat } from '../../types/dashboard';
@@ -299,7 +298,7 @@ export function DashboardHome() {
   const { notes } = useNotes();
   const { tasks } = useTasks();
   const [showNewNoteModal, setShowNewNoteModal] = useState(false);
-  const { setSelectedNote } = useModal();
+  const { setSelectedNote, setSelectedIdea } = useModal();
   const [showStatsEditor, setShowStatsEditor] = useState(false);
   const { enabledStats, toggleStat, reorderStats, getStatValue } = useDashboard();
   const quickStatsRef = useRef<HTMLDivElement>(null);
@@ -338,7 +337,11 @@ export function DashboardHome() {
   };
 
   const handleEditNote = (note: Note) => {
-    setSelectedNote(note);
+    if (note.isIdea) {
+      setSelectedIdea(note);
+    } else {
+      setSelectedNote(note);
+    }
   };
 
   const handleCloseEditModal = () => {
@@ -456,7 +459,7 @@ export function DashboardHome() {
   }
 
 // First, let's separate the welcome section into its own memoized component
-const WelcomeSection = React.memo(({ user, onNewNote, onNavigate, stats, tasks }: WelcomeSectionProps) => {
+const WelcomeSection = React.memo(({ user, onNewNote, onNavigate, tasks }: WelcomeSectionProps) => {
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good morning';

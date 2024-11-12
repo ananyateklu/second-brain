@@ -26,7 +26,7 @@ export function NotesGraph({ notes, onNoteClick }: NotesGraphProps) {
         label: note.title,
         isFavorite: note.isFavorite,
         isPinned: note.isPinned,
-        isIdea: note.tags.includes('idea')
+        isIdea: note.isIdea
       },
       position: { x: 0, y: 0 } // Add initial position
     }));

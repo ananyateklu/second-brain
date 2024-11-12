@@ -37,7 +37,7 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: 
     data: {
       id: note.id,
       label: note.title,
-      isIdea: note.tags.includes('idea'),
+      isIdea: note.isIdea,
       tags: note.tags,
       createdAt: note.createdAt,
       updatedAt: note.updatedAt,

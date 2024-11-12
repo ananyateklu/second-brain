@@ -1,6 +1,7 @@
 import api from './api';
 
 export interface Note {
+  isIdea: boolean;
   id: string;
   title: string;
   content: string;

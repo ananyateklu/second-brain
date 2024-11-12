@@ -9,12 +9,16 @@ export interface Note {
   title: string;
   content: string;
   tags: string[];
+  isFavorite: boolean;
+  isPinned: boolean;
+  isIdea: boolean;
+  isArchived: boolean;
+  isDeleted: boolean;
+  deletedAt?: string;
   createdAt: string;
   updatedAt: string;
-  isPinned: boolean;
-  isFavorite: boolean;
-  linkedNoteIds?: string[];
-  linkedNotes?: string[];
+  linkedNoteIds: string[];
+  linkedNotes?: Note[];
 }
 
 interface NoteCardProps {
@@ -34,7 +38,7 @@ export function NoteCard({ note, viewMode = 'grid' }: NoteCardProps) {
     year: 'numeric',
   });
   
-  const isIdea = note.tags.includes('idea');
+  const isIdea = note.isIdea;
   const hasLinks = note.linkedNoteIds && note.linkedNoteIds.length > 0;
   const tags = Array.isArray(note.tags) ? note.tags : [];
 

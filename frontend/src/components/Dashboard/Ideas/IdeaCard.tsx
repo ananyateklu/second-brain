@@ -8,9 +8,10 @@ import { WarningModal } from '../../shared/WarningModal';
 interface IdeaCardProps {
   idea: Note;
   viewMode?: 'grid' | 'list';
+  onClick?: (ideaId: string) => void;
 }
 
-export function IdeaCard({ idea, viewMode }: IdeaCardProps) {
+export function IdeaCard({ idea, viewMode, onClick }: IdeaCardProps) {
   const { toggleFavoriteNote, togglePinNote, archiveNote } = useNotes();
   const [showArchiveWarning, setShowArchiveWarning] = useState(false);
 
@@ -58,6 +59,7 @@ export function IdeaCard({ idea, viewMode }: IdeaCardProps) {
           ${idea.isFavorite ? 'ring-1 ring-amber-500/20' : ''}
           ${viewMode === 'list' ? 'flex gap-4' : ''}
         `}
+        onClick={() => onClick?.(idea.id)}
         style={{
           isolation: 'isolate',
         }}

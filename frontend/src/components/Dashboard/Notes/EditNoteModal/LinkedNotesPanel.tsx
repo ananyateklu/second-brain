@@ -57,7 +57,7 @@ export function LinkedNotesPanel({
               className="group relative p-3 rounded-lg bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
               <div className="flex items-start gap-3">
-                {linkedNote.tags.includes('idea') ? (
+                {linkedNote.isIdea ? (
                   <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
                     <Lightbulb className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                   </div>

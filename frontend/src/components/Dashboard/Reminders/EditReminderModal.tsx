@@ -11,14 +11,18 @@ interface EditReminderModalProps {
 
 export function EditReminderModal({ isOpen, onClose, reminder }: EditReminderModalProps) {
   const { updateReminder, deleteReminder } = useReminders();
-  const [title, setTitle] = useState(reminder.title);
-  const [description, setDescription] = useState(reminder.description || '');
-  const [dueDateTime, setDueDateTime] = useState(
-    new Date(reminder.dueDateTime).toISOString().slice(0, 16)
-  );
-  const [repeatInterval, setRepeatInterval] = useState(reminder.repeatInterval);
+  const [title, setTitle] = useState(reminder?.title || '');
+  const [description, setDescription] = useState(reminder?.description || '');
+  const [dueDateTime, setDueDateTime] = useState(() => {
+    if (reminder?.dueDateTime) {
+      const date = new Date(reminder.dueDateTime);
+      return !isNaN(date.getTime()) ? date.toISOString().slice(0, 16) : '';
+    }
+    return '';
+  });
+  const [repeatInterval, setRepeatInterval] = useState(reminder?.repeatInterval || '');
   const [tagInput, setTagInput] = useState('');
-  const [tags, setTags] = useState(reminder.tags || []);
+  const [tags, setTags] = useState(reminder?.tags || []);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -26,8 +30,11 @@ export function EditReminderModal({ isOpen, onClose, reminder }: EditReminderMod
     if (reminder) {
       setTitle(reminder.title);
       setDescription(reminder.description || '');
-      setDueDateTime(new Date(reminder.dueDateTime).toISOString().slice(0, 16));
-      setRepeatInterval(reminder.repeatInterval);
+      if (reminder.dueDateTime) {
+        const date = new Date(reminder.dueDateTime);
+        setDueDateTime(!isNaN(date.getTime()) ? date.toISOString().slice(0, 16) : '');
+      }
+      setRepeatInterval(reminder.repeatInterval || '');
       setTags(reminder.tags || []);
       setError('');
     }
@@ -66,11 +73,6 @@ export function EditReminderModal({ isOpen, onClose, reminder }: EditReminderMod
       return;
     }
 
-    if (!dueDateTime) {
-      setError('Due date and time is required');
-      return;
-    }
-
     setIsLoading(true);
     setError('');
 
@@ -78,11 +80,10 @@ export function EditReminderModal({ isOpen, onClose, reminder }: EditReminderMod
       await updateReminder(reminder.id, {
         title: title.trim(),
         description: description.trim(),
-        dueDateTime: new Date(dueDateTime).toISOString(),
-        repeatInterval,
+        dueDate: dueDateTime ? new Date(dueDateTime).toISOString() : null,
+        repeatInterval: repeatInterval || null,
         tags
       });
-      
       onClose();
     } catch (error) {
       setError('Failed to update reminder. Please try again.');

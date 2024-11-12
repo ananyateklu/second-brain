@@ -43,7 +43,7 @@ export function NotesPage() {
 
   // Filter out ideas from the notes list
   const regularNotes = useMemo(() => {
-    return notes.filter(note => !note.tags.includes('idea'));
+    return notes.filter(note => !note.isIdea);
   }, [notes]);
 
   const filteredNotes = useMemo(() => {

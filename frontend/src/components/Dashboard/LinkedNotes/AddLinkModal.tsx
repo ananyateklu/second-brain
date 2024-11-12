@@ -20,14 +20,14 @@ export function AddLinkModal({ isOpen, onClose, sourceNoteId, onLinkAdded }: Add
   const sourceNote = notes.find(note => note.id === sourceNoteId);
   if (!sourceNote) return null;
 
-  const isSourceIdea = sourceNote.tags.includes('idea');
+  const isSourceIdea = sourceNote.isIdea;
 
   const filteredItems = notes.filter(note => 
     note.id !== sourceNoteId && // Don't show the source note
     !sourceNote?.linkedNoteIds?.includes(note.id) && // Don't show already linked notes
     (selectedType === 'all' || 
-     (selectedType === 'ideas' && note.tags.includes('idea')) ||
-     (selectedType === 'notes' && !note.tags.includes('idea'))) &&
+     (selectedType === 'ideas' && note.isIdea) ||
+     (selectedType === 'notes' && !note.isIdea)) &&
     (note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
      note.content.toLowerCase().includes(searchQuery.toLowerCase()))
   );

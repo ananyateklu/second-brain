@@ -5,9 +5,9 @@ import { IdeasList } from './IdeasList';
 import { IdeasGrid } from './IdeasGrid';
 import { IdeasMindMap } from './IdeasMindMap';
 import { NewIdeaModal } from './NewIdeaModal';
-import { EditIdeaModal } from './EditIdeaModal';
 import { FilterDropdown } from '../Notes/FilterDropdown'; // Reuse the Notes filter component
 import { Input } from '../../shared/Input';
+import { useModal } from '../../../contexts/ModalContext';
 
 type ViewMode = 'list' | 'grid' | 'mindmap';
 
@@ -31,11 +31,11 @@ const defaultFilters: Filters = {
 
 export function IdeasPage() {
   const { notes } = useNotes();
+  const { setSelectedIdea } = useModal();
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [showFilters, setShowFilters] = useState(false);
   const [showNewIdeaModal, setShowNewIdeaModal] = useState(false);
-  const [selectedIdea, setSelectedIdea] = useState<Note | null>(null);
 
   // Get all ideas and their tags
   const allIdeas = useMemo(() => {
@@ -84,15 +84,10 @@ export function IdeasPage() {
   };
 
   const handleIdeaClick = (ideaId: string) => {
-    setSelectedIdea(notes.find(note => note.id === ideaId) || null);
-  };
-
-  const handleEditIdea = (idea: Note) => {
-    setSelectedIdea(idea);
-  };
-
-  const handleCloseEditModal = () => {
-    setSelectedIdea(null);
+    const idea = notes.find(note => note.id === ideaId);
+    if (idea) {
+      setSelectedIdea(idea);
+    }
   };
 
   return (
@@ -237,14 +232,6 @@ export function IdeasPage() {
         isOpen={showNewIdeaModal}
         onClose={() => setShowNewIdeaModal(false)}
       />
-
-      {selectedIdea && (
-        <EditIdeaModal
-          isOpen={selectedIdea !== null}
-          onClose={() => setSelectedIdea(null)}
-          idea={selectedIdea}
-        />
-      )}
     </div>
   );
 }
