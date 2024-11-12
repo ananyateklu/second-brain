@@ -8,47 +8,44 @@
   html {
     font-family: 'Inter', system-ui, sans-serif;
     @apply overflow-x-hidden;
+    @apply bg-slate-50;
+    @apply transition-colors duration-200;
+  }
+
+  /* Force dark mode styles when .dark class is present */
+  html.dark {
+    @apply bg-[#111827] !important;
   }
 
   body {
     @apply overflow-x-hidden;
-    background-color: rgb(15, 23, 42);
+    @apply bg-slate-50;
+    @apply transition-colors duration-200;
   }
 
   body.dark {
-    @apply bg-gradient-to-br from-gray-900 via-slate-900 to-slate-800;
-    background-attachment: fixed;
+    @apply bg-[#111827] !important;
   }
 
-  html, body {
-    @apply min-h-screen overflow-x-hidden;
-  }
-
-  /* Add overscroll behavior for modern browsers */
-  @supports (overscroll-behavior: none) {
-    html, body {
-      overscroll-behavior: none;
-    }
+  #root {
+    min-height: 100vh;
+    @apply bg-slate-50;
+    @apply transition-colors duration-200;
   }
 
   /* Handle stretching in Safari */
   @supports (-webkit-overflow-scrolling: touch) {
-    html, body {
-      @apply bg-gray-950; /* Dark background for stretching in dark mode */
+    html.dark, 
+    body.dark {
+      @apply bg-[#111827] !important;
     }
   }
 
   /* Add overscroll color matching */
   @supports (overscroll-behavior-y: contain) {
-    html {
-      overscroll-behavior-y: contain;
-      background-color: rgb(15, 23, 42);
+    html.dark {
+      @apply bg-[#111827] !important;
     }
-  }
-
-  /* For Safari and other browsers */
-  ::selection {
-    @apply bg-primary-500/20 text-primary-500;
   }
 }
 
@@ -122,7 +119,7 @@
   }
 
   .overscroll-background {
-    background-color: rgb(17, 24, 39);
+    @apply bg-slate-50 dark:bg-[#111827];
     transition: background-color 0.2s ease;
   }
 }
@@ -373,4 +370,10 @@
     perspective: 1000px;
     contain: paint;
   }
+}
+
+/* Global style outside of layers */
+html.dark,
+body.dark {
+  @apply bg-[#111827] !important;
 }

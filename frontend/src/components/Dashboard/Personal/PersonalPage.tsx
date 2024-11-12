@@ -62,22 +62,17 @@ export function PersonalPage() {
     ];
 
     return (
-        <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={containerVariants}
-            className="space-y-6"
-        >
+        <div className="space-y-6">
             {/* Profile Header */}
-            <motion.div variants={itemVariants} className="glass-morphism p-6 rounded-xl">
+            <div className="bg-white/95 dark:bg-gray-800/20 border border-gray-200 dark:border-gray-700/30 shadow-md hover:shadow-lg transition-shadow rounded-xl p-6">
                 <div className="flex flex-col md:flex-row items-center gap-6">
                     <div className="relative">
                         <img
                             src={user.avatar}
                             alt={user.name}
-                            className="w-24 h-24 rounded-full border-4 border-white dark:border-dark-card shadow-lg"
+                            className="w-24 h-24 rounded-full border-2 border-white dark:border-gray-700/30 shadow-md"
                         />
-                        <div className="absolute -bottom-2 -right-2 bg-primary-500 text-white rounded-full px-2 py-1 text-xs font-semibold">
+                        <div className="absolute -bottom-2 -right-2 bg-primary-500 dark:bg-primary-900 text-white dark:text-primary-100 rounded-full px-2.5 py-1 text-xs font-semibold shadow-lg">
                             Level {user.level}
                         </div>
                     </div>
@@ -95,14 +90,16 @@ export function PersonalPage() {
                         </div>
                     </div>
                 </div>
-            </motion.div>
+            </div>
 
             {/* Level Progress */}
-            <motion.div variants={itemVariants} className="glass-morphism p-6 rounded-xl">
+            <div className="bg-white/95 dark:bg-gray-800/20 border border-gray-200 dark:border-gray-700/30 shadow-md hover:shadow-lg transition-shadow rounded-xl p-6">
                 <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <TrendingUp className="w-5 h-5 text-primary-500" />
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-primary-100/50 dark:bg-primary-900/30 rounded-lg">
+                                <TrendingUp className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                            </div>
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                                 Level Progress
                             </h2>
@@ -118,45 +115,51 @@ export function PersonalPage() {
                         progress={user.levelProgress}
                     />
                 </div>
-            </motion.div>
+            </div>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                 {[
-                    { icon: Trophy, label: 'Achievements', value: user.achievementCount, color: 'text-amber-500' },
-                    { icon: Star, label: 'Total XP', value: user.experiencePoints, color: 'text-blue-500' },
-                    { icon: Award, label: 'Current Level', value: user.level, color: 'text-green-500' },
-                    { icon: CheckCheck, label: 'XP from Achievements', value: user.totalXPFromAchievements, color: 'text-red-500' },
-                    { icon: Target, label: 'Next Level', value: user.xpForNextLevel, color: 'text-purple-500' }
-                ].map((stat, index) => (
-                    <motion.div
+                    { icon: Trophy, label: 'Achievements', value: user.achievementCount, color: 'amber' },
+                    { icon: Star, label: 'Total XP', value: user.experiencePoints, color: 'blue' },
+                    { icon: Award, label: 'Current Level', value: user.level, color: 'green' },
+                    { icon: CheckCheck, label: 'XP from Achievements', value: user.totalXPFromAchievements, color: 'red' },
+                    { icon: Target, label: 'Next Level', value: user.xpForNextLevel, color: 'purple' }
+                ].map((stat) => (
+                    <div
                         key={stat.label}
-                        variants={itemVariants}
-                        className="glass-morphism p-4 rounded-xl"
+                        className="bg-white/95 dark:bg-gray-800/20 border border-gray-200 dark:border-gray-700/30 shadow-md hover:shadow-lg transition-shadow rounded-xl p-4"
                     >
                         <div className="flex items-center gap-4">
-                            <div className={`p-3 rounded-lg bg-opacity-10 ${stat.color.replace('text-', 'bg-')}`}>
-                                <stat.icon className={`w-6 h-6 ${stat.color}`} />
+                            <div className={`p-2 rounded-lg bg-${stat.color}-100 dark:bg-${stat.color}-900/30 shadow-sm`}>
+                                <stat.icon className={`w-5 h-5 text-${stat.color}-600 dark:text-${stat.color}-400`} />
                             </div>
                             <div>
                                 <div className="text-sm text-gray-600 dark:text-gray-400">{stat.label}</div>
-                                <div className="text-xl font-semibold text-gray-900 dark:text-white">{stat.value}</div>
+                                <div className="text-lg font-semibold text-gray-900 dark:text-white">
+                                    {stat.value.toLocaleString()}
+                                </div>
                             </div>
                         </div>
-                    </motion.div>
+                    </div>
                 ))}
             </div>
 
             {/* Account Details */}
-            <motion.div variants={itemVariants} className="glass-morphism p-6 rounded-xl">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                    <Shield className="w-5 h-5 text-primary-500" />
-                    Account Details
-                </h2>
+            <div className="bg-white/95 dark:bg-gray-800/20 border border-gray-200 dark:border-gray-700/30 shadow-md hover:shadow-lg transition-shadow rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg shadow-sm">
+                        <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                        Account Details
+                    </h2>
+                </div>
+                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-4">
                         <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-gray-100 dark:bg-dark-hover">
+                            <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800/40 shadow-sm">
                                 <User className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                             </div>
                             <div>
@@ -165,7 +168,7 @@ export function PersonalPage() {
                             </div>
                         </div>
                         <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-gray-100 dark:bg-dark-hover">
+                            <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800/40 shadow-sm">
                                 <Mail className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                             </div>
                             <div>
@@ -176,7 +179,7 @@ export function PersonalPage() {
                     </div>
                     <div className="space-y-4">
                         <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-gray-100 dark:bg-dark-hover">
+                            <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800/40 shadow-sm">
                                 <Calendar className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                             </div>
                             <div>
@@ -185,7 +188,7 @@ export function PersonalPage() {
                             </div>
                         </div>
                         <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-gray-100 dark:bg-dark-hover">
+                            <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800/40 shadow-sm">
                                 <Clock className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                             </div>
                             <div>
@@ -195,7 +198,7 @@ export function PersonalPage() {
                         </div>
                     </div>
                 </div>
-            </motion.div>
-        </motion.div>
+            </div>
+        </div>
     );
 } 

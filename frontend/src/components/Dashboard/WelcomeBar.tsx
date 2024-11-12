@@ -10,12 +10,12 @@ import { StatsEditor } from './StatsEditor';
 
 // Updated animation variants
 const cardVariants = {
-  hidden: { 
+  hidden: {
     opacity: 0,
     scale: 0.8,
     y: 20
   },
-  visible: { 
+  visible: {
     opacity: 1,
     scale: 1,
     y: 0,
@@ -195,7 +195,7 @@ export function WelcomeBar() {
     totalNotes: notes.length,
     tagsCount: [...new Set(notes.flatMap(note => note.tags))].length,
     archivedCount: notes.filter(note => note.isArchived).length,
-    lastEditedNote: notes.sort((a, b) => 
+    lastEditedNote: notes.sort((a, b) =>
       new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
     )[0],
     tasksCount: notes.filter(note => note.type === 'task').length,
@@ -251,9 +251,7 @@ export function WelcomeBar() {
 
   return (
     <>
-      <div 
-        className="bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm rounded-xl p-6 mb-6"
-      >
+      <div className="bg-white/95 dark:bg-gray-800/20 border border-gray-200/ dark:border-gray-700/30 shadow-md hover:shadow-lg transition-shadow rounded-xl p-6 mb-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-start gap-4 w-full">
             <div className="w-full">
@@ -292,12 +290,11 @@ export function WelcomeBar() {
                       <Reorder.Item
                         key={stat.id}
                         value={stat}
-                        className={`group relative w-full ${
-                          stat.size === 'small' ? 'col-span-1' :
-                          stat.size === 'medium' ? 'col-span-2' :
-                          stat.size === 'large' ? 'col-span-3' :
-                          'col-span-1'
-                        }`}
+                        className={`group relative w-full shadow-md hover:shadow-lg transition-shadow ${stat.size === 'small' ? 'col-span-1' :
+                            stat.size === 'medium' ? 'col-span-2' :
+                              stat.size === 'large' ? 'col-span-3' :
+                                'col-span-1'
+                          }`}
                         initial={false}
                         whileDrag={{
                           scale: 1.05,
@@ -347,9 +344,8 @@ export function WelcomeBar() {
                               {/* Value and Change */}
                               <div className="mt-1">
                                 <div className="flex items-baseline gap-1">
-                                  <span className={`${size.valueSize} font-semibold text-gray-900 dark:text-white ${
-                                    statValue.value === '-' ? 'animate-pulse' : ''
-                                  }`}>
+                                  <span className={`${size.valueSize} font-semibold text-gray-900 dark:text-white ${statValue.value === '-' ? 'animate-pulse' : ''
+                                    }`}>
                                     {statValue.value}
                                   </span>
                                   {statValue.change && statValue.value !== '-' && (
@@ -405,11 +401,10 @@ export function WelcomeBar() {
                                     e.stopPropagation();
                                     handleSizeChange(stat.id, 'small');
                                   }}
-                                  className={`p-0.5 rounded-md transition-all duration-200 ${
-                                    stat.size === 'small'
+                                  className={`p-0.5 rounded-md transition-all duration-200 ${stat.size === 'small'
                                       ? 'bg-primary-100/50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
                                       : 'hover:bg-gray-100/50 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400'
-                                  }`}
+                                    }`}
                                   title="Small"
                                 >
                                   <LayoutGrid className="w-3.5 h-3.5" />
@@ -419,11 +414,10 @@ export function WelcomeBar() {
                                     e.stopPropagation();
                                     handleSizeChange(stat.id, 'medium');
                                   }}
-                                  className={`p-0.5 rounded-md transition-all duration-200 ${
-                                    stat.size === 'medium'
+                                  className={`p-0.5 rounded-md transition-all duration-200 ${stat.size === 'medium'
                                       ? 'bg-primary-100/50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
                                       : 'hover:bg-gray-100/50 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400'
-                                  }`}
+                                    }`}
                                   title="Medium"
                                 >
                                   <Columns className="w-3.5 h-3.5" />
@@ -433,11 +427,10 @@ export function WelcomeBar() {
                                     e.stopPropagation();
                                     handleSizeChange(stat.id, 'large');
                                   }}
-                                  className={`p-0.5 rounded-md transition-all duration-200 ${
-                                    stat.size === 'large'
+                                  className={`p-0.5 rounded-md transition-all duration-200 ${stat.size === 'large'
                                       ? 'bg-primary-100/50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
                                       : 'hover:bg-gray-100/50 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400'
-                                  }`}
+                                    }`}
                                   title="Large"
                                 >
                                   <Layout className="w-3.5 h-3.5" />

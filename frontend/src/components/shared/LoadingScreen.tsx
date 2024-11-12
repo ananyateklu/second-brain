@@ -1,35 +1,45 @@
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Logo } from './Logo';
-import { Brain } from 'lucide-react';
+import { Moon, Sun } from 'lucide-react';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface LoadingScreenProps {
   message?: string;
 }
 
 export function LoadingScreen({ message = 'Loading...' }: LoadingScreenProps) {
+  const { theme, toggleTheme } = useTheme();
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/30 flex items-center justify-center backdrop-blur-[2px]"
+      className="fixed inset-0 bg-white/50 dark:bg-gray-950/50 flex items-center justify-center backdrop-blur-sm z-50 transition-colors duration-200"
     >
+      <button
+        onClick={toggleTheme}
+        className="absolute top-6 right-6 p-2 rounded-lg bg-white/90 dark:bg-gray-800/90 border border-gray-200 dark:border-gray-700/30 shadow-lg transition-all duration-200 hover:scale-105"
+        aria-label="Toggle theme"
+      >
+        {theme === 'dark' ? (
+          <Sun className="w-5 h-5 text-amber-500" />
+        ) : (
+          <Moon className="w-5 h-5 text-gray-700" />
+        )}
+      </button>
+
       <motion.div 
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="relative bg-white/10 rounded-xl p-12 backdrop-blur-xl 
-          border border-white/20 shadow-[0_8px_32px_0_rgba(31,38,135,0.37)]
-          bg-gradient-to-br from-white/30 to-white/10"
+        className="bg-white/95 dark:bg-gray-800/95 rounded-xl p-8 shadow-lg border border-gray-200 dark:border-gray-700/30 transition-colors duration-200"
       >
-        {/* Glass effect inner highlight */}
-        <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/50 to-transparent opacity-10" />
-        
         {/* Main Content */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center relative z-10"
+          className="text-center space-y-4"
         >
           {/* Logo Container */}
           <motion.div
@@ -41,9 +51,9 @@ export function LoadingScreen({ message = 'Loading...' }: LoadingScreenProps) {
               repeatType: "reverse",
               ease: "easeInOut"
             }}
-            className="mb-8 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]"
+            className="mb-4"
           >
-            <Logo className="w-20 h-20" />
+            <Logo className="w-16 h-16 text-primary-600 dark:text-primary-400 transition-colors duration-200" />
           </motion.div>
 
           {/* Loading Message */}
@@ -51,13 +61,13 @@ export function LoadingScreen({ message = 'Loading...' }: LoadingScreenProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="text-white/90 font-medium text-lg tracking-wide"
+            className="text-gray-900 dark:text-white/90 font-medium text-base transition-colors duration-200"
           >
             {message}
           </motion.div>
 
           {/* Loading Indicator */}
-          <div className="mt-6 flex justify-center space-x-3">
+          <div className="flex justify-center space-x-2">
             {[...Array(3)].map((_, i) => (
               <motion.div
                 key={i}
@@ -69,7 +79,7 @@ export function LoadingScreen({ message = 'Loading...' }: LoadingScreenProps) {
                   delay: i * 0.2,
                   ease: "easeInOut"
                 }}
-                className="w-2 h-2 bg-white/80 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.4)]"
+                className="w-2 h-2 bg-primary-500/80 dark:bg-primary-400/80 rounded-full transition-colors duration-200"
               />
             ))}
           </div>

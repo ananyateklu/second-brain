@@ -41,7 +41,7 @@ export const authService = {
 
   async login(data: LoginData): Promise<AuthResponse> {
     const response = await api.post<AuthResponse>('/auth/login', data);
-    await wait(3000);
+    await wait(2000);
     return response.data;
   },
 
