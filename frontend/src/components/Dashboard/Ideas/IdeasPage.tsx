@@ -91,147 +91,145 @@ export function IdeasPage() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header Section - Updated styling */}
-      <div className="bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm rounded-xl p-6">
-        <div className="flex flex-col sm:flex-row gap-6 justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-amber-100/50 dark:bg-amber-900/30 rounded-lg">
-              <Lightbulb className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+    <div className="min-h-screen overflow-x-hidden bg-fixed">
+      {/* Background gradient - matches Dashboard.tsx */}
+      <div className="fixed inset-0 bg-fixed dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-slate-800 bg-gradient-to-br from-white to-gray-100 -z-10" />
+
+      <div className="space-y-8 relative">
+        {/* Page Header with gradient overlay */}
+        <div className="relative overflow-hidden rounded-xl bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm">
+          <div className="absolute inset-0 bg-gradient-to-r from-amber-500/10 to-transparent" />
+          <div className="relative p-6">
+            <div className="flex flex-col sm:flex-row gap-6 justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-amber-100/50 dark:bg-amber-900/30 rounded-lg">
+                  <Lightbulb className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Idea Incubator</h1>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {allIdeas.length} ideas captured
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowNewIdeaModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-all duration-200 hover:scale-105 shadow-sm hover:shadow-md"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>New Idea</span>
+                </button>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Idea Incubator
-              </h1>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                {allIdeas.length} ideas captured
-              </p>
-            </div>
+          </div>
+        </div>
+
+        {/* Search and View Controls - Updated styling */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1">
+            <Input
+              label=""
+              icon={Search}
+              type="text"
+              placeholder="Search ideas..."
+              value={filters.search}
+              onChange={(e) => handleFilterChange('search', e.target.value)}
+            />
           </div>
 
           <div className="flex gap-2">
             <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200/30 dark:border-gray-700/30 bg-white/20 dark:bg-gray-800/20 hover:bg-white/30 dark:hover:bg-gray-800/30 transition-all text-gray-900 dark:text-gray-100"
+              onClick={() => setViewMode('grid')}
+              className={`p-2 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${
+                viewMode === 'grid'
+                  ? 'bg-primary-100/20 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
+                  : 'bg-white/20 dark:bg-gray-800/20 hover:bg-white/30 dark:hover:bg-gray-800/30 text-gray-900 dark:text-gray-100'
+              }`}
+              title="Grid View"
             >
-              <SlidersHorizontal className="w-5 h-5" />
-              <span>Filters</span>
+              <Grid className="w-5 h-5" />
             </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-2 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${
+                viewMode === 'list'
+                  ? 'bg-primary-100/20 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
+                  : 'bg-white/20 dark:bg-gray-800/20 hover:bg-white/30 dark:hover:bg-gray-800/30 text-gray-900 dark:text-gray-100'
+              }`}
+              title="List View"
+            >
+              <List className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setViewMode('mindmap')}
+              className={`p-2 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${
+                viewMode === 'mindmap'
+                  ? 'bg-primary-100/20 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
+                  : 'bg-white/20 dark:bg-gray-800/20 hover:bg-white/30 dark:hover:bg-gray-800/30 text-gray-900 dark:text-gray-100'
+              }`}
+              title="Mind Map View"
+            >
+              <Network className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Filters Panel - Updated styling */}
+        {showFilters && (
+          <div className="bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm rounded-xl p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Filters</h3>
+              <button
+                onClick={clearFilters}
+                className="text-sm text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+              >
+                Clear all
+              </button>
+            </div>
             
-            <button
-              onClick={() => setShowNewIdeaModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              <span>New Idea</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Search and View Controls - Updated styling */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1">
-          <Input
-            label=""
-            icon={Search}
-            type="text"
-            placeholder="Search ideas..."
-            value={filters.search}
-            onChange={(e) => handleFilterChange('search', e.target.value)}
-          />
-        </div>
-
-        <div className="flex gap-2">
-          <button
-            onClick={() => setViewMode('grid')}
-            className={`p-2 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${
-              viewMode === 'grid'
-                ? 'bg-primary-100/20 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
-                : 'bg-white/20 dark:bg-gray-800/20 hover:bg-white/30 dark:hover:bg-gray-800/30 text-gray-900 dark:text-gray-100'
-            }`}
-            title="Grid View"
-          >
-            <Grid className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => setViewMode('list')}
-            className={`p-2 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${
-              viewMode === 'list'
-                ? 'bg-primary-100/20 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
-                : 'bg-white/20 dark:bg-gray-800/20 hover:bg-white/30 dark:hover:bg-gray-800/30 text-gray-900 dark:text-gray-100'
-            }`}
-            title="List View"
-          >
-            <List className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => setViewMode('mindmap')}
-            className={`p-2 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${
-              viewMode === 'mindmap'
-                ? 'bg-primary-100/20 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
-                : 'bg-white/20 dark:bg-gray-800/20 hover:bg-white/30 dark:hover:bg-gray-800/30 text-gray-900 dark:text-gray-100'
-            }`}
-            title="Mind Map View"
-          >
-            <Network className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-
-      {/* Filters Panel - Updated styling */}
-      {showFilters && (
-        <div className="bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm rounded-xl p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Filters</h3>
-            <button
-              onClick={clearFilters}
-              className="text-sm text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
-            >
-              Clear all
-            </button>
-          </div>
-          
-          <FilterDropdown
-            filters={filters}
-            allTags={allTags}
-            onFilterChange={handleFilterChange}
-          />
-        </div>
-      )}
-
-      {/* Ideas Content */}
-      <div className="min-h-[500px]">
-        {viewMode === 'list' && (
-          <IdeasList ideas={filteredIdeas} onIdeaClick={handleIdeaClick} />
-        )}
-        {viewMode === 'grid' && (
-          <IdeasGrid ideas={filteredIdeas} onIdeaClick={handleIdeaClick} />
-        )}
-        {viewMode === 'mindmap' && (
-          <IdeasMindMap ideas={filteredIdeas} onIdeaClick={handleIdeaClick} />
-        )}
-
-        {filteredIdeas.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-[400px] text-center">
-            <Lightbulb className="w-16 h-16 text-gray-300 dark:text-gray-600 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-              No ideas found
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400 max-w-md">
-              {filters.search || filters.tags.length > 0
-                ? "Try adjusting your filters to find what you're looking for."
-                : "Start capturing your ideas! Click the 'New Idea' button to create your first idea."}
-            </p>
+            <FilterDropdown
+              filters={filters}
+              allTags={allTags}
+              onFilterChange={handleFilterChange}
+            />
           </div>
         )}
-      </div>
 
-      {/* Modals */}
-      <NewIdeaModal
-        isOpen={showNewIdeaModal}
-        onClose={() => setShowNewIdeaModal(false)}
-      />
+        {/* Ideas Content */}
+        <div className="min-h-[500px]">
+          {viewMode === 'list' && (
+            <IdeasList ideas={filteredIdeas} onIdeaClick={handleIdeaClick} />
+          )}
+          {viewMode === 'grid' && (
+            <IdeasGrid ideas={filteredIdeas} onIdeaClick={handleIdeaClick} />
+          )}
+          {viewMode === 'mindmap' && (
+            <IdeasMindMap ideas={filteredIdeas} onIdeaClick={handleIdeaClick} />
+          )}
+
+          {filteredIdeas.length === 0 && (
+            <div className="flex flex-col items-center justify-center h-[400px] text-center">
+              <Lightbulb className="w-16 h-16 text-gray-300 dark:text-gray-600 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                No ideas found
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 max-w-md">
+                {filters.search || filters.tags.length > 0
+                  ? "Try adjusting your filters to find what you're looking for."
+                  : "Start capturing your ideas! Click the 'New Idea' button to create your first idea."}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Modals */}
+        <NewIdeaModal
+          isOpen={showNewIdeaModal}
+          onClose={() => setShowNewIdeaModal(false)}
+        />
+      </div>
     </div>
   );
 }

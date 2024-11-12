@@ -174,7 +174,7 @@ const StatCard = ({
               }`}>
                 {statValue.value}
               </span>
-              {statValue.change && statValue.value !== '-' && (
+              {statValue.change && statValue.change > 0 && statValue.value !== '-' && (
                 <span className="text-xs text-green-600 dark:text-green-400">
                   +{statValue.change}
                 </span>
@@ -489,7 +489,10 @@ const WelcomeSection = React.memo(({ user, onNewNote, onNavigate, tasks }: Welco
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <h1 className={textStyles.h1}>
-                {getGreeting()}, {user?.name}
+                {getGreeting()},{' '}
+                <span className="text-primary-600 dark:text-primary-400">
+                  {user?.name}
+                </span>
               </h1>
               <span 
                 className="inline-block animate-wave"

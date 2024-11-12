@@ -24,12 +24,12 @@ export function Input({
       {label && (
         <motion.label 
           htmlFor={props.id} 
-          className={textStyles.label}
-          animate={{
-            scale: isFocused ? 1.05 : 1,
-            color: isFocused ? 'var(--color-primary-600)' : 'currentColor'
-          }}
-          transition={{ duration: 0.2 }}
+          className={`
+            block text-sm font-medium
+            text-gray-900 dark:text-gray-100
+            transition-colors duration-200
+            ${isFocused ? 'text-gray-900 dark:text-primary-400' : ''}
+          `}
         >
           {label}
         </motion.label>
@@ -55,7 +55,11 @@ export function Input({
               }}
               transition={{ duration: 0.2 }}
             >
-              <Icon className="h-5 w-5 text-[#3B7443]" />
+              <Icon className={`h-5 w-5 ${
+                isFocused 
+                  ? 'text-gray-700 dark:text-primary-400'
+                  : 'text-gray-500 dark:text-gray-400'
+              }`} />
             </motion.div>
           )}
 
@@ -78,7 +82,8 @@ export function Input({
               rounded-lg
               border border-gray-200/50 dark:border-gray-700/50
               text-gray-900 dark:text-gray-100
-              placeholder-gray-500 dark:placeholder-gray-400
+              placeholder:text-gray-400 dark:placeholder:text-gray-500
+              focus:text-gray-900 dark:focus:text-primary-300
               focus:outline-none
               focus:ring-2
               focus:ring-primary-500/30
@@ -92,24 +97,12 @@ export function Input({
             `}
           />
         </div>
-
-        <AnimatePresence>
-          {isFocused && (
-            <motion.div
-              className="absolute inset-0 border-2 border-primary-500/20 dark:border-primary-400/20 rounded-lg pointer-events-none"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 1.05 }}
-              transition={{ duration: 0.2 }}
-            />
-          )}
-        </AnimatePresence>
       </div>
 
       <AnimatePresence>
         {error && (
           <motion.p 
-            className={textStyles.error}
+            className="text-sm text-red-500 dark:text-red-400"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}

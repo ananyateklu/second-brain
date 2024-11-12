@@ -152,17 +152,18 @@ export function AIAssistantPage() {
 
   return (
     <div className="fixed top-20 left-0 lg:left-60 right-0 bottom-0 overflow-hidden px-4 pt-4 pb-4">
-      <div className="h-full grid grid-rows-[auto,1fr,auto] max-w-full overflow-hidden">
+      <div className="h-full grid grid-rows-[minmax(0,auto),1fr,auto] max-w-full overflow-hidden">
         {/* Model Selection */}
         <div className={`backdrop-blur-sm bg-white/30 dark:bg-gray-800/30 
           border border-gray-200/30 dark:border-gray-700/30 
           shadow-lg rounded-xl mb-4
           transition-all duration-200 ease-in-out
+          overflow-auto
           ${showModelDetails 
             ? 'max-h-[45vh]' 
             : selectedModel 
-              ? 'max-h-[35vh]'  // Increased height when model is selected
-              : 'max-h-[28vh]'  // Original height when no model selected
+              ? 'max-h-[35vh]'
+              : 'max-h-[25vh]'
           }`}
         >
           <div className="p-3">

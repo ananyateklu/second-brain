@@ -218,10 +218,10 @@ namespace SecondBrain.Api.Controllers
             // Award XP for creating a link
             await _xpService.AwardXPAsync(userId, "createlink");
 
-            // Return updated note with links
-            var updatedNote = await _context.Notes
+            // Return both updated notes
+            var updatedNotes = await _context.Notes
                 .Include(n => n.NoteLinks)
-                .Where(n => n.Id == id)
+                .Where(n => n.Id == id || n.Id == request.TargetNoteId)
                 .Select(n => new NoteResponse
                 {
                     Id = n.Id,
@@ -239,9 +239,12 @@ namespace SecondBrain.Api.Controllers
                         .Select(nl => nl.LinkedNoteId)
                         .ToList()
                 })
-                .FirstOrDefaultAsync();
+                .ToListAsync();
 
-            return Ok(updatedNote);
+            return Ok(new { 
+                sourceNote = updatedNotes.First(n => n.Id == id),
+                targetNote = updatedNotes.First(n => n.Id == request.TargetNoteId)
+            });
         }
 
         [HttpDelete("{id}")]

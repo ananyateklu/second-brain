@@ -344,11 +344,12 @@ export function WelcomeBar() {
                               {/* Value and Change */}
                               <div className="mt-1">
                                 <div className="flex items-baseline gap-1">
-                                  <span className={`${size.valueSize} font-semibold text-gray-900 dark:text-white ${statValue.value === '-' ? 'animate-pulse' : ''
-                                    }`}>
+                                  <span className={`${size.valueSize} font-semibold text-gray-900 dark:text-white ${
+                                    statValue.value === '-' ? 'animate-pulse' : ''
+                                  }`}>
                                     {statValue.value}
                                   </span>
-                                  {statValue.change && statValue.value !== '-' && (
+                                  {statValue.change && statValue.change > 0 && statValue.value !== '-' && (
                                     <span className="text-xs text-green-600 dark:text-green-400">
                                       +{statValue.change}
                                     </span>

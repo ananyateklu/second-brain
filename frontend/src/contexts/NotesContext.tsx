@@ -382,23 +382,22 @@ export function NotesProvider({ children }: NotesProviderProps) {
 
   const addLink = useCallback(async (sourceId: string, targetId: string) => {
     try {
-      const updatedNote = await notesService.addLink(sourceId, targetId);
+      const response = await notesService.addLink(sourceId, targetId);
+      const { sourceNote, targetNote } = response;
 
       setNotes(prev => prev.map(note => {
         if (note.id === sourceId) {
           return {
             ...note,
-            linkedNoteIds: updatedNote.linkedNoteIds,
-            linkedNotes: prev.filter(n => updatedNote.linkedNoteIds.includes(n.id)),
-            updatedAt: updatedNote.updatedAt
+            ...sourceNote,
+            linkedNoteIds: sourceNote.linkedNoteIds
           };
         }
         if (note.id === targetId) {
           return {
             ...note,
-            linkedNoteIds: [...(note.linkedNoteIds || []), sourceId],
-            linkedNotes: [...(note.linkedNotes || []), prev.find(n => n.id === sourceId)!],
-            updatedAt: new Date().toISOString()
+            ...targetNote,
+            linkedNoteIds: targetNote.linkedNoteIds
           };
         }
         return note;
@@ -408,13 +407,13 @@ export function NotesProvider({ children }: NotesProviderProps) {
         actionType: 'link',
         itemType: 'note',
         itemId: sourceId,
-        itemTitle: notes.find(n => n.id === sourceId)?.title || '',
-        description: `Linked notes: ${notes.find(n => n.id === sourceId)?.title} ↔ ${notes.find(n => n.id === targetId)?.title}`,
+        itemTitle: sourceNote.title,
+        description: `Linked notes: ${sourceNote.title} ↔ ${targetNote.title}`,
         metadata: {
           sourceNoteId: sourceId,
           targetNoteId: targetId,
-          sourceNoteTitle: notes.find(n => n.id === sourceId)?.title,
-          targetNoteTitle: notes.find(n => n.id === targetId)?.title
+          sourceNoteTitle: sourceNote.title,
+          targetNoteTitle: targetNote.title
         }
       });
     } catch (error) {

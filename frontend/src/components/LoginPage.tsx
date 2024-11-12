@@ -182,7 +182,7 @@ export function LoginPage() {
                   placeholder="Enter your email"
                   error={errors.email}
                   disabled={isLoading}
-                  className="bg-white/10 border-white/20 focus:border-primary-400 text-white placeholder:text-white/50"
+                  className="bg-white/10 dark:bg-gray-800/50 border-white/20 dark:border-gray-700/30 focus:border-primary-400"
                 />
 
                 <Input
@@ -196,7 +196,7 @@ export function LoginPage() {
                   placeholder="Enter your password"
                   error={errors.password}
                   disabled={isLoading}
-                  className="bg-white/10 border-white/20 focus:border-primary-400 text-white placeholder:text-white/50"
+                  className="bg-white/10 dark:bg-gray-800/50 border-white/20 dark:border-gray-700/30 focus:border-primary-400"
                 />
               </div>
 
@@ -268,7 +268,7 @@ export function LoginPage() {
       {/* Theme Toggle Button */}
       <button
         onClick={toggleTheme}
-        className="fixed top-4 right-4 p-2 rounded-full bg-white/10 dark:bg-gray-800/30 hover:bg-white/20 dark:hover:bg-gray-800/50 text-white transition-all duration-200 backdrop-blur-sm"
+        className="fixed top-4 right-4 p-2 rounded-full bg-white/10 dark:bg-gray-800/30 hover:bg-white/20 dark:hover:bg-gray-800/50 text-white transition-all duration-200 backdrop-blur-sm z-50"
         aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
       >
         {theme === 'dark' ? (

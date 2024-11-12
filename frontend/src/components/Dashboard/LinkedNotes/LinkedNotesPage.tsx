@@ -309,7 +309,7 @@ export function LinkedNotesPage() {
       <div className="bg-white/20 dark:bg-gray-800/20 border border-gray-200/50 dark:border-gray-700/30 shadow-sm rounded-xl">
         <div className="h-[calc(100vh-290px)] flex">
           {/* Graph/List Container */}
-          <div className={`${selectedNoteId ? 'w-[60%]' : 'w-full'} transition-all duration-300`}>
+          <div className={`${selectedNoteId ? 'w-[70%]' : 'w-full'} transition-all duration-300`}>
             {viewMode === 'graph' ? (
               notes.length > 0 ? (
                 <GraphView
@@ -330,9 +330,9 @@ export function LinkedNotesPage() {
             )}
           </div>
 
-          {/* Details Panel */}
+          {/* Details Panel - Updated width from 40% to 30% */}
           {selectedNoteId && (
-            <div className="w-[40%] border-l border-gray-200/50 dark:border-gray-700/30">
+            <div className="w-[30%] border-l border-gray-200/50 dark:border-gray-700/30">
               <NoteDetailsPanel
                 selectedNoteId={selectedNoteId}
                 onClose={() => setSelectedNoteId(null)}

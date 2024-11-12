@@ -158,7 +158,7 @@ export function RegistrationPage() {
                     placeholder="Enter your full name"
                     error={errors.fullName}
                     disabled={isLoading}
-                    className="bg-white/10 dark:bg-gray-900/50 border-white/20 dark:border-gray-700/30 focus:border-primary-400 text-white placeholder:text-white/50"
+                    className="bg-white/10 dark:bg-gray-800/50 border-white/20 dark:border-gray-700/30 focus:border-primary-400"
                   />
                 </motion.div>
 
@@ -179,7 +179,7 @@ export function RegistrationPage() {
                     placeholder="Enter your email"
                     error={errors.email}
                     disabled={isLoading}
-                    className="bg-white/10 dark:bg-gray-900/50 border-white/20 dark:border-gray-700/30 focus:border-primary-400 text-white placeholder:text-white/50"
+                    className="bg-white/10 dark:bg-gray-800/50 border-white/20 dark:border-gray-700/30 focus:border-primary-400"
                   />
                 </motion.div>
 
@@ -200,7 +200,7 @@ export function RegistrationPage() {
                     placeholder="Create a password"
                     error={errors.password}
                     disabled={isLoading}
-                    className="bg-white/10 dark:bg-gray-900/50 border-white/20 dark:border-gray-700/30 focus:border-primary-400 text-white placeholder:text-white/50"
+                    className="bg-white/10 dark:bg-gray-800/50 border-white/20 dark:border-gray-700/30 focus:border-primary-400"
                   />
                 </motion.div>
 
@@ -221,7 +221,7 @@ export function RegistrationPage() {
                     placeholder="Confirm your password"
                     error={errors.confirmPassword}
                     disabled={isLoading}
-                    className="bg-white/10 dark:bg-gray-900/50 border-white/20 dark:border-gray-700/30 focus:border-primary-400 text-white placeholder:text-white/50"
+                    className="bg-white/10 dark:bg-gray-800/50 border-white/20 dark:border-gray-700/30 focus:border-primary-400"
                   />
                 </motion.div>
               </div>
@@ -285,7 +285,7 @@ export function RegistrationPage() {
       {/* Theme Toggle */}
       <button
         onClick={toggleTheme}
-        className="fixed top-4 right-4 p-2 rounded-full bg-white/10 dark:bg-gray-800/30 hover:bg-white/20 dark:hover:bg-gray-800/50 text-white transition-all duration-200 backdrop-blur-sm"
+        className="fixed top-4 right-4 p-2 rounded-full bg-white/10 dark:bg-gray-800/30 hover:bg-white/20 dark:hover:bg-gray-800/50 text-white transition-all duration-200 backdrop-blur-sm z-50"
         aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
       >
         {theme === 'dark' ? (

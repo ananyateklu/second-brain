@@ -69,8 +69,8 @@ export function ModelSelector({
 
   return (
     <div className="space-y-2">
-      {/* Category Tabs - More compact */}
-      <div className="flex justify-center flex-wrap gap-1">
+      {/* Category Tabs - Scrollable on mobile */}
+      <div className="flex justify-start md:justify-center flex-nowrap gap-1 overflow-x-auto pb-2 custom-scrollbar">
         <AnimatePresence mode="popLayout">
           {categories.map(category => {
             const Icon = getCategoryIcon(category);
@@ -81,7 +81,7 @@ export function ModelSelector({
               <motion.button
                 key={category}
                 onClick={() => onCategoryChange(category)}
-                className={`relative flex items-center gap-1 px-2.5 py-1 rounded-lg text-sm
+                className={`relative flex-shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-lg text-sm
                   ${isSelected 
                     ? 'bg-white dark:bg-gray-800 shadow-sm' 
                     : 'bg-white/50 dark:bg-gray-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80'
@@ -117,22 +117,22 @@ export function ModelSelector({
         </AnimatePresence>
       </div>
 
-      {/* Model Selection Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-1.5 px-1 pt-1 pb-2">
+      {/* Model Selection Grid - Responsive columns */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-1.5 px-1 pt-1 pb-2">
         {Object.entries(groupedModels).map(([provider, providerModels]) => (
-          <div key={provider} className="flex flex-col">
+          <div key={provider} className="flex flex-col min-w-0">
             {/* Provider Header */}
-            <div className="sticky top-1 z-10 pb-1.5">
+            <div className="sticky top-1 z-10 pb-1.5 bg-inherit">
               <div className="flex items-center gap-1 px-1">
-                <span className="text-[10px] font-medium text-gray-600 dark:text-gray-300">
+                <span className="text-[10px] font-medium text-gray-600 dark:text-gray-300 truncate">
                   {provider}
                 </span>
                 <div className="h-px flex-1 bg-gray-200/50 dark:bg-gray-700/50" />
               </div>
             </div>
 
-            {/* Provider Models */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-1 pr-1 pl-0.5 max-h-[200px] pt-0.5 pb-1">
+            {/* Provider Models - Scrollable container */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-1 pr-1 pl-0.5 max-h-[15vh] pt-0.5 pb-1">
               {providerModels.map(model => (
                 <button
                   key={model.id}
