@@ -718,7 +718,7 @@ const WelcomeSection = React.memo(({ user, onNewNote, onNavigate, tasks }: Welco
       {/* Recent Activity */}
       <div className="bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm p-6 rounded-xl">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mb-4">
             <Clock className="w-5 h-5 text-primary-600 dark:text-primary-500" />
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
               Recent Activity

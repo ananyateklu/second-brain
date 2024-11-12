@@ -96,10 +96,10 @@ export function Sidebar({ isOpen }: SidebarProps) {
                     to={item.to}
                     end={item.exact}
                     className={({ isActive }) =>
-                      `flex items-center gap-2 px-3 py-2 rounded-lg transition-colors duration-200 ${
-                        isActive
-                          ? textStyles.navLinkActive
-                          : textStyles.navLink
+                      `flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors duration-200
+                      ${isActive
+                        ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-hover'
                       }`
                     }
                   >
@@ -113,7 +113,7 @@ export function Sidebar({ isOpen }: SidebarProps) {
         </nav>
 
         {/* Bottom Section */}
-        <div className="p-4 border-t border-gray-200 dark:border-dark-border space-y-2">
+        <div className="p-4 border-t border-gray-200 dark:border-dark-border space-y-1">
           <NavLink
             to="/dashboard/settings"
             className={({ isActive }) =>
