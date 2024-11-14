@@ -222,7 +222,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
       {/* OpenAI Configuration */}
       <div className="space-y-4">
         <h4 className="text-base font-medium text-gray-900 dark:text-white">OpenAI Configuration</h4>
-        <div className="glass-morphism p-6 rounded-lg space-y-4">
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6 rounded-lg space-y-4">
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-900 dark:text-white">
               API Key
@@ -293,7 +293,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
       {/* Gemini Configuration */}
       <div className="space-y-4">
         <h4 className="text-base font-medium text-gray-900 dark:text-white">Google Gemini Configuration</h4>
-        <div className="glass-morphism p-6 rounded-lg space-y-4">
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6 rounded-lg space-y-4">
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-900 dark:text-white">
               API Key
@@ -367,7 +367,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
       {/* Content Suggestions Configuration */}
       <div className="space-y-4">
         <h4 className="text-base font-medium text-gray-900 dark:text-white">Content Suggestions</h4>
-        <div className="glass-morphism p-6 rounded-lg space-y-4">
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6 rounded-lg space-y-4">
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-900 dark:text-white">
               AI Provider

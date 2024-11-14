@@ -8,7 +8,7 @@ interface IdeasListProps {
 
 export function IdeasList({ ideas, onIdeaClick }: Readonly<IdeasListProps>) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 px-0.5">
       {ideas.map(idea => (
         <IdeaCard 
           key={idea.id} 

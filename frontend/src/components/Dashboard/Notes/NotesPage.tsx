@@ -199,24 +199,24 @@ export function NotesPage() {
         )}
 
         {viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-0.5">
             {filteredNotes.map(note => (
               <div
                 key={note.id}
                 onClick={() => handleEditNote(note)}
-                className="cursor-pointer"
+                className="cursor-pointer w-full"
               >
                 <NoteCard note={note} viewMode="grid" />
               </div>
             ))}
           </div>
         ) : viewMode === 'list' ? (
-          <div className="space-y-2">
+          <div className="space-y-4 px-0.5">
             {filteredNotes.map(note => (
               <div
                 key={note.id}
                 onClick={() => handleEditNote(note)}
-                className="cursor-pointer"
+                className="cursor-pointer w-full"
               >
                 <NoteCard note={note} viewMode="list" />
               </div>

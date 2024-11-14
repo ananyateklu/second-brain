@@ -57,27 +57,94 @@ export function IdeaCard({ idea, viewMode, onClick }: IdeaCardProps) {
           ${idea.isPinned && idea.isFavorite ? 'ring-1 ring-purple-500/20 ring-amber-500/20' : ''}
           ${idea.isPinned ? 'ring-1 ring-primary-500/20' : ''}
           ${idea.isFavorite ? 'ring-1 ring-amber-500/20' : ''}
-          ${viewMode === 'list' ? 'flex gap-4' : ''}
+          ${viewMode === 'list' ? 'flex items-start gap-4' : 'flex flex-col'}
         `}
         onClick={() => onClick?.(idea.id)}
         style={{
           isolation: 'isolate',
         }}
       >
-        <div className="flex items-start justify-between">
-          <div className="flex items-start gap-3">
-            <div className="p-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/30">
-              <Lightbulb className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+        <div className="flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-3 flex-1">
+              <div className="p-1.5 rounded-lg bg-amber-100 dark:bg-amber-900/30">
+                <Lightbulb className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-500 transition-colors">
+                  {idea.title}
+                </h3>
+                <p className="mt-1 text-gray-600 dark:text-gray-300 line-clamp-2">
+                  {idea.content}
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-500 transition-colors">
-                {idea.title}
-              </h3>
-              <p className="mt-1 text-gray-600 dark:text-gray-300 line-clamp-2">
-                {idea.content}
-              </p>
-            </div>
+
+            {viewMode !== 'list' && (
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={handlePin}
+                  className={`p-1.5 rounded-lg transition-colors ${
+                    idea.isPinned
+                      ? 'text-primary-600 dark:text-primary-500 bg-primary-50 dark:bg-primary-900/20 ring-2 ring-primary-500/20'
+                      : 'text-gray-400 hover:text-primary-600 dark:text-gray-500 dark:hover:text-primary-500 hover:bg-gray-100 dark:hover:bg-gray-800/50'
+                  }`}
+                  title={idea.isPinned ? 'Unpin idea' : 'Pin idea'}
+                >
+                  <Pin 
+                    className="w-4 h-4 transform-gpu transition-transform duration-200" 
+                    fill={idea.isPinned ? 'currentColor' : 'none'}
+                    style={{
+                      transform: idea.isPinned ? 'rotate(45deg)' : 'none'
+                    }}
+                  />
+                </button>
+
+                <button
+                  onClick={handleFavorite}
+                  className={`p-1.5 rounded-lg transition-colors ${
+                    idea.isFavorite
+                      ? 'text-amber-500 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20'
+                      : 'text-gray-400 hover:text-amber-500 dark:text-gray-500 dark:hover:text-amber-400 hover:bg-gray-100 dark:hover:bg-gray-800/50'
+                  }`}
+                  title={idea.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                >
+                  <Star className="w-4 h-4" fill={idea.isFavorite ? 'currentColor' : 'none'} />
+                </button>
+
+                <button
+                  onClick={handleArchiveClick}
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 dark:text-gray-500 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
+                  title="Archive idea"
+                >
+                  <Archive className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            {idea.tags.map(tag => (
+              <span
+                key={tag}
+                className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 rounded-full text-sm"
+              >
+                <Tag className="w-3 h-3" />
+                {tag}
+              </span>
+            ))}
+          </div>
+
+          <div className="mt-3 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+            <div className="flex items-center gap-2">
+              <Link2 className="w-4 h-4" />
+              <span>{idea.linkedNoteIds?.length || 0} connections</span>
+            </div>
+            <span>{formatDate(idea.updatedAt)}</span>
+          </div>
+        </div>
+
+        {viewMode === 'list' && (
           <div className="flex flex-col gap-2">
             <button
               onClick={handlePin}
@@ -117,40 +184,17 @@ export function IdeaCard({ idea, viewMode, onClick }: IdeaCardProps) {
               <Archive className="w-4 h-4" />
             </button>
           </div>
-        </div>
-
-        {/* Tags section */}
-        <div className="mt-3 flex flex-wrap gap-2">
-          {idea.tags.map(tag => (
-            <span
-              key={tag}
-              className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 rounded-full text-sm"
-            >
-              <Tag className="w-3 h-3" />
-              {tag}
-            </span>
-          ))}
-        </div>
-
-        {/* Metadata section */}
-        <div className="mt-3 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-          <div className="flex items-center gap-2">
-            <Link2 className="w-4 h-4" />
-            <span>{idea.linkedNoteIds?.length || 0} connections</span>
-          </div>
-          <span>{formatDate(idea.updatedAt)}</span>
-        </div>
+        )}
       </div>
 
-      {/* Archive Warning Modal */}
       {showArchiveWarning && (
-              <WarningModal
-                isOpen={showArchiveWarning}
-                onClose={() => setShowArchiveWarning(false)}
-                onConfirm={handleArchiveConfirm}
-                type="archive"
-                title={idea.title}
-              />
+        <WarningModal
+          isOpen={showArchiveWarning}
+          onClose={() => setShowArchiveWarning(false)}
+          onConfirm={handleArchiveConfirm}
+          type="archive"
+          title={idea.title}
+        />
       )}
     </>
   );
