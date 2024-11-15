@@ -110,6 +110,22 @@ Note: For tags, always use comma-separated strings (e.g., tags='project,planning
 User context must be preserved in [USER:id] format
 All operations require valid user authentication";
 
+        private readonly string qwenSystemPrompt = @"You are a natural language interface for a Notes database. 
+Please respond with function calls in this format:
+
+function_name(param1=""value1"", param2=""value2"")
+
+Available functions:
+1. create_note(title=""string"", content=""string"", isPinned=""bool"", isFavorite=""bool"", isArchived=""bool"", isIdea=""bool"", tags=""comma,separated,tags"")
+2. update_note(id=""string"", title=""string"", content=""string"", isPinned=""bool"", isFavorite=""bool"", isArchived=""bool"", tags=""comma,separated,tags"")
+3. link_notes(sourceDescription=""string"", targetDescription=""string"")
+4. search_notes(query=""string"", tags=""string"", isPinned=""bool"", isFavorite=""bool"", isArchived=""bool"", isIdea=""bool"")
+
+Example response:
+create_note(title=""Meeting Notes"", content=""Discussion about project timeline"", tags=""meeting,project"", isPinned=""false"")
+
+Note: Always use double quotes for string values and ""true"" or ""false"" for boolean values.";
+
         public LlamaService(IConfiguration configuration, ILogger<LlamaService> logger, INexusStorageService nexusStorage, INoteToolService noteToolService, IHubContext<ToolHub> hubContext)
         {
             _logger = logger;
@@ -145,34 +161,49 @@ All operations require valid user authentication";
 
         public async Task<string> ExecuteDatabaseOperationAsync(string prompt, string messageId)
         {
-            const string MODEL_NAME = "nexusraven";
-            string response = string.Empty;
-
+            string modelId = "nexusraven"; // Default value
             try
             {
+                // Extract model ID from prompt
+                var modelMatch = Regex.Match(prompt, @"\[MODEL:([^\]]+)\]");
+                modelId = modelMatch.Success ? modelMatch.Groups[1].Value : "nexusraven";
+
+                // Remove the model tag from prompt
+                prompt = Regex.Replace(prompt, @"\[MODEL:[^\]]+\]", "").Trim();
+
+                _logger.LogInformation("[LlamaService] Executing operation with model: {ModelId}", modelId);
+
                 // Extract user ID and emit initial step
                 var userIdMatch = Regex.Match(prompt, @"\[USER:([^\]]+)\]");
                 var userId = userIdMatch.Success ? userIdMatch.Groups[1].Value : "unknown";
 
                 // Initial processing step
-                await EmitExecutionStep("processing", $"Processing request for user: {userId}", new Dictionary<string, object>
+                await EmitExecutionStep("processing", $"Processing request with {modelId} for user: {userId}", new Dictionary<string, object>
                 {
                     { "messageId", messageId },
                     { "userId", userId },
+                    { "modelId", modelId },
                     { "timestamp", DateTime.UtcNow.ToString("o") }
                 });
 
-                // Combine system prompt and user prompt
-                var fullPrompt = $"{systemPrompt}\n\nUser Input: {prompt}";
-                
+                // Choose appropriate system prompt based on model
+                var systemPromptToUse = modelId.StartsWith("qwen2.5-coder")
+                    ? qwenSystemPrompt
+                    : systemPrompt;
+
+                var fullPrompt = $"{systemPromptToUse}\n\nUser Input: {prompt}";
+
                 // Thinking step
-                await EmitExecutionStep("thinking", "Analyzing request and determining required operation...", new Dictionary<string, object>
+                await EmitExecutionStep("thinking", $"Model {modelId} analyzing request and determining required operation...", new Dictionary<string, object>
                 {
                     { "messageId", messageId },
+                    { "modelId", modelId },
                     { "timestamp", DateTime.UtcNow.ToString("o") }
                 });
 
-                response = await GenerateTextAsync(fullPrompt, MODEL_NAME);
+                string response = string.Empty;
+
+                response = await GenerateTextAsync(fullPrompt, modelId);
                 _logger.LogInformation("Raw model response: {Response}", response);
 
                 // Function call step
@@ -254,17 +285,8 @@ All operations require valid user authentication";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error executing database operation. Raw response: {Response}", response);
-                
-                // Error step
-                await EmitExecutionStep("result", $"Error: {ex.Message}", new Dictionary<string, object>
-                {
-                    { "messageId", messageId },
-                    { "error", ex.Message },
-                    { "timestamp", DateTime.UtcNow.ToString("o") }
-                });
-
-                throw new Exception($"Invalid model response format. Details: {ex.Message}. Raw response: {response}");
+                _logger.LogError(ex, "Error executing database operation with model {ModelId}", modelId);
+                throw;
             }
         }
 
@@ -272,32 +294,11 @@ All operations require valid user authentication";
         {
             try
             {
-                // First try to find a JSON object in the response
-                var jsonStart = response.IndexOf('{');
-                var jsonEnd = response.LastIndexOf('}');
-
-                if (jsonStart >= 0 && jsonEnd > jsonStart)
-                {
-                    var jsonPart = response.Substring(jsonStart, jsonEnd - jsonStart + 1);
-                    try
-                    {
-                        var operation = JsonSerializer.Deserialize<DatabaseOperation>(jsonPart);
-                        if (operation != null)
-                        {
-                            return operation;
-                        }
-                    }
-                    catch (JsonException)
-                    {
-                        _logger.LogInformation("Failed to parse JSON, trying function call format");
-                    }
-                }
-
                 // Try to parse function call format
-                var functionMatch = System.Text.RegularExpressions.Regex.Match(
+                var functionMatch = Regex.Match(
                     response,
-                    @"(?:Call:\s*)?(\w+)\((.*?)\)(?:<bot_end>|$)",
-                    System.Text.RegularExpressions.RegexOptions.Singleline
+                    @"(?:Call:\s*)?(\w+)\s*\((.*?)\)",
+                    RegexOptions.Singleline
                 );
 
                 if (!functionMatch.Success)
@@ -311,37 +312,38 @@ All operations require valid user authentication";
                 var arguments = new Dictionary<string, string>();
 
                 // Match both single and double quotes, handle arrays and simple values
-                var argMatches = System.Text.RegularExpressions.Regex.Matches(
+                var argMatches = Regex.Matches(
                     argsString,
-                    @"(\w+)=(?:'([^']*)'|\[(.*?)\]|([^,\s]*))",
-                    System.Text.RegularExpressions.RegexOptions.Singleline
+                    @"(\w+)\s*=\s*(?:'([^']*)'|""([^""]*)""|\[(.*?)\]|([^,\s]*))",
+                    RegexOptions.Singleline
                 );
 
-                foreach (System.Text.RegularExpressions.Match argMatch in argMatches)
+                foreach (Match argMatch in argMatches)
                 {
                     var key = argMatch.Groups[1].Value;
-                    var value = argMatch.Groups[2].Value;
+                    string value = null;
 
-                    // If single quoted value is empty, try array or bare value
-                    if (string.IsNullOrEmpty(value))
+                    if (argMatch.Groups[2].Success) // Single-quoted value
                     {
-                        // Check for array value
-                        value = argMatch.Groups[3].Value;
-                        if (!string.IsNullOrEmpty(value))
-                        {
-                            // Convert Python-style array to comma-separated string
-                            value = value.Replace("'", "")
-                                        .Replace("[", "")
-                                        .Replace("]", "")
-                                        .Replace(" ", "");
-                        }
-                        else
-                        {
-                            // Try bare value
-                            value = argMatch.Groups[4].Value;
-                        }
+                        value = argMatch.Groups[2].Value;
                     }
-
+                    else if (argMatch.Groups[3].Success) // Double-quoted value
+                    {
+                        value = argMatch.Groups[3].Value;
+                    }
+                    else if (argMatch.Groups[4].Success) // Array value
+                    {
+                        value = argMatch.Groups[4].Value;
+                        // Convert array to comma-separated string
+                        value = value.Replace("'", "")
+                                     .Replace("[", "")
+                                     .Replace("]", "")
+                                     .Replace(" ", "");
+                    }
+                    else if (argMatch.Groups[5].Success) // Bare value
+                    {
+                        value = argMatch.Groups[5].Value;
+                    }
                     arguments[key] = value;
                 }
 
@@ -358,6 +360,7 @@ All operations require valid user authentication";
             }
         }
 
+
         private async Task<string> ExecuteOperation(DatabaseOperation operation)
         {
             try
@@ -369,6 +372,20 @@ All operations require valid user authentication";
                     throw new Exception("User context not found in operation");
                 }
 
+                // Add model detection
+                var modelId = operation.OriginalPrompt != null && operation.OriginalPrompt.Contains("[MODEL:")
+                    ? Regex.Match(operation.OriginalPrompt, @"\[MODEL:([^\]]+)\]").Groups[1].Value
+                    : "unknown";
+
+                // Special handling for Qwen models
+                if (modelId.StartsWith("qwen2.5-coder"))
+                {
+                    // Qwen tends to return function calls in a different format
+                    // We need to parse its response differently
+                    return await HandleQwenOperation(operation, userId);
+                }
+
+                // Existing operation handling for other models...
                 switch (operation.Function.ToLower())
                 {
                     case "create_note":
@@ -389,7 +406,7 @@ All operations require valid user authentication";
                     case "update_note":
                         var rawIdOrTitle = operation.Arguments.GetValueOrDefault("id", "");
                         var cleanIdOrTitle = System.Text.RegularExpressions.Regex.Replace(rawIdOrTitle, @"\[(?:NOTE|USER):(.*?)\]", "$1");
-                        
+
                         if (string.IsNullOrEmpty(cleanIdOrTitle))
                         {
                             throw new Exception("Note ID or title is required for update operation");
@@ -397,22 +414,22 @@ All operations require valid user authentication";
 
                         // First try to find by exact ID
                         var note = await _noteToolService.GetNoteByIdAsync(cleanIdOrTitle, userId);
-                        
+
                         // If not found by ID, try to find by title
                         if (note == null)
                         {
                             // Extract title from arguments or use the cleanIdOrTitle
                             var searchTitle = operation.Arguments.GetValueOrDefault("title", cleanIdOrTitle);
                             var matchingNotes = await _noteToolService.FindNotesByDescriptionAsync(searchTitle, userId);
-                            
+
                             if (!matchingNotes.Any())
                             {
                                 throw new Exception($"Could not find note matching '{searchTitle}'");
                             }
-                            
+
                             // If multiple notes found, prefer exact title match first
-                            note = matchingNotes.FirstOrDefault(n => 
-                                n.Title.Equals(searchTitle, StringComparison.OrdinalIgnoreCase)) 
+                            note = matchingNotes.FirstOrDefault(n =>
+                                n.Title.Equals(searchTitle, StringComparison.OrdinalIgnoreCase))
                                 ?? ChooseBestNoteMatch(matchingNotes, searchTitle);
                         }
 
@@ -434,7 +451,7 @@ All operations require valid user authentication";
                     case "link_notes":
                         var sourceDesc = operation.Arguments.GetValueOrDefault("sourceDescription", "");
                         var targetDesc = operation.Arguments.GetValueOrDefault("targetDescription", "");
-                        
+
                         if (string.IsNullOrEmpty(sourceDesc) || string.IsNullOrEmpty(targetDesc))
                         {
                             throw new Exception("Source and target note descriptions are required for linking");
@@ -445,12 +462,12 @@ All operations require valid user authentication";
                     case "unlink_notes":
                         var rawSourceId = operation.Arguments.GetValueOrDefault("sourceId", "");
                         var sourceId = System.Text.RegularExpressions.Regex.Replace(rawSourceId, @"\[NOTE:(.*?)\]", "$1");
-                        
+
                         var targetIdsStr = operation.Arguments.GetValueOrDefault("targetIds", "");
                         var targetIds = targetIdsStr.Split(',', StringSplitOptions.RemoveEmptyEntries)
                                                   .Select(id => System.Text.RegularExpressions.Regex.Replace(id.Trim(), @"\[NOTE:(.*?)\]", "$1"))
                                                   .ToArray();
-                        
+
                         if (string.IsNullOrEmpty(sourceId) || !targetIds.Any())
                         {
                             throw new Exception("Source note ID and target note IDs are required for unlink operation");
@@ -472,17 +489,17 @@ All operations require valid user authentication";
                         {
                             searchCriteria.IsPinned = bool.Parse(isPinnedStr);
                         }
-                        
+
                         if (operation.Arguments.TryGetValue("isFavorite", out var isFavoriteStr) && isFavoriteStr.ToLower() != "null")
                         {
                             searchCriteria.IsFavorite = bool.Parse(isFavoriteStr);
                         }
-                        
+
                         if (operation.Arguments.TryGetValue("isArchived", out var isArchivedStr) && isArchivedStr.ToLower() != "null")
                         {
                             searchCriteria.IsArchived = bool.Parse(isArchivedStr);
                         }
-                        
+
                         if (operation.Arguments.TryGetValue("isIdea", out var isIdeaStr) && isIdeaStr.ToLower() != "null")
                         {
                             searchCriteria.IsIdea = bool.Parse(isIdeaStr);
@@ -494,7 +511,7 @@ All operations require valid user authentication";
                     case "archive_note":
                         var rawArchiveId = operation.Arguments.GetValueOrDefault("id", "");
                         var archiveNoteId = System.Text.RegularExpressions.Regex.Replace(rawArchiveId, @"\[NOTE:(.*?)\]", "$1");
-                        
+
                         if (string.IsNullOrEmpty(archiveNoteId))
                         {
                             throw new Exception("Note ID is required for archive operation");
@@ -505,7 +522,7 @@ All operations require valid user authentication";
                     case "delete_note":
                         var rawDeleteId = operation.Arguments.GetValueOrDefault("id", "");
                         var deleteNoteId = System.Text.RegularExpressions.Regex.Replace(rawDeleteId, @"\[NOTE:(.*?)\]", "$1");
-                        
+
                         if (string.IsNullOrEmpty(deleteNoteId))
                         {
                             throw new Exception("Note ID is required for delete operation");
@@ -527,20 +544,89 @@ All operations require valid user authentication";
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error executing operation {Function}", operation.Function);
-                return JsonSerializer.Serialize(new { 
-                    success = false, 
-                    error = ex.Message 
+                return JsonSerializer.Serialize(new
+                {
+                    success = false,
+                    error = ex.Message
+                });
+            }
+        }
+
+        private async Task<string> HandleQwenOperation(DatabaseOperation operation, string userId)
+        {
+            try
+            {
+                // Qwen typically returns function calls in this format:
+                // create_note(title="Example", content="Content", tags="tag1,tag2")
+                var functionMatch = Regex.Match(operation.ToString(), @"(\w+)\((.*?)\)");
+                if (!functionMatch.Success)
+                {
+                    throw new Exception("Could not parse Qwen function call format");
+                }
+
+                var function = functionMatch.Groups[1].Value;
+                var argsString = functionMatch.Groups[2].Value;
+
+                // Parse arguments from key=value pairs
+                var args = new Dictionary<string, string>();
+                var argMatches = Regex.Matches(argsString, @"(\w+)=""([^""]*)""|(\w+)='([^']*)'");
+                foreach (Match match in argMatches)
+                {
+                    var key = match.Groups[1].Value;
+                    var value = match.Groups[2].Value;
+                    args[key] = value;
+                }
+
+                // Create a new operation with parsed data
+                var parsedOperation = new DatabaseOperation
+                {
+                    Function = function,
+                    Arguments = args,
+                    OriginalPrompt = operation.OriginalPrompt
+                };
+
+                // Now execute the parsed operation using existing logic
+                switch (function.ToLower())
+                {
+                    case "create_note":
+                        var createRequest = new NoteToolRequest
+                        {
+                            Title = args.GetValueOrDefault("title", ""),
+                            Content = args.GetValueOrDefault("content", ""),
+                            IsPinned = bool.Parse(args.GetValueOrDefault("isPinned", "false")),
+                            IsFavorite = bool.Parse(args.GetValueOrDefault("isFavorite", "false")),
+                            IsArchived = bool.Parse(args.GetValueOrDefault("isArchived", "false")),
+                            IsIdea = bool.Parse(args.GetValueOrDefault("isIdea", "false")),
+                            Tags = args.GetValueOrDefault("tags", ""),
+                            UserId = userId
+                        };
+                        var createResponse = await _noteToolService.CreateNoteAsync(createRequest);
+                        return JsonSerializer.Serialize(createResponse);
+
+                    // Add other cases as needed...
+
+                    default:
+                        throw new Exception($"Unknown function: {function}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error handling Qwen operation");
+                return JsonSerializer.Serialize(new
+                {
+                    success = false,
+                    error = $"Failed to execute Qwen operation: {ex.Message}"
                 });
             }
         }
 
         private string ExtractUserId(DatabaseOperation operation)
         {
-            try 
+            try
             {
                 // Get the original prompt from the operation context
                 var prompt = operation.ToString() ?? "";
-                
+
                 // Look for [USER:id] pattern in the prompt
                 var userIdMatch = System.Text.RegularExpressions.Regex.Match(
                     prompt,
@@ -572,9 +658,10 @@ All operations require valid user authentication";
                 var sourceNotes = await _noteToolService.FindNotesByDescriptionAsync(sourceDescription, userId);
                 if (!sourceNotes.Any())
                 {
-                    return JsonSerializer.Serialize(new { 
-                        success = false, 
-                        error = $"Could not find source note matching '{sourceDescription}'" 
+                    return JsonSerializer.Serialize(new
+                    {
+                        success = false,
+                        error = $"Could not find source note matching '{sourceDescription}'"
                     });
                 }
 
@@ -582,9 +669,10 @@ All operations require valid user authentication";
                 var targetNotes = await _noteToolService.FindNotesByDescriptionAsync(targetDescription, userId);
                 if (!targetNotes.Any())
                 {
-                    return JsonSerializer.Serialize(new { 
-                        success = false, 
-                        error = $"Could not find target note matching '{targetDescription}'" 
+                    return JsonSerializer.Serialize(new
+                    {
+                        success = false,
+                        error = $"Could not find target note matching '{targetDescription}'"
                     });
                 }
 
@@ -600,8 +688,8 @@ All operations require valid user authentication";
 
                 // Perform the linking
                 var linkResponse = await _noteToolService.LinkNotesAsync(
-                    sourceNote.Id, 
-                    new[] { targetNote.Id }, 
+                    sourceNote.Id,
+                    new[] { targetNote.Id },
                     userId
                 );
 
@@ -619,9 +707,10 @@ All operations require valid user authentication";
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error handling note linking");
-                return JsonSerializer.Serialize(new { 
-                    success = false, 
-                    error = "Failed to link notes: " + ex.Message 
+                return JsonSerializer.Serialize(new
+                {
+                    success = false,
+                    error = "Failed to link notes: " + ex.Message
                 });
             }
         }
@@ -645,8 +734,8 @@ All operations require valid user authentication";
         {
             var descWords = description.ToLower().Split(' ', StringSplitOptions.RemoveEmptyEntries);
             var titleWords = note.Title.ToLower().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            var contentPreview = note.Content.Length > 200 
-                ? note.Content.Substring(0, 200) 
+            var contentPreview = note.Content.Length > 200
+                ? note.Content.Substring(0, 200)
                 : note.Content;
             var contentWords = contentPreview.ToLower().Split(' ', StringSplitOptions.RemoveEmptyEntries);
 

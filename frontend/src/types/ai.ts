@@ -27,7 +27,7 @@ export interface ExecutionStep {
   type: 'processing' | 'thinking' | 'function_call' | 'database_operation' | 'result';
   content: string;
   timestamp: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface AIResponse {
@@ -55,12 +55,15 @@ export interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system' | 'function';
   content: string;
+  type: 'text' | 'image' | 'audio' | 'embedding' | 'code' | 'function';
   timestamp: string;
-  model: AIModel;
+  model?: AIModel;
+  metadata?: Record<string, unknown>;
   functionCall?: {
     name: string;
-    arguments: Record<string, any>;
+    arguments: Record<string, unknown>;
     result?: string;
   };
   isLoading?: boolean;
+  executionSteps?: ExecutionStep[];
 }

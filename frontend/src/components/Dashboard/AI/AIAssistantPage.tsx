@@ -65,7 +65,7 @@ export function AIAssistantPage() {
     setError(null);
 
     const messageId = Date.now().toString();
-    
+
     const userMessage: Message = {
       id: `user-${messageId}`,
       role: 'user',
@@ -74,7 +74,7 @@ export function AIAssistantPage() {
       timestamp: new Date().toISOString(),
       model: selectedModel,
     };
-    
+
     const assistantMessageId = `assistant-${messageId}`;
     const assistantMessage: Message = {
       id: assistantMessageId,
@@ -91,24 +91,25 @@ export function AIAssistantPage() {
 
     try {
       if (selectedModel.category === 'function') {
-        await llamaService.executeDatabaseOperation(input, assistantMessageId);
+        await llamaService.executeDatabaseOperation(input, assistantMessageId, selectedModel.id);
       } else {
-        const aiResponse = await sendMessage(input, selectedModel.id, assistantMessageId);
-        setMessages(prev => prev.map(msg => 
+        const aiResponse = await sendMessage(input, selectedModel.id);
+        setMessages(prev => prev.map(msg =>
           msg.id === assistantMessageId
             ? {
-                ...msg,
-                content: aiResponse.content,
-                type: aiResponse.type,
-                isLoading: false,
-                executionSteps: aiResponse.executionSteps
-              }
+              ...msg,
+              content: aiResponse.content,
+              type: aiResponse.type,
+              isLoading: false,
+              executionSteps: aiResponse.executionSteps
+            }
             : msg
         ));
       }
-    } catch (e: any) {
-      console.error('Error in handleUserInput:', e);
-      setError(e.message || 'Failed to communicate with the AI assistant.');
+    } catch (error: unknown) {
+      const err = error as Error;
+      console.error('Error in handleUserInput:', err);
+      setError(err.message || 'Failed to communicate with the AI assistant.');
       setMessages(prev => prev.filter(msg => msg.id !== assistantMessageId));
     } finally {
       setIsLoading(false);
@@ -159,9 +160,9 @@ export function AIAssistantPage() {
           shadow-lg rounded-xl mb-4
           transition-all duration-200 ease-in-out
           overflow-auto
-          ${showModelDetails 
-            ? 'max-h-[45vh]' 
-            : selectedModel 
+          ${showModelDetails
+            ? 'max-h-[45vh]'
+            : selectedModel
               ? 'max-h-[35vh]'
               : 'max-h-[25vh]'
           }`}

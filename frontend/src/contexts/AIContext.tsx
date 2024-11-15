@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { AIService } from '../services/ai';
-import { AIModel, AIResponse, ExecutionStep } from '../types/ai';
+import { AIModel, AIResponse, ExecutionStep, Message } from '../types/ai';
 import { LlamaService } from '../services/ai/llama';
 import { signalRService } from '../services/signalR';
 
@@ -11,7 +11,7 @@ interface AIContextType {
   isLlamaConfigured: boolean;
   isGrokConfigured: boolean;
   error: string | null;
-  sendMessage: (input: string | File, modelId: string) => Promise<AIResponse>;
+  sendMessage: (input: string, modelId: string) => Promise<AIResponse>;
   configureOpenAI: (apiKey: string) => Promise<void>;
   configureGemini: (apiKey: string) => Promise<void>;
   availableModels: AIModel[];
@@ -44,7 +44,7 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
     // Subscribe to execution steps
     const unsubscribe = signalRService.onExecutionStep((step) => {
       console.log('[AIContext] Received step:', step);
-      
+
       // Get message ID from metadata
       const messageId = step.metadata?.messageId;
       if (!messageId) {
@@ -150,7 +150,7 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
 
   const transcribeAudio = useCallback(async (audioFile: File): Promise<AIResponse> => {
     try {
-      return await aiService.openai.transcribeAudio(audioFile);
+      return await aiService.transcribeAudio(audioFile);
     } catch (error) {
       console.error('Error in transcribeAudio:', error);
       throw error;
@@ -163,7 +163,7 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
       if (!model) throw new Error('Model not found');
 
       const messageId = Date.now().toString();
-      
+
       // Create user message
       const userMessage: Message = {
         id: `user-${messageId}`,
@@ -190,7 +190,7 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
 
         // Add both messages
         setMessages(prev => [...prev, userMessage, assistantMessage]);
-        
+
         // Initialize steps array for this message
         setExecutionSteps(prev => ({
           ...prev,
@@ -221,7 +221,7 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
 
   const handleExecutionStep = useCallback((step: ExecutionStep) => {
     console.log('[AIContext] Received new step:', step);
-    
+
     const messageId = latestMessageIdRef.current;
     if (!messageId) {
       console.log('[AIContext] No message ID available for step:', step);
@@ -266,7 +266,7 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
     if (message.role === 'user') {
       setMessages(prev => {
         const userMessage = { ...message };
-        
+
         // For function models, immediately create assistant message
         if (message.model?.category === 'function') {
           const assistantId = `assistant-${Date.now()}`;
@@ -290,7 +290,7 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
           latestMessageIdRef.current = assistantId;
           return [...prev, userMessage, assistantMessage];
         }
-        
+
         return [...prev, userMessage];
       });
     } else {

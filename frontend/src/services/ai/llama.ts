@@ -10,6 +10,13 @@ export class LlamaService {
       const messageId = Date.now().toString();
       let finalContent = '';
 
+      console.log(`[LlamaService] Sending message - Model: ${modelId}, Message: ${message}`);
+
+      if (modelId.includes('function')) {
+        // For function-calling models, use executeDatabaseOperation
+        return this.executeDatabaseOperation(message, messageId, modelId);
+      }
+
       const eventSource = new EventSource(
         `${api.defaults.baseURL}/api/llama/stream?prompt=${encodeURIComponent(message)}&modelId=${modelId}`
       );
@@ -18,33 +25,34 @@ export class LlamaService {
         eventSource.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
-            
+            console.log('Received event data:', data);
+
             if (data.Type === 'content') {
               finalContent += data.Content;
             } else if (data.Type === 'step' && data.Content && !data.Content.includes('Processing request')) {
-              if (!data.Metadata?.type?.includes('processing') && 
-                  !data.Metadata?.type?.includes('thinking') &&
-                  !data.Metadata?.type?.includes('function_call') &&
-                  !data.Metadata?.type?.includes('database_operation')) {
+              if (!data.Metadata?.type?.includes('processing') &&
+                !data.Metadata?.type?.includes('thinking') &&
+                !data.Metadata?.type?.includes('function_call') &&
+                !data.Metadata?.type?.includes('database_operation')) {
                 finalContent += data.Content;
               }
             }
-          } catch (error) {
+          } catch (_error) {
+            console.log('Raw event data:', event.data);
             if (!event.data.includes('"Type":"step"')) {
               finalContent += event.data;
             }
           }
         };
 
-        eventSource.onerror = (error) => {
+        eventSource.onerror = (_error) => {
           eventSource.close();
           if (finalContent) {
             resolve({
               content: finalContent.trim(),
               type: 'text',
               metadata: {
-                model: modelId,
-                messageId
+                model: modelId
               }
             });
           } else {
@@ -58,35 +66,41 @@ export class LlamaService {
             content: finalContent.trim(),
             type: 'text',
             metadata: {
-              model: modelId,
-              messageId
+              model: modelId
             }
           });
         });
       });
 
     } catch (error) {
-      console.error('Error communicating with Llama API:', error);
-      throw new Error('Failed to get response from Llama.');
+      console.error('Error in sendMessage:', error);
+      throw error;
     }
   }
 
-  async executeDatabaseOperation(prompt: string, messageId: string): Promise<AIResponse> {
+  async executeDatabaseOperation(prompt: string, messageId: string, modelId: string): Promise<AIResponse> {
     try {
       const steps: ExecutionStep[] = [];
+      console.log(`[LlamaService] Executing operation with model: ${modelId}`);
 
-      // Subscribe to execution steps for this messageId
+      // Subscribe to execution steps
       const unsubscribe = signalRService.onExecutionStep((step: ExecutionStep) => {
         if (step.metadata?.messageId === messageId) {
+          console.log(`[LlamaService] Received step for ${modelId}:`, step);
           steps.push(step);
-          // Optionally, trigger UI updates here if necessary
         }
       });
 
-      // Send prompt and messageId to backend
-      const response = await api.post('/api/nexusstorage/execute', { prompt, messageId });
+      // Add model identifier to prompt
+      const augmentedPrompt = `[MODEL:${modelId}] ${prompt}`;
 
-      // Unsubscribe after operation completes
+      // Send request
+      const response = await api.post('/api/nexusstorage/execute', {
+        prompt: augmentedPrompt,
+        messageId,
+        modelId
+      });
+
       unsubscribe();
 
       return {
@@ -94,13 +108,14 @@ export class LlamaService {
         type: 'text',
         executionSteps: steps,
         metadata: {
-          model: 'nexusraven',
+          model: modelId,
         },
       };
-    } catch (error: any) {
-      console.error('Error executing database operation:', error);
-      const errorMessage = error.response?.data?.error || 'Failed to execute database operation.';
-      throw new Error(`${errorMessage} Raw response: ${error.response?.data?.rawResponse || 'N/A'}`);
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string; rawResponse?: string } } };
+      console.error(`[LlamaService] Error executing ${modelId} operation:`, err);
+      const errorMessage = err.response?.data?.error || 'Failed to execute operation.';
+      throw new Error(`${errorMessage} Raw response: ${err.response?.data?.rawResponse || 'N/A'}`);
     }
   }
 
@@ -262,6 +277,26 @@ export class LlamaService {
         endpoint: 'chat',
       },
       {
+        id: 'qwen2.5-coder:14b',
+        name: 'Qwen 2.5 Coder 14b',
+        provider: 'llama',
+        category: 'function',
+        description: 'The latest series of Code-Specific Qwen models, with significant improvements in code generation, code reasoning, and code fixing.',
+        isConfigured: this.isConfigured(),
+        color: '#8B5CF6',
+        endpoint: 'chat',
+      },
+      {
+        id: 'qwen2.5-coder:7b',
+        name: 'Qwen 2.5 Coder 7b',
+        provider: 'llama',
+        category: 'function',
+        description: 'The latest series of Code-Specific Qwen models, with significant improvements in code generation, code reasoning, and code fixing.',
+        isConfigured: this.isConfigured(),
+        color: '#8B5CF6',
+        endpoint: 'chat',
+      },
+      {
         id: 'phi3.5',
         name: 'Phi 3.5',
         provider: 'llama',
@@ -297,7 +332,7 @@ export class LlamaService {
         provider: 'llama',
         category: 'chat',
         description: 'Yi-Coder is a series of open-source code language models that delivers state-of-the-art coding performance with fewer than 10 billion parameters.',
-        isConfigured:  this.isConfigured(),
+        isConfigured: this.isConfigured(),
         color: '#8B5CF6',
         endpoint: 'chat',
       },

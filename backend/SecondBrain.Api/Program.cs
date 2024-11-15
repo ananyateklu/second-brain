@@ -139,6 +139,9 @@ builder.Services.AddScoped<IActivityLogger, ActivityLogger>();
 // Add SignalR services
 builder.Services.AddSignalR();
 
+// Register OpenAIService
+builder.Services.AddHttpClient<IOpenAIService, OpenAIService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
