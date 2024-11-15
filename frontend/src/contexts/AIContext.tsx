@@ -12,7 +12,6 @@ interface AIContextType {
   isGrokConfigured: boolean;
   error: string | null;
   sendMessage: (input: string, modelId: string) => Promise<AIResponse>;
-  configureOpenAI: (apiKey: string) => Promise<void>;
   configureGemini: (apiKey: string) => Promise<void>;
   availableModels: AIModel[];
   llamaService: LlamaService;
@@ -111,24 +110,6 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setAvailableModels(aiService.getAvailableModels());
   }, [isOpenAIConfigured, isAnthropicConfigured, isGeminiConfigured, isLlamaConfigured, isGrokConfigured]);
-
-  const configureOpenAI = useCallback(async (apiKey: string) => {
-    try {
-      setError(null);
-      const success = await aiService.setOpenAIKey(apiKey);
-      if (success) {
-        setIsOpenAIConfigured(true);
-      } else {
-        throw new Error('Failed to configure OpenAI');
-      }
-    } catch (error: any) {
-      const errorMessage = error?.message || 'Failed to configure OpenAI';
-      console.error('Failed to configure OpenAI:', errorMessage);
-      setError(errorMessage);
-      setIsOpenAIConfigured(false);
-      throw error;
-    }
-  }, []);
 
   const configureGemini = useCallback(async (apiKey: string) => {
     try {
@@ -306,14 +287,13 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
     isGrokConfigured,
     error,
     sendMessage,
-    configureOpenAI,
     configureGemini,
     availableModels,
     llamaService: aiService.llama,
     executionSteps,
     handleExecutionStep,
     transcribeAudio
-  }), [isOpenAIConfigured, isAnthropicConfigured, isGeminiConfigured, isLlamaConfigured, isGrokConfigured, error, sendMessage, configureOpenAI, configureGemini, availableModels, executionSteps, handleExecutionStep, transcribeAudio]);
+  }), [isOpenAIConfigured, isAnthropicConfigured, isGeminiConfigured, isLlamaConfigured, isGrokConfigured, error, sendMessage, configureGemini, availableModels, executionSteps, handleExecutionStep, transcribeAudio]);
 
   return <AIContext.Provider value={value}>{children}</AIContext.Provider>;
 }

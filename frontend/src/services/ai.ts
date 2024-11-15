@@ -50,10 +50,6 @@ export class AIService {
     return this.openai.textToSpeech(text);
   }
 
-  async setOpenAIKey(apiKey: string): Promise<boolean> {
-    return this.openai.setApiKey(apiKey);
-  }
-
   async setAnthropicKey(apiKey: string): Promise<boolean> {
     return this.anthropic.setApiKey(apiKey);
   }

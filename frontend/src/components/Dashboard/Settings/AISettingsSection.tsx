@@ -3,7 +3,6 @@ import { Bot, Key, TestTube, EyeOff, Eye, AlertCircle, CheckCircle, Loader, Save
 import { useAI } from '../../../contexts/AIContext';
 
 interface AISettings {
-  openaiApiKey?: string;
   geminiApiKey?: string;
   contentSuggestions?: {
     provider: 'openai' | 'anthropic'| 'gemini';
@@ -21,9 +20,8 @@ interface AISettingsSectionProps {
 }
 
 export function AISettingsSection({ onSave }: AISettingsSectionProps) {
-  const { configureOpenAI, configureGemini, availableModels, isOpenAIConfigured, isGeminiConfigured, isLlamaConfigured } = useAI();
+  const { configureGemini, availableModels, isOpenAIConfigured, isGeminiConfigured, isLlamaConfigured } = useAI();
   const [settings, setSettings] = useState<AISettings>({
-    openaiApiKey: localStorage.getItem('openai_api_key') || '',
     geminiApiKey: localStorage.getItem('gemini_api_key') || '',
     contentSuggestions: {
       provider: (localStorage.getItem('content_suggestions_provider') as 'openai' | 'anthropic' | 'gemini') || 'openai',
@@ -31,9 +29,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
     },
   });
 
-  const [showOpenAIKey, setShowOpenAIKey] = useState(false);
   const [showGeminiApiKey, setShowGeminiApiKey] = useState(false);
-  const [isTestingOpenAI, setIsTestingOpenAI] = useState(false);
   const [isTestingGemini, setIsTestingGemini] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [testResults, setTestResults] = useState<Record<string, TestResult>>({});
@@ -88,69 +84,36 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
     }
   };
 
-  const testConnection = async (service: 'openai' | 'gemini') => {
-    if (service === 'gemini') {
-      setIsTestingGemini(true);
-      setTestResults((prev) => {
-        const newResults = { ...prev };
-        delete newResults[service];
-        return newResults;
-      });
+  const testConnection = async (service: 'gemini') => {
+    setIsTestingGemini(true);
+    setTestResults((prev) => {
+      const newResults = { ...prev };
+      delete newResults[service];
+      return newResults;
+    });
 
-      try {
-        await configureGemini(settings.geminiApiKey || '');
-        setTestResults((prev) => ({
-          ...prev,
-          [service]: {
-            success: true,
-            message: 'Connection successful!',
-          },
-        }));
-      } catch (error: any) {
-        console.error(`${service} test connection error:`, error);
-        setTestResults((prev) => ({
-          ...prev,
-          [service]: {
-            success: false,
-            message:
-              error?.message ||
-              `Failed to connect to ${service}. Please check your credentials.`,
-          },
-        }));
-      } finally {
-        setIsTestingGemini(false);
-      }
-    } else if (service === 'openai') {
-      setIsTestingOpenAI(true);
-      setTestResults((prev) => {
-        const newResults = { ...prev };
-        delete newResults[service];
-        return newResults;
-      });
-
-      try {
-        await configureOpenAI(settings.openaiApiKey || '');
-        setTestResults((prev) => ({
-          ...prev,
-          [service]: {
-            success: true,
-            message: 'Connection successful!',
-          },
-        }));
-      } catch (error: any) {
-        console.error(`${service} test connection error:`, error);
-        setTestResults((prev) => ({
-          ...prev,
-          [service]: {
-            success: false,
-            message:
-              error?.message ||
-              `Failed to connect to ${service}. Please check your credentials.`,
-          },
-        }));
-      } finally {
-        setIsTestingOpenAI(false);
-      }
+    try {
+      await configureGemini(settings.geminiApiKey || '');
+      setTestResults((prev) => ({
+        ...prev,
+        [service]: {
+          success: true,
+          message: 'Connection successful!',
+        },
+      }));
+    } catch (error: any) {
+      console.error(`${service} test connection error:`, error);
+      setTestResults((prev) => ({
+        ...prev,
+        [service]: {
+          success: false,
+          message:
+            error?.message ||
+            `Failed to connect to ${service}. Please check your credentials.`,
+        },
+      }));
+    } finally {
+      setIsTestingGemini(false);
     }
   };
 
@@ -217,77 +180,6 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
       <div className="flex items-center gap-3">
         <Bot className="w-6 h-6 text-[#3B7443]" />
         <h3 className="text-lg font-medium text-gray-900 dark:text-white">AI Settings</h3>
-      </div>
-
-      {/* OpenAI Configuration */}
-      <div className="space-y-4">
-        <h4 className="text-base font-medium text-gray-900 dark:text-white">OpenAI Configuration</h4>
-        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6 rounded-lg space-y-4">
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-900 dark:text-white">
-              API Key
-            </label>
-            <div className="relative">
-              <div className={iconWrapperClasses}>
-                <Key className="h-5 w-5 text-[#3B7443]" />
-              </div>
-              <input
-                type={showOpenAIKey ? 'text' : 'password'}
-                name="openaiApiKey"
-                value={settings.openaiApiKey}
-                onChange={handleInputChange}
-                className={inputClasses}
-                placeholder="sk-..."
-              />
-              <button
-                type="button"
-                onClick={() => setShowOpenAIKey(!showOpenAIKey)}
-                className={iconButtonClasses}
-              >
-                {showOpenAIKey ? (
-                  <EyeOff className="h-5 w-5" />
-                ) : (
-                  <Eye className="h-5 w-5" />
-                )}
-              </button>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <button
-              type="button"
-              onClick={() => testConnection('openai')}
-              disabled={isTestingOpenAI || !settings.openaiApiKey}
-              className={buttonClasses}
-            >
-              {isTestingOpenAI ? (
-                <>
-                  <Loader className="w-4 h-4 animate-spin" />
-                  <span>Testing...</span>
-                </>
-              ) : (
-                <>
-                  <TestTube className="w-4 h-4" />
-                  <span>Test Connection</span>
-                </>
-              )}
-            </button>
-
-            {testResults.openai && (
-              <div className={`flex items-center gap-2 text-sm ${testResults.openai.success
-                  ? 'text-green-600 dark:text-green-400'
-                  : 'text-red-600 dark:text-red-400'
-                }`}>
-                {testResults.openai.success ? (
-                  <CheckCircle className="w-4 h-4" />
-                ) : (
-                  <AlertCircle className="w-4 h-4" />
-                )}
-                <span>{testResults.openai.message}</span>
-              </div>
-            )}
-          </div>
-        </div>
       </div>
 
       {/* Gemini Configuration */}

@@ -44,6 +44,7 @@ export function ImageInterface({
 
     const assistantMessageId = (Date.now() + 1).toString();
     let progress = 0;
+    let progressSpeed = 2; // Start slow
 
     // Add placeholder assistant message
     const assistantMessage: Message = {
@@ -61,26 +62,35 @@ export function ImageInterface({
     setIsLoading(true);
     setError(null);
 
-    // Start progress updates
+    // Start progress updates with dynamic speed
     const progressInterval = setInterval(() => {
-      progress = Math.min(progress + Math.random() * 10, 99);
+      if (progress < 30) progressSpeed = 2;
+      else if (progress < 60) progressSpeed = 1;
+      else if (progress < 85) progressSpeed = 0.5;
+      else progressSpeed = 0.2;
+
+      progress = Math.min(progress + progressSpeed, 95);
       updateMessage(assistantMessageId, {
         progress: progress,
       });
-    }, 500);
+    }, 1000);
 
     try {
       const response = await sendMessage(userPrompt, model.id);
-      clearInterval(progressInterval);
       
+      // Set to 99% while image loads
+      updateMessage(assistantMessageId, {
+        progress: 99,
+      });
+
       // Update with final image
       updateMessage(assistantMessageId, {
         content: response.content,
         isLoading: false,
         progress: 100,
+        metadata: response.metadata
       });
     } catch (error: any) {
-      clearInterval(progressInterval);
       updateMessage(assistantMessageId, {
         content: 'Failed to generate image',
         type: 'text',
@@ -88,6 +98,7 @@ export function ImageInterface({
       });
       setError(error.message || 'Failed to generate image');
     } finally {
+      clearInterval(progressInterval);
       setIsLoading(false);
     }
   };
