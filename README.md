@@ -13,51 +13,30 @@ An AI-powered system to organize notes, ideas, tasks, and reminders with intelli
 
 ## Features
 
-- **Notes Management**
-  - Create, edit, and organize notes with rich text and tagging.
-  - AI-powered title and content suggestions.
-  - Link notes for better organization.
-  - Archive and trash management with soft delete and restore.
-
-- **Ideas Hub**
+- **Knowledge Management**
+  - Create, edit, and organize notes with rich text, tagging, and linking.
   - Capture and refine ideas with AI assistance.
-  - Visual mind mapping and relationship mapping.
+  - Interactive mind mapping with visual relationship mapping.
 
-- **Task Management**
+- **Task and Reminder Management**
   - Create and track tasks with priorities and due dates.
-  - Link tasks to notes and ideas.
-  - AI-suggested task descriptions.
-
-- **Smart Reminders**
-  - Set recurring reminders.
-  - AI-powered suggestions.
-
-- **Mind Mapping**
-  - Interactive visualization with node linking.
-  - Custom styling and layouts.
-
-- **Activity Tracking**
-  - Monitor progress and achievements.
-  - Experience points (XP) calculations.
-
-- **Gamification**
-  - Profile with avatar customization.
-  - Experience points and level progression.
-  - Achievements and badges.
-
-- **Focus Mode**
-  - Distraction-free environment.
-  - Timed sessions with progress tracking.
+  - Set recurring reminders with AI-powered suggestions.
 
 - **AI Integration**
-  - Supports OpenAI, Google Gemini, Anthropic Claude, Grok API.
-  - Intelligent provider switching.
-  - Local AI model support with ONNX Runtime.
+  - AI-powered suggestions for titles, content, and task descriptions.
+  - Supports OpenAI, Google Gemini, Anthropic Claude, Grok API, and local models via **Ollama**.
+  - **Database operations using natural language commands.**
+  - Intelligent provider switching and local AI model support via ONNX Runtime.
 
 - **User Experience**
   - Advanced tagging and knowledge linking.
-  - Dark/light mode with system detection.
-  - Responsive design for mobile and desktop.
+  - Responsive design with dark/light mode and system detection.
+  - Distraction-free focus mode with timed sessions.
+
+- **Gamification and Activity Tracking**
+  - Profile customization with avatars.
+  - Experience points (XP), level progression, achievements, and badges.
+  - Monitor progress and achievements.
 
 ## Technical Stack
 
@@ -71,7 +50,8 @@ An AI-powered system to organize notes, ideas, tasks, and reminders with intelli
 - **Backend**
   - .NET 8.0, ASP.NET Core Web API, Entity Framework Core, SQL Server.
   - JWT authentication with role-based access control.
-  - AI integrations with OpenAI, Anthropic Claude, Grok API, Google Gemini, and local models via ONNX Runtime.
+  - AI integrations with OpenAI, Anthropic Claude, Grok API, Google Gemini, and local models via **Ollama**.
+  - **Natural language database operations through AI services.**
 
 ## Getting Started
 
@@ -81,7 +61,7 @@ An AI-powered system to organize notes, ideas, tasks, and reminders with intelli
 - .NET SDK 8.0
 - SQL Server
 - API keys for OpenAI, Google Cloud, Anthropic, Grok
-- Optional: Local AI models
+- Optional: Local AI models and **Ollama setup**
 
 ### Installation
 
@@ -150,9 +130,6 @@ The application provides RESTful API endpoints for various resources. Below is a
     - `GET /api/notes/deleted` - Get all soft-deleted notes.
     - `GET /api/notes/archived` - Get all archived notes.
     - `POST /api/notes/{id}/unarchive` - Unarchive a note.
-    - **Note Linking:**
-      - `POST /api/notes/{id}/links` - Link a note to another.
-      - `DELETE /api/notes/{id}/links/{targetNoteId}` - Unlink notes.
 
 - **Ideas** (`/api/ideas`)
   - **Endpoints:**
@@ -220,6 +197,7 @@ The application provides RESTful API endpoints for various resources. Below is a
   - **Llama** (`/api/llama`)
     - **Endpoints:**
       - `GET /api/llama/stream` - Stream responses from local Llama models.
+      - **`POST /api/llama/execute-db` - Execute database operations via natural language.**
 
 - **Nexus Storage** (`/api/nexusstorage`)
   - **Endpoints:**
@@ -228,7 +206,7 @@ The application provides RESTful API endpoints for various resources. Below is a
 
 ## Acknowledgments
 
-- Thanks to OpenAI, Anthropic, Grok, Google, Lucide Icons, and Tailwind CSS.
+- Thanks to OpenAI, Anthropic, Grok, Google, Ollama, Lucide Icons, and Tailwind CSS.
 
 ## Roadmap
 
@@ -239,6 +217,8 @@ The application provides RESTful API endpoints for various resources. Below is a
 - Focus mode
 - AI integrations
 - Local AI model support
+- **RAG (Retrieval Augmented Generation) implementation**
+- **Agent implementation**
 
 *Planned:*
 
