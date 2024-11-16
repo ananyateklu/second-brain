@@ -1,325 +1,91 @@
 # Second Brain - AI-Powered Knowledge Management System
 
-A modern, AI-powered knowledge management system built with React, TypeScript, and Tailwind CSS for the frontend, and .NET 8.0 for the backend with SQL Server for the database. This application helps users organize notes, ideas, tasks, and reminders with intelligent suggestions and connections.
+An AI-powered system to organize notes, ideas, tasks, and reminders with intelligent suggestions. Built with React, TypeScript, Tailwind CSS, and .NET 8.0.
 
 ## Table of Contents
 
 - [Features](#features)
-  - [Core Functionality](#core-functionality)
-  - [Gamification Features](#gamification-features)
-  - [AI Integration](#ai-integration)
-  - [Organization Features](#organization-features)
-  - [User Experience](#user-experience)
 - [Technical Stack](#technical-stack)
-  - [Frontend](#frontend)
-  - [Backend](#backend)
-  - [AI Integration](#ai-integration-1)
-  - [State Management](#state-management)
 - [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
 - [API Integration](#api-integration)
 - [Acknowledgments](#acknowledgments)
 - [Roadmap](#roadmap)
 
 ## Features
 
-### Core Functionality
-
 - **Notes Management**
-
-  - Create, edit, and organize notes
-  - Rich text formatting
-  - Tags and categorization
-  - AI-powered title and content suggestions
-  - Link notes together for better organization
-  - Archiving and Trash Management
-    - Soft delete notes (move to Trash)
-    - Restore notes from Trash
-    - Permanent deletion from Trash after a defined period
+  - Create, edit, and organize notes with rich text and tagging.
+  - AI-powered title and content suggestions.
+  - Link notes for better organization.
+  - Archive and trash management with soft delete and restore.
 
 - **Ideas Hub**
-
-  - Capture and develop ideas
-  - AI-assisted idea refinement
-  - Visual mind mapping
-  - Idea linking and relationship mapping
+  - Capture and refine ideas with AI assistance.
+  - Visual mind mapping and relationship mapping.
 
 - **Task Management**
-
-  - Create and track tasks
-  - Priority levels and due dates
-  - Link tasks to related notes and ideas
-  - AI-suggested task descriptions
+  - Create and track tasks with priorities and due dates.
+  - Link tasks to notes and ideas.
+  - AI-suggested task descriptions.
 
 - **Smart Reminders**
-
-  - Set and manage reminders
-  - Recurring reminder options
-  - Snooze functionality
-  - AI-powered reminder suggestions
+  - Set recurring reminders.
+  - AI-powered suggestions.
 
 - **Mind Mapping**
-
-  - Interactive graph visualization
-  - Node linking and relationship mapping
-  - Custom node styling and layouts
-  - Zoom and pan controls
+  - Interactive visualization with node linking.
+  - Custom styling and layouts.
 
 - **Activity Tracking**
+  - Monitor progress and achievements.
+  - Experience points (XP) calculations.
 
-  - User action logging
-  - Progress monitoring
-  - Achievement tracking
-  - XP calculations
-
-- **Smart Suggestions**
-
-  - AI-powered content generation
-  - Title suggestions
-  - Tag recommendations
-  - Related content linking
-
-- **Data Organization**
-  - Hierarchical note structure
-  - Task prioritization
-  - Smart reminder system
-  - Archive and trash management
-
-### Gamification Features
-
-- **Profile Page and Leveling System**
-
-  - Personal profile with avatar customization
-  - Experience Points (XP) system
-  - Level progression based on XP
-  - Visual progress bar showing XP towards next level
-
-- **Achievements and Badges**
-
-  - Unlock achievements by completing specific actions
-  - View earned badges on your profile
-  - Share achievements with others
+- **Gamification**
+  - Profile with avatar customization.
+  - Experience points and level progression.
+  - Achievements and badges.
 
 - **Focus Mode**
-  - Distraction-free environment for enhanced productivity
-  - Minimalistic UI when focus mode is enabled
-  - Timed focus sessions with progress tracking
+  - Distraction-free environment.
+  - Timed sessions with progress tracking.
 
-### AI Integration
+- **AI Integration**
+  - Supports OpenAI, Google Gemini, Anthropic Claude, Grok API.
+  - Intelligent provider switching.
+  - Local AI model support with ONNX Runtime.
 
-- **Multiple AI Provider Support**
-
-  - Frontend Integrations:
-    - OpenAI API
-    - Google Gemini API
-  - Backend Integrations:
-    - Anthropic Claude
-    - Grok API
-  - Intelligent provider switching
-  - Provider-specific optimizations
-
-- **Local Model Support**
-  - Offline AI capabilities using local language models
-  - Enhanced privacy and faster response times
-  - ONNX Runtime integration
-
-### Organization Features
-
-- **Advanced Tagging**
-
-  - Flexible tag management
-  - Tag suggestions
-  - Tag-based filtering and search
-
-- **Knowledge Linking**
-
-  - Connect related items
-  - Visual relationship mapping
-  - Contextual suggestions
-
-- **Archiving and Trash Management**
-  - **Archiving Notes**
-    - Move seldom-used notes to the archive
-    - Keep your workspace uncluttered
-  - **Trash Page**
-    - Soft delete functionality
-    - Restore or permanently delete notes
-    - Automatic cleanup of old trashed items
-
-### User Experience
-
-- **Profile Page**
-
-  - View and edit personal information
-  - Customize avatar and profile settings
-  - Track your progress and achievements
-
-- **Dark/Light Mode**
-
-  - System preference detection
-  - Manual toggle option
-  - Consistent styling
-
-- **Responsive Design**
-  - Mobile-friendly interface
-  - Adaptive layouts
-  - Touch-optimized interactions
+- **User Experience**
+  - Advanced tagging and knowledge linking.
+  - Dark/light mode with system detection.
+  - Responsive design for mobile and desktop.
 
 ## Technical Stack
 
-### Frontend
+- **Frontend**
+  - React 18, TypeScript, Tailwind CSS, Vite.
+  - State management with React Context and custom hooks.
+  - AI libraries: OpenAI, Anthropic AI SDK, Google Generative AI.
+  - Mind mapping with Cytoscape.js.
+  - UI/UX with Headless UI, Framer Motion, Lucide Icons.
 
-- **Frameworks and Libraries**
-
-  - React 18
-  - TypeScript
-  - Tailwind CSS
-  - Vite
-  - React Router DOM
-  - Cytoscape.js and React-Cytoscape for mind mapping
-  - Lucide Icons for iconography
-
-- **State Management**
-
-  - React Context
-  - Custom hooks
-
-- **Additional Features**
-
-  - Focus Mode Implementation
-  - Custom components for focus sessions
-  - Timers and progress indicators
-
-- **AI Integration Libraries**
-
-  - @anthropic-ai/sdk
-  - @google/generative-ai
-  - openai
-
-- **UI/UX Libraries**
-
-  - @headlessui/react
-  - framer-motion
-  - react-beautiful-dnd
-  - react-circular-progressbar
-  - react-select
-
-- **Visualization**
-
-  - cytoscape
-  - react-cytoscapejs (for mind mapping)
-
-- **Development Tools**
-  - TypeScript 5.5
-  - Vite 5.4
-  - ESLint 9.9
-  - Tailwind CSS 3.4
-
-### Backend
-
-- **Technologies**
-
-  - .NET 8.0
-  - ASP.NET Core Web API
-  - Entity Framework Core
-  - SQL Server
-
-- **Authentication and Security**
-
-  - JWT Authentication
-  - Role-based access control
-  - Secure password hashing
-
-- **API Documentation**
-
-  - Swagger for API documentation and testing
-
-- **AI Integration**
-
-  - **Third-Party APIs**
-
-    - OpenAI API (GPT-3.5, GPT-4)
-    - Anthropic Claude (claude-3-5-sonnet, claude-3-opus, claude-3-haiku)
-    - Grok API (Grok-beta)
-    - Google Gemini (gemini-1.5-flash, gemini-1.5-pro)
-
-  - **Local Model Support**
-    - Integration with local AI models
-    - ONNX Runtime support
-    - Supported models:
-      - llama3.1:8b
-      - llama3.2
-      - codegemma
-      - gemma2:2b
-      - gemma2:9b
-      - nemotron-mini
-      - Mistral-nemo
-      - starcoder2:7b
-      - orca2
-      - samantha-mistral
-      - nexusraven
-      - granite3-dense:8b
-      - qwen2.5-coder
-      - phi3.5
-
-- **State Management**
-
-  - **Backend**
-
-    - Entity Framework Core
-    - AutoMapper
-
-  - **Frontend**
-    - React Context API
-    - Local storage for settings
-
-- **AI Services**
-
-  - Anthropic Claude Integration
-  - Grok API Integration
-  - Local Llama Integration via Ollama
-  - AI Model Management System
-
-- **Gamification System**
-
-  - XP Service
-  - Achievement System
-  - Level Progression
-  - User Stats Tracking
-
-- **Data Models**
-
-  - Notes with linking capability
-  - Tasks with priority levels
-  - Reminders with recurrence
-  - Ideas with mind mapping
-  - Activities tracking
-  - User achievements
-
-- **Security**
-  - JWT with refresh token rotation
-  - Concurrent session handling
-  - Rate limiting
+- **Backend**
+  - .NET 8.0, ASP.NET Core Web API, Entity Framework Core, SQL Server.
+  - JWT authentication with role-based access control.
+  - AI integrations with OpenAI, Anthropic Claude, Grok API, Google Gemini, and local models via ONNX Runtime.
 
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js 18+
-- npm or yarn
 - .NET SDK 8.0
-- SQL Server instance
-- API keys for:
-  - OpenAI (frontend)
-  - Google Cloud (frontend, for Gemini AI)
-  - Anthropic (backend)
-  - Grok (backend)
-- Local AI Model (optional)
+- SQL Server
+- API keys for OpenAI, Google Cloud, Anthropic, Grok
+- Optional: Local AI models
 
 ### Installation
 
-#### Frontend Setup
+#### Frontend
 
 1. **Clone the repository:**
 
@@ -334,130 +100,151 @@ A modern, AI-powered knowledge management system built with React, TypeScript, a
    npm install
    ```
 
-3. **Create a `.env` file:**
+3. **Configure environment variables in `.env`.**
 
-   ```env
-   VITE_OPENAI_API_KEY=your_openai_api_key_here
-   VITE_ANTHROPIC_API_KEY=your_anthropic_api_key_here
-   VITE_GROK_API_KEY=your_grok_api_key_here
-   VITE_GOOGLE_API_KEY=your_google_api_key_here
-   VITE_API_BASE_URL=http://localhost:5127/api
-   ```
+4. **Start the development server:**
 
-4. **Start development server:**
    ```bash
    npm run dev
    ```
 
-#### Backend Setup
+#### Backend
 
-1. **Navigate to backend:**
+1. **Navigate to backend directory:**
 
    ```bash
    cd ../backend/SecondBrain.Api
    ```
 
-2. **Update `appsettings.json`:**
+2. **Update `appsettings.json` with your configuration.**
 
-   ```json
-   {
-     "Logging": {
-       "LogLevel": {
-         "Default": "Information",
-         "Microsoft.AspNetCore": "Warning",
-         "SecondBrain.Api.Services.AnthropicService": "Debug"
-       }
-     },
-     "ConnectionStrings": {
-       "DefaultConnection": "Your_SQL_Server_Connection_String_Here"
-     },
-     "Authentication": {
-       "Jwt": {
-         "Secret": "your_jwt_secret_key_here",
-         "Issuer": "SecondBrain",
-         "Audience": "SecondBrain",
-         "AccessTokenExpirationMinutes": "600",
-         "RefreshTokenExpirationDays": "30"
-       }
-     },
-     "Anthropic": {
-       "ApiKey": "your_anthropic_api_key_here",
-       "ApiEndpoint": "https://api.anthropic.com/v1"
-     },
-     "Grok": {
-       "ApiKey": "your_grok_api_key_here"
-     },
-     "Llama": {
-       "OllamaUri": "http://localhost:11434/"
-     },
-     "AllowedHosts": "*"
-   }
-   ```
+3. **Restore packages and run migrations:**
 
-3. **Setup database:**
    ```bash
    dotnet restore
    dotnet ef database update
    dotnet run
    ```
 
-#### Local AI Model Setup (Optional)
-
-1. Download compatible model files
-2. Configure backend for local model
-3. Install ONNX Runtime dependencies
-
 ## API Integration
 
-RESTful API with JSON payloads for:
+The application provides RESTful API endpoints for various resources. Below is a list of available controllers and their primary routes:
 
-- Authentication (JWT-based)
-- Notes CRUD operations
-- Tasks management
-- Reminders
-- Gamification features
-- AI integrations
+- **Authentication** (`/auth`)
+  - **Endpoints:**
+    - `POST /auth/register` - Register a new user.
+    - `POST /auth/login` - Authenticate a user and obtain tokens.
+    - `POST /auth/refresh-token` - Refresh access tokens using a refresh token.
+    - `GET /auth/me` - Retrieve the authenticated user's profile.
+    - `PUT /auth/me/avatar` - Update user avatar.
 
-### API Endpoints
+- **Notes** (`/api/notes`)
+  - **Endpoints:**
+    - `GET /api/notes` - Get all notes.
+    - `POST /api/notes` - Create a new note.
+    - `GET /api/notes/{id}` - Get a note by ID.
+    - `PUT /api/notes/{id}` - Update a note.
+    - `DELETE /api/notes/{id}` - Soft-delete a note.
+    - `POST /api/notes/{id}/restore` - Restore a soft-deleted note.
+    - `DELETE /api/notes/{id}/permanent` - Permanently delete a note.
+    - `GET /api/notes/deleted` - Get all soft-deleted notes.
+    - `GET /api/notes/archived` - Get all archived notes.
+    - `POST /api/notes/{id}/unarchive` - Unarchive a note.
+    - **Note Linking:**
+      - `POST /api/notes/{id}/links` - Link a note to another.
+      - `DELETE /api/notes/{id}/links/{targetNoteId}` - Unlink notes.
 
-- **/api/Auth** - Authentication and user management
-- **/api/Notes** - Note CRUD operations
-- **/api/Tasks** - Task management
-- **/api/Reminders** - Reminder system
-- **/api/Ideas** - Idea management
-- **/api/Activities** - Activity tracking
-- **/api/Claude** - Anthropic AI integration
-- **/api/Grok** - Grok AI integration
-- **/api/Llama** - Local AI integration
+- **Ideas** (`/api/ideas`)
+  - **Endpoints:**
+    - `POST /api/ideas` - Create a new idea.
+    - `PUT /api/ideas/{id}` - Update an idea.
+    - `DELETE /api/ideas/{id}` - Delete an idea.
+    - `PUT /api/ideas/{id}/favorite` - Toggle favorite status.
+    - `PUT /api/ideas/{id}/pin` - Toggle pin status.
+    - `PUT /api/ideas/{id}/archive` - Toggle archive status.
 
-Each endpoint supports:
+- **Tasks** (`/api/tasks`)
+  - **Endpoints:**
+    - `GET /api/tasks` - Get all tasks.
+    - `POST /api/tasks` - Create a new task.
+    - `GET /api/tasks/{id}` - Get a task by ID.
+    - `PATCH /api/tasks/{id}` - Update a task.
+    - `DELETE /api/tasks/{id}` - Soft-delete a task.
+    - `POST /api/tasks/{id}/restore` - Restore a soft-deleted task.
+    - `GET /api/tasks/deleted` - Get all soft-deleted tasks.
 
-- GET (list/detail)
-- POST (create)
-- PUT/PATCH (update)
-- DELETE (soft/hard delete)
+- **Reminders** (`/api/reminders`)
+  - **Endpoints:**
+    - `GET /api/reminders` - Get all reminders.
+    - `POST /api/reminders` - Create a new reminder.
+    - `GET /api/reminders/{id}` - Get a reminder by ID.
+    - `PUT /api/reminders/{id}` - Update a reminder.
+    - `DELETE /api/reminders/{id}` - Delete a reminder.
+    - `GET /api/reminders/deleted` - Get all deleted reminders.
+
+- **Activities** (`/api/activities`)
+  - **Endpoints:**
+    - *(To be defined based on implementation)*
+
+- **Achievements** (`/api/achievements`)
+  - **Endpoints:**
+    - `GET /api/achievements` - Get all achievements.
+    - `GET /api/achievements/user` - Get user's unlocked achievements.
+    - `GET /api/achievements/progress` - Get user's progress towards achievements.
+
+- **AI Integrations**
+
+  - **OpenAI** (`/api/ai/openai`)
+    - **Endpoints:**
+      - `GET /api/ai/openai/status` - Check OpenAI API status.
+      - `POST /api/ai/openai/chat` - Send a message to OpenAI Chat API.
+      - `POST /api/ai/openai/embeddings` - Create embeddings.
+      - `POST /api/ai/openai/images/generate` - Generate images.
+      - `POST /api/ai/openai/audio/transcribe` - Transcribe audio.
+      - `POST /api/ai/openai/audio/speech` - Convert text to speech.
+
+  - **Anthropic Claude** (`/api/claude`)
+    - **Endpoints:**
+      - `POST /api/claude/send-message` - Send a message to Claude.
+      - `GET /api/claude/status` - Check Claude API status.
+
+  - **Grok** (`/api/grok`)
+    - **Endpoints:**
+      - `POST /api/grok/send` - Send a message to Grok API.
+
+  - **Google Gemini** (`/api/gemini`)
+    - **Endpoints:**
+      - `POST /api/gemini/chat` - Chat with the Gemini model.
+      - `POST /api/gemini/generate` - Generate content with Gemini.
+
+  - **Llama** (`/api/llama`)
+    - **Endpoints:**
+      - `GET /api/llama/stream` - Stream responses from local Llama models.
+
+- **Nexus Storage** (`/api/nexusstorage`)
+  - **Endpoints:**
+    - `POST /api/nexusstorage/execute` - Execute database operations via Llama service.
+    - `POST /api/nexusstorage/test` - Test Llama service operations.
 
 ## Acknowledgments
 
-- OpenAI for GPT-4 API
-- Anthropic for Claude API
-- Grok for AI integration
-- Google for Gemini AI
-- Lucide Icons
-- Tailwind CSS team
+- Thanks to OpenAI, Anthropic, Grok, Google, Lucide Icons, and Tailwind CSS.
 
 ## Roadmap
 
-- [x] User authentication system
-- [x] Gamification features
-- [x] Profile page with leveling
-- [x] Archiving and trash management
-- [x] Focus mode
-- [x] AI integration (OpenAI, Anthropic, Grok)
-- [x] Local AI model support
-- [ ] Real-time collaboration
-- [ ] Mobile applications
-- [ ] Advanced AI features
-- [ ] Data export/import
-- [ ] API documentation
-- [ ] Integration tests
+- User authentication system
+- Gamification features
+- Profile page with leveling
+- Archiving and trash management
+- Focus mode
+- AI integrations
+- Local AI model support
+
+*Planned:*
+
+- Real-time collaboration
+- Mobile applications
+- Advanced AI features
+- Data export/import
+- API documentation
+- Integration tests
