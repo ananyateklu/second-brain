@@ -109,7 +109,8 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
   // Update available models whenever configuration changes
   useEffect(() => {
     setAvailableModels(aiService.getAvailableModels());
-  }, [isOpenAIConfigured, isAnthropicConfigured, isGeminiConfigured, isLlamaConfigured, isGrokConfigured]);
+    console.log('Available models:', aiService.getAvailableModels());
+  }, [isGeminiConfigured]);
 
   const configureGemini = useCallback(async (apiKey: string) => {
     try {

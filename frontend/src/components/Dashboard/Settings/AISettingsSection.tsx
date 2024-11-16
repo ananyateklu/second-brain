@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { Bot, Key, TestTube, EyeOff, Eye, AlertCircle, CheckCircle, Loader, Save, Settings2 } from 'lucide-react';
+import { Bot, Settings2, AlertCircle, CheckCircle, Loader, Save } from 'lucide-react';
 import { useAI } from '../../../contexts/AIContext';
 
 interface AISettings {
-  geminiApiKey?: string;
   contentSuggestions?: {
-    provider: 'openai' | 'anthropic'| 'gemini';
+    provider: 'openai' | 'anthropic' | 'gemini' | 'llama';
     modelId: string;
   };
 }
@@ -20,19 +19,15 @@ interface AISettingsSectionProps {
 }
 
 export function AISettingsSection({ onSave }: AISettingsSectionProps) {
-  const { configureGemini, availableModels, isOpenAIConfigured, isGeminiConfigured, isLlamaConfigured } = useAI();
+  const { availableModels, isOpenAIConfigured, isGeminiConfigured, isLlamaConfigured } = useAI();
   const [settings, setSettings] = useState<AISettings>({
-    geminiApiKey: localStorage.getItem('gemini_api_key') || '',
     contentSuggestions: {
-      provider: (localStorage.getItem('content_suggestions_provider') as 'openai' | 'anthropic' | 'gemini') || 'openai',
+      provider: (localStorage.getItem('content_suggestions_provider') as 'openai' | 'anthropic' | 'gemini' | 'llama') || 'openai',
       modelId: localStorage.getItem('content_suggestions_model') || 'gpt-4',
     },
   });
 
-  const [showGeminiApiKey, setShowGeminiApiKey] = useState(false);
-  const [isTestingGemini, setIsTestingGemini] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [testResults, setTestResults] = useState<Record<string, TestResult>>({});
   const [saveResult, setSaveResult] = useState<TestResult | null>(null);
 
   // Filter models suitable for content generation
@@ -49,7 +44,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
       setSettings(prev => ({
         ...prev,
         contentSuggestions: {
-          provider: value as 'openai' | 'anthropic' | 'gemini',
+          provider: value as 'openai' | 'anthropic' | 'gemini' | 'llama',
           modelId: firstModelForProvider ?? prev.contentSuggestions?.modelId ?? '',
         },
       }));
@@ -63,11 +58,6 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
         },
       }));
       localStorage.setItem('content_suggestions_model', value);
-    } else {
-      setSettings(prev => ({
-        ...prev,
-        [name]: value,
-      }));
     }
   };
 
@@ -81,39 +71,6 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
       setSaveResult({ success: false, message: error?.message || 'Failed to save settings.' });
     } finally {
       setIsSaving(false);     
-    }
-  };
-
-  const testConnection = async (service: 'gemini') => {
-    setIsTestingGemini(true);
-    setTestResults((prev) => {
-      const newResults = { ...prev };
-      delete newResults[service];
-      return newResults;
-    });
-
-    try {
-      await configureGemini(settings.geminiApiKey || '');
-      setTestResults((prev) => ({
-        ...prev,
-        [service]: {
-          success: true,
-          message: 'Connection successful!',
-        },
-      }));
-    } catch (error: any) {
-      console.error(`${service} test connection error:`, error);
-      setTestResults((prev) => ({
-        ...prev,
-        [service]: {
-          success: false,
-          message:
-            error?.message ||
-            `Failed to connect to ${service}. Please check your credentials.`,
-        },
-      }));
-    } finally {
-      setIsTestingGemini(false);
     }
   };
 
@@ -180,80 +137,6 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
       <div className="flex items-center gap-3">
         <Bot className="w-6 h-6 text-[#3B7443]" />
         <h3 className="text-lg font-medium text-gray-900 dark:text-white">AI Settings</h3>
-      </div>
-
-      {/* Gemini Configuration */}
-      <div className="space-y-4">
-        <h4 className="text-base font-medium text-gray-900 dark:text-white">Google Gemini Configuration</h4>
-        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6 rounded-lg space-y-4">
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-900 dark:text-white">
-              API Key
-            </label>
-            <div className="relative">
-              <div className={iconWrapperClasses}>
-                <Key className="h-5 w-5 text-[#3B7443]" />
-              </div>
-              <input
-                type={showGeminiApiKey ? 'text' : 'password'}
-                name="geminiApiKey"
-                value={settings.geminiApiKey}
-                onChange={handleInputChange}
-                className={inputClasses}
-                placeholder="Your Gemini API Key"
-              />
-              <button
-                type="button"
-                onClick={() => setShowGeminiApiKey(!showGeminiApiKey)}
-                className={iconButtonClasses}
-              >
-                {showGeminiApiKey ? (
-                  <EyeOff className="h-5 w-5" />
-                ) : (
-                  <Eye className="h-5 w-5" />
-                )}
-              </button>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <button
-              type="button"
-              onClick={() => testConnection('gemini')}
-              disabled={isTestingGemini || !settings.geminiApiKey}
-              className={buttonClasses}
-            >
-              {isTestingGemini ? (
-                <>
-                  <Loader className="w-4 h-4 animate-spin" />
-                  <span>Testing...</span>
-                </>
-              ) : (
-                <>
-                  <TestTube className="w-4 h-4" />
-                  <span>Test Connection</span>
-                </>
-              )}
-            </button>
-
-            {testResults.gemini && (
-              <div
-                className={`flex items-center gap-2 text-sm ${
-                  testResults.gemini.success
-                    ? 'text-green-600 dark:text-green-400'
-                    : 'text-red-600 dark:text-red-400'
-                }`}
-              >
-                {testResults.gemini.success ? (
-                  <CheckCircle className="w-4 h-4" />
-                ) : (
-                  <AlertCircle className="w-4 h-4" />
-                )}
-                <span>{testResults.gemini.message}</span>
-              </div>
-            )}
-          </div>
-        </div>
       </div>
 
       {/* Content Suggestions Configuration */}

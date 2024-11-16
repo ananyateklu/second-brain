@@ -142,6 +142,9 @@ builder.Services.AddSignalR();
 // Register OpenAIService
 builder.Services.AddHttpClient<IOpenAIService, OpenAIService>();
 
+// Register GeminiService
+builder.Services.AddHttpClient<IGeminiService, GeminiService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
