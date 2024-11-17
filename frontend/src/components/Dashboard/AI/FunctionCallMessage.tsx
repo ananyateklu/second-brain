@@ -28,46 +28,55 @@ export function FunctionCallMessage({ message, themeColor, isStreaming }: Functi
   const assistantThemeColor = message.model?.color || '#6B7280';
 
   return (
-    <div className={`flex items-end ${isUser ? 'justify-end' : 'justify-start'} mb-4 animate-message-slide-in`}>
-      <div className={`flex flex-col max-w-xs mx-2 ${isUser ? 'items-end' : 'items-start'}`}>
+    <div className="flex items-start gap-4 mb-4 animate-message-slide-in">
+      {/* Message Container */}
+      <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-md`}>
         {/* Header with user/bot info */}
-        <div className={`flex items-center ${isUser ? 'flex-row-reverse' : ''} mb-1`}>
+        <div className={`flex items-center gap-2 mb-1 ${isUser ? 'flex-row-reverse' : ''}`}>
           {isUser ? (
             <>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {user?.name}
+              </span>
               {user?.avatarUrl && (
                 <img
                   src={user.avatarUrl}
                   alt={user.name}
-                  className="w-6 h-6 rounded-full ml-2"
+                  className="w-6 h-6 rounded-full border border-gray-200/50 dark:border-gray-700/50"
                 />
               )}
-              <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                {user?.name}
-              </span>
             </>
           ) : (
             <>
-              <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                {message.model?.name || 'Assistant'}
-              </span>
               <Bot
-                className="w-6 h-6 ml-2"
+                className="w-6 h-6"
                 style={{ color: assistantThemeColor }}
               />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {message.model?.name || 'Assistant'}
+              </span>
             </>
           )}
         </div>
 
-        {/* Message content */}
+        {/* Message Bubble */}
         <div
-          className={`px-4 py-2 rounded-lg backdrop-blur-sm ${
-            isUser
-              ? `bg-[${themeColor}]/90 text-white`
-              : 'bg-white/50 dark:bg-gray-800/50 text-gray-800 dark:text-gray-200'
-          } ${isUser ? 'rounded-br-none' : 'rounded-bl-none'} border border-gray-200/30 dark:border-gray-700/30`}
-          style={{ backgroundColor: isUser ? `${themeColor}90` : undefined }}
+          className={`
+            px-4 py-3 rounded-2xl
+            backdrop-blur-md shadow-sm hover:shadow-md
+            transition-all duration-200
+            ${isUser 
+              ? 'bg-gradient-to-br from-primary-500/80 to-primary-600/80 text-white'
+              : 'bg-white/90 dark:bg-gray-800/90 text-gray-900 dark:text-gray-100'
+            }
+            ${isUser ? 'rounded-br-md' : 'rounded-bl-md'}
+            border border-gray-200/30 dark:border-gray-700/30
+          `}
+          style={isUser ? {
+            background: `linear-gradient(135deg, ${themeColor}80, ${themeColor}90)`
+          } : undefined}
         >
-          <p className="whitespace-pre-wrap break-all animate-fade-in">
+          <p className="whitespace-pre-wrap break-words text-sm">
             {message.content}
           </p>
         </div>
@@ -78,14 +87,16 @@ export function FunctionCallMessage({ message, themeColor, isStreaming }: Functi
         </span>
       </div>
 
-      {/* Thought Process */}
+      {/* Thought Process Section */}
       {!isUser && (messageSteps.length > 0 || message.isLoading) && (
-        <div className="ml-4 flex-1 max-w-xl">
-          <ThoughtProcess
-            steps={messageSteps}
-            isComplete={!message.isLoading}
-            themeColor={themeColor}
-          />
+        <div className="flex-1 max-w-xl">
+          <div className="bg-white/50 dark:bg-gray-800/50 rounded-xl p-4 backdrop-blur-sm border border-gray-200/30 dark:border-gray-700/30 shadow-sm">
+            <ThoughtProcess
+              steps={messageSteps}
+              isComplete={!message.isLoading}
+              themeColor={themeColor}
+            />
+          </div>
         </div>
       )}
     </div>
