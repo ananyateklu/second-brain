@@ -39,7 +39,7 @@ namespace SecondBrain.Api.Controllers
                 {
                     // Generate a message ID for this request
                     var messageId = Guid.NewGuid().ToString();
-                    var response = await _llamaService.ExecuteDatabaseOperationAsync(prompt, messageId);
+                    var response = await _llamaService.ExecuteDatabaseOperationAsync(prompt, messageId, 2048);
                     
                     var update = new
                     {
@@ -55,7 +55,7 @@ namespace SecondBrain.Api.Controllers
                 else
                 {
                     // Direct model response for local models
-                    var response = await _llamaService.GenerateTextAsync(prompt, modelId);
+                    var response = await _llamaService.GenerateTextAsync(prompt, modelId, 2048);
                     var update = new
                     {
                         Type = "content",

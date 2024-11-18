@@ -5,7 +5,7 @@ namespace SecondBrain.Api.Services
 {
     public interface ILlamaService
     {
-        Task<string> GenerateTextAsync(string prompt, string modelName);
-        Task<string> ExecuteDatabaseOperationAsync(string prompt, string messageId);
+        Task<string> GenerateTextAsync(string prompt, string modelName, int numPredict = 2048);
+        Task<string> ExecuteDatabaseOperationAsync(string prompt, string messageId, int numPredict = 2048);
     }
 } 

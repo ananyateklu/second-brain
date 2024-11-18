@@ -136,7 +136,7 @@ Note: Always use double quotes for string values and ""true"" or ""false"" for b
             _ollamaClient = new OllamaApiClient(ollamaUri);
         }
 
-        public async Task<string> GenerateTextAsync(string prompt, string modelName)
+        public async Task<string> GenerateTextAsync(string prompt, string modelName, int numPredict = 2048)
         {
             try
             {
@@ -159,7 +159,7 @@ Note: Always use double quotes for string values and ""true"" or ""false"" for b
             }
         }
 
-        public async Task<string> ExecuteDatabaseOperationAsync(string prompt, string messageId)
+        public async Task<string> ExecuteDatabaseOperationAsync(string prompt, string messageId, int numPredict = 2048)
         {
             string modelId = "nexusraven"; // Default value
             try
@@ -203,7 +203,7 @@ Note: Always use double quotes for string values and ""true"" or ""false"" for b
 
                 string response = string.Empty;
 
-                response = await GenerateTextAsync(fullPrompt, modelId);
+                response = await GenerateTextAsync(fullPrompt, modelId, numPredict);
                 _logger.LogInformation("Raw model response: {Response}", response);
 
                 // Function call step

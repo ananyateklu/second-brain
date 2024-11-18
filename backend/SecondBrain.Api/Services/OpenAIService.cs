@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
 using SecondBrain.Api.DTOs.OpenAI;
 using System.Net.Http.Headers;
+using System.Diagnostics;
 
 namespace SecondBrain.Api.Services
 {
@@ -38,15 +39,37 @@ namespace SecondBrain.Api.Services
         {
             try
             {
+                var maxOutputTokens = request.Model switch
+                {
+                    "gpt-4-turbo-preview" => 4096,
+                    "gpt-4" => 8192,
+                    "gpt-3.5-turbo" => 4096,
+                    "gpt-4o" => 16384,
+                    "gpt-4o-mini" => 16384,
+                    _ => 2048 // default fallback
+                };
+
                 var jsonOptions = new JsonSerializerOptions
                 {
                     PropertyNamingPolicy = JsonNamingPolicy.CamelCase
                 };
 
-                var json = JsonSerializer.Serialize(request, jsonOptions);
+                var apiRequest = new
+                {
+                    model = request.Model,
+                    messages = request.Messages,
+                    max_tokens = maxOutputTokens,
+                    temperature = request.Temperature ?? 0.7,
+                    top_p = request.TopP ?? 1.0,
+                    frequency_penalty = request.FrequencyPenalty ?? 0.0,
+                    presence_penalty = request.PresencePenalty ?? 0.0
+                };
+
+                var json = JsonSerializer.Serialize(apiRequest, jsonOptions);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                _logger.LogInformation("Sending message to OpenAI. Model: {ModelId}", request.Model);
+                _logger.LogInformation("Sending message to OpenAI. Model: {ModelId}, MaxTokens: {MaxTokens}", 
+                    request.Model, maxOutputTokens);
                 _logger.LogDebug("Request Payload: {RequestPayload}", json);
 
                 var response = await _httpClient.PostAsync($"{_apiEndpoint}/chat/completions", content);
@@ -103,12 +126,14 @@ namespace SecondBrain.Api.Services
 
                 formData.Add(streamContent, "file", file.FileName);
                 formData.Add(new StringContent("whisper-1"), "model");
+                formData.Add(new StringContent("json"), "response_format");
 
                 var response = await _httpClient.PostAsync($"{_apiEndpoint}/audio/transcriptions", formData);
                 var responseString = await response.Content.ReadAsStringAsync();
 
                 if (response.IsSuccessStatusCode)
                 {
+                    _logger.LogInformation("Successfully transcribed audio");
                     return JsonSerializer.Deserialize<AudioTranscriptionResponse>(responseString, new JsonSerializerOptions
                     {
                         PropertyNameCaseInsensitive = true
@@ -116,6 +141,7 @@ namespace SecondBrain.Api.Services
                 }
 
                 var errorResponse = JsonSerializer.Deserialize<OpenAIErrorResponse>(responseString);
+                _logger.LogError("OpenAI API Error: {ErrorMessage}", errorResponse?.Error?.Message);
                 throw new Exception($"OpenAI API Error: {errorResponse?.Error?.Message}");
             }
             catch (Exception ex)
