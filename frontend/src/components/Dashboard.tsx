@@ -29,7 +29,7 @@ import { EditIdeaModal } from './Dashboard/Ideas/EditIdeaModal';
 import { useModal } from '../contexts/ModalContext';
 
 export function Dashboard() {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { isLoading: notesLoading } = useNotes();
   const { isLoading: tasksLoading } = useTasks();
@@ -48,10 +48,10 @@ export function Dashboard() {
       <div className="fixed inset-0 bg-fixed dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-slate-800 bg-gradient-to-br from-white to-gray-100 -z-10" />
 
       <div className="flex overflow-x-hidden min-h-screen">
-        <Sidebar isOpen={isSidebarOpen} />
+        <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
 
-        {/* Main Content Area - Adjusted padding */}
-        <div className="flex-1 min-w-0 lg:ml-56 flex flex-col">
+        {/* Main Content Area */}
+        <div className="flex-1 min-w-0 lg:ml-60 flex flex-col">
           <Header
             isSidebarOpen={isSidebarOpen}
             toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -59,7 +59,7 @@ export function Dashboard() {
             setSearchQuery={setSearchQuery}
           />
 
-          {/* Optimized Scrolling Container - Adjusted max-width and padding */}
+          {/* Main Content */}
           <main
             className="flex-1 overflow-y-auto overflow-x-hidden mt-20"
             style={{

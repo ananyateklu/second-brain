@@ -33,14 +33,15 @@ export function AIAssistantPage() {
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [showModelDetails, setShowModelDetails] = useState(false);
+  const [showModelSelector, setShowModelSelector] = useState(true);
 
   const themeColor = selectedModel?.color || '#3b82f6'; // Default to blue
 
   const handleModelSelect = (model: AIModel | null) => {
     setSelectedModel(model);
     setError(null);
-    if (!model) {
-      setMessages([]);
+    if (model) {
+      setShowModelSelector(false); // Auto-collapse when model is selected
     }
   };
 
@@ -159,15 +160,15 @@ export function AIAssistantPage() {
           border border-gray-200/30 dark:border-gray-700/30 
           shadow-lg rounded-xl mb-4
           transition-all duration-200 ease-in-out
-          overflow-auto
+          flex items-center justify-center
           ${showModelDetails
             ? 'max-h-[45vh]'
-            : selectedModel
-              ? 'max-h-[35vh]'
+            : selectedModel && !showModelSelector
+              ? 'max-h-[80px]'
               : 'max-h-[25vh]'
           }`}
         >
-          <div className="p-3">
+          <div className="w-full max-w-[1400px]">
             <ModelSelector
               models={availableModels}
               selectedModel={selectedModel}
@@ -175,6 +176,8 @@ export function AIAssistantPage() {
               onModelSelect={handleModelSelect}
               onCategoryChange={handleCategoryChange}
               onDetailsToggle={handleDetailsToggle}
+              showModelSelector={showModelSelector}
+              setShowModelSelector={setShowModelSelector}
             />
           </div>
         </div>
