@@ -117,18 +117,36 @@ export function AIAssistantPage() {
     }
   };
 
-  const updateMessage = (messageId: string, updatedMessage: Partial<Message>) => {
-    setMessages((prevMessages) =>
-      prevMessages.map((msg) =>
-        msg.id === messageId
-          ? { ...msg, ...updatedMessage }
-          : msg
+  const updateMessage = (messageId: string, updates: Partial<Message>) => {
+    setMessages(prevMessages => 
+      prevMessages.map(msg => 
+        msg.id === messageId ? { ...msg, ...updates } : msg
       )
     );
   };
 
   const handleDetailsToggle = (isOpen: boolean) => {
     setShowModelDetails(isOpen);
+  };
+
+  const handleAudioMessage = (message: Message) => {
+    if (message.role === 'assistant' && !message.isLoading) {
+      setMessages(prevMessages => {
+        const existingMessageIndex = prevMessages.findIndex(
+          msg => msg.role === 'assistant' && msg.isLoading
+        );
+        
+        if (existingMessageIndex !== -1) {
+          const newMessages = [...prevMessages];
+          newMessages[existingMessageIndex] = message;
+          return newMessages;
+        }
+        
+        return [...prevMessages, message];
+      });
+    } else {
+      setMessages(prev => [...prev, message]);
+    }
   };
 
   if (!isOpenAIConfigured && !isGeminiConfigured && !isAnthropicConfigured && !isLlamaConfigured) {
@@ -221,7 +239,7 @@ export function AIAssistantPage() {
                 ) : selectedModel.id === 'whisper-1' ? (
                   <AudioInterface
                     model={selectedModel}
-                    onMessageSend={addMessage}
+                    onMessageSend={handleAudioMessage}
                     isLoading={isLoading}
                     setIsLoading={setIsLoading}
                     setError={setError}
