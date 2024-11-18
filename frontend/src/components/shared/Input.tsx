@@ -1,13 +1,17 @@
-import React from 'react';
-import { LucideIcon } from 'lucide-react';
+import React, { useState } from 'react';
+import { LucideIcon, Wand2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { textStyles } from '../../utils/textUtils';
+import { promptEnhancementService } from '../../services/ai/promptEnhancementService';
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
   label: string;
   icon: LucideIcon;
   error?: string;
   className?: string;
+  context?: string;
+  onEnhanced?: (value: string) => void;
+  onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  disableEnhancement?: boolean;
 }
 
 export function Input({
@@ -15,9 +19,38 @@ export function Input({
   icon: Icon,
   error,
   className,
+  context,
+  onEnhanced,
+  onChange,
+  disableEnhancement = false,
   ...props
 }: InputProps) {
-  const [isFocused, setIsFocused] = React.useState(false);
+  const [isFocused, setIsFocused] = useState(false);
+  const [isEnhancing, setIsEnhancing] = useState(false);
+
+  const handleEnhancePrompt = async () => {
+    if (!props.value || isEnhancing) return;
+
+    setIsEnhancing(true);
+    try {
+      const enhanced = await promptEnhancementService.enhancePrompt(
+        props.value as string,
+        context
+      );
+      
+      const syntheticEvent = {
+        target: { value: enhanced }
+      } as React.ChangeEvent<HTMLInputElement>;
+      
+      onChange?.(syntheticEvent);
+      onEnhanced?.(enhanced);
+      
+    } catch (error) {
+      console.error('Failed to enhance prompt:', error);
+    } finally {
+      setIsEnhancing(false);
+    }
+  };
 
   return (
     <div className="space-y-1">
@@ -45,10 +78,10 @@ export function Input({
           transition={{ duration: 0.2 }}
         />
 
-        <div className="relative">
+        <div className="relative flex items-center">
           {Icon && (
             <motion.div 
-              className="absolute inset-y-0 left-3 flex items-center pointer-events-none z-10"
+              className="absolute left-3 flex items-center justify-center pointer-events-none z-10"
               animate={{
                 scale: isFocused ? 1.1 : 1,
                 x: isFocused ? 2 : 0
@@ -65,6 +98,7 @@ export function Input({
 
           <input
             {...props}
+            onChange={onChange}
             onFocus={(e) => {
               setIsFocused(true);
               props.onFocus?.(e);
@@ -75,8 +109,10 @@ export function Input({
             }}
             className={`
               w-full
-              px-4 py-2
+              h-10
+              px-4
               ${Icon ? 'pl-10' : ''}
+              ${props.value ? 'pr-10' : ''}
               backdrop-blur-glass
               bg-white/70 dark:bg-gray-800/70
               rounded-lg
@@ -96,6 +132,39 @@ export function Input({
               ${className}
             `}
           />
+
+          <AnimatePresence>
+            {props.value && !disableEnhancement && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                onClick={handleEnhancePrompt}
+                disabled={isEnhancing}
+                className={`
+                  absolute 
+                  right-3
+                  flex
+                  items-center
+                  justify-center
+                  w-6
+                  h-6
+                  rounded-md
+                  text-gray-500 dark:text-gray-400
+                  hover:text-primary-500 dark:hover:text-primary-400
+                  hover:bg-gray-100 dark:hover:bg-gray-700/50
+                  disabled:opacity-50 
+                  disabled:cursor-not-allowed
+                  transition-all 
+                  duration-200
+                `}
+              >
+                <Wand2 
+                  className={`h-4 w-4 ${isEnhancing ? 'animate-pulse' : ''}`} 
+                />
+              </motion.button>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 

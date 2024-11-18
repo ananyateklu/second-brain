@@ -7,6 +7,10 @@ interface AISettings {
     provider: 'openai' | 'anthropic' | 'gemini' | 'llama';
     modelId: string;
   };
+  promptEnhancement?: {
+    provider: 'openai' | 'anthropic' | 'gemini' | 'llama';
+    modelId: string;
+  };
 }
 
 interface TestResult {
@@ -24,6 +28,10 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
     contentSuggestions: {
       provider: (localStorage.getItem('content_suggestions_provider') as 'openai' | 'anthropic' | 'gemini' | 'llama') || 'openai',
       modelId: localStorage.getItem('content_suggestions_model') || 'gpt-4',
+    },
+    promptEnhancement: {
+      provider: (localStorage.getItem('prompt_enhancement_provider') as 'openai' | 'anthropic' | 'gemini' | 'llama') || 'openai',
+      modelId: localStorage.getItem('prompt_enhancement_model') || 'gpt-4',
     },
   });
 
@@ -58,6 +66,25 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
         },
       }));
       localStorage.setItem('content_suggestions_model', value);
+    } else if (name === 'promptEnhancementProvider') {
+      const firstModelForProvider = contentGenerationModels.find(m => m.provider === value)?.id;
+      setSettings(prev => ({
+        ...prev,
+        promptEnhancement: {
+          provider: value as 'openai' | 'anthropic' | 'gemini' | 'llama',
+          modelId: firstModelForProvider ?? prev.promptEnhancement?.modelId ?? '',
+        },
+      }));
+      localStorage.setItem('prompt_enhancement_provider', value);
+    } else if (name === 'promptEnhancementModel') {
+      setSettings(prev => ({
+        ...prev,
+        promptEnhancement: {
+          ...prev.promptEnhancement!,
+          modelId: value,
+        },
+      }));
+      localStorage.setItem('prompt_enhancement_model', value);
     }
   };
 
@@ -205,43 +232,112 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
             <Bot className="w-4 h-4 text-[#3B7443]" />
             <span>These settings will be used for generating titles, content, and tags.</span>
           </div>
+        </div>
+      </div>
 
-          <div className="flex items-center gap-4">
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={isSaving}
-              className={buttonClasses}
-            >
-              {isSaving ? (
-                <>
-                  <Loader className="w-4 h-4 animate-spin" />
-                  <span>Saving...</span>
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4" />
-                  <span>Save</span>
-                </>
-              )}
-            </button>
-
-            {saveResult && (
-              <div className={`flex items-center gap-2 text-sm ${
-                saveResult.success
-                  ? 'text-green-600 dark:text-green-400'
-                  : 'text-red-600 dark:text-red-400'
-              }`}>
-                {saveResult.success ? (
-                  <CheckCircle className="w-4 h-4" />
-                ) : (
-                  <AlertCircle className="w-4 h-4" />
-                )}
-                <span>{saveResult.message}</span>
+      {/* Prompt Enhancement Configuration */}
+      <div className="space-y-4">
+        <h4 className="text-base font-medium text-gray-900 dark:text-white">Prompt Enhancement</h4>
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6 rounded-lg space-y-4">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-900 dark:text-white">
+              AI Provider
+            </label>
+            <div className="relative">
+              <div className={iconWrapperClasses}>
+                <Bot className="h-5 w-5 text-[#3B7443]" />
               </div>
-            )}
+              <select
+                name="promptEnhancementProvider"
+                value={settings.promptEnhancement?.provider}
+                onChange={handleInputChange}
+                className={selectClasses}
+              >
+                {isOpenAIConfigured && <option value="openai">OpenAI</option>}
+                {isGeminiConfigured && <option value="gemini">Google Gemini</option>}
+                {<option value="anthropic">Anthropic (Claude)</option>}
+                {isLlamaConfigured && <option value="llama">Llama</option>}
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-900 dark:text-white">
+              Model
+            </label>
+            <div className="relative">
+              <div className={iconWrapperClasses}>
+                <Settings2 className="h-5 w-5 text-[#3B7443]" />
+              </div>
+              <select
+                name="promptEnhancementModel"
+                value={settings.promptEnhancement?.modelId}
+                onChange={handleInputChange}
+                className={selectClasses}
+              >
+                {contentGenerationModels
+                  .filter(model => model.provider === settings.promptEnhancement?.provider)
+                  .map(model => (
+                    <option key={model.id} value={model.id}>
+                      {model.name}
+                    </option>
+                  ))}
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+            <Bot className="w-4 h-4 text-[#3B7443]" />
+            <span>These settings will be used for enhancing input prompts across the application.</span>
           </div>
         </div>
+      </div>
+
+      {/* Save Button Section */}
+      <div className="mt-6 flex items-center gap-4">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={isSaving}
+          className={buttonClasses}
+        >
+          {isSaving ? (
+            <>
+              <Loader className="w-4 h-4 animate-spin" />
+              <span>Saving...</span>
+            </>
+          ) : (
+            <>
+              <Save className="w-4 h-4" />
+              <span>Save Settings</span>
+            </>
+          )}
+        </button>
+
+        {saveResult && (
+          <div className={`flex items-center gap-2 text-sm ${
+            saveResult.success
+              ? 'text-green-600 dark:text-green-400'
+              : 'text-red-600 dark:text-red-400'
+          }`}>
+            {saveResult.success ? (
+              <CheckCircle className="w-4 h-4" />
+            ) : (
+              <AlertCircle className="w-4 h-4" />
+            )}
+            <span>{saveResult.message}</span>
+          </div>
+        )}
       </div>
     </div>
   );

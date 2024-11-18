@@ -179,6 +179,7 @@ export function RegistrationPage() {
                     placeholder="Enter your email"
                     error={errors.email}
                     disabled={isLoading}
+                    disableEnhancement={true}
                     className="bg-white/10 dark:bg-gray-800/50 border-white/20 dark:border-gray-700/30 focus:border-primary-400"
                   />
                 </motion.div>
@@ -200,6 +201,7 @@ export function RegistrationPage() {
                     placeholder="Create a password"
                     error={errors.password}
                     disabled={isLoading}
+                    disableEnhancement={true}
                     className="bg-white/10 dark:bg-gray-800/50 border-white/20 dark:border-gray-700/30 focus:border-primary-400"
                   />
                 </motion.div>
@@ -221,6 +223,7 @@ export function RegistrationPage() {
                     placeholder="Confirm your password"
                     error={errors.confirmPassword}
                     disabled={isLoading}
+                    disableEnhancement={true}
                     className="bg-white/10 dark:bg-gray-800/50 border-white/20 dark:border-gray-700/30 focus:border-primary-400"
                   />
                 </motion.div>
