@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { LucideIcon, Wand2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { promptEnhancementService } from '../../services/ai/promptEnhancementService';
+import { RecordButton } from './RecordButton';
 
 interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
   label: string;
@@ -12,6 +13,7 @@ interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, '
   onEnhanced?: (value: string) => void;
   onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
   disableEnhancement?: boolean;
+  disableRecording?: boolean;
 }
 
 export function Input({
@@ -23,6 +25,7 @@ export function Input({
   onEnhanced,
   onChange,
   disableEnhancement = false,
+  disableRecording = false,
   ...props
 }: InputProps) {
   const [isFocused, setIsFocused] = useState(false);
@@ -49,6 +52,15 @@ export function Input({
       console.error('Failed to enhance prompt:', error);
     } finally {
       setIsEnhancing(false);
+    }
+  };
+
+  const handleTranscription = (text: string) => {
+    if (text && onChange) {
+      const syntheticEvent = {
+        target: { value: text }
+      } as React.ChangeEvent<HTMLInputElement>;
+      onChange(syntheticEvent);
     }
   };
 
@@ -133,38 +145,47 @@ export function Input({
             `}
           />
 
-          <AnimatePresence>
-            {props.value && !disableEnhancement && (
-              <motion.button
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                onClick={handleEnhancePrompt}
-                disabled={isEnhancing}
-                className={`
-                  absolute 
-                  right-3
-                  flex
-                  items-center
-                  justify-center
-                  w-6
-                  h-6
-                  rounded-md
-                  text-gray-500 dark:text-gray-400
-                  hover:text-primary-500 dark:hover:text-primary-400
-                  hover:bg-gray-100 dark:hover:bg-gray-700/50
-                  disabled:opacity-50 
-                  disabled:cursor-not-allowed
-                  transition-all 
-                  duration-200
-                `}
-              >
-                <Wand2 
-                  className={`h-4 w-4 ${isEnhancing ? 'animate-pulse' : ''}`} 
+          <div className="absolute right-1.5 flex items-center h-full">
+            <AnimatePresence>
+              {props.value && !disableEnhancement && (
+                <motion.button
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  onClick={handleEnhancePrompt}
+                  disabled={isEnhancing}
+                  className={`
+                    flex
+                    items-center
+                    justify-center
+                    w-6
+                    h-6
+                    mr-3
+                    rounded-md
+                    text-gray-500 dark:text-gray-400
+                    hover:text-primary-500 dark:hover:text-primary-400
+                    hover:bg-gray-100 dark:hover:bg-gray-700/50
+                    disabled:opacity-50 
+                    disabled:cursor-not-allowed
+                    transition-all 
+                    duration-200
+                  `}
+                >
+                  <Wand2 
+                    className={`h-4 w-4 ${isEnhancing ? 'animate-pulse' : ''}`} 
+                  />
+                </motion.button>
+              )}
+            </AnimatePresence>
+
+            {!disableRecording && (
+              <div className="border-l border-gray-200/50 dark:border-gray-700/50 h-full flex items-center pl-3">
+                <RecordButton
+                  onTranscription={handleTranscription}
                 />
-              </motion.button>
+              </div>
             )}
-          </AnimatePresence>
+          </div>
         </div>
       </div>
 

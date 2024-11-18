@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Send, Loader, Image } from 'lucide-react';
+import { Send, Loader, Image, Wand2 } from 'lucide-react';
 import { useAI } from '../../../contexts/AIContext';
 import { AIModel } from '../../../types/ai';
 import { Message } from '../../../types/message';
 import { RecordButton } from '../../shared/RecordButton';
+import { promptEnhancementService } from '../../../services/ai/promptEnhancementService';
 
 interface ImageInterfaceProps {
   model: AIModel;
@@ -24,6 +25,7 @@ export function ImageInterface({
 }: ImageInterfaceProps) {
   const { sendMessage } = useAI();
   const [prompt, setPrompt] = useState('');
+  const [isEnhancing, setIsEnhancing] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,6 +111,20 @@ export function ImageInterface({
     setPrompt(text);
   };
 
+  const handleEnhancePrompt = async () => {
+    if (!prompt.trim() || isEnhancing) return;
+
+    setIsEnhancing(true);
+    try {
+      const enhanced = await promptEnhancementService.enhancePrompt(prompt, 'This is for image generation. Make it more descriptive and visual.');
+      setPrompt(enhanced);
+    } catch (error) {
+      console.error('Failed to enhance prompt:', error);
+    } finally {
+      setIsEnhancing(false);
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit} className="relative">
       <div className="relative">
@@ -118,7 +134,7 @@ export function ImageInterface({
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="Describe the image you want to generate..."
           disabled={isLoading}
-          className="w-full px-4 py-2.5 pr-32
+          className="w-full px-4 py-2.5 pr-40
             bg-white/50 dark:bg-gray-800/50
             border border-gray-200/30 dark:border-gray-700/30
             rounded-lg
@@ -130,6 +146,21 @@ export function ImageInterface({
         />
         
         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
+          {/* Enhance Button */}
+          {prompt.trim() && (
+            <button
+              type="button"
+              onClick={handleEnhancePrompt}
+              disabled={isEnhancing || isLoading}
+              className={`p-2 rounded-full transition-all duration-200
+                hover:bg-gray-100 dark:hover:bg-gray-700 
+                text-gray-600 dark:text-gray-300
+                disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              <Wand2 className={`w-4 h-4 ${isEnhancing ? 'animate-spin' : ''}`} />
+            </button>
+          )}
+
           {/* Record Button */}
           <RecordButton 
             onTranscription={handleTranscription}

@@ -84,6 +84,7 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
                     error={error}
                     disabled={isLoading}
                     disableEnhancement={true}
+                    disableRecording={true}
                     className="bg-white/10 border-white/20 focus:border-primary-400 text-white placeholder:text-white/50"
                   />
 

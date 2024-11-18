@@ -1,9 +1,10 @@
 import React, { useState, useRef } from 'react';
-import { Settings2, Save, Search, Edit, Tags, Link, Archive, Trash2, Loader } from 'lucide-react';
+import { Settings2, Save, Search, Edit, Tags, Link, Archive, Trash2, Loader, Wand2 } from 'lucide-react';
 import { AIModel } from '../../../types/ai';
 import { textStyles } from '../../../utils/textUtils';
 import { useAuth } from '../../../contexts/AuthContext';
 import { RecordButton } from '../../shared/RecordButton';
+import { promptEnhancementService } from '../../../services/ai/promptEnhancementService';
 
 interface FunctionInterfaceProps {
   model: AIModel;
@@ -22,6 +23,7 @@ export function FunctionInterface({
   const [showExamples, setShowExamples] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { user } = useAuth();
+  const [isEnhancing, setIsEnhancing] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,6 +41,20 @@ export function FunctionInterface({
 
   const handleTranscription = (text: string) => {
     setInput(text);
+  };
+
+  const handleEnhancePrompt = async () => {
+    if (!input.trim() || isEnhancing) return;
+
+    setIsEnhancing(true);
+    try {
+      const enhanced = await promptEnhancementService.enhancePrompt(input);
+      setInput(enhanced);
+    } catch (error) {
+      console.error('Failed to enhance prompt:', error);
+    } finally {
+      setIsEnhancing(false);
+    }
   };
 
   const examples = [
@@ -136,6 +152,21 @@ export function FunctionInterface({
           />
           
           <div className="absolute right-2 bottom-2 flex items-center gap-2">
+            {/* Enhance Button */}
+            {input.trim() && (
+              <button
+                type="button"
+                onClick={handleEnhancePrompt}
+                disabled={isEnhancing}
+                className={`p-2 rounded-full transition-all duration-200
+                  hover:bg-gray-100 dark:hover:bg-gray-700 
+                  text-gray-600 dark:text-gray-300
+                  disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                <Wand2 className={`w-4 h-4 ${isEnhancing ? 'animate-spin' : ''}`} />
+              </button>
+            )}
+
             {/* Record Button */}
             <RecordButton 
               onTranscription={handleTranscription}

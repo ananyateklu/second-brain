@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Send, Loader, MessageSquare, Hash, Mic, Sparkles, Zap, Image, Settings2 } from 'lucide-react';
+import { Send, Loader, MessageSquare, Hash, Mic, Sparkles, Zap, Image, Settings2, Wand2 } from 'lucide-react';
 import { AIModel } from '../../../types/ai';
 import { RecordButton } from '../../shared/RecordButton';
+import { promptEnhancementService } from '../../../services/ai/promptEnhancementService';
 
 interface ChatInterfaceProps {
   model: AIModel;
@@ -19,6 +20,7 @@ export function ChatInterface({
   placeholder,
 }: ChatInterfaceProps) {
   const [input, setInput] = useState('');
+  const [isEnhancing, setIsEnhancing] = useState(false);
 
   const getModelIcon = () => {
     switch (model.category) {
@@ -110,6 +112,20 @@ export function ChatInterface({
     setInput(text);
   };
 
+  const handleEnhancePrompt = async () => {
+    if (!input.trim() || isEnhancing) return;
+
+    setIsEnhancing(true);
+    try {
+      const enhanced = await promptEnhancementService.enhancePrompt(input);
+      setInput(enhanced);
+    } catch (error) {
+      console.error('Failed to enhance prompt:', error);
+    } finally {
+      setIsEnhancing(false);
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit} className="relative">
       <div className="relative">
@@ -120,7 +136,7 @@ export function ChatInterface({
           onKeyDown={handleKeyDown}
           placeholder={getPlaceholder()}
           disabled={isLoading}
-          className="w-full px-4 py-2.5 pr-24
+          className="w-full px-4 py-2.5 pr-32
             bg-white/50 dark:bg-gray-800/50
             border border-gray-200/30 dark:border-gray-700/30
             rounded-lg
@@ -132,8 +148,22 @@ export function ChatInterface({
         />
         
         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
+          {input.trim() && (
+            <button
+              type="button"
+              onClick={handleEnhancePrompt}
+              disabled={isEnhancing || isLoading}
+              className={`p-2 rounded-full transition-all duration-200
+                hover:bg-gray-100 dark:hover:bg-gray-700 
+                text-gray-600 dark:text-gray-300
+                disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              <Wand2 className={`w-4 h-4 ${isEnhancing ? 'animate-spin' : ''}`} />
+            </button>
+          )}
+
           <RecordButton 
-            onTranscription={handleTranscription} 
+            onTranscription={handleTranscription}
             disabled={isLoading}
           />
           
