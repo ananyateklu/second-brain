@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Brain, Terminal, Database, Check, Loader2 } from 'lucide-react';
 import { ExecutionStep } from '../../../types/ai';
 import { textStyles } from '../../../utils/textUtils';
@@ -9,6 +10,19 @@ interface ThoughtProcessProps {
 }
 
 export function ThoughtProcess({ steps, isComplete, themeColor }: ThoughtProcessProps) {
+  const stepsContainerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll effect when new steps are added
+  useEffect(() => {
+    if (stepsContainerRef.current) {
+      const container = stepsContainerRef.current;
+      // Use requestAnimationFrame to ensure smooth scrolling after DOM update
+      requestAnimationFrame(() => {
+        container.scrollTop = container.scrollHeight;
+      });
+    }
+  }, [steps]); // Trigger on any steps change, not just length
+
   const getStepIcon = (type: ExecutionStep['type'], isActiveStep: boolean) => {
     if (isActiveStep) {
       return <Loader2 className="w-3 h-3 animate-spin" style={{ color: '#8B5CF6' }} />;
@@ -27,7 +41,14 @@ export function ThoughtProcess({ steps, isComplete, themeColor }: ThoughtProcess
   };
 
   return (
-    <div className={`space-y-1 animate-fade-in ${textStyles.caption} max-h-[50vh] overflow-y-auto custom-scrollbar`}>
+    <div 
+      ref={stepsContainerRef}
+      className={`
+        space-y-1 animate-fade-in ${textStyles.caption} 
+        h-auto max-h-full overflow-y-visible
+        scroll-smooth
+      `}
+    >
       {steps.map((step, index) => (
         <div
           key={index}
@@ -70,8 +91,8 @@ export function ThoughtProcess({ steps, isComplete, themeColor }: ThoughtProcess
         </div>
       ))}
 
-      {/* Status Indicator */}
-      <div className="flex items-center justify-center gap-1 py-1">
+      {/* Status Indicator - Make it absolute positioned */}
+      <div className="flex items-center justify-center gap-1 py-1 mt-2">
         {!isComplete ? (
           <>
             <div
@@ -93,4 +114,4 @@ export function ThoughtProcess({ steps, isComplete, themeColor }: ThoughtProcess
       </div>
     </div>
   );
-} 
+}

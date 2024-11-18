@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { AIMessage } from './AIMessage';
 import { EmptyState } from './EmptyState';
 import { AIModel, ExecutionStep } from '../../../types/ai';
@@ -33,6 +33,39 @@ export function MessageList({
   themeColor,
   selectedModel,
 }: MessageListProps) {
+  // Add state to track if user has manually scrolled
+  const [userHasScrolled, setUserHasScrolled] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Handle scroll events
+  const handleScroll = () => {
+    if (!isLoading) {
+      const container = scrollContainerRef.current;
+      if (!container) return;
+
+      const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 100;
+      setUserHasScrolled(!isAtBottom);
+    }
+  };
+
+  // Auto-scroll effect
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const shouldAutoScroll = isLoading || !userHasScrolled;
+    if (shouldAutoScroll) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, isLoading, userHasScrolled]);
+
+  // Reset userHasScrolled when loading starts
+  useEffect(() => {
+    if (isLoading) {
+      setUserHasScrolled(false);
+    }
+  }, [isLoading]);
+
   // Group messages by date and consecutive sender
   const groupedMessages = useMemo(() => {
     const groups: Message[][] = [];
@@ -73,7 +106,11 @@ export function MessageList({
           themeColor={themeColor} 
         />
       ) : (
-        <div className="h-full overflow-y-auto overflow-x-hidden px-2 py-2 space-y-4">
+        <div 
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+          className="h-full overflow-y-auto overflow-x-hidden px-2 py-2 space-y-4"
+        >
           {groupedMessages.map((group, groupIndex) => {
             const date = new Date(group[0].timestamp);
             const showDateDivider = groupIndex === 0 || 
@@ -92,7 +129,7 @@ export function MessageList({
                     </div>
                   </div>
                 )}
-                <div className="space-y-1">
+                <div className="space-y-1 mx-5">
                   {group.map((message, index) => (
                     <AIMessage
                       key={`${message.id}-${index}`}

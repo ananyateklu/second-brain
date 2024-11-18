@@ -3,6 +3,7 @@ import { Settings2, Save, Search, Edit, Tags, Link, Archive, Trash2, Loader } fr
 import { AIModel } from '../../../types/ai';
 import { textStyles } from '../../../utils/textUtils';
 import { useAuth } from '../../../contexts/AuthContext';
+import { RecordButton } from '../../shared/RecordButton';
 
 interface FunctionInterfaceProps {
   model: AIModel;
@@ -34,6 +35,10 @@ export function FunctionInterface({
     setInput(example);
     setShowExamples(false);
     textareaRef.current?.focus();
+  };
+
+  const handleTranscription = (text: string) => {
+    setInput(text);
   };
 
   const examples = [
@@ -131,6 +136,12 @@ export function FunctionInterface({
           />
           
           <div className="absolute right-2 bottom-2 flex items-center gap-2">
+            {/* Record Button */}
+            <RecordButton 
+              onTranscription={handleTranscription}
+              className="hover:bg-gray-100/50 dark:hover:bg-gray-700/50"
+            />
+
             {/* Model Icon */}
             <div className="p-1.5 rounded-md"
               style={{ backgroundColor: `${model.color}10` }}>

@@ -3,6 +3,7 @@ import { Send, Loader, Image } from 'lucide-react';
 import { useAI } from '../../../contexts/AIContext';
 import { AIModel } from '../../../types/ai';
 import { Message } from '../../../types/message';
+import { RecordButton } from '../../shared/RecordButton';
 
 interface ImageInterfaceProps {
   model: AIModel;
@@ -46,7 +47,7 @@ export function ImageInterface({
     let progress = 0;
     let progressSpeed = 2; // Start slow
 
-    // Add placeholder assistant message
+    // Add placeholder assistant message with the inputText
     const assistantMessage: Message = {
       id: assistantMessageId,
       role: 'assistant',
@@ -55,7 +56,8 @@ export function ImageInterface({
       timestamp: new Date().toISOString(),
       model,
       isLoading: true,
-      progress: progress,
+      progress: 0,
+      inputText: userPrompt,
     };
     addMessage(assistantMessage);
 
@@ -103,6 +105,10 @@ export function ImageInterface({
     }
   };
 
+  const handleTranscription = (text: string) => {
+    setPrompt(text);
+  };
+
   return (
     <form onSubmit={handleSubmit} className="relative">
       <div className="relative">
@@ -112,7 +118,7 @@ export function ImageInterface({
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="Describe the image you want to generate..."
           disabled={isLoading}
-          className="w-full px-4 py-2.5 pr-24
+          className="w-full px-4 py-2.5 pr-32
             bg-white/50 dark:bg-gray-800/50
             border border-gray-200/30 dark:border-gray-700/30
             rounded-lg
@@ -124,6 +130,12 @@ export function ImageInterface({
         />
         
         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
+          {/* Record Button */}
+          <RecordButton 
+            onTranscription={handleTranscription}
+            className="hover:bg-gray-100/50 dark:hover:bg-gray-700/50"
+          />
+
           {/* Model Icon */}
           <div className="p-1.5 rounded-md"
             style={{ backgroundColor: `${model.color}10` }}>

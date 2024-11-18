@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Send, Loader, MessageSquare, Hash, Mic, Sparkles, Zap, Image, Settings2 } from 'lucide-react';
 import { AIModel } from '../../../types/ai';
+import { RecordButton } from '../../shared/RecordButton';
 
 interface ChatInterfaceProps {
   model: AIModel;
@@ -90,10 +91,23 @@ export function ChatInterface({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     if (!input.trim() || isLoading) return;
 
     onUserInput(input.trim());
     setInput('');
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      e.stopPropagation();
+      handleSubmit(e as unknown as React.FormEvent);
+    }
+  };
+
+  const handleTranscription = (text: string) => {
+    setInput(text);
   };
 
   return (
@@ -103,6 +117,7 @@ export function ChatInterface({
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
           placeholder={getPlaceholder()}
           disabled={isLoading}
           className="w-full px-4 py-2.5 pr-24
@@ -117,13 +132,16 @@ export function ChatInterface({
         />
         
         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
-          {/* Model Icon */}
+          <RecordButton 
+            onTranscription={handleTranscription} 
+            disabled={isLoading}
+          />
+          
           <div className="p-1.5 rounded-md"
             style={{ backgroundColor: `${model.color}10` }}>
             {getModelIcon()}
           </div>
 
-          {/* Submit Button */}
           <button
             type="submit"
             disabled={isLoading || !input.trim()}
