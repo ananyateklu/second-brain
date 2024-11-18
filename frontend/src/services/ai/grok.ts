@@ -45,6 +45,40 @@ export class GrokService {
     }
   }
 
+  async executeFunctionCall(message: string, modelId: string, functions: any[]): Promise<AIResponse> {
+    try {
+      const request = {
+        model: modelId,
+        messages: [
+          {
+            role: "user",
+            content: message,
+            toolCalls: [],
+            toolCallId: ""
+          }
+        ],
+        tools: functions,
+        stream: false,
+        temperature: 0
+      };
+
+      const response = await api.post('/api/Grok/function-call', request);
+
+      return {
+        content: response.data.choices[0].message.content,
+        type: 'text',
+        metadata: {
+          model: modelId,
+          usage: response.data.usage,
+          toolCalls: response.data.choices[0].message.toolCalls
+        }
+      };
+    } catch (error) {
+      console.error('Error executing function call with Grok:', error);
+      throw new Error('Failed to execute function call with Grok.');
+    }
+  }
+
   isConfigured(): boolean {
     return this.isEnabled;
   }
@@ -69,4 +103,4 @@ export class GrokService {
       }
     ];
   }
-} 
+}

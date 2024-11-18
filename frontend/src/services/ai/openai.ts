@@ -6,16 +6,19 @@ export class OpenAIService {
   private isEnabled = false;
 
   constructor() {
-    this.checkConfiguration();
+    // Remove this as it won't complete before isConfigured is called
+    // this.checkConfiguration();
   }
 
-  async checkConfiguration(): Promise<void> {
+  async isConfigured(): Promise<boolean> {
     try {
       const response = await api.get('/api/ai/openai/status');
       this.isEnabled = response.data.isConfigured;
+      return this.isEnabled;
     } catch (error) {
       console.error('Error checking OpenAI configuration:', error);
       this.isEnabled = false;
+      return false;
     }
   }
 
@@ -153,10 +156,6 @@ export class OpenAIService {
       console.error('Error converting text to speech:', error);
       throw error;
     }
-  }
-
-  isConfigured(): boolean {
-    return this.isEnabled;
   }
 
   getModels(): AIModel[] {

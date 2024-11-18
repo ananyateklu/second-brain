@@ -27,7 +27,7 @@ const aiService = new AIService();
 export function AIProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [isOpenAIConfigured, setIsOpenAIConfigured] = useState<boolean>(aiService.isOpenAIConfigured());
-  const [isAnthropicConfigured, setIsAnthropicConfigured] = useState<boolean>(aiService.isAnthropicConfigured());
+  const [isAnthropicConfigured, setIsAnthropicConfigured] = useState<boolean>(false);
   const [isGeminiConfigured, setIsGeminiConfigured] = useState<boolean>(aiService.isGeminiConfigured());
   const [isLlamaConfigured, setIsLlamaConfigured] = useState<boolean>(aiService.llama.isConfigured());
   const [isGrokConfigured, setIsGrokConfigured] = useState<boolean>(false);
@@ -70,47 +70,68 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Initialize Anthropic configuration status
+  // Add debug logging for all model configurations
   useEffect(() => {
-    const checkAnthropicConfig = async () => {
-      const isConfigured = await aiService.isAnthropicConfigured();
-      setIsAnthropicConfigured(isConfigured);
-    };
-    checkAnthropicConfig();
-  }, []);
+    const checkAllConfigurations = async () => {
+      console.group('AI Model Configurations');
+      
+      // OpenAI
+      try {
+        const openaiConfigured = await aiService.isOpenAIConfigured();
+        setIsOpenAIConfigured(openaiConfigured);
+      } catch (error) {
+        console.error('OpenAI configuration error:', error);
+        setIsOpenAIConfigured(false);
+      }
 
-  // Initialize Gemini configuration status
-  useEffect(() => {
-    const checkGeminiConfig = async () => {
-      const isConfigured = aiService.isGeminiConfigured();
-      setIsGeminiConfigured(isConfigured);
-    };
-    checkGeminiConfig();
-  }, []);
+      // Anthropic
+      try {
+        const anthropicConfigured = await aiService.isAnthropicConfigured();
+        console.log('Anthropic configured:', anthropicConfigured);
+        setIsAnthropicConfigured(anthropicConfigured);
+      } catch (error) {
+        console.error('Anthropic configuration error:', error);
+        setIsAnthropicConfigured(false);
+      }
 
-  // Initialize Llama configuration status
-  useEffect(() => {
-    const checkLlamaConfig = async () => {
-      const isConfigured = aiService.llama.isConfigured();
-      setIsLlamaConfigured(isConfigured);
-    };
-    checkLlamaConfig();
-  }, []);
+      // Gemini
+      try {
+        const geminiConfigured = aiService.isGeminiConfigured();
+        console.log('Gemini configured:', geminiConfigured);
+        setIsGeminiConfigured(geminiConfigured);
+      } catch (error) {
+        console.error('Gemini configuration error:', error);
+        setIsGeminiConfigured(false);
+      }
 
-  // Initialize Grok configuration status
-  useEffect(() => {
-    const checkGrokConfig = async () => {
-      const isConfigured = await aiService.grokService.checkConfiguration();
-      setIsGrokConfigured(isConfigured);
-    };
-    checkGrokConfig();
-  }, []);
+      // Llama
+      try {
+        const llamaConfigured = aiService.llama.isConfigured();
+        console.log('Llama configured:', llamaConfigured);
+        setIsLlamaConfigured(llamaConfigured);
+      } catch (error) {
+        console.error('Llama configuration error:', error);
+        setIsLlamaConfigured(false);
+      }
 
-  // Update available models whenever configuration changes
-  useEffect(() => {
-    setAvailableModels(aiService.getAvailableModels());
-    console.log('Available models:', aiService.getAvailableModels());
-  }, [isGeminiConfigured]);
+      // Grok
+      try {
+        const grokConfigured = await aiService.grokService.checkConfiguration();
+        console.log('Grok configured:', grokConfigured);
+        setIsGrokConfigured(grokConfigured);
+      } catch (error) {
+        console.error('Grok configuration error:', error);
+        setIsGrokConfigured(false);
+      }
+
+      // Log available models
+      console.log('Available models:', aiService.getAvailableModels());
+      
+      console.groupEnd();
+    };
+
+    checkAllConfigurations();
+  }, []);
 
   const configureGemini = useCallback(async (apiKey: string) => {
     try {

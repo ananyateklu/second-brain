@@ -140,34 +140,84 @@ export const AI_MODELS: AIModel[] = [
   },
   // Anthropic Models (Colored Orange)
   {
-    id: 'claude-3-opus-latest',
-    name: 'Claude 3 Opus',
+    id: 'claude-3-5-sonnet-20241022',
+    name: 'Claude 3.5 Sonnet (latest)',
     provider: 'anthropic',
     category: 'chat',
-    description: 'Most capable Claude model',
+    description: 'Most intelligent model with high capability and fast response times',
     isConfigured: true,
     color: '#F97316',
     endpoint: 'chat',
+    rateLimits: {
+      maxInputTokens: 200000,
+      maxOutputTokens: 8192,
+      tpm: 100000,
+      rpm: 50,
+    }
   },
   {
-    id: 'claude-3-5-sonnet-latest',
-    name: 'Claude 3 Sonnet (New)',
+    id: 'claude-3-5-haiku-20241022',
+    name: 'Claude 3.5 Haiku (latest)',
     provider: 'anthropic',
     category: 'chat',
-    description: "Claude 3.5 Sonnet - Anthropic's latest language model",
+    description: 'Fastest model with high intelligence and quick response times',
     isConfigured: true,
     color: '#F97316',
     endpoint: 'chat',
+    rateLimits: {
+      maxInputTokens: 200000,
+      maxOutputTokens: 8192,
+      tpm: 100000,
+      rpm: 50,
+    }
+  },
+  {
+    id: 'claude-3-opus-20240229',
+    name: 'Claude 3 Opus (latest)',
+    provider: 'anthropic',
+    category: 'chat',
+    description: 'Most powerful model for highly complex tasks with top-level intelligence and understanding',
+    isConfigured: true,
+    color: '#F97316',
+    endpoint: 'chat',
+    rateLimits: {
+      maxInputTokens: 200000,
+      maxOutputTokens: 4096,
+      tpm: 100000,
+      rpm: 50,
+    }
+  },
+  {
+    id: 'claude-3-sonnet-20240229',
+    name: 'Claude 3 Sonnet',
+    provider: 'anthropic',
+    category: 'chat',
+    description: 'Balanced model optimized for production deployments with strong utility',
+    isConfigured: true,
+    color: '#F97316',
+    endpoint: 'chat',
+    rateLimits: {
+      maxInputTokens: 200000,
+      maxOutputTokens: 4096,
+      tpm: 100000,
+      rpm: 50,
+    }
   },
   {
     id: 'claude-3-haiku-20240307',
     name: 'Claude 3 Haiku',
     provider: 'anthropic',
     category: 'chat',
-    description: 'Fastest and most compact Claude 3 model',
+    description: 'Fastest and most compact model for near-instant responsiveness',
     isConfigured: true,
     color: '#F97316',
     endpoint: 'chat',
+    rateLimits: {
+      maxInputTokens: 200000,
+      maxOutputTokens: 4096,
+      tpm: 100000,
+      rpm: 50,
+    }
   },
   // Llama Models (Colored Blue)
   {
@@ -457,6 +507,23 @@ export const AI_MODELS: AIModel[] = [
     name: 'Grok Beta',
     provider: 'grok',
     category: 'chat',
+    description: 'Comparable performance to Grok 2 but with improved efficiency, speed and capabilities',
+    isConfigured: true,
+    color: '#1DA1F2', // X/Twitter blue color
+    endpoint: 'chat',
+    rateLimits: {
+      tpm: 100000,
+      rpm: 500,
+      rpd: 10000,
+      tpd: 1000000,
+    },
+  },
+   // Grok Models (Colored Blue)
+   {
+    id: 'grok-beta',
+    name: 'Grok Beta',
+    provider: 'grok',
+    category: 'function',
     description: 'Comparable performance to Grok 2 but with improved efficiency, speed and capabilities',
     isConfigured: true,
     color: '#1DA1F2', // X/Twitter blue color

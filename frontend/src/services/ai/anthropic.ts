@@ -249,7 +249,19 @@ export class AnthropicService {
     }
   }
 
-  isConfigured(): boolean {
+  async isConfigured(): Promise<boolean> {
+    try {
+      const isConnected = await this.testConnection();
+      this.isEnabled = isConnected;
+      return isConnected;
+    } catch (error) {
+      console.error('[AnthropicService] Configuration error:', error);
+      this.isEnabled = false;
+      return false;
+    }
+  }
+
+  getIsEnabled(): boolean {
     return this.isEnabled;
   }
 

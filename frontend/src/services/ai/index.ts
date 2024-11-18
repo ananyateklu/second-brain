@@ -75,24 +75,59 @@ export class AIService {
     ];
   }
 
-  isOpenAIConfigured(): boolean {
-    return this.openai.isConfigured();
+  async isOpenAIConfigured(): Promise<boolean> {
+    try {
+      const configured = await this.openai.isConfigured();
+      console.log('[AIService] OpenAI configuration check:', configured);
+      return configured;
+    } catch (error) {
+      console.error('[AIService] OpenAI configuration error:', error);
+      return false;
+    }
   }
 
-  isAnthropicConfigured(): boolean {
-    return this.anthropic.isConfigured();
+  async isAnthropicConfigured(): Promise<boolean> {
+    try {
+      const configured = await this.anthropic.isConfigured();
+      console.log('[AIService] Anthropic configuration check:', configured);
+      return configured;
+    } catch (error) {
+      console.error('[AIService] Anthropic configuration error:', error);
+      return false;
+    }
   }
 
   isGeminiConfigured(): boolean {
-    return this.geminiService.isConfigured();
+    try {
+      const configured = this.geminiService.isConfigured();
+      console.log('[AIService] Gemini configuration check:', configured);
+      return configured;
+    } catch (error) {
+      console.error('[AIService] Gemini configuration error:', error);
+      return false;
+    }
   }
 
   isLlamaConfigured(): boolean {
-    return this.llamaService.isConfigured();
+    try {
+      const configured = this.llamaService.isConfigured();
+      console.log('[AIService] Llama configuration check:', configured);
+      return configured;
+    } catch (error) {
+      console.error('[AIService] Llama configuration error:', error);
+      return false;
+    }
   }
 
   isGrokConfigured(): boolean {
-    return this.grokService.isConfigured();
+    try {
+      const configured = this.grokService.isConfigured();
+      console.log('[AIService] Grok configuration check:', configured);
+      return configured;
+    } catch (error) {
+      console.error('[AIService] Grok configuration error:', error);
+      return false;
+    }
   }
 
   async executeFunctionCall(message: string, modelId: string, functions: any[]): Promise<AIResponse> {

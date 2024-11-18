@@ -1,8 +1,10 @@
 export interface RateLimits {
-  tpm?: number; // Tokens per minute
-  rpm?: number; // Requests per minute
-  rpd?: number; // Requests per day
-  tpd?: number; // Tokens per day
+  tpm?: number;           // Tokens per minute
+  rpm?: number;           // Requests per minute
+  rpd?: number;           // Requests per day
+  tpd?: number;           // Tokens per day
+  maxInputTokens?: number;  // Maximum input context length
+  maxOutputTokens?: number; // Maximum output response length
   imagesPerMinute?: number;
 }
 
@@ -66,4 +68,5 @@ export interface Message {
   };
   isLoading?: boolean;
   executionSteps?: ExecutionStep[];
+  isStreaming?: boolean;
 }
