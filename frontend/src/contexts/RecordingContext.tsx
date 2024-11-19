@@ -76,7 +76,10 @@ export function RecordingProvider({ children }: { children: React.ReactNode }) {
           setMediaRecorder(null);
           setIsRecording(false);
 
-          resolve(response.content as string);
+          // Remove trailing periods from transcription
+          const cleanedTranscription = response.content.toString().trim().replace(/[.]+$/, '');
+          
+          resolve(cleanedTranscription);
         } catch (err) {
           setError('Failed to transcribe audio.');
           reject(err);

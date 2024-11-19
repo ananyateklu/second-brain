@@ -50,6 +50,7 @@ export class PromptEnhancementService {
         .replace(/["'`]/g, '')
         .replace(/\s+/g, ' ')
         .replace(/\b(AI|artificial intelligence|AI-assisted|AI assisted)\b/gi, '')
+        .replace(/[.]+$/, '')
         .trim();
     } catch (error) {
       console.error('Failed to enhance prompt:', error);

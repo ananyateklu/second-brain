@@ -320,7 +320,7 @@ export function ModelSelector({
         >
           {/* Category Tabs - Now properly centered */}
           <div className="w-full">
-            <div className="flex justify-start md:justify-center flex-nowrap gap-1 overflow-x-auto pb-2 custom-scrollbar">
+            <div className="flex justify-start md:justify-center flex-nowrap gap-2 overflow-x-auto py-2 custom-scrollbar">
               <AnimatePresence mode="popLayout">
                 {categories.map(category => {
                   const Icon = getCategoryIcon(category);

@@ -123,6 +123,7 @@ export function Input({
               w-full
               h-10
               px-4
+              mx-0.5
               ${Icon ? 'pl-10' : ''}
               ${props.value ? 'pr-10' : ''}
               backdrop-blur-glass
@@ -179,7 +180,7 @@ export function Input({
             </AnimatePresence>
 
             {!disableRecording && (
-              <div className="border-l border-gray-200/50 dark:border-gray-700/50 h-full flex items-center pl-3">
+              <div className="border-l border-gray-200/50 dark:border-gray-700/50 h-full flex items-center pl-2">
                 <RecordButton
                   onTranscription={handleTranscription}
                 />
