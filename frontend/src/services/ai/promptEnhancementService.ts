@@ -27,7 +27,6 @@ export class PromptEnhancementService {
 
   async enhancePrompt(input: string, context?: string): Promise<string> {
     try {
-      // Truncate input if it's too long (e.g., more than 1000 characters)
       const truncatedInput = input.slice(0, 1000);
       const truncatedContext = context?.slice(0, 500);
 
@@ -38,9 +37,9 @@ export class PromptEnhancementService {
         this.modelId,
         {
           max_tokens: 150, 
-          temperature: 0.7,
+          temperature: 0.5,
           top_p: 1,
-          frequency_penalty: 0,
+          frequency_penalty: 0.5,
           presence_penalty: 0
         }
       );
@@ -50,6 +49,7 @@ export class PromptEnhancementService {
         .replace(/`([^`]+)`/g, '$1')
         .replace(/["'`]/g, '')
         .replace(/\s+/g, ' ')
+        .replace(/\b(AI|artificial intelligence|AI-assisted|AI assisted)\b/gi, '')
         .trim();
     } catch (error) {
       console.error('Failed to enhance prompt:', error);
@@ -58,7 +58,7 @@ export class PromptEnhancementService {
   }
 
   private createEnhancementPrompt(input: string, context?: string): string {
-    const basePrompt = `Enhance this input to be more specific and professional while keeping it concise (max 100 words):
+    const basePrompt = `Please improve the following input to be more specific and professional while keeping it concise (max 100 words). Focus on the core message without mentioning AI, artificial intelligence, or assistance. Provide only one enhanced version without additional options or explanations.
 
 Input: "${input}"
 ${context ? `Context: ${context}` : ''}
