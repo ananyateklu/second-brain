@@ -118,8 +118,8 @@ export function AIAssistantPage() {
   };
 
   const updateMessage = (messageId: string, updates: Partial<Message>) => {
-    setMessages(prevMessages => 
-      prevMessages.map(msg => 
+    setMessages(prevMessages =>
+      prevMessages.map(msg =>
         msg.id === messageId ? { ...msg, ...updates } : msg
       )
     );
@@ -135,13 +135,13 @@ export function AIAssistantPage() {
         const existingMessageIndex = prevMessages.findIndex(
           msg => msg.role === 'assistant' && msg.isLoading
         );
-        
+
         if (existingMessageIndex !== -1) {
           const newMessages = [...prevMessages];
           newMessages[existingMessageIndex] = message;
           return newMessages;
         }
-        
+
         return [...prevMessages, message];
       });
     } else {
@@ -186,18 +186,18 @@ export function AIAssistantPage() {
               : 'max-h-[25vh]'
           }`}
         >
-          <div className="w-full max-w-[1400px]">
-            <ModelSelector
-              models={availableModels}
-              selectedModel={selectedModel}
-              selectedCategory={selectedCategory}
-              onModelSelect={handleModelSelect}
-              onCategoryChange={handleCategoryChange}
-              onDetailsToggle={handleDetailsToggle}
-              showModelSelector={showModelSelector}
-              setShowModelSelector={setShowModelSelector}
-            />
-          </div>
+
+          <ModelSelector
+            models={availableModels}
+            selectedModel={selectedModel}
+            selectedCategory={selectedCategory}
+            onModelSelect={handleModelSelect}
+            onCategoryChange={handleCategoryChange}
+            onDetailsToggle={handleDetailsToggle}
+            showModelSelector={showModelSelector}
+            setShowModelSelector={setShowModelSelector}
+          />
+
         </div>
 
         {/* Messages Container */}

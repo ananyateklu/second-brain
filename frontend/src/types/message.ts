@@ -4,6 +4,7 @@ export interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string | Blob;
+  metadata?: ImageMetadata;
   type: 'text' | 'image' | 'audio' | 'embedding' | 'code' | 'function';
   timestamp: string;
   model?: AIModel;
@@ -13,3 +14,9 @@ export interface Message {
   inputText?: string;
   progress?: number;
 } 
+
+export interface ImageMetadata {
+  model: string;
+  prompt: string;
+  revised_prompt?: string;
+}

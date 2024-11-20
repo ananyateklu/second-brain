@@ -27,20 +27,8 @@ export function ImageModal({ imageUrl, revisedPrompt, onClose }: ImageModalProps
   }, []);
 
   const handleDownload = async () => {
-    try {
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'ai-generated-image.png';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Error downloading image:', error);
-    }
+    // Open image in new window
+    window.open(imageUrl, '_blank');
   };
 
   return (
@@ -76,29 +64,20 @@ export function ImageModal({ imageUrl, revisedPrompt, onClose }: ImageModalProps
         </div>
 
         {/* Footer with prompt */}
-        {revisedPrompt && (
-          <div className="absolute bottom-0 left-0 right-0 p-6 
-            bg-gradient-to-t from-black/70 via-black/50 to-transparent">
-            <div className="max-w-3xl mx-auto space-y-4">
-              <div className="flex items-start gap-3">
-                <Sparkles className="w-5 h-5 mt-1 text-yellow-400" />
-                <p className="text-white/90 text-sm leading-relaxed">
-                  {revisedPrompt}
-                </p>
-              </div>
-
-              <button
-                onClick={handleDownload}
-                className="flex items-center gap-2 px-4 py-2 
-                  bg-white/10 hover:bg-white/20 rounded-lg 
-                  transition-all duration-200 text-white text-sm"
-              >
-                <Download className="w-4 h-4" />
-                <span>Download Image</span>
-              </button>
-            </div>
+        <div className="absolute bottom-0 left-0 right-0 p-6 
+          bg-gradient-to-t from-black/70 via-black/50 to-transparent">
+          <div className="max-w-3xl mx-auto space-y-4">
+            <button
+              onClick={handleDownload}
+              className="flex items-center gap-2 px-4 py-2 
+                bg-white/10 hover:bg-white/20 rounded-lg 
+                transition-all duration-200 text-white text-sm"
+            >
+              <Download className="w-4 h-4" />
+              <span>Open in New Window</span>
+            </button>
           </div>
-        )}
+        </div>
       </motion.div>
     </div>
   );

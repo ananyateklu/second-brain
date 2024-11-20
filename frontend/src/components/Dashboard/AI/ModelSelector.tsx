@@ -115,7 +115,7 @@ export function ModelSelector({
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="w-full h-full px-1"
+          className="w-full h-full"
           transition={{ 
             duration: 0.2,
             ease: [0.4, 0, 0.2, 1] // Smooth easing function
@@ -125,12 +125,12 @@ export function ModelSelector({
             <motion.div
               className={`w-full h-full rounded-xl backdrop-blur-md 
                 border border-gray-200/30 dark:border-gray-700/30
-                transition-all p-4
+                transition-all py-3 px-5
                 ${isHovered ? 'shadow-lg shadow-primary-500/10' : 'shadow-md'}`}
               onHoverStart={() => setIsHovered(true)}
               onHoverEnd={() => setIsHovered(false)}
               animate={{
-                scale: isHovered ? 1.005 : 1,
+                scale: isHovered ? 1.000 : 1,
                 borderColor: isHovered ? `${selectedModel.color}50` : 'rgba(229, 231, 235, 0.3)'
               }}
               transition={{

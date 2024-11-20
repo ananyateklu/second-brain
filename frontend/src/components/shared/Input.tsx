@@ -180,7 +180,7 @@ export function Input({
             </AnimatePresence>
 
             {!disableRecording && (
-              <div className="border-l border-gray-200/50 dark:border-gray-700/50 h-full flex items-center pl-2">
+              <div className="border-l border-gray-200/50 dark:border-gray-700/50 h-full flex items-center pl-1">
                 <RecordButton
                   onTranscription={handleTranscription}
                 />
