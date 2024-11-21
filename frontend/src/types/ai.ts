@@ -18,6 +18,7 @@ export interface AIModel {
   color: string;
   endpoint: 'chat' | 'completions' | 'images' | 'audio' | 'embeddings';
   rateLimits?: RateLimits;
+  size?: string;
 }
 
 export interface AIMessage {

@@ -1,11 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Bot, MessageSquare, Image, Mic, Settings2, Sparkles, Zap, 
-  ChevronDown, Gauge, Cpu, Clock, Info } from 'lucide-react';
+  ChevronDown, Gauge, Cpu, Clock, Info, ArrowDown, ArrowUp, Calendar } from 'lucide-react';
 import { AIModel } from '../../../types/ai';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
    
- 
   Image as ImageIcon, 
   Braces, Database, Brain 
 } from 'lucide-react';
@@ -31,8 +30,8 @@ export function ModelSelector({
   showModelSelector,
   setShowModelSelector,
 }: ModelSelectorProps) {
-  const [showDetails, setShowDetails] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
 
   // Memoize categories to prevent unnecessary recalculations
   const categories = useMemo(() => 
@@ -72,17 +71,13 @@ export function ModelSelector({
   };
 
   const toggleDetails = () => {
-    const newDetailsState = !showDetails;
-    setShowDetails(newDetailsState);
-    onDetailsToggle(newDetailsState);
+    setShowDetails(!showDetails);
+    onDetailsToggle(!showDetails);
   };
 
   // New function to toggle model selector visibility
   const toggleModelSelector = () => {
     setShowModelSelector(!showModelSelector);
-    if (!showModelSelector) {
-      setShowDetails(false);
-    }
   };
 
   const getModelIcon = () => {
@@ -116,16 +111,13 @@ export function ModelSelector({
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           className="w-full h-full"
-          transition={{ 
-            duration: 0.2,
-            ease: [0.4, 0, 0.2, 1] // Smooth easing function
-          }}
+          transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
         >
           <div className="w-full h-full relative">
             <motion.div
               className={`w-full h-full rounded-xl backdrop-blur-md 
                 border border-gray-200/30 dark:border-gray-700/30
-                transition-all py-3 px-5
+                transition-all py-2.5 px-4
                 ${isHovered ? 'shadow-lg shadow-primary-500/10' : 'shadow-md'}`}
               onHoverStart={() => setIsHovered(true)}
               onHoverEnd={() => setIsHovered(false)}
@@ -136,67 +128,81 @@ export function ModelSelector({
               transition={{
                 duration: 0.2,
                 ease: [0.4, 0, 0.2, 1],
-                scale: {
-                  type: "spring",
-                  stiffness: 300,
-                  damping: 25
-                }
+                scale: { type: "spring", stiffness: 300, damping: 25 }
               }}
             >
-              <div className="flex items-center justify-between h-full">
-                {/* Model Info Section */}
-                <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3">
+                {/* Model Icon */}
+                <motion.div
+                  className="relative p-2.5 rounded-lg shrink-0"
+                  style={{ backgroundColor: `${selectedModel.color}15` }}
+                  animate={{
+                    backgroundColor: isHovered ? `${selectedModel.color}25` : `${selectedModel.color}15`
+                  }}
+                >
+                  {getModelIcon()}
                   <motion.div
-                    className="relative p-2.5 rounded-lg"
-                    style={{ backgroundColor: `${selectedModel.color}15` }}
+                    className="absolute inset-0 rounded-lg"
                     animate={{
-                      backgroundColor: isHovered ? `${selectedModel.color}25` : `${selectedModel.color}15`
+                      boxShadow: isHovered 
+                        ? `0 0 0 2px ${selectedModel.color}30` 
+                        : `0 0 0 1px ${selectedModel.color}20`
                     }}
-                  >
-                    {getModelIcon()}
-                    <motion.div
-                      className="absolute inset-0 rounded-lg"
-                      animate={{
-                        boxShadow: isHovered 
-                          ? `0 0 0 2px ${selectedModel.color}30` 
-                          : `0 0 0 1px ${selectedModel.color}20`
-                      }}
-                    />
-                  </motion.div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-gray-900 dark:text-white">
-                        {selectedModel.name}
-                      </h3>
-                      <span className="px-2 py-0.5 rounded-full text-xs font-medium
-                        bg-gray-100 dark:bg-gray-800 
-                        text-gray-600 dark:text-gray-400 capitalize
-                        border border-gray-200/50 dark:border-gray-700/50">
-                        {selectedModel.provider}
-                      </span>
-                      {/* Model Stats */}
-                      <div className="flex items-center gap-3 ml-2 text-xs text-gray-500 dark:text-gray-400">
-                        {selectedModel.rateLimits?.tpm && (
-                          <div className="flex items-center gap-1" title="Tokens per minute">
-                            <Gauge className="w-3.5 h-3.5" />
-                            <span>{(selectedModel.rateLimits.tpm / 1000).toFixed(1)}k TPM</span>
-                          </div>
-                        )}
-                        {selectedModel.rateLimits?.rpm && (
-                          <div className="flex items-center gap-1" title="Requests per minute">
-                            <Clock className="w-3.5 h-3.5" />
-                            <span>{selectedModel.rateLimits.rpm} RPM</span>
-                          </div>
-                        )}
+                  />
+                </motion.div>
+
+                {/* Model Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-gray-900 dark:text-white">
+                      {selectedModel.name}
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-full text-xs font-medium
+                      bg-gray-100 dark:bg-gray-800 
+                      text-gray-600 dark:text-gray-400 capitalize
+                      border border-gray-200/50 dark:border-gray-700/50">
+                      {selectedModel.provider}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
+                    {selectedModel.description}
+                  </p>
+                </div>
+
+                {/* Performance & Rate Limit */}
+                <div className="flex items-center gap-6 px-6 mx-6 border-x border-gray-200/30 dark:border-gray-700/30">
+                  {/* Model Size */}
+                  {selectedModel.size && (
+                    <div className="flex items-center gap-1.5">
+                      <Database className="w-4 h-4 text-gray-500" />
+                      <div className="text-sm text-gray-900 dark:text-white">
+                        {selectedModel.size}
                       </div>
                     </div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">
-                      {selectedModel.description}
-                    </p>
-                  </div>
+                  )}
+
+                  {/* TPM (Tokens per Minute) */}
+                  {selectedModel.rateLimits?.tpm && (
+                    <div className="flex items-center gap-1.5">
+                      <Cpu className="w-4 h-4 text-gray-500" />
+                      <div className="text-sm text-gray-900 dark:text-white">
+                        {(selectedModel.rateLimits.tpm / 1000).toFixed(1)}k TPM
+                      </div>
+                    </div>
+                  )}
+
+                  {/* RPM (Requests per Minute) */}
+                  {selectedModel.rateLimits?.rpm && (
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="w-4 h-4 text-gray-500" />
+                      <div className="text-sm text-gray-900 dark:text-white">
+                        {selectedModel.rateLimits.rpm} RPM
+                      </div>
+                    </div>
+                  )}
                 </div>
-                
-                {/* Actions Section */}
+
+                {/* Action Buttons */}
                 <div className="flex items-center gap-2">
                   <motion.button
                     onClick={() => setShowModelSelector(true)}
@@ -215,10 +221,7 @@ export function ModelSelector({
                     Change Model
                   </motion.button>
                   <motion.button
-                    onClick={() => {
-                      setShowDetails(!showDetails);
-                      onDetailsToggle(!showDetails);
-                    }}
+                    onClick={toggleDetails}
                     className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800
                       text-gray-500 dark:text-gray-400 transition-colors
                       border border-transparent hover:border-gray-200/50 dark:hover:border-gray-700/50"
@@ -234,75 +237,84 @@ export function ModelSelector({
                 </div>
               </div>
 
-              {/* Enhanced Details Section */}
+              {/* Expanded Details */}
               <AnimatePresence>
                 {showDetails && (
                   <motion.div
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
-                    className="mt-4 pt-4 border-t border-gray-200/30 dark:border-gray-700/30"
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
                   >
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {/* Provider Info */}
-                      <div className="space-y-1">
-                        <div className="text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
-                          <Bot className="w-3.5 h-3.5" />
-                          Provider
-                        </div>
-                        <div className="text-sm text-gray-900 dark:text-white capitalize">
-                          {selectedModel.provider}
-                        </div>
-                      </div>
+                    <div className="pt-4 mt-4 border-t border-gray-200/30 dark:border-gray-700/30">
+                      {/* Remove the debug section */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {/* Model Size */}
+                        {selectedModel.size && (
+                          <div className="space-y-1">
+                            <div className="text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                              <Database className="w-3.5 h-3.5" />
+                              Model Size
+                            </div>
+                            <div className="text-sm text-gray-900 dark:text-white">
+                              {selectedModel.size}
+                            </div>
+                          </div>
+                        )}
 
-                      {/* Category */}
-                      <div className="space-y-1">
-                        <div className="text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
-                          <Database className="w-3.5 h-3.5" />
-                          Category
-                        </div>
-                        <div className="text-sm text-gray-900 dark:text-white capitalize">
-                          {selectedModel.category}
-                        </div>
-                      </div>
+                        {/* TPM (Tokens per Minute) */}
+                        {selectedModel.rateLimits?.tpm && (
+                          <div className="space-y-1">
+                            <div className="text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                              <Gauge className="w-3.5 h-3.5" />
+                              Tokens per Minute
+                            </div>
+                            <div className="text-sm text-gray-900 dark:text-white">
+                              {(selectedModel.rateLimits.tpm / 1000).toFixed(1)}k
+                            </div>
+                          </div>
+                        )}
 
-                      {/* Performance */}
-                      <div className="space-y-1">
-                        <div className="text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
-                          <Cpu className="w-3.5 h-3.5" />
-                          Performance
-                        </div>
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {selectedModel.rateLimits?.tpm 
-                            ? `${(selectedModel.rateLimits.tpm / 1000).toFixed(1)}k TPM`
-                            : 'N/A'}
-                        </div>
-                      </div>
+                        {/* Input Context Length */}
+                        {selectedModel.rateLimits?.maxInputTokens && (
+                          <div className="space-y-1">
+                            <div className="text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                              <ArrowDown className="w-3.5 h-3.5" />
+                              Input Context
+                            </div>
+                            <div className="text-sm text-gray-900 dark:text-white">
+                              {(selectedModel.rateLimits.maxInputTokens / 1000).toFixed(1)}k tokens
+                            </div>
+                          </div>
+                        )}
 
-                      {/* Rate Limits */}
-                      <div className="space-y-1">
-                        <div className="text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5" />
-                          Rate Limit
-                        </div>
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {selectedModel.rateLimits?.rpm 
-                            ? `${selectedModel.rateLimits.rpm} RPM`
-                            : 'N/A'}
-                        </div>
-                      </div>
-                    </div>
+                        {/* Output Length */}
+                        {selectedModel.rateLimits?.maxOutputTokens && (
+                          <div className="space-y-1">
+                            <div className="text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                              <ArrowUp className="w-3.5 h-3.5" />
+                              Max Output
+                            </div>
+                            <div className="text-sm text-gray-900 dark:text-white">
+                              {(selectedModel.rateLimits.maxOutputTokens / 1000).toFixed(1)}k tokens
+                            </div>
+                          </div>
+                        )}
 
-                    {/* Description */}
-                    <div className="mt-4 space-y-1">
-                      <div className="text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
-                        <Info className="w-3.5 h-3.5" />
-                        Description
+                        {/* RPM (Requests per Minute) */}
+                        {selectedModel.rateLimits?.rpm && (
+                          <div className="space-y-1">
+                            <div className="text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                              <Clock className="w-3.5 h-3.5" />
+                              Requests per Minute
+                            </div>
+                            <div className="text-sm text-gray-900 dark:text-white">
+                              {selectedModel.rateLimits.rpm}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">
-                        {selectedModel.description}
-                      </p>
                     </div>
                   </motion.div>
                 )}

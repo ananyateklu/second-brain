@@ -17,6 +17,7 @@ export const AI_MODELS: AIModel[] = [
       rpd: 10000,
       tpd: 100000,
     },
+    size: '1.76T',
   },
   {
     id: 'gpt-4-turbo',
@@ -32,6 +33,7 @@ export const AI_MODELS: AIModel[] = [
       rpm: 500,
       tpd: 90000,
     },
+    size: '1.76T',
   },
   {
     id: 'gpt-4o',
@@ -47,6 +49,7 @@ export const AI_MODELS: AIModel[] = [
       rpm: 500,
       tpd: 90000,
     },
+    size: '1.76T',
   },
   {
     id: 'gpt-4o-mini',
@@ -63,6 +66,7 @@ export const AI_MODELS: AIModel[] = [
       rpd: 10000,
       tpd: 2000000,
     },
+    size: '1.76T',
   },
   {
     id: 'gpt-3.5-turbo',
@@ -79,6 +83,7 @@ export const AI_MODELS: AIModel[] = [
       rpd: 10000,
       tpd: 2000000,
     },
+    size: '175B',
   },
   // OpenAI Embedding Models
   {
@@ -95,6 +100,7 @@ export const AI_MODELS: AIModel[] = [
       rpm: 3000,
       tpd: 3000000,
     },
+    size: '1.5B',
   },
   // OpenAI Image Models
   {
@@ -110,6 +116,7 @@ export const AI_MODELS: AIModel[] = [
       rpm: 500,
       imagesPerMinute: 5,
     },
+    size: '20B',
   },
   // OpenAI Audio Models
   {
@@ -124,6 +131,7 @@ export const AI_MODELS: AIModel[] = [
     rateLimits: {
       rpm: 500,
     },
+    size: '1.5B',
   },
   {
     id: 'tts-1',
@@ -137,6 +145,7 @@ export const AI_MODELS: AIModel[] = [
     rateLimits: {
       rpm: 500,
     },
+    size: '1B',
   },
   // Anthropic Models (Colored Orange)
   {
@@ -153,7 +162,8 @@ export const AI_MODELS: AIModel[] = [
       maxOutputTokens: 8192,
       tpm: 100000,
       rpm: 50,
-    }
+    },
+    size: '175B',
   },
   {
     id: 'claude-3-5-haiku-20241022',
@@ -169,7 +179,8 @@ export const AI_MODELS: AIModel[] = [
       maxOutputTokens: 8192,
       tpm: 100000,
       rpm: 50,
-    }
+    },
+    size: '175B',
   },
   {
     id: 'claude-3-opus-20240229',
@@ -185,7 +196,8 @@ export const AI_MODELS: AIModel[] = [
       maxOutputTokens: 4096,
       tpm: 100000,
       rpm: 50,
-    }
+    },
+    size: '175B',
   },
   {
     id: 'claude-3-sonnet-20240229',
@@ -201,7 +213,8 @@ export const AI_MODELS: AIModel[] = [
       maxOutputTokens: 4096,
       tpm: 100000,
       rpm: 50,
-    }
+    },
+    size: '175B',
   },
   {
     id: 'claude-3-haiku-20240307',
@@ -217,7 +230,8 @@ export const AI_MODELS: AIModel[] = [
       maxOutputTokens: 4096,
       tpm: 100000,
       rpm: 50,
-    }
+    },
+    size: '175B',
   },
   // Llama Models (Colored Blue)
   {
@@ -229,6 +243,13 @@ export const AI_MODELS: AIModel[] = [
     isConfigured: true,
     color: '#8B5CF6',
     endpoint: 'chat',
+    size: '8B',
+    rateLimits: {
+      tpm: 60000,
+      rpm: 35,
+      maxInputTokens: 128000,
+      maxOutputTokens: 4096,
+    },
   },
   {
     id: 'llama3.2',
@@ -239,6 +260,13 @@ export const AI_MODELS: AIModel[] = [
     isConfigured: true,
     color: '#8B5CF6',
     endpoint: 'chat',
+    size: '3B',
+    rateLimits: {
+      tpm: 80000,
+      rpm: 45,
+      maxInputTokens: 128000,
+      maxOutputTokens: 4096,
+    },
   },
   {
     id: 'deepseek-coder-v2',
@@ -249,6 +277,13 @@ export const AI_MODELS: AIModel[] = [
     isConfigured: true,
     color: '#8B5CF6',
     endpoint: 'chat',
+    rateLimits: {
+      tpm: 60000,
+      rpm: 35,
+      maxInputTokens: 16384,
+      maxOutputTokens: 4096,
+    },
+    size: '33B',
   },
   {
     id: 'nemotron-mini',
@@ -259,6 +294,12 @@ export const AI_MODELS: AIModel[] = [
     isConfigured: true,
     color: '#8B5CF6',
     endpoint: 'chat',
+    rateLimits: {
+      tpm: 60000,
+      rpm: 35,
+      maxInputTokens: 16384,
+      maxOutputTokens: 4096,
+    },
   },
   {
     id: 'nemotron',
@@ -269,6 +310,12 @@ export const AI_MODELS: AIModel[] = [
     isConfigured: true,
     color: '#8B5CF6',
     endpoint: 'chat',
+    rateLimits: {
+      tpm: 60000,
+      rpm: 35,
+      maxInputTokens: 16384,
+      maxOutputTokens: 4096,
+    },
   },
   {
     id: 'Mistral-nemo',
@@ -279,6 +326,12 @@ export const AI_MODELS: AIModel[] = [
     isConfigured: true,
     color: '#8B5CF6',
     endpoint: 'chat',
+    rateLimits: {
+      tpm: 60000,
+      rpm: 35,
+      maxInputTokens: 16384,
+      maxOutputTokens: 4096,
+    },
   },
   {
     id: 'orca2',
@@ -289,6 +342,12 @@ export const AI_MODELS: AIModel[] = [
     isConfigured: true,
     color: '#8B5CF6',
     endpoint: 'chat',
+    rateLimits: {
+      tpm: 60000,
+      rpm: 35,
+      maxInputTokens: 16384,
+      maxOutputTokens: 4096,
+    },
   },
   {
     id: 'samantha-mistral',
@@ -299,16 +358,28 @@ export const AI_MODELS: AIModel[] = [
     isConfigured: true,
     color: '#8B5CF6',
     endpoint: 'chat',
+    rateLimits: {
+      tpm: 60000,
+      rpm: 35,
+      maxInputTokens: 16384,
+      maxOutputTokens: 4096,
+    },
   },
   {
     id: 'nexusraven',
     name: 'Nexus Raven (Tool Calling)',
     provider: 'llama',
-    category: 'chat',
+    category: 'function',
     description: 'Nexus Raven is a model designed to excel in function calling, and is optimized for tool calling.',
     isConfigured: true,
     color: '#8B5CF6',
     endpoint: 'chat',
+    rateLimits: {
+      tpm: 60000,
+      rpm: 35,
+      maxInputTokens: 16384,
+      maxOutputTokens: 4096,
+    },
   },
   {
     id: 'granite3-dense:8b',
@@ -319,6 +390,13 @@ export const AI_MODELS: AIModel[] = [
     isConfigured: true,
     color: '#8B5CF6',
     endpoint: 'chat',
+    rateLimits: {
+      tpm: 60000,
+      rpm: 35,
+      maxInputTokens: 16384,
+      maxOutputTokens: 4096,
+    },
+    size: '8B',
   },
   {
     id: 'granite3-moe',
@@ -329,6 +407,12 @@ export const AI_MODELS: AIModel[] = [
     isConfigured: true,
     color: '#8B5CF6',
     endpoint: 'chat',
+    rateLimits: {
+      tpm: 80000,
+      rpm: 45,
+      maxInputTokens: 16384,
+      maxOutputTokens: 4096,
+    },
   },
   {
     id: 'qwen2.5-coder:3b',
@@ -339,6 +423,13 @@ export const AI_MODELS: AIModel[] = [
     isConfigured: true,
     color: '#8B5CF6',
     endpoint: 'chat',
+    size: '3B',
+    rateLimits: {
+      tpm: 80000,
+      rpm: 45,
+      maxInputTokens: 16384,
+      maxOutputTokens: 4096,
+    },
   },
   {
     id: 'qwen2.5-coder:14b',
@@ -349,6 +440,13 @@ export const AI_MODELS: AIModel[] = [
     isConfigured: true,
     color: '#8B5CF6',
     endpoint: 'chat',
+    size: '14B',
+    rateLimits: {
+      tpm: 60000,
+      rpm: 35,
+      maxInputTokens: 16384,
+      maxOutputTokens: 4096,
+    },
   },
   {
     id: 'qwen2.5-coder:32b',
@@ -359,6 +457,13 @@ export const AI_MODELS: AIModel[] = [
     isConfigured: true,
     color: '#8B5CF6',
     endpoint: 'chat',
+    size: '32B',
+    rateLimits: {
+      tpm: 40000,
+      rpm: 25,
+      maxInputTokens: 128000,
+      maxOutputTokens: 4096,
+    },
   },
   {
     id: 'qwen2.5-coder:14b',
@@ -399,6 +504,13 @@ export const AI_MODELS: AIModel[] = [
     isConfigured: true,
     color: '#8B5CF6',
     endpoint: 'chat',
+    size: '3.8B',
+    rateLimits: {
+      tpm: 80000,
+      rpm: 45,
+      maxInputTokens: 16384,
+      maxOutputTokens: 4096,
+    },
   },
   {
     id: 'phi3:14b',
@@ -409,6 +521,13 @@ export const AI_MODELS: AIModel[] = [
     isConfigured: true,
     color: '#8B5CF6',
     endpoint: 'chat',
+    size: '14B',
+    rateLimits: {
+      tpm: 60000,
+      rpm: 35,
+      maxInputTokens: 16384,
+      maxOutputTokens: 4096,
+    },
   },
   // Gemini Models (Colored Purple)
   {
@@ -420,6 +539,13 @@ export const AI_MODELS: AIModel[] = [
     isConfigured: true,
     color: '#8B5CF6',
     endpoint: 'chat',
+    rateLimits: {
+      tpm: 60000,
+      rpm: 35,
+      maxInputTokens: 16384,
+      maxOutputTokens: 4096,
+    },
+    size: '7B',
   },
   {
     id: 'gemma2:9b',
@@ -430,6 +556,13 @@ export const AI_MODELS: AIModel[] = [
     isConfigured: true,
     color: '#8B5CF6',
     endpoint: 'chat',
+    size: '9B',
+    rateLimits: {
+      tpm: 60000,
+      rpm: 35,
+      maxInputTokens: 16384,
+      maxOutputTokens: 4096,
+    },
   },
   {
     id: 'gemma2:2b',
@@ -440,6 +573,13 @@ export const AI_MODELS: AIModel[] = [
     isConfigured: true,
     color: '#8B5CF6',
     endpoint: 'chat',
+    size: '2B',
+    rateLimits: {
+      tpm: 80000,
+      rpm: 45,
+      maxInputTokens: 16384,
+      maxOutputTokens: 4096,
+    },
   },
   {
     id: 'opencoder:8b',
@@ -450,6 +590,13 @@ export const AI_MODELS: AIModel[] = [
     isConfigured: true,
     color: '#8B5CF6',
     endpoint: 'chat',
+    size: '8B',
+    rateLimits: {
+      tpm: 60000,
+      rpm: 35,
+      maxInputTokens: 16384,
+      maxOutputTokens: 4096,
+    },
   },
   {
     id: 'opencoder:1.5b',
@@ -460,6 +607,13 @@ export const AI_MODELS: AIModel[] = [
     isConfigured: true,
     color: '#8B5CF6',
     endpoint: 'chat',
+    size: '1.5B',
+    rateLimits: {
+      tpm: 80000,
+      rpm: 45,
+      maxInputTokens: 16384,
+      maxOutputTokens: 4096,
+    },
   },
   {
     id: 'solar-pro',
@@ -470,6 +624,13 @@ export const AI_MODELS: AIModel[] = [
     isConfigured: true,
     color: '#8B5CF6',
     endpoint: 'chat',
+    size: '22B',
+    rateLimits: {
+      tpm: 40000,
+      rpm: 25,
+      maxInputTokens: 16384,
+      maxOutputTokens: 4096,
+    },
   },
   {
     id: 'athene-v2',
@@ -480,6 +641,13 @@ export const AI_MODELS: AIModel[] = [
     isConfigured: true,
     color: '#8B5CF6',
     endpoint: 'chat',
+    size: '72B',
+    rateLimits: {
+      tpm: 30000,
+      rpm: 20,
+      maxInputTokens: 16384,
+      maxOutputTokens: 4096,
+    },
   },
   {
     id: 'yi-coder',
@@ -490,6 +658,13 @@ export const AI_MODELS: AIModel[] = [
     isConfigured: true,
     color: '#8B5CF6',
     endpoint: 'chat',
+    rateLimits: {
+      tpm: 60000,
+      rpm: 35,
+      maxInputTokens: 16384,
+      maxOutputTokens: 4096,
+    },
+    size: '10B',
   },
   {
     id: 'mxbai-embed-large',
@@ -500,6 +675,7 @@ export const AI_MODELS: AIModel[] = [
     isConfigured: true,
     color: '#8B5CF6',
     endpoint: 'chat',
+    size: '1.5B',
   },
   // Grok Models (Colored Blue)
   {
@@ -517,6 +693,7 @@ export const AI_MODELS: AIModel[] = [
       rpd: 10000,
       tpd: 1000000,
     },
+    size: '314B',
   },
    // Grok Models (Colored Blue)
    {
@@ -548,6 +725,7 @@ export const AI_MODELS: AIModel[] = [
       tpm: 100000,
       rpm: 60,
     },
+    size: '1.5T',
   },
   {
     id: 'gemini-1.5-flash',
@@ -562,6 +740,7 @@ export const AI_MODELS: AIModel[] = [
       tpm: 100000,
       rpm: 60,
     },
+    size: '1.5T',
   },
   {
     id: 'gemini-1.5-flash-8b',
@@ -576,6 +755,7 @@ export const AI_MODELS: AIModel[] = [
       tpm: 100000,
       rpm: 60,
     },
+    size: '8B',
   },
   {
     id: 'gemini-1.0-pro',
