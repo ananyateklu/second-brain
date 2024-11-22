@@ -49,7 +49,7 @@ export function LoginPage() {
 
   const validateForm = (): boolean => {
     const newErrors: ValidationErrors = {};
-    
+
     const emailError = validateEmail(formData.email);
     if (emailError) newErrors.email = emailError;
 
@@ -62,14 +62,15 @@ export function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     try {
       setIsRedirecting(true);
       await login(formData.email, formData.password);
       navigate(from, { replace: true });
-    } catch (error) {
+    } catch (error: unknown) {
+      console.error(error);
       setIsRedirecting(false);
     }
   };
@@ -85,11 +86,6 @@ export function LoginPage() {
     }
   };
 
-  // Only show loading screen when actually redirecting after successful login
-  if (isRedirecting) {
-    return <LoadingScreen message="Logging you in..." />;
-  }
-
   // Make sure the dark class is being applied to the html element
   useEffect(() => {
     if (theme === 'dark') {
@@ -101,6 +97,11 @@ export function LoginPage() {
     }
   }, [theme]);
 
+  // Only show loading screen when actually redirecting after successful login
+  if (isRedirecting) {
+    return <LoadingScreen message="Logging you in..." />;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-600 via-primary-500 to-primary-700 dark:from-gray-900 dark:via-gray-800 dark:to-primary-900/50 flex">
       {/* Left Panel - Decorative */}
@@ -111,25 +112,25 @@ export function LoginPage() {
           <p className="text-xl text-center text-white/90 dark:text-white/80 max-w-md">
             Your personal workspace for better focus, organization, and productivity.
           </p>
-          
+
           {/* Decorative Elements */}
           <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-white/10 dark:bg-white/5 rounded-full blur-3xl" />
           <div className="absolute top-20 -right-20 w-96 h-96 bg-primary-400/20 dark:bg-primary-600/10 rounded-full blur-3xl" />
         </div>
-        
+
         {/* Floating Cards */}
         <div className="absolute inset-0 z-0">
           {[...Array(3)].map((_, i) => (
             <motion.div
               key={i}
               className="absolute bg-white/5 dark:bg-white/3 backdrop-blur-lg rounded-2xl p-4 shadow-lg"
-              initial={{ 
-                x: Math.random() * 100, 
+              initial={{
+                x: Math.random() * 100,
                 y: Math.random() * 100,
                 rotate: Math.random() * 20 - 10
               }}
-              animate={{ 
-                x: Math.random() * 100, 
+              animate={{
+                x: Math.random() * 100,
                 y: Math.random() * 100,
                 rotate: Math.random() * 20 - 10
               }}
@@ -216,8 +217,8 @@ export function LoginPage() {
                   />
                   <span className="text-sm">Remember me</span>
                 </label>
-                
-                <button 
+
+                <button
                   type="button"
                   onClick={() => setShowForgotPassword(true)}
                   className="text-sm text-white/90 hover:text-white transition-colors"

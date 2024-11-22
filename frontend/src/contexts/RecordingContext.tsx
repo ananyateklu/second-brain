@@ -102,10 +102,11 @@ export function RecordingProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function useRecording() {
+// eslint-disable-next-line react-refresh/only-export-components
+export function useRecording(): RecordingContextType {
   const context = useContext(RecordingContext);
   if (!context) {
     throw new Error('useRecording must be used within a RecordingProvider');
   }
-  return context;
+  return context!;
 } 

@@ -5,6 +5,7 @@ export interface Task {
   id: string;
   title: string;
   description: string;
+  tags: string[];
   priority: number;
   dueDate: string;
   status: string;

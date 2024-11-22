@@ -27,7 +27,14 @@ const aiService = new AIService();
 
 export function AIProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
-  const [isOpenAIConfigured, setIsOpenAIConfigured] = useState<boolean>(aiService.isOpenAIConfigured());
+  const [isOpenAIConfigured, setIsOpenAIConfigured] = useState<boolean>(false);
+  useEffect(() => {
+    const checkOpenAIConfig = async () => {
+      const isConfigured = await aiService.isOpenAIConfigured();
+      setIsOpenAIConfigured(isConfigured);
+    };
+    checkOpenAIConfig();
+  }, []);
   const [isAnthropicConfigured, setIsAnthropicConfigured] = useState<boolean>(false);
   const [isGeminiConfigured, setIsGeminiConfigured] = useState<boolean>(aiService.isGeminiConfigured());
   const [isLlamaConfigured, setIsLlamaConfigured] = useState<boolean>(aiService.llama.isConfigured());
@@ -53,14 +60,14 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
       }
 
       setExecutionSteps(prev => {
-        const currentSteps = [...(prev[messageId] || []), step];
+        const currentSteps = [...(prev[messageId as keyof typeof prev] || []), step];
         console.log('[AIContext] Updating steps for message:', {
           messageId,
           steps: currentSteps
         });
         return {
           ...prev,
-          [messageId]: currentSteps
+          [messageId as string]: currentSteps
         };
       });
     });
@@ -75,7 +82,7 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const checkAllConfigurations = async () => {
       console.group('AI Model Configurations');
-      
+
       // OpenAI
       try {
         const openaiConfigured = await aiService.isOpenAIConfigured();
@@ -125,26 +132,23 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
         setIsGrokConfigured(false);
       }
 
-      // Log available models
-      console.log('Available models:', aiService.getAvailableModels());
-      
       console.groupEnd();
     };
 
     checkAllConfigurations();
   }, []);
 
-  const configureGemini = useCallback(async (apiKey: string) => {
+  const configureGemini = useCallback(async () => {
     try {
       setError(null);
-      const success = await aiService.setGeminiKey(apiKey);
+      const success = await aiService.isGeminiConfigured();
       if (success) {
         setIsGeminiConfigured(true);
       } else {
         throw new Error('Failed to configure Gemini');
       }
-    } catch (error: any) {
-      const errorMessage = error?.message || 'Failed to configure Gemini';
+    } catch (error: Error | unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to configure Gemini';
       console.error('Failed to configure Gemini:', errorMessage);
       setError(errorMessage);
       setIsGeminiConfigured(false);
@@ -284,6 +288,7 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
   return <AIContext.Provider value={value}>{children}</AIContext.Provider>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAI() {
   const context = useContext(AIContext);
   if (!context) {

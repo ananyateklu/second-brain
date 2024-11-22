@@ -11,7 +11,7 @@ export class SignalRService {
     this.connection = new signalR.HubConnectionBuilder()
       .withUrl('http://localhost:5127/toolHub')
       .withAutomaticReconnect({
-        nextRetryDelayInMilliseconds: (_retryContext) => {
+        nextRetryDelayInMilliseconds: () => {
           return 1000; // Retry every second
         }
       })

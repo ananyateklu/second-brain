@@ -12,9 +12,19 @@ export interface TrashedItem {
   type: 'note' | 'task' | 'idea' | 'reminder' | 'tag';
   title: string;
   content?: string;
+  priority?: number;
+  status?: string;
+  isCompleted?: boolean;
+  isSnoozed?: boolean;
+  snoozeUntil?: string;
   metadata?: {
     tags?: string[];
     dueDate?: string;
+    priority?: number;
+    status?: string;
+    isCompleted?: boolean;
+    isSnoozed?: boolean;
+    snoozeUntil?: string;
     linkedItems?: string[];
     isFavorite?: boolean;
   };
@@ -204,7 +214,7 @@ export function TrashProvider({
             // Update the reminder in the backend
             await reminderService.updateReminder(item.id, {
               isDeleted: false,
-              deletedAt: null,
+              deletedAt: item.deletedAt,
               title: item.title,
               description: item.content,
               dueDateTime: item.metadata?.dueDate,

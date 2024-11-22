@@ -1,4 +1,4 @@
-import { AIService } from './index';
+import { AIService } from '../../services/aiService';
 
 export class NamingService {
   private aiService: AIService;

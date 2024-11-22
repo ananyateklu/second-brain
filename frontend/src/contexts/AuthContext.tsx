@@ -4,20 +4,6 @@ import { authService, AuthResponse } from '../services/api/auth.service';
 import { useNavigate } from 'react-router-dom';
 import { LoadingScreen } from '../components/shared/LoadingScreen';
 
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  createdAt: string;
-  experiencePoints: number;  // Total XP
-  level: number;
-  avatar: string;
-  xpForNextLevel: number;    // XP needed for next level from current position
-  levelProgress: number;     // Progress percentage (0-1)
-  achievementCount: number;
-  totalXPFromAchievements: number;
-}
-
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
@@ -49,11 +35,12 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
         error: null,
         user: response.user,
       });
-    } catch (error: any) {
+    } catch (error: Error | unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Invalid credentials';
       setAuthState(prev => ({
         ...prev,
         isLoading: false,
-        error: error.response?.data?.error || 'Invalid credentials',
+        error: errorMessage,
       }));
       throw error;
     }

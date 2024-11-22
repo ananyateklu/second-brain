@@ -5,9 +5,9 @@ export interface Reminder {
   dueDateTime: string;
   repeatInterval?: 'Daily' | 'Weekly' | 'Monthly' | 'Yearly' | 'Custom';
   customRepeatPattern?: string;
-  isSnoozed: boolean;
   snoozeUntil?: string;
   isCompleted: boolean;
+  isSnoozed: boolean;
   completedAt?: string;
   tags: string[];
   createdAt: string;
