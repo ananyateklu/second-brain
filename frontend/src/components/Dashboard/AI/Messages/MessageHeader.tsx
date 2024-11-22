@@ -1,5 +1,4 @@
-import React from 'react';
-import { BotMessageSquareIcon, UserCircle } from 'lucide-react';
+import { BotMessageSquareIcon } from 'lucide-react';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { Message } from '../../../../types/message';
 

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { AIService } from '../services/ai';
-import { AIModel, AIResponse, ExecutionStep, Message } from '../types/ai';
+import { AIModel, AIResponse, ExecutionStep } from '../types/ai';
+import { Message } from '../types/message';
 import { LlamaService } from '../services/ai/llama';
 import { signalRService } from '../services/signalR';
 
@@ -31,7 +32,7 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
   const [isGeminiConfigured, setIsGeminiConfigured] = useState<boolean>(aiService.isGeminiConfigured());
   const [isLlamaConfigured, setIsLlamaConfigured] = useState<boolean>(aiService.llama.isConfigured());
   const [isGrokConfigured, setIsGrokConfigured] = useState<boolean>(false);
-  const [availableModels, setAvailableModels] = useState<AIModel[]>(aiService.getAvailableModels());
+  const [availableModels] = useState<AIModel[]>(aiService.getAvailableModels());
   const [messages, setMessages] = useState<Message[]>([]);
   const [executionSteps, setExecutionSteps] = useState<Record<string, ExecutionStep[]>>({});
   const latestMessageIdRef = useRef<string | null>(null);

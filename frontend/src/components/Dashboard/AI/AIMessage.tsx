@@ -1,4 +1,3 @@
-import React from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { MessageHeader } from './Messages/MessageHeader';
 import { MessageContent } from './Messages/MessageContent';
@@ -85,7 +84,7 @@ export function AIMessage({
               text-sm
               max-w-[600px] overflow-hidden`}
               style={isUser ? {
-                background: `linear-gradient(135deg, ${message.model?.color || themeColor}70, ${message.model?.color || themeColor}80)`
+                background: `linear-gradient(135deg, ${message.model?.color ?? themeColor}70, ${message.model?.color ?? themeColor}80)`
               } : undefined}
             >
               <div className="overflow-x-auto custom-scrollbar">

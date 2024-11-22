@@ -53,21 +53,3 @@ interface ContentBlock {
   url?: string;
   // Add other properties as needed
 }
-
-export interface Message {
-  id: string;
-  role: 'user' | 'assistant' | 'system' | 'function';
-  content: string;
-  type: 'text' | 'image' | 'audio' | 'embedding' | 'code' | 'function';
-  timestamp: string;
-  model?: AIModel;
-  metadata?: Record<string, unknown>;
-  functionCall?: {
-    name: string;
-    arguments: Record<string, unknown>;
-    result?: string;
-  };
-  isLoading?: boolean;
-  executionSteps?: ExecutionStep[];
-  isStreaming?: boolean;
-}
