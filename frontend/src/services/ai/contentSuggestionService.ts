@@ -1,5 +1,5 @@
 // ContentSuggestionService.ts
-import { AIService } from './index';
+import { AIService } from '../aiService';
 import { PROMPT_CONFIG } from './promptConfig';
 
 export class ContentSuggestionService {

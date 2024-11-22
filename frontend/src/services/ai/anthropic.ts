@@ -21,7 +21,17 @@ export class AnthropicService {
     return this.testConnection();
   }
 
-  async sendMessage(message: string, modelId: string): Promise<AIResponse> {
+  async sendMessage(
+    message: string, 
+    modelId: string,
+    parameters?: {
+      max_tokens?: number;
+      temperature?: number;
+      top_p?: number;
+      frequency_penalty?: number;
+      presence_penalty?: number;
+    }
+  ): Promise<AIResponse> {
     try {
       const isContentSuggestion = this.isContentSuggestionContext();
       
@@ -69,7 +79,9 @@ export class AnthropicService {
 
       const request = {
         model: modelId,
-        max_tokens: 1024,
+        max_tokens: parameters?.max_tokens ?? 1024,
+        temperature: parameters?.temperature ?? 0.7,
+        top_p: parameters?.top_p ?? 1,
         messages: [{
           role: "user",
           content: message

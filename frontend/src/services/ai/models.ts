@@ -12,10 +12,10 @@ export const AI_MODELS: AIModel[] = [
     color: '#3B7443',
     endpoint: 'chat',
     rateLimits: {
-      tpm: 10000,
+      tpm: 8000,
       rpm: 500,
-      rpd: 10000,
-      tpd: 100000,
+      maxOutputTokens: 8192,
+      maxInputTokens: 10000,
     },
     size: '1.76T',
   },

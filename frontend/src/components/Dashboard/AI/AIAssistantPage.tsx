@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bot, Settings } from 'lucide-react';
 import { useAI } from '../../../contexts/AIContext';

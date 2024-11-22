@@ -36,10 +36,15 @@ export interface ExecutionStep {
 export interface AIResponse {
   content: string;
   type: 'text' | 'image' | 'audio' | 'embedding';
+  inputText?: string;
   contentBlocks?: ContentBlock[];
   executionSteps?: ExecutionStep[];
   metadata?: {
     model?: string;
+    prompt?: string;
+    revised_prompt?: string;
+    parameters?: Record<string, unknown>;
+    toolCalls?: Record<string, unknown>[];
     usage?: {
       input_tokens: number;
       output_tokens: number;
@@ -52,4 +57,38 @@ interface ContentBlock {
   text?: string;
   url?: string;
   // Add other properties as needed
+}
+
+export interface AIFunction {
+  type: 'function';
+  function: {
+    name: string;
+    description: string;
+    parameters: {
+      type: string;
+      properties: Record<string, {
+        type: string;
+        description: string;
+        exampleValue: string;
+      }>;
+      required: string[];
+    };
+  };
+}
+
+export interface GrokFunction {
+  type: 'function';
+  function: {
+    name: string;
+    description: string;
+    parameters: {
+      type: string;
+      properties: Record<string, {
+        type: string;
+        description: string;
+        exampleValue: string;
+      }>;
+      required: string[];
+    };
+  };
 }

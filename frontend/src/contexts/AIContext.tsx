@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { AIService } from '../services/ai';
+import { AIService } from '../services/aiService';
 import { AIModel, AIResponse, ExecutionStep } from '../types/ai';
 import { Message } from '../types/message';
 import { LlamaService } from '../services/ai/llama';
@@ -263,43 +263,6 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
         ...prev.slice(index + 1)
       ];
     });
-  }, []);
-
-  // Initialize assistant message for function calls
-  const addMessage = useCallback((message: Message) => {
-    if (message.role === 'user') {
-      setMessages(prev => {
-        const userMessage = { ...message };
-
-        // For function models, immediately create assistant message
-        if (message.model?.category === 'function') {
-          const assistantId = `assistant-${Date.now()}`;
-          const assistantMessage: Message = {
-            id: assistantId,
-            role: 'assistant',
-            content: '',
-            type: 'function',
-            timestamp: new Date().toISOString(),
-            model: message.model,
-            executionSteps: [], // Initialize empty array
-            isStreaming: true
-          };
-
-          // Initialize steps array for new message
-          setExecutionSteps(prev => ({
-            ...prev,
-            [assistantId]: []
-          }));
-
-          latestMessageIdRef.current = assistantId;
-          return [...prev, userMessage, assistantMessage];
-        }
-
-        return [...prev, userMessage];
-      });
-    } else {
-      setMessages(prev => [...prev, message]);
-    }
   }, []);
 
   const value = useMemo(() => ({

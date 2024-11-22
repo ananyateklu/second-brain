@@ -1,4 +1,4 @@
-import { AIModel, AIResponse } from '../../types/ai';
+import { AIModel, AIResponse, GrokFunction } from '../../types/ai';
 import api from '../api/api';
 
 export class GrokService {
@@ -15,7 +15,17 @@ export class GrokService {
     }
   }
 
-  async sendMessage(message: string, modelId: string): Promise<AIResponse> {
+  async sendMessage(
+    message: string, 
+    modelId: string,
+    parameters?: {
+      max_tokens?: number;
+      temperature?: number;
+      top_p?: number;
+      frequency_penalty?: number;
+      presence_penalty?: number;
+    }
+  ): Promise<AIResponse> {
     try {
       const request = {
         model: modelId,
@@ -26,7 +36,11 @@ export class GrokService {
           }
         ],
         stream: false,
-        temperature: 0
+        max_tokens: parameters?.max_tokens,
+        temperature: parameters?.temperature ?? 0,
+        top_p: parameters?.top_p ?? 1,
+        frequency_penalty: parameters?.frequency_penalty ?? 0,
+        presence_penalty: parameters?.presence_penalty ?? 0
       };
 
       const response = await api.post('/api/Grok/send', request);
@@ -45,7 +59,11 @@ export class GrokService {
     }
   }
 
-  async executeFunctionCall(message: string, modelId: string, functions: any[]): Promise<AIResponse> {
+  async executeFunctionCall(
+    message: string, 
+    modelId: string, 
+    functions: GrokFunction[]
+  ): Promise<AIResponse> {
     try {
       const request = {
         model: modelId,

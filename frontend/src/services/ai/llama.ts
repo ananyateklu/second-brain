@@ -6,7 +6,17 @@ import { AI_MODELS } from './models';
 export class LlamaService {
   private isEnabled = true;
 
-  async sendMessage(message: string, modelId: string): Promise<AIResponse> {
+  async sendMessage(
+    message: string, 
+    modelId: string,
+    parameters?: {
+      max_tokens?: number;
+      temperature?: number;
+      top_p?: number;
+      frequency_penalty?: number;
+      presence_penalty?: number;
+    }
+  ): Promise<AIResponse> {
     try {
       const messageId = Date.now().toString();
       let finalContent = '';
@@ -18,8 +28,19 @@ export class LlamaService {
         return this.executeDatabaseOperation(message, messageId, modelId);
       }
 
+      // Build query parameters including the model parameters
+      const queryParams = new URLSearchParams({
+        prompt: message,
+        modelId: modelId,
+        ...(parameters?.max_tokens && { max_tokens: parameters.max_tokens.toString() }),
+        ...(parameters?.temperature !== undefined && { temperature: parameters.temperature.toString() }),
+        ...(parameters?.top_p !== undefined && { top_p: parameters.top_p.toString() }),
+        ...(parameters?.frequency_penalty !== undefined && { frequency_penalty: parameters.frequency_penalty.toString() }),
+        ...(parameters?.presence_penalty !== undefined && { presence_penalty: parameters.presence_penalty.toString() })
+      });
+
       const eventSource = new EventSource(
-        `${api.defaults.baseURL}/api/llama/stream?prompt=${encodeURIComponent(message)}&modelId=${modelId}`
+        `${api.defaults.baseURL}/api/llama/stream?${queryParams.toString()}`
       );
 
       return new Promise((resolve, reject) => {
@@ -38,7 +59,8 @@ export class LlamaService {
                 finalContent += data.Content;
               }
             }
-          } catch (_error) {
+          } catch (error) {
+            console.log('Error parsing event data:', error);
             console.log('Raw event data:', event.data);
             if (!event.data.includes('"Type":"step"')) {
               finalContent += event.data;
@@ -46,14 +68,15 @@ export class LlamaService {
           }
         };
 
-        eventSource.onerror = (_error) => {
+        eventSource.onerror = () => {
           eventSource.close();
           if (finalContent) {
             resolve({
               content: finalContent.trim(),
               type: 'text',
               metadata: {
-                model: modelId
+                model: modelId,
+                parameters: parameters // Include the parameters in metadata
               }
             });
           } else {
@@ -67,7 +90,8 @@ export class LlamaService {
             content: finalContent.trim(),
             type: 'text',
             metadata: {
-              model: modelId
+              model: modelId,
+              parameters: parameters // Include the parameters in metadata
             }
           });
         });

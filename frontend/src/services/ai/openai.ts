@@ -22,7 +22,17 @@ export class OpenAIService {
     }
   }
 
-  async sendMessage(message: string, modelId: string): Promise<AIResponse> {
+  async sendMessage(
+    message: string, 
+    modelId: string,
+    parameters?: {
+      max_tokens?: number;
+      temperature?: number;
+      top_p?: number;
+      frequency_penalty?: number;
+      presence_penalty?: number;
+    }
+  ): Promise<AIResponse> {
     try {
       const model = this.getModels().find(m => m.id === modelId);
       if (!model) {
@@ -33,7 +43,8 @@ export class OpenAIService {
         case 'chat': {
           const response = await api.post('/api/ai/openai/chat', {
             model: modelId,
-            messages: [{ role: 'user', content: message }]
+            messages: [{ role: 'user', content: message }],
+            ...parameters
           });
           return {
             content: response.data.choices[0].message.content,

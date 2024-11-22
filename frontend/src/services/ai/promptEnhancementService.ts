@@ -1,4 +1,4 @@
-import { AIService } from './index';
+import { AIService } from '../aiService';
 
 export class PromptEnhancementService {
   private aiService: AIService;
