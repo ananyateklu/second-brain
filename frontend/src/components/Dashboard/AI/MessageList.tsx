@@ -1,22 +1,8 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { AIMessage } from './AIMessage';
 import { EmptyState } from './EmptyState';
-import { AIModel, ExecutionStep } from '../../../types/ai';
-
-// Define a complete Message interface here
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string | Blob;
-  type: 'text' | 'image' | 'audio' | 'embedding' | 'code' | 'function';
-  timestamp: string;
-  model?: AIModel;
-  isLoading?: boolean;
-  executionSteps?: ExecutionStep[];
-  language?: string;
-  transcription?: string;
-  progress?: number;
-}
+import { AIModel } from '../../../types/ai';
+import { Message } from '../../../types/message'; // Import Message interface
 
 interface MessageListProps {
   messages: Message[];
@@ -26,20 +12,14 @@ interface MessageListProps {
   selectedModel: AIModel | null;
 }
 
-export function MessageList({
-  messages,
-  isLoading,
-  messagesEndRef,
-  themeColor,
-  selectedModel,
-}: MessageListProps) {
+export function MessageList(props: MessageListProps) {
   // Add state to track if user has manually scrolled
   const [userHasScrolled, setUserHasScrolled] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Handle scroll events
   const handleScroll = () => {
-    if (!isLoading) {
+    if (!props.isLoading) {
       const container = scrollContainerRef.current;
       if (!container) return;
 
@@ -53,18 +33,18 @@ export function MessageList({
     const container = scrollContainerRef.current;
     if (!container) return;
 
-    const shouldAutoScroll = isLoading || !userHasScrolled;
+    const shouldAutoScroll = props.isLoading || !userHasScrolled;
     if (shouldAutoScroll) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      props.messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, isLoading, userHasScrolled]);
+  }, [props.messages, props.isLoading, userHasScrolled]);
 
   // Reset userHasScrolled when loading starts
   useEffect(() => {
-    if (isLoading) {
+    if (props.isLoading) {
       setUserHasScrolled(false);
     }
-  }, [isLoading]);
+  }, [props.isLoading]);
 
   // Group messages by date and consecutive sender
   const groupedMessages = useMemo(() => {
@@ -72,8 +52,8 @@ export function MessageList({
     let currentGroup: Message[] = [];
     let currentGroupId = '';
     
-    messages.forEach((message, index) => {
-      const prevMessage = messages[index - 1];
+    props.messages.forEach((message, index) => {
+      const prevMessage = props.messages[index - 1];
       
       if (
         !prevMessage ||
@@ -96,14 +76,14 @@ export function MessageList({
     }
     
     return groups;
-  }, [messages]);
+  }, [props.messages]);
 
   return (
     <div className="h-full relative">
-      {messages.length === 0 ? (
+      {props.messages.length === 0 ? (
         <EmptyState 
-          selectedModel={selectedModel} 
-          themeColor={themeColor} 
+          selectedModel={props.selectedModel} 
+          themeColor={props.themeColor} 
         />
       ) : (
         <div 
@@ -134,8 +114,8 @@ export function MessageList({
                     <AIMessage
                       key={`${message.id}-${index}`}
                       message={message}
-                      themeColor={themeColor}
-                      isStreaming={isLoading && message.role === 'assistant'}
+                      themeColor={props.themeColor}
+                      isStreaming={props.isLoading && message.role === 'assistant'}
                       isFirstInGroup={index === 0}
                       isLastInGroup={index === group.length - 1}
                     />
@@ -144,7 +124,7 @@ export function MessageList({
               </div>
             );
           })}
-          <div ref={messagesEndRef} />
+          <div ref={props.messagesEndRef} />
         </div>
       )}
     </div>

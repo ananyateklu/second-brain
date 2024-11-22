@@ -2,7 +2,8 @@ import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bot, Settings } from 'lucide-react';
 import { useAI } from '../../../contexts/AIContext';
-import { AIModel, ExecutionStep } from '../../../types/ai';
+import { AIModel } from '../../../types/ai';
+import { Message } from '../../../types/message'; // Import Message interface
 import { ModelSelector } from './ModelSelector';
 import { ChatInterface } from './ChatInterface';
 import { MessageList } from './MessageList';
@@ -10,19 +11,6 @@ import { AudioInterface } from './AudioInterface';
 import { ImageInterface } from './ImageInterface';
 import { FunctionInterface } from './FunctionInterface';
 import { RAGInterface } from './RAGInterface';
-
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string | Blob;
-  type: 'text' | 'image' | 'audio' | 'embedding' | 'code';
-  timestamp: string;
-  model?: AIModel;
-  isLoading?: boolean;
-  executionSteps?: ExecutionStep[];
-  language?: string;
-  transcription?: string;
-}
 
 export function AIAssistantPage() {
   const navigate = useNavigate();

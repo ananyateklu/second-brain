@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bot, Wand2, Hash, Music } from 'lucide-react';
+import { Bot, Hash, Music } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface LoadingContentProps {

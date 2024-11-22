@@ -2,18 +2,25 @@ import { AIModel, ExecutionStep } from './ai';
 
 export interface Message {
   id: string;
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'system' | 'function';
   content: string | Blob | File;
-  metadata?: ImageMetadata;
   type: 'text' | 'image' | 'audio' | 'embedding' | 'code' | 'function';
   timestamp: string;
   model?: AIModel;
   isLoading?: boolean;
+  isStreaming?: boolean;
   executionSteps?: ExecutionStep[];
   language?: string;
+  transcription?: string;
   inputText?: string;
   progress?: number;
-} 
+  metadata?: ImageMetadata | Record<string, unknown>;
+  functionCall?: {
+    name: string;
+    arguments: Record<string, unknown>;
+    result?: string;
+  };
+}
 
 export interface ImageMetadata {
   model: string;
