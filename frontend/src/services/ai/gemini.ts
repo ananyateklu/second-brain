@@ -47,13 +47,13 @@ export class GeminiService {
           parameters: parameters // Include the parameters in metadata for debugging
         }
       };
-    } catch (error: any) {
-      this.handleError(error);
+    } catch (error: unknown) {
+      this.handleError(error as Error);
       throw error;
     }
   }
 
-  private handleError(error: any): never {
+  private handleError(error: Error): never {
     console.error('Gemini Error:', error);
     throw new Error(error?.message || 'An unexpected error occurred');
   }

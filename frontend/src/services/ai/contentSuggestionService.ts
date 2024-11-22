@@ -154,10 +154,11 @@ export class ContentSuggestionService {
       priority?: string;
     }
   ): string {
-    const promptTemplate =
-      PROMPT_CONFIG.title[type][this.provider];
+    const promptTemplate = PROMPT_CONFIG.title[type][this.provider];
+    const contextInfo = context ? this.buildContext(context) : '';
     const replacements: Record<string, string> = {
       content,
+      context: contextInfo,
     };
     return this.replacePlaceholders(promptTemplate, replacements);
   }
@@ -175,8 +176,7 @@ export class ContentSuggestionService {
       priority?: string;
     }
   ): string {
-    const promptTemplate =
-      PROMPT_CONFIG.content[type][this.provider];
+    const promptTemplate = PROMPT_CONFIG.content[type][this.provider];
     const contextInfo = context ? this.buildContext(context) : '';
     const replacements: Record<string, string> = {
       title,

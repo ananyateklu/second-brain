@@ -73,7 +73,7 @@ namespace SecondBrain.Api.Controllers
             {
                 var testRequest = new SendMessageRequest
                 {
-                    Model = "claude-3-5-sonnet-20241022",
+                    Model = "claude-3-5-haiku-20241022",
                     MaxTokens = 1024,
                     Messages = new List<Message>
                     {

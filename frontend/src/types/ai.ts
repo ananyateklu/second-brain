@@ -43,6 +43,8 @@ export interface AIResponse {
     model?: string;
     prompt?: string;
     revised_prompt?: string;
+    context?: AccumulatedContext;
+    toolResults?: AnthropicToolResult[];
     parameters?: Record<string, unknown>;
     toolCalls?: Record<string, unknown>[];
     usage?: {
@@ -57,23 +59,6 @@ interface ContentBlock {
   text?: string;
   url?: string;
   // Add other properties as needed
-}
-
-export interface AIFunction {
-  type: 'function';
-  function: {
-    name: string;
-    description: string;
-    parameters: {
-      type: string;
-      properties: Record<string, {
-        type: string;
-        description: string;
-        exampleValue: string;
-      }>;
-      required: string[];
-    };
-  };
 }
 
 export interface GrokFunction {
@@ -91,4 +76,52 @@ export interface GrokFunction {
       required: string[];
     };
   };
+}
+
+// Anthropic-specific interfaces
+export interface AnthropicToolResult {
+  type: 'tool_result';
+  tool_use_id: string;
+  content: unknown;
+  is_error?: boolean;
+}
+
+export interface AnthropicToolUse {
+  type: 'tool_use';
+  id: string;
+  name: string;
+  input: Record<string, unknown>;
+}
+
+export interface AnthropicContentBlock {
+  type: 'text' | 'tool_use' | 'tool_result';
+  text?: string;
+  id?: string;
+  name?: string;
+  input?: Record<string, unknown>;
+  tool_use_id?: string;
+  content?: unknown;
+  is_error?: boolean;
+}
+
+export interface AnthropicResponse {
+  id: string;
+  content: AnthropicContentBlock[];
+  usage: {
+    input_tokens: number;
+    output_tokens: number;
+  };
+}
+
+export interface AnthropicGeneratedFields {
+  title?: string;
+  content?: string;
+  tags?: string[];
+  [key: string]: unknown; // Allow for additional dynamic fields
+}
+
+export interface AccumulatedContext {
+  title: string;
+  content: string;
+  tags: string[];
 }
