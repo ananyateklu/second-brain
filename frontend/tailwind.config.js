@@ -100,6 +100,7 @@ export default {
         'spin': 'spin 1s linear infinite',
         'pulse-ring': 'pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'float': 'float 6s ease-in-out infinite',
+        'spin-slow': 'spin 2s linear infinite',
       }
     },
   },

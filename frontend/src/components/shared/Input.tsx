@@ -173,7 +173,11 @@ export function Input({
                   `}
                 >
                   <Wand2 
-                    className={`h-4 w-4 ${isEnhancing ? 'animate-pulse' : ''}`} 
+                    className={`h-4 w-4 ${
+                      isEnhancing 
+                        ? 'animate-spin-slow transition-transform duration-700' 
+                        : 'transition-transform duration-200'
+                    }`} 
                   />
                 </motion.button>
               )}
