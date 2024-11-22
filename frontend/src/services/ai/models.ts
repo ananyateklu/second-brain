@@ -770,5 +770,15 @@ export const AI_MODELS: AIModel[] = [
       tpm: 60000,
       rpm: 45,
     },
+  },
+  {
+    id: 'rag-assistant',
+    name: 'Document Assistant',
+    provider: 'openai',
+    category: 'rag',
+    description: 'Upload and query documents using GPT-4',
+    isConfigured: true,
+    color: '#10B981',
+    endpoint: 'rag'
   }
 ];

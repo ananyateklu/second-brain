@@ -3,7 +3,7 @@ import { AIModel, ExecutionStep } from './ai';
 export interface Message {
   id: string;
   role: 'user' | 'assistant';
-  content: string | Blob;
+  content: string | Blob | File;
   metadata?: ImageMetadata;
   type: 'text' | 'image' | 'audio' | 'embedding' | 'code' | 'function';
   timestamp: string;

@@ -14,6 +14,11 @@ using SecondBrain.Api.Gamification;  // Updated namespace
 using SecondBrain.Api.DTOs.Nexus;
 using Microsoft.AspNetCore.SignalR;
 using SecondBrain.Api.Hubs;
+using OpenAI;
+using OpenAI.Assistants;
+using OpenAI.Files;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -144,6 +149,9 @@ builder.Services.AddHttpClient<IOpenAIService, OpenAIService>();
 
 // Register GeminiService
 builder.Services.AddHttpClient<IGeminiService, GeminiService>();
+
+// Register RAGService
+builder.Services.AddScoped<RAGService>();
 
 var app = builder.Build();
 

@@ -9,6 +9,7 @@ import { MessageList } from './MessageList';
 import { AudioInterface } from './AudioInterface';
 import { ImageInterface } from './ImageInterface';
 import { FunctionInterface } from './FunctionInterface';
+import { RAGInterface } from './RAGInterface';
 
 interface Message {
   id: string;
@@ -53,7 +54,15 @@ export function AIAssistantPage() {
   };
 
   const addMessage = (message: Message) => {
-    setMessages((prevMessages) => [...prevMessages, message]);
+    setMessages((prev) => [...prev, message]);
+  };
+
+  const updateMessage = (messageId: string, updatedMessage: Partial<Message>) => {
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg.id === messageId ? { ...msg, ...updatedMessage } : msg
+      )
+    );
   };
 
   const handleUserInput = async (input: string) => {
@@ -117,14 +126,6 @@ export function AIAssistantPage() {
     }
   };
 
-  const updateMessage = (messageId: string, updates: Partial<Message>) => {
-    setMessages(prevMessages =>
-      prevMessages.map(msg =>
-        msg.id === messageId ? { ...msg, ...updates } : msg
-      )
-    );
-  };
-
   const handleDetailsToggle = (isOpen: boolean) => {
     setShowModelDetails(isOpen);
   };
@@ -175,8 +176,7 @@ export function AIAssistantPage() {
       <div className="h-full grid grid-rows-[minmax(0,auto),1fr,auto] max-w-full overflow-hidden">
         {/* Model Selection */}
         <div className={`backdrop-blur-sm bg-white/30 dark:bg-gray-800/30 
-          border border-gray-200/30 dark:border-gray-700/30 
-          shadow-lg rounded-xl mb-4
+          border shadow-lg rounded-xl mb-4
           transition-all duration-200 ease-in-out
           flex items-center justify-center
           ${showModelDetails
@@ -185,8 +185,13 @@ export function AIAssistantPage() {
               ? 'max-h-[80px]'
               : 'max-h-[25vh]'
           }`}
+          style={{
+            borderColor: selectedModel ? `${selectedModel.color}30` : 'rgb(229 231 235 / 0.3)',
+            boxShadow: selectedModel 
+              ? `0 4px 6px -1px ${selectedModel.color}10, 0 2px 4px -2px ${selectedModel.color}10` 
+              : '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)'
+          }}
         >
-
           <ModelSelector
             models={availableModels}
             selectedModel={selectedModel}
@@ -197,13 +202,19 @@ export function AIAssistantPage() {
             showModelSelector={showModelSelector}
             setShowModelSelector={setShowModelSelector}
           />
-
         </div>
 
         {/* Messages Container */}
-        <div className="min-h-0 backdrop-blur-sm bg-white/30 
-          dark:bg-gray-800/30 border border-gray-200/30 
-          dark:border-gray-700/30 shadow-lg rounded-xl mb-4">
+        <div 
+          className="min-h-0 backdrop-blur-sm bg-white/30 
+            dark:bg-gray-800/30 border shadow-lg rounded-xl mb-4"
+          style={{
+            borderColor: selectedModel ? `${selectedModel.color}30` : 'rgb(229 231 235 / 0.3)',
+            boxShadow: selectedModel 
+              ? `0 4px 6px -1px ${selectedModel.color}10, 0 2px 4px -2px ${selectedModel.color}10` 
+              : undefined
+          }}
+        >
           <MessageList
             messages={messages}
             isLoading={isLoading}
@@ -225,8 +236,14 @@ export function AIAssistantPage() {
           )}
 
           <div className="backdrop-blur-sm bg-white/30 dark:bg-gray-800/30 
-            border border-gray-200/30 dark:border-gray-700/30 
-            shadow-lg p-4 rounded-xl">
+            border shadow-lg p-4 rounded-xl"
+            style={{
+              borderColor: selectedModel ? `${selectedModel.color}30` : 'rgb(229 231 235 / 0.3)',
+              boxShadow: selectedModel 
+                ? `0 4px 6px -1px ${selectedModel.color}10, 0 2px 4px -2px ${selectedModel.color}10` 
+                : undefined
+            }}
+          >
             {selectedModel ? (
               <>
                 {selectedModel.category === 'function' ? (
@@ -243,6 +260,12 @@ export function AIAssistantPage() {
                     isLoading={isLoading}
                     setIsLoading={setIsLoading}
                     setError={setError}
+                  />
+                ) : selectedModel.category === 'rag' ? (
+                  <RAGInterface
+                    addMessage={addMessage}
+                    updateMessage={updateMessage}
+                    themeColor={themeColor}
                   />
                 ) : selectedModel.category === 'audio' ? (
                   <ChatInterface

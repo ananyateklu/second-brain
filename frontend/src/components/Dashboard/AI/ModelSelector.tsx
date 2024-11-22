@@ -116,14 +116,18 @@ export function ModelSelector({
           <div className="w-full h-full relative">
             <motion.div
               className={`w-full h-full rounded-xl backdrop-blur-md 
-                border border-gray-200/30 dark:border-gray-700/30
-                transition-all py-2.5 px-4
-                ${isHovered ? 'shadow-lg shadow-primary-500/10' : 'shadow-md'}`}
+                border transition-all py-2.5 px-4
+                ${isHovered ? 'shadow-lg' : 'shadow-md'}`}
               onHoverStart={() => setIsHovered(true)}
               onHoverEnd={() => setIsHovered(false)}
               animate={{
                 scale: isHovered ? 1.000 : 1,
-                borderColor: isHovered ? `${selectedModel.color}50` : 'rgba(229, 231, 235, 0.3)'
+                borderColor: isHovered 
+                  ? 'rgba(229, 231, 235, 0.3)' 
+                  : `${selectedModel.color}30`,
+                boxShadow: isHovered
+                  ? `0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)`
+                  : `0 4px 6px -1px ${selectedModel.color}10, 0 2px 4px -2px ${selectedModel.color}10`
               }}
               transition={{
                 duration: 0.2,
