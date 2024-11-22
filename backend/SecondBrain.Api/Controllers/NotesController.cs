@@ -6,6 +6,7 @@ using SecondBrain.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using SecondBrain.Api.Gamification;
+using System.Text.Json;
 
 namespace SecondBrain.Api.Controllers
 {
@@ -91,8 +92,8 @@ namespace SecondBrain.Api.Controllers
                     Id = note.Id,
                     Title = note.Title,
                     Content = note.Content,
-                    Tags = !string.IsNullOrEmpty(note.Tags) 
-                        ? note.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList() 
+                    Tags = !string.IsNullOrEmpty(note.Tags)
+                        ? note.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList()
                         : new List<string>(),
                     IsPinned = note.IsPinned,
                     IsFavorite = note.IsFavorite,
@@ -199,7 +200,7 @@ namespace SecondBrain.Api.Controllers
 
             // Check if link already exists
             var existingLink = await _context.NoteLinks
-                .AnyAsync(nl => 
+                .AnyAsync(nl =>
                     (nl.NoteId == id && nl.LinkedNoteId == request.TargetNoteId) ||
                     (nl.NoteId == request.TargetNoteId && nl.LinkedNoteId == id));
 
@@ -241,7 +242,8 @@ namespace SecondBrain.Api.Controllers
                 })
                 .ToListAsync();
 
-            return Ok(new { 
+            return Ok(new
+            {
                 sourceNote = updatedNotes.First(n => n.Id == id),
                 targetNote = updatedNotes.First(n => n.Id == request.TargetNoteId)
             });
@@ -325,19 +327,79 @@ namespace SecondBrain.Api.Controllers
                 return Unauthorized(new { error = "User ID not found in token." });
             }
 
+            // Find the note and include its links
             var note = await _context.Notes
-                .Where(n => n.Id == id && n.UserId == userId)
-                .FirstOrDefaultAsync();
+                .Include(n => n.NoteLinks)
+                    .ThenInclude(nl => nl.LinkedNote)
+                .FirstOrDefaultAsync(n => n.Id == id && n.UserId == userId);
 
             if (note == null)
             {
                 return NotFound(new { error = "Note not found." });
             }
 
-            _context.Notes.Remove(note);
-            await _context.SaveChangesAsync();
-            
-            return NoContent();
+            try
+            {
+                using var transaction = await _context.Database.BeginTransactionAsync();
+
+                try
+                {
+                    // 1. Track unlink activities only for the note being deleted
+                    foreach (var link in note.NoteLinks)
+                    {
+                        var linkedNote = link.LinkedNote;
+
+                        // Create single unlink activity from the perspective of the deleted note
+                        var unlinkActivity = new Activity
+                        {
+                            UserId = userId,
+                            ActionType = ActivityActionType.UNLINK.ToString(),
+                            ItemType = ActivityItemType.NOTELINK.ToString(),
+                            ItemId = note.Id,
+                            ItemTitle = note.Title,
+                            Description = $"Unlinked from '{linkedNote.Title}' (due to deletion)",
+                            MetadataJson = System.Text.Json.JsonSerializer.Serialize(new
+                            {
+                                sourceNoteId = note.Id,
+                                targetNoteId = linkedNote.Id,
+                                sourceNoteTitle = note.Title,
+                                targetNoteTitle = linkedNote.Title,
+                                reason = "deletion"
+                            })
+                        };
+
+                        _context.Activities.Add(unlinkActivity);
+                    }
+
+                    // 2. Remove all links
+                    var linkedNotes = await _context.NoteLinks
+                        .Where(nl => nl.NoteId == id || nl.LinkedNoteId == id)
+                        .ToListAsync();
+
+                    _context.NoteLinks.RemoveRange(linkedNotes);
+
+                    // 4. Delete the note itself
+                    _context.Notes.Remove(note);
+
+                    // 5. Save all changes
+                    await _context.SaveChangesAsync();
+
+                    // 6. Commit transaction
+                    await transaction.CommitAsync();
+
+                    return Ok(new { message = "Note permanently deleted" });
+                }
+                catch (Exception)
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to permanently delete note {NoteId}", id);
+                return StatusCode(500, new { error = "Failed to delete note permanently." });
+            }
         }
 
         [HttpPut("{id}")]
@@ -365,7 +427,7 @@ namespace SecondBrain.Api.Controllers
             if (request.IsPinned.HasValue) note.IsPinned = request.IsPinned.Value;
             if (request.IsFavorite.HasValue) note.IsFavorite = request.IsFavorite.Value;
             if (request.IsArchived.HasValue) note.IsArchived = request.IsArchived.Value;
-            if (request.IsDeleted.HasValue) 
+            if (request.IsDeleted.HasValue)
             {
                 note.IsDeleted = request.IsDeleted.Value;
                 note.DeletedAt = request.IsDeleted.Value ? DateTime.UtcNow : null;
@@ -412,8 +474,8 @@ namespace SecondBrain.Api.Controllers
                 Id = n.Id,
                 Title = n.Title,
                 Content = n.Content,
-                Tags = !string.IsNullOrEmpty(n.Tags) 
-                    ? n.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList() 
+                Tags = !string.IsNullOrEmpty(n.Tags)
+                    ? n.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList()
                     : new List<string>(),
                 IsPinned = n.IsPinned,
                 IsFavorite = n.IsFavorite,
