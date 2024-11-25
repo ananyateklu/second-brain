@@ -7,18 +7,9 @@ using SecondBrain.Data;
 using Microsoft.EntityFrameworkCore;
 using SecondBrain.Api.Services;
 using SecondBrain.Api.Configuration;
-using Microsoft.Extensions.Options;
 using System.Text.Json;
-using SecondBrain.Services.Gamification;
-using SecondBrain.Api.Gamification;  // Updated namespace
-using SecondBrain.Api.DTOs.Nexus;
-using Microsoft.AspNetCore.SignalR;
+using SecondBrain.Api.Gamification;
 using SecondBrain.Api.Hubs;
-using OpenAI;
-using OpenAI.Assistants;
-using OpenAI.Files;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
 
