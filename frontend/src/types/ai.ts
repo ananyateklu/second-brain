@@ -15,6 +15,7 @@ export interface AIModel {
   category: 'chat' | 'completion' | 'embedding' | 'image' | 'audio' | 'function' | 'rag';
   description: string;
   isConfigured: boolean;
+  isReasoner: boolean;
   color: string;
   endpoint: 'chat' | 'completions' | 'images' | 'audio' | 'embeddings' | 'rag';
   rateLimits?: RateLimits;

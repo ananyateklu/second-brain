@@ -9,6 +9,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'Most capable base GPT-4 model',
     isConfigured: true,
+    isReasoner: false,
     color: '#3B7443',
     endpoint: 'chat',
     rateLimits: {
@@ -26,6 +27,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'Enhanced GPT-4 with higher rate limits',
     isConfigured: true,
+    isReasoner: false,
     color: '#3B7443',
     endpoint: 'chat',
     rateLimits: {
@@ -42,6 +44,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'Optimized version of GPT-4',
     isConfigured: true,
+    isReasoner: false,
     color: '#3B7443',
     endpoint: 'chat',
     rateLimits: {
@@ -58,6 +61,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'Lightweight GPT-4 with higher token limits',
     isConfigured: true,
+    isReasoner: false,
     color: '#3B7443',
     endpoint: 'chat',
     rateLimits: {
@@ -75,6 +79,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'Fast and cost-effective chat model',
     isConfigured: true,
+    isReasoner: false,
     color: '#3B7443',
     endpoint: 'chat',
     rateLimits: {
@@ -93,6 +98,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'embedding',
     description: 'Efficient text embedding generation',
     isConfigured: true,
+    isReasoner: false,
     color: '#3B7443',
     endpoint: 'embeddings',
     rateLimits: {
@@ -110,6 +116,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'image',
     description: 'Advanced image generation',
     isConfigured: true,
+    isReasoner: false,
     color: '#3B7443',
     endpoint: 'images',
     rateLimits: {
@@ -126,6 +133,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'audio',
     description: 'Speech to text transcription',
     isConfigured: true,
+    isReasoner: false,
     color: '#3B7443',
     endpoint: 'audio',
     rateLimits: {
@@ -140,6 +148,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'audio',
     description: 'Text to speech conversion',
     isConfigured: true,
+    isReasoner: false,
     color: '#3B7443',
     endpoint: 'audio',
     rateLimits: {
@@ -155,6 +164,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'Most intelligent model with high capability and fast response times',
     isConfigured: true,
+    isReasoner: false,
     color: '#F97316',
     endpoint: 'chat',
     rateLimits: {
@@ -172,6 +182,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'Fastest model with high intelligence and quick response times',
     isConfigured: true,
+    isReasoner: false,
     color: '#F97316',
     endpoint: 'chat',
     rateLimits: {
@@ -189,6 +200,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'Most powerful model for highly complex tasks with top-level intelligence and understanding',
     isConfigured: true,
+    isReasoner: false,
     color: '#F97316',
     endpoint: 'chat',
     rateLimits: {
@@ -206,6 +218,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'Balanced model optimized for production deployments with strong utility',
     isConfigured: true,
+    isReasoner: false,
     color: '#F97316',
     endpoint: 'chat',
     rateLimits: {
@@ -223,6 +236,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'Fastest and most compact model for near-instant responsiveness',
     isConfigured: true,
+    isReasoner: false,
     color: '#F97316',
     endpoint: 'chat',
     rateLimits: {
@@ -235,12 +249,31 @@ export const AI_MODELS: AIModel[] = [
   },
   // Llama Models (Colored Blue)
   {
+    id: 'marco-o1',
+    name: 'Marco O1',
+    provider: 'llama',
+    category: 'chat',
+    description: "An open large reasoning model for real-world solutions by the Alibaba International Digital Commerce Group (AIDC-AI).",
+    isConfigured: true,
+    isReasoner: true,
+    color: '#8B5CF6',
+    endpoint: 'chat',
+    size: '7.62B',
+    rateLimits: {
+      tpm: 60000,
+      rpm: 35,
+      maxInputTokens: 128000,
+      maxOutputTokens: 4096,
+    },
+  },
+  {
     id: 'llama3.1:8b',
     name: 'Llama 3.1',
     provider: 'llama',
     category: 'chat',
     description: "Llama 3.1 - Meta's latest 8b parameter model",
     isConfigured: true,
+    isReasoner: false,
     color: '#8B5CF6',
     endpoint: 'chat',
     size: '8B',
@@ -258,6 +291,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: "Llama 3.2 - Meta's latest 3b parameter model",
     isConfigured: true,
+    isReasoner: false,
     color: '#8B5CF6',
     endpoint: 'chat',
     size: '3B',
@@ -275,6 +309,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'An open-source Mixture-of-Experts code language model that achieves performance comparable to GPT4-Turbo in code-specific tasks.',
     isConfigured: true,
+    isReasoner: false,
     color: '#8B5CF6',
     endpoint: 'chat',
     rateLimits: {
@@ -292,6 +327,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'A commercial-friendly small language model by NVIDIA optimized for roleplay, RAG QA, and function calling.',
     isConfigured: true,
+    isReasoner: false,
     color: '#8B5CF6',
     endpoint: 'chat',
     rateLimits: {
@@ -308,6 +344,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'A commercial-friendly small language model by NVIDIA optimized for roleplay, RAG QA, and function calling.',
     isConfigured: true,
+    isReasoner: false,
     color: '#8B5CF6',
     endpoint: 'chat',
     rateLimits: {
@@ -324,6 +361,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'A state-of-the-art 12B model with 128k context length, built by Mistral AI in collaboration with NVIDIA.',
     isConfigured: true,
+    isReasoner: false,
     color: '#8B5CF6',
     endpoint: 'chat',
     rateLimits: {
@@ -340,6 +378,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: "Orca 2 is built by Microsoft research, and are a fine-tuned version of Meta's Llama 2 models. The model is designed to excel particularly in reasoning.",
     isConfigured: true,
+    isReasoner: false,
     color: '#8B5CF6',
     endpoint: 'chat',
     rateLimits: {
@@ -356,6 +395,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'A companion assistant trained in philosophy, psychology, and personal relationships. Based on Mistral.',
     isConfigured: true,
+    isReasoner: false,
     color: '#8B5CF6',
     endpoint: 'chat',
     rateLimits: {
@@ -372,6 +412,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'function',
     description: 'Nexus Raven is a model designed to excel in function calling, and is optimized for tool calling.',
     isConfigured: true,
+    isReasoner: false,
     color: '#8B5CF6',
     endpoint: 'chat',
     rateLimits: {
@@ -388,6 +429,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'The IBM Granite 2B and 8B models are designed to support tool-based use cases and support for retrieval augmented generation (RAG), streamlining code generation, translation and bug fixing.',
     isConfigured: true,
+    isReasoner: false,
     color: '#8B5CF6',
     endpoint: 'chat',
     rateLimits: {
@@ -405,6 +447,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'The IBM Granite 1B and 3B models are the first mixture of experts (MoE) Granite models from IBM designed for low latency usage.',
     isConfigured: true,
+    isReasoner: false,
     color: '#8B5CF6',
     endpoint: 'chat',
     rateLimits: {
@@ -421,6 +464,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'The latest series of Code-Specific Qwen models, with significant improvements in code generation, code reasoning, and code fixing.',
     isConfigured: true,
+    isReasoner: false,
     color: '#8B5CF6',
     endpoint: 'chat',
     size: '3B',
@@ -438,6 +482,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'The latest series of Code-Specific Qwen models, with significant improvements in code generation, code reasoning, and code fixing.',
     isConfigured: true,
+    isReasoner: false,
     color: '#8B5CF6',
     endpoint: 'chat',
     size: '14B',
@@ -455,6 +500,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'The latest series of Code-Specific Qwen models, with significant improvements in code generation, code reasoning, and code fixing.',
     isConfigured: true,
+    isReasoner: false,
     color: '#8B5CF6',
     endpoint: 'chat',
     size: '32B',
@@ -472,6 +518,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'function',
     description: 'The latest series of Code-Specific Qwen models, with significant improvements in code generation, code reasoning, and code fixing.',
     isConfigured: true,
+    isReasoner: false,
     color: '#8B5CF6',
     endpoint: 'chat',
   },
@@ -482,6 +529,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'function',
     description: 'The latest series of Code-Specific Qwen models, with significant improvements in code generation, code reasoning, and code fixing.',
     isConfigured: true,
+    isReasoner: false,
     color: '#8B5CF6',
     endpoint: 'chat',
   },
@@ -492,6 +540,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'function',
     description: 'The latest series of Code-Specific Qwen models, with significant improvements in code generation, code reasoning, and code fixing.',
     isConfigured: true,
+    isReasoner: false,
     color: '#8B5CF6',
     endpoint: 'chat',
   },
@@ -502,6 +551,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'A lightweight AI model with 3.8 billion parameters with performance overtaking similarly and larger sized models.',
     isConfigured: true,
+    isReasoner: false,
     color: '#8B5CF6',
     endpoint: 'chat',
     size: '3.8B',
@@ -519,6 +569,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'Phi-3 is a family of lightweight 3B (Mini) and 14B (Medium) state-of-the-art open models by Microsoft.',
     isConfigured: true,
+    isReasoner: false,
     color: '#8B5CF6',
     endpoint: 'chat',
     size: '14B',
@@ -537,6 +588,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'Local Code Gemma model (7b parameters) from Google via Ollama',
     isConfigured: true,
+    isReasoner: false,
     color: '#8B5CF6',
     endpoint: 'chat',
     rateLimits: {
@@ -554,6 +606,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: "Gemma 2 - Google's latest 9b parameter model",
     isConfigured: true,
+    isReasoner: false,
     color: '#8B5CF6',
     endpoint: 'chat',
     size: '9B',
@@ -571,6 +624,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'Local Gemma 2 model (2b parameters) from Google via Ollama',
     isConfigured: true,
+    isReasoner: false,
     color: '#8B5CF6',
     endpoint: 'chat',
     size: '2B',
@@ -588,6 +642,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'OpenCoder is an open and reproducible code LLM family which includes 1.5B and 8B models, supporting both chat and fill-in-the-middle for English and Chinese languages.',
     isConfigured: true,
+    isReasoner: false,
     color: '#8B5CF6',
     endpoint: 'chat',
     size: '8B',
@@ -605,6 +660,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'OpenCoder is an open and reproducible code LLM family which includes 1.5B and 8B models, supporting both chat and fill-in-the-middle for English and Chinese languages.',
     isConfigured: true,
+    isReasoner: false,
     color: '#8B5CF6',
     endpoint: 'chat',
     size: '1.5B',
@@ -622,6 +678,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'Solar Pro Preview: an advanced language model (LLM) with 22 billion parameters designed to fit into a single GPU.',
     isConfigured: true,
+    isReasoner: false,
     color: '#8B5CF6',
     endpoint: 'chat',
     size: '22B',
@@ -639,6 +696,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'Athene-V2 is a 72B parameter model which excels at code completion, mathematics, and log extraction tasks.',
     isConfigured: true,
+    isReasoner: false,
     color: '#8B5CF6',
     endpoint: 'chat',
     size: '72B',
@@ -656,6 +714,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'Yi-Coder is a series of open-source code language models that delivers state-of-the-art coding performance with fewer than 10 billion parameters.',
     isConfigured: true,
+    isReasoner: false,
     color: '#8B5CF6',
     endpoint: 'chat',
     rateLimits: {
@@ -673,6 +732,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'embedding',
     description: 'State-of-the-art large embedding model from mixedbread.ai',
     isConfigured: true,
+    isReasoner: false,
     color: '#8B5CF6',
     endpoint: 'chat',
     size: '1.5B',
@@ -685,6 +745,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'Comparable performance to Grok 2 but with improved efficiency, speed and capabilities',
     isConfigured: true,
+    isReasoner: false,
     color: '#1DA1F2', // X/Twitter blue color
     endpoint: 'chat',
     rateLimits: {
@@ -695,14 +756,15 @@ export const AI_MODELS: AIModel[] = [
     },
     size: '314B',
   },
-   // Grok Models (Colored Blue)
-   {
+  // Grok Models (Colored Blue)
+  {
     id: 'grok-beta',
     name: 'Grok Beta',
     provider: 'grok',
     category: 'function',
     description: 'Comparable performance to Grok 2 but with improved efficiency, speed and capabilities',
     isConfigured: true,
+    isReasoner: false,
     color: '#1DA1F2', // X/Twitter blue color
     endpoint: 'chat',
     rateLimits: {
@@ -719,6 +781,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'Google Gemini 1.5 Pro model for complex reasoning tasks.',
     isConfigured: true,
+    isReasoner: false,
     color: '#4285F4',
     endpoint: 'chat',
     rateLimits: {
@@ -734,6 +797,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'Google Gemini 1.5 Flash model for chat and completion tasks.',
     isConfigured: true,
+    isReasoner: false,
     color: '#4285F4',
     endpoint: 'chat',
     rateLimits: {
@@ -749,6 +813,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'Google Gemini 1.5 Flash-8B model for high-volume tasks.',
     isConfigured: true,
+    isReasoner: false,
     color: '#4285F4',
     endpoint: 'chat',
     rateLimits: {
@@ -764,6 +829,7 @@ export const AI_MODELS: AIModel[] = [
     category: 'chat',
     description: 'Google Gemini 1.0 Pro model for text and code tasks.',
     isConfigured: true,
+    isReasoner: false,
     color: '#4285F4',
     endpoint: 'chat',
     rateLimits: {
@@ -778,7 +844,27 @@ export const AI_MODELS: AIModel[] = [
     category: 'rag',
     description: 'Upload and query documents using GPT-4',
     isConfigured: true,
+    isReasoner: false,
     color: '#10B981',
     endpoint: 'rag'
+  },
+  // Assistant Models
+  {
+    id: 'gpt-4-1106-preview',
+    name: 'GPT-4 Assistant',
+    provider: 'openai',
+    category: 'assistant',
+    description: 'Create and interact with AI assistants powered by GPT-4',
+    isConfigured: true,
+    isReasoner: false,
+    color: '#3B7443',
+    endpoint: 'chat',
+    rateLimits: {
+      tpm: 8000,
+      rpm: 500,
+      maxOutputTokens: 4096,
+      maxInputTokens: 128000,
+    },
+    size: '1.76T',
   }
 ];
