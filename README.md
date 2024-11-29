@@ -7,6 +7,10 @@ An AI-powered system to organize notes, ideas, tasks, and reminders with intelli
 - [Features](#features)
 - [Technical Stack](#technical-stack)
 - [Getting Started](#getting-started)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Frontend](#frontend)
+- [Backend](#backend)
 - [API Integration](#api-integration)
 - [Acknowledgments](#acknowledgments)
 - [Roadmap](#roadmap)
@@ -96,7 +100,69 @@ An AI-powered system to organize notes, ideas, tasks, and reminders with intelli
    cd ../backend/SecondBrain.Api
    ```
 
-2. **Update `appsettings.json` with your configuration.**
+2. **Configure `appsettings.json` with your settings.**
+
+   Here's a template for `appsettings.json`:
+
+   ```json:backend/SecondBrain.Api/appsettings.json
+   {
+     "Logging": {
+       "LogLevel": {
+         "Default": "Information",
+         "Microsoft.AspNetCore": "Warning"
+       }
+     },
+     "ConnectionStrings": {
+       "DefaultConnection": "Server=YOUR_SERVER;Database=SecondBrainDb;User Id=YOUR_USER_ID;Password=YOUR_PASSWORD;TrustServerCertificate=True;"
+     },
+     "Authentication": {
+       "Jwt": {
+         "Secret": "YOUR_SECRET_KEY",
+         "Issuer": "SecondBrain",
+         "Audience": "SecondBrain",
+         "AccessTokenExpirationMinutes": "60",
+         "RefreshTokenExpirationDays": "30"
+       }
+     },
+     "Anthropic": {
+       "ApiKey": "YOUR_ANTHROPIC_API_KEY",
+       "ApiEndpoint": "https://api.anthropic.com/v1"
+     },
+     "Llama": {
+       "OllamaUri": "http://localhost:11434/",
+       "NetworkSettings": {
+         "ConnectionTimeoutSeconds": 5,
+         "RetryAttempts": 3,
+         "RequireFirewallPermission": true
+       }
+     },
+     "OpenAI": {
+       "ApiKey": "YOUR_OPENAI_API_KEY",
+       "ApiEndpoint": "https://api.openai.com/v1",
+       "ModelId": "gpt-4"
+     },
+     "Gemini": {
+       "ApiKey": "YOUR_GOOGLE_GEMINI_API_KEY"
+     },
+     "Pinecone": {
+       "ApiKey": "YOUR_PINECONE_API_KEY",
+       "Environment": "YOUR_PINECONE_ENVIRONMENT",
+       "IndexName": "secondbrainindex"
+     },
+     "Storage": {
+       "DocumentsPath": "Storage/Documents"
+     },
+     "DocumentProcessing": {
+       "MaxTokensPerChunk": 500,
+       "OverlapTokens": 50
+     },
+     "AllowedHosts": "*"
+   }
+   ```
+
+   - Replace placeholders (`YOUR_SERVER`, `YOUR_USER_ID`, etc.) with your actual configuration settings.
+   - Generate a strong secret key for JWT authentication.
+   - Ensure all required API keys are provided.
 
 3. **Restore packages and run migrations:**
 
