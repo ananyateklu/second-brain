@@ -266,6 +266,25 @@ export const AI_MODELS: AIModel[] = [
       maxOutputTokens: 4096,
     },
   },
+  // Llama Models (Colored Blue)
+  {
+    id: 'qwq',
+    name: 'QwQ',
+    provider: 'llama',
+    category: 'chat',
+    description: "QwQ is an experimental research model focused on advancing AI reasoning capabilities.",
+    isConfigured: true,
+    isReasoner: true,
+    color: '#8B5CF6',
+    endpoint: 'chat',
+    size: '32.8B',
+    rateLimits: {
+      tpm: 60000,
+      rpm: 35,
+      maxInputTokens: 128000,
+      maxOutputTokens: 4096,
+    },
+  },
   {
     id: 'llama3.1:8b',
     name: 'Llama 3.1',
