@@ -870,9 +870,9 @@ export const AI_MODELS: AIModel[] = [
   // Assistant Models
   {
     id: 'gpt-4-1106-preview',
-    name: 'GPT-4 Assistant',
+    name: 'GPT-4 (preview)',
     provider: 'openai',
-    category: 'assistant',
+    category: 'chat',
     description: 'Create and interact with AI assistants powered by GPT-4',
     isConfigured: true,
     isReasoner: false,

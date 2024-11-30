@@ -128,6 +128,9 @@ An AI-powered system to organize notes, ideas, tasks, and reminders with intelli
        "ApiKey": "YOUR_ANTHROPIC_API_KEY",
        "ApiEndpoint": "https://api.anthropic.com/v1"
      },
+     "Grok": {
+       "ApiKey": "YOUR_GROK_API_KEY"
+     },
      "Llama": {
        "OllamaUri": "http://localhost:11434/",
        "NetworkSettings": {
