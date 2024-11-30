@@ -19,6 +19,7 @@ interface AIContextType {
   executionSteps: Record<string, ExecutionStep[]>;
   handleExecutionStep: (step: ExecutionStep) => void;
   transcribeAudio: (audioFile: File) => Promise<AIResponse>;
+  checkConfigurations: () => Promise<void>;
 }
 
 const AIContext = createContext<AIContextType | null>(null);
@@ -28,13 +29,6 @@ const aiService = new AIService();
 export function AIProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [isOpenAIConfigured, setIsOpenAIConfigured] = useState<boolean>(false);
-  useEffect(() => {
-    const checkOpenAIConfig = async () => {
-      const isConfigured = await aiService.isOpenAIConfigured();
-      setIsOpenAIConfigured(isConfigured);
-    };
-    checkOpenAIConfig();
-  }, []);
   const [isAnthropicConfigured, setIsAnthropicConfigured] = useState<boolean>(false);
   const [isGeminiConfigured, setIsGeminiConfigured] = useState<boolean>(aiService.isGeminiConfigured());
   const [isLlamaConfigured, setIsLlamaConfigured] = useState<boolean>(aiService.llama.isConfigured());
@@ -78,64 +72,49 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Add debug logging for all model configurations
-  useEffect(() => {
-    const checkAllConfigurations = async () => {
-      console.group('AI Model Configurations');
+  // Add new function to check configurations
+  const checkConfigurations = useCallback(async () => {
+    console.group('🤖 AI Model Configurations Check');
 
-      // OpenAI
-      try {
-        const openaiConfigured = await aiService.isOpenAIConfigured();
-        setIsOpenAIConfigured(openaiConfigured);
-      } catch (error) {
-        console.error('OpenAI configuration error:', error);
-        setIsOpenAIConfigured(false);
-      }
+    try {
+      const [openai, anthropic, grok] = await Promise.all([
+        aiService.isOpenAIConfigured(),
+        aiService.isAnthropicConfigured(),
+        aiService.grokService.checkConfiguration()
+      ]);
 
-      // Anthropic
-      try {
-        const anthropicConfigured = await aiService.isAnthropicConfigured();
-        console.log('Anthropic configured:', anthropicConfigured);
-        setIsAnthropicConfigured(anthropicConfigured);
-      } catch (error) {
-        console.error('Anthropic configuration error:', error);
-        setIsAnthropicConfigured(false);
-      }
+      // Log each configuration status
+      console.log('📊 Configuration Status:');
+      console.log('OpenAI:', openai ? '✅ Configured' : '❌ Not Configured');
+      console.log('Anthropic:', anthropic ? '✅ Configured' : '❌ Not Configured');
+      console.log('Grok:', grok ? '✅ Configured' : '❌ Not Configured');
 
-      // Gemini
-      try {
-        const geminiConfigured = aiService.isGeminiConfigured();
-        console.log('Gemini configured:', geminiConfigured);
-        setIsGeminiConfigured(geminiConfigured);
-      } catch (error) {
-        console.error('Gemini configuration error:', error);
-        setIsGeminiConfigured(false);
-      }
+      // These don't need async calls
+      const gemini = aiService.isGeminiConfigured();
+      const llama = aiService.llama.isConfigured();
+      console.log('Gemini:', gemini ? '✅ Configured' : '❌ Not Configured');
+      console.log('Llama:', llama ? '✅ Configured' : '❌ Not Configured');
 
-      // Llama
-      try {
-        const llamaConfigured = aiService.llama.isConfigured();
-        console.log('Llama configured:', llamaConfigured);
-        setIsLlamaConfigured(llamaConfigured);
-      } catch (error) {
-        console.error('Llama configuration error:', error);
-        setIsLlamaConfigured(false);
-      }
+      setIsOpenAIConfigured(openai);
+      setIsAnthropicConfigured(anthropic);
+      setIsGrokConfigured(grok);
+      setIsGeminiConfigured(gemini);
+      setIsLlamaConfigured(llama);
 
-      // Grok
-      try {
-        const grokConfigured = await aiService.grokService.checkConfiguration();
-        console.log('Grok configured:', grokConfigured);
-        setIsGrokConfigured(grokConfigured);
-      } catch (error) {
-        console.error('Grok configuration error:', error);
-        setIsGrokConfigured(false);
-      }
+      console.log('🔄 State Updated:', {
+        isOpenAIConfigured: openai,
+        isAnthropicConfigured: anthropic,
+        isGrokConfigured: grok,
+        isGeminiConfigured: gemini,
+        isLlamaConfigured: llama
+      });
 
-      console.groupEnd();
-    };
+    } catch (error) {
+      console.error('❌ Error checking configurations:', error);
+      console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace available');
+    }
 
-    checkAllConfigurations();
+    console.groupEnd();
   }, []);
 
   const configureGemini = useCallback(async () => {
@@ -282,8 +261,9 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
     llamaService: aiService.llama,
     executionSteps,
     handleExecutionStep,
-    transcribeAudio
-  }), [isOpenAIConfigured, isAnthropicConfigured, isGeminiConfigured, isLlamaConfigured, isGrokConfigured, error, sendMessage, configureGemini, availableModels, executionSteps, handleExecutionStep, transcribeAudio]);
+    transcribeAudio,
+    checkConfigurations
+  }), [isOpenAIConfigured, isAnthropicConfigured, isGeminiConfigured, isLlamaConfigured, isGrokConfigured, error, sendMessage, configureGemini, availableModels, executionSteps, handleExecutionStep, transcribeAudio, checkConfigurations]);
 
   return <AIContext.Provider value={value}>{children}</AIContext.Provider>;
 }

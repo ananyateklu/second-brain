@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bot, Settings2, AlertCircle, CheckCircle, Loader, Save } from 'lucide-react';
 import { useAI } from '../../../contexts/AIContext';
 
@@ -22,8 +22,21 @@ interface AISettingsSectionProps {
   onSave: (settings: AISettings) => Promise<void>;
 }
 
+// Add error interface
+interface SaveSettingsError {
+  message?: string;
+}
+
 export function AISettingsSection({ onSave }: AISettingsSectionProps) {
-  const { availableModels, isOpenAIConfigured, isGeminiConfigured, isLlamaConfigured } = useAI();
+  const { 
+    availableModels, 
+    isOpenAIConfigured, 
+    isAnthropicConfigured,
+    isGeminiConfigured, 
+    isLlamaConfigured,
+    isGrokConfigured,
+    checkConfigurations 
+  } = useAI();
   const [settings, setSettings] = useState<AISettings>({
     contentSuggestions: {
       provider: (localStorage.getItem('content_suggestions_provider') as 'openai' | 'anthropic' | 'gemini' | 'llama') || 'openai',
@@ -37,6 +50,24 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveResult, setSaveResult] = useState<TestResult | null>(null);
+
+  // Add state for configuration check status
+  const [isChecking, setIsChecking] = useState(false);
+
+  useEffect(() => {
+    setIsChecking(true);
+    checkConfigurations()
+      .finally(() => setIsChecking(false));
+  }, [checkConfigurations]);
+
+  // Configuration status cards
+  const configurationStatus = [
+    { name: 'OpenAI', isConfigured: isOpenAIConfigured, color: '#3B7443' },
+    { name: 'Anthropic', isConfigured: isAnthropicConfigured, color: '#F97316' },
+    { name: 'Gemini', isConfigured: isGeminiConfigured, color: '#4285F4' },
+    { name: 'Llama', isConfigured: isLlamaConfigured, color: '#8B5CF6' },
+    { name: 'Grok', isConfigured: isGrokConfigured, color: '#1DA1F2' }
+  ];
 
   // Filter models suitable for content generation
   const contentGenerationModels = availableModels.filter(model =>
@@ -93,27 +124,14 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
     try {
       await onSave(settings);
       setSaveResult({ success: true, message: 'Settings saved successfully!' });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to save settings:', error);
-      setSaveResult({ success: false, message: error?.message || 'Failed to save settings.' });
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save settings.';
+      setSaveResult({ success: false, message: errorMessage });
     } finally {
       setIsSaving(false);     
     }
   };
-
-  const inputClasses = `
-    w-full
-    pl-10 pr-4 py-2
-    bg-transparent
-    rounded-lg
-    text-gray-900 dark:text-white
-    placeholder-gray-500/70 dark:placeholder-gray-400/70
-    border border-gray-200/20 dark:border-gray-700/30
-    focus:ring-2
-    focus:ring-[#3B7443]/50
-    focus:border-transparent
-    transition-all duration-200
-  `;
 
   const selectClasses = `
     w-full
@@ -130,7 +148,12 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
     appearance-none
   `;
 
-  const iconClasses = "h-5 w-5 text-gray-600 dark:text-gray-300";
+  const iconWrapperClasses = `
+    absolute inset-y-0 left-0 pl-3 
+    flex items-center 
+    pointer-events-none
+    z-10
+  `;
 
   const buttonClasses = `
     flex items-center gap-2 
@@ -144,26 +167,101 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
     transition-colors
   `;
 
-  const iconButtonClasses = `
-    absolute inset-y-0 right-0 pr-3 
-    flex items-center 
-    text-gray-500 dark:text-gray-400 
-    hover:text-gray-700 dark:hover:text-gray-200
-    transition-colors
-  `;
-
-  const iconWrapperClasses = `
-    absolute inset-y-0 left-0 pl-3 
-    flex items-center 
-    pointer-events-none
-    z-10
-  `;
-
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
         <Bot className="w-6 h-6 text-[#3B7443]" />
         <h3 className="text-lg font-medium text-gray-900 dark:text-white">AI Settings</h3>
+      </div>
+
+      {/* Configuration Status Section */}
+      <div className="space-y-4">
+        <h4 className="text-base font-medium text-gray-900 dark:text-white">Configuration Status</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {configurationStatus.map(({ name, isConfigured, color }) => (
+            <div
+              key={name}
+              className="relative overflow-hidden group"
+            >
+              <div className={`
+                p-4 rounded-lg backdrop-blur-sm
+                bg-white/80 dark:bg-gray-800/80
+                border border-gray-200/30 dark:border-gray-700/30
+                transition-all duration-200
+                hover:shadow-lg
+                ${isConfigured ? 'hover:border-green-500/50' : 'hover:border-red-500/50'}
+              `}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`
+                      p-2 rounded-lg
+                      ${isConfigured ? 'bg-green-50 dark:bg-green-900/30' : 'bg-red-50 dark:bg-red-900/30'}
+                    `}>
+                      {isConfigured ? (
+                        <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+                      ) : (
+                        <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">{name}</p>
+                      <p className={`text-sm ${
+                        isConfigured 
+                          ? 'text-green-600 dark:text-green-400' 
+                          : 'text-red-600 dark:text-red-400'
+                      }`}>
+                        {isConfigured ? 'Configured' : 'Not Configured'}
+                      </p>
+                    </div>
+                  </div>
+                  <div 
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: color }}
+                  />
+                </div>
+              </div>
+              
+              {/* Gradient overlay */}
+              <div 
+                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
+                style={{
+                  background: `linear-gradient(135deg, ${color}10, transparent 50%)`
+                }}
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* Refresh button */}
+        <button
+          onClick={() => {
+            setIsChecking(true);
+            checkConfigurations().finally(() => setIsChecking(false));
+          }}
+          className={`
+            flex items-center gap-2 px-4 py-2 text-sm
+            text-gray-700 dark:text-gray-300
+            bg-white/50 dark:bg-gray-800/50
+            border border-gray-200/30 dark:border-gray-700/30
+            rounded-lg transition-all duration-200
+            hover:bg-white/80 dark:hover:bg-gray-800/80
+            ${isChecking ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-md'}
+          `}
+          disabled={isChecking}
+        >
+          <div className={`w-4 h-4 ${isChecking ? 'animate-spin' : ''}`}>
+            {isChecking ? (
+              <Loader className="w-4 h-4" />
+            ) : (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" 
+                />
+              </svg>
+            )}
+          </div>
+          {isChecking ? 'Checking...' : 'Refresh Status'}
+        </button>
       </div>
 
       {/* Content Suggestions Configuration */}
