@@ -241,7 +241,7 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
       console.log('[AIContext] Updating steps for message:', {
         messageId,
         steps: currentSteps,
-        isComplete: step.type === 'result'
+        isComplete: step.type === 4  // 4 is Result in ExecutionStepType
       });
 
       return {
@@ -258,7 +258,7 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
       const updatedMessage = {
         ...prev[index],
         executionSteps: [...(prev[index].executionSteps || []), step],
-        isStreaming: step.type !== 'result' // Set streaming false when we get result
+        isStreaming: step.type !== 4  // 4 is Result in ExecutionStepType
       };
 
       return [

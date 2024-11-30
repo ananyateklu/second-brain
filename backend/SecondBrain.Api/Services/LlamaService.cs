@@ -173,18 +173,24 @@ Note: Always use double quotes for string values and ""true"" or ""false"" for b
 
                 _logger.LogInformation("[LlamaService] Executing operation with model: {ModelId}", modelId);
 
-                // Extract user ID and emit initial step
+                // Extract user ID
                 var userIdMatch = Regex.Match(prompt, @"\[USER:([^\]]+)\]");
                 var userId = userIdMatch.Success ? userIdMatch.Groups[1].Value : "unknown";
 
                 // Initial processing step
-                await EmitExecutionStep("processing", $"Processing request with {modelId} for user: {userId}", new Dictionary<string, object>
-                {
-                    { "messageId", messageId },
-                    { "userId", userId },
-                    { "modelId", modelId },
-                    { "timestamp", DateTime.UtcNow.ToString("o") }
-                });
+                await EmitExecutionStep(
+                    ExecutionStepType.Processing,
+                    $"Processing request with {modelId} for user: {userId}",
+                    new Dictionary<string, object> {
+                        { "messageId", messageId },
+                        { "userId", userId },
+                        { "modelId", modelId },
+                        { "timestamp", DateTime.UtcNow.ToString("o") }
+                    }
+                );
+
+                // Emit processing sub-steps
+                await EmitProcessingSubSteps(messageId, userId, modelId);
 
                 // Choose appropriate system prompt based on model
                 var systemPromptToUse = modelId.StartsWith("qwen2.5-coder")
@@ -194,25 +200,35 @@ Note: Always use double quotes for string values and ""true"" or ""false"" for b
                 var fullPrompt = $"{systemPromptToUse}\n\nUser Input: {prompt}";
 
                 // Thinking step
-                await EmitExecutionStep("thinking", $"Model {modelId} analyzing request and determining required operation...", new Dictionary<string, object>
-                {
-                    { "messageId", messageId },
-                    { "modelId", modelId },
-                    { "timestamp", DateTime.UtcNow.ToString("o") }
-                });
+                await EmitExecutionStep(
+                    ExecutionStepType.Thinking,
+                    $"Model {modelId} analyzing request and determining required operation...",
+                    new Dictionary<string, object> {
+                        { "messageId", messageId },
+                        { "modelId", modelId },
+                        { "timestamp", DateTime.UtcNow.ToString("o") }
+                    }
+                );
 
-                string response = string.Empty;
+                // Emit thinking sub-steps
+                await EmitThinkingSubSteps(messageId, modelId);
 
-                response = await GenerateTextAsync(fullPrompt, modelId, numPredict);
+                string response = await GenerateTextAsync(fullPrompt, modelId, numPredict);
                 _logger.LogInformation("Raw model response: {Response}", response);
 
                 // Function call step
-                await EmitExecutionStep("function_call", $"Extracted operation from model response: {response}", new Dictionary<string, object>
-                {
-                    { "messageId", messageId },
-                    { "rawResponse", response },
-                    { "timestamp", DateTime.UtcNow.ToString("o") }
-                });
+                await EmitExecutionStep(
+                    ExecutionStepType.FunctionCall,
+                    $"Extracted operation from model response: {response}",
+                    new Dictionary<string, object> {
+                        { "messageId", messageId },
+                        { "rawResponse", response },
+                        { "timestamp", DateTime.UtcNow.ToString("o") }
+                    }
+                );
+
+                // Emit function call sub-steps
+                await EmitFunctionCallSubSteps(messageId, response);
 
                 // Try to parse as JSON first
                 try
@@ -223,69 +239,93 @@ Note: Always use double quotes for string values and ""true"" or ""false"" for b
                     if (jsonStart >= 0 && jsonEnd > jsonStart)
                     {
                         var jsonPart = response.Substring(jsonStart, jsonEnd - jsonStart + 1);
-                        var operation = JsonSerializer.Deserialize<DatabaseOperation>(jsonPart);
-                        if (operation != null)
+                        var parsedOperation = JsonSerializer.Deserialize<DatabaseOperation>(jsonPart);
+                        if (parsedOperation != null)
                         {
                             // Database operation step
-                            await EmitExecutionStep("database_operation", "Executing database operation...", new Dictionary<string, object>
-                            {
-                                { "messageId", messageId },
-                                { "operation", operation },
-                                { "timestamp", DateTime.UtcNow.ToString("o") }
-                            });
+                            await EmitExecutionStep(
+                                ExecutionStepType.DatabaseOperation,
+                                "Executing database operation...",
+                                new Dictionary<string, object> {
+                                    { "messageId", messageId },
+                                    { "operation", parsedOperation },
+                                    { "timestamp", DateTime.UtcNow.ToString("o") }
+                                }
+                            );
 
-                            operation.OriginalPrompt = prompt;
-                            var result = await ExecuteOperation(operation);
+                            // Emit database operation sub-steps
+                            await EmitDatabaseOperationSubSteps(messageId, parsedOperation);
+
+                            parsedOperation.OriginalPrompt = prompt;
+                            var result = await ExecuteOperation(parsedOperation);
 
                             // Result step
-                            await EmitExecutionStep("result", "Operation completed successfully", new Dictionary<string, object>
-                            {
-                                { "messageId", messageId },
-                                { "result", result },
-                                { "timestamp", DateTime.UtcNow.ToString("o") }
-                            });
+                            await EmitExecutionStep(
+                                ExecutionStepType.Result,
+                                "Operation completed successfully",
+                                new Dictionary<string, object> {
+                                    { "messageId", messageId },
+                                    { "result", result },
+                                    { "timestamp", DateTime.UtcNow.ToString("o") }
+                                }
+                            );
+
+                            // Emit result sub-steps
+                            await EmitResultSubSteps(messageId, result);
 
                             return result;
                         }
                     }
-                }
-                catch (JsonException)
-                {
-                    _logger.LogInformation("Response was not in JSON format, trying function call format");
-                }
 
-                // Try to parse as function call
-                var functionCall = ParseFunctionCall(response);
-                if (functionCall != null)
-                {
-                    // Add database operation step
-                    await EmitExecutionStep("database_operation", "Executing database operation...", new Dictionary<string, object>
+                    // If JSON parsing fails, try function call format
+                    var operation = ParseFunctionCall(response);
+                    if (operation != null)
                     {
-                        { "messageId", messageId },
-                        { "operation", functionCall },
-                        { "timestamp", DateTime.UtcNow.ToString("o") }
-                    });
+                        // Database operation step
+                        await EmitExecutionStep(
+                            ExecutionStepType.DatabaseOperation,
+                            "Executing database operation...",
+                            new Dictionary<string, object> {
+                                { "messageId", messageId },
+                                { "operation", operation },
+                                { "timestamp", DateTime.UtcNow.ToString("o") }
+                            }
+                        );
 
-                    // Add the original prompt to the operation for user context
-                    functionCall.OriginalPrompt = prompt;
-                    var result = await ExecuteOperation(functionCall);
+                        // Emit database operation sub-steps
+                        await EmitDatabaseOperationSubSteps(messageId, operation);
 
-                    // Add result step
-                    await EmitExecutionStep("result", "Operation completed successfully", new Dictionary<string, object>
-                    {
-                        { "messageId", messageId },
-                        { "result", result },
-                        { "timestamp", DateTime.UtcNow.ToString("o") }
-                    });
+                        operation.OriginalPrompt = prompt;
+                        var result = await ExecuteOperation(operation);
 
-                    return result;
+                        // Result step
+                        await EmitExecutionStep(
+                            ExecutionStepType.Result,
+                            "Operation completed successfully",
+                            new Dictionary<string, object> {
+                                { "messageId", messageId },
+                                { "result", result },
+                                { "timestamp", DateTime.UtcNow.ToString("o") }
+                            }
+                        );
+
+                        // Emit result sub-steps
+                        await EmitResultSubSteps(messageId, result);
+
+                        return result;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error executing database operation");
+                    throw;
                 }
 
-                throw new Exception($"Could not parse response in either JSON or function call format: {response}");
+                throw new Exception("Failed to parse model response");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error executing database operation with model {ModelId}", modelId);
+                _logger.LogError(ex, "Error in ExecuteDatabaseOperationAsync");
                 throw;
             }
         }
@@ -747,11 +787,246 @@ Note: Always use double quotes for string values and ""true"" or ""false"" for b
             return (titleMatches * 2.0) + contentMatches;
         }
 
-        private async Task EmitExecutionStep(string type, string content, Dictionary<string, object> metadata)
+        private async Task EmitExecutionStep(
+            ExecutionStepType type,
+            string content,
+            Dictionary<string, object> metadata,
+            ExecutionStepType? parentStep = null)
         {
-            var step = new ModelUpdate(type, content, metadata);
+            var step = new ModelUpdate(type, content, metadata, parentStep);
             await _hubContext.Clients.All.SendAsync("ReceiveExecutionStep", step);
             _logger.LogInformation($"[SignalR] Emitted step: {type} - {content}");
+        }
+
+        private async Task EmitProcessingSubSteps(string messageId, string userId, string modelId)
+        {
+            // Model Initialization
+            await EmitExecutionStep(
+                ExecutionStepType.ModelInitialization,
+                "Initializing model and loading parameters",
+                new Dictionary<string, object> {
+                    { "messageId", messageId },
+                    { "modelId", modelId }
+                },
+                ExecutionStepType.Processing
+            );
+
+            // Context Preparation
+            await EmitExecutionStep(
+                ExecutionStepType.ContextPreparation,
+                "Preparing context and user information",
+                new Dictionary<string, object> {
+                    { "messageId", messageId },
+                    { "userId", userId }
+                },
+                ExecutionStepType.Processing
+            );
+
+            // Input Validation
+            await EmitExecutionStep(
+                ExecutionStepType.InputValidation,
+                "Validating input parameters",
+                new Dictionary<string, object> {
+                    { "messageId", messageId }
+                },
+                ExecutionStepType.Processing
+            );
+
+            // Token Analysis
+            await EmitExecutionStep(
+                ExecutionStepType.TokenAnalysis,
+                "Analyzing input tokens and limitations",
+                new Dictionary<string, object> {
+                    { "messageId", messageId }
+                },
+                ExecutionStepType.Processing
+            );
+        }
+
+        private async Task EmitThinkingSubSteps(string messageId, string modelId)
+        {
+            // Prompt Analysis
+            await EmitExecutionStep(
+                ExecutionStepType.PromptAnalysis,
+                "Analyzing prompt structure and intent",
+                new Dictionary<string, object> {
+                    { "messageId", messageId },
+                    { "modelId", modelId }
+                },
+                ExecutionStepType.Thinking
+            );
+
+            // Parameter Extraction
+            await EmitExecutionStep(
+                ExecutionStepType.ParameterExtraction,
+                "Extracting key parameters from input",
+                new Dictionary<string, object> {
+                    { "messageId", messageId }
+                },
+                ExecutionStepType.Thinking
+            );
+
+            // Operation Selection
+            await EmitExecutionStep(
+                ExecutionStepType.OperationSelection,
+                "Determining appropriate operation",
+                new Dictionary<string, object> {
+                    { "messageId", messageId }
+                },
+                ExecutionStepType.Thinking
+            );
+
+            // Validation Check
+            await EmitExecutionStep(
+                ExecutionStepType.ValidationCheck,
+                "Validating operation parameters",
+                new Dictionary<string, object> {
+                    { "messageId", messageId }
+                },
+                ExecutionStepType.Thinking
+            );
+        }
+
+        private async Task EmitFunctionCallSubSteps(string messageId, string response)
+        {
+            // Argument Parsing
+            await EmitExecutionStep(
+                ExecutionStepType.ArgumentParsing,
+                "Parsing function arguments",
+                new Dictionary<string, object> {
+                    { "messageId", messageId },
+                    { "rawResponse", response }
+                },
+                ExecutionStepType.FunctionCall
+            );
+
+            // Parameter Validation
+            await EmitExecutionStep(
+                ExecutionStepType.ParameterValidation,
+                "Validating parameter types and values",
+                new Dictionary<string, object> {
+                    { "messageId", messageId }
+                },
+                ExecutionStepType.FunctionCall
+            );
+
+            // Function Preparation
+            await EmitExecutionStep(
+                ExecutionStepType.FunctionPreparation,
+                "Preparing function call",
+                new Dictionary<string, object> {
+                    { "messageId", messageId }
+                },
+                ExecutionStepType.FunctionCall
+            );
+
+            // Execution Plan
+            await EmitExecutionStep(
+                ExecutionStepType.ExecutionPlan,
+                "Generating execution plan",
+                new Dictionary<string, object> {
+                    { "messageId", messageId }
+                },
+                ExecutionStepType.FunctionCall
+            );
+        }
+
+        private async Task EmitDatabaseOperationSubSteps(string messageId, DatabaseOperation operation)
+        {
+            // Connection Check
+            await EmitExecutionStep(
+                ExecutionStepType.ConnectionCheck,
+                "Checking database connection",
+                new Dictionary<string, object> {
+                    { "messageId", messageId }
+                },
+                ExecutionStepType.DatabaseOperation
+            );
+
+            // Transaction Start
+            await EmitExecutionStep(
+                ExecutionStepType.TransactionStart,
+                "Starting database transaction",
+                new Dictionary<string, object> {
+                    { "messageId", messageId }
+                },
+                ExecutionStepType.DatabaseOperation
+            );
+
+            // Query Preparation
+            await EmitExecutionStep(
+                ExecutionStepType.QueryPreparation,
+                "Preparing database query",
+                new Dictionary<string, object> {
+                    { "messageId", messageId },
+                    { "operation", operation }
+                },
+                ExecutionStepType.DatabaseOperation
+            );
+
+            // Execution Status
+            await EmitExecutionStep(
+                ExecutionStepType.ExecutionStatus,
+                "Executing database operation",
+                new Dictionary<string, object> {
+                    { "messageId", messageId }
+                },
+                ExecutionStepType.DatabaseOperation
+            );
+
+            // Transaction Commit
+            await EmitExecutionStep(
+                ExecutionStepType.TransactionCommit,
+                "Committing transaction",
+                new Dictionary<string, object> {
+                    { "messageId", messageId }
+                },
+                ExecutionStepType.DatabaseOperation
+            );
+        }
+
+        private async Task EmitResultSubSteps(string messageId, string result)
+        {
+            // Result Processing
+            await EmitExecutionStep(
+                ExecutionStepType.ResultProcessing,
+                "Processing operation result",
+                new Dictionary<string, object> {
+                    { "messageId", messageId }
+                },
+                ExecutionStepType.Result
+            );
+
+            // Response Formatting
+            await EmitExecutionStep(
+                ExecutionStepType.ResponseFormatting,
+                "Formatting response data",
+                new Dictionary<string, object> {
+                    { "messageId", messageId },
+                    { "result", result }
+                },
+                ExecutionStepType.Result
+            );
+
+            // Performance Metrics
+            await EmitExecutionStep(
+                ExecutionStepType.PerformanceMetrics,
+                "Calculating operation metrics",
+                new Dictionary<string, object> {
+                    { "messageId", messageId }
+                },
+                ExecutionStepType.Result
+            );
+
+            // Completion Status
+            await EmitExecutionStep(
+                ExecutionStepType.CompletionStatus,
+                "Finalizing operation",
+                new Dictionary<string, object> {
+                    { "messageId", messageId }
+                },
+                ExecutionStepType.Result
+            );
         }
     }
 }

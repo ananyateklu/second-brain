@@ -22,7 +22,7 @@ namespace SecondBrain.Api.Services
             _httpClient.BaseAddress = new Uri("https://generativelanguage.googleapis.com/v1beta/");
         }
 
-        public async Task<ModelUpdate> ChatAsync(string prompt, string modelId = "gemini-1.5-pro")
+        public async Task<GeminiUpdate> ChatAsync(string prompt, string modelId = "gemini-1.5-pro")
         {
             try
             {
@@ -57,13 +57,12 @@ namespace SecondBrain.Api.Services
                 if (response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
                 {
                     _logger.LogWarning("Gemini service is temporarily unavailable");
-                    return new ModelUpdate(
+                    return new GeminiUpdate(
                         "gemini",
                         "I apologize, but I'm temporarily unavailable due to high demand. Please try again in a few moments.",
                         new Dictionary<string, object>
                         {
-                            { "error", "service_unavailable" },
-                            { "retry", true }
+                            { "error", "Service temporarily unavailable" }
                         }
                     );
                 }
@@ -81,7 +80,7 @@ namespace SecondBrain.Api.Services
                 var content = result?.Candidates?.FirstOrDefault()?.Content?.Parts?.FirstOrDefault()?.Text
                     ?? throw new Exception("No content received from Gemini API");
 
-                return new ModelUpdate(
+                return new GeminiUpdate(
                     "gemini",
                     content,
                     new Dictionary<string, object> { { "model", modelId } }

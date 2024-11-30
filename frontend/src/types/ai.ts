@@ -28,9 +28,12 @@ export interface AIMessage {
 }
 
 export interface ExecutionStep {
-  type: 'processing' | 'thinking' | 'function_call' | 'database_operation' | 'result';
+  type: number;  // Using numeric enum values from backend
   content: string;
   timestamp: string;
+  parentStep?: number | null;
+  isSubStep?: boolean;
+  duration?: number;
   metadata?: Record<string, unknown>;
 }
 
