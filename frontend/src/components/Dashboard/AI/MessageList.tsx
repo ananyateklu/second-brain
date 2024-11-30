@@ -35,7 +35,15 @@ export function MessageList(props: MessageListProps) {
 
     const shouldAutoScroll = props.isLoading || !userHasScrolled;
     if (shouldAutoScroll) {
-      props.messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      // Add a small delay to ensure content is fully rendered
+      const timer = setTimeout(() => {
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior: 'smooth'
+        });
+      }, 150);
+
+      return () => clearTimeout(timer);
     }
   }, [props.messages, props.isLoading, userHasScrolled]);
 
@@ -51,10 +59,10 @@ export function MessageList(props: MessageListProps) {
     const groups: Message[][] = [];
     let currentGroup: Message[] = [];
     let currentGroupId = '';
-    
+
     props.messages.forEach((message, index) => {
       const prevMessage = props.messages[index - 1];
-      
+
       if (
         !prevMessage ||
         prevMessage.role !== message.role ||
@@ -70,30 +78,30 @@ export function MessageList(props: MessageListProps) {
         currentGroup.push(message);
       }
     });
-    
+
     if (currentGroup.length > 0) {
       groups.push(currentGroup);
     }
-    
+
     return groups;
   }, [props.messages]);
 
   return (
     <div className="h-full relative">
       {props.messages.length === 0 ? (
-        <EmptyState 
-          selectedModel={props.selectedModel} 
-          themeColor={props.themeColor} 
+        <EmptyState
+          selectedModel={props.selectedModel}
+          themeColor={props.themeColor}
         />
       ) : (
-        <div 
+        <div
           ref={scrollContainerRef}
           onScroll={handleScroll}
-          className="h-full overflow-y-auto overflow-x-hidden px-2 py-2 space-y-4"
+          className="h-full overflow-y-auto overflow-x-hidden px-2 py-4 space-y-4"
         >
           {groupedMessages.map((group, groupIndex) => {
             const date = new Date(group[0].timestamp);
-            const showDateDivider = groupIndex === 0 || 
+            const showDateDivider = groupIndex === 0 ||
               new Date(groupedMessages[groupIndex - 1][0].timestamp).toDateString() !== date.toDateString();
             const groupKey = `group-${group[0].id}-${groupIndex}`;
 
@@ -141,10 +149,10 @@ function formatDate(date: Date): string {
   } else if (date.toDateString() === yesterday.toDateString()) {
     return 'Yesterday';
   } else {
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
       day: 'numeric',
-      year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined 
+      year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined
     });
   }
 }
