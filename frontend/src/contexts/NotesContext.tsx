@@ -3,6 +3,7 @@ import { useActivities } from './ActivityContext';
 import { notesService } from '../services/api/notes.service';
 import { useTrash, TrashProvider } from './TrashContext';
 import { useAuth } from './AuthContext';
+import { sortNotes } from '../utils/noteUtils';
 
 export interface Note {
   id: string;
@@ -19,6 +20,7 @@ export interface Note {
   updatedAt: string;
   linkedNoteIds: string[];
   linkedNotes?: Note[];
+  archivedAt?: string;
 }
 
 interface NotesContextType {
@@ -58,12 +60,18 @@ export function NotesProvider({ children }: NotesProviderProps) {
     try {
       setIsLoading(true);
       const fetchedNotes = await notesService.getAllNotes();
-      setNotes(fetchedNotes.filter(note => !note.isArchived && !note.isDeleted).map(note => ({
-        ...note,
-        isArchived: note.isArchived || false,
-        isDeleted: note.isDeleted || false,
-        isIdea: note.isIdea || false
-      })));
+      const processedNotes = fetchedNotes
+        .filter(note => !note.isArchived && !note.isDeleted)
+        .map(note => ({
+          ...note,
+          isArchived: false,
+          isDeleted: false,
+          isIdea: note.isIdea || false,
+          linkedNoteIds: note.linkedNoteIds || [],
+          linkedNotes: note.linkedNotes || []
+        })) as Note[];
+      
+      setNotes(sortNotes(processedNotes));
       setIsLoading(false);
     } catch (error) {
       console.error('Failed to fetch notes:', error);
@@ -101,7 +109,7 @@ export function NotesProvider({ children }: NotesProviderProps) {
         isDeleted: false
       };
 
-      setNotes(prev => [safeNewNote, ...prev]);
+      setNotes(prev => sortNotes([safeNewNote, ...prev]));
 
       try {
         if (createActivity) {
@@ -131,20 +139,30 @@ export function NotesProvider({ children }: NotesProviderProps) {
       if (updates.isArchived !== undefined) {
         return;
       }
+      
+      // Get the current note to preserve its links
+      const currentNote = notes.find(n => n.id === id);
+      if (!currentNote) {
+        throw new Error('Note not found');
+      }
+
       const updatedNote = await notesService.updateNote(id, updates);
       const safeUpdatedNote: Note = {
         ...updatedNote,
         isArchived: false,
         isDeleted: false,
         tags: Array.isArray(updatedNote.tags) ? updatedNote.tags : [],
-        linkedNoteIds: Array.isArray(updatedNote.linkedNoteIds) ? updatedNote.linkedNoteIds : []
+        // Preserve the existing links
+        linkedNoteIds: currentNote.linkedNoteIds,
+        linkedNotes: currentNote.linkedNotes
       };
 
-      setNotes(prevNotes =>
-        prevNotes
+      setNotes(prevNotes => {
+        const updatedNotes = prevNotes
           .map(note => (note.id === id ? safeUpdatedNote : note))
-          .filter(note => !note.isDeleted && !note.isArchived)
-      );
+          .filter(note => !note.isDeleted && !note.isArchived);
+        return sortNotes(updatedNotes);
+      });
 
       try {
         if (createActivity) {
@@ -161,15 +179,14 @@ export function NotesProvider({ children }: NotesProviderProps) {
         }
       } catch (activityError) {
         console.error('Failed to add activity for note update:', activityError);
-        // Don't throw the error since the note was still updated successfully
       }
 
-      return updatedNote;
+      return safeUpdatedNote;
     } catch (error) {
       console.error('Failed to update note:', error);
       throw error;
     }
-  }, [createActivity]);
+  }, [createActivity, notes]);
 
   const deleteNote = useCallback(async (id: string) => {
     try {
@@ -180,7 +197,7 @@ export function NotesProvider({ children }: NotesProviderProps) {
       setNotes(prev => prev.filter(note => note.id !== id));
 
       // Mark as deleted in backend
-      await notesService.updateNote(id, {
+      const updateData: Partial<UpdateNoteData> = {
         isDeleted: true,
         deletedAt: new Date().toISOString(),
         title: noteToDelete.title,
@@ -188,7 +205,9 @@ export function NotesProvider({ children }: NotesProviderProps) {
         tags: noteToDelete.tags,
         isFavorite: noteToDelete.isFavorite,
         linkedNoteIds: noteToDelete.linkedNoteIds
-      });
+      };
+
+      await notesService.updateNote(id, updateData);
 
       // Move to trash
       await moveToTrash({
@@ -288,10 +307,12 @@ export function NotesProvider({ children }: NotesProviderProps) {
       const noteToArchive = notes.find(n => n.id === id);
       if (!noteToArchive) return;
 
-      await notesService.updateNote(id, {
+      const updateData: Partial<UpdateNoteData> = {
         isArchived: true,
         archivedAt: new Date().toISOString()
-      });
+      };
+
+      await notesService.updateNote(id, updateData);
 
       setNotes(prevNotes => prevNotes.filter(note => note.id !== id));
 
@@ -312,33 +333,30 @@ export function NotesProvider({ children }: NotesProviderProps) {
     }
   }, [notes, createActivity]);
 
-  const unarchiveNote = useCallback(async (id: string) => {
+  const unarchiveNote = useCallback(async (id: string): Promise<Note> => {
     try {
       const updatedNote = await notesService.unarchiveNote(id);
+      if (!updatedNote) throw new Error('Failed to unarchive note');
+      
       const noteToUnarchive = archivedNotes.find(n => n.id === id);
-      if (!noteToUnarchive) return;
+      if (!noteToUnarchive) throw new Error('Note not found in archived notes');
 
-      setNotes(prevNotes => [...prevNotes, { ...noteToUnarchive, ...updatedNote, isArchived: false }]);
+      const restoredNote: Note = {
+        ...noteToUnarchive,
+        ...updatedNote,
+        isArchived: false,
+        isIdea: noteToUnarchive.isIdea || false
+      };
+
+      setNotes(prevNotes => sortNotes([...prevNotes, restoredNote]));
       setArchivedNotes(prevNotes => prevNotes.filter(note => note.id !== id));
 
-      createActivity({
-        actionType: 'restore',
-        itemType: noteToUnarchive.tags.includes('idea') ? 'idea' : 'note', 
-        itemId: id,
-        itemTitle: noteToUnarchive.title,
-        description: `Restored ${noteToUnarchive.tags.includes('idea') ? 'idea' : 'note'}: ${noteToUnarchive.title}`,
-        metadata: {
-          isArchived: false,
-          restoredAt: new Date().toISOString()
-        }
-      });
-
-      return updatedNote;
+      return restoredNote;
     } catch (error) {
       console.error('Error unarchiving note:', error);
       throw error;
     }
-  });
+  }, [archivedNotes]);
 
   // Add a method for restoring multiple notes
   const restoreMultipleNotes = useCallback(async (ids: string[]) => {
@@ -350,11 +368,11 @@ export function NotesProvider({ children }: NotesProviderProps) {
       // Add activity for bulk restore
       if (results.length > 1) {
         const successfulRestores = results.filter(
-          (result): result is PromiseSettledResult<Note | undefined> =>
-            result.status === 'fulfilled'
-        ) as PromiseFulfilledResult<Note | undefined>[];
+          (result): result is PromiseFulfilledResult<Note> =>
+            result.status === 'fulfilled' && result.value !== undefined
+        );
 
-        const restoredNotes = successfulRestores.map(result => result.value).filter((note): note is Note => note !== undefined);
+        const restoredNotes = successfulRestores.map(result => result.value);
 
         createActivity({
           actionType: 'restore_multiple',
@@ -382,40 +400,48 @@ export function NotesProvider({ children }: NotesProviderProps) {
 
   const addLink = useCallback(async (sourceId: string, targetId: string) => {
     try {
-      const response = await notesService.addLink(sourceId, targetId);
-      const { sourceNote, targetNote } = response;
+      const linkResponse = await notesService.addLink(sourceId, targetId);
+      const { sourceNote, targetNote } = linkResponse;
 
-      setNotes(prev => prev.map(note => {
-        if (note.id === sourceId) {
-          return {
-            ...note,
-            ...sourceNote,
-            linkedNoteIds: sourceNote.linkedNoteIds
-          };
-        }
-        if (note.id === targetId) {
-          return {
-            ...note,
-            ...targetNote,
-            linkedNoteIds: targetNote.linkedNoteIds
-          };
-        }
-        return note;
-      }));
-
-      createActivity({
-        actionType: 'link',
-        itemType: 'note',
-        itemId: sourceId,
-        itemTitle: sourceNote.title,
-        description: `Linked notes: ${sourceNote.title} ↔ ${targetNote.title}`,
-        metadata: {
-          sourceNoteId: sourceId,
-          targetNoteId: targetId,
-          sourceNoteTitle: sourceNote.title,
-          targetNoteTitle: targetNote.title
-        }
+      setNotes(prev => {
+        return prev.map(note => {
+          if (note.id === sourceId) {
+            return {
+              ...note,
+              linkedNoteIds: sourceNote.linkedNoteIds,
+              linkedNotes: prev.filter(n => sourceNote.linkedNoteIds.includes(n.id))
+            };
+          }
+          if (note.id === targetId) {
+            return {
+              ...note,
+              linkedNoteIds: targetNote.linkedNoteIds,
+              linkedNotes: prev.filter(n => targetNote.linkedNoteIds.includes(n.id))
+            };
+          }
+          return note;
+        });
       });
+
+      // Add activity
+      const sourceNoteData = notes.find(n => n.id === sourceId);
+      const targetNoteData = notes.find(n => n.id === targetId);
+      
+      if (sourceNoteData && targetNoteData) {
+        createActivity({
+          actionType: 'link',
+          itemType: 'note',
+          itemId: sourceId,
+          itemTitle: sourceNoteData.title,
+          description: `Linked notes: ${sourceNoteData.title} ↔ ${targetNoteData.title}`,
+          metadata: {
+            sourceNoteId: sourceId,
+            targetNoteId: targetId,
+            sourceNoteTitle: sourceNoteData.title,
+            targetNoteTitle: targetNoteData.title
+          }
+        });
+      }
     } catch (error) {
       console.error('Failed to add link:', error);
       throw error;
@@ -431,38 +457,39 @@ export function NotesProvider({ children }: NotesProviderProps) {
     try {
       await notesService.removeLink(sourceId, targetId);
 
-      setNotes(prev => prev.map(note => {
-        if (note.id === sourceId || note.id === targetId) {
-          return {
-            ...note,
-            linkedNoteIds: (note.linkedNoteIds || []).filter(id =>
-              id !== (note.id === sourceId ? targetId : sourceId)
-            ),
-            linkedNotes: (note.linkedNoteIds || []).filter(id =>
-              id !== (note.id === sourceId ? targetId : sourceId)
-            ).map(id => prev.find(n => n.id === id)!),
-            updatedAt: new Date().toISOString()
-          };
-        }
-        return note;
-      }));
+      setNotes(prev => {
+        const updatedNotes = prev.map(note => {
+          if (note.id === sourceId || note.id === targetId) {
+            const otherNoteId = note.id === sourceId ? targetId : sourceId;
+            return {
+              ...note,
+              linkedNoteIds: note.linkedNoteIds.filter(id => id !== otherNoteId),
+              linkedNotes: (note.linkedNotes || []).filter(n => n.id !== otherNoteId)
+            };
+          }
+          return note;
+        });
+        return sortNotes(updatedNotes);
+      });
 
       const sourceNote = notes.find(n => n.id === sourceId);
       const targetNote = notes.find(n => n.id === targetId);
 
-      createActivity({
-        actionType: 'unlink',
-        itemType: 'note',
-        itemId: sourceId,
-        itemTitle: sourceNote?.title || '',
-        description: `Unlinked notes: ${sourceNote?.title} ↮ ${targetNote?.title}`,
-        metadata: {
-          sourceNoteId: sourceId,
-          targetNoteId: targetId,
-          sourceNoteTitle: sourceNote?.title,
-          targetNoteTitle: targetNote?.title
-        }
-      });
+      if (sourceNote && targetNote) {
+        createActivity({
+          actionType: 'unlink',
+          itemType: 'note',
+          itemId: sourceId,
+          itemTitle: sourceNote.title,
+          description: `Unlinked notes: ${sourceNote.title} ↮ ${targetNote.title}`,
+          metadata: {
+            sourceNoteId: sourceId,
+            targetNoteId: targetId,
+            sourceNoteTitle: sourceNote.title,
+            targetNoteTitle: targetNote.title
+          }
+        });
+      }
     } catch (error) {
       console.error('Failed to remove link:', error);
       throw error;
@@ -472,7 +499,16 @@ export function NotesProvider({ children }: NotesProviderProps) {
   const loadArchivedNotes = useCallback(async () => {
     try {
       const fetchedArchivedNotes = await notesService.getArchivedNotes();
-      setArchivedNotes(fetchedArchivedNotes);
+      const processedNotes = fetchedArchivedNotes.map(note => ({
+        ...note,
+        isArchived: true,
+        isDeleted: false,
+        isIdea: note.isIdea || false,
+        linkedNoteIds: note.linkedNoteIds || [],
+        linkedNotes: []
+      })) as Note[];
+      
+      setArchivedNotes(processedNotes);
     } catch (error) {
       console.error('Failed to load archived notes:', error);
     }

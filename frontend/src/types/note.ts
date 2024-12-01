@@ -3,16 +3,17 @@ export interface Note {
   title: string;
   content: string;
   tags: string[];
+  isFavorite: boolean;
+  isPinned: boolean;
+  isIdea: boolean;
+  isArchived: boolean;
+  isDeleted: boolean;
+  deletedAt?: string;
   createdAt: string;
   updatedAt: string;
-  isPinned: boolean;
-  isFavorite: boolean;
-  isArchived?: boolean;
+  linkedNoteIds: string[];
+  linkedNotes?: Note[];
   archivedAt?: string;
-  isDeleted?: boolean;
-  deletedAt?: string;
-  linkedNoteIds?: string[];
-  isIdea?: boolean;
 }
 
 export interface NoteLink {

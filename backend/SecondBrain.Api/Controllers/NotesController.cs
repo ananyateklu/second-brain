@@ -412,6 +412,7 @@ namespace SecondBrain.Api.Controllers
             }
 
             var note = await _context.Notes
+                .Include(n => n.NoteLinks)
                 .Where(n => n.Id == id && n.UserId == userId)
                 .FirstOrDefaultAsync();
 
@@ -435,6 +436,12 @@ namespace SecondBrain.Api.Controllers
 
             note.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
+
+            // Reload the note with its links
+            note = await _context.Notes
+                .Include(n => n.NoteLinks)
+                .Where(n => n.Id == id)
+                .FirstOrDefaultAsync();
 
             return Ok(NoteResponse.FromEntity(note));
         }

@@ -1,20 +1,21 @@
 import api from './api';
 
 export interface Note {
-  isIdea: boolean;
   id: string;
   title: string;
   content: string;
   tags: string[];
-  isPinned: boolean;
   isFavorite: boolean;
-  isArchived?: boolean;
-  isDeleted?: boolean;
+  isPinned: boolean;
+  isIdea: boolean;
+  isArchived: boolean;
+  isDeleted: boolean;
   deletedAt?: string;
-  archivedAt?: string;
-  linkedNoteIds: string[];
   createdAt: string;
   updatedAt: string;
+  linkedNoteIds: string[];
+  linkedNotes?: Note[];
+  archivedAt?: string;
 }
 
 export interface CreateNoteData {
@@ -24,7 +25,26 @@ export interface CreateNoteData {
   isPinned?: boolean;
   isFavorite?: boolean;
   isArchived?: boolean;
-  archivedAt?: string | null;
+  isDeleted?: boolean;
+  deletedAt?: string;
+}
+
+export interface LinkResponse {
+  sourceNote: Note;
+  targetNote: Note;
+}
+
+export interface UpdateNoteData {
+  title?: string;
+  content?: string;
+  tags?: string[];
+  isPinned?: boolean;
+  isFavorite?: boolean;
+  isArchived?: boolean;
+  isDeleted?: boolean;
+  deletedAt?: string;
+  archivedAt?: string;
+  linkedNoteIds?: string[];
 }
 
 export const notesService = {
@@ -36,13 +56,18 @@ export const notesService = {
     
     const response = await api.post<Note>('/api/Notes', safeData);
     
-    console.log('Create note response:', response.data);
-    
+    const tags = response.data.tags;
+    const processedTags = typeof tags === 'string' 
+      ? tags.split(',').filter(Boolean)
+      : Array.isArray(tags) 
+        ? tags 
+        : [];
+
     return {
       ...response.data,
-      tags: Array.isArray(response.data.tags) ? response.data.tags : 
-            typeof response.data.tags === 'string' ? response.data.tags.split(',').filter(Boolean) : [],
-      linkedNoteIds: response.data.linkedNoteIds || []
+      tags: processedTags,
+      linkedNoteIds: response.data.linkedNoteIds || [],
+      linkedNotes: []
     };
   },
 
@@ -54,7 +79,7 @@ export const notesService = {
         ...note,
         tags: Array.isArray(note.tags) ? note.tags : [],
         linkedNoteIds: Array.isArray(note.linkedNoteIds) ? note.linkedNoteIds : [],
-        linkedNotes: Array.isArray(note.linkedNotes) ? note.linkedNotes : []
+        linkedNotes: []
       }));
   },
 
@@ -78,14 +103,9 @@ export const notesService = {
     });
   },
 
-  async addLink(sourceId: string, targetId: string): Promise<Note> {
-    const response = await api.post<Note>(`/api/Notes/${sourceId}/links`, { targetNoteId: targetId });
-    return {
-      ...response.data,
-      tags: Array.isArray(response.data.tags) ? response.data.tags : [],
-      linkedNoteIds: Array.isArray(response.data.linkedNoteIds) ? response.data.linkedNoteIds : [],
-      linkedNotes: Array.isArray(response.data.linkedNoteIds) ? response.data.linkedNoteIds : []
-    };
+  async addLink(sourceId: string, targetId: string): Promise<LinkResponse> {
+    const response = await api.post<LinkResponse>(`/api/Notes/${sourceId}/links`, { targetNoteId: targetId });
+    return response.data;
   },
 
   async removeLink(sourceId: string, targetId: string): Promise<void> {
@@ -105,19 +125,17 @@ export const notesService = {
 
   async getArchivedNotes(): Promise<Note[]> {
     try {
-        console.log('Fetching archived notes...');
-        const response = await api.get<Note[]>('/api/Notes/archived');
-        console.log('Archived notes response:', response.data);
-        
-        return response.data.map(note => ({
-            ...note,
-            tags: Array.isArray(note.tags) ? note.tags : [],
-            linkedNoteIds: Array.isArray(note.linkedNoteIds) ? note.linkedNoteIds : [],
-            linkedNotes: Array.isArray(note.linkedNoteIds) ? note.linkedNoteIds : []
-        }));
+      const response = await api.get<Note[]>('/api/Notes/archived');
+      
+      return response.data.map(note => ({
+        ...note,
+        tags: Array.isArray(note.tags) ? note.tags : [],
+        linkedNoteIds: Array.isArray(note.linkedNoteIds) ? note.linkedNoteIds : [],
+        linkedNotes: []
+      }));
     } catch (error) {
-        console.error('Error fetching archived notes:', error);
-        throw error;
+      console.error('Error fetching archived notes:', error);
+      throw error;
     }
   },
 

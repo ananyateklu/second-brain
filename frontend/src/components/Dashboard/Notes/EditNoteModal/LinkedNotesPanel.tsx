@@ -13,7 +13,6 @@ interface LinkedNotesPanelProps {
   readonly onShowAddLink: () => void;
   readonly onShowAddTask: () => void;
   readonly currentNoteId: string;
-  readonly isIdea?: boolean;
   readonly onUnlinkTask?: (taskId: string) => void;
 }
 
@@ -23,7 +22,6 @@ export function LinkedNotesPanel({
   onShowAddLink, 
   onShowAddTask,
   currentNoteId,
-  isIdea = false,
   onUnlinkTask
 }: LinkedNotesPanelProps) {
   const { removeLink } = useNotes();

@@ -1,18 +1,20 @@
 import { ArrowDownAZ, ArrowUpAZ, Clock, Star, Pin } from 'lucide-react';
+import { Filters } from '../../../types/filters';
 
 interface FilterDropdownProps {
-  filters: {
-    sortBy: 'createdAt' | 'updatedAt' | 'title';
-    sortOrder: 'asc' | 'desc';
-    showPinned: boolean;
-    showFavorites: boolean;
-    tags: string[];
-  };
+  filters: Filters;
   allTags: string[];
-  onFilterChange: (key: string, value: any) => void;
+  onFilterChange: (key: keyof Filters, value: string | boolean | string[]) => void;
 }
 
 export function FilterDropdown({ filters, allTags, onFilterChange }: FilterDropdownProps) {
+  const handleTagFilter = (tag: string) => {
+    const newTags = filters.tags.includes(tag)
+      ? filters.tags.filter((t: string) => t !== tag)
+      : [...filters.tags, tag];
+    onFilterChange('tags', newTags);
+  };
+
   return (
     <div className="space-y-4">
       {/* Sort Options */}
@@ -131,12 +133,7 @@ export function FilterDropdown({ filters, allTags, onFilterChange }: FilterDropd
             {allTags.map(tag => (
               <button
                 key={tag}
-                onClick={() => {
-                  const newTags = filters.tags.includes(tag)
-                    ? filters.tags.filter(t => t !== tag)
-                    : [...filters.tags, tag];
-                  onFilterChange('tags', newTags);
-                }}
+                onClick={() => handleTagFilter(tag)}
                 className={`
                   px-3 py-1.5 rounded-lg text-sm border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass transition-all
                   ${filters.tags.includes(tag)

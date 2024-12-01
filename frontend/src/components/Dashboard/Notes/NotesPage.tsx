@@ -3,22 +3,13 @@ import { Plus, Search, SlidersHorizontal, FileText, Grid, List, Network } from '
 import { useNotes } from '../../../contexts/NotesContext';
 import { Note, NoteCard } from '../NoteCard';
 import { NewNoteModal } from './NewNoteModal';
-import { EditNoteModal } from './EditNoteModal';
 import { FilterDropdown } from './FilterDropdown';
 import { NotesGraph } from './NotesGraph';
 import { LoadingScreen } from '../../shared/LoadingScreen';
 import { Input } from '../../shared/Input';
 import { useModal } from '../../../contexts/ModalContext';
-
-
-interface Filters {
-  search: string;
-  sortBy: 'createdAt' | 'updatedAt' | 'title';
-  sortOrder: 'asc' | 'desc';
-  showPinned: boolean;
-  showFavorites: boolean;
-  tags: string[];
-}
+import { sortNotes } from '../../../utils/noteUtils';
+import { Filters } from '../../../types/filters';
 
 const defaultFilters: Filters = {
   search: '',
@@ -37,17 +28,12 @@ export function NotesPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'graph'>('grid');
 
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
-
-  // Filter out ideas from the notes list
   const regularNotes = useMemo(() => {
     return notes.filter(note => !note.isIdea);
   }, [notes]);
 
   const filteredNotes = useMemo(() => {
-    return regularNotes
+    const filtered = regularNotes
       .filter(note => {
         const matchesSearch = note.title.toLowerCase().includes(filters.search.toLowerCase()) ||
           note.content.toLowerCase().includes(filters.search.toLowerCase());
@@ -57,38 +43,50 @@ export function NotesPage() {
           filters.tags.some(tag => note.tags.includes(tag));
 
         return matchesSearch && matchesPinned && matchesFavorites && matchesTags;
-      })
-      .sort((a, b) => {
-        const aValue = a[filters.sortBy];
-        const bValue = b[filters.sortBy];
-
-        if (filters.sortBy === 'title') {
-          return filters.sortOrder === 'asc'
-            ? aValue.localeCompare(bValue)
-            : bValue.localeCompare(aValue);
-        }
-
-        return filters.sortOrder === 'asc'
-          ? new Date(aValue).getTime() - new Date(bValue).getTime()
-          : new Date(bValue).getTime() - new Date(aValue).getTime();
       });
+
+    if (filters.sortBy === 'title') {
+      return filtered.sort((a, b) => {
+        return filters.sortOrder === 'asc'
+          ? a.title.localeCompare(b.title)
+          : b.title.localeCompare(a.title);
+      });
+    }
+
+    return sortNotes(filtered);
   }, [regularNotes, filters]);
 
   const allTags = useMemo(() => {
     return Array.from(new Set(regularNotes.flatMap(note => note.tags)));
   }, [regularNotes]);
 
-  const handleEditNote = (note: Note) => {
-    setSelectedNote(note);
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+
+  const handleFilterChange = (key: keyof Filters, value: string | boolean | string[]) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleFilterChange = (key: keyof Filters, value: any) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+  const handleEditNote = (note: Note) => {
+    const fullNote: Note = {
+      ...note,
+      isIdea: note.isIdea || false,
+      linkedNotes: note.linkedNotes || []
+    };
+    setSelectedNote(fullNote);
   };
 
   const clearFilters = () => {
     setFilters(defaultFilters);
   };
+
+  const graphNotes = filteredNotes.map(note => ({
+    ...note,
+    linkedNotes: note.linkedNoteIds.map(id => notes.find(n => n.id === id)).filter((n): n is Note => n !== undefined)
+  }));
+
+  const toggleFilters = () => setShowFilters(prev => !prev);
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-fixed">
@@ -140,6 +138,14 @@ export function NotesPage() {
           </div>
 
           <div className="flex gap-2">
+            <button
+              onClick={toggleFilters}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200/50 dark:border-gray-700/50 bg-white/70 dark:bg-gray-800/70 backdrop-blur-glass hover:bg-white/80 dark:hover:bg-gray-800/80 transition-all text-gray-900 dark:text-gray-100"
+            >
+              <SlidersHorizontal className="w-5 h-5" />
+              <span>Filters</span>
+            </button>
+
             <button
               onClick={() => setViewMode('grid')}
               className={`p-2 rounded-lg border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass transition-all ${
@@ -223,18 +229,12 @@ export function NotesPage() {
             ))}
           </div>
         ) : (
-          <NotesGraph 
-            notes={filteredNotes.map(note => ({
-              ...note,
-              linkedNotes: note.linkedNotes?.map(n => n.id) || []
-            }))}
+          <NotesGraph
+            notes={graphNotes}
             onNoteClick={(noteId) => {
               const note = notes.find(n => n.id === noteId);
               if (note) {
-                handleEditNote({
-                  ...note,
-                  linkedNotes: note.linkedNotes?.map(n => n.id) || []
-                });
+                handleEditNote(note);
               }
             }}
           />
