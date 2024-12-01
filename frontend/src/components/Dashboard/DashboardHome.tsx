@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Clock,
@@ -12,8 +12,6 @@ import {
   X,
   LayoutGrid,
   Layout,
-  Lightbulb,
-  LightbulbIcon,
   Share2,
   CheckSquare,
   Edit3,
@@ -21,6 +19,7 @@ import {
   Paperclip,
   CheckCircle,
   Columns,
+  LightbulbIcon,
 } from 'lucide-react';
 import { useNotes } from '../../contexts/NotesContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -32,9 +31,9 @@ import { DashboardStat } from '../../types/dashboard';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { getIconColor, getIconBg } from '../../utils/styleUtils';
 import { useTasks } from '../../contexts/TasksContext';
-import { textStyles } from '../../utils/textUtils';
 import { useModal } from '../../contexts/ModalContext';
 import { Note } from '../../types/note';
+import { WelcomeSection } from './WelcomeSection';
 
 // Create an icon map
 const IconMap = {
@@ -114,22 +113,32 @@ const sizeClasses = {
   },
 };
 
+interface StatValue {
+  value: string | number;
+  change?: number;
+  timeframe?: string;
+  metadata?: {
+    breakdown?: {
+      created: number;
+      edited: number;
+      deleted: number;
+    };
+  };
+}
+
 const StatCard = ({
   stat,
   showStatsEditor,
   onRemove,
-  getStatValue,
-  index,
+  getStatValue
 }: {
   stat: DashboardStat;
   showStatsEditor: boolean;
   onRemove: (id: string) => void;
-  getStatValue: (id: string) => { value: number | string; change?: number; timeframe?: string };
-  index: number;
+  getStatValue: (id: string) => StatValue;
 }) => {
   const { updateStatSize } = useDashboard();
 
-  // Use the IconMap to get the correct icon component
   const IconComponent = IconMap[stat.icon as keyof typeof IconMap];
   const statValue = getStatValue(stat.id);
   const size = sizeClasses[stat.size || 'medium'];
@@ -148,7 +157,7 @@ const StatCard = ({
       }}
     >
       <motion.div
-        className={`w-full h-full glass-morphism ${size.padding} rounded-lg border border-gray-100 dark:border-dark-border hover:border-primary-400 dark:hover:border-primary-400 transition-all cursor-pointer`}
+        className={`w-full h-full glass-morphism dark:bg-[#2C2C2E] ${size.padding} rounded-lg border border-gray-100/20 dark:border-[#3C3C3E]/30 hover:border-primary-400 dark:hover:border-primary-400 transition-all cursor-pointer`}
         whileTap={showStatsEditor ? { scale: 0.95 } : undefined}
       >
         <div className="flex flex-col h-full justify-between">
@@ -169,9 +178,8 @@ const StatCard = ({
           {/* Value and Change */}
           <div className="mt-1">
             <div className="flex items-baseline gap-1">
-              <span className={`${size.valueSize} font-semibold text-gray-900 dark:text-white ${
-                statValue.value === '-' ? 'animate-pulse' : ''
-              }`}>
+              <span className={`${size.valueSize} font-semibold text-gray-900 dark:text-white ${statValue.value === '-' ? 'animate-pulse' : ''
+                }`}>
                 {statValue.value}
               </span>
               {statValue.change && statValue.change > 0 && statValue.value !== '-' && (
@@ -227,11 +235,10 @@ const StatCard = ({
                 e.stopPropagation();
                 updateStatSize(stat.id, 'small');
               }}
-              className={`p-0.5 rounded-md transition-all duration-200 ${
-                stat.size === 'small'
-                  ? 'bg-primary-100/50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
-                  : 'hover:bg-gray-100/50 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400'
-              }`}
+              className={`p-0.5 rounded-md transition-all duration-200 ${stat.size === 'small'
+                ? 'bg-primary-100/50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
+                : 'hover:bg-gray-100/50 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400'
+                }`}
               title="Small"
             >
               <LayoutGrid className="w-3.5 h-3.5" />
@@ -241,11 +248,10 @@ const StatCard = ({
                 e.stopPropagation();
                 updateStatSize(stat.id, 'medium');
               }}
-              className={`p-0.5 rounded-md transition-all duration-200 ${
-                stat.size === 'medium'
-                  ? 'bg-primary-100/50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
-                  : 'hover:bg-gray-100/50 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400'
-              }`}
+              className={`p-0.5 rounded-md transition-all duration-200 ${stat.size === 'medium'
+                ? 'bg-primary-100/50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
+                : 'hover:bg-gray-100/50 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400'
+                }`}
               title="Medium"
             >
               <Columns className="w-3.5 h-3.5" />
@@ -255,11 +261,10 @@ const StatCard = ({
                 e.stopPropagation();
                 updateStatSize(stat.id, 'large');
               }}
-              className={`p-0.5 rounded-md transition-all duration-200 ${
-                stat.size === 'large'
-                  ? 'bg-primary-100/50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
-                  : 'hover:bg-gray-100/50 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400'
-              }`}
+              className={`p-0.5 rounded-md transition-all duration-200 ${stat.size === 'large'
+                ? 'bg-primary-100/50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
+                : 'hover:bg-gray-100/50 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400'
+                }`}
               title="Large"
             >
               <Layout className="w-3.5 h-3.5" />
@@ -333,271 +338,62 @@ export function DashboardHome() {
       ? new Date(Math.max(...notes.map(note => new Date(note.updatedAt).getTime())))
       : null,
     totalTasks: tasks.length,
-    completedTasks: tasks.filter(task => task.completed).length
+    completedTasks: tasks.filter(task => task.status === 'Completed').length
   };
 
   const handleEditNote = (note: Note) => {
     if (note.isIdea) {
-      setSelectedIdea(note);
+      setSelectedIdea({ ...note, isFavorite: false, isArchived: false, isDeleted: false, linkedNoteIds: [] });
     } else {
-      setSelectedNote(note);
-    }
-  };
-
-  const handleCloseEditModal = () => {
-    setSelectedNote(null);
-  };
-
-  const renderStat = (stat: DashboardStat) => {
-    switch (stat.type) {
-      case 'notes':
-        if (stat.id === 'total-notes') return stats.totalNotes;
-        if (stat.id === 'new-notes') return stats.newThisWeek;
-        if (stat.id === 'word-count') {
-          // Calculate total word count across all notes
-          return notes.reduce((total, note) => {
-            const wordCount = note.content.trim().split(/\s+/).length;
-            return total + wordCount;
-          }, 0).toLocaleString();
-        }
-        return 0;
-        
-      case 'tags':
-        // Get unique tags count
-        return new Set(notes.flatMap(note => note.tags)).size;
-        
-      case 'time':
-        if (!stats.lastUpdated) return 'No notes yet';
-        return formatTimeAgo(stats.lastUpdated);
-        
-      case 'ideas':
-        // Remove this case entirely as it's now handled by the getStatValue function
-        return '';
-        
-      case 'tasks':
-        if (stat.id === 'active-tasks') {
-          return notes.filter(note => 
-            note.content.includes('[ ]') || 
-            note.content.includes('[]')
-          ).length;
-        }
-        if (stat.id === 'completed-tasks') {
-          return notes.filter(note => 
-            note.content.includes('[x]') || 
-            note.content.includes('[X]')
-          ).length;
-        }
-        return 0;
-        
-      case 'collaboration':
-        // Count shared notes
-        return notes.filter(note => note.shared?.length > 0).length;
-        
-      case 'search':
-        // This would need integration with search history
-        return '';
-        
-      case 'activity':
-        // Count notes modified today
-        const today = new Date();
-        return notes.filter(note => {
-          const updateDate = new Date(note.updatedAt);
-          return updateDate.toDateString() === today.toDateString();
-        }).length;
-        
-      default:
-        return 0;
+      setSelectedNote({ ...note, isFavorite: false, isArchived: false, isDeleted: false, linkedNoteIds: [] });
     }
   };
 
   const handleReorder = (newOrder: DashboardStat[]) => {
-    // Update the order property of each stat based on its new position
     const updatedStats = newOrder.map((stat, index) => ({
       ...stat,
       order: index
     }));
-    reorderStats(0, 0, updatedStats); // Pass the full updated array instead of just indices
+    reorderStats(0, 0, updatedStats);
   };
 
-  // Update the calculateGridHeight function
-  const calculateGridHeight = () => {
-    const rows = Math.ceil(enabledStats.length / 4); // 4 is the number of columns in lg view
-    const rowHeight = 160; // Approximate height of each stat card in pixels
-    // Add extra space when stats editor is open
-    return rows * rowHeight + (showStatsEditor ? 400 : 0); // Add buffer for stats editor
-  };
-
-  // Add this helper function
-  const formatTimeAgo = (date: Date) => {
-    const now = new Date();
-    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    const diffInDays = Math.floor(diffInHours / 24);
-
-    if (diffInMinutes < 1) return 'Just now';
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    if (diffInHours < 24) return `${diffInHours}h ago`;
-    if (diffInDays < 7) return `${diffInDays}d ago`;
-
-    // For older dates, use a consistent format
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
-  interface WelcomeSectionProps {
-    user: any;
-    onNewNote: () => void;
-    onNavigate: (path: string) => void;
-    stats: {
-      totalNotes: number;
-      totalTasks: number;
-      completedTasks: number;
-    };
-    tasks: any[];
-  }
-
-// First, let's separate the welcome section into its own memoized component
-const WelcomeSection = React.memo(({ user, onNewNote, onNavigate, tasks }: WelcomeSectionProps) => {
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 18) return 'Good afternoon';
-    return 'Good evening';
+  const getStatSpanClass = (size: string) => {
+    switch (size) {
+      case 'medium': return 'col-span-2';
+      case 'large': return 'col-span-3';
+      default: return 'col-span-1';
+    }
   };
 
   return (
-    <div className="relative overflow-hidden">
-      {/* Gradient overlays */}
-      <div 
-        className="absolute top-0 right-0 w-[400px] h-[400px] opacity-30"
-        style={{
-          background: 'radial-gradient(circle, var(--primary-500-alpha) 0%, transparent 70%)',
-        }}
-      />
-      <div 
-        className="absolute bottom-0 left-0 w-[300px] h-[300px] opacity-30"
-        style={{
-          background: 'radial-gradient(circle, var(--amber-500-alpha) 0%, transparent 70%)',
-        }}
-      />
-
-      <div className="relative flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
-        {/* Left Section */}
-        <div className="space-y-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <h1 className={textStyles.h1}>
-                {getGreeting()},{' '}
-                <span className="text-primary-600 dark:text-primary-400">
-                  {user?.name}
-                </span>
-              </h1>
-              <span 
-                className="inline-block animate-wave"
-                style={{ transformOrigin: '70% 70%' }}
-              >
-                👋
-              </span>
-            </div>
-            <p className={textStyles.bodySmall}>
-              Ready to capture your thoughts and ideas?
-            </p>
-          </div>
-          
-          {/* Quick Actions */}
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={onNewNote}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-all duration-200 shadow-lg shadow-primary-600/20 hover:shadow-primary-600/30 hover:-translate-y-0.5"
-            >
-              <Plus className="w-4 h-4" />
-              <span className="font-medium text-sm">New Note</span>
-            </button>
-            <button
-              onClick={() => onNavigate('/dashboard/tasks')}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-200 shadow-lg shadow-green-600/20 hover:shadow-green-600/30 hover:-translate-y-0.5"
-            >
-              <CheckSquare className="w-4 h-4" />
-              <span className="font-medium text-sm">New Task</span>
-            </button>
-            <button
-              onClick={() => onNavigate('/dashboard/ideas')}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-all duration-200 shadow-lg shadow-amber-600/20 hover:shadow-amber-600/30 hover:-translate-y-0.5"
-            >
-              <Lightbulb className="w-4 h-4" />
-              <span className="font-medium text-sm">Capture Idea</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Right Section - Summary */}
-        <div className="relative bg-white/10 dark:bg-white/5 rounded-lg p-3 space-y-2 min-w-[260px] border border-gray-200/30 dark:border-gray-700/30">
-          <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
-            <div className="p-1.5 bg-gray-100/50 dark:bg-white/10 rounded-lg">
-              <Clock className="w-3.5 h-3.5" />
-            </div>
-            <span className="text-sm font-medium">
-              {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-            </span>
-          </div>
-          <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
-            <div className="p-1.5 bg-green-100/50 dark:bg-green-500/10 rounded-lg">
-              <CheckCircle className="w-3.5 h-3.5 text-green-600 dark:text-green-500" />
-            </div>
-            <div>
-              <span className="text-sm font-semibold text-green-600 dark:text-green-500">
-                {tasks.filter(task => task.status === 'Completed').length}
-              </span>
-              <span className="ml-1 text-sm">tasks completed today</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
-            <div className="p-1.5 bg-blue-100/50 dark:bg-blue-500/10 rounded-lg">
-              <Edit3 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-500" />
-            </div>
-            <div>
-              <span className="text-sm font-semibold text-blue-600 dark:text-blue-500">
-                {notes.filter(note => {
-                  const today = new Date();
-                  return new Date(note.updatedAt).toDateString() === today.toDateString();
-                }).length}
-              </span>
-              <span className="ml-1 text-sm">notes updated today</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-});
-
-  return (
-    <div 
+    <div
       className="space-y-8"
       style={{
         contain: 'content'
       }}
     >
-      {/* Welcome Section - With data-type attribute to differentiate it */}
-      <div 
-        className="bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm rounded-xl"
+      {/* Welcome Section */}
+      <div
+        className="bg-white/20 dark:bg-[#2C2C2E] border border-gray-200/30 dark:border-[#3C3C3E]/30 shadow-sm rounded-xl"
         data-type="welcome-section"
       >
         <div className="p-6">
-          <WelcomeSection 
-            user={user}
+          <WelcomeSection
+            user={{ ...user!, experience: user!.experiencePoints }}
             onNewNote={() => setShowNewNoteModal(true)}
             onNavigate={navigate}
             stats={stats}
-            tasks={tasks}
+            tasks={tasks.map(task => ({
+              ...task,
+              status: task.status === 'Incomplete' ? 'Pending' : task.status,
+              dueDate: task.dueDate ?? undefined
+            }))}
           />
         </div>
       </div>
 
       {/* Quick Stats */}
-      <div className="bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm p-6 rounded-xl">
+      <div className="bg-white/20 dark:bg-[#2C2C2E] border border-gray-200/30 dark:border-[#3C3C3E]/30 shadow-sm p-6 rounded-xl">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
             Quick Stats
@@ -619,15 +415,11 @@ const WelcomeSection = React.memo(({ user, onNewNote, onNavigate, tasks }: Welco
             className="grid grid-cols-8 gap-2"
           >
             <AnimatePresence mode="popLayout">
-              {enabledStats.map((stat, index) => (
+              {enabledStats.map((stat) => (
                 <Reorder.Item
                   key={stat.id}
                   value={stat}
-                  className={`group relative w-full ${stat.size === 'small' ? 'col-span-1' :   // Base size (1/8)
-                      stat.size === 'medium' ? 'col-span-2' :  // Double width (2/8)
-                        stat.size === 'large' ? 'col-span-3' :   // Triple width (3/8)
-                          'col-span-1'
-                    }`}
+                  className={`group relative w-full ${getStatSpanClass(stat.size)}`}
                   initial={false}
                   whileDrag={{
                     scale: 1.05,
@@ -651,7 +443,6 @@ const WelcomeSection = React.memo(({ user, onNewNote, onNavigate, tasks }: Welco
                     showStatsEditor={showStatsEditor}
                     onRemove={toggleStat}
                     getStatValue={getStatValue}
-                    index={index}
                   />
                 </Reorder.Item>
               ))}
@@ -683,7 +474,7 @@ const WelcomeSection = React.memo(({ user, onNewNote, onNavigate, tasks }: Welco
 
       {/* Pinned Notes */}
       {stats.pinnedNotes.length > 0 && (
-        <div className="bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm p-6 rounded-xl">
+        <div className="bg-white/20 dark:bg-[#2C2C2E] border border-gray-200/30 dark:border-[#3C3C3E]/30 shadow-sm p-6 rounded-xl">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <PinIcon className="w-5 h-5 text-primary-600 dark:text-primary-500" />
@@ -699,24 +490,26 @@ const WelcomeSection = React.memo(({ user, onNewNote, onNavigate, tasks }: Welco
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
-          <div 
+          <div
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
           >
             {stats.pinnedNotes.map(note => (
-              <div
+              <button
                 key={note.id}
                 onClick={() => handleEditNote(note)}
-                className="cursor-pointer transition-transform duration-200 hover:-translate-y-0.5"
+                onKeyDown={(e) => e.key === 'Enter' && handleEditNote(note)}
+                className="w-full text-left cursor-pointer transition-transform duration-200 hover:-translate-y-0.5"
+                tabIndex={0}
               >
                 <NoteCard note={note} />
-              </div>
+              </button>
             ))}
           </div>
         </div>
       )}
 
       {/* Recent Activity */}
-      <div className="bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm p-6 rounded-xl">
+      <div className="bg-white/20 dark:bg-[#2C2C2E] border border-gray-200/30 dark:border-[#3C3C3E]/30 shadow-sm p-6 rounded-xl">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 mb-4">
             <Clock className="w-5 h-5 text-primary-600 dark:text-primary-500" />
@@ -734,13 +527,15 @@ const WelcomeSection = React.memo(({ user, onNewNote, onNavigate, tasks }: Welco
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {notes.slice(0, 3).map(note => (
-            <div
+            <button
               key={note.id}
               onClick={() => handleEditNote(note)}
-              className="cursor-pointer transition-transform duration-200 hover:-translate-y-0.5"
+              onKeyDown={(e) => e.key === 'Enter' && handleEditNote(note)}
+              className="w-full text-left cursor-pointer transition-transform duration-200 hover:-translate-y-0.5"
+              tabIndex={0}
             >
               <NoteCard note={note} />
-            </div>
+            </button>
           ))}
         </div>
       </div>

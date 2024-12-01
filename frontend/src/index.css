@@ -12,9 +12,8 @@
     @apply transition-colors duration-200;
   }
 
-  /* Force dark mode styles when .dark class is present */
   html.dark {
-    @apply bg-[#111827] !important;
+    @apply bg-[#1C1C1E] !important;
   }
 
   body {
@@ -24,7 +23,7 @@
   }
 
   body.dark {
-    @apply bg-[#111827] !important;
+    @apply bg-[#1C1C1E] !important;
   }
 
   #root {
@@ -33,46 +32,44 @@
     @apply transition-colors duration-200;
   }
 
-  /* Handle stretching in Safari */
   @supports (-webkit-overflow-scrolling: touch) {
     html.dark, 
     body.dark {
-      @apply bg-[#111827] !important;
+      @apply bg-[#1C1C1E] !important;
     }
   }
 
-  /* Add overscroll color matching */
   @supports (overscroll-behavior-y: contain) {
     html.dark {
-      @apply bg-[#111827] !important;
+      @apply bg-[#1C1C1E] !important;
     }
   }
 }
 
 @layer components {
   .glass-effect {
-    @apply bg-white/90 dark:bg-gray-900/50 backdrop-blur-md border border-white/20 dark:border-gray-700/30;
+    @apply bg-white/90 dark:bg-[#2C2C2E]/90 backdrop-blur-md border border-white/20 dark:border-[#3C3C3E]/30;
   }
   
   .gradient-border {
-    @apply border border-transparent bg-gradient-to-r from-primary-500/20 to-primary-600/20 dark:from-primary-900/20 dark:to-primary-800/10;
+    @apply border border-transparent bg-gradient-to-r from-gray-500/20 to-gray-600/20 dark:from-[#2C2C2E]/20 dark:to-[#3C3C3E]/10;
   }
 
   .glass-morphism {
-    @apply bg-white/90 dark:bg-gray-900/90;
+    @apply bg-white/90 dark:bg-[#2C2C2E]/90;
     isolation: isolate;
   }
 
   .glass-morphism-backdrop {
-    @apply bg-white/50 dark:bg-gray-900/50;
+    @apply bg-white/50 dark:bg-[#2C2C2E]/50;
   }
 
   .dark .glass-morphism-backdrop {
-    background-color: rgba(17, 24, 39, 0.5);
+    background-color: rgba(44, 44, 46, 0.5);
   }
 
   .glass-card {
-    @apply bg-white/90 dark:bg-gray-900/90
+    @apply bg-white/90 dark:bg-[#2C2C2E]/90
            motion-safe:transition-[background-color,border-color,opacity,box-shadow]
            motion-safe:duration-200
            transform-gpu;
@@ -85,23 +82,23 @@
   }
 
   .dark .glass-card-backdrop {
-    background-color: rgba(17, 24, 39, 0.5);
+    background-color: rgba(44, 44, 46, 0.5);
   }
 
   .card {
-    @apply bg-white dark:bg-gray-900/50 
+    @apply bg-white dark:bg-[#2C2C2E]/50 
            backdrop-blur-md 
-           border border-gray-200 dark:border-gray-700/30
+           border border-gray-200 dark:border-[#3C3C3E]/30
            shadow-lg dark:shadow-dark
            rounded-lg;
   }
 
   .container-dark {
-    @apply bg-gradient-to-br from-gray-900 via-gray-800 to-primary-900/50;
+    @apply bg-gradient-to-br from-[#1C1C1E] via-[#2C2C2E] to-[#3C3C3E]/50;
   }
 
   .panel-dark {
-    @apply bg-gray-900/50 backdrop-blur-md border border-gray-700/30 shadow-dark;
+    @apply bg-[#2C2C2E]/50 backdrop-blur-md border border-[#3C3C3E]/30 shadow-dark;
   }
 
   .scroll-container {
@@ -346,12 +343,12 @@
 
 /* Update the glass-morphism related styles */
 .glass-morphism {
-  @apply bg-white/90 dark:bg-gray-900/90;
+  @apply bg-white/90 dark:bg-[#2C2C2E]/90;
   isolation: isolate;
 }
 
 .glass-morphism-backdrop {
-  @apply bg-white/50 dark:bg-gray-900/50;
+  @apply bg-white/50 dark:bg-[#2C2C2E]/50;
 }
 
 /* Remove or update problematic backdrop-filter styles */
@@ -375,5 +372,5 @@
 /* Global style outside of layers */
 html.dark,
 body.dark {
-  @apply bg-[#111827] !important;
+  @apply bg-[#1C1C1E] !important;
 }

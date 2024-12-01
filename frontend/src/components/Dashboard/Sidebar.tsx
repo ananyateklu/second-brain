@@ -17,8 +17,7 @@ import {
   HelpCircle,
   History,
   Quote,
-  LogOut,
-  User
+  LogOut
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -100,12 +99,12 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
 
       <aside
         ref={sidebarRef}
-        className={`fixed top-0 left-0 z-40 h-screen w-60 bg-white dark:bg-gray-900/50 backdrop-blur-md border-r border-gray-200 dark:border-gray-700/30 transition-transform duration-200 ease-in-out
+        className={`fixed top-0 left-0 z-40 h-screen w-60 bg-white dark:bg-[#111111] backdrop-blur-md border-r border-gray-200 dark:border-[#1C1C1E] transition-transform duration-200 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex justify-center items-center px-4 h-20 border-b border-gray-200 dark:border-dark-border">
+          <div className="flex justify-center items-center px-4 h-20 border-b border-gray-200 dark:border-[#1C1C1E]">
             <img
               src={theme === 'dark' ? darkLogo : lightLogo}
               alt="Second Brain Logo"
@@ -131,7 +130,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                           ${
                             isActive
                               ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
-                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-hover'
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#1C1C1E]'
                           }`
                       }
                     >
@@ -145,7 +144,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           </nav>
 
           {/* Bottom Section */}
-          <div className="p-4 border-t border-gray-200 dark:border-dark-border space-y-1">
+          <div className="p-4 border-t border-gray-200 dark:border-[#1C1C1E] space-y-1">
             <NavLink
               to="/dashboard/settings"
               className={({ isActive }) =>
@@ -153,7 +152,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                   ${
                     isActive
                       ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-hover'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#1C1C1E]'
                   }`
               }
             >
@@ -167,7 +166,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                   ${
                     isActive
                       ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-hover'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#1C1C1E]'
                   }`
               }
             >

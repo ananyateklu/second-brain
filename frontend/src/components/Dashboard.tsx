@@ -43,9 +43,9 @@ export function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-fixed dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-slate-800 bg-gradient-to-br from-white to-gray-100">
+    <div className="min-h-screen overflow-x-hidden bg-gray-50 dark:bg-[#111111]">
       {/* Fixed background */}
-      <div className="fixed inset-0 bg-fixed dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-slate-800 bg-gradient-to-br from-white to-gray-100 -z-10" />
+      <div className="fixed inset-0 bg-gray-50 dark:bg-[#111111] -z-10" />
 
       <div className="flex overflow-x-hidden min-h-screen">
         <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
@@ -87,7 +87,6 @@ export function Dashboard() {
                 <Route path="search" element={<SearchPage />} />
                 <Route path="settings" element={<SettingsPage />} />
                 <Route path="help" element={<HelpPage />} />
-
               </Routes>
             </div>
           </main>

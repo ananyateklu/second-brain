@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { X, Link2, Calendar, Tag, Plus, Type, Lightbulb, CheckSquare, Clock } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { X, Link2, Tag, Plus, Type, Lightbulb, CheckSquare, Clock } from 'lucide-react';
 import { useNotes } from '../../../contexts/NotesContext';
 import { formatDistanceToNow } from 'date-fns';
 import { AddLinkModal } from './AddLinkModal';

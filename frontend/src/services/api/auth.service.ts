@@ -17,6 +17,7 @@ export interface User {
   name: string;
   createdAt: string;
   experiencePoints: number;
+  experience: number;
   level: number;
   avatar: string;
   xpForNextLevel: number;
