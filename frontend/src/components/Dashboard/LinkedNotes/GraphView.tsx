@@ -389,73 +389,79 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: 
           });
         }}
       />
-      <div className="absolute bottom-24 right-4 flex flex-col gap-2 glass-morphism rounded-lg p-2">
-        <button
-          onClick={() => {
-            if (!cyRef.current) return;
-            const cy = cyRef.current;
-            const currentZoom = cy.zoom();
-            cy.animate({
-              zoom: currentZoom * 1.2,
-              duration: 200
-            });
-          }}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-dark-hover rounded-lg transition-colors"
-          title="Zoom in"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600 dark:text-gray-400">
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            <line x1="11" y1="8" x2="11" y2="14"></line>
-            <line x1="8" y1="11" x2="14" y2="11"></line>
-          </svg>
-        </button>
-        <button
-          onClick={() => {
-            if (!cyRef.current) return;
-            const cy = cyRef.current;
-            const currentZoom = cy.zoom();
-            cy.animate({
-              zoom: currentZoom / 1.2,
-              duration: 200
-            });
-          }}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-dark-hover rounded-lg transition-colors"
-          title="Zoom out"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600 dark:text-gray-400">
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            <line x1="8" y1="11" x2="14" y2="11"></line>
-          </svg>
-        </button>
-        <button
-          onClick={() => {
-            if (!cyRef.current) return;
-            const cy = cyRef.current;
-            cy.fit(undefined, 50);
-          }}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-dark-hover rounded-lg transition-colors"
-          title="Fit to view"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600 dark:text-gray-400">
-            <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
-          </svg>
-        </button>
+
+      {/* Zoom Controls - Moved further up */}
+      <div className="absolute bottom-32 right-6 backdrop-blur-sm bg-[#1C1C1E] dark:bg-[#1C1C1E] border border-[#2C2C2E] dark:border-[#2C2C2E] p-3 rounded-lg shadow-lg">
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={() => {
+              if (!cyRef.current) return;
+              const cy = cyRef.current;
+              const currentZoom = cy.zoom();
+              cy.animate({
+                zoom: currentZoom * 1.2,
+                duration: 200
+              });
+            }}
+            className="p-2 hover:bg-[#2C2C2E] rounded-lg transition-colors"
+            title="Zoom in"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              <line x1="11" y1="8" x2="11" y2="14"></line>
+              <line x1="8" y1="11" x2="14" y2="11"></line>
+            </svg>
+          </button>
+          <button
+            onClick={() => {
+              if (!cyRef.current) return;
+              const cy = cyRef.current;
+              const currentZoom = cy.zoom();
+              cy.animate({
+                zoom: currentZoom / 1.2,
+                duration: 200
+              });
+            }}
+            className="p-2 hover:bg-[#2C2C2E] rounded-lg transition-colors"
+            title="Zoom out"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              <line x1="8" y1="11" x2="14" y2="11"></line>
+            </svg>
+          </button>
+          <button
+            onClick={() => {
+              if (!cyRef.current) return;
+              const cy = cyRef.current;
+              cy.fit(undefined, 50);
+            }}
+            className="p-2 hover:bg-[#2C2C2E] rounded-lg transition-colors"
+            title="Fit to view"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+              <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
+            </svg>
+          </button>
+        </div>
       </div>
-      <div className="absolute bottom-4 right-4 bg-opacity-80 bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg">
+
+      {/* Legend - Position unchanged */}
+      <div className="absolute bottom-6 right-6 backdrop-blur-sm bg-[#1C1C1E] dark:bg-[#1C1C1E] border border-[#2C2C2E] dark:border-[#2C2C2E] p-3 rounded-lg shadow-lg">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 border-2 border-blue-500 rounded"></div>
-            <span className="text-sm">Notes</span>
+            <div className="w-4 h-4 border-2 border-blue-500 rounded bg-[#1C1C1E] dark:bg-[#1C1C1E]"></div>
+            <span className="text-sm text-gray-300">Notes</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 border-2 border-orange-500 rounded"></div>
-            <span className="text-sm">Ideas</span>
+            <div className="w-4 h-4 border-2 border-amber-500 rounded bg-[#1C1C1E] dark:bg-[#1C1C1E]"></div>
+            <span className="text-sm text-gray-300">Ideas</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 border-2 border-green-500 rounded bg-[#F0F7F0] dark:bg-[#2A332A]"></div>
-            <span className="text-sm">Selected</span>
+            <div className="w-4 h-4 border-2 border-[#64ab6f] rounded bg-[#2C2C2E] dark:bg-[#2C2C2E]"></div>
+            <span className="text-sm text-gray-300">Selected</span>
           </div>
         </div>
       </div>

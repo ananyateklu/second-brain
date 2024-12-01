@@ -36,12 +36,12 @@ const getIconBg = (type: string) => {
 };
 
 const cardVariants = {
-  hidden: { 
+  hidden: {
     opacity: 0,
     y: 20,
     scale: 0.8
   },
-  visible: { 
+  visible: {
     opacity: 1,
     y: 0,
     scale: 1,
@@ -81,10 +81,9 @@ export function StatsEditor({ isOpen }: { isOpen: boolean }) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
-      transition={{ duration: 0.3 }}
-      className="glass-morphism rounded-xl w-full"
+      className="bg-[#1C1C1E] dark:bg-[#1C1C1E] backdrop-blur-md border border-[#2C2C2E] dark:border-[#2C2C2E] rounded-xl w-full"
     >
-      <div className="p-4 border-b border-gray-200 dark:border-dark-border">
+      <div className="p-4 border-b border-gray-200/30 dark:border-[#1C1C1E]">
         <h3 className="text-sm font-medium text-gray-900 dark:text-white flex items-center gap-2">
           <Icons.Gauge className="w-4 h-4" />
           Available Stats
@@ -111,11 +110,11 @@ export function StatsEditor({ isOpen }: { isOpen: boolean }) {
                   className="transform origin-center cursor-pointer col-span-1"
                 >
                   <motion.div
-                    className="w-full h-[100px] glass-morphism p-3 rounded-lg border border-gray-100 dark:border-dark-border hover:border-primary-400 dark:hover:border-primary-400 transition-all"
+                    className="w-full h-[100px] bg-[#1C1C1E] dark:bg-[#1C1C1E] backdrop-blur-md p-3 rounded-lg border border-[#2C2C2E] dark:border-[#2C2C2E] hover:border-[#64ab6f] dark:hover:border-[#64ab6f] transition-all"
                     whileTap={{ scale: 0.95 }}
                   >
                     <div className="flex flex-col h-full justify-between">
-                      <motion.div 
+                      <motion.div
                         className="flex items-center gap-2"
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -135,13 +134,13 @@ export function StatsEditor({ isOpen }: { isOpen: boolean }) {
                         </span>
                       </div>
 
-                      <motion.div 
+                      <motion.div
                         className="flex items-center gap-1 group"
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.3 }}
                       >
-                        <span className="text-xs font-medium text-primary-600 dark:text-primary-400 group-hover:text-primary-700 dark:group-hover:text-primary-300 transition-colors">
+                        <span className="text-xs font-medium text-[#64ab6f] dark:text-[#64ab6f] group-hover:text-[#64ab6f] dark:group-hover:text-[#64ab6f] transition-colors">
                           Add
                         </span>
                         <Icons.Plus className="w-3 h-3 text-primary-600 dark:text-primary-400 group-hover:text-primary-700 dark:group-hover:text-primary-300 transition-colors" />

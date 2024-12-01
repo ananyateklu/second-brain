@@ -134,13 +134,14 @@ export function NotesPage() {
               placeholder="Search notes..."
               value={filters.search}
               onChange={(e) => handleFilterChange('search', e.target.value)}
+              className="bg-[#1C1C1E] dark:bg-[#1C1C1E] border-[#2C2C2E] dark:border-[#2C2C2E]"
             />
           </div>
 
           <div className="flex gap-2">
             <button
               onClick={toggleFilters}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200/50 dark:border-gray-700/50 bg-white/70 dark:bg-gray-800/70 backdrop-blur-glass hover:bg-white/80 dark:hover:bg-gray-800/80 transition-all text-gray-900 dark:text-gray-100"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[#2C2C2E] dark:border-[#2C2C2E] bg-[#1C1C1E] dark:bg-[#1C1C1E] hover:bg-[#2C2C2E] dark:hover:bg-[#2C2C2E] transition-all text-gray-100 dark:text-gray-100"
             >
               <SlidersHorizontal className="w-5 h-5" />
               <span>Filters</span>
@@ -148,10 +149,10 @@ export function NotesPage() {
 
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-lg border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass transition-all ${
+              className={`p-2 rounded-lg border border-[#2C2C2E] dark:border-[#2C2C2E] transition-all ${
                 viewMode === 'grid'
-                  ? 'bg-primary-50/90 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                  : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/80 dark:hover:bg-gray-800/80 text-gray-900 dark:text-gray-100'
+                  ? 'bg-[#64ab6f]/20 dark:bg-[#64ab6f]/20 text-[#64ab6f] dark:text-[#64ab6f]'
+                  : 'bg-[#1C1C1E] dark:bg-[#1C1C1E] hover:bg-[#2C2C2E] dark:hover:bg-[#2C2C2E] text-gray-100 dark:text-gray-100'
               }`}
               title="Grid View"
             >
@@ -160,10 +161,10 @@ export function NotesPage() {
             
             <button
               onClick={() => setViewMode('list')}
-              className={`p-2 rounded-lg border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass transition-all ${
+              className={`p-2 rounded-lg border border-[#2C2C2E] dark:border-[#2C2C2E] transition-all ${
                 viewMode === 'list'
-                  ? 'bg-primary-50/90 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                  : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/80 dark:hover:bg-gray-800/80 text-gray-900 dark:text-gray-100'
+                  ? 'bg-[#64ab6f]/20 dark:bg-[#64ab6f]/20 text-[#64ab6f] dark:text-[#64ab6f]'
+                  : 'bg-[#1C1C1E] dark:bg-[#1C1C1E] hover:bg-[#2C2C2E] dark:hover:bg-[#2C2C2E] text-gray-100 dark:text-gray-100'
               }`}
               title="List View"
             >
@@ -172,10 +173,10 @@ export function NotesPage() {
             
             <button
               onClick={() => setViewMode('graph')}
-              className={`p-2 rounded-lg border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass transition-all ${
+              className={`p-2 rounded-lg border border-[#2C2C2E] dark:border-[#2C2C2E] transition-all ${
                 viewMode === 'graph'
-                  ? 'bg-primary-50/90 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
-                  : 'bg-white/70 dark:bg-gray-800/70 hover:bg-white/80 dark:hover:bg-gray-800/80 text-gray-900 dark:text-gray-100'
+                  ? 'bg-[#64ab6f]/20 dark:bg-[#64ab6f]/20 text-[#64ab6f] dark:text-[#64ab6f]'
+                  : 'bg-[#1C1C1E] dark:bg-[#1C1C1E] hover:bg-[#2C2C2E] dark:hover:bg-[#2C2C2E] text-gray-100 dark:text-gray-100'
               }`}
               title="Graph View"
             >
@@ -185,12 +186,12 @@ export function NotesPage() {
         </div>
 
         {showFilters && (
-          <div className="p-4 rounded-lg border border-gray-200/50 dark:border-gray-700/50 bg-white/70 dark:bg-gray-800/70 backdrop-blur-glass shadow-lg">
+          <div className="p-4 rounded-lg border border-[#2C2C2E] dark:border-[#2C2C2E] bg-[#1C1C1E] dark:bg-[#1C1C1E] shadow-lg">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Filters</h3>
+              <h3 className="text-lg font-semibold text-gray-100 dark:text-white">Filters</h3>
               <button
                 onClick={clearFilters}
-                className="text-sm text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                className="text-sm text-gray-400 hover:text-[#64ab6f] dark:text-gray-400 dark:hover:text-[#64ab6f]"
               >
                 Clear all
               </button>

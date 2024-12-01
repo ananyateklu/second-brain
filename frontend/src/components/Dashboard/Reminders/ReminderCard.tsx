@@ -21,86 +21,90 @@ export function ReminderCard({ reminder }: ReminderCardProps) {
 
   return (
     <>
-      <div className={`bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm p-4 rounded-xl hover:border-primary-400/50 dark:hover:border-primary-400/50 transition-all duration-200 ${
-        reminder.isCompleted ? 'opacity-75' : ''
-      }`}>
+      <div className={`bg-[#1C1C1E] dark:bg-[#1C1C1E] backdrop-blur-md
+        border border-[#2C2C2E] dark:border-[#2C2C2E]
+        shadow-sm hover:shadow-md
+        p-4 rounded-xl
+        hover:border-[#64ab6f] dark:hover:border-[#64ab6f]
+        transition-all duration-200
+        ${reminder.isCompleted ? 'opacity-75' : ''}`}>
         <div className="flex items-start gap-3">
-          {/* Completion Toggle */}
           <button
             onClick={() => toggleReminderCompletion(reminder.id)}
-            className={`flex-shrink-0 p-1.5 rounded-lg transition-colors ${
+            className={`p-1.5 rounded-lg transition-colors ${
               reminder.isCompleted
-                ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
-                : 'text-gray-400 hover:text-primary-600 dark:text-gray-500 dark:hover:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-800/50'
+                ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
+                : 'text-gray-400 hover:text-primary-600 dark:text-gray-500 dark:hover:text-primary-400 hover:bg-gray-100/50 dark:hover:bg-[#1C1C1E]'
             }`}
           >
             {reminder.isCompleted ? (
-              <CheckSquare className="w-5 h-5" />
+              <CheckSquare className="w-4 h-4" />
             ) : (
-              <Square className="w-5 h-5" />
+              <Square className="w-4 h-4" />
             )}
           </button>
 
-          {/* Content */}
           <div className="flex-1 min-w-0" onClick={() => setShowEditModal(true)}>
-            <div className="flex items-center gap-2">
-              <h3 className={`text-base font-medium ${
-                reminder.isCompleted
-                  ? 'text-gray-500 dark:text-gray-400 line-through'
-                  : 'text-gray-900 dark:text-white'
-              }`}>
-                {reminder.title}
-              </h3>
-              {isOverdue && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
-                  <AlertCircle className="w-3 h-3" />
-                  Overdue
-                </span>
-              )}
-            </div>
-
-            {reminder.description && (
-              <p className={`mt-1 text-sm ${
-                reminder.isCompleted
-                  ? 'text-gray-400 dark:text-gray-500 line-through'
-                  : 'text-gray-600 dark:text-gray-400'
-              } line-clamp-2`}>
-                {reminder.description}
-              </p>
-            )}
-
-            <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
-              <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
-                <Calendar className="w-4 h-4" />
-                <span>
-                  {new Date(reminder.dueDateTime).toLocaleString(undefined, {
-                    dateStyle: 'medium',
-                    timeStyle: 'short'
-                  })}
-                </span>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <h3 className={`text-lg font-semibold ${
+                  reminder.isCompleted
+                    ? 'text-gray-500 dark:text-gray-400 line-through'
+                    : 'text-gray-900 dark:text-white'
+                }`}>
+                  {reminder.title}
+                </h3>
+                {isOverdue && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
+                    <AlertCircle className="w-3 h-3" />
+                    Overdue
+                  </span>
+                )}
               </div>
 
-              {reminder.repeatInterval && (
+              {reminder.description && (
+                <p className={`mt-1 text-sm ${
+                  reminder.isCompleted
+                    ? 'text-gray-400 dark:text-gray-500 line-through'
+                    : 'text-gray-600 dark:text-gray-400'
+                } line-clamp-2`}>
+                  {reminder.description}
+                </p>
+              )}
+
+              <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
                 <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
-                  <Clock className="w-4 h-4" />
-                  <span className="capitalize">{reminder.repeatInterval}</span>
+                  <Calendar className="w-4 h-4" />
+                  <span>
+                    {new Date(reminder.dueDateTime).toLocaleString(undefined, {
+                      dateStyle: 'medium',
+                      timeStyle: 'short'
+                    })}
+                  </span>
+                </div>
+
+                {reminder.repeatInterval && (
+                  <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                    <Clock className="w-4 h-4" />
+                    <span className="capitalize">{reminder.repeatInterval}</span>
+                  </div>
+                )}
+              </div>
+
+              {reminder.tags && reminder.tags.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {reminder.tags.map(tag => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400"
+                    >
+                      <Tag className="w-3 h-3" />
+                      {tag}
+                    </span>
+                  ))}
                 </div>
               )}
             </div>
-
-            {reminder.tags && reminder.tags.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {reminder.tags.map(tag => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400"
-                  >
-                    <Tag className="w-3 h-3" />
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* Snooze Buttons */}
@@ -111,7 +115,7 @@ export function ReminderCard({ reminder }: ReminderCardProps) {
                   e.stopPropagation();
                   handleSnooze(5 * 60 * 1000);
                 }}
-                className="px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50 rounded transition-colors"
+                className="px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:bg-[#2C2C2E] dark:hover:bg-[#2C2C2E] rounded transition-colors"
               >
                 5m
               </button>
@@ -120,7 +124,7 @@ export function ReminderCard({ reminder }: ReminderCardProps) {
                   e.stopPropagation();
                   handleSnooze(60 * 60 * 1000);
                 }}
-                className="px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50 rounded transition-colors"
+                className="px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:bg-[#2C2C2E] dark:hover:bg-[#2C2C2E] rounded transition-colors"
               >
                 1h
               </button>
@@ -129,7 +133,7 @@ export function ReminderCard({ reminder }: ReminderCardProps) {
                   e.stopPropagation();
                   handleSnooze(24 * 60 * 60 * 1000);
                 }}
-                className="px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50 rounded transition-colors"
+                className="px-2 py-1 text-xs text-gray-600 dark:text-gray-400 hover:bg-[#2C2C2E] dark:hover:bg-[#2C2C2E] rounded transition-colors"
               >
                 1d
               </button>

@@ -153,192 +153,201 @@ export function LinkedNotesPage() {
   });
 
   return (
-    <div className="space-y-3">
-      {/* Header Section */}
-      <div className="bg-white/20 dark:bg-gray-800/20 border border-gray-200/50 dark:border-gray-700/30 shadow-sm p-3 rounded-xl">
-        <div className="flex flex-col gap-3">
-          {/* Title and View Toggle */}
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <Link2 className="w-4 h-4 text-primary-600 dark:text-primary-500" />
-              <h1 className="text-base font-semibold text-gray-900 dark:text-white">
-                Linked Notes
-              </h1>
-            </div>
+    <div className="min-h-screen overflow-x-hidden bg-fixed">
+      {/* Keep the existing background gradient */}
+      <div className="fixed inset-0 bg-fixed dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-slate-800 bg-gradient-to-br from-white to-gray-100 -z-10" />
 
-            {/* View Toggle Buttons */}
-            <div className="flex gap-1.5">
-              <button
-                onClick={() => setViewMode('graph')}
-                className={`p-1.5 rounded-lg transition-colors duration-200 ${viewMode === 'graph'
-                  ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+      <div className="space-y-6 relative">
+        {/* Stats Container */}
+        <div className="bg-[#2C2C2E] dark:bg-[#2C2C2E] border border-[#2C2C2E] dark:border-[#2C2C2E] shadow-sm p-3 rounded-xl">
+          <div className="flex flex-col gap-3">
+            {/* Title and View Toggle */}
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <Link2 className="w-4 h-4 text-[#64ab6f] dark:text-[#64ab6f]" />
+                <h1 className="text-base font-semibold text-gray-100 dark:text-gray-100">
+                  Linked Notes
+                </h1>
+              </div>
+
+              {/* View Toggle Buttons */}
+              <div className="flex gap-1.5">
+                <button
+                  onClick={() => setViewMode('graph')}
+                  className={`p-1.5 rounded-lg transition-colors duration-200 ${
+                    viewMode === 'graph'
+                      ? 'bg-[#64ab6f]/20 text-[#64ab6f]'
+                      : 'text-gray-400 hover:bg-[#1C1C1E]'
                   }`}
-                title="Graph View"
-              >
-                <Network className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-1.5 rounded-lg transition-colors duration-200 ${viewMode === 'list'
-                  ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  title="Graph View"
+                >
+                  <Network className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-1.5 rounded-lg transition-colors duration-200 ${
+                    viewMode === 'list'
+                      ? 'bg-[#64ab6f]/20 text-[#64ab6f]'
+                      : 'text-gray-400 hover:bg-[#1C1C1E]'
                   }`}
-                title="List View"
-              >
-                <List className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-
-          {/* Stats Display Grid - Reorganized to be more compact */}
-          <div className="grid grid-cols-6 gap-1.5"> {/* Changed to 6 columns for better space usage */}
-            {/* Basic Stats Row */}
-            <div className="flex items-center gap-2 px-2.5 py-1.5 bg-white/20 dark:bg-gray-800/20 border border-gray-200/50 dark:border-gray-700/30 rounded-lg">
-              <Type className="shrink-0 w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-              <div className="text-xs truncate">
-                <span className="text-blue-600 dark:text-blue-400 font-medium">{stats.notes}</span>
-                <span className="text-gray-700 dark:text-gray-300"> Notes</span>
+                  title="List View"
+                >
+                  <List className="w-4 h-4" />
+                </button>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 px-2.5 py-1.5 bg-white/20 dark:bg-gray-800/20 border border-gray-200/50 dark:border-gray-700/30 rounded-lg">
-              <Lightbulb className="shrink-0 w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-              <div className="text-xs truncate">
-                <span className="text-amber-600 dark:text-amber-400 font-medium">{stats.ideas}</span>
-                <span className="text-gray-700 dark:text-gray-300"> Ideas</span>
+            {/* Stats Display Grid - Reorganized to be more compact */}
+            <div className="grid grid-cols-6 gap-1.5"> {/* Changed to 6 columns for better space usage */}
+              {/* Basic Stats Row */}
+              <div className="flex items-center gap-2 px-2.5 py-1.5 bg-[#1C1C1E] dark:bg-[#1C1C1E] border border-[#2C2C2E] dark:border-[#2C2C2E] rounded-lg">
+                <Type className="shrink-0 w-3.5 h-3.5 text-[#64ab6f]" />
+                <div className="text-xs truncate">
+                  <span className="text-[#64ab6f] font-medium">{stats.notes}</span>
+                  <span className="text-gray-300"> Notes</span>
+                </div>
               </div>
-            </div>
 
-            <div className="flex items-center gap-2 px-2.5 py-1.5 bg-white/20 dark:bg-gray-800/20 border border-gray-200/50 dark:border-gray-700/30 rounded-lg">
-              <Network className="shrink-0 w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-              <div className="text-xs truncate">
-                <span className="text-indigo-600 dark:text-indigo-400 font-medium">{stats.connectionDensity}%</span>
+              <div className="flex items-center gap-2 px-2.5 py-1.5 bg-[#1C1C1E] dark:bg-[#1C1C1E] border border-[#2C2C2E] dark:border-[#2C2C2E] rounded-lg">
+                <Lightbulb className="shrink-0 w-3.5 h-3.5 text-[#64ab6f] dark:text-[#64ab6f]" />
+                <div className="text-xs truncate">
+                  <span className="text-[#64ab6f] font-medium">{stats.ideas}</span>
+                  <span className="text-gray-300"> Ideas</span>
+                </div>
               </div>
-            </div>
 
-            <div className="flex items-center gap-2 px-2.5 py-1.5 bg-white/20 dark:bg-gray-800/20 border border-gray-200/50 dark:border-gray-700/30 rounded-lg">
-              <GitBranch className="shrink-0 w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
-              <div className="text-xs truncate">
-                <span className="text-purple-600 dark:text-purple-400 font-medium">{stats.clusterCount}</span>
-                <span className="text-gray-700 dark:text-gray-300"> Topics</span>
+              <div className="flex items-center gap-2 px-2.5 py-1.5 bg-[#1C1C1E] dark:bg-[#1C1C1E] border border-[#2C2C2E] dark:border-[#2C2C2E] rounded-lg">
+                <Network className="shrink-0 w-3.5 h-3.5 text-[#64ab6f] dark:text-[#64ab6f]" />
+                <div className="text-xs truncate">
+                  <span className="text-[#64ab6f] font-medium">{stats.connectionDensity}%</span>
+                </div>
               </div>
-            </div>
 
-            <div className="flex items-center gap-2 px-2.5 py-1.5 bg-white/20 dark:bg-gray-800/20 border border-gray-200/50 dark:border-gray-700/30 rounded-lg">
-              <Type className="shrink-0 w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
-              <div className="text-xs truncate">
-                <span className="text-gray-500 dark:text-gray-400 font-medium">{stats.isolatedNotes}</span>
-                <span className="text-gray-700 dark:text-gray-300"> Unconnected Notes</span>
+              <div className="flex items-center gap-2 px-2.5 py-1.5 bg-[#1C1C1E] dark:bg-[#1C1C1E] border border-[#2C2C2E] dark:border-[#2C2C2E] rounded-lg">
+                <GitBranch className="shrink-0 w-3.5 h-3.5 text-[#64ab6f] dark:text-[#64ab6f]" />
+                <div className="text-xs truncate">
+                  <span className="text-[#64ab6f] font-medium">{stats.clusterCount}</span>
+                  <span className="text-gray-300"> Topics</span>
+                </div>
               </div>
-            </div>
 
-            <div className="flex items-center gap-2 px-2.5 py-1.5 bg-white/20 dark:bg-gray-800/20 border border-gray-200/50 dark:border-gray-700/30 rounded-lg">
-              <Lightbulb className="shrink-0 w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
-              <div className="text-xs truncate">
-                <span className="text-gray-500 dark:text-gray-400 font-medium">{stats.isolatedIdeas}</span>
-                <span className="text-gray-700 dark:text-gray-300"> Unconnected Ideas</span>
+              <div className="flex items-center gap-2 px-2.5 py-1.5 bg-[#1C1C1E] dark:bg-[#1C1C1E] border border-[#2C2C2E] dark:border-[#2C2C2E] rounded-lg">
+                <Type className="shrink-0 w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
+                <div className="text-xs truncate">
+                  <span className="text-gray-500 dark:text-gray-400 font-medium">{stats.isolatedNotes}</span>
+                  <span className="text-gray-300"> Unconnected Notes</span>
+                </div>
               </div>
-            </div>
 
-            {/* Most Connected Items Row */}
-            {stats.mostConnectedNote && stats.mostConnectedNote.connectionCount > 0 && (
-              <div className={`col-span-3 flex items-center gap-2 px-3 py-1.5 bg-white/20 dark:bg-gray-800/20 border transition-colors duration-200 rounded-lg ${
-                selectedNoteId === stats.mostConnectedNote.note.id
-                  ? 'border-blue-400/50 dark:border-blue-400/50 bg-blue-50/10 dark:bg-blue-900/10'
-                  : 'border-gray-200/50 dark:border-gray-700/30'
-              }`}>
-                <Type className={`shrink-0 w-3.5 h-3.5 ${
+              <div className="flex items-center gap-2 px-2.5 py-1.5 bg-[#1C1C1E] dark:bg-[#1C1C1E] border border-[#2C2C2E] dark:border-[#2C2C2E] rounded-lg">
+                <Lightbulb className="shrink-0 w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
+                <div className="text-xs truncate">
+                  <span className="text-gray-500 dark:text-gray-400 font-medium">{stats.isolatedIdeas}</span>
+                  <span className="text-gray-300"> Unconnected Ideas</span>
+                </div>
+              </div>
+
+              {/* Most Connected Items Row */}
+              {stats.mostConnectedNote && stats.mostConnectedNote.connectionCount > 0 && (
+                <div className={`col-span-3 flex items-center gap-2 px-3 py-1.5 bg-[#1C1C1E] dark:bg-[#1C1C1E] border transition-colors duration-200 rounded-lg ${
                   selectedNoteId === stats.mostConnectedNote.note.id
-                    ? 'text-blue-600 dark:text-blue-400'
-                    : 'text-blue-600/80 dark:text-blue-400/80'
-                }`} />
-                <button 
-                  onClick={() => setSelectedNoteId(stats.mostConnectedNote?.note.id)}
-                  className="flex-1 flex items-center justify-between text-xs transition-colors"
-                  title={stats.mostConnectedNote.note.title}
-                >
-                  <span className={`truncate pr-3 ${
+                    ? 'border-[#64ab6f]/50 dark:border-[#64ab6f]/50 bg-[#64ab6f]/10 dark:bg-[#64ab6f]/10'
+                    : 'border-gray-200/50 dark:border-gray-700/30'
+                }`}>
+                  <Type className={`shrink-0 w-3.5 h-3.5 ${
                     selectedNoteId === stats.mostConnectedNote.note.id
-                      ? 'text-blue-700 dark:text-blue-300'
-                      : 'text-gray-700 dark:text-gray-300'
-                  }`}>
-                    Most Connected: {stats.mostConnectedNote.note.title}
-                  </span>
-                  <span className="shrink-0 text-blue-600 dark:text-blue-400">
-                    ({stats.mostConnectedNote.connectionCount})
-                  </span>
-                </button>
-              </div>
-            )}
+                      ? 'text-[#64ab6f] dark:text-[#64ab6f]'
+                      : 'text-[#64ab6f]/80 dark:text-[#64ab6f]/80'
+                  }`} />
+                  <button 
+                    onClick={() => setSelectedNoteId(stats.mostConnectedNote?.note.id)}
+                    className="flex-1 flex items-center justify-between text-xs transition-colors"
+                    title={stats.mostConnectedNote.note.title}
+                  >
+                    <span className={`truncate pr-3 ${
+                      selectedNoteId === stats.mostConnectedNote.note.id
+                        ? 'text-[#64ab6f] dark:text-[#64ab6f]'
+                        : 'text-gray-700 dark:text-gray-300'
+                    }`}>
+                      Most Connected: {stats.mostConnectedNote.note.title}
+                    </span>
+                    <span className="shrink-0 text-[#64ab6f] dark:text-[#64ab6f]">
+                      ({stats.mostConnectedNote.connectionCount})
+                    </span>
+                  </button>
+                </div>
+              )}
 
-            {stats.mostConnectedIdea && stats.mostConnectedIdea.connectionCount > 0 && (
-              <div className={`col-span-3 flex items-center gap-2 px-3 py-1.5 bg-white/20 dark:bg-gray-800/20 border transition-colors duration-200 rounded-lg ${
-                selectedNoteId === stats.mostConnectedIdea.note.id
-                  ? 'border-amber-400/50 dark:border-amber-400/50 bg-amber-50/10 dark:bg-amber-900/10'
-                  : 'border-gray-200/50 dark:border-gray-700/30'
-              }`}>
-                <Lightbulb className={`shrink-0 w-3.5 h-3.5 ${
+              {stats.mostConnectedIdea && stats.mostConnectedIdea.connectionCount > 0 && (
+                <div className={`col-span-3 flex items-center gap-2 px-3 py-1.5 bg-[#1C1C1E] dark:bg-[#1C1C1E] border transition-colors duration-200 rounded-lg ${
                   selectedNoteId === stats.mostConnectedIdea.note.id
-                    ? 'text-amber-600 dark:text-amber-400'
-                    : 'text-amber-600/80 dark:text-amber-400/80'
-                }`} />
-                <button 
-                  onClick={() => setSelectedNoteId(stats.mostConnectedIdea?.note.id)}
-                  className="flex-1 flex items-center justify-between text-xs transition-colors"
-                  title={stats.mostConnectedIdea.note.title}
-                >
-                  <span className={`truncate pr-3 ${
+                    ? 'border-[#64ab6f]/50 dark:border-[#64ab6f]/50 bg-[#64ab6f]/10 dark:bg-[#64ab6f]/10'
+                    : 'border-gray-200/50 dark:border-gray-700/30'
+                }`}>
+                  <Lightbulb className={`shrink-0 w-3.5 h-3.5 ${
                     selectedNoteId === stats.mostConnectedIdea.note.id
-                      ? 'text-amber-700 dark:text-amber-300'
-                      : 'text-gray-700 dark:text-gray-300'
-                  }`}>
-                    Most Connected: {stats.mostConnectedIdea.note.title}
-                  </span>
-                  <span className="shrink-0 text-amber-600 dark:text-amber-400">
-                    ({stats.mostConnectedIdea.connectionCount})
-                  </span>
-                </button>
-              </div>
-            )}
+                      ? 'text-[#64ab6f] dark:text-[#64ab6f]'
+                      : 'text-[#64ab6f]/80 dark:text-[#64ab6f]/80'
+                  }`} />
+                  <button 
+                    onClick={() => setSelectedNoteId(stats.mostConnectedIdea?.note.id)}
+                    className="flex-1 flex items-center justify-between text-xs transition-colors"
+                    title={stats.mostConnectedIdea.note.title}
+                  >
+                    <span className={`truncate pr-3 ${
+                      selectedNoteId === stats.mostConnectedIdea.note.id
+                        ? 'text-[#64ab6f] dark:text-[#64ab6f]'
+                        : 'text-gray-700 dark:text-gray-300'
+                    }`}>
+                      Most Connected: {stats.mostConnectedIdea.note.title}
+                    </span>
+                    <span className="shrink-0 text-[#64ab6f] dark:text-[#64ab6f]">
+                      ({stats.mostConnectedIdea.connectionCount})
+                    </span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Main Content Area */}
-      <div className="bg-white/20 dark:bg-gray-800/20 border border-gray-200/50 dark:border-gray-700/30 shadow-sm rounded-xl">
-        <div className="h-[calc(100vh-290px)] flex">
-          {/* Graph/List Container */}
-          <div className={`${selectedNoteId ? 'w-[70%]' : 'w-full'} transition-all duration-300`}>
-            {viewMode === 'graph' ? (
-              notes.length > 0 ? (
-                <GraphView
-                  onNodeSelect={setSelectedNoteId}
-                  selectedNoteId={selectedNoteId}
-                  isDetailsPanelOpen={!!selectedNoteId}
-                />
+        {/* Main Content Area */}
+        <div className="bg-[#2C2C2E] dark:bg-[#2C2C2E] border border-[#2C2C2E] dark:border-[#2C2C2E] shadow-sm rounded-xl">
+          <div className="h-[calc(100vh-320px)] flex relative"> {/* Added relative positioning here */}
+            {/* Graph/List Container */}
+            <div className={`${selectedNoteId ? 'w-[70%]' : 'w-full'} transition-all duration-300`}>
+              {viewMode === 'graph' ? (
+                notes.length > 0 ? (
+                  <>
+                    <GraphView
+                      onNodeSelect={setSelectedNoteId}
+                      selectedNoteId={selectedNoteId}
+                      isDetailsPanelOpen={!!selectedNoteId}
+                    />
+                  </>
+                ) : (
+                  <div className="h-full flex flex-col items-center justify-center gap-3">
+                    <Link2 className="w-8 h-8 text-gray-600" />
+                    <p className="text-gray-400">
+                      No connected notes to display
+                    </p>
+                  </div>
+                )
               ) : (
-                <div className="h-full flex flex-col items-center justify-center gap-3">
-                  <Link2 className="w-8 h-8 text-gray-400 dark:text-gray-600" />
-                  <p className="text-gray-500 dark:text-gray-400">
-                    No connected notes to display
-                  </p>
-                </div>
-              )
-            ) : (
-              <ListView onNoteSelect={setSelectedNoteId} />
+                <ListView onNoteSelect={setSelectedNoteId} />
+              )}
+            </div>
+
+            {/* Details Panel */}
+            {selectedNoteId && (
+              <div className="w-[30%] border-l border-[#2C2C2E] dark:border-[#2C2C2E]">
+                <NoteDetailsPanel
+                  selectedNoteId={selectedNoteId}
+                  onClose={() => setSelectedNoteId(null)}
+                />
+              </div>
             )}
           </div>
-
-          {/* Details Panel - Updated width from 40% to 30% */}
-          {selectedNoteId && (
-            <div className="w-[30%] border-l border-gray-200/50 dark:border-gray-700/30">
-              <NoteDetailsPanel
-                selectedNoteId={selectedNoteId}
-                onClose={() => setSelectedNoteId(null)}
-              />
-            </div>
-          )}
         </div>
       </div>
     </div>

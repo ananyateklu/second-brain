@@ -251,20 +251,20 @@ export function WelcomeBar() {
 
   return (
     <>
-      <div className="bg-white/95 dark:bg-gray-800/20 border border-gray-200/ dark:border-gray-700/30 shadow-md hover:shadow-lg transition-shadow rounded-xl p-6 mb-6">
+      <div className="bg-[#2C2C2E] dark:bg-[#2C2C2E] backdrop-blur-md border border-[#2C2C2E] dark:border-[#2C2C2E] shadow-sm hover:shadow-md transition-shadow rounded-xl p-6 mb-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-start gap-4 w-full">
             <div className="w-full">
               <div className="flex justify-between items-center mb-3">
                 <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
                   {getGreeting()},{' '}
-                  <span className="text-primary-600 dark:text-primary-400">
+                  <span className="text-green-400 dark:text-green-400">
                     {user?.name}
                   </span>
                 </h1>
                 <button
                   onClick={() => setShowStatsEditor(!showStatsEditor)}
-                  className="p-2 hover:bg-gray-100/50 dark:hover:bg-gray-700/50 rounded-lg text-gray-600 dark:text-gray-400 transition-colors"
+                  className="p-2 hover:bg-[#3C3C3E] dark:hover:bg-[#3C3C3E] rounded-lg text-gray-400 dark:text-gray-400 transition-colors"
                   title="Customize stats"
                 >
                   <Settings className="w-5 h-5" />
@@ -290,7 +290,7 @@ export function WelcomeBar() {
                       <Reorder.Item
                         key={stat.id}
                         value={stat}
-                        className={`group relative w-full shadow-md hover:shadow-lg transition-shadow ${stat.size === 'small' ? 'col-span-1' :
+                        className={`group relative w-full ${stat.size === 'small' ? 'col-span-1' :
                             stat.size === 'medium' ? 'col-span-2' :
                               stat.size === 'large' ? 'col-span-3' :
                                 'col-span-1'
@@ -323,7 +323,7 @@ export function WelcomeBar() {
                           className={`transform origin-center relative w-full h-[80px]`}
                         >
                           <motion.div
-                            className={`w-full h-full glass-morphism ${size.padding} rounded-lg border border-gray-100 dark:border-dark-border hover:border-primary-400 dark:hover:border-primary-400 transition-all cursor-pointer`}
+                            className={`w-full h-full bg-[#1C1C1E] dark:bg-[#1C1C1E] backdrop-blur-md ${size.padding} rounded-lg border border-[#2C2C2E] dark:border-[#2C2C2E] hover:border-[#64ab6f] dark:hover:border-[#64ab6f] transition-all cursor-pointer`}
                             whileTap={showStatsEditor ? { scale: 0.95 } : undefined}
                           >
                             <div className="flex flex-col h-full justify-between">
@@ -395,7 +395,7 @@ export function WelcomeBar() {
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
-                                className="absolute bottom-2 right-2 flex items-center gap-1.5 glass-morphism rounded-lg p-1.5 border border-gray-100/20 dark:border-white/5"
+                                className="absolute bottom-2 right-2 flex items-center gap-1.5 bg-[#2C2C2E] dark:bg-[#2C2C2E] backdrop-blur-md rounded-lg p-1.5 border border-[#3C3C3E] dark:border-[#3C3C3E]"
                               >
                                 <button
                                   onClick={(e) => {
@@ -403,8 +403,8 @@ export function WelcomeBar() {
                                     handleSizeChange(stat.id, 'small');
                                   }}
                                   className={`p-0.5 rounded-md transition-all duration-200 ${stat.size === 'small'
-                                      ? 'bg-primary-100/50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
-                                      : 'hover:bg-gray-100/50 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400'
+                                      ? 'bg-green-900/30 dark:bg-green-900/30 text-green-400 dark:text-green-400'
+                                      : 'hover:bg-[#3C3C3E] dark:hover:bg-[#3C3C3E] text-gray-400 dark:text-gray-400'
                                     }`}
                                   title="Small"
                                 >
@@ -416,8 +416,8 @@ export function WelcomeBar() {
                                     handleSizeChange(stat.id, 'medium');
                                   }}
                                   className={`p-0.5 rounded-md transition-all duration-200 ${stat.size === 'medium'
-                                      ? 'bg-primary-100/50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
-                                      : 'hover:bg-gray-100/50 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400'
+                                      ? 'bg-green-900/30 dark:bg-green-900/30 text-green-400 dark:text-green-400'
+                                      : 'hover:bg-[#3C3C3E] dark:hover:bg-[#3C3C3E] text-gray-400 dark:text-gray-400'
                                     }`}
                                   title="Medium"
                                 >
@@ -429,8 +429,8 @@ export function WelcomeBar() {
                                     handleSizeChange(stat.id, 'large');
                                   }}
                                   className={`p-0.5 rounded-md transition-all duration-200 ${stat.size === 'large'
-                                      ? 'bg-primary-100/50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
-                                      : 'hover:bg-gray-100/50 dark:hover:bg-white/5 text-gray-600 dark:text-gray-400'
+                                      ? 'bg-green-900/30 dark:bg-green-900/30 text-green-400 dark:text-green-400'
+                                      : 'hover:bg-[#3C3C3E] dark:hover:bg-[#3C3C3E] text-gray-400 dark:text-gray-400'
                                     }`}
                                   title="Large"
                                 >
@@ -478,7 +478,7 @@ export function WelcomeBar() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm mt-4 mb-6 p-6 rounded-xl"
+            className="bg-white/80 dark:bg-[#111111] backdrop-blur-md border border-gray-200/30 dark:border-[#1C1C1E] shadow-sm mt-4 mb-6 rounded-xl"
           >
             <StatsEditor isOpen={showStatsEditor} />
           </motion.div>

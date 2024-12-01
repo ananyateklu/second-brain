@@ -55,9 +55,9 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
   if (!note) return null;
 
   return (
-    <div className="h-full flex flex-col bg-white/20 dark:bg-gray-800/20 border-l border-gray-200/50 dark:border-gray-700/30 overflow-hidden shadow-lg backdrop-blur-sm">
+    <div className="h-full flex flex-col bg-[#1C1C1E] dark:bg-[#1C1C1E] border-l border-[#2C2C2E] dark:border-[#2C2C2E] overflow-hidden shadow-lg">
       {/* Header */}
-      <div className="shrink-0 p-4 border-b border-gray-200/50 dark:border-gray-700/30">
+      <div className="shrink-0 p-4 border-b border-[#2C2C2E] dark:border-[#2C2C2E]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {isIdea ? (
@@ -71,7 +71,7 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="p-1 rounded-lg hover:bg-[#2C2C2E] transition-colors"
           >
             <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
           </button>
@@ -82,10 +82,10 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* Title and Content */}
         <div>
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+          <h2 className="text-xl font-semibold text-gray-100 mb-2">
             {note.title}
           </h2>
-          <p className="text-gray-600 dark:text-gray-300">
+          <p className="text-gray-400">
             {note.content}
           </p>
         </div>
@@ -93,14 +93,14 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
         {/* Tags */}
         {note.tags && note.tags.length > 0 && (
           <div>
-            <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
+            <h4 className="text-sm font-medium text-gray-100 mb-2">
               Tags
             </h4>
             <div className="flex flex-wrap gap-2">
               {note.tags.map(tag => (
                 <span
                   key={tag}
-                  className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 text-sm"
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[#64ab6f]/20 text-[#64ab6f] text-sm"
                 >
                   <Tag className="w-3 h-3" />
                   {tag}
@@ -113,12 +113,12 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
         {/* Connected Items */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h4 className="text-sm font-medium text-gray-900 dark:text-white">
+            <h4 className="text-sm font-medium text-gray-100">
               Connected Items ({linkedItems.notes.length + linkedItems.tasks.length})
             </h4>
             <button
               onClick={() => setShowAddLinkModal(true)}
-              className="flex items-center gap-1.5 px-2 py-1 text-sm text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 px-2 py-1 text-sm text-[#64ab6f] hover:bg-[#64ab6f]/20 rounded-lg transition-colors"
             >
               <Plus className="w-4 h-4" />
               Add Link
@@ -129,12 +129,12 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
             {/* Notes Section */}
             {linkedItems.notes.length > 0 && (
               <div>
-                <h5 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Notes</h5>
+                <h5 className="text-xs font-medium text-gray-400 mb-2">Notes</h5>
                 <div className="space-y-2">
                   {linkedItems.notes.map(linkedNote => (
                     <div
                       key={linkedNote.id}
-                      className="group relative p-3 rounded-lg bg-white/20 dark:bg-gray-800/20 border border-gray-200/50 dark:border-gray-700/30 hover:border-primary-400/50 dark:hover:border-primary-400/50 transition-all"
+                      className="group relative p-3 rounded-lg bg-[#2C2C2E] dark:bg-[#2C2C2E] border border-[#2C2C2E] dark:border-[#2C2C2E] hover:border-primary-400/50 dark:hover:border-primary-400/50 transition-all"
                     >
                       <div className="flex items-start gap-3">
                         <div className={`p-1.5 rounded-lg ${
@@ -149,16 +149,16 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h6 className="font-medium text-gray-900 dark:text-white truncate">
+                          <h6 className="font-medium text-gray-100 truncate">
                             {linkedNote.title}
                           </h6>
-                          <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
+                          <p className="text-sm text-gray-400 line-clamp-2">
                             {linkedNote.content}
                           </p>
                         </div>
                         <button
                           onClick={() => handleUnlink(linkedNote.id)}
-                          className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 rounded transition-opacity"
+                          className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 rounded transition-opacity"
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -172,31 +172,31 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
             {/* Tasks Section */}
             {linkedItems.tasks.length > 0 && (
               <div>
-                <h5 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Tasks</h5>
+                <h5 className="text-xs font-medium text-gray-400 mb-2">Tasks</h5>
                 <div className="space-y-2">
                   {linkedItems.tasks.map(task => (
                     <div
                       key={task.id}
-                      className="group relative p-3 rounded-lg bg-white/20 dark:bg-gray-800/20 border border-gray-200/50 dark:border-gray-700/30 hover:border-purple-400/50 dark:hover:border-purple-400/50 transition-all"
+                      className="group relative p-3 rounded-lg bg-[#2C2C2E] dark:bg-[#2C2C2E] border border-[#2C2C2E] dark:border-[#2C2C2E] hover:border-primary-400/50 dark:hover:border-primary-400/50 transition-all"
                     >
                       <div className="flex items-start gap-3">
-                        <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-                          <CheckSquare className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                        <div className="p-1.5 bg-[#64ab6f]/20 rounded-lg">
+                          <CheckSquare className="w-4 h-4 text-[#64ab6f]" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h6 className="font-medium text-gray-900 dark:text-white truncate">
+                          <h6 className="font-medium text-gray-100 truncate">
                             {task.title}
                           </h6>
                           <div className="flex items-center gap-3 mt-1">
                             <span className={`text-xs px-2 py-0.5 rounded-full ${
                               task.status === 'completed'
-                                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                                : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+                                ? 'bg-[#64ab6f]/20 text-[#64ab6f]'
+                                : 'bg-[#64ab6f]/20 text-[#64ab6f]'
                             }`}>
                               {task.status}
                             </span>
                             {task.dueDate && (
-                              <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                              <span className="flex items-center gap-1 text-xs text-gray-400">
                                 <Clock className="w-3 h-3" />
                                 {formatDistanceToNow(new Date(task.dueDate), { addSuffix: true })}
                               </span>
@@ -205,7 +205,7 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
                         </div>
                         <button
                           onClick={() => handleUnlink(task.id)}
-                          className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 rounded transition-opacity"
+                          className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 rounded transition-opacity"
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -218,11 +218,11 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
 
             {linkedItems.notes.length === 0 && linkedItems.tasks.length === 0 && (
               <div className="flex flex-col items-center justify-center py-8 text-center">
-                <Link2 className="w-8 h-8 text-gray-300 dark:text-gray-600 mb-2" />
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+                <Link2 className="w-8 h-8 text-gray-600 mb-2" />
+                <p className="text-sm text-gray-400">
                   No connected items yet
                 </p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 mt-1">
                   Click "Add Link" to connect with notes, ideas, or tasks
                 </p>
               </div>

@@ -30,17 +30,22 @@ export function TaskCard({ task }: TaskCardProps) {
   return (
     <>
       <div className="w-full">
-        <div className="p-4 bg-white dark:bg-gray-900 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-[#1C1C1E] dark:bg-[#1C1C1E] backdrop-blur-md
+          border border-[#2C2C2E] dark:border-[#2C2C2E]
+          shadow-sm hover:shadow-md
+          p-4 rounded-xl
+          hover:border-[#64ab6f] dark:hover:border-[#64ab6f]
+          transition-all duration-200">
           <div className="flex items-start gap-3">
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 toggleTaskStatus(task.id);
               }}
-              className={`p-1 rounded-lg transition-colors ${
+              className={`p-1.5 rounded-lg transition-colors ${
                 task.status === 'Completed'
-                  ? 'text-primary-600 dark:text-primary-400'
-                  : 'text-gray-400 hover:text-primary-600 dark:text-gray-500 dark:hover:text-primary-400'
+                  ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
+                  : 'text-gray-400 hover:text-primary-600 dark:text-gray-500 dark:hover:text-primary-400 hover:bg-gray-100/50 dark:hover:bg-[#1C1C1E]'
               }`}
             >
               {task.status === 'Completed' ? (
@@ -51,9 +56,9 @@ export function TaskCard({ task }: TaskCardProps) {
             </button>
 
             <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setShowEditModal(true)}>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <h3 className={`text-lg font-medium ${
+                  <h3 className={`text-lg font-semibold ${
                     task.status === 'Completed'
                       ? 'text-gray-500 dark:text-gray-400 line-through'
                       : 'text-gray-900 dark:text-white'
@@ -61,18 +66,18 @@ export function TaskCard({ task }: TaskCardProps) {
                     {task.title}
                   </h3>
                   {isOverdue && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-sm">
-                      <AlertCircle className="w-3.5 h-3.5" />
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-medium">
+                      <AlertCircle className="w-3 h-3" />
                       Overdue
                     </span>
                   )}
                 </div>
 
-                <p className={`mt-1 text-sm ${
+                <p className={`text-sm ${
                   task.status === 'Completed'
                     ? 'text-gray-400 dark:text-gray-500'
                     : 'text-gray-600 dark:text-gray-300'
-                }`}>
+                } line-clamp-2`}>
                   {task.description}
                 </p>
 

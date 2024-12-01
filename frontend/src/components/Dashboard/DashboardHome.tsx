@@ -157,7 +157,7 @@ const StatCard = ({
       }}
     >
       <motion.div
-        className={`w-full h-full glass-morphism dark:bg-[#2C2C2E] ${size.padding} rounded-lg border border-gray-100/20 dark:border-[#3C3C3E]/30 hover:border-primary-400 dark:hover:border-primary-400 transition-all cursor-pointer`}
+        className={`w-full h-full bg-[#1C1C1E] dark:bg-[#1C1C1E] backdrop-blur-md ${size.padding} rounded-lg border border-[#2C2C2E] dark:border-[#2C2C2E] hover:border-[#64ab6f] dark:hover:border-[#64ab6f] transition-all cursor-pointer`}
         whileTap={showStatsEditor ? { scale: 0.95 } : undefined}
       >
         <div className="flex flex-col h-full justify-between">
@@ -474,7 +474,7 @@ export function DashboardHome() {
 
       {/* Pinned Notes */}
       {stats.pinnedNotes.length > 0 && (
-        <div className="bg-white/20 dark:bg-[#2C2C2E] border border-gray-200/30 dark:border-[#3C3C3E]/30 shadow-sm p-6 rounded-xl">
+        <div className="bg-[#2C2C2E] dark:bg-[#2C2C2E] border border-[#2C2C2E] dark:border-[#2C2C2E] shadow-sm p-6 rounded-xl">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <PinIcon className="w-5 h-5 text-primary-600 dark:text-primary-500" />
@@ -509,7 +509,7 @@ export function DashboardHome() {
       )}
 
       {/* Recent Activity */}
-      <div className="bg-white/20 dark:bg-[#2C2C2E] border border-gray-200/30 dark:border-[#3C3C3E]/30 shadow-sm p-6 rounded-xl">
+      <div className="bg-[#2C2C2E] dark:bg-[#2C2C2E] border border-[#2C2C2E] dark:border-[#2C2C2E] shadow-sm p-6 rounded-xl">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 mb-4">
             <Clock className="w-5 h-5 text-primary-600 dark:text-primary-500" />

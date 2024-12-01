@@ -127,15 +127,15 @@ export function Input({
               ${Icon ? 'pl-10' : ''}
               ${props.value ? 'pr-10' : ''}
               backdrop-blur-glass
-              bg-white/70 dark:bg-gray-800/70
+              bg-[#1C1C1E] dark:bg-[#1C1C1E]
               rounded-lg
-              border border-gray-200/50 dark:border-gray-700/50
-              text-gray-900 dark:text-gray-100
-              placeholder:text-gray-400 dark:placeholder:text-gray-500
-              focus:text-gray-900 dark:focus:text-primary-300
+              border border-[#2C2C2E] dark:border-[#2C2C2E]
+              text-gray-100 dark:text-gray-100
+              placeholder:text-gray-500 dark:placeholder:text-gray-500
+              focus:text-gray-100 dark:focus:text-[#64ab6f]
               focus:outline-none
               focus:ring-2
-              focus:ring-primary-500/30
+              focus:ring-[#64ab6f]/30
               focus:border-transparent
               transition-all
               duration-200

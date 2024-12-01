@@ -65,7 +65,7 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
   const xpProgress = calculateXPProgress(user);
 
   return (
-    <header className="fixed top-0 right-0 left-0 lg:left-60 z-20 bg-white/80 dark:bg-[#111111] backdrop-blur-md border-b border-gray-200 dark:border-[#1C1C1E]">
+    <header className="fixed top-0 right-0 left-0 lg:left-60 z-20 bg-[#1E1E1E] dark:bg-[#111111] backdrop-blur-md border-b border-[#2C2C2E] dark:border-[#2C2C2E]">
       <div className="max-w-7xl mx-auto h-20 px-4 sm:px-6 lg:px-8 flex items-center gap-4 border-b border-gray-200 dark:border-[#1C1C1E]">
         <div className="w-10 lg:hidden">
           <button

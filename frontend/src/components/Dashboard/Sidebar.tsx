@@ -127,11 +127,10 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                       end={item.exact}
                       className={({ isActive }) =>
                         `flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors duration-200
-                          ${
-                            isActive
-                              ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
-                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#1C1C1E]'
-                          }`
+                          ${isActive
+                          ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#1C1C1E]'
+                        }`
                       }
                     >
                       <item.icon className="w-5 h-5" />
@@ -149,11 +148,10 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
               to="/dashboard/settings"
               className={({ isActive }) =>
                 `flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors duration-200
-                  ${
-                    isActive
-                      ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#1C1C1E]'
-                  }`
+                  ${isActive
+                  ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#1C1C1E]'
+                }`
               }
             >
               <Settings className="w-5 h-5" />
@@ -163,11 +161,10 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
               to="/dashboard/help"
               className={({ isActive }) =>
                 `flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors duration-200
-                  ${
-                    isActive
-                      ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#1C1C1E]'
-                  }`
+                  ${isActive
+                  ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#1C1C1E]'
+                }`
               }
             >
               <HelpCircle className="w-5 h-5" />
