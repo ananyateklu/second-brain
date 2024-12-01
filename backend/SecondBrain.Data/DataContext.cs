@@ -12,7 +12,8 @@ namespace SecondBrain.Data
 
         public DbSet<User> Users { get; set; }
         public DbSet<Note> Notes { get; set; } = null!;
-        public DbSet<TaskItem> Tasks { get; set; }
+        public DbSet<TaskItem> Tasks { get; set; } = null!;
+        public DbSet<TaskLink> TaskLinks { get; set; } = null!;
         public DbSet<Reminder> Reminders { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<TaskItemNote> TaskItemNotes { get; set; }
@@ -174,6 +175,29 @@ namespace SecondBrain.Data
             modelBuilder.Entity<User>()
                 .Property(u => u.Avatar)
                 .HasMaxLength(1000); // Adjust max length based on your needs
+
+            // Configure TaskLink entity
+            modelBuilder.Entity<TaskLink>(entity =>
+            {
+                // Configure composite key
+                entity.HasKey(e => new { e.TaskId, e.LinkedItemId });
+
+                // Configure relationships
+                entity.HasOne(e => e.Task)
+                    .WithMany(t => t.TaskLinks)
+                    .HasForeignKey(e => e.TaskId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.LinkedItem)
+                    .WithMany(n => n.TaskLinks)
+                    .HasForeignKey(e => e.LinkedItemId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.Creator)
+                    .WithMany()
+                    .HasForeignKey(e => e.CreatedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
         }
     }
 }

@@ -2,11 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Note } from '../../../../contexts/NotesContext';
 import { useNotes } from '../../../../contexts/NotesContext';
+import { useTasks } from '../../../../contexts/TasksContext';
+import { Task } from '../../../../api/types/task';
 import { Header } from './Header';
 import { MainContent } from './MainContent';
 import { LinkedNotesPanel } from '../../Notes/EditNoteModal/LinkedNotesPanel';
 import { DeleteConfirmDialog } from '../../Notes/EditNoteModal/DeleteConfirmDialog';
 import { AddLinkModal } from '../../LinkedNotes/AddLinkModal';
+import { AddTaskLinkModal } from '../../Notes/EditNoteModal/AddTaskLinkModal';
 
 interface EditIdeaModalProps {
   isOpen: boolean;
@@ -17,15 +20,18 @@ interface EditIdeaModalProps {
 export function EditIdeaModal({ isOpen, onClose, idea }: EditIdeaModalProps) {
   const navigate = useNavigate();
   const { notes, updateNote, deleteNote } = useNotes();
+  const { tasks, removeTaskLink } = useTasks();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [linkedNotes, setLinkedNotes] = useState<Note[]>([]);
+  const [linkedTasks, setLinkedTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showAddLinkModal, setShowAddLinkModal] = useState(false);
+  const [showAddTaskModal, setShowAddTaskModal] = useState(false);
 
   // Get current idea from context to ensure we have latest data
   const currentIdea = notes.find(n => n.id === idea?.id);
@@ -46,8 +52,14 @@ export function EditIdeaModal({ isOpen, onClose, idea }: EditIdeaModalProps) {
         currentIdea.linkedNoteIds?.includes(n.id)
       );
       setLinkedNotes(linkedNotesList);
+
+      // Update linked tasks
+      const linkedTasksList = tasks.filter(t =>
+        t.linkedItems?.some(item => item.id === currentIdea.id)
+      );
+      setLinkedTasks(linkedTasksList);
     }
-  }, [currentIdea, currentIdea?.linkedNoteIds, notes]);
+  }, [currentIdea, currentIdea?.linkedNoteIds, notes, tasks]);
 
   if (!isOpen || !currentIdea) return null;
 
@@ -58,10 +70,20 @@ export function EditIdeaModal({ isOpen, onClose, idea }: EditIdeaModalProps) {
       setShowDeleteConfirm(false);
       navigate('/dashboard/ideas');
       onClose();
-    } catch (error) {
+    } catch (err) {
+      console.error('Failed to delete idea:', err);
       setError('Failed to delete idea');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleUnlinkTask = async (taskId: string) => {
+    try {
+      await removeTaskLink(taskId, currentIdea.id);
+    } catch (err) {
+      console.error('Failed to unlink task:', err);
+      setError('Failed to unlink task. Please try again.');
     }
   };
 
@@ -83,7 +105,8 @@ export function EditIdeaModal({ isOpen, onClose, idea }: EditIdeaModalProps) {
         tags: tags.includes('idea') ? tags : ['idea', ...tags]
       });
       onClose();
-    } catch (error) {
+    } catch (err) {
+      console.error('Failed to update idea:', err);
       setError('Failed to update idea. Please try again.');
     } finally {
       setIsLoading(false);
@@ -139,9 +162,12 @@ export function EditIdeaModal({ isOpen, onClose, idea }: EditIdeaModalProps) {
 
             <LinkedNotesPanel
               linkedNotes={linkedNotes}
+              linkedTasks={linkedTasks}
               onShowAddLink={() => setShowAddLinkModal(true)}
+              onShowAddTask={() => setShowAddTaskModal(true)}
               currentNoteId={currentIdea?.id || ''}
               isIdea={true}
+              onUnlinkTask={handleUnlinkTask}
             />
           </div>
 
@@ -176,6 +202,13 @@ export function EditIdeaModal({ isOpen, onClose, idea }: EditIdeaModalProps) {
           onClose={() => setShowAddLinkModal(false)}
           sourceNoteId={currentIdea.id}
           onLinkAdded={() => setShowAddLinkModal(false)}
+        />
+
+        <AddTaskLinkModal
+          isOpen={showAddTaskModal}
+          onClose={() => setShowAddTaskModal(false)}
+          noteId={currentIdea.id}
+          onLinkAdded={() => setShowAddTaskModal(false)}
         />
       </div>
     </div>

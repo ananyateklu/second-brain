@@ -2,32 +2,37 @@ export interface Task {
     id: string;
     title: string;
     description: string;
-    status: 'incomplete' | 'completed';
+    status: 'Incomplete' | 'Completed';
     priority: 'low' | 'medium' | 'high';
     dueDate: string | null;
     tags: string[];
-    linkedNotes: string[];
-    linkedIdeas: string[];
+    linkedItems: Array<{
+        id: string;
+        title: string;
+        type: string;
+        createdAt: string;
+    }>;
     createdAt: string;
     updatedAt: string;
-    userId: string;
-  }
-  
-  export interface CreateTaskDto {
+    isDeleted?: boolean;
+    deletedAt?: string;
+}
+
+export interface CreateTaskDto {
     title: string;
     description: string;
-    priority: number;
-    dueDate?: string;
+    priority: 'low' | 'medium' | 'high';
+    dueDate?: string | null;
     tags?: string[];
-  }
+}
 
 export interface UpdateTaskDto {
-  title?: string;
-  description?: string;
-  priority?: number;
-  dueDate?: string | null;
-  tags?: string[];
-  status?: number;
-  isDeleted?: boolean;
-  deletedAt?: string | null;
+    title?: string;
+    description?: string;
+    priority?: 'low' | 'medium' | 'high';
+    dueDate?: string | null;
+    tags?: string[];
+    status?: 'Incomplete' | 'Completed';
+    isDeleted?: boolean;
+    deletedAt?: string | null;
 }

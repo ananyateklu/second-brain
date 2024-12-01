@@ -36,7 +36,7 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!title.trim()) {
       setError('Title is required');
       return;
@@ -49,15 +49,11 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
       await addTask({
         title: title.trim(),
         description: description.trim(),
-        status: 'incomplete',
         priority,
         dueDate: dueDate ? new Date(dueDate).toISOString() : null,
-        tags,
-        linkedNotes: [],
-        linkedIdeas: [],
-        reminders: []
+        tags
       });
-      
+
       onClose();
     } catch (error) {
       setError('Failed to create task. Please try again.');
@@ -69,7 +65,7 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      
+
       <div className="relative w-full max-w-2xl glass-morphism rounded-xl">
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-dark-border">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
@@ -174,15 +170,14 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
                       type="button"
                       onClick={() => setPriority(p)}
                       disabled={isLoading}
-                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        priority === p
+                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${priority === p
                           ? p === 'high'
                             ? 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300'
                             : p === 'medium'
-                            ? 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300'
-                            : 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300'
+                              ? 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300'
+                              : 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300'
                           : 'bg-gray-100 dark:bg-dark-card text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-dark-hover'
-                      }`}
+                        }`}
                     >
                       <span className="capitalize">{p}</span>
                     </button>

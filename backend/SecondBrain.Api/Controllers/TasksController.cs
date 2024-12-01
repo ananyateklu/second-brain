@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
 using System.Linq;
 using System.Security.Claims;
+using SecondBrain.Api.Extensions;
 
 namespace SecondBrain.Api.Controllers
 {
@@ -23,20 +24,17 @@ namespace SecondBrain.Api.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAllTasks()
+        public async Task<ActionResult<IEnumerable<TaskResponse>>> GetTasks()
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { error = "User ID not found in token." });
-            }
-
+            var userId = User.GetUserId();
             var tasks = await _context.Tasks
+                .Include(t => t.TaskLinks)
+                    .ThenInclude(tl => tl.LinkedItem)
                 .Where(t => t.UserId == userId && !t.IsDeleted)
+                .OrderByDescending(t => t.CreatedAt)
                 .ToListAsync();
 
-            var response = tasks.Select(TaskResponse.FromEntity);
-            return Ok(response);
+            return Ok(tasks.Select(TaskResponse.FromEntity));
         }
 
         [HttpGet("deleted")]
@@ -84,35 +82,22 @@ namespace SecondBrain.Api.Controllers
 
             var response = TaskResponse.FromEntity(task);
 
-            return CreatedAtAction(nameof(GetTaskById), new { id = task.Id }, response);
+            return CreatedAtAction(nameof(GetTask), new { id = task.Id }, response);
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetTaskById(string id)
+        public async Task<ActionResult<TaskResponse>> GetTask(string id)
         {
-            // Retrieve userId using ClaimTypes.NameIdentifier
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            // Optional: Check if userId is null or empty
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { error = "User ID not found in token." });
-            }
-
+            var userId = User.GetUserId();
             var task = await _context.Tasks
-                .Where(t => t.Id == id && t.UserId == userId)
-                .Include(t => t.TaskItemNotes)
-                .ThenInclude(tn => tn.Note)
-                .FirstOrDefaultAsync();
+                .Include(t => t.TaskLinks)
+                    .ThenInclude(tl => tl.LinkedItem)
+                .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
 
             if (task == null)
-            {
-                return NotFound(new { error = "Task not found." });
-            }
+                return NotFound();
 
-            var response = TaskResponse.FromEntity(task);
-
-            return Ok(task);
+            return Ok(TaskResponse.FromEntity(task));
         }
 
         [HttpPatch("{id}")]
@@ -244,6 +229,75 @@ namespace SecondBrain.Api.Controllers
             await _context.SaveChangesAsync();
             
             return NoContent();
+        }
+
+        [HttpPost("{taskId}/links")]
+        [ProducesResponseType(typeof(TaskResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> AddTaskLink(string taskId, [FromBody] TaskLinkRequest request)
+        {
+            var userId = User.GetUserId();
+            var task = await _context.Tasks
+                .Include(t => t.TaskLinks)
+                .FirstOrDefaultAsync(t => t.Id == taskId && t.UserId == userId);
+
+            if (task == null)
+                return NotFound();
+
+            var linkedItem = await _context.Notes
+                .FirstOrDefaultAsync(n => n.Id == request.LinkedItemId && n.UserId == userId);
+
+            if (linkedItem == null)
+                return NotFound("Linked item not found");
+
+            var taskLink = new TaskLink
+            {
+                TaskId = taskId,
+                LinkedItemId = request.LinkedItemId,
+                LinkType = request.LinkType,
+                Description = request.Description,
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = userId
+            };
+
+            _context.TaskLinks.Add(taskLink);
+            await _context.SaveChangesAsync();
+
+            task = await _context.Tasks
+                .Include(t => t.TaskLinks)
+                .ThenInclude(tl => tl.LinkedItem)
+                .FirstAsync(t => t.Id == taskId);
+
+            return Ok(TaskResponse.FromEntity(task));
+        }
+
+        [HttpDelete("{taskId}/links/{linkedItemId}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> RemoveTaskLink(string taskId, string linkedItemId)
+        {
+            var userId = User.GetUserId();
+            var taskLink = await _context.TaskLinks
+                .FirstOrDefaultAsync(tl => 
+                    tl.TaskId == taskId && 
+                    tl.LinkedItemId == linkedItemId && 
+                    tl.Task.UserId == userId);
+
+            if (taskLink == null)
+                return NotFound();
+
+            taskLink.IsDeleted = true;
+            taskLink.DeletedAt = DateTime.UtcNow;
+            
+            await _context.SaveChangesAsync();
+
+            var task = await _context.Tasks
+                .Include(t => t.TaskLinks)
+                .ThenInclude(tl => tl.LinkedItem)
+                .FirstAsync(t => t.Id == taskId);
+
+            return Ok(TaskResponse.FromEntity(task));
         }
     }
 }

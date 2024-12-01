@@ -239,13 +239,13 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
       case 'active-tasks':
         return {
-          value: tasks.filter(task => task.status === 'incomplete').length,
+          value: tasks.filter(task => task.status === 'Incomplete').length,
           timeframe: 'Current'
         };
 
       case 'completed-tasks':
         return {
-          value: tasks.filter(task => task.status === 'completed').length,
+          value: tasks.filter(task => task.status === 'Completed').length,
           timeframe: 'Total'
         };
 

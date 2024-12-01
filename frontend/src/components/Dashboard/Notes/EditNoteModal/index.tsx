@@ -2,11 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Note } from '../../../../contexts/NotesContext';
 import { useNotes } from '../../../../contexts/NotesContext';
+import { useTasks } from '../../../../contexts/TasksContext';
+import { Task } from '../../../../api/types/task';
 import { Header } from './Header';
 import { MainContent } from './MainContent';
 import { LinkedNotesPanel } from './LinkedNotesPanel';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import { AddLinkModal } from '../../LinkedNotes/AddLinkModal';
+import { AddTaskLinkModal } from './AddTaskLinkModal';
 
 interface EditNoteModalProps {
   isOpen: boolean;
@@ -14,18 +17,27 @@ interface EditNoteModalProps {
   note: Note | null;
 }
 
+interface HeaderProps {
+  note: Note;
+  onClose: () => void;
+  onShowDeleteConfirm: () => void;
+}
+
 export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
   const navigate = useNavigate();
   const { notes, updateNote, deleteNote } = useNotes();
+  const { tasks, removeTaskLink } = useTasks();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [linkedNotes, setLinkedNotes] = useState<Note[]>([]);
+  const [linkedTasks, setLinkedTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showAddLinkModal, setShowAddLinkModal] = useState(false);
+  const [showAddTaskModal, setShowAddTaskModal] = useState(false);
 
   // Get current note from context to ensure we have latest data
   const currentNote = notes.find(n => n.id === note?.id);
@@ -46,8 +58,14 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
         currentNote.linkedNoteIds?.includes(n.id)
       );
       setLinkedNotes(linkedNotesList);
+
+      // Update linked tasks
+      const linkedTasksList = tasks.filter(t =>
+        t.linkedItems?.some(item => item.id === currentNote.id)
+      );
+      setLinkedTasks(linkedTasksList);
     }
-  }, [currentNote, currentNote?.linkedNoteIds, notes]);
+  }, [currentNote, currentNote?.linkedNoteIds, notes, tasks]);
 
   if (!isOpen || !currentNote) return null;
 
@@ -57,10 +75,20 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
       await deleteNote(currentNote.id);
       navigate('/dashboard/notes');
       onClose();
-    } catch (error) {
+    } catch (err) {
+      console.error('Failed to delete note:', err);
       setError('Failed to delete note');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleUnlinkTask = async (taskId: string) => {
+    try {
+      await removeTaskLink(taskId, currentNote.id);
+    } catch (err) {
+      console.error('Failed to unlink task:', err);
+      setError('Failed to unlink task. Please try again.');
     }
   };
 
@@ -82,7 +110,8 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
         tags
       });
       onClose();
-    } catch (error) {
+    } catch (err) {
+      console.error('Failed to update note:', err);
       setError('Failed to update note. Please try again.');
     } finally {
       setIsLoading(false);
@@ -142,9 +171,12 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
 
               <LinkedNotesPanel
                 linkedNotes={linkedNotes}
+                linkedTasks={linkedTasks}
                 onShowAddLink={() => setShowAddLinkModal(true)}
+                onShowAddTask={() => setShowAddTaskModal(true)}
                 currentNoteId={currentNote.id}
                 isIdea={false}
+                onUnlinkTask={handleUnlinkTask}
               />
             </div>
 
@@ -179,6 +211,13 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
             onClose={() => setShowAddLinkModal(false)}
             sourceNoteId={currentNote.id}
             onLinkAdded={() => setShowAddLinkModal(false)}
+          />
+
+          <AddTaskLinkModal
+            isOpen={showAddTaskModal}
+            onClose={() => setShowAddTaskModal(false)}
+            noteId={currentNote.id}
+            onLinkAdded={() => setShowAddTaskModal(false)}
           />
         </div>
       </div>

@@ -548,7 +548,7 @@ const WelcomeSection = React.memo(({ user, onNewNote, onNavigate, tasks }: Welco
             </div>
             <div>
               <span className="text-sm font-semibold text-green-600 dark:text-green-500">
-                {tasks.filter(task => task.status === 'completed').length}
+                {tasks.filter(task => task.status === 'Completed').length}
               </span>
               <span className="ml-1 text-sm">tasks completed today</span>
             </div>

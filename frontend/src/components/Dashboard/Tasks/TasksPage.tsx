@@ -17,7 +17,7 @@ export function TasksPage() {
     dueDate: 'all'
   });
 
-  const completedTasks = tasks.filter(task => task && task.status === 'completed').length;
+  const completedTasks = tasks.filter(task => task && task.status === 'Completed').length;
   const dueTodayTasks = tasks.filter(task => {
     if (!task || !task.dueDate) return false;
     const today = new Date();

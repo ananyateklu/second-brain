@@ -1,40 +1,43 @@
 import api from './api';
-import { UpdateTaskDto } from '../../api/types/task';
+import { Task, UpdateTaskDto } from '../../api/types/task';
+import { mapPriorityToNumber } from '../../utils/priorityMapping';
 
-export interface Task {
-  id: string;
-  title: string;
-  description: string;
-  tags: string[];
-  priority: number;
-  dueDate: string;
-  status: string;
-  isDeleted?: boolean;
-  deletedAt?: string;
-  createdAt: string;
-  updatedAt: string;
+export interface TaskLinkData {
+  taskId: string;
+  linkedItemId: string;
+  linkType: 'note' | 'idea';
+  description?: string;
 }
 
 export interface CreateTaskData {
   title: string;
   description: string;
-  priority: number;
-  dueDate: string;
+  priority: 'low' | 'medium' | 'high';
+  dueDate?: string | null;
+  tags: string[];
+}
+
+function mapStatusToNumber(status: 'Incomplete' | 'Completed'): number {
+  return status === 'Completed' ? 1 : 0;
 }
 
 export const tasksService = {
   async createTask(data: CreateTaskData): Promise<Task> {
-    const response = await api.post<Task>('/api/Tasks', data);
-    return response.data;
-  },
-
-  async getTaskById(id: string): Promise<Task> {
-    const response = await api.get<Task>(`/api/Tasks/${id}`);
+    const priorityNumber = mapPriorityToNumber(data.priority);
+    const response = await api.post<Task>('/api/Tasks', {
+      ...data,
+      priority: priorityNumber,
+    });
     return response.data;
   },
 
   async getTasks(): Promise<Task[]> {
     const response = await api.get<Task[]>('/api/Tasks');
+    return response.data;
+  },
+
+  async getTaskById(id: string): Promise<Task> {
+    const response = await api.get<Task>(`/api/Tasks/${id}`);
     return response.data;
   },
 
@@ -44,8 +47,20 @@ export const tasksService = {
   },
 
   async updateTask(id: string, updates: UpdateTaskDto): Promise<Task> {
-    const response = await api.patch<Task>(`/api/Tasks/${id}`, updates);
-    return response.data;
+    try {
+      // Map priority and status to numbers if they exist in updates
+      const updatesWithMappedValues = {
+        ...updates,
+        priority: updates.priority ? mapPriorityToNumber(updates.priority) : undefined,
+        status: updates.status ? mapStatusToNumber(updates.status) : undefined
+      };
+
+      const response = await api.patch<Task>(`/api/Tasks/${id}`, updatesWithMappedValues);
+      return response.data;
+    } catch (error) {
+      console.error('Task update API error:', error);
+      throw error;
+    }
   },
 
   async restoreTask(id: string): Promise<Task> {
@@ -60,4 +75,14 @@ export const tasksService = {
   async deleteTaskPermanently(id: string): Promise<void> {
     await api.delete(`/api/Tasks/${id}/permanent`);
   },
+
+  async addTaskLink(data: TaskLinkData): Promise<Task> {
+    const response = await api.post<Task>(`/api/Tasks/${data.taskId}/links`, data);
+    return response.data;
+  },
+
+  async removeTaskLink(taskId: string, linkedItemId: string): Promise<Task> {
+    const response = await api.delete<Task>(`/api/Tasks/${taskId}/links/${linkedItemId}`);
+    return response.data;
+  }
 };

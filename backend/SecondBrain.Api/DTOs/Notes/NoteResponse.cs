@@ -23,6 +23,7 @@ namespace SecondBrain.Api.DTOs.Notes
         public DateTime? ArchivedAt { get; set; }
         public bool IsIdea { get; set; }
         public List<string> LinkedNoteIds { get; set; } = new List<string>();
+        public List<LinkedTaskDto> LinkedTasks { get; set; } = new List<LinkedTaskDto>();
         public int? XPAwarded { get; set; }
         public int? NewTotalXP { get; set; }
         public bool? LeveledUp { get; set; }
@@ -51,8 +52,30 @@ namespace SecondBrain.Api.DTOs.Notes
                 LinkedNoteIds = note.NoteLinks
                     .Where(nl => !nl.IsDeleted)
                     .Select(nl => nl.LinkedNoteId)
+                    .ToList(),
+                LinkedTasks = note.TaskLinks
+                    .Where(tl => !tl.IsDeleted)
+                    .Select(tl => new LinkedTaskDto
+                    {
+                        Id = tl.TaskId,
+                        Title = tl.Task.Title,
+                        Status = tl.Task.Status.ToString().ToLower(),
+                        Priority = tl.Task.Priority.ToString().ToLower(),
+                        DueDate = tl.Task.DueDate,
+                        CreatedAt = tl.CreatedAt
+                    })
                     .ToList()
             };
         }
+    }
+
+    public class LinkedTaskDto
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public string Priority { get; set; } = string.Empty;
+        public DateTime? DueDate { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
 }

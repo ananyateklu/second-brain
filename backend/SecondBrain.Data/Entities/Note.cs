@@ -27,9 +27,8 @@ namespace SecondBrain.Data.Entities
         public User User { get; set; } = null!;
 
         // Navigation Properties
-        public ICollection<TaskItemNote> TaskItemNotes { get; set; } = new List<TaskItemNote>();
-
-        // Linked notes (many-to-many self-reference)
         public ICollection<NoteLink> NoteLinks { get; set; } = new List<NoteLink>();
+        public ICollection<TaskLink> TaskLinks { get; set; } = new List<TaskLink>();
+        public ICollection<TaskItemNote> TaskItemNotes { get; set; } = new List<TaskItemNote>();
     }
 }

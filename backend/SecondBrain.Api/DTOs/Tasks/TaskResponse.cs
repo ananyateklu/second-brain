@@ -5,6 +5,14 @@ using System.Linq;
 
 namespace SecondBrain.Api.DTOs.Tasks
 {
+    public class LinkedItemDto
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty; // "note" or "idea"
+        public DateTime CreatedAt { get; set; }
+    }
+
     public class TaskResponse
     {
         public string Id { get; set; }
@@ -14,8 +22,7 @@ namespace SecondBrain.Api.DTOs.Tasks
         public string Priority { get; set; } // 'low', 'medium', 'high'
         public DateTime? DueDate { get; set; }
         public List<string> Tags { get; set; }
-        public List<string> LinkedNotes { get; set; } = new List<string>();
-        public List<string> LinkedIdeas { get; set; } = new List<string>();
+        public List<LinkedItemDto> LinkedItems { get; set; } = new();
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public string UserId { get; set; }
@@ -36,8 +43,16 @@ namespace SecondBrain.Api.DTOs.Tasks
                 UpdatedAt = task.UpdatedAt,
                 UserId = task.UserId,
                 Tags = string.IsNullOrEmpty(task.Tags) ? new List<string>() : task.Tags.Split(',').ToList(),
-                LinkedNotes = task.TaskItemNotes?.Select(tn => tn.NoteId).ToList() ?? new List<string>(),
-                // LinkedIdeas handling if applicable
+                LinkedItems = task.TaskLinks
+                    .Where(tl => !tl.IsDeleted)
+                    .Select(tl => new LinkedItemDto
+                    {
+                        Id = tl.LinkedItemId,
+                        Title = tl.LinkedItem.Title,
+                        Type = tl.LinkType,
+                        CreatedAt = tl.CreatedAt
+                    })
+                    .ToList(),
                 IsDeleted = task.IsDeleted,
                 DeletedAt = task.DeletedAt
             };

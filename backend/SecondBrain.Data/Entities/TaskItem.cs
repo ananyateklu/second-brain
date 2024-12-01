@@ -37,6 +37,7 @@ namespace SecondBrain.Data.Entities
 
         // Navigation Properties
         public ICollection<TaskItemNote> TaskItemNotes { get; set; } = new List<TaskItemNote>();
+        public ICollection<TaskLink> TaskLinks { get; set; } = new List<TaskLink>();
         public bool IsDeleted { get; set; }
         public DateTime? DeletedAt { get; set; }
     }

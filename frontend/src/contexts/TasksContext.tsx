@@ -1,311 +1,171 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { taskService } from '../api/services/taskService';  // Import the taskService
-import { Task } from '../api/types/task';
+import { Task, CreateTaskDto, UpdateTaskDto } from '../api/types/task';
 import { useAuth } from './AuthContext';
-import { mapPriorityToNumber } from '../utils/priorityMapping';
-import { UpdateTaskDto } from '../api/types/task';
 import { useActivities } from './ActivityContext';
-import { useTrash } from './TrashContext';
+import { tasksService, TaskLinkData, CreateTaskData } from '../services/api/tasks.service';
 
+// Re-export the Task type
+export type { Task };
 
 interface TasksContextType {
   tasks: Task[];
-  trashTasks: Task[];
-  addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => void;
-  updateTask: (id: string, updates: Partial<Task>) => void;
+  isLoading: boolean;
+  addTask: (taskData: CreateTaskData) => Promise<void>;
+  updateTask: (id: string, updates: UpdateTaskDto) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
-  addTaskLink: (taskId: string, itemId: string, type: 'note' | 'idea') => void;
-  removeTaskLink: (taskId: string, itemId: string, type: 'note' | 'idea') => void;
+  addTaskLink: (data: TaskLinkData) => Promise<void>;
+  removeTaskLink: (taskId: string, linkedItemId: string) => Promise<void>;
   toggleTaskStatus: (id: string) => Promise<void>;
   fetchDeletedTasks: () => Promise<Task[]>;
   restoreTask: (id: string) => Promise<void>;
-  isLoading: boolean;
 }
 
 const TasksContext = createContext<TasksContextType | null>(null);
 
-
 export function TasksProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [trashTasks, setTrashTasks] = useState<Task[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth();
   const { createActivity } = useActivities();
-  const { moveToTrash } = useTrash();
 
-  // Fetch tasks from the backend API when the component mounts
-  useEffect(() => {
-    if (user) {
-      fetchTasks();
-    }
-  }, [user]);
-
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
+    if (!user) return;
+    setIsLoading(true);
     try {
-      const response = await taskService.getTasks();
-      const fetchedTasks = response.data.filter(task => !task.isDeleted);
+      const fetchedTasks = await tasksService.getTasks();
       setTasks(fetchedTasks);
     } catch (error) {
       console.error('Failed to fetch tasks:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchTasks();
+  }, [fetchTasks]);
+
+  const addTask = async (taskData: CreateTaskData) => {
+    try {
+      const newTask = await tasksService.createTask(taskData);
+      setTasks(prev => [newTask, ...prev]);
+
+      if (createActivity) {
+        createActivity({
+          actionType: 'create',
+          itemType: 'task',
+          itemId: newTask.id,
+          itemTitle: newTask.title,
+          description: `Created task "${newTask.title}"`,
+          metadata: {
+            tags: newTask.tags,
+            dueDate: newTask.dueDate,
+            priority: newTask.priority,
+            status: newTask.status
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Failed to create task:', error);
+      throw error;
     }
   };
 
-  const addTask = useCallback(async (taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
+  const updateTask = async (id: string, updates: UpdateTaskDto) => {
     try {
-      const priorityNumber = mapPriorityToNumber(taskData.priority);
-      const response = await taskService.createTask({
-        ...taskData,
-        priority: priorityNumber,
-      });
-      const newTask = response.data;
-      setTasks(prev => [newTask, ...prev]);
-
-      // Wrap addActivity in a try-catch and check if it exists
-      try {
-        if (createActivity) {
-          createActivity({
-            id: newTask.id,
-            actionType: 'create',
-            itemType: 'task',
-            itemId: newTask.id,
-            itemTitle: newTask.title,
-            timestamp: new Date().toISOString(),
-            description: `Created task "${newTask.title}"`,
-            metadata: {
-              tags: newTask.tags,
-              priority: newTask.priority,
-              dueDate: newTask.dueDate,
-            },
-          });
+      const updatedTask = await tasksService.updateTask(id, updates);
+      setTasks(prev => prev.map(task => {
+        if (task.id === id) {
+          return {
+            ...updatedTask,
+            linkedItems: task.linkedItems
+          };
         }
-      } catch (activityError) {
-        console.error('Failed to add activity for new task:', activityError);
-        // Don't throw the error since the task was still created successfully
+        return task;
+      }));
+
+      if (createActivity) {
+        createActivity({
+          actionType: 'edit',
+          itemType: 'task',
+          itemId: id,
+          itemTitle: updatedTask.title,
+          description: `Updated task "${updatedTask.title}"`,
+          metadata: {
+            tags: updatedTask.tags,
+            dueDate: updatedTask.dueDate,
+            priority: updatedTask.priority,
+            status: updatedTask.status
+          }
+        });
       }
-    } catch (err) {
-      console.error('Failed to create task:', err);
-      throw err;
+    } catch (error) {
+      console.error('Failed to update task:', error);
+      throw error;
     }
-  }, [createActivity]);
+  };
 
-  const updateTask = useCallback(async (id: string, updates: Partial<Task>) => {
+  const addTaskLink = async (data: TaskLinkData) => {
     try {
-      const updatesToSend: UpdateTaskDto = {
-        title: updates.title,
-        description: updates.description,
-        dueDate: updates.dueDate,
-        tags: updates.tags ?? [],
-        priority: updates.priority !== undefined ? mapPriorityToNumber(updates.priority) : undefined
-      };
-
-      const response = await taskService.updateTask(id, updatesToSend);
-      const updatedTask = response;  // response is already the task object
-
-      setTasks(prev => prev.map(task => 
-        task.id === id ? { ...task, ...updatedTask } : task
-      ));
-
-      // Create activity with proper error handling
-      try {
-        if (createActivity) {
-          await createActivity({
-            actionType: 'edit',
-            itemType: 'task',
-            itemId: id,  // Use the passed id instead of response.id
-            itemTitle: updatedTask.title || '',
-            timestamp: new Date().toISOString(),
-            description: `Updated task "${updatedTask.title || 'Untitled'}"`,
-            metadata: {
-              tags: updatedTask.tags || [],
-              priority: updatedTask.priority,
-              dueDate: updatedTask.dueDate,
-            },
-          });
-        }
-      } catch (activityError) {
-        console.error('Failed to add activity for task update:', activityError);
-        // Don't throw the error since the task was still updated successfully
-      }
-
-      return updatedTask;
-    } catch (err) {
-      console.error('Failed to update task:', err);
-      throw err;
+      const updatedTask = await tasksService.addTaskLink(data);
+      setTasks(prev => prev.map(task => task.id === data.taskId ? updatedTask : task));
+    } catch (error) {
+      console.error('Failed to add task link:', error);
+      throw error;
     }
-  }, [createActivity]);
+  };
 
-  const deleteTask = useCallback(async (id: string) => {
+  const removeTaskLink = async (taskId: string, linkedItemId: string) => {
     try {
-      const taskToDelete = tasks.find(task => task.id === id);
-      if (!taskToDelete) return;
+      const updatedTask = await tasksService.removeTaskLink(taskId, linkedItemId);
+      setTasks(prev => prev.map(task => task.id === taskId ? updatedTask : task));
+    } catch (error) {
+      console.error('Failed to remove task link:', error);
+      throw error;
+    }
+  };
 
-      // First mark as deleted in backend
-      await taskService.updateTask(id, {
-        isDeleted: true,
-        deletedAt: new Date().toISOString(),
-        title: taskToDelete.title,
-        description: taskToDelete.description,
-        priority: mapPriorityToNumber(taskToDelete.priority),
-        dueDate: taskToDelete.dueDate,
-        tags: taskToDelete.tags
-      });
-
-      // Remove from active tasks list
+  const deleteTask = async (id: string) => {
+    try {
+      await tasksService.deleteTask(id);
       setTasks(prev => prev.filter(task => task.id !== id));
-
-      // Move to trash
-      await moveToTrash({
-        id: taskToDelete.id,
-        type: 'task',
-        title: taskToDelete.title,
-        content: taskToDelete.description,
-        metadata: {
-          tags: taskToDelete.tags,
-          dueDate: taskToDelete.dueDate,
-          priority: taskToDelete.priority,
-          status: taskToDelete.status,
-          deletedAt: new Date().toISOString()
-        }
-      });
-
-      createActivity({
-        actionType: 'delete',
-        itemType: 'task',
-        itemId: id,
-        itemTitle: taskToDelete.title,
-        description: `Moved task to trash: ${taskToDelete.title}`,
-        metadata: {
-          taskId: id,
-          taskTitle: taskToDelete.title,
-          taskStatus: taskToDelete.status,
-          taskPriority: taskToDelete.priority,
-          taskDueDate: taskToDelete.dueDate,
-          taskTags: taskToDelete.tags,
-          deletedAt: new Date().toISOString()
-        }
-      });
     } catch (error) {
       console.error('Failed to delete task:', error);
       throw error;
     }
-  }, [tasks, moveToTrash, createActivity]);
-
-  const addTaskLink = useCallback((taskId: string, itemId: string, type: 'note' | 'idea') => {
-    setTasks(prev => prev.map(task => {
-      if (task.id === taskId) {
-        const linkField = type === 'note' ? 'linkedNotes' : 'linkedIdeas';
-        const currentLinks = task[linkField];
-        if (!currentLinks.includes(itemId)) {
-          return {
-            ...task,
-            [linkField]: [...currentLinks, itemId],
-            updatedAt: new Date().toISOString()
-          };
-        }
-      }
-      return task;
-    }));
-  }, []);
-
-  const removeTaskLink = useCallback((taskId: string, itemId: string, type: 'note' | 'idea') => {
-    setTasks(prev => prev.map(task => {
-      if (task.id === taskId) {
-        const linkField = type === 'note' ? 'linkedNotes' : 'linkedIdeas';
-        return {
-          ...task,
-          [linkField]: task[linkField].filter(id => id !== itemId),
-          updatedAt: new Date().toISOString()
-        };
-      }
-      return task;
-    }));
-  }, []);
-
-  const toggleTaskStatus = useCallback(async (id: string) => {
-    try {
-      const task = tasks.find(t => t.id === id);
-      if (!task) return;
-
-      const newStatus = task.status === 'completed' ? 'incomplete' : 'completed';
-      
-      // Send update to backend with all existing task data
-      await taskService.updateTask(id, {
-        status: newStatus === 'completed' ? 1 : 0,
-        title: task.title,
-        description: task.description,
-        priority: mapPriorityToNumber(task.priority),
-        dueDate: task.dueDate,
-        tags: task.tags
-      });
-
-      // Update local state
-      setTasks(prev => prev.map(task => 
-        task.id === id 
-          ? { ...task, status: newStatus }
-          : task
-      ));
-
-      // Add activity
-      createActivity({
-        id,
-        actionType: 'edit',
-        itemType: 'task',
-        itemId: id,
-        itemTitle: task.title,
-        timestamp: new Date().toISOString(),
-        description: `Marked task "${task.title}" as ${newStatus}`,
-        metadata: {
-          status: newStatus,
-        },
-      });
-    } catch (err) {
-      console.error('Failed to toggle task status:', err);
-      throw err;
-    }
-  }, [tasks, createActivity]);
+  };
 
   const fetchDeletedTasks = async () => {
     try {
-      const deletedTasks = await taskService.getDeletedTasks();
-      return deletedTasks;
+      return await tasksService.getDeletedTasks();
     } catch (error) {
       console.error('Failed to fetch deleted tasks:', error);
       throw error;
     }
   };
 
-  const restoreTask = useCallback(async (id: string) => {
+  const restoreTask = async (id: string) => {
     try {
-      // Update task in backend
-      await taskService.updateTask(id, {
-        isDeleted: false,
-        deletedAt: null,
-      });
-
-      // Fetch all tasks to refresh the list
-      await fetchTasks();
-
-      // Record activity
-      await createActivity({
-        actionType: 'restore',
-        itemType: 'task',
-        itemId: id,
-        itemTitle: tasks.find(t => t.id === id)?.title || '',
-        description: `Restored task from trash`,
-        metadata: {
-          taskId: id,
-          restoredAt: new Date().toISOString()
-        }
-      });
+      const restoredTask = await tasksService.restoreTask(id);
+      setTasks(prev => [...prev, restoredTask]);
     } catch (error) {
       console.error('Failed to restore task:', error);
       throw error;
     }
-  }, [tasks, createActivity, fetchTasks]);
+  };
+
+  const toggleTaskStatus = async (id: string) => {
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+
+    const newStatus = task.status === 'Completed' ? 'Incomplete' : 'Completed';
+    await updateTask(id, { status: newStatus });
+  };
 
   return (
     <TasksContext.Provider value={{
       tasks,
-      trashTasks,
+      isLoading,
       addTask,
       updateTask,
       deleteTask,
@@ -320,11 +180,10 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-
-export function useTasks() {
+export const useTasks = () => {
   const context = useContext(TasksContext);
   if (!context) {
     throw new Error('useTasks must be used within a TasksProvider');
   }
   return context;
-}
+};
