@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SecondBrain.Data.Entities
 {
@@ -26,13 +27,17 @@ namespace SecondBrain.Data.Entities
         public string Description { get; set; } = string.Empty;
         public TaskStatus Status { get; set; }
         public TaskPriority Priority { get; set; }
-        public string Tags { get; set; }
+        public string Tags { get; set; } = string.Empty;
         public DateTime? DueDate { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
 
         // Foreign Key
+        [Required]
+        [MaxLength(450)]
         public string UserId { get; set; } = string.Empty;
+
+        [ForeignKey("UserId")]
         public User User { get; set; } = null!;
 
         // Navigation Properties

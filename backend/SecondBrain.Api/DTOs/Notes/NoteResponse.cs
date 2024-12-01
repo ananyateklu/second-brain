@@ -24,11 +24,13 @@ namespace SecondBrain.Api.DTOs.Notes
         public bool IsIdea { get; set; }
         public List<string> LinkedNoteIds { get; set; } = new List<string>();
         public List<LinkedTaskDto> LinkedTasks { get; set; } = new List<LinkedTaskDto>();
-        public int? XPAwarded { get; set; }
-        public int? NewTotalXP { get; set; }
-        public bool? LeveledUp { get; set; }
-        public int? NewLevel { get; set; }
-        public List<UnlockedAchievement>? UnlockedAchievements { get; set; }
+        
+        // Gamification properties
+        public int XPAwarded { get; set; }
+        public int NewTotalXP { get; set; }
+        public bool LeveledUp { get; set; }
+        public int NewLevel { get; set; }
+        public List<UnlockedAchievement> UnlockedAchievements { get; set; } = new List<UnlockedAchievement>();
 
         public static NoteResponse FromEntity(Note note)
         {
@@ -37,8 +39,8 @@ namespace SecondBrain.Api.DTOs.Notes
                 Id = note.Id,
                 Title = note.Title,
                 Content = note.Content,
-                Tags = !string.IsNullOrEmpty(note.Tags) 
-                    ? note.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList() 
+                Tags = !string.IsNullOrEmpty(note.Tags)
+                    ? note.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList()
                     : new List<string>(),
                 IsPinned = note.IsPinned,
                 IsFavorite = note.IsFavorite,
@@ -54,7 +56,7 @@ namespace SecondBrain.Api.DTOs.Notes
                     .Select(nl => nl.LinkedNoteId)
                     .ToList(),
                 LinkedTasks = note.TaskLinks
-                    .Where(tl => !tl.IsDeleted)
+                    .Where(tl => !tl.IsDeleted && tl.Task != null)
                     .Select(tl => new LinkedTaskDto
                     {
                         Id = tl.TaskId,

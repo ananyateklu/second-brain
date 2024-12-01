@@ -2,130 +2,315 @@ import { useEffect, useRef, useCallback } from 'react';
 import CytoscapeComponent from 'react-cytoscapejs';
 import { useTheme } from '../../../contexts/ThemeContext';
 import { useNotes } from '../../../contexts/NotesContext';
-import type { Core, NodeSingular, LayoutOptions, Stylesheet } from 'cytoscape';
+import type { Core, NodeSingular, Stylesheet } from 'cytoscape';
 
 interface GraphViewProps {
   onNodeSelect: (noteId: string) => void;
   isDetailsPanelOpen: boolean;
-  selectedNoteId: string;
+  selectedNoteId: string | null;
 }
-
-const debounce = <T extends (...args: unknown[]) => unknown>(func: T, wait: number) => {
-  let timeout: NodeJS.Timeout;
-  return function executedFunction(...args: Parameters<T>): void {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
-};
 
 export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: Readonly<GraphViewProps>) {
   const { notes } = useNotes();
   const { theme } = useTheme();
   const cyRef = useRef<Core | null>(null);
 
-  // Filter notes to only include those with links
+  // Filter notes to only include those with links or tasks
   const notesWithLinks = notes.filter(note =>
-    note.linkedNoteIds && note.linkedNoteIds.length > 0
+    (note.linkedNoteIds?.length > 0) || ((note.linkedTasks?.length ?? 0) > 0)
   );
 
-  // Create nodes
-  const elements = notesWithLinks.map(note => ({
-    data: {
-      id: note.id,
-      label: note.title,
-      isIdea: note.isIdea,
-      tags: note.tags,
-      createdAt: note.createdAt,
-      updatedAt: note.updatedAt,
-      preview: note.content?.substring(0, 50) + '...'
-    }
-  }));
+  // Create nodes with task information embedded
+  const elements = [
+    // Note nodes with task information
+    ...notesWithLinks.map(note => {
+      const linkedTasks = note.linkedTasks || [];
+      const hasCompletedTasks = linkedTasks.some(task => task.status === 'completed');
+      const hasHighPriorityTasks = linkedTasks.some(task => task.priority === 'high');
+      const taskCount = linkedTasks.length;
 
-  // Create edges
-  const edges = notesWithLinks.flatMap(note =>
-    note.linkedNoteIds
-      .filter(targetId => notesWithLinks.some(n => n.id === targetId))
-      .map(targetId => ({
+      return {
         data: {
-          id: `${note.id}-${targetId}`,
-          source: note.id,
-          target: targetId
+          id: note.id,
+          label: note.title,
+          isIdea: note.isIdea,
+          type: 'note',
+          tags: note.tags,
+          createdAt: note.createdAt,
+          updatedAt: note.updatedAt,
+          preview: note.content?.substring(0, 50) + '...',
+          taskCount,
+          hasCompletedTasks,
+          hasHighPriorityTasks,
+          taskSummary: linkedTasks.map(t => `${t.status === 'completed' ? '✓' : '○'} ${t.title}`).join('\n')
         }
-      }))
-  );
+      };
+    }),
+    // Note-to-note edges
+    ...notesWithLinks.flatMap(note =>
+      (note.linkedNoteIds || [])
+        .filter(targetId => notesWithLinks.some(n => n.id === targetId))
+        .map(targetId => ({
+          data: {
+            id: `${note.id}-${targetId}`,
+            source: note.id,
+            target: targetId
+          }
+        }))
+    )
+  ];
 
-  // Combine nodes and edges
-  const graphElements = [...elements, ...edges];
-
-  // Select the initial node in the graph
-  useEffect(() => {
-    if (!cyRef.current || !selectedNoteId) return;
-
-    const cy = cyRef.current;
-    const selectedNode = cy.$id(selectedNoteId);
-    
-    if (selectedNode.length) {
-      cy.elements().unselect();
-      selectedNode.select();
-    }
-  }, [selectedNoteId]);
-
-  // Update layout to allow free movement with animation
-  const layout: LayoutOptions = {
-    name: 'concentric',
+  // Layout configuration - only run once at initial render
+  const layout = {
+    name: 'cose',
     fit: true,
-    padding: 50,
-    spacingFactor: 0.4,
-    minNodeSpacing: 100,
-    animate: true,
-    animationDuration: 800,
-    animationEasing: 'ease-in-out-cubic',
-    animationThreshold: 250,
-    refresh: 20,
-    // Animate on drag
-    boundingBox: undefined,
+    padding: 100,
+    animate: 'end',
+    animationDuration: 1000,
+    animationEasing: 'ease-out',
+    nodeDimensionsIncludeLabels: true,
+    // Spacing and organization
+    nodeRepulsion: () => 100000,
+    nodeOverlap: 50,
+    idealEdgeLength: () => 250,
+    edgeElasticity: 0.45,
+    nestingFactor: 1.2,
+    gravity: 0.1,
+    numIter: 2000,
+    initialTemp: 1000,
+    coolingFactor: 0.99,
+    minTemp: 1.0,
+    // Layout settings
     randomize: false,
-    componentSpacing: 100,
-    nodeRepulsion: function(node: any) { return 4500; },
-    gravity: 0.2,
-    // Prevent overlap during animation
-    avoidOverlap: true,
-    nodeDimensionsIncludeLabels: true
+    refresh: 30,
+    componentSpacing: 150,
+    maxSimulationTime: 8000,
+    // Quality settings
+    weaver: true,
+    quality: "proof",
+    // Prevent infinite layout
+    infinite: false,
+    // Don't lock nodes after layout
+    stop: () => {
+      if (cyRef.current) {
+        const cy = cyRef.current;
+        // Only lock nodes that aren't being dragged
+        cy.nodes().forEach(node => {
+          node.unlock();
+          node.grabify();
+        });
+      }
+    }
   };
 
+  // Function to smoothly center on a node without disturbing layout
+  const centerOnNode = useCallback((nodeId: string) => {
+    if (!cyRef.current) return;
+
+    const cy = cyRef.current;
+    const node = cy.$id(nodeId);
+    
+    if (!node.length) return;
+
+    const currentZoom = cy.zoom();
+    const targetZoom = Math.max(currentZoom, 1.5); // Set minimum zoom when centering
+    const currentPan = cy.pan();
+    const nodePosition = node.position();
+    const renderedPosition = node.renderedPosition();
+    
+    // Calculate the target pan position
+    const targetPan = {
+      x: currentPan.x - (nodePosition.x * targetZoom - renderedPosition.x),
+      y: currentPan.y - (nodePosition.y * targetZoom - renderedPosition.y)
+    };
+
+    // Perform the animation in a single smooth motion
+    cy.animate({
+      zoom: targetZoom,
+      pan: targetPan,
+      duration: 500,
+      easing: 'ease-in-out',
+      queue: false
+    });
+  }, []);
+
+  // Initial layout effect - only runs once
+  useEffect(() => {
+    if (!cyRef.current) return;
+
+    const cy = cyRef.current;
+    
+    // Enable node dragging
+    cy.nodes().forEach(node => {
+      node.grabify();
+      
+      // Add drag event handlers
+      node.on('dragfree', (event) => {
+        const draggedNode = event.target;
+        const pos = draggedNode.position();
+        draggedNode.unlock();
+        draggedNode.position(pos);
+      });
+
+      // Lock position during selection
+      node.on('select', () => {
+        node.lock();
+      });
+
+      node.on('unselect', () => {
+        node.unlock();
+      });
+    });
+
+    // Function to organize nodes based on connections
+    const organizeNodes = () => {
+      const nodes = cy.nodes();
+      const nodePositions = new Map<NodeSingular, { x: number; y: number }>();
+      const padding = 30;
+
+      nodes.forEach((node) => {
+        const pos = node.position();
+        const width = node.width();
+        const height = node.height();
+        
+        let overlapping = true;
+        let attempts = 0;
+        const maxAttempts = 50;
+        
+        while (overlapping && attempts < maxAttempts) {
+          overlapping = false;
+          
+          nodePositions.forEach((existingPos, existingNode) => {
+            const dx = Math.abs(pos.x - existingPos.x);
+            const dy = Math.abs(pos.y - existingPos.y);
+            const minX = (width + existingNode.width()) / 2 + padding;
+            const minY = (height + existingNode.height()) / 2 + padding;
+            
+            if (dx < minX && dy < minY) {
+              overlapping = true;
+              // Move connected nodes closer together
+              if (node.edgesWith(existingNode).length > 0) {
+                pos.x += (Math.random() - 0.5) * 50;
+                pos.y += (Math.random() - 0.5) * 50;
+              } else {
+                pos.x += (Math.random() - 0.5) * 150;
+                pos.y += (Math.random() - 0.5) * 150;
+              }
+            }
+          });
+          
+          attempts++;
+        }
+        
+        node.position(pos);
+        nodePositions.set(node, pos);
+      });
+    };
+
+    // Run initial layout
+    cy.layout(layout).run();
+
+    // After layout completes, organize nodes and then handle centering
+    cy.one('layoutstop', () => {
+      // First organize nodes
+      organizeNodes();
+      
+      // Then handle centering in a separate animation
+      setTimeout(() => {
+        if (selectedNoteId) {
+          centerOnNode(selectedNoteId);
+        } else {
+          cy.animate({
+            fit: {
+              eles: cy.elements(),
+              padding: 50
+            },
+            duration: 500,
+            easing: 'ease-in-out',
+            queue: false
+          });
+        }
+      }, 100); // Small delay to ensure organization is complete
+    });
+
+    return () => {
+      cy.removeListener('layoutstop');
+    };
+  }, [selectedNoteId, centerOnNode]);
+
+  // Handle panel state changes without affecting layout
+  useEffect(() => {
+    const resizeTimer = setTimeout(() => {
+      if (cyRef.current) {
+        cyRef.current.resize();
+        // Only fit to view if no node is selected
+        if (!selectedNoteId) {
+          cyRef.current.fit(undefined, 50);
+        }
+      }
+    }, 300);
+
+    return () => clearTimeout(resizeTimer);
+  }, [isDetailsPanelOpen]);
+
+  // Stylesheet configuration
   const stylesheet: Stylesheet[] = [
     {
-      selector: 'node',
+      selector: 'node[type = "note"]',
       style: {
         'background-color': theme === 'dark' ? '#1E1E1E' : '#FFFFFF',
         'border-color': theme === 'dark' ? '#2196F3' : '#1976D2',
         'border-width': 2,
-        'label': 'data(label)',
+        'label': (node: NodeSingular) => {
+          const title = node.data('label');
+          const taskCount = node.data('taskCount');
+          if (taskCount === 0) return title;
+
+          const tasks = node.data('taskSummary').split('\n');
+          const taskList = tasks.map((task: string) => 
+            task.replace('✓', '✅').replace('○', '⭕️')
+          ).join('\n');
+
+          return `${title}\n\n${taskList}`;
+        },
         'color': theme === 'dark' ? '#E3E3E3' : '#333333',
         'text-valign': 'center',
         'text-halign': 'center',
-        'font-size': '8px',
-        'width': '90px',
-        'height': '30px',
+        'font-size': '14px',
+        'font-family': 'system-ui, -apple-system, sans-serif',
+        'font-weight': 500,
+        'width': '200px',
+        'height': (node: NodeSingular) => {
+          const taskCount = node.data('taskCount') || 0;
+          return Math.max(80, 60 + (taskCount * 25));
+        },
         'text-wrap': 'wrap',
-        'text-max-width': '85px',
+        'text-max-width': '180px',
         'shape': 'round-rectangle',
         'text-outline-color': theme === 'dark' ? '#1E1E1E' : '#FFFFFF',
-        'text-outline-width': 1.5,
-        'min-zoomed-font-size': 8,
-        'transition-property': 'border-color, border-width',
-        'transition-duration': 200,
+        'text-outline-width': 2,
+        'text-margin-y': 8,
+        'min-zoomed-font-size': 10,
+        'background-image': (node: NodeSingular) => {
+          if (node.data('hasHighPriorityTasks')) {
+            return 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24"><circle cx="12" cy="12" r="10" fill="%23F44336" opacity="0.2"/></svg>';
+          }
+          return 'none';
+        },
+        'background-width': '100%',
+        'background-height': '100%',
+        'background-position-y': '100%',
+        'background-opacity': 0.5,
+        'border-style': (node: NodeSingular) => {
+          return node.data('hasCompletedTasks') ? 'double' : 'solid';
+        }
       }
     },
     {
       selector: 'node[?isIdea]',
       style: {
         'border-color': theme === 'dark' ? '#FFA726' : '#FB8C00',
-        'border-width': 2.5,
+        'border-width': 3,
         'border-style': 'solid'
       }
     },
@@ -133,8 +318,8 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: 
       selector: ':selected',
       style: {
         'border-color': theme === 'dark' ? '#66BB6A' : '#43A047',
-        'border-width': 2,
-        'background-color': theme === 'dark' ? '#2A332A' : '#F0F7F0',  // Very subtle green tint
+        'border-width': 3,
+        'background-color': theme === 'dark' ? '#2A332A' : '#F0F7F0',
         'transition-property': 'border-color, background-color',
         'transition-duration': 200
       }
@@ -155,75 +340,10 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: 
     }
   ];
 
-  const centerGraph = useCallback(() => {
-    if (cyRef.current) {
-      cyRef.current.fit(undefined, 30);
-    }
-  }, []);
-
-  // Watch for panel state changes
-  useEffect(() => {
-    if (!cyRef.current) return;
-
-    const timeoutId = setTimeout(() => {
-      centerGraph();
-    }, 100);
-
-    return () => clearTimeout(timeoutId);
-  }, [isDetailsPanelOpen, centerGraph]);
-
-  // Handle node clicks
-  useEffect(() => {
-    if (!cyRef.current) return;
-
-    const cy = cyRef.current;
-
-    const handleNodeTap = (event: { target: NodeSingular }) => {
-      const clickedNode = event.target;
-      const clickedNodeId = clickedNode.id();
-
-      if (selectedNoteId === clickedNodeId) {
-        cy.elements().unselect();
-        onNodeSelect('');
-      } else {
-        cy.elements().unselect();
-        clickedNode.select();
-        onNodeSelect(clickedNodeId);
-      }
-    };
-
-    const handleBackgroundTap = (event: { target: cytoscape.Core }) => {
-      if (event.target === cy) {
-        if (selectedNoteId) {
-          cy.elements().unselect();
-          onNodeSelect('');
-        }
-      }
-    };
-
-    cy.on('tap', 'node', handleNodeTap);
-    cy.on('click', handleBackgroundTap);
-
-    return () => {
-      cy.removeListener('tap', 'node', handleNodeTap);
-      cy.removeListener('click', handleBackgroundTap);
-    };
-  }, [onNodeSelect, selectedNoteId]);
-
-  // Handle window resize
-  useEffect(() => {
-    const handleResize = debounce(() => {
-      centerGraph();
-    }, 250);
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [centerGraph]);
-
   return (
     <div className="h-full w-full relative">
       <CytoscapeComponent
-        elements={graphElements}
+        elements={elements}
         stylesheet={stylesheet}
         layout={layout}
         style={{
@@ -234,10 +354,95 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: 
         }}
         cy={(cy) => {
           cyRef.current = cy;
-          cy.minZoom(0.5);
-          cy.maxZoom(2.0);
+          cy.minZoom(0.2);
+          cy.maxZoom(3.0);
+          cy.userZoomingEnabled(true);
+          cy.userPanningEnabled(true);
+
+          // Add click handlers that only handle selection and centering
+          cy.on('tap', 'node', (event) => {
+            const node = event.target;
+            const nodeId = node.id();
+            cy.nodes().unlock(); // Temporarily unlock for selection
+            onNodeSelect(nodeId);
+            // Delay the centering slightly to ensure selection is processed
+            requestAnimationFrame(() => {
+              centerOnNode(nodeId);
+            });
+            cy.nodes().lock(); // Lock again after selection
+          });
+
+          cy.on('tap', (event) => {
+            if (event.target === cy) {
+              cy.elements().unselect();
+              onNodeSelect('');
+              cy.animate({
+                fit: {
+                  eles: cy.elements(),
+                  padding: 50
+                },
+                duration: 500,
+                easing: 'ease-in-out',
+                queue: false
+              });
+            }
+          });
         }}
       />
+      <div className="absolute bottom-24 right-4 flex flex-col gap-2 glass-morphism rounded-lg p-2">
+        <button
+          onClick={() => {
+            if (!cyRef.current) return;
+            const cy = cyRef.current;
+            const currentZoom = cy.zoom();
+            cy.animate({
+              zoom: currentZoom * 1.2,
+              duration: 200
+            });
+          }}
+          className="p-2 hover:bg-gray-100 dark:hover:bg-dark-hover rounded-lg transition-colors"
+          title="Zoom in"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600 dark:text-gray-400">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            <line x1="11" y1="8" x2="11" y2="14"></line>
+            <line x1="8" y1="11" x2="14" y2="11"></line>
+          </svg>
+        </button>
+        <button
+          onClick={() => {
+            if (!cyRef.current) return;
+            const cy = cyRef.current;
+            const currentZoom = cy.zoom();
+            cy.animate({
+              zoom: currentZoom / 1.2,
+              duration: 200
+            });
+          }}
+          className="p-2 hover:bg-gray-100 dark:hover:bg-dark-hover rounded-lg transition-colors"
+          title="Zoom out"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600 dark:text-gray-400">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            <line x1="8" y1="11" x2="14" y2="11"></line>
+          </svg>
+        </button>
+        <button
+          onClick={() => {
+            if (!cyRef.current) return;
+            const cy = cyRef.current;
+            cy.fit(undefined, 50);
+          }}
+          className="p-2 hover:bg-gray-100 dark:hover:bg-dark-hover rounded-lg transition-colors"
+          title="Fit to view"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600 dark:text-gray-400">
+            <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
+          </svg>
+        </button>
+      </div>
       <div className="absolute bottom-4 right-4 bg-opacity-80 bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">

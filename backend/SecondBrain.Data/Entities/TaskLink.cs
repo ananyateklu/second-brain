@@ -34,8 +34,13 @@ namespace SecondBrain.Data.Entities
         public DateTime? DeletedAt { get; set; }
 
         // Navigation properties
+        [ForeignKey("TaskId")]
         public TaskItem Task { get; set; } = null!;
+
+        [ForeignKey("LinkedItemId")]
         public Note LinkedItem { get; set; } = null!;
+
+        [ForeignKey("CreatedBy")]
         public User Creator { get; set; } = null!;
     }
 } 

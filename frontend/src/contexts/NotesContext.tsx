@@ -1,33 +1,18 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { useActivities } from './ActivityContext';
-import { notesService } from '../services/api/notes.service';
-import { useTrash, TrashProvider } from './TrashContext';
+import { notesService, type UpdateNoteData } from '../services/api/notes.service';
+import { useTrash } from './TrashContext';
 import { useAuth } from './AuthContext';
 import { sortNotes } from '../utils/noteUtils';
+import type { Note } from '../types/note';
 
-export interface Note {
-  id: string;
-  title: string;
-  content: string;
-  tags: string[];
-  isFavorite: boolean;
-  isPinned: boolean;
-  isIdea: boolean;
-  isArchived: boolean;
-  isDeleted: boolean;
-  deletedAt?: string;
-  createdAt: string;
-  updatedAt: string;
-  linkedNoteIds: string[];
-  linkedNotes?: Note[];
-  archivedAt?: string;
-}
+export type { Note };
 
 interface NotesContextType {
   notes: Note[];
   archivedNotes: Note[];
   isLoading: boolean;
-  addNote: (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'linkedNoteIds' | 'linkedNotes'>) => void;
+  addNote: (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'linkedNoteIds' | 'linkedNotes' | 'linkedTasks'>) => void;
   updateNote: (id: string, updates: Partial<Note>) => void;
   deleteNote: (id: string) => Promise<void>;
   togglePinNote: (id: string) => void;
@@ -43,6 +28,14 @@ interface NotesContextType {
 }
 
 const NotesContext = createContext<NotesContextType | null>(null);
+
+export function useNotes() {
+  const context = useContext(NotesContext);
+  if (!context) {
+    throw new Error('useNotes must be used within a NotesProvider');
+  }
+  return context;
+}
 
 interface NotesProviderProps {
   children: React.ReactNode;
@@ -60,6 +53,8 @@ export function NotesProvider({ children }: NotesProviderProps) {
     try {
       setIsLoading(true);
       const fetchedNotes = await notesService.getAllNotes();
+      console.log('Fetched notes:', fetchedNotes); // Debug log
+      
       const processedNotes = fetchedNotes
         .filter(note => !note.isArchived && !note.isDeleted)
         .map(note => ({
@@ -68,9 +63,11 @@ export function NotesProvider({ children }: NotesProviderProps) {
           isDeleted: false,
           isIdea: note.isIdea || false,
           linkedNoteIds: note.linkedNoteIds || [],
-          linkedNotes: note.linkedNotes || []
+          linkedNotes: note.linkedNotes || [],
+          linkedTasks: note.linkedTasks || []
         })) as Note[];
       
+      console.log('Processed notes:', processedNotes); // Debug log
       setNotes(sortNotes(processedNotes));
       setIsLoading(false);
     } catch (error) {
@@ -88,7 +85,7 @@ export function NotesProvider({ children }: NotesProviderProps) {
   useEffect(() => {
   }, [notes]);
 
-  const addNote = useCallback(async (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'linkedNoteIds' | 'linkedNotes'>) => {
+  const addNote = useCallback(async (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'linkedNoteIds' | 'linkedNotes' | 'linkedTasks'>) => {
     try {
       const noteWithSafeTags = {
         ...note,
@@ -106,7 +103,8 @@ export function NotesProvider({ children }: NotesProviderProps) {
         tags: Array.isArray(newNote.tags) ? newNote.tags : [],
         linkedNoteIds: Array.isArray(newNote.linkedNoteIds) ? newNote.linkedNoteIds : [],
         isArchived: false,
-        isDeleted: false
+        isDeleted: false,
+        linkedTasks: Array.isArray(newNote.linkedTasks) ? newNote.linkedTasks : []
       };
 
       setNotes(prev => sortNotes([safeNewNote, ...prev]));
@@ -154,7 +152,8 @@ export function NotesProvider({ children }: NotesProviderProps) {
         tags: Array.isArray(updatedNote.tags) ? updatedNote.tags : [],
         // Preserve the existing links
         linkedNoteIds: currentNote.linkedNoteIds,
-        linkedNotes: currentNote.linkedNotes
+        linkedNotes: currentNote.linkedNotes,
+        linkedTasks: currentNote.linkedTasks
       };
 
       setNotes(prevNotes => {
@@ -505,7 +504,8 @@ export function NotesProvider({ children }: NotesProviderProps) {
         isDeleted: false,
         isIdea: note.isIdea || false,
         linkedNoteIds: note.linkedNoteIds || [],
-        linkedNotes: []
+        linkedNotes: [],
+        linkedTasks: []
       })) as Note[];
       
       setArchivedNotes(processedNotes);
@@ -562,17 +562,7 @@ export function NotesProvider({ children }: NotesProviderProps) {
 
   return (
     <NotesContext.Provider value={contextValue}>
-      <TrashProvider onRestoreNote={restoreNote}>
-        {children}
-      </TrashProvider>
+      {children}
     </NotesContext.Provider>
   );
-}
-
-export function useNotes() {
-  const context = useContext(NotesContext);
-  if (!context) {
-    throw new Error('useNotes must be used within a NotesProvider');
-  }
-  return context;
 }

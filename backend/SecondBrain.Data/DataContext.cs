@@ -197,6 +197,43 @@ namespace SecondBrain.Data
                     .WithMany()
                     .HasForeignKey(e => e.CreatedBy)
                     .OnDelete(DeleteBehavior.Restrict);
+
+                // Set default value for IsDeleted
+                entity.Property(e => e.IsDeleted)
+                    .HasDefaultValue(false);
+
+                // Configure indexes
+                entity.HasIndex(e => e.TaskId);
+                entity.HasIndex(e => e.LinkedItemId);
+                entity.HasIndex(e => e.CreatedBy);
+                entity.HasIndex(e => e.IsDeleted);
+            });
+
+            // Configure NoteLink entity
+            modelBuilder.Entity<NoteLink>(entity =>
+            {
+                // Configure composite key
+                entity.HasKey(e => new { e.NoteId, e.LinkedNoteId });
+
+                // Configure relationships
+                entity.HasOne(e => e.Note)
+                    .WithMany(n => n.NoteLinks)
+                    .HasForeignKey(e => e.NoteId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.LinkedNote)
+                    .WithMany()
+                    .HasForeignKey(e => e.LinkedNoteId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                // Set default value for IsDeleted
+                entity.Property(e => e.IsDeleted)
+                    .HasDefaultValue(false);
+
+                // Configure indexes
+                entity.HasIndex(e => e.NoteId);
+                entity.HasIndex(e => e.LinkedNoteId);
+                entity.HasIndex(e => e.IsDeleted);
             });
         }
     }

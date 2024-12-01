@@ -10,10 +10,23 @@ using System.Text.Json;
 
 namespace SecondBrain.Api.Controllers
 {
+    public abstract class ApiControllerBase : ControllerBase
+    {
+        protected string GetUserId()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new UnauthorizedAccessException("User ID not found in token.");
+            }
+            return userId;
+        }
+    }
+
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
-    public class NotesController : ControllerBase
+    public class NotesController : ApiControllerBase
     {
         private readonly DataContext _context;
         private readonly IXPService _xpService;
@@ -29,21 +42,19 @@ namespace SecondBrain.Api.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetNotes()
+        public async Task<ActionResult<IEnumerable<NoteResponse>>> GetNotes()
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { error = "User ID not found in token." });
-            }
-
+            var userId = GetUserId();
             var notes = await _context.Notes
                 .Include(n => n.NoteLinks)
+                    .ThenInclude(nl => nl.LinkedNote)
+                .Include(n => n.TaskLinks.Where(tl => !tl.IsDeleted))
+                    .ThenInclude(tl => tl.Task)
                 .Where(n => n.UserId == userId && !n.IsDeleted)
                 .ToListAsync();
 
-            var response = notes.Select(NoteResponse.FromEntity);
-            return Ok(response);
+            var responses = notes.Select(note => NoteResponse.FromEntity(note));
+            return Ok(responses);
         }
 
         [HttpPost]
@@ -120,42 +131,22 @@ namespace SecondBrain.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetNoteById(string id)
+        public async Task<ActionResult<NoteResponse>> GetNoteById(string id)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userId = GetUserId();
             var note = await _context.Notes
-                .Where(n => n.Id == id && n.UserId == userId)
-                .Include(n => n.TaskItemNotes)
-                    .ThenInclude(tn => tn.TaskItem)
                 .Include(n => n.NoteLinks)
                     .ThenInclude(nl => nl.LinkedNote)
-                .FirstOrDefaultAsync();
+                .Include(n => n.TaskLinks.Where(tl => !tl.IsDeleted))
+                    .ThenInclude(tl => tl.Task)
+                .FirstOrDefaultAsync(n => n.Id == id && n.UserId == userId);
 
             if (note == null)
             {
-                return NotFound(new { error = "Note not found." });
+                return NotFound();
             }
 
-            var linkedNoteIds = note.NoteLinks.Select(nl => nl.LinkedNoteId).ToList();
-
-            var response = new NoteResponse
-            {
-                Id = note.Id,
-                Title = note.Title,
-                Content = note.Content,
-                IsPinned = note.IsPinned,
-                IsFavorite = note.IsFavorite,
-                IsArchived = note.IsArchived,
-                ArchivedAt = note.ArchivedAt,
-                CreatedAt = note.CreatedAt,
-                UpdatedAt = note.UpdatedAt,
-                LinkedNoteIds = linkedNoteIds,
-                Tags = !string.IsNullOrEmpty(note.Tags)
-                    ? note.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList()
-                    : new List<string>()
-            };
-
-            return Ok(response);
+            return Ok(NoteResponse.FromEntity(note));
         }
 
         [HttpDelete("{id}/links/{targetNoteId}")]
@@ -413,8 +404,9 @@ namespace SecondBrain.Api.Controllers
 
             var note = await _context.Notes
                 .Include(n => n.NoteLinks)
-                .Where(n => n.Id == id && n.UserId == userId)
-                .FirstOrDefaultAsync();
+                .Include(n => n.TaskLinks.Where(tl => !tl.IsDeleted))
+                    .ThenInclude(tl => tl.Task)
+                .FirstOrDefaultAsync(n => n.Id == id && n.UserId == userId);
 
             if (note == null)
             {
@@ -437,13 +429,8 @@ namespace SecondBrain.Api.Controllers
             note.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
-            // Reload the note with its links
-            note = await _context.Notes
-                .Include(n => n.NoteLinks)
-                .Where(n => n.Id == id)
-                .FirstOrDefaultAsync();
-
-            return Ok(NoteResponse.FromEntity(note));
+            var response = NoteResponse.FromEntity(note);
+            return Ok(response);
         }
 
         [HttpGet("archived")]

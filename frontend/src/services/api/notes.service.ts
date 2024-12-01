@@ -1,10 +1,12 @@
 import api from './api';
+import { Note, LinkedTask } from '../../types/note';
 
-export interface Note {
+// API response types
+interface NoteResponse {
   id: string;
   title: string;
   content: string;
-  tags: string[];
+  tags: string[] | string;
   isFavorite: boolean;
   isPinned: boolean;
   isIdea: boolean;
@@ -16,6 +18,16 @@ export interface Note {
   linkedNoteIds: string[];
   linkedNotes?: Note[];
   archivedAt?: string;
+  linkedTasks?: Array<{
+    id: string;
+    title: string;
+    description?: string;
+    status: string;
+    priority: string;
+    dueDate?: string;
+    createdAt: string;
+    updatedAt: string;
+  }>;
 }
 
 export interface CreateNoteData {
@@ -47,6 +59,45 @@ export interface UpdateNoteData {
   linkedNoteIds?: string[];
 }
 
+const processTaskStatus = (status: string): LinkedTask['status'] => {
+  const normalizedStatus = status.toLowerCase();
+  return normalizedStatus === 'completed' ? 'completed' : 'incomplete';
+};
+
+const processTaskPriority = (priority: string): LinkedTask['priority'] => {
+  const normalizedPriority = priority.toLowerCase();
+  switch (normalizedPriority) {
+    case 'high':
+      return 'high';
+    case 'low':
+      return 'low';
+    default:
+      return 'medium';
+  }
+};
+
+const processNoteResponse = (note: NoteResponse): Note => {
+  console.log('Processing note response:', note);
+  
+  const processedNote = {
+    ...note,
+    tags: Array.isArray(note.tags) ? note.tags : note.tags?.split(',').filter(Boolean) || [],
+    linkedNoteIds: Array.isArray(note.linkedNoteIds) ? note.linkedNoteIds : [],
+    linkedNotes: Array.isArray(note.linkedNotes) ? note.linkedNotes : [],
+    linkedTasks: Array.isArray(note.linkedTasks) ? note.linkedTasks.map((task): LinkedTask => {
+      console.log('Processing task:', task);
+      return {
+        ...task,
+        status: processTaskStatus(task.status),
+        priority: processTaskPriority(task.priority)
+      };
+    }) : []
+  };
+  
+  console.log('Processed note:', processedNote);
+  return processedNote;
+};
+
 export const notesService = {
   async createNote(data: CreateNoteData): Promise<Note> {
     const safeData = {
@@ -54,46 +105,29 @@ export const notesService = {
       tags: data.tags || [],
     };
     
-    const response = await api.post<Note>('/api/Notes', safeData);
-    
-    const tags = response.data.tags;
-    const processedTags = typeof tags === 'string' 
-      ? tags.split(',').filter(Boolean)
-      : Array.isArray(tags) 
-        ? tags 
-        : [];
-
-    return {
-      ...response.data,
-      tags: processedTags,
-      linkedNoteIds: response.data.linkedNoteIds || [],
-      linkedNotes: []
-    };
+    const response = await api.post<NoteResponse>('/api/Notes', safeData);
+    console.log('Create note response:', response.data); // Debug log
+    return processNoteResponse(response.data);
   },
 
   async getAllNotes(): Promise<Note[]> {
-    const response = await api.get<Note[]>('/api/Notes');
-    return response.data
+    const response = await api.get<NoteResponse[]>('/api/Notes');
+    console.log('API response for getAllNotes:', response.data);
+    
+    const processedNotes = response.data
       .filter(note => !note.isDeleted)
-      .map(note => ({
-        ...note,
-        tags: Array.isArray(note.tags) ? note.tags : [],
-        linkedNoteIds: Array.isArray(note.linkedNoteIds) ? note.linkedNoteIds : [],
-        linkedNotes: []
-      }));
+      .map(processNoteResponse);
+    
+    console.log('Processed all notes:', processedNotes);
+    return processedNotes;
   },
 
   async updateNote(id: string, data: Partial<UpdateNoteData>): Promise<Note> {
     const response = await api.put<Note>(`/api/Notes/${id}`, {
-        ...data,
-        ...(data.isDeleted && { deletedAt: new Date().toISOString() })
+      ...data,
+      ...(data.isDeleted && { deletedAt: new Date().toISOString() })
     });
-    return {
-        ...response.data,
-        tags: Array.isArray(response.data.tags) ? response.data.tags : [],
-        linkedNoteIds: Array.isArray(response.data.linkedNoteIds) ? response.data.linkedNoteIds : [],
-        linkedNotes: Array.isArray(response.data.linkedNotes) ? response.data.linkedNotes : []
-    };
+    return processNoteResponse(response.data);
   },
 
   async deleteNote(id: string): Promise<Note> {
@@ -127,12 +161,7 @@ export const notesService = {
     try {
       const response = await api.get<Note[]>('/api/Notes/archived');
       
-      return response.data.map(note => ({
-        ...note,
-        tags: Array.isArray(note.tags) ? note.tags : [],
-        linkedNoteIds: Array.isArray(note.linkedNoteIds) ? note.linkedNoteIds : [],
-        linkedNotes: []
-      }));
+      return response.data.map(processNoteResponse);
     } catch (error) {
       console.error('Error fetching archived notes:', error);
       throw error;
@@ -141,17 +170,12 @@ export const notesService = {
 
   async restoreNote(id: string): Promise<Note> {
     const response = await api.post<Note>(`/api/Notes/${id}/restore`);
-    return response.data;
+    return processNoteResponse(response.data);
   },
 
   async getDeletedNotes(): Promise<Note[]> {
     const response = await api.get<Note[]>('/api/Notes/deleted');
-    return response.data.map(note => ({
-      ...note,
-      tags: Array.isArray(note.tags) ? note.tags : [],
-      linkedNoteIds: Array.isArray(note.linkedNoteIds) ? note.linkedNoteIds : [],
-      linkedNotes: Array.isArray(note.linkedNotes) ? note.linkedNotes : []
-    }));
+    return response.data.map(processNoteResponse);
   },
 
   async deleteNotePermanently(id: string): Promise<void> {
@@ -161,12 +185,7 @@ export const notesService = {
   async unarchiveNote(id: string): Promise<Note> {
     try {
         const response = await api.post<Note>(`/api/Notes/${id}/unarchive`);
-        return {
-            ...response.data,
-            tags: Array.isArray(response.data.tags) ? response.data.tags : [],
-            linkedNoteIds: Array.isArray(response.data.linkedNoteIds) ? response.data.linkedNoteIds : [],
-            linkedNotes: Array.isArray(response.data.linkedNotes) ? response.data.linkedNotes : []
-        };
+        return processNoteResponse(response.data);
     } catch (error) {
         console.error('Error unarchiving note:', error);
         throw error;

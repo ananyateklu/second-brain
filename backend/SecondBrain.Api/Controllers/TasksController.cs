@@ -8,61 +8,60 @@ using System.Threading.Tasks;
 using System.Linq;
 using System.Security.Claims;
 using SecondBrain.Api.Extensions;
+using Microsoft.Extensions.Logging;
 
 namespace SecondBrain.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
-    public class TasksController : ControllerBase
+    public class TasksController : ApiControllerBase
     {
         private readonly DataContext _context;
+        private readonly ILogger<TasksController> _logger;
 
-        public TasksController(DataContext context)
+        public TasksController(DataContext context, ILogger<TasksController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<TaskResponse>>> GetTasks()
         {
-            var userId = User.GetUserId();
+            var userId = GetUserId();
+            _logger.LogInformation("Getting tasks for user {UserId}", userId);
+
             var tasks = await _context.Tasks
-                .Include(t => t.TaskLinks)
+                .Include(t => t.TaskLinks.Where(tl => !tl.IsDeleted))
                     .ThenInclude(tl => tl.LinkedItem)
                 .Where(t => t.UserId == userId && !t.IsDeleted)
                 .OrderByDescending(t => t.CreatedAt)
                 .ToListAsync();
 
+            _logger.LogInformation("Retrieved {Count} tasks for user {UserId}", tasks.Count, userId);
             return Ok(tasks.Select(TaskResponse.FromEntity));
         }
 
-        [HttpGet("deleted")]
-        public async Task<IActionResult> GetDeletedTasks()
+        [HttpGet("{id}")]
+        public async Task<ActionResult<TaskResponse>> GetTaskById(string id)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { error = "User ID not found in token." });
-            }
+            var userId = GetUserId();
+            var task = await _context.Tasks
+                .Include(t => t.TaskLinks.Where(tl => !tl.IsDeleted))
+                    .ThenInclude(tl => tl.LinkedItem)
+                .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
 
-            var deletedTasks = await _context.Tasks
-                .Where(t => t.UserId == userId && t.IsDeleted)
-                .ToListAsync();
+            if (task == null)
+                return NotFound();
 
-            var response = deletedTasks.Select(TaskResponse.FromEntity);
-            return Ok(response);
+            return Ok(TaskResponse.FromEntity(task));
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateTask([FromBody] CreateTaskRequest request)
+        public async Task<ActionResult<TaskResponse>> CreateTask([FromBody] CreateTaskRequest request)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { error = "User ID not found in token." });
-            }
-
+            var userId = GetUserId();
             var task = new TaskItem
             {
                 Id = Guid.NewGuid().ToString(),
@@ -81,23 +80,24 @@ namespace SecondBrain.Api.Controllers
             await _context.SaveChangesAsync();
 
             var response = TaskResponse.FromEntity(task);
-
-            return CreatedAtAction(nameof(GetTask), new { id = task.Id }, response);
+            return CreatedAtAction(nameof(GetTaskById), new { id = task.Id }, response);
         }
 
-        [HttpGet("{id}")]
-        public async Task<ActionResult<TaskResponse>> GetTask(string id)
+        [HttpGet("deleted")]
+        public async Task<IActionResult> GetDeletedTasks()
         {
-            var userId = User.GetUserId();
-            var task = await _context.Tasks
-                .Include(t => t.TaskLinks)
-                    .ThenInclude(tl => tl.LinkedItem)
-                .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { error = "User ID not found in token." });
+            }
 
-            if (task == null)
-                return NotFound();
+            var deletedTasks = await _context.Tasks
+                .Where(t => t.UserId == userId && t.IsDeleted)
+                .ToListAsync();
 
-            return Ok(TaskResponse.FromEntity(task));
+            var response = deletedTasks.Select(TaskResponse.FromEntity);
+            return Ok(response);
         }
 
         [HttpPatch("{id}")]
@@ -238,18 +238,36 @@ namespace SecondBrain.Api.Controllers
         public async Task<IActionResult> AddTaskLink(string taskId, [FromBody] TaskLinkRequest request)
         {
             var userId = User.GetUserId();
+            _logger.LogInformation("Adding task link. TaskId: {TaskId}, LinkedItemId: {LinkedItemId}, UserId: {UserId}", taskId, request.LinkedItemId, userId);
+
             var task = await _context.Tasks
                 .Include(t => t.TaskLinks)
                 .FirstOrDefaultAsync(t => t.Id == taskId && t.UserId == userId);
 
             if (task == null)
+            {
+                _logger.LogWarning("Task not found. TaskId: {TaskId}, UserId: {UserId}", taskId, userId);
                 return NotFound();
+            }
 
             var linkedItem = await _context.Notes
                 .FirstOrDefaultAsync(n => n.Id == request.LinkedItemId && n.UserId == userId);
 
             if (linkedItem == null)
+            {
+                _logger.LogWarning("Linked item not found. LinkedItemId: {LinkedItemId}, UserId: {UserId}", request.LinkedItemId, userId);
                 return NotFound("Linked item not found");
+            }
+
+            // Check if link already exists
+            var existingLink = await _context.TaskLinks
+                .AnyAsync(tl => tl.TaskId == taskId && tl.LinkedItemId == request.LinkedItemId && !tl.IsDeleted);
+
+            if (existingLink)
+            {
+                _logger.LogWarning("Task link already exists. TaskId: {TaskId}, LinkedItemId: {LinkedItemId}", taskId, request.LinkedItemId);
+                return BadRequest("Task is already linked to this item");
+            }
 
             var taskLink = new TaskLink
             {
@@ -258,18 +276,44 @@ namespace SecondBrain.Api.Controllers
                 LinkType = request.LinkType,
                 Description = request.Description,
                 CreatedAt = DateTime.UtcNow,
-                CreatedBy = userId
+                CreatedBy = userId,
+                IsDeleted = false
             };
 
+            _logger.LogInformation("Creating task link: {@TaskLink}", taskLink);
             _context.TaskLinks.Add(taskLink);
-            await _context.SaveChangesAsync();
 
-            task = await _context.Tasks
-                .Include(t => t.TaskLinks)
-                .ThenInclude(tl => tl.LinkedItem)
-                .FirstAsync(t => t.Id == taskId);
+            try
+            {
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Task link saved successfully");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error saving task link");
+                return StatusCode(500, new { error = "Failed to save task link" });
+            }
 
-            return Ok(TaskResponse.FromEntity(task));
+            // Reload the task with its links
+            try
+            {
+                task = await _context.Tasks
+                    .Include(t => t.TaskLinks.Where(tl => !tl.IsDeleted))
+                        .ThenInclude(tl => tl.LinkedItem)
+                    .FirstAsync(t => t.Id == taskId);
+
+                // Log the task links for debugging
+                _logger.LogInformation("Task links after save: {@TaskLinks}", task.TaskLinks.Select(tl => new { tl.TaskId, tl.LinkedItemId, tl.IsDeleted }));
+
+                var response = TaskResponse.FromEntity(task);
+                _logger.LogInformation("Task link created successfully. TaskId: {TaskId}, LinkedItemId: {LinkedItemId}, Response: {@Response}", taskId, request.LinkedItemId, response);
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading task after saving link");
+                return StatusCode(500, new { error = "Failed to load task after saving link" });
+            }
         }
 
         [HttpDelete("{taskId}/links/{linkedItemId}")]
