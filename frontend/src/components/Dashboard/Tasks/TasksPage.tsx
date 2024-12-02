@@ -1,16 +1,19 @@
-import React, { useState } from 'react';
-import { CheckSquare, Plus, Search, SlidersHorizontal } from 'lucide-react';
+import { useState } from 'react';
+import { CheckSquare, Plus, Search, SlidersHorizontal, LayoutGrid, List } from 'lucide-react';
 import { useTasks } from '../../../contexts/TasksContext';
-import { TaskList } from './TaskList';
 import { NewTaskModal } from './NewTaskModal';
 import { TaskFilters } from './TaskFilters';
 import { Input } from '../../shared/Input';
+import { TaskCard } from './TaskCard';
+import { EditTaskModal } from './EditTaskModal';
 
 export function TasksPage() {
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const { tasks } = useTasks();
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [filters, setFilters] = useState({
     status: 'all',
     priority: 'all',
@@ -18,6 +21,8 @@ export function TasksPage() {
   });
 
   const completedTasks = tasks.filter(task => task && task.status === 'Completed').length;
+
+  const selectedTask = selectedTaskId ? tasks.find(t => t.id === selectedTaskId) : null;
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-fixed">
@@ -69,18 +74,43 @@ export function TasksPage() {
             />
           </div>
 
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`
-              flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200/50 dark:border-[#2C2C2E]
-              bg-white dark:bg-[#1C1C1E] hover:bg-gray-50 dark:hover:bg-[#2C2C2E]
-              text-gray-700 dark:text-gray-300 transition-colors
-              ${showFilters ? 'bg-gray-50 dark:bg-[#2C2C2E]' : ''}
-            `}
-          >
-            <SlidersHorizontal className="w-5 h-5" />
-            <span>Filters</span>
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-2 rounded-lg border border-[#2C2C2E] transition-all ${
+                viewMode === 'grid'
+                  ? 'bg-[#64ab6f]/20 text-[#64ab6f]'
+                  : 'bg-[#1C1C1E] hover:bg-[#2C2C2E] text-gray-400'
+              }`}
+              title="Grid View"
+            >
+              <LayoutGrid className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`p-2 rounded-lg border border-[#2C2C2E] transition-all ${
+                viewMode === 'list'
+                  ? 'bg-[#64ab6f]/20 text-[#64ab6f]'
+                  : 'bg-[#1C1C1E] hover:bg-[#2C2C2E] text-gray-400'
+              }`}
+              title="List View"
+            >
+              <List className="w-5 h-5" />
+            </button>
+
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`
+                flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200/50 dark:border-[#2C2C2E]
+                bg-white dark:bg-[#1C1C1E] hover:bg-gray-50 dark:hover:bg-[#2C2C2E]
+                text-gray-700 dark:text-gray-300 transition-colors
+                ${showFilters ? 'bg-gray-50 dark:bg-[#2C2C2E]' : ''}
+              `}
+            >
+              <SlidersHorizontal className="w-5 h-5" />
+              <span>Filters</span>
+            </button>
+          </div>
         </div>
 
         {/* Filters Panel */}
@@ -97,18 +127,35 @@ export function TasksPage() {
             </div>
             <TaskFilters
               filters={filters}
-              onFilterChange={(key, value) => 
+              onFilterChange={(key, value) =>
                 setFilters(prev => ({ ...prev, [key]: value }))
               }
             />
           </div>
         )}
 
-        {/* Task List */}
-        <TaskList
-          searchQuery={searchQuery}
-          filters={filters}
-        />
+        {/* Tasks Grid/List */}
+        <div className={viewMode === 'grid'
+          ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'
+          : 'space-y-2'
+        }>
+          {tasks.map(task => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              viewMode={viewMode}
+              onEdit={() => setSelectedTaskId(task.id)}
+            />
+          ))}
+        </div>
+
+        {selectedTask && (
+          <EditTaskModal
+            isOpen={!!selectedTaskId}
+            onClose={() => setSelectedTaskId(null)}
+            task={selectedTask}
+          />
+        )}
 
         {/* New Task Modal */}
         <NewTaskModal

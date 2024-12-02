@@ -2,18 +2,19 @@ import { Link2, Plus, Type, Lightbulb, CheckSquare, X, Calendar } from 'lucide-r
 import { Note, useNotes } from '../../../../contexts/NotesContext';
 
 interface LinkedNotesPanelProps {
-  readonly linkedNotes: Note[];
-  readonly linkedTasks: Array<{
+  linkedNotes: Note[];
+  linkedTasks: Array<{
     id: string;
     title: string;
     status: string;
     priority: string;
-    dueDate?: string;
+    dueDate: string | null | undefined;
   }>;
-  readonly onShowAddLink: () => void;
-  readonly onShowAddTask: () => void;
-  readonly currentNoteId: string;
-  readonly onUnlinkTask?: (taskId: string) => void;
+  onShowAddLink: () => void;
+  onShowAddTask: () => void;
+  currentNoteId: string;
+  isIdea?: boolean;
+  onUnlinkTask: (taskId: string) => void;
 }
 
 export function LinkedNotesPanel({
@@ -22,6 +23,7 @@ export function LinkedNotesPanel({
   onShowAddLink,
   onShowAddTask,
   currentNoteId,
+  isIdea,
   onUnlinkTask
 }: LinkedNotesPanelProps) {
   const { removeLink } = useNotes();
@@ -45,7 +47,7 @@ export function LinkedNotesPanel({
           <div className="flex items-center gap-2">
             <Link2 className="w-4 h-4 text-gray-500 dark:text-gray-400" />
             <h3 className="text-sm font-medium text-gray-900 dark:text-white">
-              Connections
+              {isIdea ? 'Connected Items' : 'Connections'}
             </h3>
           </div>
           <div className="flex items-center gap-2">

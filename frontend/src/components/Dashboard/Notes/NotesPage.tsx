@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Plus, Search, SlidersHorizontal, FileText, Grid, List, Network } from 'lucide-react';
 import { useNotes } from '../../../contexts/NotesContext';
-import { Note, NoteCard } from '../NoteCard';
+import { NoteCard } from '../NoteCard';
+import { Note } from '../../../types/note';
 import { NewNoteModal } from './NewNoteModal';
 import { FilterDropdown } from './FilterDropdown';
 import { NotesGraph } from './NotesGraph';
@@ -72,7 +73,7 @@ export function NotesPage() {
     const fullNote: Note = {
       ...note,
       isIdea: note.isIdea || false,
-      linkedNotes: note.linkedNotes || []
+      linkedNoteIds: note.linkedNoteIds || []
     };
     setSelectedNote(fullNote);
   };
@@ -81,10 +82,16 @@ export function NotesPage() {
     setFilters(defaultFilters);
   };
 
-  const graphNotes = filteredNotes.map(note => ({
-    ...note,
-    linkedNotes: note.linkedNoteIds.map(id => notes.find(n => n.id === id)).filter((n): n is Note => n !== undefined)
-  }));
+  const graphNotes = filteredNotes.map(note => {
+    const linkedNotes = note.linkedNoteIds
+      .map(id => notes.find(n => n.id === id))
+      .filter((n): n is Note => n !== undefined && !n.isArchived && !n.isDeleted);
+    
+    return {
+      ...note,
+      linkedNoteIds: linkedNotes.map(n => n.id)
+    };
+  });
 
   const toggleFilters = () => setShowFilters(prev => !prev);
 
@@ -149,35 +156,32 @@ export function NotesPage() {
 
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-lg border border-[#2C2C2E] dark:border-[#2C2C2E] transition-all ${
-                viewMode === 'grid'
+              className={`p-2 rounded-lg border border-[#2C2C2E] dark:border-[#2C2C2E] transition-all ${viewMode === 'grid'
                   ? 'bg-[#64ab6f]/20 dark:bg-[#64ab6f]/20 text-[#64ab6f] dark:text-[#64ab6f]'
                   : 'bg-[#1C1C1E] dark:bg-[#1C1C1E] hover:bg-[#2C2C2E] dark:hover:bg-[#2C2C2E] text-gray-100 dark:text-gray-100'
-              }`}
+                }`}
               title="Grid View"
             >
               <Grid className="w-5 h-5" />
             </button>
-            
+
             <button
               onClick={() => setViewMode('list')}
-              className={`p-2 rounded-lg border border-[#2C2C2E] dark:border-[#2C2C2E] transition-all ${
-                viewMode === 'list'
+              className={`p-2 rounded-lg border border-[#2C2C2E] dark:border-[#2C2C2E] transition-all ${viewMode === 'list'
                   ? 'bg-[#64ab6f]/20 dark:bg-[#64ab6f]/20 text-[#64ab6f] dark:text-[#64ab6f]'
                   : 'bg-[#1C1C1E] dark:bg-[#1C1C1E] hover:bg-[#2C2C2E] dark:hover:bg-[#2C2C2E] text-gray-100 dark:text-gray-100'
-              }`}
+                }`}
               title="List View"
             >
               <List className="w-5 h-5" />
             </button>
-            
+
             <button
               onClick={() => setViewMode('graph')}
-              className={`p-2 rounded-lg border border-[#2C2C2E] dark:border-[#2C2C2E] transition-all ${
-                viewMode === 'graph'
+              className={`p-2 rounded-lg border border-[#2C2C2E] dark:border-[#2C2C2E] transition-all ${viewMode === 'graph'
                   ? 'bg-[#64ab6f]/20 dark:bg-[#64ab6f]/20 text-[#64ab6f] dark:text-[#64ab6f]'
                   : 'bg-[#1C1C1E] dark:bg-[#1C1C1E] hover:bg-[#2C2C2E] dark:hover:bg-[#2C2C2E] text-gray-100 dark:text-gray-100'
-              }`}
+                }`}
               title="Graph View"
             >
               <Network className="w-5 h-5" />
@@ -196,7 +200,7 @@ export function NotesPage() {
                 Clear all
               </button>
             </div>
-            
+
             <FilterDropdown
               filters={filters}
               allTags={allTags}

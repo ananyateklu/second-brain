@@ -3,28 +3,17 @@ import { Clock, Tag as TagIcon, Star, Pin, FileText, Archive, Link2, CheckSquare
 import { useNotes } from '../../contexts/NotesContext';
 import { WarningModal } from '../shared/WarningModal';
 import { formatDate } from '../../utils/dateUtils';
-
-export interface Note {
-  id: string;
-  title: string;
-  content: string;
-  tags: string[];
-  isFavorite: boolean;
-  isPinned: boolean;
-  isIdea: boolean;
-  createdAt: string;
-  updatedAt: string;
-  linkedNoteIds?: string[];
-  linkedTasks?: string[];
-}
+import { Note } from '../../types/note';
 
 interface NoteCardProps {
   note: Note;
   viewMode?: 'grid' | 'list';
+  isSelected?: boolean;
+  isArchiveView?: boolean;
   onClick?: () => void;
 }
 
-export function NoteCard({ note, viewMode = 'grid' }: NoteCardProps) {
+export function NoteCard({ note, viewMode = 'grid', isSelected, isArchiveView }: NoteCardProps) {
   const { toggleFavoriteNote, togglePinNote, archiveNote } = useNotes();
   const [showArchiveWarning, setShowArchiveWarning] = useState(false);
 
@@ -70,6 +59,7 @@ export function NoteCard({ note, viewMode = 'grid' }: NoteCardProps) {
         ${note.isPinned && !note.isFavorite ? 'bg-[#1A1A1D]' : ''}
         ${!note.isPinned && note.isFavorite ? 'bg-[#1A1A1D]' : ''}
         ${viewMode === 'list' ? 'flex items-start gap-4' : 'flex flex-col'}
+        ${isSelected ? 'border-[#64ab6f]' : ''}
       `}>
         <div className="flex-1">
           <div className="flex items-start justify-between gap-3">
@@ -87,43 +77,45 @@ export function NoteCard({ note, viewMode = 'grid' }: NoteCardProps) {
               </div>
             </div>
 
-            <div className="flex flex-col gap-2">
-              <button
-                onClick={handlePin}
-                className={`p-1.5 rounded-lg transition-colors ${note.isPinned
-                  ? 'bg-[#64ab6f]/20 text-[#64ab6f]'
-                  : 'text-gray-400 hover:text-[#64ab6f] hover:bg-[#2C2C2E]'
-                  }`}
-                title={note.isPinned ? 'Unpin note' : 'Pin note'}
-              >
-                <Pin
-                  className="w-4 h-4 transform-gpu transition-transform duration-200"
-                  fill={note.isPinned ? 'currentColor' : 'none'}
-                  style={{
-                    transform: note.isPinned ? 'rotate(45deg)' : 'none'
-                  }}
-                />
-              </button>
+            {!isArchiveView && (
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={handlePin}
+                  className={`p-1.5 rounded-lg transition-colors ${note.isPinned
+                    ? 'bg-[#64ab6f]/20 text-[#64ab6f]'
+                    : 'text-gray-400 hover:text-[#64ab6f] hover:bg-[#2C2C2E]'
+                    }`}
+                  title={note.isPinned ? 'Unpin note' : 'Pin note'}
+                >
+                  <Pin
+                    className="w-4 h-4 transform-gpu transition-transform duration-200"
+                    fill={note.isPinned ? 'currentColor' : 'none'}
+                    style={{
+                      transform: note.isPinned ? 'rotate(45deg)' : 'none'
+                    }}
+                  />
+                </button>
 
-              <button
-                onClick={handleFavorite}
-                className={`p-1.5 rounded-lg transition-colors ${note.isFavorite
-                  ? 'text-amber-400 bg-amber-900/30'
-                  : 'text-gray-400 hover:text-amber-400 hover:bg-[#2C2C2E]'
-                  }`}
-                title={note.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-              >
-                <Star className="w-4 h-4" fill={note.isFavorite ? 'currentColor' : 'none'} />
-              </button>
+                <button
+                  onClick={handleFavorite}
+                  className={`p-1.5 rounded-lg transition-colors ${note.isFavorite
+                    ? 'text-amber-400 bg-amber-900/30'
+                    : 'text-gray-400 hover:text-amber-400 hover:bg-[#2C2C2E]'
+                    }`}
+                  title={note.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                >
+                  <Star className="w-4 h-4" fill={note.isFavorite ? 'currentColor' : 'none'} />
+                </button>
 
-              <button
-                onClick={handleArchiveClick}
-                className="p-1.5 rounded-lg text-gray-400 hover:text-blue-400 hover:bg-[#2C2C2E] transition-colors"
-                title="Archive note"
-              >
-                <Archive className="w-4 h-4" />
-              </button>
-            </div>
+                <button
+                  onClick={handleArchiveClick}
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-blue-400 hover:bg-[#2C2C2E] transition-colors"
+                  title="Archive note"
+                >
+                  <Archive className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
 
           {note.tags.length > 0 && (

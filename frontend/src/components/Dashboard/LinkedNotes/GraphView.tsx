@@ -10,6 +10,34 @@ interface GraphViewProps {
   selectedNoteId: string | null;
 }
 
+// Layout configuration - moved outside component
+const graphLayout = {
+  name: 'cose',
+  fit: true,
+  padding: 100,
+  animate: 'end',
+  animationDuration: 1000,
+  animationEasing: 'ease-out',
+  nodeDimensionsIncludeLabels: true,
+  nodeRepulsion: () => 100000,
+  nodeOverlap: 50,
+  idealEdgeLength: () => 250,
+  edgeElasticity: 0.45,
+  nestingFactor: 1.2,
+  gravity: 0.1,
+  numIter: 2000,
+  initialTemp: 1000,
+  coolingFactor: 0.99,
+  minTemp: 1.0,
+  randomize: false,
+  refresh: 30,
+  componentSpacing: 150,
+  maxSimulationTime: 8000,
+  weaver: true,
+  quality: "proof",
+  infinite: false,
+} as const;
+
 export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: Readonly<GraphViewProps>) {
   const { notes } = useNotes();
   const { theme } = useTheme();
@@ -59,49 +87,6 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: 
         }))
     )
   ];
-
-  // Layout configuration - only run once at initial render
-  const layout = {
-    name: 'cose',
-    fit: true,
-    padding: 100,
-    animate: 'end',
-    animationDuration: 1000,
-    animationEasing: 'ease-out',
-    nodeDimensionsIncludeLabels: true,
-    // Spacing and organization
-    nodeRepulsion: () => 100000,
-    nodeOverlap: 50,
-    idealEdgeLength: () => 250,
-    edgeElasticity: 0.45,
-    nestingFactor: 1.2,
-    gravity: 0.1,
-    numIter: 2000,
-    initialTemp: 1000,
-    coolingFactor: 0.99,
-    minTemp: 1.0,
-    // Layout settings
-    randomize: false,
-    refresh: 30,
-    componentSpacing: 150,
-    maxSimulationTime: 8000,
-    // Quality settings
-    weaver: true,
-    quality: "proof",
-    // Prevent infinite layout
-    infinite: false,
-    // Don't lock nodes after layout
-    stop: () => {
-      if (cyRef.current) {
-        const cy = cyRef.current;
-        // Only lock nodes that aren't being dragged
-        cy.nodes().forEach(node => {
-          node.unlock();
-          node.grabify();
-        });
-      }
-    }
-  };
 
   // Function to smoothly center on a node without disturbing layout
   const centerOnNode = useCallback((nodeId: string) => {
@@ -208,7 +193,7 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: 
     };
 
     // Run initial layout
-    cy.layout(layout).run();
+    cy.layout(graphLayout).run();
 
     // After layout completes, organize nodes and then handle centering
     cy.one('layoutstop', () => {
@@ -251,7 +236,7 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: 
     }, 300);
 
     return () => clearTimeout(resizeTimer);
-  }, [isDetailsPanelOpen]);
+  }, [isDetailsPanelOpen, selectedNoteId]);
 
   // Update the stylesheet configuration
   const stylesheet: Stylesheet[] = [
@@ -303,34 +288,19 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: 
           return label;
         },
         // Main note/idea icon
-        'backgroundImage': (node: NodeSingular) => {
+        'background-image': (node: NodeSingular) => {
           const isIdea = node.data('isIdea');
           return isIdea
             ? 'data:image/svg+xml;base64,' + btoa(`<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FCD34D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8A6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>`)
             : 'data:image/svg+xml;base64,' + btoa(`<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>`);
         },
-        'backgroundWidth': '24px',
-        'backgroundHeight': '24px',
-        'backgroundPositionX': '16px',
-        'backgroundPositionY': '16px',
-        'backgroundFit': 'none',
-        'backgroundClip': 'none',
-        'backgroundImageOpacity': 1,
-
-        // Task icon (using CheckSquare from NoteDetailsPanel)
-        'backgroundImage2': (node: NodeSingular) => {
-          const hasTask = node.data('taskCount') > 0;
-          return hasTask
-            ? 'data:image/svg+xml;base64,' + btoa(`<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#64AB6F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path><polyline points="9 11 12 14 22 4"></polyline></svg>`)
-            : 'none';
-        },
-        'backgroundWidth2': '14px',
-        'backgroundHeight2': '14px',
-        'backgroundPositionX2': '16px',
-        'backgroundPositionY2': '75%',
-        'backgroundFit2': 'none',
-        'backgroundClip2': 'none',
-        'backgroundImageOpacity2': 1,
+        'background-width': '24px',
+        'background-height': '24px',
+        'background-position-x': '16px',
+        'background-position-y': '16px',
+        'background-fit': 'none',
+        'background-clip': 'none',
+        'background-image-opacity': 1,
       }
     },
     {
@@ -403,7 +373,7 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: 
       <CytoscapeComponent
         elements={elements}
         stylesheet={stylesheet}
-        layout={layout}
+        layout={graphLayout}
         style={{
           width: '100%',
           height: '100%',

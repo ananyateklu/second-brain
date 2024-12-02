@@ -49,12 +49,17 @@ export function NewIdeaModal({ isOpen, onClose }: NewIdeaModalProps) {
       await addNote({
         title: title.trim(),
         content: content.trim(),
-        tags: tags,
-        isIdea: true
+        tags,
+        isIdea: true,
+        isPinned: false,
+        isFavorite: false,
+        isArchived: false,
+        isDeleted: false
       });
       
       onClose();
     } catch (error) {
+      console.error('Error creating idea:', error);
       setError('Failed to create idea. Please try again.');
     } finally {
       setIsLoading(false);
@@ -66,7 +71,7 @@ export function NewIdeaModal({ isOpen, onClose }: NewIdeaModalProps) {
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       
       <div className="relative w-full max-w-2xl glass-morphism rounded-xl">
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-dark-border">
+        <div className="flex items-center justify-between p-4 border-b border-[#2C2C2E] dark:border-[#2C2C2E]">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
             Capture New Idea
           </h2>
@@ -101,6 +106,7 @@ export function NewIdeaModal({ isOpen, onClose }: NewIdeaModalProps) {
                 id="idea-title"
                 name="title"
                 type="text"
+                label="Title"
                 icon={Type}
                 value={title}
                 onChange={(e) => {
@@ -110,6 +116,7 @@ export function NewIdeaModal({ isOpen, onClose }: NewIdeaModalProps) {
                 placeholder="What's your idea?"
                 error={error}
                 disabled={isLoading}
+                className="bg-[#1C1C1E] dark:bg-[#1C1C1E] border-[#2C2C2E] dark:border-[#2C2C2E]"
               />
             </div>
 
@@ -136,7 +143,7 @@ export function NewIdeaModal({ isOpen, onClose }: NewIdeaModalProps) {
                 placeholder="Describe your idea..."
                 rows={6}
                 disabled={isLoading}
-                className="w-full px-4 py-3 glass-morphism border border-gray-100/20 dark:border-white/5 rounded-lg focus:ring-2 focus:ring-primary-500/50 focus:border-transparent transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400"
+                className="w-full px-4 py-3 bg-[#1C1C1E] dark:bg-[#1C1C1E] border border-[#2C2C2E] dark:border-[#2C2C2E] rounded-lg focus:ring-2 focus:ring-[#64ab6f]/50 focus:border-transparent transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400"
               />
             </div>
 
@@ -160,14 +167,14 @@ export function NewIdeaModal({ isOpen, onClose }: NewIdeaModalProps) {
                 {tags.map(tag => (
                   <span
                     key={tag}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 rounded-full text-sm"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#64ab6f]/20 text-[#64ab6f] rounded-full text-sm"
                   >
                     {tag}
                     {tag !== 'idea' && (
                       <button
                         type="button"
                         onClick={() => handleRemoveTag(tag)}
-                        className="p-0.5 hover:text-primary-800 dark:hover:text-primary-200"
+                        className="p-0.5 hover:text-[#64ab6f]"
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -186,12 +193,13 @@ export function NewIdeaModal({ isOpen, onClose }: NewIdeaModalProps) {
                   onChange={(e) => setTagInput(e.target.value)}
                   placeholder="Add a tag"
                   disabled={isLoading}
+                  className="bg-[#1C1C1E] dark:bg-[#1C1C1E] border-[#2C2C2E] dark:border-[#2C2C2E]"
                 />
                 <button
                   type="button"
                   onClick={handleAddTag}
                   disabled={!tagInput.trim() || isLoading}
-                  className="px-4 py-2 bg-gray-100 dark:bg-dark-card text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-dark-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-4 py-2 bg-[#1C1C1E] text-gray-400 hover:bg-[#2C2C2E] rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Add
                 </button>
@@ -204,14 +212,14 @@ export function NewIdeaModal({ isOpen, onClose }: NewIdeaModalProps) {
               type="button"
               onClick={onClose}
               disabled={isLoading}
-              className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-card rounded-lg transition-colors"
+              className="px-4 py-2 text-gray-400 hover:bg-[#2C2C2E] rounded-lg transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-[#64ab6f] hover:bg-[#64ab6f]/90 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isLoading ? (
                 <>

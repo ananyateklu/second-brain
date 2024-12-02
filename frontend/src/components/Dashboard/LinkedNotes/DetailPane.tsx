@@ -8,7 +8,7 @@ interface DetailPaneProps {
   linkTypes: LinkType[];
 }
 
-export function DetailPane({ note, onClose, linkTypes }: DetailPaneProps) {
+export function DetailPane({ note, onClose }: DetailPaneProps) {
   return (
     <div className="fixed inset-y-0 right-0 w-96 bg-[#1C1C1E] dark:bg-[#1C1C1E] border-l border-[#2C2C2E] dark:border-[#2C2C2E] shadow-xl">
       <div className="h-full flex flex-col">

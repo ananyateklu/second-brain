@@ -17,13 +17,13 @@ interface EditNoteModalProps {
   note: Note | null;
 }
 
-interface HeaderProps {
+export interface HeaderProps {
   note: Note;
   onClose: () => void;
   onShowDeleteConfirm: () => void;
 }
 
-interface LinkedNotesPanelProps {
+export interface LinkedNotesPanelProps {
   linkedNotes: Note[];
   linkedTasks: Array<{
     id: string;
@@ -54,6 +54,15 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showAddLinkModal, setShowAddLinkModal] = useState(false);
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
+
+  // Reset states when modal opens/closes
+  useEffect(() => {
+    if (!isOpen) {
+      setShowDeleteConfirm(false);
+      setError('');
+      // Reset other states if needed
+    }
+  }, [isOpen]);
 
   // Get current note from context to ensure we have latest data
   const currentNote = notes.find(n => n.id === note?.id);
@@ -89,6 +98,7 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
     setIsLoading(true);
     try {
       await deleteNote(currentNote.id);
+      setShowDeleteConfirm(false);  // Reset delete confirm state
       navigate('/dashboard/notes');
       onClose();
     } catch (err) {
@@ -142,6 +152,12 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
     }
   };
 
+  // Format linked tasks before passing to panel
+  const formattedTasks = linkedTasks.map(task => ({
+    ...task,
+    dueDate: task.dueDate || undefined
+  }));
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
@@ -184,11 +200,10 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
 
             <LinkedNotesPanel
               linkedNotes={linkedNotes}
-              linkedTasks={linkedTasks}
+              linkedTasks={formattedTasks}
               onShowAddLink={() => setShowAddLinkModal(true)}
               onShowAddTask={() => setShowAddTaskModal(true)}
               currentNoteId={currentNote.id}
-              isIdea={false}
               onUnlinkTask={handleUnlinkTask}
             />
           </div>

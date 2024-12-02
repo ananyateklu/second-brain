@@ -1,8 +1,8 @@
 import { useTasks } from '../../../contexts/TasksContext';
 import { TaskCard } from './TaskCard';
+import { Task } from '../../../api/types/task';
 import { LayoutGrid, List } from 'lucide-react';
 import { useState } from 'react';
-import { Task } from '../../../api/types/task';
 
 interface TaskListProps {
   searchQuery: string;
@@ -15,7 +15,7 @@ interface TaskListProps {
 
 export function TaskList({ searchQuery, filters }: TaskListProps) {
   const { tasks } = useTasks();
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
 
   const filteredTasks = tasks.filter((task): task is Task => {
     // First check if task exists and has required properties
@@ -44,11 +44,12 @@ export function TaskList({ searchQuery, filters }: TaskListProps) {
         case 'today':
           matchesDueDate = dueDate?.toDateString() === today.toDateString();
           break;
-        case 'week':
+        case 'week': {
           const weekFromNow = new Date(today);
           weekFromNow.setDate(today.getDate() + 7);
           matchesDueDate = dueDate ? dueDate <= weekFromNow : false;
           break;
+        }
         case 'overdue':
           matchesDueDate = dueDate ? dueDate < today : false;
           break;
@@ -85,6 +86,7 @@ export function TaskList({ searchQuery, filters }: TaskListProps) {
 
   return (
     <div className="space-y-4">
+      {/* View Mode Toggle */}
       <div className="flex justify-end">
         <div className="inline-flex rounded-lg overflow-hidden">
           <button
@@ -110,6 +112,7 @@ export function TaskList({ searchQuery, filters }: TaskListProps) {
         </div>
       </div>
 
+      {/* Tasks Grid/List */}
       <div className={viewMode === 'grid' 
         ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'
         : 'space-y-2'
@@ -117,7 +120,7 @@ export function TaskList({ searchQuery, filters }: TaskListProps) {
         {filteredTasks.map(task => (
           <TaskCard 
             key={task.id} 
-            task={task} 
+            task={task}
             viewMode={viewMode}
           />
         ))}

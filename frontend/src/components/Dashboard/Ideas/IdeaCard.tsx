@@ -8,10 +8,11 @@ import { WarningModal } from '../../shared/WarningModal';
 interface IdeaCardProps {
   idea: Note;
   viewMode?: 'grid' | 'list';
-  onClick?: (ideaId: string) => void;
+  isSelected?: boolean;
+  isArchiveView?: boolean;
 }
 
-export function IdeaCard({ idea, viewMode = 'grid' }: IdeaCardProps) {
+export function IdeaCard({ idea, viewMode = 'grid', isSelected, isArchiveView }: IdeaCardProps) {
   const { toggleFavoriteNote, togglePinNote, archiveNote } = useNotes();
   const [showArchiveWarning, setShowArchiveWarning] = useState(false);
 
@@ -57,6 +58,7 @@ export function IdeaCard({ idea, viewMode = 'grid' }: IdeaCardProps) {
         ${idea.isPinned && !idea.isFavorite ? 'bg-[#1A1A1D]' : ''}
         ${!idea.isPinned && idea.isFavorite ? 'bg-[#1A1A1D]' : ''}
         ${viewMode === 'list' ? 'flex items-start gap-4' : 'flex flex-col'}
+        ${isSelected ? 'border-[#64ab6f]' : ''}
       `}>
         <div className="flex-1">
           <div className="flex items-start justify-between gap-3">
@@ -74,43 +76,45 @@ export function IdeaCard({ idea, viewMode = 'grid' }: IdeaCardProps) {
               </div>
             </div>
 
-            <div className="flex flex-col gap-2">
-              <button
-                onClick={handlePin}
-                className={`p-1.5 rounded-lg transition-colors ${idea.isPinned
-                  ? 'bg-[#64ab6f]/20 text-[#64ab6f]'
-                  : 'text-gray-400 hover:text-[#64ab6f] hover:bg-[#2C2C2E]'
-                  }`}
-                title={idea.isPinned ? 'Unpin idea' : 'Pin idea'}
-              >
-                <Pin
-                  className="w-4 h-4 transform-gpu transition-transform duration-200"
-                  fill={idea.isPinned ? 'currentColor' : 'none'}
-                  style={{
-                    transform: idea.isPinned ? 'rotate(45deg)' : 'none'
-                  }}
-                />
-              </button>
+            {!isArchiveView && (
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={handlePin}
+                  className={`p-1.5 rounded-lg transition-colors ${idea.isPinned
+                    ? 'bg-[#64ab6f]/20 text-[#64ab6f]'
+                    : 'text-gray-400 hover:text-[#64ab6f] hover:bg-[#2C2C2E]'
+                    }`}
+                  title={idea.isPinned ? 'Unpin idea' : 'Pin idea'}
+                >
+                  <Pin
+                    className="w-4 h-4 transform-gpu transition-transform duration-200"
+                    fill={idea.isPinned ? 'currentColor' : 'none'}
+                    style={{
+                      transform: idea.isPinned ? 'rotate(45deg)' : 'none'
+                    }}
+                  />
+                </button>
 
-              <button
-                onClick={handleFavorite}
-                className={`p-1.5 rounded-lg transition-colors ${idea.isFavorite
-                  ? 'text-amber-400 bg-amber-900/30'
-                  : 'text-gray-400 hover:text-amber-400 hover:bg-[#2C2C2E]'
-                  }`}
-                title={idea.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-              >
-                <Star className="w-4 h-4" fill={idea.isFavorite ? 'currentColor' : 'none'} />
-              </button>
+                <button
+                  onClick={handleFavorite}
+                  className={`p-1.5 rounded-lg transition-colors ${idea.isFavorite
+                    ? 'text-amber-400 bg-amber-900/30'
+                    : 'text-gray-400 hover:text-amber-400 hover:bg-[#2C2C2E]'
+                    }`}
+                  title={idea.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+                >
+                  <Star className="w-4 h-4" fill={idea.isFavorite ? 'currentColor' : 'none'} />
+                </button>
 
-              <button
-                onClick={handleArchiveClick}
-                className="p-1.5 rounded-lg text-gray-400 hover:text-blue-400 hover:bg-[#2C2C2E] transition-colors"
-                title="Archive idea"
-              >
-                <Archive className="w-4 h-4" />
-              </button>
-            </div>
+                <button
+                  onClick={handleArchiveClick}
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-blue-400 hover:bg-[#2C2C2E] transition-colors"
+                  title="Archive idea"
+                >
+                  <Archive className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
 
           {idea.tags.length > 0 && (

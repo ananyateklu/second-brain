@@ -142,10 +142,10 @@ export function IdeasPage() {
           <div className="flex gap-2">
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${
+              className={`p-2 rounded-lg border border-[#2C2C2E] transition-all ${
                 viewMode === 'grid'
-                  ? 'bg-primary-100/20 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
-                  : 'bg-white/20 dark:bg-gray-800/20 hover:bg-white/30 dark:hover:bg-gray-800/30 text-gray-900 dark:text-gray-100'
+                  ? 'bg-[#64ab6f]/20 text-[#64ab6f]'
+                  : 'bg-[#1C1C1E] hover:bg-[#2C2C2E] text-gray-400'
               }`}
               title="Grid View"
             >
@@ -153,10 +153,10 @@ export function IdeasPage() {
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`p-2 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${
+              className={`p-2 rounded-lg border border-[#2C2C2E] transition-all ${
                 viewMode === 'list'
-                  ? 'bg-primary-100/20 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
-                  : 'bg-white/20 dark:bg-gray-800/20 hover:bg-white/30 dark:hover:bg-gray-800/30 text-gray-900 dark:text-gray-100'
+                  ? 'bg-[#64ab6f]/20 text-[#64ab6f]'
+                  : 'bg-[#1C1C1E] hover:bg-[#2C2C2E] text-gray-400'
               }`}
               title="List View"
             >
@@ -164,10 +164,10 @@ export function IdeasPage() {
             </button>
             <button
               onClick={() => setViewMode('mindmap')}
-              className={`p-2 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${
+              className={`p-2 rounded-lg border border-[#2C2C2E] transition-all ${
                 viewMode === 'mindmap'
-                  ? 'bg-primary-100/20 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400'
-                  : 'bg-white/20 dark:bg-gray-800/20 hover:bg-white/30 dark:hover:bg-gray-800/30 text-gray-900 dark:text-gray-100'
+                  ? 'bg-[#64ab6f]/20 text-[#64ab6f]'
+                  : 'bg-[#1C1C1E] hover:bg-[#2C2C2E] text-gray-400'
               }`}
               title="Mind Map View"
             >

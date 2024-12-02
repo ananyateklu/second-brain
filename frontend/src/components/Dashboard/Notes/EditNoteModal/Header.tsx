@@ -1,18 +1,17 @@
 import { useState } from 'react';
 import { X, Type, Star, Archive, Trash2 } from 'lucide-react';
-import { Note } from '../../../../contexts/NotesContext';
-import { useNotes } from '../../../../contexts/NotesContext';
+import { Note, useNotes } from '../../../../contexts/NotesContext';
 import { WarningModal } from '../../../shared/WarningModal';
 
-interface HeaderProps {
+export interface HeaderProps {
   note: Note;
   onClose: () => void;
+  onShowDeleteConfirm: () => void;
 }
 
-export function Header({ note, onClose }: HeaderProps) {
-  const { toggleFavoriteNote, archiveNote, deleteNote } = useNotes();
+export function Header({ note, onClose, onShowDeleteConfirm }: HeaderProps) {
+  const { toggleFavoriteNote, archiveNote } = useNotes();
   const [showArchiveWarning, setShowArchiveWarning] = useState(false);
-  const [showDeleteWarning, setShowDeleteWarning] = useState(false);
 
   const handleFavorite = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -29,7 +28,7 @@ export function Header({ note, onClose }: HeaderProps) {
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setShowDeleteWarning(true);
+    onShowDeleteConfirm();
   };
 
   const handleArchiveConfirm = async () => {
@@ -40,16 +39,6 @@ export function Header({ note, onClose }: HeaderProps) {
     } catch (error) {
       console.error('Failed to archive note:', error);
       setShowArchiveWarning(false);
-    }
-  };
-
-  const handleDeleteConfirm = async () => {
-    try {
-      setShowDeleteWarning(false);
-      await deleteNote(note.id);
-      onClose();
-    } catch (error) {
-      console.error('Failed to delete note:', error);
     }
   };
 
@@ -107,14 +96,6 @@ export function Header({ note, onClose }: HeaderProps) {
         onClose={() => setShowArchiveWarning(false)}
         onConfirm={handleArchiveConfirm}
         type="archive"
-        title={note.title}
-      />
-
-      <WarningModal
-        isOpen={showDeleteWarning}
-        onClose={() => setShowDeleteWarning(false)}
-        onConfirm={handleDeleteConfirm}
-        type="delete"
         title={note.title}
       />
     </>

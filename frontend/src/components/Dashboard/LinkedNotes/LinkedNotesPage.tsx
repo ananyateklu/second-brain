@@ -14,6 +14,11 @@ interface NoteWithConnections extends Note {
   connections?: NoteConnection[];
 }
 
+interface Connection {
+  noteId: string;
+  createdAt: string;
+}
+
 export function LinkedNotesPage() {
   const { notes } = useNotes();
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
@@ -72,7 +77,7 @@ export function LinkedNotesPage() {
         oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
 
         linkedNoteIds.forEach(id => {
-          const connection = note.connections?.find(c => c.noteId === id);
+          const connection = (note as NoteWithConnections).connections?.find((c: Connection) => c.noteId === id);
           if (connection?.createdAt) {
             const connectionDate = new Date(connection.createdAt);
             if (connectionDate > oneWeekAgo) {

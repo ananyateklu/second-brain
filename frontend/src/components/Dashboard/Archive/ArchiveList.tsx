@@ -1,7 +1,10 @@
 import React from 'react';
 import { useNotes } from '../../../contexts/NotesContext';
-import { ArchiveNoteCard } from './ArchiveNoteCard';
+import { NoteCard } from '../NoteCard';
+import { IdeaCard } from '../Ideas/IdeaCard';
 import { RotateCcw } from 'lucide-react';
+import { useModal } from '../../../contexts/ModalContext';
+import { Note } from '../../../types/note';
 
 interface ArchiveListProps {
   filters: {
@@ -24,6 +27,15 @@ export function ArchiveList({
   onRestoreSelected
 }: ArchiveListProps) {
   const { archivedNotes } = useNotes();
+  const { setSelectedNote, setSelectedIdea } = useModal();
+
+  const handleEditNote = (note: Note) => {
+    if (note.isIdea) {
+      setSelectedIdea(note);
+    } else {
+      setSelectedNote(note);
+    }
+  };
 
   const filteredNotes = React.useMemo(() => {
     let filtered = [...archivedNotes];
@@ -47,7 +59,7 @@ export function ArchiveList({
     // Apply links filter
     if (filters.hasLinks) {
       filtered = filtered.filter(note =>
-        note.linkedNotes && note.linkedNotes.length > 0
+        note.linkedNoteIds && note.linkedNoteIds.length > 0
       );
     }
 
@@ -94,13 +106,13 @@ export function ArchiveList({
   return (
     <div className="space-y-4">
       {selectedItems.length > 0 && (
-        <div className="flex items-center justify-between p-4 backdrop-blur-sm bg-white/30 dark:bg-gray-800/30 rounded-lg border border-gray-200/30 dark:border-gray-700/30">
-          <span className="text-sm text-gray-600 dark:text-gray-400">
+        <div className="flex items-center justify-between p-4 backdrop-blur-sm bg-[#1C1C1E] dark:bg-[#1C1C1E] rounded-lg border border-[#2C2C2E] dark:border-[#2C2C2E]">
+          <span className="text-sm text-gray-400 dark:text-gray-400">
             {selectedItems.length} items selected
           </span>
           <button
             onClick={onRestoreSelected}
-            className="flex items-center gap-2 px-4 py-2 text-sm bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-sm bg-[#64ab6f] hover:bg-[#64ab6f]/90 text-white rounded-lg transition-colors"
           >
             <RotateCcw className="w-4 h-4" />
             <span>Restore Selected</span>
@@ -109,14 +121,35 @@ export function ArchiveList({
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredNotes.map(note => (
-          <ArchiveNoteCard
-            key={note.id}
-            note={note}
-            isSelected={selectedItems.includes(note.id)}
-            onSelect={() => onSelectItem(note.id)}
-          />
-        ))}
+        {filteredNotes.map(note => {
+          const isIdea = note.isIdea || note.tags.includes('idea');
+          return (
+            <div
+              key={note.id}
+              onClick={() => {
+                onSelectItem(note.id);
+                handleEditNote({ ...note, isIdea });
+              }}
+              className="cursor-pointer w-full"
+            >
+              {isIdea ? (
+                <IdeaCard 
+                  idea={{ ...note, isIdea: true }}
+                  viewMode="grid"
+                  isSelected={selectedItems.includes(note.id)}
+                  isArchiveView
+                />
+              ) : (
+                <NoteCard 
+                  note={note}
+                  viewMode="grid"
+                  isSelected={selectedItems.includes(note.id)}
+                  isArchiveView
+                />
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
