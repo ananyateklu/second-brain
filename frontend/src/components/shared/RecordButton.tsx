@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Mic, Loader } from 'lucide-react';
 import { useRecording } from '../../contexts/RecordingContext';
 
 interface RecordButtonProps {
   onTranscription: (text: string) => void;
   className?: string;
+  disabled?: boolean;
 }
 
-export function RecordButton({ onTranscription, className = '' }: RecordButtonProps) {
+export function RecordButton({ onTranscription, className = '', disabled = false }: RecordButtonProps) {
   const { isRecording, startRecording, stopRecording } = useRecording();
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -31,7 +32,7 @@ export function RecordButton({ onTranscription, className = '' }: RecordButtonPr
   return (
     <button
       onClick={handleClick}
-      disabled={isProcessing}
+      disabled={disabled || isProcessing}
       className={`p-2 rounded-full transition-all duration-200
         ${isRecording 
           ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse'

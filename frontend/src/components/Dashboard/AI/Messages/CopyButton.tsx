@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Copy, Check, Loader } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -20,6 +20,7 @@ export function CopyButton({ content, isUser }: CopyButtonProps) {
       setCopyState('copied');
       setTimeout(() => setCopyState('idle'), 2000);
     } catch (error) {
+      console.error('Failed to copy text:', error);
       setCopyState('idle');
     }
   };

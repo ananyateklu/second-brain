@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Calendar, Tag, Clock, AlertCircle, CheckSquare, Square } from 'lucide-react';
 import { Reminder, useReminders } from '../../../contexts/RemindersContext';
 import { EditReminderModal } from './EditReminderModal';

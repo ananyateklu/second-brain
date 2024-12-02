@@ -22,7 +22,7 @@ import {
   LightbulbIcon,
 } from 'lucide-react';
 import { useNotes } from '../../contexts/NotesContext';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { NoteCard } from './NoteCard';
 import { NewNoteModal } from './Notes/NewNoteModal';
 import { StatsEditor } from './StatsEditor';

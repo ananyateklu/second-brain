@@ -1,8 +1,8 @@
-import React from 'react';
 import { Message } from '../../../../types/message';
 import ReactMarkdown from 'react-markdown';
 import { CodeBlock } from '../CodeBlock';
 import remarkGfm from 'remark-gfm';
+import { type ComponentPropsWithoutRef } from 'react';
 
 interface TextContentProps {
   message: Message;
@@ -11,14 +11,14 @@ interface TextContentProps {
 
 export function TextContent({ message, themeColor }: TextContentProps) {
   const content = message.content as string;
-  
-  if (message.model?.isReasoner && 
-      content.includes('<Thought>') && 
-      content.includes('</Thought>')) {
+
+  if (message.model?.isReasoner &&
+    content.includes('<Thought>') &&
+    content.includes('</Thought>')) {
     const thought = extractThought(content);
     // Split thought into paragraphs and format as steps
     const thoughtSteps = formatThoughtSteps(thought);
-    
+
     return (
       <div className="space-y-4">
         <div className="prose prose-sm dark:prose-invert max-w-none">
@@ -30,7 +30,7 @@ export function TextContent({ message, themeColor }: TextContentProps) {
                   {index + 1}
                 </div>
                 <div className="flex-1">
-                  <ReactMarkdown 
+                  <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
                     className="text-gray-700 dark:text-gray-300"
                   >
@@ -55,9 +55,11 @@ export function TextContent({ message, themeColor }: TextContentProps) {
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          code({ node, inline, className, children, ...props }) {
+          code(props: ComponentPropsWithoutRef<'code'>) {
+            const { className, children } = props;
             const match = /language-(\w+)/.exec(className || '');
-            
+            const inline = !match;
+
             if (!inline && match) {
               return (
                 <CodeBlock
@@ -69,11 +71,11 @@ export function TextContent({ message, themeColor }: TextContentProps) {
             }
             
             return (
-              <code 
+              <code
                 className="px-1.5 py-0.5 rounded-md 
                   bg-black/10 dark:bg-white/10 
                   text-gray-800 dark:text-gray-200
-                  text-xs font-mono" 
+                  text-xs font-mono"
                 {...props}
               >
                 {children}
@@ -89,7 +91,7 @@ export function TextContent({ message, themeColor }: TextContentProps) {
       </ReactMarkdown>
     </div>
   );
-} 
+}
 
 function extractThought(content: string): string {
   const thoughtMatch = content.match(/<Thought>(.*?)<\/Thought>/s);
@@ -104,7 +106,7 @@ function extractOutput(content: string): string {
 function formatThoughtSteps(thought: string): string[] {
   // First, try to split on line breaks or double line breaks
   let steps = thought.split(/\n\n+/);
-  
+
   // If we only got one step, try to split on sentences
   if (steps.length === 1) {
     // Split on periods that are followed by a space and a capital letter
@@ -133,7 +135,7 @@ function formatThoughtSteps(thought: string): string[] {
       currentStep = step;
     }
   }
-  
+
   // Don't forget to add the last step
   if (currentStep) {
     groupedSteps.push(currentStep);

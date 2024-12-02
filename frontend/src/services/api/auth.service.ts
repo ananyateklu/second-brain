@@ -46,6 +46,10 @@ export const authService = {
     return response.data;
   },
 
+  async resetPassword(email: string): Promise<void> {
+    await api.post('/auth/reset-password', { email });
+  },
+
   refreshToken: async (data: { refreshToken: string }) => {
     const response = await api.post('/auth/refresh-token', data);
     return response.data;

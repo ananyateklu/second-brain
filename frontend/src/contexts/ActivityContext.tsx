@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Activity, activityService } from '../api/services/activityService';
-import { useAuth } from './AuthContext';
+import { useAuth } from '../hooks/useAuth';
 
 interface ActivityContextType {
   activities: Activity[];
@@ -13,7 +13,7 @@ interface ActivityContextType {
 const ActivityContext = createContext<ActivityContextType | undefined>(undefined);
 
 export const ActivityProvider = ({ children }: { children: React.ReactNode }) => {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user } = useAuth();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,8 +26,12 @@ export const ActivityProvider = ({ children }: { children: React.ReactNode }) =>
       const response = await activityService.getActivities();
       setActivities(response.data);
       setError(null);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to fetch activities');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message || 'Failed to fetch activities');
+      } else {
+        setError('Failed to fetch activities');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -38,8 +42,12 @@ export const ActivityProvider = ({ children }: { children: React.ReactNode }) =>
     try {
       const response = await activityService.createActivity(activityData);
       setActivities(prev => [response.data, ...prev]);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to create activity');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message || 'Failed to create activity');
+      } else {
+        setError('Failed to create activity');
+      }
       throw err;
     }
   }, []);

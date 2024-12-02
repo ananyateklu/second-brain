@@ -1,109 +1,14 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import { Plus, Search, Clock, Star, Pin, Hash, Archive, Files, Edit, CheckSquare, Bell, Settings, X, FileText, Lightbulb, Share2, Activity, FolderPlus, Tags, AlignLeft, FolderIcon, TagIcon, LayoutGrid, Layout, Columns } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
+import { Plus, Search, Clock, Hash, Files, CheckSquare, Settings, X, FileText, Lightbulb, Share2, Activity, FolderPlus, Tags, AlignLeft, FolderIcon, TagIcon, LayoutGrid, Layout, Columns } from 'lucide-react';
 import { NewNoteModal } from './Notes/NewNoteModal';
-import { useNotes } from '../../contexts/NotesContext';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { useDashboard } from '../../contexts/DashboardContext';
 import { StatsEditor } from './StatsEditor';
-
-// Updated animation variants
-const cardVariants = {
-  hidden: {
-    opacity: 0,
-    scale: 0.8,
-    y: 20
-  },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    y: 0,
-    transition: {
-      type: "spring",
-      bounce: 0.4,
-      duration: 0.6
-    }
-  },
-  exit: {
-    opacity: 0,
-    scale: 0.9,
-    y: -20,
-    transition: {
-      type: "spring",
-      bounce: 0.2,
-      duration: 0.4
-    }
-  },
-  hover: {
-    scale: 1.02,
-    y: -5,
-    transition: {
-      type: "spring",
-      bounce: 0.4,
-      duration: 0.3
-    }
-  }
-};
-
-// Add these utility functions
-const getIconBg = (type: string) => {
-  switch (type) {
-    case 'notes':
-      return 'bg-blue-100 dark:bg-blue-900/30';
-    case 'new-notes':
-      return 'bg-green-100 dark:bg-green-900/30';
-    case 'categories':
-      return 'bg-yellow-100 dark:bg-yellow-900/30';
-    case 'word-count':
-      return 'bg-purple-100 dark:bg-purple-900/30';
-    case 'tags':
-      return 'bg-primary-100 dark:bg-primary-900/30';
-    case 'time':
-      return 'bg-purple-100 dark:bg-purple-900/30';
-    case 'ideas':
-      return 'bg-amber-100 dark:bg-amber-900/30';
-    case 'tasks':
-      return 'bg-green-100 dark:bg-green-900/30';
-    case 'activity':
-      return 'bg-rose-100 dark:bg-rose-900/30';
-    case 'search':
-      return 'bg-indigo-100 dark:bg-indigo-900/30';
-    case 'collaboration':
-      return 'bg-teal-100 dark:bg-teal-900/30';
-    default:
-      return 'bg-gray-100 dark:bg-gray-900/30';
-  }
-};
-
-const getIconColor = (type: string) => {
-  switch (type) {
-    case 'notes':
-      return 'text-blue-600 dark:text-blue-400';
-    case 'new-notes':
-      return 'text-green-600 dark:text-green-400';
-    case 'categories':
-      return 'text-yellow-600 dark:text-yellow-400';
-    case 'word-count':
-      return 'text-purple-600 dark:text-purple-400';
-    case 'tags':
-      return 'text-primary-600 dark:text-primary-400';
-    case 'time':
-      return 'text-purple-600 dark:text-purple-400';
-    case 'ideas':
-      return 'text-amber-600 dark:text-amber-400';
-    case 'tasks':
-      return 'text-green-600 dark:text-green-400';
-    case 'activity':
-      return 'text-rose-600 dark:text-rose-400';
-    case 'search':
-      return 'text-indigo-600 dark:text-indigo-400';
-    case 'collaboration':
-      return 'text-teal-600 dark:text-teal-400';
-    default:
-      return 'text-gray-600 dark:text-gray-400';
-  }
-};
+import { DashboardStat } from '../../types/dashboard';
+import { getIconBg, getIconColor } from '../../utils/dashboardUtils';
+import { cardVariants, sizeClasses } from '../../utils/welcomeBarUtils';
 
 // Update the IconMap to include all necessary icons and their mappings
 const IconMap = {
@@ -125,38 +30,9 @@ const IconMap = {
   // Add any other icons you need
 };
 
-// Add these size classes
-const sizeClasses = {
-  small: {
-    colSpan: 'col-span-1',
-    fontSize: 'text-xs',
-    iconSize: 'w-3.5 h-3.5',
-    padding: 'p-2.5',
-    titleSize: 'text-xs',
-    valueSize: 'text-sm',
-  },
-  medium: {
-    colSpan: 'col-span-2',
-    fontSize: 'text-sm',
-    iconSize: 'w-4 h-4',
-    padding: 'p-2.5',
-    titleSize: 'text-xs',
-    valueSize: 'text-sm',
-  },
-  large: {
-    colSpan: 'col-span-3',
-    fontSize: 'text-base',
-    iconSize: 'w-5 h-5',
-    padding: 'p-2.5',
-    titleSize: 'text-xs',
-    valueSize: 'text-sm',
-  },
-};
-
 export function WelcomeBar() {
   const location = useLocation();
   const { user } = useAuth();
-  const { notes } = useNotes();
   const [showNewNoteModal, setShowNewNoteModal] = useState(false);
   const [showStatsEditor, setShowStatsEditor] = useState(false);
   const { enabledStats, toggleStat, reorderStats, getStatValue } = useDashboard();
@@ -183,30 +59,6 @@ export function WelcomeBar() {
     return 'Good evening';
   };
 
-  const stats = {
-    pinnedCount: notes.filter(note => note.isPinned).length,
-    favoriteCount: notes.filter(note => note.isFavorite).length,
-    recentCount: notes.filter(note => {
-      const noteDate = new Date(note.updatedAt);
-      const dayAgo = new Date();
-      dayAgo.setDate(dayAgo.getDate() - 1);
-      return noteDate > dayAgo;
-    }).length,
-    totalNotes: notes.length,
-    tagsCount: [...new Set(notes.flatMap(note => note.tags))].length,
-    archivedCount: notes.filter(note => note.isArchived).length,
-    lastEditedNote: notes.sort((a, b) =>
-      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-    )[0],
-    tasksCount: notes.filter(note => note.type === 'task').length,
-    remindersCount: notes.filter(note => note.reminder && new Date(note.reminder) > new Date()).length,
-  };
-
-  const handleCreateNote = async (note: { title: string; content: string; tags: string[] }) => {
-    addNote(note);
-    setShowNewNoteModal(false);
-  };
-
   // Add reorder handler
   const handleReorder = (newOrder: DashboardStat[]) => {
     const updatedStats = newOrder.map((stat, index) => ({
@@ -214,29 +66,6 @@ export function WelcomeBar() {
       order: index
     }));
     reorderStats(0, 0, updatedStats);
-  };
-
-  // Add renderStat function
-  const renderStat = (stat: DashboardStat) => {
-    const statValue = getStatValue(stat.id);
-    return (
-      <div className="min-w-0 flex-1">
-        <div className="text-lg font-semibold text-gray-900 dark:text-white truncate">
-          {statValue.value}
-          {statValue.change && (
-            <span className="ml-1 text-xs text-green-600 dark:text-green-400">
-              +{statValue.change}
-            </span>
-          )}
-        </div>
-        <div className="text-xs text-gray-600 dark:text-gray-400 truncate">
-          {stat.title}
-          {statValue.timeframe && (
-            <span className="ml-1 opacity-75">• {statValue.timeframe}</span>
-          )}
-        </div>
-      </div>
-    );
   };
 
   const handleSizeChange = (statId: string, size: 'small' | 'medium' | 'large') => {
@@ -279,7 +108,7 @@ export function WelcomeBar() {
                 className="grid grid-cols-8 gap-2"
               >
                 <AnimatePresence mode="popLayout">
-                  {enabledStats.map((stat, index) => {
+                  {enabledStats.map((stat) => {
                     // Get the icon component from the IconMap
                     const StatIcon = IconMap[stat.icon as keyof typeof IconMap];
                     // Get the stat value here
@@ -291,9 +120,9 @@ export function WelcomeBar() {
                         key={stat.id}
                         value={stat}
                         className={`group relative w-full ${stat.size === 'small' ? 'col-span-1' :
-                            stat.size === 'medium' ? 'col-span-2' :
-                              stat.size === 'large' ? 'col-span-3' :
-                                'col-span-1'
+                          stat.size === 'medium' ? 'col-span-2' :
+                            stat.size === 'large' ? 'col-span-3' :
+                              'col-span-1'
                           }`}
                         initial={false}
                         whileDrag={{
@@ -344,9 +173,8 @@ export function WelcomeBar() {
                               {/* Value and Change */}
                               <div className="mt-1">
                                 <div className="flex items-baseline gap-1">
-                                  <span className={`${size.valueSize} font-semibold text-gray-900 dark:text-white ${
-                                    statValue.value === '-' ? 'animate-pulse' : ''
-                                  }`}>
+                                  <span className={`${size.valueSize} font-semibold text-gray-900 dark:text-white ${statValue.value === '-' ? 'animate-pulse' : ''
+                                    }`}>
                                     {statValue.value}
                                   </span>
                                   {statValue.change && statValue.change > 0 && statValue.value !== '-' && (
@@ -403,8 +231,8 @@ export function WelcomeBar() {
                                     handleSizeChange(stat.id, 'small');
                                   }}
                                   className={`p-0.5 rounded-md transition-all duration-200 ${stat.size === 'small'
-                                      ? 'bg-green-900/30 dark:bg-green-900/30 text-green-400 dark:text-green-400'
-                                      : 'hover:bg-[#3C3C3E] dark:hover:bg-[#3C3C3E] text-gray-400 dark:text-gray-400'
+                                    ? 'bg-green-900/30 dark:bg-green-900/30 text-green-400 dark:text-green-400'
+                                    : 'hover:bg-[#3C3C3E] dark:hover:bg-[#3C3C3E] text-gray-400 dark:text-gray-400'
                                     }`}
                                   title="Small"
                                 >
@@ -416,8 +244,8 @@ export function WelcomeBar() {
                                     handleSizeChange(stat.id, 'medium');
                                   }}
                                   className={`p-0.5 rounded-md transition-all duration-200 ${stat.size === 'medium'
-                                      ? 'bg-green-900/30 dark:bg-green-900/30 text-green-400 dark:text-green-400'
-                                      : 'hover:bg-[#3C3C3E] dark:hover:bg-[#3C3C3E] text-gray-400 dark:text-gray-400'
+                                    ? 'bg-green-900/30 dark:bg-green-900/30 text-green-400 dark:text-green-400'
+                                    : 'hover:bg-[#3C3C3E] dark:hover:bg-[#3C3C3E] text-gray-400 dark:text-gray-400'
                                     }`}
                                   title="Medium"
                                 >
@@ -429,8 +257,8 @@ export function WelcomeBar() {
                                     handleSizeChange(stat.id, 'large');
                                   }}
                                   className={`p-0.5 rounded-md transition-all duration-200 ${stat.size === 'large'
-                                      ? 'bg-green-900/30 dark:bg-green-900/30 text-green-400 dark:text-green-400'
-                                      : 'hover:bg-[#3C3C3E] dark:hover:bg-[#3C3C3E] text-gray-400 dark:text-gray-400'
+                                    ? 'bg-green-900/30 dark:bg-green-900/30 text-green-400 dark:text-green-400'
+                                    : 'hover:bg-[#3C3C3E] dark:hover:bg-[#3C3C3E] text-gray-400 dark:text-gray-400'
                                     }`}
                                   title="Large"
                                 >
@@ -488,7 +316,6 @@ export function WelcomeBar() {
       <NewNoteModal
         isOpen={showNewNoteModal}
         onClose={() => setShowNewNoteModal(false)}
-        onCreateNote={handleCreateNote}
       />
     </>
   );

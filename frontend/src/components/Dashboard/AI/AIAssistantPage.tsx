@@ -118,7 +118,23 @@ export function AIAssistantPage() {
     setShowModelDetails(isOpen);
   };
 
-  const handleAudioMessage = (message: Message) => {
+  const handleAudioMessage = (messageData: { 
+    id?: string;
+    role: "user" | "assistant"; 
+    content: string | File; 
+    type: "audio" | "image" | "text";
+    timestamp?: string;
+    model?: AIModel;
+    isLoading?: boolean;
+  }) => {
+    const message: Message = {
+      ...messageData,
+      id: messageData.id || `${messageData.role}-${Date.now()}`,
+      timestamp: messageData.timestamp || new Date().toISOString(),
+      model: messageData.model || selectedModel!,
+      isLoading: messageData.isLoading ?? false
+    };
+
     if (message.role === 'assistant' && !message.isLoading) {
       setMessages(prevMessages => {
         const existingMessageIndex = prevMessages.findIndex(

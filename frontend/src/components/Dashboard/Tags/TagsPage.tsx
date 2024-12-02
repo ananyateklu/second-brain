@@ -1,18 +1,17 @@
 import { useState, useMemo } from 'react';
 import { Tag, ChevronRight, Hash, FileText, Lightbulb, CheckSquare, Search, SlidersHorizontal, Grid, List, Bell } from 'lucide-react';
-import { Note, useNotes } from '../../../contexts/NotesContext';
+import { useNotes } from '../../../contexts/NotesContext';
 import { useTasks } from '../../../contexts/TasksContext';
-import { Reminder, useReminders } from '../../../contexts/RemindersContext';
-import { NotesGraph } from '../Notes/NotesGraph';
+import { useReminders } from '../../../contexts/RemindersContext';
 import { EditTaskModal } from '../Tasks/EditTaskModal';
 import { EditReminderModal } from '../Reminders/EditReminderModal';
 import { EditNoteModal } from '../Notes/EditNoteModal';
 import { EditIdeaModal } from '../Ideas/EditIdeaModal';
-import { Task } from '../../../api/types/task';
 import { useModal } from '../../../contexts/ModalContext';
 import { NoteCard } from '../NoteCard';
 import { TaskCard } from '../Tasks/TaskCard';
 import { ReminderCard } from '../Reminders/ReminderCard';
+import { IdeaCard } from '../Ideas/IdeaCard';
 
 type ItemType = 'note' | 'task' | 'idea' | 'reminder';
 
@@ -23,6 +22,7 @@ interface TaggedItem {
   tags: string[];
   type: ItemType;
   updatedAt: string;
+  createdAt: string;
 }
 
 export function TagsPage() {
@@ -55,6 +55,7 @@ export function TagsPage() {
           tags: note.tags,
           type: 'note' as ItemType,
           updatedAt: note.updatedAt,
+          createdAt: note.createdAt,
           isIdea: note.isIdea
         })),
       // Ideas (notes with isIdea=true)
@@ -67,6 +68,7 @@ export function TagsPage() {
           tags: note.tags,
           type: 'idea' as ItemType,
           updatedAt: note.updatedAt,
+          createdAt: note.createdAt,
           isIdea: note.isIdea
         })),
       // Tasks
@@ -76,16 +78,18 @@ export function TagsPage() {
         content: task.description,
         tags: task.tags,
         type: 'task' as ItemType,
-        updatedAt: task.updatedAt
+        updatedAt: task.updatedAt,
+        createdAt: task.createdAt
       })),
       // Reminders
       ...reminders.map(reminder => ({
         id: reminder.id,
         title: reminder.title,
-        content: reminder.description || '',
+        content: reminder.description ?? '',
         tags: reminder.tags,
         type: 'reminder' as ItemType,
-        updatedAt: reminder.updatedAt
+        updatedAt: reminder.updatedAt,
+        createdAt: reminder.createdAt
       }))
     ];
 
@@ -163,51 +167,78 @@ export function TagsPage() {
     });
   }, [selectedTag, allItems, filters.types]);
 
-  const getItemIcon = (type: ItemType) => {
-    switch (type) {
-      case 'note':
-        return <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />;
-      case 'task':
-        return <CheckSquare className="w-5 h-5 text-green-600 dark:text-green-400" />;
-      case 'idea':
-        return <Lightbulb className="w-5 h-5 text-amber-600 dark:text-amber-400" />;
-      case 'reminder':
-        return <Bell className="w-5 h-5 text-purple-600 dark:text-purple-400" />;
-      default:
-        return <Hash className="w-5 h-5 text-gray-600 dark:text-gray-400" />;
-    }
-  };
-
-  const convertToNote = (item: TaggedItem): Note => {
-    return {
-      id: item.id,
-      title: item.title,
-      content: item.content || '',
-      tags: item.tags,
-      createdAt: item.createdAt,
-      updatedAt: item.updatedAt,
-      isArchived: false,
-      isFavorite: false,
-      linkedNoteIds: [],
-      type: 'note',
-      isIdea: item.tags.includes('idea')
-    };
-  };
-
-
   const handleEditNote = (item: TaggedItem) => {
+    // Close all modals first
+    setSelectedNote(null);
+    setSelectedIdea(null);
+    setSelectedTask(null);
+    setSelectedReminder(null);
+
+    // Then open the appropriate modal
     switch (item.type) {
       case 'note':
-        setSelectedNote(item as Note);
+        setSelectedNote({
+          id: item.id,
+          title: item.title,
+          content: item.content,
+          tags: item.tags,
+          updatedAt: item.updatedAt,
+          createdAt: item.createdAt,
+          isIdea: false,
+          isFavorite: false,
+          isPinned: false,
+          isArchived: false,
+          isDeleted: false,
+          linkedNoteIds: [],
+          linkedTasks: []
+        });
         break;
       case 'idea':
-        setSelectedIdea(item as Note);
+        setSelectedIdea({
+          id: item.id,
+          title: item.title,
+          content: item.content,
+          tags: item.tags,
+          updatedAt: item.updatedAt,
+          createdAt: item.createdAt,
+          isIdea: true,
+          isFavorite: false,
+          isPinned: false,
+          isArchived: false,
+          isDeleted: false,
+          linkedNoteIds: [],
+          linkedTasks: []
+        });
         break;
       case 'task':
-        setSelectedTask(item as Task);
+        setSelectedTask({
+          id: item.id,
+          title: item.title,
+          description: item.content,
+          tags: item.tags,
+          status: 'Incomplete',
+          priority: 'medium',
+          dueDate: null,
+          updatedAt: item.updatedAt,
+          createdAt: item.createdAt,
+          isDeleted: false,
+          linkedItems: []
+        });
         break;
       case 'reminder':
-        setSelectedReminder(item as Reminder);
+        setSelectedReminder({
+          id: item.id,
+          title: item.title,
+          description: item.content,
+          tags: item.tags,
+          dueDateTime: item.updatedAt,
+          isCompleted: false,
+          isSnoozed: false,
+          isDeleted: false,
+          userId: '',
+          updatedAt: item.updatedAt,
+          createdAt: item.createdAt
+        });
         break;
     }
   };
@@ -337,14 +368,8 @@ export function TagsPage() {
                             setFilters(prev => {
                               const newTypes = prev.types.includes('note')
                                 ? prev.types.filter(t => t !== 'note')
-                                : [...prev.types, 'note'];
-
-                              console.log('Updated types:', newTypes); // For debugging
-
-                              return {
-                                ...prev,
-                                types: newTypes
-                              };
+                                : [...prev.types, 'note' as ItemType];
+                              return { ...prev, types: newTypes };
                             });
                           }}
                           className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-all ${filters.types.includes('note')
@@ -358,12 +383,12 @@ export function TagsPage() {
 
                         <button
                           onClick={() => {
-                            setFilters(prev => ({
-                              ...prev,
-                              types: prev.types.includes('idea')
+                            setFilters(prev => {
+                              const newTypes = prev.types.includes('idea')
                                 ? prev.types.filter(t => t !== 'idea')
-                                : [...prev.types, 'idea']
-                            }));
+                                : [...prev.types, 'idea' as ItemType];
+                              return { ...prev, types: newTypes };
+                            });
                           }}
                           className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-all ${filters.types.includes('idea')
                             ? 'bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-200 border border-amber-200 dark:border-amber-800'
@@ -376,12 +401,12 @@ export function TagsPage() {
 
                         <button
                           onClick={() => {
-                            setFilters(prev => ({
-                              ...prev,
-                              types: prev.types.includes('task')
+                            setFilters(prev => {
+                              const newTypes = prev.types.includes('task')
                                 ? prev.types.filter(t => t !== 'task')
-                                : [...prev.types, 'task']
-                            }));
+                                : [...prev.types, 'task' as ItemType];
+                              return { ...prev, types: newTypes };
+                            });
                           }}
                           className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-all ${filters.types.includes('task')
                             ? 'bg-green-100 dark:bg-green-900/60 text-green-700 dark:text-green-200 border border-green-200 dark:border-green-800'
@@ -394,12 +419,12 @@ export function TagsPage() {
 
                         <button
                           onClick={() => {
-                            setFilters(prev => ({
-                              ...prev,
-                              types: prev.types.includes('reminder')
+                            setFilters(prev => {
+                              const newTypes = prev.types.includes('reminder')
                                 ? prev.types.filter(t => t !== 'reminder')
-                                : [...prev.types, 'reminder']
-                            }));
+                                : [...prev.types, 'reminder' as ItemType];
+                              return { ...prev, types: newTypes };
+                            });
                           }}
                           className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-all ${filters.types.includes('reminder')
                             ? 'bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-200 border border-purple-200 dark:border-purple-800'
@@ -452,7 +477,7 @@ export function TagsPage() {
               {/* Scrollable Tags List */}
               <div className="flex-1 overflow-y-auto rounded-bl-xl">
                 <div className="space-y-0.5 p-2">
-                  {tagStats.map(({ tag, count, byType }) => (
+                  {tagStats.map(({ tag, byType }) => (
                     <div
                       key={tag}
                       onClick={() => setSelectedTag(tag)}
@@ -513,70 +538,195 @@ export function TagsPage() {
             <div className="flex-1 flex flex-col overflow-hidden">
               {selectedTag ? (
                 <div className="flex-1 overflow-y-auto px-4">
-                  <div className={`grid ${viewMode === 'grid'
-                    ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
-                    : 'grid-cols-1'
-                    } gap-3 auto-rows-min pb-4`}>
-                    {filteredItems.map(item => {
-                      switch (item.type) {
-                        case 'task':
-                          return (
-                            <TaskCard
-                              key={item.id}
-                              task={{
-                                id: item.id,
-                                title: item.title,
-                                description: item.content,
-                                tags: item.tags,
-                                status: 'In Progress',
-                                priority: 'medium',
-                                dueDate: null,
-                                updatedAt: item.updatedAt,
-                                createdAt: item.updatedAt,
-                              }}
-                            />
-                          );
-                        case 'reminder':
-                          return (
-                            <ReminderCard
-                              key={item.id}
-                              reminder={{
-                                id: item.id,
-                                title: item.title,
-                                description: item.content,
-                                tags: item.tags,
-                                dueDateTime: item.updatedAt,
-                                isCompleted: false,
-                                isSnoozed: false,
-                                createdAt: item.updatedAt,
-                                updatedAt: item.updatedAt,
-                              }}
-                            />
-                          );
-                        default: // 'note' or 'idea'
-                          return (
-                            <NoteCard
-                              key={item.id}
-                              note={{
-                                id: item.id,
-                                title: item.title,
-                                content: item.content || '',
-                                tags: item.tags,
-                                createdAt: item.createdAt,
-                                updatedAt: item.updatedAt,
-                                isArchived: false,
-                                isFavorite: false,
-                                linkedNoteIds: [],
-                                type: 'note',
-                                isIdea: item.type === 'idea'
-                              }}
-                              viewMode={viewMode}
-                              onClick={() => handleEditNote(item)}
-                            />
-                          );
-                      }
-                    })}
-                  </div>
+                  {viewMode === 'grid' ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {filteredItems.map(item => {
+                        switch (item.type) {
+                          case 'task':
+                            return (
+                              <div onClick={() => handleEditNote(item)}>
+                                <TaskCard
+                                  key={item.id}
+                                  task={{
+                                    id: item.id,
+                                    title: item.title,
+                                    description: item.content,
+                                    tags: item.tags,
+                                    status: 'Incomplete',
+                                    priority: 'medium',
+                                    dueDate: null,
+                                    updatedAt: item.updatedAt,
+                                    createdAt: item.createdAt,
+                                    isDeleted: false,
+                                    linkedItems: []
+                                  }}
+                                />
+                              </div>
+                            );
+                          case 'reminder':
+                            return (
+                              <ReminderCard
+                                key={item.id}
+                                reminder={{
+                                  id: item.id,
+                                  title: item.title,
+                                  description: item.content,
+                                  tags: item.tags,
+                                  dueDateTime: item.updatedAt,
+                                  isCompleted: false,
+                                  isSnoozed: false,
+                                  isDeleted: false,
+                                  userId: '',
+                                  updatedAt: item.updatedAt,
+                                  createdAt: item.createdAt
+                                }}
+                              />
+                            );
+                          case 'idea':
+                            return (
+                              <div onClick={() => handleEditNote(item)}>
+                                <IdeaCard
+                                  key={item.id}
+                                  idea={{
+                                    id: item.id,
+                                    title: item.title,
+                                    content: item.content,
+                                    tags: item.tags,
+                                    updatedAt: item.updatedAt,
+                                    createdAt: item.createdAt,
+                                    isIdea: true,
+                                    isFavorite: false,
+                                    isPinned: false,
+                                    isArchived: false,
+                                    isDeleted: false,
+                                    linkedNoteIds: [],
+                                    linkedTasks: []
+                                  }}
+                                />
+                              </div>
+                            );
+                          case 'note':
+                            return (
+                              <div onClick={() => handleEditNote(item)}>
+                                <NoteCard
+                                  key={item.id}
+                                  note={{
+                                    id: item.id,
+                                    title: item.title,
+                                    content: item.content,
+                                    tags: item.tags,
+                                    updatedAt: item.updatedAt,
+                                    createdAt: item.createdAt,
+                                    isIdea: false,
+                                    isFavorite: false,
+                                    isPinned: false,
+                                    isArchived: false,
+                                    isDeleted: false,
+                                    linkedNoteIds: [],
+                                    linkedTasks: []
+                                  }}
+                                  viewMode={viewMode}
+                                />
+                              </div>
+                            );
+                        }
+                      })}
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {filteredItems.map(item => {
+                        switch (item.type) {
+                          case 'task':
+                            return (
+                              <div onClick={() => handleEditNote(item)}>
+                                <TaskCard
+                                  key={item.id}
+                                  task={{
+                                    id: item.id,
+                                    title: item.title,
+                                    description: item.content,
+                                    tags: item.tags,
+                                    status: 'Incomplete',
+                                    priority: 'medium',
+                                    dueDate: null,
+                                    updatedAt: item.updatedAt,
+                                    createdAt: item.createdAt,
+                                    isDeleted: false,
+                                    linkedItems: []
+                                  }}
+                                />
+                              </div>
+                            );
+                          case 'reminder':
+                            return (
+                              <ReminderCard
+                                key={item.id}
+                                reminder={{
+                                  id: item.id,
+                                  title: item.title,
+                                  description: item.content,
+                                  tags: item.tags,
+                                  dueDateTime: item.updatedAt,
+                                  isCompleted: false,
+                                  isSnoozed: false,
+                                  isDeleted: false,
+                                  userId: '',
+                                  updatedAt: item.updatedAt,
+                                  createdAt: item.createdAt
+                                }}
+                              />
+                            );
+                          case 'idea':
+                            return (
+                              <div onClick={() => handleEditNote(item)}>
+                                <IdeaCard
+                                  key={item.id}
+                                  idea={{
+                                    id: item.id,
+                                    title: item.title,
+                                    content: item.content,
+                                    tags: item.tags,
+                                    updatedAt: item.updatedAt,
+                                    createdAt: item.createdAt,
+                                    isIdea: true,
+                                    isFavorite: false,
+                                    isPinned: false,
+                                    isArchived: false,
+                                    isDeleted: false,
+                                    linkedNoteIds: [],
+                                    linkedTasks: []
+                                  }}
+                                />
+                              </div>
+                            );
+                          case 'note':
+                            return (
+                              <div onClick={() => handleEditNote(item)}>
+                                <NoteCard
+                                  key={item.id}
+                                  note={{
+                                    id: item.id,
+                                    title: item.title,
+                                    content: item.content,
+                                    tags: item.tags,
+                                    updatedAt: item.updatedAt,
+                                    createdAt: item.createdAt,
+                                    isIdea: false,
+                                    isFavorite: false,
+                                    isPinned: false,
+                                    isArchived: false,
+                                    isDeleted: false,
+                                    linkedNoteIds: [],
+                                    linkedTasks: []
+                                  }}
+                                  viewMode={viewMode}
+                                />
+                              </div>
+                            );
+                        }
+                      })}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
@@ -590,10 +740,34 @@ export function TagsPage() {
       </div>
 
       {/* Modals */}
-      {selectedNote && <EditNoteModal note={selectedNote} onClose={() => setSelectedNote(null)} />}
-      {selectedIdea && <EditIdeaModal ideaId={selectedIdea.id} onClose={() => setSelectedIdea(null)} />}
-      {selectedTask && <EditTaskModal taskId={selectedTask.id} onClose={() => setSelectedTask(null)} />}
-      {selectedReminder && <EditReminderModal reminder={selectedReminder} onClose={() => setSelectedReminder(null)} />}
+      {selectedNote && (
+        <EditNoteModal 
+          note={selectedNote} 
+          onClose={() => setSelectedNote(null)} 
+          isOpen={!!selectedNote} 
+        />
+      )}
+      {selectedIdea && (
+        <EditIdeaModal 
+          idea={selectedIdea} 
+          onClose={() => setSelectedIdea(null)} 
+          isOpen={!!selectedIdea} 
+        />
+      )}
+      {selectedTask && (
+        <EditTaskModal 
+          task={selectedTask} 
+          onClose={() => setSelectedTask(null)} 
+          isOpen={!!selectedTask} 
+        />
+      )}
+      {selectedReminder && (
+        <EditReminderModal 
+          reminder={selectedReminder} 
+          onClose={() => setSelectedReminder(null)} 
+          isOpen={!!selectedReminder} 
+        />
+      )}
     </div>
   );
 }

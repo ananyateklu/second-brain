@@ -1,9 +1,10 @@
-import { Search, Menu, X, Sun, Moon, User, Settings, LogOut } from 'lucide-react';
+import { Search, Menu, X, Sun, Moon, User as UserIcon, Settings, LogOut } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import type { User } from '../../types/auth';
 
 interface HeaderProps {
   isSidebarOpen: boolean;
@@ -45,7 +46,7 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
   }, []);
 
   // Calculate XP values
-  const calculateXPProgress = (user: any) => {
+  const calculateXPProgress = (user: User | null) => {
     if (!user) return { currentLevelXP: 0, nextLevelXP: 100, progress: 0 };
 
     const currentLevelThreshold = LevelThresholds[user.level - 1] || 0;
@@ -128,7 +129,7 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <User className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                    <UserIcon className="w-5 h-5 text-primary-600 dark:text-primary-400" />
                   )}
                 </div>
                 <svg className="absolute -inset-0.5 w-9 h-9 rotate-90">
@@ -171,7 +172,7 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <User className="w-6 h-6 text-primary-600 dark:text-primary-400" />
+                        <UserIcon className="w-6 h-6 text-primary-600 dark:text-primary-400" />
                       )}
                     </div>
                     <div>
@@ -214,7 +215,7 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
                     }}
                     className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50/50 dark:hover:bg-[#3C3C3E]/30 transition-all flex items-center gap-2"
                   >
-                    <User className="w-4 h-4" />
+                    <UserIcon className="w-4 h-4" />
                     View Profile
                   </button>
                   <button

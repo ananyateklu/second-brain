@@ -1,7 +1,8 @@
-import React from 'react';
 import { Message } from '../../../../types/message';
 import { Download, Hash } from 'lucide-react';
 import { motion } from 'framer-motion';
+
+type EmbeddingValue = number;
 
 interface EmbeddingContentProps {
   message: Message;
@@ -9,7 +10,7 @@ interface EmbeddingContentProps {
 
 export function EmbeddingContent({ message }: EmbeddingContentProps) {
   // Parse the embedding data
-  const embeddings = (() => {
+  const embeddings: EmbeddingValue[] = (() => {
     try {
       const content = typeof message.content === 'string' 
         ? JSON.parse(message.content)
@@ -25,7 +26,7 @@ export function EmbeddingContent({ message }: EmbeddingContentProps) {
     dimensions: embeddings.length,
     min: Math.min(...embeddings),
     max: Math.max(...embeddings),
-    average: embeddings.reduce((sum, val) => sum + val, 0) / embeddings.length
+    average: embeddings.reduce((sum: number, val: number) => sum + val, 0) / embeddings.length
   };
 
   const handleDownload = () => {
@@ -74,7 +75,7 @@ export function EmbeddingContent({ message }: EmbeddingContentProps) {
         {/* Preview of vector values */}
         <div className="p-3 border-b border-gray-200 dark:border-gray-700">
           <div className="font-mono text-xs text-gray-600 dark:text-gray-400 overflow-x-auto whitespace-nowrap">
-            [{embeddings.slice(0, 8).map(n => n.toFixed(6)).join(', ')}
+            [{embeddings.slice(0, 8).map((n: number) => n.toFixed(6)).join(', ')}
             {embeddings.length > 8 ? ', ...' : ''}]
           </div>
         </div>
@@ -87,7 +88,7 @@ export function EmbeddingContent({ message }: EmbeddingContentProps) {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}
           >
-            {embeddings.slice(0, 100).map((value, index) => (
+            {embeddings.slice(0, 100).map((value: number, index: number) => (
               <motion.div
                 key={index}
                 className="flex-1 bg-primary-500/20 dark:bg-primary-400/20 rounded-t"

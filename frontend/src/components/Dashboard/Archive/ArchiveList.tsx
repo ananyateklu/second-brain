@@ -3,8 +3,7 @@ import { useNotes } from '../../../contexts/NotesContext';
 import { NoteCard } from '../NoteCard';
 import { IdeaCard } from '../Ideas/IdeaCard';
 import { RotateCcw } from 'lucide-react';
-import { useModal } from '../../../contexts/ModalContext';
-import { Note } from '../../../types/note';
+import { RestoreWarningModal } from '../../shared/RestoreWarningModal';
 
 interface ArchiveListProps {
   filters: {
@@ -27,15 +26,7 @@ export function ArchiveList({
   onRestoreSelected
 }: ArchiveListProps) {
   const { archivedNotes } = useNotes();
-  const { setSelectedNote, setSelectedIdea } = useModal();
-
-  const handleEditNote = (note: Note) => {
-    if (note.isIdea) {
-      setSelectedIdea(note);
-    } else {
-      setSelectedNote(note);
-    }
-  };
+  const [showRestoreModal, setShowRestoreModal] = React.useState(false);
 
   const filteredNotes = React.useMemo(() => {
     let filtered = [...archivedNotes];
@@ -91,6 +82,10 @@ export function ArchiveList({
     });
   }, [archivedNotes, searchQuery, filters]);
 
+  const handleRestoreClick = () => {
+    setShowRestoreModal(true);
+  };
+
   if (filteredNotes.length === 0) {
     return (
       <div className="text-center py-12">
@@ -111,7 +106,7 @@ export function ArchiveList({
             {selectedItems.length} items selected
           </span>
           <button
-            onClick={onRestoreSelected}
+            onClick={handleRestoreClick}
             className="flex items-center gap-2 px-4 py-2 text-sm bg-[#64ab6f] hover:bg-[#64ab6f]/90 text-white rounded-lg transition-colors"
           >
             <RotateCcw className="w-4 h-4" />
@@ -120,16 +115,13 @@ export function ArchiveList({
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 px-1">
         {filteredNotes.map(note => {
           const isIdea = note.isIdea || note.tags.includes('idea');
           return (
             <div
               key={note.id}
-              onClick={() => {
-                onSelectItem(note.id);
-                handleEditNote({ ...note, isIdea });
-              }}
+              onClick={() => onSelectItem(note.id)}
               className="cursor-pointer w-full"
             >
               {isIdea ? (
@@ -151,6 +143,16 @@ export function ArchiveList({
           );
         })}
       </div>
+
+      <RestoreWarningModal
+        isOpen={showRestoreModal}
+        onClose={() => setShowRestoreModal(false)}
+        onConfirm={() => {
+          setShowRestoreModal(false);
+          onRestoreSelected();
+        }}
+        count={selectedItems.length}
+      />
     </div>
   );
 }

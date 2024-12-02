@@ -1,5 +1,5 @@
 import { BotMessageSquareIcon } from 'lucide-react';
-import { useAuth } from '../../../../contexts/AuthContext';
+import { useAuth } from '../../../../hooks/useAuth';
 import { Message } from '../../../../types/message';
 
 interface MessageHeaderProps {

@@ -1,8 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Settings2, Save, Search, Edit, Tags, Link, Archive, Trash2, Loader, Wand2 } from 'lucide-react';
 import { AIModel } from '../../../types/ai';
-import { textStyles } from '../../../utils/textUtils';
-import { useAuth } from '../../../contexts/AuthContext';
+import { useAuth } from '../../../hooks/useAuth';
 import { RecordButton } from '../../shared/RecordButton';
 import { promptEnhancementService } from '../../../services/ai/promptEnhancementService';
 

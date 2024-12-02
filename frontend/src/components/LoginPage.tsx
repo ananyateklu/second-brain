@@ -5,7 +5,7 @@ import { Mail, Lock, AlertCircle, Loader, Sun, Moon } from 'lucide-react';
 import { Logo } from './shared/Logo';
 import { Input } from './shared/Input';
 import { useTheme } from '../contexts/ThemeContext';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { ForgotPasswordModal } from './shared/ForgotPasswordModal';
 import { validateEmail, validatePassword } from '../utils/validation';
 import { motion } from 'framer-motion';

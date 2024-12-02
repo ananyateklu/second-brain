@@ -5,7 +5,15 @@ import { AIModel } from '../../../types/ai';
 
 interface AudioInterfaceProps {
   model: AIModel;
-  onMessageSend: (message: { role: 'user' | 'assistant'; content: string; type: 'text' | 'image' | 'audio' }) => void;
+  onMessageSend: (message: { 
+    id?: string;
+    role: 'user' | 'assistant'; 
+    content: string | File; 
+    type: 'text' | 'image' | 'audio';
+    timestamp?: string;
+    model?: AIModel;
+    isLoading?: boolean;
+  }) => void;
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -20,12 +28,13 @@ export function AudioInterface({
 }: AudioInterfaceProps) {
   const { transcribeAudio } = useAI();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [text, setText] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const [recordingDuration, setRecordingDuration] = useState<number>(0);
-  const timerIntervalRef = useRef<NodeJS.Timer | null>(null);
+  const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number>(0);
 
   const handleSubmit = async (e: React.FormEvent) => {

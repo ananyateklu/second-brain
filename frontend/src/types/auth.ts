@@ -27,3 +27,11 @@ export interface AuthState {
     totalXPFromAchievements: number;
   };
 }
+
+export interface User {
+  level: number;
+  experiencePoints: number;
+  name?: string;
+  email?: string;
+  avatar?: string;
+}

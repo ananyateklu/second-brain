@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useState, useCallback, useEffect } from 'react';
 import { AuthState } from '../types/auth';
 import { authService, AuthResponse } from '../services/api/auth.service';
 import { useNavigate } from 'react-router-dom';
 import { LoadingScreen } from '../components/shared/LoadingScreen';
+
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
@@ -59,11 +60,12 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
         error: null,
         user: response.user,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const apiError = error as { response?: { data?: { error?: string } } };
       setAuthState(prev => ({
         ...prev,
         isLoading: false,
-        error: error.response?.data?.error || 'Registration failed',
+        error: apiError.response?.data?.error || 'Registration failed',
       }));
       throw error;
     }
@@ -77,11 +79,12 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
         ...prev,
         isLoading: false,
       }));
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const apiError = error as { response?: { data?: { error?: string } } };
       setAuthState(prev => ({
         ...prev,
         isLoading: false,
-        error: error.response?.data?.error || 'Password reset failed',
+        error: apiError.response?.data?.error || 'Password reset failed',
       }));
       throw error;
     }
@@ -148,10 +151,4 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
     );
   }
 
-  export function useAuth() {
-    const context = useContext(AuthContext);
-    if (!context) {
-      throw new Error('useAuth must be used within an AuthProvider');
-    }
-    return context;
-  }
+export { AuthContext };

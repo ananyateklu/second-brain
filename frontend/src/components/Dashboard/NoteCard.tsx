@@ -48,19 +48,16 @@ export function NoteCard({ note, viewMode = 'grid', isSelected, isArchiveView }:
 
   return (
     <>
-      <div className={`
-        bg-[#1C1C1E] dark:bg-[#1C1C1E]
-        border border-[#2C2C2E] dark:border-[#2C2C2E]
-        shadow-sm hover:shadow-md
-        p-4 rounded-xl
-        hover:border-[#64ab6f] dark:hover:border-[#64ab6f]
-        transition-all duration-200
-        ${note.isPinned && note.isFavorite ? 'bg-[#1A1A1D]' : ''}
-        ${note.isPinned && !note.isFavorite ? 'bg-[#1A1A1D]' : ''}
-        ${!note.isPinned && note.isFavorite ? 'bg-[#1A1A1D]' : ''}
-        ${viewMode === 'list' ? 'flex items-start gap-4' : 'flex flex-col'}
-        ${isSelected ? 'border-[#64ab6f]' : ''}
-      `}>
+      <div 
+        className={`
+          bg-[#1C1C1E] dark:bg-[#1C1C1E] 
+          border border-[#2C2C2E] dark:border-[#2C2C2E]
+          hover:border-[#64ab6f] dark:hover:border-[#64ab6f]
+          rounded-xl p-4 transition-all
+          ${isSelected ? 'ring-2 ring-[#64ab6f] ring-offset-2 ring-offset-[#1C1C1E]' : ''}
+          ${viewMode === 'list' ? 'w-full' : ''}
+        `}
+      >
         <div className="flex-1">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-3 flex-1">

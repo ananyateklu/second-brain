@@ -1,6 +1,5 @@
-import React from 'react';
 import { Bot } from 'lucide-react';
-import { useAuth } from '../../../contexts/AuthContext';
+import { useAuth } from '../../../hooks/useAuth';
 import { AIModel, ExecutionStep } from '../../../types/ai';
 import { ThoughtProcess } from './ThoughtProcess';
 import { useAI } from '../../../contexts/AIContext';

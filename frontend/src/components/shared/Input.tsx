@@ -124,7 +124,7 @@ export function Input({
               h-10
               px-4
               mx-0.5
-              ${Icon ? 'pl-10' : ''}
+              ${typeof Icon !== 'undefined' ? 'pl-10' : ''}
               ${props.value ? 'pr-10' : ''}
               backdrop-blur-glass
               bg-[#1C1C1E] dark:bg-[#1C1C1E]

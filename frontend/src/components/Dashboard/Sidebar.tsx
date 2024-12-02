@@ -19,7 +19,7 @@ import {
   Quote,
   LogOut
 } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/ThemeContext';
 import lightLogo from '../../assets/second-brain-logo-light-mode.png';
 import darkLogo from '../../assets/second-brain-logo-dark-mode.png';

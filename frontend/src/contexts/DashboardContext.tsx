@@ -3,62 +3,20 @@ import { DashboardStat } from '../types/dashboard';
 import { useNotes } from './NotesContext';
 import { useTasks } from './TasksContext';
 import { useReminders } from './RemindersContext';
-import { Note } from '../types/note';
-import { Task } from '../types/task';
 import { useActivities } from './ActivityContext';
-
-// Helper functions first
-const calculateWeeklyChange = (notes: Note[], type: 'created' | 'updated') => {
-  const now = new Date();
-  const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
-
-  const thisWeek = notes.filter(note => {
-    const date = new Date(type === 'created' ? note.createdAt : note.updatedAt);
-    return date >= oneWeekAgo;
-  }).length;
-
-  const lastWeek = notes.filter(note => {
-    const date = new Date(type === 'created' ? note.createdAt : note.updatedAt);
-    return date >= twoWeeksAgo && date < oneWeekAgo;
-  }).length;
-
-  return thisWeek - lastWeek;
-};
-
-const getNewNotesCount = (notes: Note[]) => {
-  const weekAgo = new Date();
-  weekAgo.setDate(weekAgo.getDate() - 7);
-  return notes.filter(note => new Date(note.createdAt) > weekAgo).length;
-};
-
-const formatTimeAgo = (date: Date) => {
-  const now = new Date();
-  const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
-  const diffInHours = Math.floor(diffInMinutes / 60);
-  const diffInDays = Math.floor(diffInHours / 24);
-
-  if (diffInMinutes < 1) return 'Just now';
-  if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-  if (diffInHours < 24) return `${diffInHours}h ago`;
-  if (diffInDays < 7) return `${diffInDays}d ago`;
-
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric'
-  });
-};
-
-const getLastUpdateTime = (notes: Note[]) => {
-  if (notes.length === 0) return 'No notes yet';
-  const lastUpdate = Math.max(...notes.map(note => new Date(note.updatedAt).getTime()));
-  return formatTimeAgo(new Date(lastUpdate));
-};
+import { calculateWeeklyChange, getNewNotesCount, getLastUpdateTime, DEFAULT_STATS } from '../utils/dashboardContextUtils';
 
 interface StatValue {
   value: number | string;
   change?: number;
   timeframe?: string;
+  metadata?: {
+    breakdown?: {
+      created: number;
+      edited: number;
+      deleted: number;
+    }
+  };
 }
 
 interface DashboardContextType {
@@ -71,109 +29,39 @@ interface DashboardContextType {
   isLoading: boolean;
 }
 
-const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
+export const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
 
-const DEFAULT_STATS: DashboardStat[] = [
-  {
-    id: 'total-notes',
-    type: 'notes',
-    title: 'Total Notes',
-    icon: 'FileText',
-    enabled: true,
-    order: 0,
-    size: 'medium'
-  },
-  {
-    id: 'new-notes',
-    type: 'notes',
-    title: 'New Notes',
-    icon: 'Plus',
-    enabled: true,
-    order: 1,
-    size: 'medium'
-  },
-  {
-    id: 'categories',
-    type: 'tags',
-    title: 'Categories',
-    icon: 'TagIcon',
-    enabled: true,
-    order: 2,
-    size: 'medium'
-  },
-  {
-    id: 'last-update',
-    type: 'time',
-    title: 'Last Update',
-    icon: 'Clock',
-    enabled: true,
-    order: 3,
-    size: 'medium'
-  },
-  {
-    id: 'active-tasks',
-    type: 'tasks',
-    title: 'Active Tasks',
-    icon: 'CheckSquare',
-    enabled: true,
-    order: 4,
-    size: 'medium'
-  },
-  {
-    id: 'completed-tasks',
-    type: 'tasks',
-    title: 'Completed Tasks',
-    icon: 'CheckSquare',
-    enabled: true,
-    order: 5,
-    size: 'medium'
-  },
-  {
-    id: 'word-count',
-    type: 'notes',
-    title: 'Word Count',
-    icon: 'AlignLeft',
-    enabled: true,
-    order: 6,
-    size: 'medium'
-  },
-  {
-    id: 'ideas-count',
-    type: 'ideas',
-    title: 'Ideas',
-    icon: 'Lightbulb',
-    enabled: true,
-    order: 7,
-    size: 'medium'
-  },
-  {
-    id: 'shared-notes',
-    type: 'collaboration',
-    title: 'Shared Notes',
-    icon: 'Share2',
-    enabled: true,
-    order: 8,
-    size: 'medium'
-  },
-  {
-    id: 'search-frequency',
-    type: 'search',
-    title: 'Searches',
-    icon: 'Search',
-    enabled: true,
-    order: 9,
-    size: 'medium'
-  },
-  {
-    id: 'daily-activity',
-    type: 'activity',
-    title: 'Today\'s Activity',
-    icon: 'Activity',
-    enabled: true,
-    order: 10,
-    size: 'medium'
+// Add type for activities
+interface Activity {
+  actionType: string;
+  timestamp: string;
+}
+
+const isDashboardStat = (obj: any): obj is DashboardStat => {
+  const validTypes = [
+    'notes', 'new-notes', 'categories', 'word-count', 
+    'tasks', 'tags', 'time', 'ideas', 'activity', 
+    'search', 'collaboration'
+  ] as const;
+  
+  return (
+    typeof obj.id === 'string' &&
+    validTypes.includes(obj.type) &&
+    typeof obj.title === 'string' &&
+    typeof obj.icon === 'string' &&
+    typeof obj.enabled === 'boolean' &&
+    typeof obj.order === 'number' &&
+    ['small', 'medium', 'large'].includes(obj.size)
+  );
+};
+
+export function useDashboard() {
+  const context = useContext(DashboardContext);
+  if (!context) {
+    throw new Error('useDashboard must be used within a DashboardProvider');
   }
-];
+  return context;
+}
 
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const { notes, isLoading: notesLoading } = useNotes();
@@ -187,9 +75,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     const saved = localStorage.getItem('dashboard_stats');
     if (saved) {
       const parsed = JSON.parse(saved);
-      return Array.from(
-        new Map(parsed.map((stat: DashboardStat) => [stat.id, stat])).values()
-      );
+      if (Array.isArray(parsed) && parsed.every(isDashboardStat)) {
+        return parsed;
+      }
     }
     return DEFAULT_STATS;
   });
@@ -224,14 +112,21 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     const regularNotes = notes.filter(note => !note.isIdea);
     const ideas = notes.filter(note => note.isIdea);
 
+    // Move declarations outside switch
+    let allTags: string[];
+    let uniqueTags: Set<string>;
+    let newRegularNotes: number;
+    let today: Date;
+    let todayActivities: Activity[];
+
     switch (statId) {
       case 'categories':
-        const allTags = [
+        allTags = [
           ...regularNotes.flatMap(note => note.tags),
           ...tasks.flatMap(task => task.tags),
           ...reminders.flatMap(reminder => reminder.tags)
         ];
-        const uniqueTags = new Set(allTags);
+        uniqueTags = new Set(allTags);
         return {
           value: uniqueTags.size,
           timeframe: 'Total Categories'
@@ -250,26 +145,26 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         };
 
       case 'total-notes':
-        return { 
+        return {
           value: regularNotes.length,
           change: calculateWeeklyChange(regularNotes, 'created'),
           timeframe: 'This week'
         };
-        
+
       case 'new-notes':
-        const newRegularNotes = getNewNotesCount(regularNotes);
-        return { 
+        newRegularNotes = getNewNotesCount(regularNotes);
+        return {
           value: newRegularNotes,
           change: calculateWeeklyChange(regularNotes, 'created'),
           timeframe: 'vs last week'
         };
-        
+
       case 'last-update':
-        return { 
+        return {
           value: getLastUpdateTime(notes),
           timeframe: 'Last activity'
         };
-        
+
       case 'word-count':
         return {
           value: notes.reduce((total, note) => {
@@ -278,51 +173,46 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           }, 0).toLocaleString(),
           timeframe: 'Total'
         };
-        
+
       case 'ideas-count':
         return {
           value: ideas.length,
           timeframe: 'Total',
           change: calculateWeeklyChange(ideas, 'created')
         };
-        
+
       case 'shared-notes':
         return {
-          value: notes.filter(note => note.shared?.length > 0).length,
+          value: notes.filter(note => note.linkedTasks && note.linkedTasks.length > 0).length,
           timeframe: 'Total'
         };
-        
+
       case 'search-frequency':
         // This would need integration with search history
         return {
           value: '0',
           timeframe: 'Today'
         };
-        
+
       case 'daily-activity':
-        const today = new Date();
+        today = new Date();
         today.setHours(0, 0, 0, 0);
-        
-        // Count all activities for today
-        const todayActivities = activities.filter(activity => {
+        todayActivities = activities.filter(activity => {
           const activityDate = new Date(activity.timestamp);
           return activityDate >= today;
         });
-
         return {
           value: todayActivities.length,
           timeframe: 'Today',
-          // Add metadata for tooltip
           metadata: {
             breakdown: {
               created: todayActivities.filter(a => a.actionType === 'create').length,
               edited: todayActivities.filter(a => a.actionType === 'edit').length,
               deleted: todayActivities.filter(a => a.actionType === 'delete').length,
-              // Add other action types as needed
             }
           }
         };
-        
+
       default:
         return { value: 0 };
     }
@@ -353,7 +243,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       const reorderedStats = Array.from(enabledStats);
       const [removed] = reorderedStats.splice(startIndex, 1);
       reorderedStats.splice(endIndex, 0, removed);
-      
+
       const newStats = prevStats.map(stat => {
         if (!stat.enabled) return stat;
         const newIndex = reorderedStats.findIndex(s => s.id === stat.id);
@@ -391,12 +281,4 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       {children}
     </DashboardContext.Provider>
   );
-}
-
-export const useDashboard = () => {
-  const context = useContext(DashboardContext);
-  if (!context) {
-    throw new Error('useDashboard must be used within a DashboardProvider');
-  }
-  return context;
-}; 
+} 

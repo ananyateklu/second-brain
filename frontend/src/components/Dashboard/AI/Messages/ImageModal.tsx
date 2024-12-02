@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
-import { X, Download, Sparkles } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect } from 'react';
+import { X, Download } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface ImageModalProps {
   imageUrl: string;
@@ -8,7 +8,7 @@ interface ImageModalProps {
   onClose: () => void;
 }
 
-export function ImageModal({ imageUrl, revisedPrompt, onClose }: ImageModalProps) {
+export function ImageModal({ imageUrl, onClose }: ImageModalProps) {
   // Add keyboard event listener for Escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {

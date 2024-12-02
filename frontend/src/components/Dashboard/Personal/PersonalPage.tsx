@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { useAuth } from '../../../contexts/AuthContext';
+import React from 'react';
+import { useAuth } from '../../../hooks/useAuth';
 import {
     User,
     Mail,
@@ -9,7 +9,6 @@ import {
     TrendingUp,
     Award,
     Target,
-    BarChart2,
     CheckCheck,
     Clock,
     Shield

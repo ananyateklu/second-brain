@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { Task, CreateTaskDto, UpdateTaskDto } from '../api/types/task';
-import { useAuth } from './AuthContext';
+import { Task, UpdateTaskDto } from '../api/types/task';
+import { useAuth } from '../hooks/useAuth';
 import { useActivities } from './ActivityContext';
 import { tasksService, TaskLinkData, CreateTaskData } from '../services/api/tasks.service';
 

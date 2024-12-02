@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import { useActivities } from './ActivityContext';
 import { notesService, type UpdateNoteData } from '../services/api/notes.service';
 import { useTrash } from './TrashContext';
-import { useAuth } from './AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { sortNotes } from '../utils/noteUtils';
 import type { Note } from '../types/note';
 

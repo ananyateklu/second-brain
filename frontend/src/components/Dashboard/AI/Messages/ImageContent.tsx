@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Message } from '../../../../types/message';
 import { ImageGenerationLoading } from '../ImageGenerationLoading';
 import { motion } from 'framer-motion';

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Message } from '../../../../types/message';
 import { ThoughtProcess } from '../ThoughtProcess';
 import { useAI } from '../../../../contexts/AIContext';

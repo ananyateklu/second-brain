@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Archive, Search, SlidersHorizontal } from 'lucide-react';
 import { useNotes } from '../../../contexts/NotesContext';
 import { ArchiveList } from './ArchiveList';
@@ -6,7 +6,7 @@ import { ArchiveFilters } from './ArchiveFilters';
 import { Input } from '../../shared/Input';
 
 export function ArchivePage() {
-  const { archivedNotes, unarchiveNote, restoreMultipleNotes, loadArchivedNotes } = useNotes();
+  const { archivedNotes, restoreMultipleNotes, loadArchivedNotes } = useNotes();
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
@@ -33,19 +33,13 @@ export function ArchivePage() {
   const handleRestoreSelected = async () => {
     if (selectedItems.length === 0) return;
 
-    const message = selectedItems.length === 1
-      ? 'Are you sure you want to restore this note?'
-      : `Are you sure you want to restore ${selectedItems.length} notes?`;
-
-    if (window.confirm(message)) {
-      try {
-        await restoreMultipleNotes(selectedItems);
-        setSelectedItems([]);
-        await loadArchivedNotes();
-      } catch (error) {
-        console.error('Failed to restore selected notes:', error);
-        // You might want to add error handling UI here
-      }
+    try {
+      await restoreMultipleNotes(selectedItems);
+      setSelectedItems([]);
+      await loadArchivedNotes();
+    } catch (error) {
+      console.error('Failed to restore selected notes:', error);
+      // You might want to add error handling UI here
     }
   };
 

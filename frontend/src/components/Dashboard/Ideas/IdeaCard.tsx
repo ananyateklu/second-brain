@@ -58,7 +58,7 @@ export function IdeaCard({ idea, viewMode = 'grid', isSelected, isArchiveView }:
         ${idea.isPinned && !idea.isFavorite ? 'bg-[#1A1A1D]' : ''}
         ${!idea.isPinned && idea.isFavorite ? 'bg-[#1A1A1D]' : ''}
         ${viewMode === 'list' ? 'flex items-start gap-4' : 'flex flex-col'}
-        ${isSelected ? 'border-[#64ab6f]' : ''}
+        ${isSelected ? 'ring-2 ring-[#64ab6f] ring-offset-2 ring-offset-[#1C1C1E]' : ''}
       `}>
         <div className="flex-1">
           <div className="flex items-start justify-between gap-3">
