@@ -11,7 +11,7 @@ interface MainContentProps {
   isLoading: boolean;
   onTitleChange: (title: string) => void;
   onContentChange: (content: string) => void;
-  onTagInputChange: (tagInput: string) => void;
+  onTagInputChange: (value: string | string[]) => void;
   onAddTag: () => void;
   onRemoveTag: (tag: string) => void;
   setError: (error: string) => void;

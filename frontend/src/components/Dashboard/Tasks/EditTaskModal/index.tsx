@@ -6,14 +6,15 @@ import { Header } from './Header';
 import { MainContent } from './MainContent';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import { Loader2 } from 'lucide-react';
+import { Task } from '../../../../api/types/task';
 
 interface EditTaskModalProps {
     isOpen: boolean;
     onClose: () => void;
-    taskId: string;
+    task: Task | null;
 }
 
-export function EditTaskModal({ isOpen, onClose, taskId }: EditTaskModalProps) {
+export function EditTaskModal({ isOpen, onClose, task }: EditTaskModalProps) {
     const { tasks, updateTask, removeTaskLink, deleteTask } = useTasks();
     const [showAddLinkModal, setShowAddLinkModal] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -27,7 +28,7 @@ export function EditTaskModal({ isOpen, onClose, taskId }: EditTaskModalProps) {
     const [tags, setTags] = useState<string[]>([]);
 
     // Get current task from context to ensure we have latest data
-    const currentTask = tasks.find(t => t.id === taskId);
+    const currentTask = tasks.find(t => t.id === task?.id);
 
     // Update form data when task changes
     useEffect(() => {
@@ -57,7 +58,7 @@ export function EditTaskModal({ isOpen, onClose, taskId }: EditTaskModalProps) {
         try {
             setIsLoading(true);
             setError(null);
-            await removeTaskLink(taskId, itemId);
+            await removeTaskLink(task?.id || '', itemId);
         } catch (err) {
             console.error('Failed to unlink item:', err);
             setError('Failed to unlink item. Please try again.');
@@ -88,7 +89,7 @@ export function EditTaskModal({ isOpen, onClose, taskId }: EditTaskModalProps) {
                 tags
             };
 
-            await updateTask(taskId, updates);
+            await updateTask(task?.id || '', updates);
             onClose();
         } catch (err) {
             console.error('Failed to update task:', err);
@@ -103,7 +104,7 @@ export function EditTaskModal({ isOpen, onClose, taskId }: EditTaskModalProps) {
         setError(null);
 
         try {
-            await deleteTask(taskId);
+            await deleteTask(task?.id || '');
             onClose();
         } catch (err) {
             console.error('Failed to delete task:', err);
@@ -119,9 +120,11 @@ export function EditTaskModal({ isOpen, onClose, taskId }: EditTaskModalProps) {
       ${isOpen ? 'pointer-events-auto' : 'pointer-events-none opacity-0'}
     `}>
             {/* Backdrop */}
-            <div
+            <button
+                type="button"
                 className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
                 onClick={onClose}
+                aria-label="Close modal"
             />
 
             {/* Modal */}
@@ -197,7 +200,7 @@ export function EditTaskModal({ isOpen, onClose, taskId }: EditTaskModalProps) {
             <AddLinkModal
                 isOpen={showAddLinkModal}
                 onClose={() => setShowAddLinkModal(false)}
-                currentTaskId={taskId}
+                currentTaskId={task?.id || ''}
             />
 
             <DeleteConfirmDialog

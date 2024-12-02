@@ -76,27 +76,19 @@ const processTaskPriority = (priority: string): LinkedTask['priority'] => {
   }
 };
 
-const processNoteResponse = (note: NoteResponse): Note => {
-  console.log('Processing note response:', note);
-  
-  const processedNote = {
-    ...note,
-    tags: Array.isArray(note.tags) ? note.tags : note.tags?.split(',').filter(Boolean) || [],
-    linkedNoteIds: Array.isArray(note.linkedNoteIds) ? note.linkedNoteIds : [],
-    linkedNotes: Array.isArray(note.linkedNotes) ? note.linkedNotes : [],
-    linkedTasks: Array.isArray(note.linkedTasks) ? note.linkedTasks.map((task): LinkedTask => {
-      console.log('Processing task:', task);
-      return {
-        ...task,
-        status: processTaskStatus(task.status),
-        priority: processTaskPriority(task.priority)
-      };
-    }) : []
-  };
-  
-  console.log('Processed note:', processedNote);
-  return processedNote;
-};
+const processNoteResponse = (note: NoteResponse): Note => ({
+  ...note,
+  tags: Array.isArray(note.tags) ? note.tags : note.tags?.split(',').filter(Boolean) || [],
+  linkedNoteIds: Array.isArray(note.linkedNoteIds) ? note.linkedNoteIds : [],
+  linkedNotes: Array.isArray(note.linkedNotes) ? note.linkedNotes : [],
+  linkedTasks: Array.isArray(note.linkedTasks)
+    ? note.linkedTasks.map((task): LinkedTask => ({
+      ...task,
+      status: processTaskStatus(task.status),
+      priority: processTaskPriority(task.priority)
+    }))
+    : []
+});
 
 export const notesService = {
   async createNote(data: CreateNoteData): Promise<Note> {
@@ -104,22 +96,16 @@ export const notesService = {
       ...data,
       tags: data.tags || [],
     };
-    
+
     const response = await api.post<NoteResponse>('/api/Notes', safeData);
-    console.log('Create note response:', response.data); // Debug log
     return processNoteResponse(response.data);
   },
 
   async getAllNotes(): Promise<Note[]> {
     const response = await api.get<NoteResponse[]>('/api/Notes');
-    console.log('API response for getAllNotes:', response.data);
-    
-    const processedNotes = response.data
+    return response.data
       .filter(note => !note.isDeleted)
       .map(processNoteResponse);
-    
-    console.log('Processed all notes:', processedNotes);
-    return processedNotes;
   },
 
   async updateNote(id: string, data: Partial<UpdateNoteData>): Promise<Note> {
@@ -146,9 +132,7 @@ export const notesService = {
     if (!sourceId || !targetId) {
       throw new Error('Both sourceId and targetId are required to remove a link');
     }
-    
-    console.log('Making DELETE request to:', `/api/Notes/${sourceId}/links/${targetId}`);
-    
+
     try {
       await api.delete(`/api/Notes/${sourceId}/links/${targetId}`);
     } catch (error) {
@@ -160,7 +144,6 @@ export const notesService = {
   async getArchivedNotes(): Promise<Note[]> {
     try {
       const response = await api.get<Note[]>('/api/Notes/archived');
-      
       return response.data.map(processNoteResponse);
     } catch (error) {
       console.error('Error fetching archived notes:', error);
@@ -184,11 +167,11 @@ export const notesService = {
 
   async unarchiveNote(id: string): Promise<Note> {
     try {
-        const response = await api.post<Note>(`/api/Notes/${id}/unarchive`);
-        return processNoteResponse(response.data);
+      const response = await api.post<Note>(`/api/Notes/${id}/unarchive`);
+      return processNoteResponse(response.data);
     } catch (error) {
-        console.error('Error unarchiving note:', error);
-        throw error;
+      console.error('Error unarchiving note:', error);
+      throw error;
     }
   }
 };

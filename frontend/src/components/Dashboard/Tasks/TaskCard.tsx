@@ -13,6 +13,12 @@ export function TaskCard({ task, viewMode }: TaskCardProps) {
   const { updateTask } = useTasks();
   const [showEditModal, setShowEditModal] = useState(false);
 
+  const handleStatusToggle = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newStatus = task.status === 'Completed' ? 'Incomplete' : 'Completed';
+    await updateTask(task.id, { status: newStatus });
+  };
+
   const getPriorityStyles = (priority: string) => {
     switch (priority.toLowerCase()) {
       case 'high':
@@ -28,12 +34,11 @@ export function TaskCard({ task, viewMode }: TaskCardProps) {
 
   return (
     <>
-      <button 
-        type="button"
+      <div
         onClick={() => setShowEditModal(true)}
         className={`
           relative group w-full text-left
-          ${viewMode === 'grid' 
+          ${viewMode === 'grid'
             ? 'h-[220px] flex flex-col'
             : ''
           }
@@ -43,7 +48,7 @@ export function TaskCard({ task, viewMode }: TaskCardProps) {
           rounded-xl p-3 shadow-sm
           transition-all duration-200
           cursor-pointer
-          focus:outline-none focus:ring-2 focus:ring-primary-500
+          ${task.status === 'Completed' ? 'opacity-75' : ''}
         `}
       >
         {task.priority && (
@@ -55,12 +60,15 @@ export function TaskCard({ task, viewMode }: TaskCardProps) {
             {task.priority}
           </span>
         )}
-        
+
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-start gap-3 mb-2">
             <div className="flex-1 min-w-0">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
+              <h3 className={`
+                text-lg font-semibold text-gray-900 dark:text-white truncate
+                ${task.status === 'Completed' ? 'line-through decoration-2' : ''}
+              `}>
                 {task.title}
               </h3>
             </div>
@@ -69,7 +77,10 @@ export function TaskCard({ task, viewMode }: TaskCardProps) {
           {/* Content */}
           <div className="flex-1">
             {task.description && (
-              <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3 mb-4">
+              <p className={`
+                text-sm text-gray-600 dark:text-gray-400 line-clamp-3 mb-4
+                ${task.status === 'Completed' ? 'line-through' : ''}
+              `}>
                 {task.description}
               </p>
             )}
@@ -108,31 +119,27 @@ export function TaskCard({ task, viewMode }: TaskCardProps) {
             </div>
 
             <div className="flex items-center justify-between mt-3">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    updateTask(task.id, { status: task.status === 'Completed' ? 'Incomplete' : 'Completed' });
-                  }}
-                  className={`
-                    p-1.5 rounded-lg transition-colors
-                    ${task.status === 'Completed'
-                      ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
-                      : 'text-gray-400 hover:text-primary-600 dark:text-gray-500 dark:hover:text-primary-400 hover:bg-gray-100/50 dark:hover:bg-[#2C2C2E]'
-                    }
-                  `}
-                >
-                  {task.status === 'Completed' ? (
-                    <CheckSquare className="w-4 h-4" />
-                  ) : (
-                    <Square className="w-4 h-4" />
-                  )}
-                </button>
-              </div>
+              <button
+                onClick={handleStatusToggle}
+                className={`
+                  p-2 rounded-lg transition-colors
+                  ${task.status === 'Completed'
+                    ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
+                    : 'text-gray-400 hover:text-primary-600 dark:text-gray-500 dark:hover:text-primary-400 hover:bg-gray-100/50 dark:hover:bg-[#2C2C2E]'
+                  }
+                `}
+                aria-label={task.status === 'Completed' ? 'Mark as incomplete' : 'Mark as complete'}
+              >
+                {task.status === 'Completed' ? (
+                  <CheckSquare className="w-5 h-5" />
+                ) : (
+                  <Square className="w-5 h-5" />
+                )}
+              </button>
             </div>
           </div>
         </div>
-      </button>
+      </div>
 
       <EditTaskModal
         isOpen={showEditModal}

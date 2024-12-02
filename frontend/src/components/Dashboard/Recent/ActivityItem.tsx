@@ -13,11 +13,10 @@ import {
 } from 'lucide-react';
 import { Activity } from '../../../api/services/activityService';
 import { formatTimeAgo } from './utils';
-import { Link } from 'react-router-dom';
 
 interface ActivityItemProps {
   activity: Activity;
-  onClick?: () => void;
+  onClick: () => void;
 }
 
 const itemTypeIcons: Record<string, React.ElementType> = {
@@ -54,43 +53,17 @@ export function ActivityItem({ activity, onClick }: ActivityItemProps) {
   const ActionTypeIcon = actionTypeIcons[activity.actionType] || Pencil;
   const itemTypeColorClass = itemTypeColors[activity.itemType] || 'bg-gray-100 text-gray-600';
 
-  // Build the link to the item if routes are set up
-  let itemLink = '#';
-  switch (activity.itemType) {
-    case 'note':
-      itemLink = `/notes/${activity.itemId}`;
-      break;
-    case 'task':
-      itemLink = `/tasks/${activity.itemId}`;
-      break;
-    case 'idea':
-      itemLink = `/ideas/${activity.itemId}`;
-      break;
-    case 'reminder':
-      itemLink = `/reminders/${activity.itemId}`;
-      break;
-    default:
-      break;
-  }
-
-  const Element = onClick ? 'button' : 'div';
-  
   return (
-    <Element
-      {...(onClick && {
-        type: 'button',
-        onClick,
-        'aria-label': `View ${activity.itemTitle}`
-      })}
+    <div
+      onClick={onClick}
       className={`
-        w-full text-left
+        w-full text-left cursor-pointer
         group backdrop-blur-sm bg-white/40 dark:bg-zinc-800/40 
         border border-zinc-200/50 dark:border-zinc-700/50 
         shadow-sm hover:shadow-md dark:shadow-zinc-900/10
         rounded-lg p-4
         hover:bg-white/50 dark:hover:bg-zinc-800/50
         transition-all duration-200
-        ${onClick ? 'cursor-pointer' : ''}
       `}
     >
       <div className="flex items-start gap-4">
@@ -103,11 +76,17 @@ export function ActivityItem({ activity, onClick }: ActivityItemProps) {
           {/* Activity Header */}
           <div className="flex items-start justify-between gap-2">
             <div>
-              {/* Item Title */}
+              {/* Replace Link with button styled as a link */}
               <h4 className="text-base font-medium text-gray-900 dark:text-white flex items-center gap-1">
-                <Link to={itemLink} className="hover:underline">
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent double handling
+                    onClick();
+                  }}
+                  className="hover:underline"
+                >
                   {activity.itemTitle}
-                </Link>
+                </button>
               </h4>
               {/* Activity Description */}
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
@@ -150,6 +129,6 @@ export function ActivityItem({ activity, onClick }: ActivityItemProps) {
           )}
         </div>
       </div>
-    </Element>
+    </div>
   );
 }

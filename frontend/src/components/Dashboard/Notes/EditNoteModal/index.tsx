@@ -23,6 +23,22 @@ interface HeaderProps {
   onShowDeleteConfirm: () => void;
 }
 
+interface LinkedNotesPanelProps {
+  linkedNotes: Note[];
+  linkedTasks: Array<{
+    id: string;
+    title: string;
+    status: string;
+    priority: string;
+    dueDate: string | null | undefined;
+  }>;
+  onShowAddLink: () => void;
+  onShowAddTask: () => void;
+  currentNoteId: string;
+  isIdea?: boolean;
+  onUnlinkTask: (taskId: string) => void;
+}
+
 export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
   const navigate = useNavigate();
   const { notes, updateNote, deleteNote } = useNotes();
@@ -118,6 +134,14 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
     }
   };
 
+  const handleTagInputChange = (value: string | string[]) => {
+    if (Array.isArray(value)) {
+      setTags(value);
+    } else {
+      setTagInput(value);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
@@ -146,7 +170,7 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
               isLoading={isLoading}
               onTitleChange={setTitle}
               onContentChange={setContent}
-              onTagInputChange={setTagInput}
+              onTagInputChange={handleTagInputChange}
               onAddTag={() => {
                 const trimmedTag = tagInput.trim();
                 if (trimmedTag && !tags.includes(trimmedTag)) {

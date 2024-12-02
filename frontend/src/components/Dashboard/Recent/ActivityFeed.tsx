@@ -11,9 +11,10 @@ interface ActivityFeedProps {
     dateRange: 'all' | 'today' | 'week' | 'month';
   };
   searchQuery: string;
+  onActivityClick: (activity: Activity) => void;
 }
 
-export function ActivityFeed({ activities, filters, searchQuery }: ActivityFeedProps) {
+export function ActivityFeed({ activities, filters, searchQuery, onActivityClick }: ActivityFeedProps) {
   const filteredActivities = activities.filter(activity => {
     // Search filter
     const matchesSearch = activity.itemTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -83,6 +84,7 @@ export function ActivityFeed({ activities, filters, searchQuery }: ActivityFeedP
               <ActivityItem
                 key={activity.id}
                 activity={activity}
+                onClick={() => onActivityClick(activity)}
               />
             ))}
           </div>

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Note } from '../../../../contexts/NotesContext';
-import { useNotes } from '../../../../contexts/NotesContext';
+import { Note, useNotes } from '../../../../contexts/NotesContext';
 import { useTasks } from '../../../../contexts/TasksContext';
 import { Task } from '../../../../api/types/task';
 import { Header } from './Header';
@@ -16,6 +15,7 @@ interface EditIdeaModalProps {
   onClose: () => void;
   idea: Note | null;
 }
+
 
 export function EditIdeaModal({ isOpen, onClose, idea }: EditIdeaModalProps) {
   const navigate = useNavigate();
@@ -113,6 +113,11 @@ export function EditIdeaModal({ isOpen, onClose, idea }: EditIdeaModalProps) {
     }
   };
 
+  const formattedTasks = linkedTasks.map(task => ({
+    ...task,
+    dueDate: task.dueDate || undefined
+  }));
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
@@ -162,7 +167,7 @@ export function EditIdeaModal({ isOpen, onClose, idea }: EditIdeaModalProps) {
 
             <LinkedNotesPanel
               linkedNotes={linkedNotes}
-              linkedTasks={linkedTasks}
+              linkedTasks={formattedTasks}
               onShowAddLink={() => setShowAddLinkModal(true)}
               onShowAddTask={() => setShowAddTaskModal(true)}
               currentNoteId={currentIdea?.id || ''}

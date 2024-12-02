@@ -4,9 +4,20 @@ import { ActivityFeed } from './ActivityFeed';
 import { ActivityFilters } from './ActivityFilters';
 import { useActivities } from '../../../contexts/ActivityContext';
 import { Input } from '../../shared/Input';
+import { EditNoteModal } from '../Notes/EditNoteModal';
+import { EditTaskModal } from '../Tasks/EditTaskModal';
+import { EditReminderModal } from '../Reminders/EditReminderModal';
+import { EditIdeaModal } from '../Ideas/EditIdeaModal';
+import { useNotes } from '../../../contexts/NotesContext';
+import { useTasks } from '../../../contexts/TasksContext';
+import { useReminders } from '../../../contexts/RemindersContext';
+import { Activity } from '../../../api/services/activityService';
 
 export function RecentPage() {
   const { activities } = useActivities();
+  const { notes } = useNotes();
+  const { tasks } = useTasks();
+  const { reminders } = useReminders();
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
@@ -14,6 +25,32 @@ export function RecentPage() {
     itemTypes: [] as string[],
     dateRange: 'all' as 'all' | 'today' | 'week' | 'month'
   });
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [selectedReminderId, setSelectedReminderId] = useState<string | null>(null);
+  const [selectedIdeaId, setSelectedIdeaId] = useState<string | null>(null);
+
+  const selectedNote = selectedNoteId ? notes.find(n => n.id === selectedNoteId && !n.isIdea) : null;
+  const selectedIdea = selectedIdeaId ? notes.find(n => n.id === selectedIdeaId && n.isIdea) : null;
+  const selectedTask = selectedTaskId ? tasks.find(t => t.id === selectedTaskId) : null;
+  const selectedReminder = selectedReminderId ? reminders.find(r => r.id === selectedReminderId) : null;
+
+  const handleActivityClick = (activity: Activity) => {
+    switch (activity.itemType.toLowerCase()) {
+      case 'note':
+        setSelectedNoteId(activity.itemId);
+        break;
+      case 'idea':
+        setSelectedIdeaId(activity.itemId);
+        break;
+      case 'task':
+        setSelectedTaskId(activity.itemId);
+        break;
+      case 'reminder':
+        setSelectedReminderId(activity.itemId);
+        break;
+    }
+  };
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-fixed">
@@ -100,7 +137,41 @@ export function RecentPage() {
           activities={activities}
           filters={filters}
           searchQuery={searchQuery}
+          onActivityClick={handleActivityClick}
         />
+
+        {/* Add Modals */}
+        {selectedNote && (
+          <EditNoteModal
+            isOpen={!!selectedNoteId}
+            onClose={() => setSelectedNoteId(null)}
+            note={selectedNote}
+          />
+        )}
+
+        {selectedIdea && (
+          <EditIdeaModal
+            isOpen={!!selectedIdeaId}
+            onClose={() => setSelectedIdeaId(null)}
+            idea={selectedIdea}
+          />
+        )}
+
+        {selectedTask && (
+          <EditTaskModal
+            isOpen={!!selectedTaskId}
+            onClose={() => setSelectedTaskId(null)}
+            task={selectedTask}
+          />
+        )}
+
+        {selectedReminder && (
+          <EditReminderModal
+            isOpen={!!selectedReminderId}
+            onClose={() => setSelectedReminderId(null)}
+            reminder={selectedReminder}
+          />
+        )}
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, Calendar, Tag, Clock, AlertCircle, CheckSquare, Square } from 'lucide-react';
+import { Calendar, Tag, Clock, AlertCircle, CheckSquare, Square } from 'lucide-react';
 import { Reminder, useReminders } from '../../../contexts/RemindersContext';
 import { EditReminderModal } from './EditReminderModal';
 
@@ -12,7 +12,6 @@ export function ReminderCard({ reminder }: ReminderCardProps) {
   const [showEditModal, setShowEditModal] = useState(false);
 
   const isOverdue = new Date(reminder.dueDateTime) < new Date() && !reminder.isSnoozed && !reminder.isCompleted;
-  const isSnoozed = reminder.isSnoozed && reminder.snoozeUntil;
 
   const handleSnooze = (duration: number) => {
     const until = new Date(Date.now() + duration);

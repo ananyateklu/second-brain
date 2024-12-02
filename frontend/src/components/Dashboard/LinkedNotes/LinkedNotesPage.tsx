@@ -2,9 +2,17 @@ import React, { useState, useMemo } from 'react';
 import { GraphView } from './GraphView';
 import { NoteDetailsPanel } from './NoteDetailsPanel';
 import { ListView } from './ListView';
-import { List, Network, Link2, Type, Lightbulb, Workflow, GitBranch } from 'lucide-react';
+import { List, Network, Link2, Type, Lightbulb, GitBranch } from 'lucide-react';
 import { Note, useNotes } from '../../../contexts/NotesContext';
-import { formatDistanceToNow } from 'date-fns';
+
+interface NoteConnection {
+  noteId: string;
+  createdAt: string;
+}
+
+interface NoteWithConnections extends Note {
+  connections?: NoteConnection[];
+}
 
 export function LinkedNotesPage() {
   const { notes } = useNotes();
@@ -23,7 +31,7 @@ export function LinkedNotesPage() {
         visited.add(noteId);
         clusters.add(clusterId);
 
-        const note = notes.find(n => n.id === noteId);
+        const note = notes.find(n => n.id === noteId) as NoteWithConnections;
         note?.linkedNoteIds?.forEach(linkedId => {
           dfs(linkedId, clusterId);
         });
@@ -260,7 +268,7 @@ export function LinkedNotesPage() {
                       : 'text-[#64ab6f]/80 dark:text-[#64ab6f]/80'
                   }`} />
                   <button 
-                    onClick={() => setSelectedNoteId(stats.mostConnectedNote?.note.id)}
+                    onClick={() => stats.mostConnectedNote?.note.id ? setSelectedNoteId(stats.mostConnectedNote.note.id) : null}
                     className="flex-1 flex items-center justify-between text-xs transition-colors"
                     title={stats.mostConnectedNote.note.title}
                   >
@@ -290,7 +298,7 @@ export function LinkedNotesPage() {
                       : 'text-[#64ab6f]/80 dark:text-[#64ab6f]/80'
                   }`} />
                   <button 
-                    onClick={() => setSelectedNoteId(stats.mostConnectedIdea?.note.id)}
+                    onClick={() => stats.mostConnectedIdea?.note.id ? setSelectedNoteId(stats.mostConnectedIdea.note.id) : null}
                     className="flex-1 flex items-center justify-between text-xs transition-colors"
                     title={stats.mostConnectedIdea.note.title}
                   >
