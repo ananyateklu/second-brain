@@ -32,7 +32,7 @@ export function MainContent({
   setError
 }: MainContentProps) {
   return (
-    <div className="flex flex-col min-h-0 p-6">
+    <div className="flex flex-col min-h-0 p-6 bg-white dark:bg-[#111111]">
       <div className="space-y-4">
         <div className="space-y-2">
           <div className="flex items-center justify-between">
@@ -91,7 +91,7 @@ export function MainContent({
             placeholder="Describe your idea..."
             rows={8}
             disabled={isLoading}
-            className="w-full px-4 py-3 bg-white/70 dark:bg-gray-800/70 backdrop-blur-glass rounded-lg border border-gray-200/50 dark:border-gray-700/50 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-transparent transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-3 py-2 bg-white dark:bg-[#1C1C1E] text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 resize-none rounded-lg border border-gray-200/50 dark:border-[#2C2C2E] focus:ring-2 focus:ring-primary-500/50 focus:border-transparent transition-all"
           />
         </div>
 

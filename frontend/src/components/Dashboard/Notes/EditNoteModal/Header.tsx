@@ -55,7 +55,7 @@ export function Header({ note, onClose }: HeaderProps) {
 
   return (
     <>
-      <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-gray-200/30 dark:border-gray-700/30 bg-white/50 dark:bg-gray-900/50 backdrop-blur-md">
+      <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-gray-200/30 dark:border-[#1C1C1E] bg-white dark:bg-[#111111] backdrop-blur-md">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
             <Type className="w-6 h-6 text-blue-600 dark:text-blue-400" />
@@ -75,7 +75,7 @@ export function Header({ note, onClose }: HeaderProps) {
             className={`p-2 rounded-lg transition-colors ${note.isFavorite
               ? 'text-amber-500 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20'
               : 'text-gray-400 hover:text-amber-500 dark:text-gray-500 dark:hover:text-amber-400 hover:bg-gray-100 dark:hover:bg-dark-hover'
-            }`}
+              }`}
           >
             <Star className="w-5 h-5" fill={note.isFavorite ? 'currentColor' : 'none'} />
           </button>

@@ -23,13 +23,13 @@ export function AddLinkModal({ isOpen, onClose, currentTaskId }: AddLinkModalPro
 
   const alreadyLinkedIds = currentTask.linkedItems.map(item => item.id);
 
-  const filteredItems = notes.filter(note => 
+  const filteredItems = notes.filter(note =>
     !alreadyLinkedIds.includes(note.id) && // Don't show already linked items
-    (selectedType === 'all' || 
-     (selectedType === 'ideas' && note.isIdea) ||
-     (selectedType === 'notes' && !note.isIdea)) &&
+    (selectedType === 'all' ||
+      (selectedType === 'ideas' && note.isIdea) ||
+      (selectedType === 'notes' && !note.isIdea)) &&
     (note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-     note.content.toLowerCase().includes(searchQuery.toLowerCase()))
+      note.content.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const handleAddLink = async (linkedItemId: string) => {
@@ -51,9 +51,9 @@ export function AddLinkModal({ isOpen, onClose, currentTaskId }: AddLinkModalPro
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      
-      <div className="relative w-full max-w-lg glass-morphism rounded-xl">
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-dark-border">
+
+      <div className="relative w-full max-w-lg bg-white dark:bg-[#111111] rounded-xl shadow-2xl overflow-hidden border border-gray-200/30 dark:border-[#1C1C1E]">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200/30 dark:border-[#1C1C1E]">
           <h3 className="text-lg font-medium text-gray-900 dark:text-white">
             Link to Note or Idea
           </h3>
@@ -68,7 +68,6 @@ export function AddLinkModal({ isOpen, onClose, currentTaskId }: AddLinkModalPro
 
         <div className="p-4">
           <div className="space-y-4">
-            {/* Search and Filter Controls */}
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -77,14 +76,14 @@ export function AddLinkModal({ isOpen, onClose, currentTaskId }: AddLinkModalPro
                   placeholder="Search..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-white dark:bg-dark-bg border border-gray-200 dark:border-dark-border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                  className="w-full pl-10 pr-4 py-2 bg-white dark:bg-[#1C1C1E] border border-gray-200/50 dark:border-[#2C2C2E] rounded-lg focus:ring-2 focus:ring-primary-500/50 focus:border-transparent transition-colors text-gray-700 dark:text-gray-300"
                   disabled={isLoading}
                 />
               </div>
               <select
                 value={selectedType}
                 onChange={(e) => setSelectedType(e.target.value as 'all' | 'notes' | 'ideas')}
-                className="px-3 py-2 bg-white dark:bg-dark-bg border border-gray-200 dark:border-dark-border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                className="px-3 py-2 bg-white dark:bg-[#1C1C1E] border border-gray-200/50 dark:border-[#2C2C2E] rounded-lg focus:ring-2 focus:ring-primary-500/50 focus:border-transparent transition-colors text-gray-700 dark:text-gray-300"
                 disabled={isLoading}
               >
                 <option value="all">All Items</option>
@@ -93,24 +92,18 @@ export function AddLinkModal({ isOpen, onClose, currentTaskId }: AddLinkModalPro
               </select>
             </div>
 
-            {/* Items List */}
             <div className="max-h-60 overflow-y-auto">
               {filteredItems.map(item => (
                 <button
                   key={item.id}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleAddLink(item.id);
-                  }}
+                  onClick={() => handleAddLink(item.id)}
                   disabled={isLoading}
-                  className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-dark-hover rounded-lg transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full flex items-center gap-3 p-3 bg-white dark:bg-[#1C1C1E] hover:bg-gray-50 dark:hover:bg-[#2C2C2E] rounded-lg transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed border border-gray-200/50 dark:border-[#2C2C2E] mb-2"
                 >
-                  <div className={`p-1.5 rounded-lg ${
-                    item.isIdea 
-                      ? 'bg-amber-100 dark:bg-amber-900/30' 
+                  <div className={`p-1.5 rounded-lg ${item.isIdea
+                      ? 'bg-amber-100 dark:bg-amber-900/30'
                       : 'bg-blue-100 dark:bg-blue-900/30'
-                  }`}>
+                    }`}>
                     {item.isIdea ? (
                       <Lightbulb className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                     ) : (

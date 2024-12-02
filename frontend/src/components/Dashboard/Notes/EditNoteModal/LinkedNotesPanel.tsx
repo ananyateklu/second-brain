@@ -16,10 +16,10 @@ interface LinkedNotesPanelProps {
   readonly onUnlinkTask?: (taskId: string) => void;
 }
 
-export function LinkedNotesPanel({ 
-  linkedNotes, 
+export function LinkedNotesPanel({
+  linkedNotes,
   linkedTasks = [],
-  onShowAddLink, 
+  onShowAddLink,
   onShowAddTask,
   currentNoteId,
   onUnlinkTask
@@ -39,8 +39,8 @@ export function LinkedNotesPanel({
   };
 
   return (
-    <div className="border-l border-gray-200/30 dark:border-gray-700/30 flex flex-col min-h-0">
-      <div className="shrink-0 px-4 py-3 border-b border-gray-200/30 dark:border-gray-700/30 bg-white/50 dark:bg-gray-900/50 backdrop-blur-md">
+    <div className="border-l border-gray-200/30 dark:border-[#1C1C1E] flex flex-col min-h-0">
+      <div className="shrink-0 px-4 py-3 border-b border-gray-200/30 dark:border-[#1C1C1E] bg-white/50 dark:bg-[#111111] backdrop-blur-md">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Link2 className="w-4 h-4 text-gray-500 dark:text-gray-400" />
@@ -68,8 +68,8 @@ export function LinkedNotesPanel({
           </div>
         </div>
       </div>
-      
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50 dark:bg-gray-800/50">
+
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50 dark:bg-[#111111]">
         {linkedNotes.length > 0 || linkedTasks.length > 0 ? (
           <>
             {/* Linked Notes Section */}
@@ -81,14 +81,13 @@ export function LinkedNotesPanel({
                 {linkedNotes.map(linkedNote => (
                   <div
                     key={linkedNote.id}
-                    className="group relative p-3 rounded-lg bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border border-gray-100 dark:border-gray-800"
+                    className="group relative p-3 rounded-lg bg-white dark:bg-[#1C1C1E] hover:bg-gray-50 dark:hover:bg-[#2C2C2E] transition-colors border border-gray-100 dark:border-[#2C2C2E]"
                   >
                     <div className="flex items-start gap-3">
-                      <div className={`shrink-0 p-1.5 rounded-lg ${
-                        linkedNote.isIdea 
-                          ? 'bg-amber-100 dark:bg-amber-900/30' 
+                      <div className={`shrink-0 p-1.5 rounded-lg ${linkedNote.isIdea
+                          ? 'bg-amber-100 dark:bg-amber-900/30'
                           : 'bg-blue-100 dark:bg-blue-900/30'
-                      }`}>
+                        }`}>
                         {linkedNote.isIdea ? (
                           <Lightbulb className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                         ) : (
@@ -130,7 +129,7 @@ export function LinkedNotesPanel({
                 {linkedTasks.map(task => (
                   <div
                     key={task.id}
-                    className="group relative p-3 rounded-lg bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border border-gray-100 dark:border-gray-800"
+                    className="group relative p-3 rounded-lg bg-white dark:bg-[#1C1C1E] hover:bg-gray-50 dark:hover:bg-[#2C2C2E] transition-colors border border-gray-100 dark:border-[#2C2C2E]"
                   >
                     <div className="flex items-start gap-3">
                       <div className="shrink-0 p-1.5 bg-green-100 dark:bg-green-900/30 rounded-lg">
@@ -155,20 +154,18 @@ export function LinkedNotesPanel({
                           )}
                         </div>
                         <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                          <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full ${
-                            task.status === 'Completed'
+                          <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full ${task.status === 'Completed'
                               ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                               : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                          }`}>
+                            }`}>
                             {task.status}
                           </span>
-                          <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full ${
-                            task.priority === 'high'
+                          <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full ${task.priority === 'high'
                               ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                               : task.priority === 'medium'
-                              ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
-                              : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                          }`}>
+                                ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+                                : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                            }`}>
                             {task.priority}
                           </span>
                           {task.dueDate && (

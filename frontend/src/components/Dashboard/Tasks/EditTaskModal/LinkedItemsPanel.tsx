@@ -17,8 +17,8 @@ export function LinkedItemsPanel({
   onUnlink
 }: LinkedItemsPanelProps) {
   return (
-    <div className="border-l border-gray-200/30 dark:border-gray-700/30 flex flex-col min-h-0">
-      <div className="shrink-0 px-4 py-3 border-b border-gray-200/30 dark:border-gray-700/30 bg-white/50 dark:bg-gray-900/50 backdrop-blur-md">
+    <div className="border-l border-gray-200/30 dark:border-[#1C1C1E] flex flex-col min-h-0">
+      <div className="shrink-0 px-4 py-3 border-b border-gray-200/30 dark:border-[#1C1C1E] bg-white dark:bg-[#111111] backdrop-blur-md">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Link2 className="w-4 h-4 text-gray-500 dark:text-gray-400" />
@@ -37,12 +37,12 @@ export function LinkedItemsPanel({
         </div>
       </div>
       
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50/50 dark:bg-gray-800/50">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-white dark:bg-[#111111]">
         {linkedItems.length > 0 ? (
           linkedItems.map(item => (
             <div
               key={item.id}
-              className="group relative p-3 rounded-lg bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              className="group relative p-3 rounded-lg bg-white dark:bg-[#1C1C1E] hover:bg-gray-50 dark:hover:bg-[#2C2C2E] transition-colors border border-gray-200/50 dark:border-[#2C2C2E]"
             >
               <div className="flex items-start gap-3">
                 {item.type === 'idea' ? (

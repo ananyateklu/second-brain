@@ -66,9 +66,9 @@ export function NoteCard({ note, viewMode = 'grid' }: NoteCardProps) {
         p-4 rounded-xl
         hover:border-[#64ab6f] dark:hover:border-[#64ab6f]
         transition-all duration-200
-        ${note.isPinned && note.isFavorite ? 'ring-1 ring-[#64ab6f]/20 ring-amber-500/20' : ''}
-        ${note.isPinned ? 'ring-1 ring-[#64ab6f]/20' : ''}
-        ${note.isFavorite ? 'ring-1 ring-amber-500/20' : ''}
+        ${note.isPinned && note.isFavorite ? 'bg-[#1A1A1D]' : ''}
+        ${note.isPinned && !note.isFavorite ? 'bg-[#1A1A1D]' : ''}
+        ${!note.isPinned && note.isFavorite ? 'bg-[#1A1A1D]' : ''}
         ${viewMode === 'list' ? 'flex items-start gap-4' : 'flex flex-col'}
       `}>
         <div className="flex-1">

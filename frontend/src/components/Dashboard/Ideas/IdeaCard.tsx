@@ -53,9 +53,9 @@ export function IdeaCard({ idea, viewMode = 'grid' }: IdeaCardProps) {
         p-4 rounded-xl
         hover:border-[#64ab6f] dark:hover:border-[#64ab6f]
         transition-all duration-200
-        ${idea.isPinned && idea.isFavorite ? 'ring-1 ring-[#64ab6f]/20 ring-amber-500/20' : ''}
-        ${idea.isPinned ? 'ring-1 ring-[#64ab6f]/20' : ''}
-        ${idea.isFavorite ? 'ring-1 ring-amber-500/20' : ''}
+        ${idea.isPinned && idea.isFavorite ? 'bg-[#1A1A1D]' : ''}
+        ${idea.isPinned && !idea.isFavorite ? 'bg-[#1A1A1D]' : ''}
+        ${!idea.isPinned && idea.isFavorite ? 'bg-[#1A1A1D]' : ''}
         ${viewMode === 'list' ? 'flex items-start gap-4' : 'flex flex-col'}
       `}>
         <div className="flex-1">
