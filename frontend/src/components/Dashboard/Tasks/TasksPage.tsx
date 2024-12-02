@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckSquare, Plus, Search, SlidersHorizontal, Calendar, Clock } from 'lucide-react';
+import { CheckSquare, Plus, Search, SlidersHorizontal } from 'lucide-react';
 import { useTasks } from '../../../contexts/TasksContext';
 import { TaskList } from './TaskList';
 import { NewTaskModal } from './NewTaskModal';
@@ -18,16 +18,6 @@ export function TasksPage() {
   });
 
   const completedTasks = tasks.filter(task => task && task.status === 'Completed').length;
-  const dueTodayTasks = tasks.filter(task => {
-    if (!task || !task.dueDate) return false;
-    const today = new Date();
-    const dueDate = new Date(task.dueDate);
-    return (
-      dueDate.getDate() === today.getDate() &&
-      dueDate.getMonth() === today.getMonth() &&
-      dueDate.getFullYear() === today.getFullYear()
-    );
-  }).length;
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-fixed">
@@ -75,13 +65,18 @@ export function TasksPage() {
               placeholder="Search tasks..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-white/70 dark:bg-gray-800/70 border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
+              className="bg-white dark:bg-[#1C1C1E] border-gray-200/50 dark:border-[#2C2C2E] text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500"
             />
           </div>
 
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200/50 dark:border-gray-700/50 bg-white/70 dark:bg-gray-800/70 backdrop-blur-glass hover:bg-white/80 dark:hover:bg-gray-800/80 transition-all text-gray-900 dark:text-gray-100"
+            className={`
+              flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200/50 dark:border-[#2C2C2E]
+              bg-white dark:bg-[#1C1C1E] hover:bg-gray-50 dark:hover:bg-[#2C2C2E]
+              text-gray-700 dark:text-gray-300 transition-colors
+              ${showFilters ? 'bg-gray-50 dark:bg-[#2C2C2E]' : ''}
+            `}
           >
             <SlidersHorizontal className="w-5 h-5" />
             <span>Filters</span>
@@ -90,7 +85,7 @@ export function TasksPage() {
 
         {/* Filters Panel */}
         {showFilters && (
-          <div className="backdrop-blur-sm bg-white/50 dark:bg-gray-800/50 border border-gray-200/50 dark:border-gray-700/50 p-4 rounded-xl shadow-lg">
+          <div className="bg-white dark:bg-[#1C1C1E] border border-gray-200/50 dark:border-[#2C2C2E] p-4 rounded-xl shadow-lg">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Filters</h3>
               <button

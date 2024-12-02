@@ -11,7 +11,7 @@ import {
   Archive,
   Pin,
 } from 'lucide-react';
-import { Activity } from '../../../contexts/ActivityContext';
+import { Activity } from '../../../api/services/activityService';
 import { formatTimeAgo } from './utils';
 import { Link } from 'react-router-dom';
 
@@ -73,14 +73,22 @@ export function ActivityItem({ activity, onClick }: ActivityItemProps) {
       break;
   }
 
+  const Element = onClick ? 'button' : 'div';
+  
   return (
-    <div
-      onClick={onClick}
+    <Element
+      {...(onClick && {
+        type: 'button',
+        onClick,
+        'aria-label': `View ${activity.itemTitle}`
+      })}
       className={`
-        group backdrop-blur-sm bg-white/30 dark:bg-gray-800/30 
-        border border-gray-200/50 dark:border-gray-700/50 
-        shadow-lg rounded-lg p-4
-        hover:shadow-xl dark:hover:shadow-lg dark:hover:shadow-black/10
+        w-full text-left
+        group backdrop-blur-sm bg-white/40 dark:bg-zinc-800/40 
+        border border-zinc-200/50 dark:border-zinc-700/50 
+        shadow-sm hover:shadow-md dark:shadow-zinc-900/10
+        rounded-lg p-4
+        hover:bg-white/50 dark:hover:bg-zinc-800/50
         transition-all duration-200
         ${onClick ? 'cursor-pointer' : ''}
       `}
@@ -142,6 +150,6 @@ export function ActivityItem({ activity, onClick }: ActivityItemProps) {
           )}
         </div>
       </div>
-    </div>
+    </Element>
   );
 }

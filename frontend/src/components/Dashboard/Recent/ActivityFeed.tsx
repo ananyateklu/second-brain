@@ -1,4 +1,4 @@
-import { Activity } from '../../../contexts/ActivityContext';
+import { Activity } from '../../../api/services/activityService';
 import { ActivityItem } from './ActivityItem';
 import { groupActivitiesByDate } from './utils';
 import { History } from 'lucide-react';
@@ -58,11 +58,11 @@ export function ActivityFeed({ activities, filters, searchQuery }: ActivityFeedP
   if (filteredActivities.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
-        <History className="w-12 h-12 text-gray-300 dark:text-gray-600 mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+        <History className="w-12 h-12 text-zinc-300 dark:text-zinc-600 mb-4" />
+        <h3 className="text-lg font-medium text-zinc-900 dark:text-zinc-50 mb-2">
           No activities found
         </h3>
-        <p className="text-gray-500 dark:text-gray-400 max-w-md">
+        <p className="text-zinc-500 dark:text-zinc-400 max-w-md">
           {searchQuery || filters.actionTypes.length > 0 || filters.itemTypes.length > 0
             ? "No activities match your search criteria. Try adjusting your filters."
             : "Start creating and managing your notes to see activity here."}
@@ -75,7 +75,7 @@ export function ActivityFeed({ activities, filters, searchQuery }: ActivityFeedP
     <div className="space-y-8">
       {Object.entries(groupedActivities).map(([date, activities]) => (
         <div key={date}>
-          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4">
+          <h3 className="text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-4">
             {date}
           </h3>
           <div className="space-y-4">

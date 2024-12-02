@@ -187,7 +187,7 @@ export function EditTaskModal({ isOpen, onClose, taskId }: EditTaskModalProps) {
 
                     {/* Loading overlay */}
                     {isLoading && (
-                        <div className="absolute inset-0 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50">
+                        <div className="absolute inset-0 bg-white/30 dark:bg-[#111111]/50 backdrop-blur-sm flex items-center justify-center z-50">
                             <Loader2 className="w-8 h-8 text-primary-600 dark:text-primary-400 animate-spin" />
                         </div>
                     )}

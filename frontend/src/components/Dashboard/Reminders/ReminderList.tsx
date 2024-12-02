@@ -3,9 +3,10 @@ import { ReminderCard } from './ReminderCard';
 
 interface ReminderListProps {
   reminders: Reminder[];
+  viewMode: 'grid' | 'list';
 }
 
-export function ReminderList({ reminders }: ReminderListProps) {
+export function ReminderList({ reminders, viewMode }: ReminderListProps) {
   if (reminders.length === 0) {
     return (
       <div className="text-center py-12">
@@ -17,7 +18,11 @@ export function ReminderList({ reminders }: ReminderListProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4">
+    <div className={`grid gap-4 ${
+      viewMode === 'grid' 
+        ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' 
+        : 'grid-cols-1'
+    }`}>
       {reminders.map(reminder => (
         <ReminderCard key={reminder.id} reminder={reminder} />
       ))}

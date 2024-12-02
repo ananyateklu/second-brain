@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
-import { Bell, Plus, Calendar, Clock } from 'lucide-react';
+import { Bell, Plus, Search, SlidersHorizontal, LayoutGrid, List } from 'lucide-react';
 import { useReminders } from '../../../contexts/RemindersContext';
 import { ReminderList } from './ReminderList';
 import { NewReminderModal } from './NewReminderModal';
 import { ReminderFilters } from './ReminderFilters';
+import { Input } from '../../shared/Input';
 
 export function RemindersPage() {
   const { reminders, getDueReminders, getUpcomingReminders } = useReminders();
   const [showNewReminderModal, setShowNewReminderModal] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'due' | 'upcoming'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
 
   const filteredReminders = React.useMemo(() => {
     let filtered = reminders;
@@ -39,6 +42,7 @@ export function RemindersPage() {
       <div className="fixed inset-0 bg-fixed dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-slate-800 bg-gradient-to-br from-white to-gray-100 -z-10" />
 
       <div className="space-y-8 relative">
+        {/* Page Header with gradient overlay */}
         <div className="relative overflow-hidden rounded-xl bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm">
           <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-transparent" />
           <div className="relative p-6">
@@ -68,17 +72,75 @@ export function RemindersPage() {
           </div>
         </div>
 
-        <ReminderFilters
-          selectedFilter={selectedFilter}
-          onFilterChange={setSelectedFilter}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-        />
+        {/* Search, Filters, and View Toggle */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1">
+            <Input
+              label=""
+              icon={Search}
+              type="text"
+              placeholder="Search reminders..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="bg-white dark:bg-[#1C1C1E] border-gray-200/50 dark:border-[#2C2C2E] text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500"
+            />
+          </div>
 
-        <div className="w-full">
-          <ReminderList reminders={filteredReminders} />
+          <div className="flex gap-2">
+            <button
+              onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200/50 dark:border-[#2C2C2E] bg-white dark:bg-[#1C1C1E] hover:bg-gray-50 dark:hover:bg-[#2C2C2E] text-gray-700 dark:text-gray-300 transition-colors"
+            >
+              {viewMode === 'grid' ? (
+                <List className="w-5 h-5" />
+              ) : (
+                <LayoutGrid className="w-5 h-5" />
+              )}
+            </button>
+
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`
+                flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200/50 dark:border-[#2C2C2E]
+                bg-white dark:bg-[#1C1C1E] hover:bg-gray-50 dark:hover:bg-[#2C2C2E]
+                text-gray-700 dark:text-gray-300 transition-colors
+                ${showFilters ? 'bg-gray-50 dark:bg-[#2C2C2E]' : ''}
+              `}
+            >
+              <SlidersHorizontal className="w-5 h-5" />
+              <span>Filters</span>
+            </button>
+          </div>
         </div>
 
+        {/* Filters Panel */}
+        {showFilters && (
+          <div className="bg-white dark:bg-[#1C1C1E] border border-gray-200/50 dark:border-[#2C2C2E] p-4 rounded-xl shadow-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Filters</h3>
+              <button
+                onClick={() => setSelectedFilter('all')}
+                className="text-sm text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+              >
+                Clear all
+              </button>
+            </div>
+            <ReminderFilters
+              selectedFilter={selectedFilter}
+              onFilterChange={setSelectedFilter}
+            />
+          </div>
+        )}
+
+        {/* Reminder List */}
+        <div className="w-full">
+          <ReminderList 
+            reminders={filteredReminders} 
+            viewMode={viewMode}
+          />
+        </div>
+
+        {/* New Reminder Modal */}
         <NewReminderModal
           isOpen={showNewReminderModal}
           onClose={() => setShowNewReminderModal(false)}
