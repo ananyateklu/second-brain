@@ -7,103 +7,41 @@ Second Brain is a personal knowledge management system designed to help you orga
 - **Stay Organized**: Manage tasks and reminders with intelligent scheduling and priority management
 - **Learn & Grow**: Track your progress with gamification elements as you build your knowledge base
 
-## What Makes Second Brain Different?
-
-- **Seamless AI Integration**
-  - Use multiple AI models (OpenAI, Claude, Gemini, Grok, or local models) for different needs
-  - Get smart suggestions for content organization and improvement
-  - Convert voice to text and text to speech
-  - Generate and edit images to enhance your notes
-  - Query your data using natural language
-
-- **Smart Organization**:
-  - Connect related notes automatically through AI-powered suggestions
-  - Visualize your knowledge with interactive graph views
-  - Tag and categorize content intelligently
-  - Create bi-directional links between notes, tasks, and ideas
-
-- **Productivity Tools**:
-  - Focus Mode for distraction-free work sessions
-  - Priority-based task management
-  - Smart reminders with natural language scheduling
-  - Archive system for long-term knowledge storage
-
-- **Personal Growth**:
-  - Earn XP and level up as you organize and connect ideas
-  - Track your progress with achievements
-  - Monitor your knowledge management habits
-  - Customize your experience with themes and avatars
-
-## Core Features
+## Key Features
 
 - **Knowledge Management**
   - Rich text editing with Markdown support
-  - Automated content organization
-  - Visual relationship mapping
-  - Version history and soft deletion
-  - Comprehensive archiving system
+  - Interactive mind mapping and visual relationship graphs
+  - Automated content organization with AI suggestions
+  - Bi-directional linking between notes, tasks, and ideas
+  - Version history and comprehensive archiving
+
+- **AI Integration**
+  - Multiple AI model support (OpenAI, Claude, Gemini, Grok, local models)
+  - Natural language queries and content enhancement
+  - Voice transcription and text-to-speech
+  - Image generation and editing
+  - Context-aware responses using RAG technology
 
 - **Task & Reminder System**
   - Priority-based organization
-  - Smart scheduling suggestions
+  - Smart scheduling with AI suggestions
   - Task linking and dependencies
   - Progress tracking
   - Context-aware notifications
 
-- **AI Capabilities**
-  - Multi-model AI support
-  - Natural language queries
-  - Content enhancement
-  - Image generation
-  - Voice transcription
-  - Context-aware responses using RAG
+- **Productivity & Growth**
+  - Focus Mode for distraction-free work
+  - Achievement system with XP and levels
+  - Progress tracking and analytics
+  - Customizable themes and avatars
+  - Activity monitoring
 
 - **Privacy & Security**
-  - Optional local AI model support
-  - Secure authentication
-  - Data encryption
+  - Optional local AI model support via Ollama
+  - Secure authentication and data encryption
   - Regular backup options
-  - Privacy controls
-
-## Table of Contents
-
-- [Features](#features)
-- [Technical Stack](#technical-stack)
-- [Getting Started](#getting-started)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Frontend](#frontend)
-- [Backend](#backend)
-- [API Integration](#api-integration)
-- [Acknowledgments](#acknowledgments)
-- [Roadmap](#roadmap)
-
-## Features
-
-- **Knowledge Management**
-  - Create, edit, and organize notes with rich text, tagging, and linking.
-  - Capture and refine ideas with AI assistance.
-  - Interactive mind mapping with visual relationship mapping.
-
-- **Task and Reminder Management**
-  - Create and track tasks with priorities and due dates.
-  - Set recurring reminders with AI-powered suggestions.
-
-- **AI Integration**
-  - AI-powered suggestions for titles, content, and task descriptions.
-  - Supports OpenAI, Google Gemini, Anthropic Claude, Grok API, and local models via **Ollama**.
-  - **Database operations using natural language commands.**
-  - Intelligent provider switching and local AI model support via ONNX Runtime.
-
-- **User Experience**
-  - Advanced tagging and knowledge linking.
-  - Responsive design with dark/light mode and system detection.
-  - Distraction-free focus mode with timed sessions.
-
-- **Gamification and Activity Tracking**
-  - Profile customization with avatars.
-  - Experience points (XP), level progression, achievements, and badges.
-  - Monitor progress and achievements.
+  - Granular privacy controls
 
 ## Technical Stack
 
