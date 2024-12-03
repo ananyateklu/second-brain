@@ -1,47 +1,13 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { useActivities } from './ActivityContext';
+import React, { useState, useCallback, useEffect } from 'react';
+import { NotesContext } from './notesContextUtils';
+import { useActivities } from './activityContextUtils';
 import { notesService, type UpdateNoteData } from '../services/api/notes.service';
-import { useTrash } from './TrashContext';
+import { useTrash } from './trashContextUtils';
 import { useAuth } from '../hooks/useAuth';
 import { sortNotes } from '../utils/noteUtils';
 import type { Note } from '../types/note';
 
-export type { Note };
-
-interface NotesContextType {
-  notes: Note[];
-  archivedNotes: Note[];
-  isLoading: boolean;
-  addNote: (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'linkedNoteIds' | 'linkedNotes' | 'linkedTasks'>) => void;
-  updateNote: (id: string, updates: Partial<Note>) => void;
-  deleteNote: (id: string) => Promise<void>;
-  togglePinNote: (id: string) => void;
-  toggleFavoriteNote: (id: string) => void;
-  archiveNote: (id: string) => void;
-  unarchiveNote: (id: string) => Promise<Note>;
-  addLink: (sourceId: string, targetId: string) => void;
-  removeLink: (sourceId: string, targetId: string) => void;
-  loadArchivedNotes: () => Promise<void>;
-  restoreMultipleNotes: (ids: string[]) => Promise<PromiseSettledResult<Note>[]>;
-  restoreNote: (restoredNote: Note) => Promise<void>;
-  fetchNotes: () => Promise<void>;
-}
-
-const NotesContext = createContext<NotesContextType | null>(null);
-
-export function useNotes() {
-  const context = useContext(NotesContext);
-  if (!context) {
-    throw new Error('useNotes must be used within a NotesProvider');
-  }
-  return context;
-}
-
-interface NotesProviderProps {
-  children: React.ReactNode;
-}
-
-export function NotesProvider({ children }: NotesProviderProps) {
+export function NotesProvider({ children }: { children: React.ReactNode }) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [archivedNotes, setArchivedNotes] = useState<Note[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -132,10 +98,10 @@ export function NotesProvider({ children }: NotesProviderProps) {
     }
   }, [createActivity]);
 
-  const updateNote = useCallback(async (id: string, updates: Partial<Note>) => {
+  const updateNote = useCallback(async (id: string, updates: Partial<Note>): Promise<Note> => {
     try {
       if (updates.isArchived !== undefined) {
-        return;
+        throw new Error('Cannot update archive status directly');
       }
       
       // Get the current note to preserve its links

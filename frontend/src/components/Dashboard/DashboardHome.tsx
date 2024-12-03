@@ -21,17 +21,17 @@ import {
   Columns,
   LightbulbIcon,
 } from 'lucide-react';
-import { useNotes } from '../../contexts/NotesContext';
+import { useNotes } from '../../contexts/notesContextUtils';
 import { useAuth } from '../../hooks/useAuth';
 import { NoteCard } from './NoteCard';
 import { NewNoteModal } from './Notes/NewNoteModal';
 import { StatsEditor } from './StatsEditor';
-import { useDashboard } from '../../contexts/DashboardContext';
+import { useDashboard } from '../../hooks/useDashboard';
 import { DashboardStat } from '../../types/dashboard';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { getIconColor, getIconBg } from '../../utils/styleUtils';
-import { useTasks } from '../../contexts/TasksContext';
-import { useModal } from '../../contexts/ModalContext';
+import { useTasks } from '../../contexts/tasksContextUtils';
+import { useModal } from '../../contexts/modalContextUtils';
 import { Note } from '../../types/note';
 import { WelcomeSection } from './WelcomeSection';
 
@@ -415,7 +415,7 @@ export function DashboardHome() {
             className="grid grid-cols-8 gap-2"
           >
             <AnimatePresence mode="popLayout">
-              {enabledStats.map((stat) => (
+              {enabledStats.map((stat: DashboardStat) => (
                 <Reorder.Item
                   key={stat.id}
                   value={stat}

@@ -58,7 +58,6 @@ export function MessageList(props: MessageListProps) {
   const groupedMessages = useMemo(() => {
     const groups: Message[][] = [];
     let currentGroup: Message[] = [];
-    let currentGroupId = '';
 
     props.messages.forEach((message, index) => {
       const prevMessage = props.messages[index - 1];
@@ -72,7 +71,6 @@ export function MessageList(props: MessageListProps) {
         if (currentGroup.length > 0) {
           groups.push(currentGroup);
         }
-        currentGroupId = `group-${message.id}`;
         currentGroup = [message];
       } else {
         currentGroup.push(message);

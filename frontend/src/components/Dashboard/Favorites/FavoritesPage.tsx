@@ -1,8 +1,9 @@
 import { Star } from 'lucide-react';
 import { NoteCard } from '../NoteCard';
 import { IdeaCard } from '../Ideas/IdeaCard';
-import { Note, useNotes } from '../../../contexts/NotesContext';
-import { useModal } from '../../../contexts/ModalContext';
+import type { Note } from '../../../types/note';
+import { useNotes } from '../../../contexts/notesContextUtils';
+import { useModal } from '../../../contexts/modalContextUtils';
 
 
 export function FavoritesPage() {

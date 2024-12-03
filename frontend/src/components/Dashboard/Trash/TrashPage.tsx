@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Trash2, Search, SlidersHorizontal, RotateCcw, AlertTriangle } from 'lucide-react';
-import { useTrash } from '../../../contexts/TrashContext';
+import { useState, useEffect } from 'react';
+import { Trash2, Search, SlidersHorizontal, RotateCcw } from 'lucide-react';
+import { useTrash } from '../../../contexts/trashContextUtils';
 import { TrashList } from './TrashList';
 import { TrashFilters } from './TrashFilters';
 import { ConfirmationDialog } from './ConfirmationDialog';

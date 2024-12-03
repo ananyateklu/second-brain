@@ -20,13 +20,13 @@ import { AIAssistantPage } from './Dashboard/AI/AIAssistantPage';
 import { SearchPage } from './Dashboard/Search/SearchPage';
 import { HelpPage } from './Dashboard/Help/HelpPage';
 import { LoadingScreen } from './shared/LoadingScreen';
-import { useNotes } from '../contexts/NotesContext';
-import { useTasks } from '../contexts/TasksContext';
-import { useReminders } from '../contexts/RemindersContext';
+import { useNotes } from '../contexts/notesContextUtils';
+import { useTasks } from '../contexts/tasksContextUtils';
+import { useReminders } from '../contexts/remindersContextUtils';
 import { PersonalPage } from './Dashboard/Personal/PersonalPage';
 import { EditNoteModal } from './Dashboard/Notes/EditNoteModal';
 import { EditIdeaModal } from './Dashboard/Ideas/EditIdeaModal';
-import { useModal } from '../contexts/ModalContext';
+import { useModal } from '../contexts/modalContextUtils';
 
 export function Dashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);

@@ -1,62 +1,11 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { Note } from './NotesContext';
-import { Task } from '../services/api/tasks.service';
-import { Reminder } from '../services/api/reminders.service';
-import { useActivities } from './ActivityContext';
+import { useState, useCallback, useEffect } from 'react';
+import { TrashedItem, TrashProviderProps, TrashContext } from './trashContextUtils';
+import { useActivities } from './activityContextUtils';
 import { tasksService } from '../services/api/tasks.service';
 import { notesService } from '../services/api/notes.service';
 import { reminderService } from '../api/services/reminderService';
 
-export interface TrashedItem {
-  id: string;
-  type: 'note' | 'task' | 'idea' | 'reminder' | 'tag';
-  title: string;
-  content?: string;
-  priority?: number;
-  status?: string;
-  isCompleted?: boolean;
-  isSnoozed?: boolean;
-  snoozeUntil?: string;
-  metadata?: {
-    tags?: string[];
-    dueDate?: string;
-    priority?: number;
-    status?: string;
-    isCompleted?: boolean;
-    isSnoozed?: boolean;
-    snoozeUntil?: string;
-    linkedItems?: string[];
-    isFavorite?: boolean;
-  };
-  deletedAt: string;
-  expiresAt: string;
-}
-
-interface TrashContextType {
-  trashedItems: TrashedItem[];
-  moveToTrash: (item: Omit<TrashedItem, 'deletedAt' | 'expiresAt'>) => Promise<boolean>;
-  restoreItems: (itemIds: string[]) => Promise<void>;
-  deleteItemsPermanently: (itemIds: string[]) => Promise<void>;
-  emptyTrash: () => Promise<void>;
-  cleanupExpiredItems: () => Promise<void>;
-  refreshTrashItems: () => Promise<void>;
-}
-
-const TrashContext = createContext<TrashContextType | null>(null);
-
-interface TrashProviderProps {
-  children: React.ReactNode;
-  onRestoreNote?: (note: Note) => Promise<void>;
-  onRestoreTask?: (task: Task) => Promise<void>;
-  onRestoreReminder?: (reminder: Reminder) => Promise<void>;
-}
-
-export function TrashProvider({ 
-  children, 
-  onRestoreNote,
-  onRestoreTask,
-  onRestoreReminder 
-}: TrashProviderProps) {
+export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
   const [trashedItems, setTrashedItems] = useState<TrashedItem[]>([]);
 
   const { createActivity } = useActivities();
@@ -77,7 +26,7 @@ export function TrashProvider({
           content: task.description,
           metadata: {
             tags: task.tags,
-            dueDate: task.dueDate,
+            dueDate: task.dueDate || undefined,
             priority: task.priority,
             status: task.status,
             deletedAt: task.deletedAt
@@ -159,27 +108,30 @@ export function TrashProvider({
     for (const item of itemsToRestore) {
       try {
         switch (item.type) {
-          case 'task':
+          case 'task': {
             // Remove from trash immediately
             setTrashedItems(prev => prev.filter(i => i.id !== item.id));
             
-            // Map priority string to number
-            const priorityMap = {
-              'low': 1,
-              'medium': 2,
-              'high': 3
-            };
+            const priority = item.metadata?.priority;
+            let mappedPriority: 'low' | 'medium' | 'high' = 'medium';
+            
+            // Map numeric priority back to string
+            if (typeof priority === 'number') {
+              mappedPriority = priority === 1 ? 'low' : priority === 3 ? 'high' : 'medium';
+            } else if (typeof priority === 'string') {
+              mappedPriority = priority as 'low' | 'medium' | 'high';
+            }
 
-            // Create the update request with proper priority mapping
+            // Create the update request with proper status type
             const updateData = {
               isDeleted: false,
               deletedAt: null,
               title: item.title,
               description: item.content,
-              priority: priorityMap[item.metadata?.priority?.toLowerCase() as keyof typeof priorityMap] || 1,
-              dueDate: item.metadata?.dueDate,
+              priority: mappedPriority,
+              dueDate: item.metadata?.dueDate || undefined,
               tags: item.metadata?.tags || [],
-              status: item.metadata?.status === 'completed' ? 1 : 0 // Map status to number
+              status: (item.metadata?.status === 'completed' ? 'Completed' : 'Incomplete') as 'Completed' | 'Incomplete'
             };
 
             // Update the task in the backend
@@ -197,27 +149,36 @@ export function TrashProvider({
                 taskTitle: item.title,
                 taskDueDate: item.metadata?.dueDate,
                 taskTags: item.metadata?.tags,
-                taskPriority: item.metadata?.priority,
-                taskStatus: item.metadata?.status,
+                taskPriority: mappedPriority,
+                taskStatus: updateData.status,
                 restoredAt: new Date().toISOString()
               }
             });
-
-            // Force a refresh of the tasks list
-            window.location.reload();
             break;
+          }
+
+          case 'note':
+          case 'idea': {
+            setTrashedItems(prev => prev.filter(i => i.id !== item.id));
+            const restoredNote = await notesService.restoreNote(item.id);
+            
+            if (onRestoreNote) {
+              await onRestoreNote(restoredNote);
+            }
+            break;
+          }
 
           case 'reminder':
             // Remove from trash immediately
             setTrashedItems(prev => prev.filter(i => i.id !== item.id));
             
-            // Update the reminder in the backend
+            // Update the reminder in the backend with proper dueDateTime handling
             await reminderService.updateReminder(item.id, {
               isDeleted: false,
               deletedAt: item.deletedAt,
               title: item.title,
               description: item.content,
-              dueDateTime: item.metadata?.dueDate,
+              dueDateTime: item.metadata?.dueDate || undefined, // Convert null to undefined
               tags: item.metadata?.tags || [],
               isCompleted: item.metadata?.isCompleted || false,
               isSnoozed: item.metadata?.isSnoozed || false,
@@ -239,17 +200,6 @@ export function TrashProvider({
                 restoredAt: new Date().toISOString()
               }
             });
-            break;
-
-          case 'note':
-          case 'idea':
-            setTrashedItems(prev => prev.filter(i => i.id !== item.id));
-            const restoredNote = await notesService.restoreNote(item.id);
-            
-            if (onRestoreNote) {
-              await onRestoreNote(restoredNote);
-            }
-            
             break;
         }
 
@@ -274,7 +224,7 @@ export function TrashProvider({
 
     // After all restorations, refresh the lists
     window.location.reload(); // This is a temporary solution - we can improve it later
-  }, [trashedItems, onRestoreNote, onRestoreTask, onRestoreReminder, createActivity]);
+  }, [trashedItems, onRestoreNote, createActivity]);
 
   const deleteItemsPermanently = useCallback(async (itemIds: string[]) => {
     const itemsToDelete = trashedItems.filter(item => itemIds.includes(item.id));
@@ -354,7 +304,7 @@ export function TrashProvider({
         content: task.description,
         metadata: {
           tags: task.tags,
-          dueDate: task.dueDate,
+          dueDate: task.dueDate || undefined,
           priority: task.priority,
           status: task.status,
           deletedAt: task.deletedAt
@@ -413,12 +363,4 @@ export function TrashProvider({
       {children}
     </TrashContext.Provider>
   );
-}
-
-export function useTrash() {
-  const context = useContext(TrashContext);
-  if (!context) {
-    throw new Error('useTrash must be used within a TrashProvider');
-  }
-  return context;
 }

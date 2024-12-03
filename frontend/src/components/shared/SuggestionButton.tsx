@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Sparkles, Loader } from 'lucide-react';
 import { contentSuggestionService } from '../../services/ai/contentSuggestionService';
 

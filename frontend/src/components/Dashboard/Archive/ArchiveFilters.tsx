@@ -7,7 +7,7 @@ interface ArchiveFiltersProps {
     tags: string[];
     hasLinks: boolean;
   };
-  onFilterChange: (key: string, value: any) => void;
+  onFilterChange: (key: keyof ArchiveFiltersProps['filters'], value: string | boolean | string[]) => void;
 }
 
 export function ArchiveFilters({ filters, onFilterChange }: ArchiveFiltersProps) {

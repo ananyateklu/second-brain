@@ -1,4 +1,4 @@
-import { useNotes } from '../../../contexts/NotesContext';
+import { useNotes } from '../../../contexts/notesContextUtils';
 import { formatDate } from '../../../utils/dateUtils';
 import { Link2 } from 'lucide-react';
 

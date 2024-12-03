@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import CytoscapeComponent from 'react-cytoscapejs';
 import { useTheme } from '../../../contexts/ThemeContext';
-import { useNotes } from '../../../contexts/NotesContext';
+import { useNotes } from '../../../contexts/notesContextUtils';
 import type { Core, NodeSingular, Stylesheet } from 'cytoscape';
 
 interface GraphViewProps {

@@ -1,17 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Bot, Settings2, AlertCircle, CheckCircle, Loader, Save } from 'lucide-react';
 import { useAI } from '../../../contexts/AIContext';
-
-interface AISettings {
-  contentSuggestions?: {
-    provider: 'openai' | 'anthropic' | 'gemini' | 'llama';
-    modelId: string;
-  };
-  promptEnhancement?: {
-    provider: 'openai' | 'anthropic' | 'gemini' | 'llama';
-    modelId: string;
-  };
-}
+import { AISettings } from '../../../types/ai';
 
 interface TestResult {
   success: boolean;
@@ -20,11 +10,6 @@ interface TestResult {
 
 interface AISettingsSectionProps {
   onSave: (settings: AISettings) => Promise<void>;
-}
-
-// Add error interface
-interface SaveSettingsError {
-  message?: string;
 }
 
 export function AISettingsSection({ onSave }: AISettingsSectionProps) {

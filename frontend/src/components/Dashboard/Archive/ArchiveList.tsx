@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNotes } from '../../../contexts/NotesContext';
+import { useNotes } from '../../../contexts/notesContextUtils';
 import { NoteCard } from '../NoteCard';
 import { IdeaCard } from '../Ideas/IdeaCard';
 import { RotateCcw } from 'lucide-react';

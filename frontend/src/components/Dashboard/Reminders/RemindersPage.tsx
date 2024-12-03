@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Bell, Plus, Search, SlidersHorizontal, LayoutGrid, List } from 'lucide-react';
-import { useReminders } from '../../../contexts/RemindersContext';
+import { useReminders } from '../../../contexts/remindersContextUtils';
 import { ReminderList } from './ReminderList';
 import { NewReminderModal } from './NewReminderModal';
 import { ReminderFilters } from './ReminderFilters';

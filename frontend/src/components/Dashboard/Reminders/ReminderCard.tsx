@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Calendar, Tag, Clock, AlertCircle, CheckSquare, Square } from 'lucide-react';
-import { Reminder, useReminders } from '../../../contexts/RemindersContext';
+import { Reminder, useReminders } from '../../../contexts/remindersContextUtils';
 import { EditReminderModal } from './EditReminderModal';
 
 interface ReminderCardProps {

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X, Type, Star, Archive, Trash2 } from 'lucide-react';
-import { Note, useNotes } from '../../../../contexts/NotesContext';
+import type { Note } from '../../../../types/note';
+import { useNotes } from '../../../../contexts/notesContextUtils';
 import { WarningModal } from '../../../shared/WarningModal';
 
 export interface HeaderProps {

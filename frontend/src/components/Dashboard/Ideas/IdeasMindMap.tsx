@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import CytoscapeComponent from 'react-cytoscapejs';
 import { useTheme } from '../../../contexts/ThemeContext';
-import { Note } from '../../../contexts/NotesContext';
+import type { Note } from '../../../types/note';
 import Cytoscape , { Stylesheet } from 'cytoscape';
 
 interface IdeasMindMapProps {
@@ -59,7 +59,7 @@ export function IdeasMindMap({ ideas, onIdeaClick }: IdeasMindMapProps) {
         'text-outline-width': 1.5,
         'min-zoomed-font-size': 8,
         'transition-property': 'border-color, border-width',
-        'transition-duration': '0.2s',
+        'transition-duration': 200,
       }
     },
     {
@@ -77,7 +77,7 @@ export function IdeasMindMap({ ideas, onIdeaClick }: IdeasMindMapProps) {
         'border-style': 'solid',
         'background-color': theme === 'dark' ? '#2A332A' : '#F0F7F0',
         'transition-property': 'border-color, background-color',
-        'transition-duration': '0.2s'
+        'transition-duration': 200,
       }
     },
     {
@@ -104,7 +104,7 @@ export function IdeasMindMap({ ideas, onIdeaClick }: IdeasMindMapProps) {
     padding: 50,
     spacingFactor: 0.85,
     minNodeSpacing: 50,
-    concentric: (node: any) => node.connectedEdges().length,
+    concentric: (node: cytoscape.NodeSingular) => node.connectedEdges().length,
     levelWidth: () => 2.5,
     animate: false
   };

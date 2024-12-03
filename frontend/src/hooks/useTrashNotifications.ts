@@ -1,4 +1,4 @@
-import { useTrash } from '../contexts/TrashContext';
+import { useTrash } from '../contexts/trashContextUtils';
 import { useEffect } from 'react';
 
 export function useTrashNotifications() {

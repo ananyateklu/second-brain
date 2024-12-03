@@ -1,20 +1,7 @@
 import { useTheme } from '../../../contexts/ThemeContext';
 import { Moon, Sun, Bell, Shield, Database, Settings } from 'lucide-react';
 import { AISettingsSection } from './AISettingsSection';
-
-interface AISettings {
-  openaiApiKey?: string;
-  anthropicApiKey?: string;
-  localModelPath?: string;
-  localModelParams?: {
-    temperature: number;
-    maxTokens: number;
-  };
-  contentSuggestions?: {
-    provider: 'openai' | 'anthropic' | 'gemini';
-    modelId: string;
-  };
-}
+import { AISettings } from '../../../types/ai';
 
 export function SettingsPage() {
   const { theme, toggleTheme } = useTheme();

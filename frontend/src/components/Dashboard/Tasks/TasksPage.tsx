@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { CheckSquare, Plus, Search, SlidersHorizontal, LayoutGrid, List } from 'lucide-react';
-import { useTasks } from '../../../contexts/TasksContext';
+import { useTasks } from '../../../contexts/tasksContextUtils';
 import { NewTaskModal } from './NewTaskModal';
 import { TaskFilters } from './TaskFilters';
 import { Input } from '../../shared/Input';
 import { TaskCard } from './TaskCard';
 import { EditTaskModal } from './EditTaskModal';
+import { Task } from '../../../api/types/task';
 
 export function TasksPage() {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -20,9 +21,9 @@ export function TasksPage() {
     dueDate: 'all'
   });
 
-  const completedTasks = tasks.filter(task => task && task.status === 'Completed').length;
+  const completedTasks = tasks.filter((task: Task) => task && task.status === 'Completed').length;
 
-  const selectedTask = selectedTaskId ? tasks.find(t => t.id === selectedTaskId) : null;
+  const selectedTask = selectedTaskId ? tasks.find((t: Task) => t.id === selectedTaskId) : null;
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-fixed">
@@ -139,7 +140,7 @@ export function TasksPage() {
           ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'
           : 'space-y-2'
         }>
-          {tasks.map(task => (
+          {tasks.map((task: Task) => (
             <TaskCard
               key={task.id}
               task={task}

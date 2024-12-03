@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { GraphView } from './GraphView';
 import { NoteDetailsPanel } from './NoteDetailsPanel';
 import { ListView } from './ListView';
 import { List, Network, Link2, Type, Lightbulb, GitBranch } from 'lucide-react';
-import { Note, useNotes } from '../../../contexts/NotesContext';
+import type { Note } from '../../../types/note';
+import { useNotes } from '../../../contexts/notesContextUtils';
 
 interface NoteConnection {
   noteId: string;
@@ -187,22 +188,20 @@ export function LinkedNotesPage() {
               <div className="flex gap-1.5">
                 <button
                   onClick={() => setViewMode('graph')}
-                  className={`p-1.5 rounded-lg transition-colors duration-200 ${
-                    viewMode === 'graph'
+                  className={`p-1.5 rounded-lg transition-colors duration-200 ${viewMode === 'graph'
                       ? 'bg-[#64ab6f]/20 text-[#64ab6f]'
                       : 'text-gray-400 hover:bg-[#1C1C1E]'
-                  }`}
+                    }`}
                   title="Graph View"
                 >
                   <Network className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setViewMode('list')}
-                  className={`p-1.5 rounded-lg transition-colors duration-200 ${
-                    viewMode === 'list'
+                  className={`p-1.5 rounded-lg transition-colors duration-200 ${viewMode === 'list'
                       ? 'bg-[#64ab6f]/20 text-[#64ab6f]'
                       : 'text-gray-400 hover:bg-[#1C1C1E]'
-                  }`}
+                    }`}
                   title="List View"
                 >
                   <List className="w-4 h-4" />
@@ -262,26 +261,23 @@ export function LinkedNotesPage() {
 
               {/* Most Connected Items Row */}
               {stats.mostConnectedNote && stats.mostConnectedNote.connectionCount > 0 && (
-                <div className={`col-span-3 flex items-center gap-2 px-3 py-1.5 bg-[#1C1C1E] dark:bg-[#1C1C1E] border transition-colors duration-200 rounded-lg ${
-                  selectedNoteId === stats.mostConnectedNote.note.id
+                <div className={`col-span-3 flex items-center gap-2 px-3 py-1.5 bg-[#1C1C1E] dark:bg-[#1C1C1E] border transition-colors duration-200 rounded-lg ${selectedNoteId === stats.mostConnectedNote.note.id
                     ? 'border-[#64ab6f]/50 dark:border-[#64ab6f]/50 bg-[#64ab6f]/10 dark:bg-[#64ab6f]/10'
                     : 'border-gray-200/50 dark:border-gray-700/30'
-                }`}>
-                  <Type className={`shrink-0 w-3.5 h-3.5 ${
-                    selectedNoteId === stats.mostConnectedNote.note.id
+                  }`}>
+                  <Type className={`shrink-0 w-3.5 h-3.5 ${selectedNoteId === stats.mostConnectedNote.note.id
                       ? 'text-[#64ab6f] dark:text-[#64ab6f]'
                       : 'text-[#64ab6f]/80 dark:text-[#64ab6f]/80'
-                  }`} />
-                  <button 
+                    }`} />
+                  <button
                     onClick={() => stats.mostConnectedNote?.note.id ? setSelectedNoteId(stats.mostConnectedNote.note.id) : null}
                     className="flex-1 flex items-center justify-between text-xs transition-colors"
                     title={stats.mostConnectedNote.note.title}
                   >
-                    <span className={`truncate pr-3 ${
-                      selectedNoteId === stats.mostConnectedNote.note.id
+                    <span className={`truncate pr-3 ${selectedNoteId === stats.mostConnectedNote.note.id
                         ? 'text-[#64ab6f] dark:text-[#64ab6f]'
                         : 'text-gray-700 dark:text-gray-300'
-                    }`}>
+                      }`}>
                       Most Connected: {stats.mostConnectedNote.note.title}
                     </span>
                     <span className="shrink-0 text-[#64ab6f] dark:text-[#64ab6f]">
@@ -292,26 +288,23 @@ export function LinkedNotesPage() {
               )}
 
               {stats.mostConnectedIdea && stats.mostConnectedIdea.connectionCount > 0 && (
-                <div className={`col-span-3 flex items-center gap-2 px-3 py-1.5 bg-[#1C1C1E] dark:bg-[#1C1C1E] border transition-colors duration-200 rounded-lg ${
-                  selectedNoteId === stats.mostConnectedIdea.note.id
+                <div className={`col-span-3 flex items-center gap-2 px-3 py-1.5 bg-[#1C1C1E] dark:bg-[#1C1C1E] border transition-colors duration-200 rounded-lg ${selectedNoteId === stats.mostConnectedIdea.note.id
                     ? 'border-[#64ab6f]/50 dark:border-[#64ab6f]/50 bg-[#64ab6f]/10 dark:bg-[#64ab6f]/10'
                     : 'border-gray-200/50 dark:border-gray-700/30'
-                }`}>
-                  <Lightbulb className={`shrink-0 w-3.5 h-3.5 ${
-                    selectedNoteId === stats.mostConnectedIdea.note.id
+                  }`}>
+                  <Lightbulb className={`shrink-0 w-3.5 h-3.5 ${selectedNoteId === stats.mostConnectedIdea.note.id
                       ? 'text-[#64ab6f] dark:text-[#64ab6f]'
                       : 'text-[#64ab6f]/80 dark:text-[#64ab6f]/80'
-                  }`} />
-                  <button 
+                    }`} />
+                  <button
                     onClick={() => stats.mostConnectedIdea?.note.id ? setSelectedNoteId(stats.mostConnectedIdea.note.id) : null}
                     className="flex-1 flex items-center justify-between text-xs transition-colors"
                     title={stats.mostConnectedIdea.note.title}
                   >
-                    <span className={`truncate pr-3 ${
-                      selectedNoteId === stats.mostConnectedIdea.note.id
+                    <span className={`truncate pr-3 ${selectedNoteId === stats.mostConnectedIdea.note.id
                         ? 'text-[#64ab6f] dark:text-[#64ab6f]'
                         : 'text-gray-700 dark:text-gray-300'
-                    }`}>
+                      }`}>
                       Most Connected: {stats.mostConnectedIdea.note.title}
                     </span>
                     <span className="shrink-0 text-[#64ab6f] dark:text-[#64ab6f]">

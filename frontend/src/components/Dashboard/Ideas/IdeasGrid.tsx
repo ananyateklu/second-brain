@@ -1,4 +1,5 @@
 import { IdeaCard } from './IdeaCard';
+import type { Note } from '../../../types/note';
 
 interface IdeasGridProps {
   ideas: Note[];
@@ -18,7 +19,6 @@ export function IdeasGrid({ ideas, onIdeaClick }: IdeasGridProps) {
             key={idea.id} 
             idea={idea} 
             viewMode="grid"
-            onClick={onIdeaClick}
           />
         </div>
       ))}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Archive, Search, SlidersHorizontal } from 'lucide-react';
-import { useNotes } from '../../../contexts/NotesContext';
+import { useNotes } from '../../../contexts/notesContextUtils';
 import { ArchiveList } from './ArchiveList';
 import { ArchiveFilters } from './ArchiveFilters';
 import { Input } from '../../shared/Input';

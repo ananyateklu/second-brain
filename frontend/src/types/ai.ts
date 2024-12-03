@@ -129,3 +129,21 @@ export interface AccumulatedContext {
   content: string;
   tags: string[];
 }
+
+export interface AISettings {
+  openaiApiKey?: string;
+  anthropicApiKey?: string;
+  localModelPath?: string;
+  localModelParams?: {
+    temperature: number;
+    maxTokens: number;
+  };
+  contentSuggestions?: {
+    provider: 'openai' | 'anthropic' | 'gemini' | 'llama';
+    modelId: string;
+  };
+  promptEnhancement?: {
+    provider: 'openai' | 'anthropic' | 'gemini' | 'llama';
+    modelId: string;
+  };
+}

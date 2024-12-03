@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Note } from '../../../../contexts/NotesContext';
-import { useNotes } from '../../../../contexts/NotesContext';
-import { useTasks } from '../../../../contexts/TasksContext';
+import type { Note } from '../../../../types/note';
+import { useNotes } from '../../../../contexts/notesContextUtils';
+import { useTasks } from '../../../../contexts/tasksContextUtils';
 import { Task } from '../../../../api/types/task';
 import { Header } from './Header';
 import { MainContent } from './MainContent';

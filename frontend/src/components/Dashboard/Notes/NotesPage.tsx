@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Plus, Search, SlidersHorizontal, FileText, Grid, List, Network } from 'lucide-react';
-import { useNotes } from '../../../contexts/NotesContext';
+import { useNotes } from '../../../contexts/notesContextUtils';
 import { NoteCard } from '../NoteCard';
 import { Note } from '../../../types/note';
 import { NewNoteModal } from './NewNoteModal';
@@ -8,7 +8,7 @@ import { FilterDropdown } from './FilterDropdown';
 import { NotesGraph } from './NotesGraph';
 import { LoadingScreen } from '../../shared/LoadingScreen';
 import { Input } from '../../shared/Input';
-import { useModal } from '../../../contexts/ModalContext';
+import { useModal } from '../../../contexts/modalContextUtils';
 import { sortNotes } from '../../../utils/noteUtils';
 import { Filters } from '../../../types/filters';
 

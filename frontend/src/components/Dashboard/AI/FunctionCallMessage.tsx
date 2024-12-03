@@ -19,7 +19,7 @@ interface FunctionCallMessageProps {
   isStreaming?: boolean;
 }
 
-export function FunctionCallMessage({ message, themeColor, isStreaming }: FunctionCallMessageProps) {
+export function FunctionCallMessage({ message, themeColor }: FunctionCallMessageProps) {
   const isUser = message.role === 'user';
   const { user } = useAuth();
   const { executionSteps } = useAI();
@@ -37,9 +37,9 @@ export function FunctionCallMessage({ message, themeColor, isStreaming }: Functi
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 {user?.name}
               </span>
-              {user?.avatarUrl && (
+              {user?.avatar && (
                 <img
-                  src={user.avatarUrl}
+                  src={user.avatar}
                   alt={user.name}
                   className="w-6 h-6 rounded-full border border-gray-200/50 dark:border-gray-700/50"
                 />

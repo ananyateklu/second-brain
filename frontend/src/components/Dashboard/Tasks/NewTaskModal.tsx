@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Type, Tag as TagIcon, Calendar, Loader } from 'lucide-react';
 import { Input } from '../../shared/Input';
-import { useTasks } from '../../../contexts/TasksContext';
+import { useTasks } from '../../../contexts/tasksContextUtils';
 import { SuggestionButton } from '../../shared/SuggestionButton';
 
 interface NewTaskModalProps {

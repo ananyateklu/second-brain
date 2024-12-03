@@ -155,8 +155,8 @@ export function LoginPage() {
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
         <div className="w-full max-w-md">
           <div className="bg-white/10 dark:bg-gray-900/50 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20 dark:border-gray-700/30">
-            <div className="mb-8">
-              <Logo />
+            <div className="flex justify-center mb-8 h-12">
+              <Logo className="w-auto h-full" />
             </div>
 
             {errors.general && (

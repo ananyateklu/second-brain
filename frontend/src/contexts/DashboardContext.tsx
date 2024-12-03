@@ -1,66 +1,15 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { DashboardStat } from '../types/dashboard';
-import { useNotes } from './NotesContext';
-import { useTasks } from './TasksContext';
-import { useReminders } from './RemindersContext';
-import { useActivities } from './ActivityContext';
-import { calculateWeeklyChange, getNewNotesCount, getLastUpdateTime, DEFAULT_STATS } from '../utils/dashboardContextUtils';
+import { useNotes } from './notesContextUtils';
+import { useTasks } from './tasksContextUtils';
+import { useReminders } from './remindersContextUtils';
+import { useActivities } from './activityContextUtils';
+import { calculateWeeklyChange, getNewNotesCount, getLastUpdateTime, DEFAULT_STATS, DashboardContext, isDashboardStat, StatValue } from '../utils/dashboardContextUtils';
+import type { Task } from '../api/types/task';
 
-interface StatValue {
-  value: number | string;
-  change?: number;
-  timeframe?: string;
-  metadata?: {
-    breakdown?: {
-      created: number;
-      edited: number;
-      deleted: number;
-    }
-  };
-}
-
-interface DashboardContextType {
-  availableStats: DashboardStat[];
-  enabledStats: DashboardStat[];
-  toggleStat: (statId: string) => void;
-  reorderStats: (startIndex: number, endIndex: number, newOrder?: DashboardStat[]) => void;
-  getStatValue: (statId: string) => StatValue;
-  updateStatSize: (statId: string, size: 'small' | 'medium' | 'large') => void;
-  isLoading: boolean;
-}
-
-export const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
-
-// Add type for activities
 interface Activity {
   actionType: string;
   timestamp: string;
-}
-
-const isDashboardStat = (obj: any): obj is DashboardStat => {
-  const validTypes = [
-    'notes', 'new-notes', 'categories', 'word-count', 
-    'tasks', 'tags', 'time', 'ideas', 'activity', 
-    'search', 'collaboration'
-  ] as const;
-  
-  return (
-    typeof obj.id === 'string' &&
-    validTypes.includes(obj.type) &&
-    typeof obj.title === 'string' &&
-    typeof obj.icon === 'string' &&
-    typeof obj.enabled === 'boolean' &&
-    typeof obj.order === 'number' &&
-    ['small', 'medium', 'large'].includes(obj.size)
-  );
-};
-
-export function useDashboard() {
-  const context = useContext(DashboardContext);
-  if (!context) {
-    throw new Error('useDashboard must be used within a DashboardProvider');
-  }
-  return context;
 }
 
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
@@ -74,12 +23,16 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [stats, setStats] = useState<DashboardStat[]>(() => {
     const saved = localStorage.getItem('dashboard_stats');
     if (saved) {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.every(isDashboardStat)) {
-        return parsed;
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.every(isDashboardStat)) {
+          return parsed as DashboardStat[];
+        }
+      } catch (e) {
+        console.error('Failed to parse dashboard stats:', e);
       }
     }
-    return DEFAULT_STATS;
+    return DEFAULT_STATS as DashboardStat[];
   });
 
   // Update loading state when both notes and tasks are ready
@@ -123,8 +76,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       case 'categories':
         allTags = [
           ...regularNotes.flatMap(note => note.tags),
-          ...tasks.flatMap(task => task.tags),
-          ...reminders.flatMap(reminder => reminder.tags)
+          ...tasks.flatMap((task: Task) => task.tags),
+          ...reminders.flatMap((reminder: { tags: string[] }) => reminder.tags)
         ];
         uniqueTags = new Set(allTags);
         return {
@@ -134,13 +87,13 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
       case 'active-tasks':
         return {
-          value: tasks.filter(task => task.status === 'Incomplete').length,
+          value: tasks.filter((task: Task) => task.status === 'Incomplete').length,
           timeframe: 'Current'
         };
 
       case 'completed-tasks':
         return {
-          value: tasks.filter(task => task.status === 'Completed').length,
+          value: tasks.filter((task: Task) => task.status === 'Completed').length,
           timeframe: 'Total'
         };
 

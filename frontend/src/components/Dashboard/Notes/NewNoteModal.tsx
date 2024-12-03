@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Type, Tag as TagIcon, Loader } from 'lucide-react';
 import { Input } from '../../shared/Input';
-import { useNotes } from '../../../contexts/NotesContext';
+import { useNotes } from '../../../contexts/notesContextUtils';
 import { SuggestionButton } from '../../shared/SuggestionButton';
 
 interface NewNoteModalProps {
@@ -57,6 +57,7 @@ export function NewNoteModal({ isOpen, onClose }: NewNoteModalProps) {
       
       onClose();
     } catch (error) {
+      console.error(error);
       setError('Failed to create note. Please try again.');
     } finally {
       setIsLoading(false);

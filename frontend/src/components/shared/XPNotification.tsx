@@ -1,4 +1,3 @@
-import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Star, ArrowUp } from 'lucide-react';
 
@@ -14,7 +13,7 @@ interface XPNotificationProps {
   onClose: () => void;
 }
 
-export function XPNotification({ xp, achievement, levelUp, onClose }: XPNotificationProps) {
+export function XPNotification({ xp, achievement, levelUp }: XPNotificationProps) {
   return (
     <AnimatePresence>
       <motion.div

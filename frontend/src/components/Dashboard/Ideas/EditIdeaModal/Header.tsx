@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { X, Lightbulb, Star, Trash2, Archive } from 'lucide-react';
-import { Note } from '../../../../contexts/NotesContext';
-import { useNotes } from '../../../../contexts/NotesContext';
+import type { Note } from '../../../../types/note';
+import { useNotes } from '../../../../contexts/notesContextUtils';
 import { WarningModal } from '../../../shared/WarningModal';
 
 interface HeaderProps {

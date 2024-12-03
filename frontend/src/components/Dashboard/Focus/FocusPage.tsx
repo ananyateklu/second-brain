@@ -1,29 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect } from 'react';
 import {
-  Timer,
   Play,
   Pause,
   RotateCcw,
-  CheckCircle,
-  Coffee,
-  Music2,
   Volume2,
   VolumeX,
-  Settings,
-  ChevronRight,
   AlertCircle,
   Keyboard,
   BarChart2,
-  FileText,
   Plus,
 } from 'lucide-react';
-import { useTasks } from '../../../contexts/TasksContext';
-import { useNotes } from '../../../contexts/NotesContext';
+import { useTasks } from '../../../contexts/tasksContextUtils';
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
 import { NewTaskModal } from '../Tasks/NewTaskModal';
 import { TaskCard } from '../Tasks/TaskCard';
+import { Task } from '../../../api/types/task';
 import './FocusPage.css';
 
 // Pomodoro timer settingså
@@ -33,17 +25,14 @@ const LONG_BREAK_MINUTES = 15;
 
 export function DailyFocus() {
   const { tasks } = useTasks();
-  const { notes } = useNotes();
   const [timeLeft, setTimeLeft] = useState(WORK_MINUTES * 60);
   const [isActive, setIsActive] = useState(false);
   const [isBreak, setIsBreak] = useState(false);
   const [pomodoroCount, setPomodoroCount] = useState(0);
-  const [selectedTask, setSelectedTask] = useState(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [playSound, setPlaySound] = useState(true);
-  const [showSettings, setShowSettings] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [quickNote, setQuickNote] = useState('');
-  const [focusHistory, setFocusHistory] = useState([]);
   const [selectedSound, setSelectedSound] = useState('none'); // none, rain, cafe, nature
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
@@ -58,7 +47,7 @@ export function DailyFocus() {
     if (!task) return false; // Skip if task is undefined
     
     // Skip completed tasks
-    if (task.status === 'completed') return false;
+    if (task.status === 'Completed') return false;
 
     // If no due date, include in today's tasks only
     if (!task.dueDate) return !showUpcoming;
@@ -95,7 +84,24 @@ export function DailyFocus() {
 
   // Timer logic
   useEffect(() => {
-    let interval = null;
+    const handleTimerComplete = () => {
+      if (playSound) {
+        const audio = new Audio('/notification.mp3');
+        audio.play();
+      }
+
+      if (!isBreak) {
+        setPomodoroCount(prev => prev + 1);
+        setIsBreak(true);
+        setTimeLeft((pomodoroCount + 1) % 4 === 0 ? LONG_BREAK_MINUTES * 60 : BREAK_MINUTES * 60);
+      } else {
+        setIsBreak(false);
+        setTimeLeft(WORK_MINUTES * 60);
+      }
+      setIsActive(false);
+    };
+
+    let interval: NodeJS.Timeout | null = null;
     if (isActive && timeLeft > 0) {
       interval = setInterval(() => {
         setTimeLeft(timeLeft - 1);
@@ -103,28 +109,12 @@ export function DailyFocus() {
     } else if (timeLeft === 0) {
       handleTimerComplete();
     }
-    return () => clearInterval(interval);
-  }, [isActive, timeLeft]);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isActive, timeLeft, isBreak, playSound, pomodoroCount]);
 
-  const handleTimerComplete = () => {
-    if (playSound) {
-      // Play notification sound
-      const audio = new Audio('/notification.mp3');
-      audio.play();
-    }
-
-    if (!isBreak) {
-      setPomodoroCount(prev => prev + 1);
-      setIsBreak(true);
-      setTimeLeft((pomodoroCount + 1) % 4 === 0 ? LONG_BREAK_MINUTES * 60 : BREAK_MINUTES * 60);
-    } else {
-      setIsBreak(false);
-      setTimeLeft(WORK_MINUTES * 60);
-    }
-    setIsActive(false);
-  };
-
-  const formatTime = (seconds) => {
+  const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
@@ -349,9 +339,9 @@ export function DailyFocus() {
                   <TaskCard
                     task={task}
                     viewMode={viewMode}
-                    showDate={true}
                     isSelected={selectedTask?.id === task.id}
                     className="hover:border-gray-300 dark:hover:border-gray-600"
+                    onEdit={() => setSelectedTask(task)}
                   />
                 </div>
               ))

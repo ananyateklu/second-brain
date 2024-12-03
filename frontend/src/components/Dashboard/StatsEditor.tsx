@@ -1,8 +1,9 @@
 import React from 'react';
 import * as Icons from 'lucide-react';
-import { useDashboard } from '../../contexts/DashboardContext';
+import { useDashboard } from '../../hooks/useDashboard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getIconBg } from '../../utils/dashboardUtils';
+import { DashboardStat } from '../../types/dashboard';
 
 const cardVariants = {
   hidden: {
@@ -40,7 +41,7 @@ const cardVariants = {
 export function StatsEditor({ isOpen }: { isOpen: boolean }) {
   const { availableStats, toggleStat, getStatValue } = useDashboard();
 
-  const unusedStats = availableStats.filter(stat => !stat.enabled);
+  const unusedStats = availableStats.filter((stat: DashboardStat) => !stat.enabled);
 
   if (!isOpen) return null;
 
@@ -61,7 +62,7 @@ export function StatsEditor({ isOpen }: { isOpen: boolean }) {
       {unusedStats.length > 0 ? (
         <div className="p-3 grid grid-cols-8 gap-2">
           <AnimatePresence mode="popLayout">
-            {unusedStats.map((stat) => {
+            {unusedStats.map((stat: DashboardStat) => {
               const IconComponent = Icons[stat.icon as keyof typeof Icons] as React.ComponentType<{ className?: string }>;
               const statValue = getStatValue(stat.id);
 

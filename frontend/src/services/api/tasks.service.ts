@@ -5,7 +5,7 @@ import { mapPriorityToNumber } from '../../utils/priorityMapping';
 export interface TaskLinkData {
   taskId: string;
   linkedItemId: string;
-  linkType: 'note' | 'idea';
+  itemType: 'note' | 'idea';
   description?: string;
 }
 

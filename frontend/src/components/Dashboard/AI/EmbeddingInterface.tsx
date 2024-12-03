@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
-import { Send, Loader, Hash } from 'lucide-react';
+import { Loader, Hash } from 'lucide-react';
 import { useAI } from '../../../contexts/AIContext';
 import { AIModel } from '../../../types/ai';
 
 interface EmbeddingInterfaceProps {
   model: AIModel;
-  onMessageSend: (message: { role: 'user' | 'assistant'; content: string; type: 'text' | 'image' | 'audio' }) => void;
+  onMessageSend: (message: { 
+    role: 'user' | 'assistant'; 
+    content: string; 
+    type: 'text' | 'image' | 'audio' | 'embedding' 
+  }) => void;
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -47,8 +51,9 @@ export function EmbeddingInterface({
         content: JSON.stringify(response.content, null, 2),
         type: 'embedding'
       });
-    } catch (error: any) {
-      setError(error.message || 'Failed to generate embeddings');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate embeddings';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

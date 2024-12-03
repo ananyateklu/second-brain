@@ -8,7 +8,7 @@ export interface Activity {
   itemId: string;
   itemTitle: string;
   description: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 export const activityService = {

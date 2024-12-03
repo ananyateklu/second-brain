@@ -1,4 +1,4 @@
-import { useTasks } from '../../../contexts/TasksContext';
+import { useTasks } from '../../../contexts/tasksContextUtils';
 import { TaskCard } from './TaskCard';
 import { Task } from '../../../api/types/task';
 import { LayoutGrid, List } from 'lucide-react';
@@ -17,7 +17,7 @@ export function TaskList({ searchQuery, filters }: TaskListProps) {
   const { tasks } = useTasks();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
 
-  const filteredTasks = tasks.filter((task): task is Task => {
+  const filteredTasks = tasks.filter((task: Task): task is Task => {
     // First check if task exists and has required properties
     if (!task || typeof task.title !== 'string' || typeof task.description !== 'string') {
       return false;
@@ -117,7 +117,7 @@ export function TaskList({ searchQuery, filters }: TaskListProps) {
         ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'
         : 'space-y-2'
       }>
-        {filteredTasks.map(task => (
+        {filteredTasks.map((task: Task) => (
           <TaskCard 
             key={task.id} 
             task={task}

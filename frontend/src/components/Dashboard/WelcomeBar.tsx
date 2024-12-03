@@ -4,7 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { Plus, Search, Clock, Hash, Files, CheckSquare, Settings, X, FileText, Lightbulb, Share2, Activity, FolderPlus, Tags, AlignLeft, FolderIcon, TagIcon, LayoutGrid, Layout, Columns } from 'lucide-react';
 import { NewNoteModal } from './Notes/NewNoteModal';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
-import { useDashboard } from '../../contexts/DashboardContext';
+import { useDashboard } from '../../hooks/useDashboard';
 import { StatsEditor } from './StatsEditor';
 import { DashboardStat } from '../../types/dashboard';
 import { getIconBg, getIconColor } from '../../utils/dashboardUtils';
@@ -108,7 +108,7 @@ export function WelcomeBar() {
                 className="grid grid-cols-8 gap-2"
               >
                 <AnimatePresence mode="popLayout">
-                  {enabledStats.map((stat) => {
+                  {enabledStats.map((stat: DashboardStat) => {
                     // Get the icon component from the IconMap
                     const StatIcon = IconMap[stat.icon as keyof typeof IconMap];
                     // Get the stat value here

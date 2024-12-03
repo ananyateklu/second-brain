@@ -1,5 +1,6 @@
 import { Link2, Plus, Type, Lightbulb, CheckSquare, X, Calendar } from 'lucide-react';
-import { Note, useNotes } from '../../../../contexts/NotesContext';
+import type { Note } from '../../../../types/note';
+import { useNotes } from '../../../../contexts/notesContextUtils';
 
 interface LinkedNotesPanelProps {
   linkedNotes: Note[];

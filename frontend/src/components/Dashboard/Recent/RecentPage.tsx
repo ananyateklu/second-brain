@@ -2,15 +2,15 @@ import { useState } from 'react';
 import { History, Search, SlidersHorizontal } from 'lucide-react';
 import { ActivityFeed } from './ActivityFeed';
 import { ActivityFilters } from './ActivityFilters';
-import { useActivities } from '../../../contexts/ActivityContext';
+import { useActivities } from '../../../contexts/activityContextUtils';
 import { Input } from '../../shared/Input';
 import { EditNoteModal } from '../Notes/EditNoteModal';
 import { EditTaskModal } from '../Tasks/EditTaskModal';
 import { EditReminderModal } from '../Reminders/EditReminderModal';
 import { EditIdeaModal } from '../Ideas/EditIdeaModal';
-import { useNotes } from '../../../contexts/NotesContext';
-import { useTasks } from '../../../contexts/TasksContext';
-import { useReminders } from '../../../contexts/RemindersContext';
+import { useNotes } from '../../../contexts/notesContextUtils';
+import { useTasks } from '../../../contexts/tasksContextUtils';
+import { useReminders } from '../../../contexts/remindersContextUtils';
 import { Activity } from '../../../api/services/activityService';
 
 export function RecentPage() {

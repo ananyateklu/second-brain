@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Clock, Tag as TagIcon, Star, Pin, FileText, Archive, Link2, CheckSquare } from 'lucide-react';
-import { useNotes } from '../../contexts/NotesContext';
+import { useNotes } from '../../contexts/notesContextUtils';
 import { WarningModal } from '../shared/WarningModal';
 import { formatDate } from '../../utils/dateUtils';
 import { Note } from '../../types/note';

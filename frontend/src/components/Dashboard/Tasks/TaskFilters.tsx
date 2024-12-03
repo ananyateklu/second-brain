@@ -1,4 +1,4 @@
-import { CheckSquare, AlertCircle, Calendar } from 'lucide-react';
+import { AlertCircle, Calendar } from 'lucide-react';
 
 interface TaskFiltersProps {
   filters: {

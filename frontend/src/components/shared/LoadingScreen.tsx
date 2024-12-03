@@ -1,4 +1,3 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import { Logo } from './Logo';
 import { Moon, Sun } from 'lucide-react';
@@ -51,9 +50,9 @@ export function LoadingScreen({ message = 'Loading...' }: LoadingScreenProps) {
               repeatType: "reverse",
               ease: "easeInOut"
             }}
-            className="mb-4"
+            className="flex justify-center items-center"
           >
-            <Logo className="w-16 h-16 text-primary-600 dark:text-primary-400 transition-colors duration-200" />
+            <Logo className="w-auto h-12" />
           </motion.div>
 
           {/* Loading Message */}

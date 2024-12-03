@@ -1,4 +1,4 @@
-import { X, MoreVertical, Trash2 } from 'lucide-react';
+import { X, Trash2 } from 'lucide-react';
 import { Task } from '../../../../api/types/task';
 
 interface HeaderProps {

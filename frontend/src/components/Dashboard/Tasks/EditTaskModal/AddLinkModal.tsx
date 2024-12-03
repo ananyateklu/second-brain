@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Search, X, Lightbulb, Type } from 'lucide-react';
-import { useNotes } from '../../../../contexts/NotesContext';
-import { useTasks } from '../../../../contexts/TasksContext';
+import { useNotes } from '../../../../contexts/notesContextUtils';
+import { useTasks } from '../../../../contexts/tasksContextUtils';
 
 interface AddLinkModalProps {
   isOpen: boolean;
@@ -38,7 +38,7 @@ export function AddLinkModal({ isOpen, onClose, currentTaskId }: AddLinkModalPro
       await addTaskLink({
         taskId: currentTaskId,
         linkedItemId,
-        linkType: notes.find(n => n.id === linkedItemId)?.isIdea ? 'idea' : 'note'
+        itemType: notes.find(n => n.id === linkedItemId)?.isIdea ? 'idea' : 'note'
       });
       onClose();
     } catch (error) {

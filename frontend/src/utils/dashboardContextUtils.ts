@@ -1,4 +1,31 @@
+import { createContext } from 'react';
+import { DashboardStat } from '../types/dashboard';
 import { Note } from '../types/note';
+
+export interface StatValue {
+  value: number | string;
+  change?: number;
+  timeframe?: string;
+  metadata?: {
+    breakdown?: {
+      created: number;
+      edited: number;
+      deleted: number;
+    }
+  };
+}
+
+export interface DashboardContextType {
+  availableStats: DashboardStat[];
+  enabledStats: DashboardStat[];
+  toggleStat: (statId: string) => void;
+  reorderStats: (startIndex: number, endIndex: number, newOrder?: DashboardStat[]) => void;
+  getStatValue: (statId: string) => StatValue;
+  updateStatSize: (statId: string, size: 'small' | 'medium' | 'large') => void;
+  isLoading: boolean;
+}
+
+export const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
 
 export const calculateWeeklyChange = (notes: Note[], type: 'created' | 'updated') => {
   const now = new Date();
@@ -24,6 +51,12 @@ export const getNewNotesCount = (notes: Note[]) => {
   return notes.filter(note => new Date(note.createdAt) > weekAgo).length;
 };
 
+export const getLastUpdateTime = (notes: Note[]) => {
+  if (notes.length === 0) return 'No notes yet';
+  const lastUpdate = Math.max(...notes.map(note => new Date(note.updatedAt).getTime()));
+  return formatTimeAgo(new Date(lastUpdate));
+};
+
 export const formatTimeAgo = (date: Date) => {
   const now = new Date();
   const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
@@ -41,13 +74,34 @@ export const formatTimeAgo = (date: Date) => {
   });
 };
 
-export const getLastUpdateTime = (notes: Note[]) => {
-  if (notes.length === 0) return 'No notes yet';
-  const lastUpdate = Math.max(...notes.map(note => new Date(note.updatedAt).getTime()));
-  return formatTimeAgo(new Date(lastUpdate));
+export const isDashboardStat = (obj: unknown): obj is DashboardStat => {
+  const validTypes = [
+    'notes', 'new-notes', 'categories', 'word-count', 
+    'tasks', 'tags', 'time', 'ideas', 'activity', 
+    'search', 'collaboration'
+  ] as const;
+  
+  type ValidType = typeof validTypes[number];
+  
+  if (typeof obj !== 'object' || obj === null) return false;
+  
+  const stat = obj as Record<string, unknown>;
+  const type = stat.type;
+  
+  return (
+    typeof stat.id === 'string' &&
+    typeof type === 'string' &&
+    validTypes.includes(type as ValidType) &&
+    typeof stat.title === 'string' &&
+    typeof stat.icon === 'string' &&
+    typeof stat.enabled === 'boolean' &&
+    typeof stat.order === 'number' &&
+    typeof stat.size === 'string' &&
+    ['small', 'medium', 'large'].includes(stat.size)
+  );
 };
 
-export const DEFAULT_STATS = [
+export const DEFAULT_STATS: DashboardStat[] = [
   {
     id: 'total-notes',
     type: 'notes',

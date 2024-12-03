@@ -1,5 +1,5 @@
 import { X, Link2, Calendar, Tag } from 'lucide-react';
-import { Note } from '../../../contexts/NotesContext';
+import type { Note } from '../../../types/note';
 import { LinkType } from './types';
 
 interface DetailPaneProps {

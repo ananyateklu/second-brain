@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Type, Tag as TagIcon, Calendar, Loader } from 'lucide-react';
 import { Input } from '../../shared/Input';
-import { useReminders } from '../../../contexts/RemindersContext';
+import { useReminders } from '../../../contexts/remindersContextUtils';
 import { SuggestionButton } from '../../shared/SuggestionButton';
 
 interface NewReminderModalProps {

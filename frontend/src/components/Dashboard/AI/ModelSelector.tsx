@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Bot, MessageSquare, Image, Mic, Settings2, Sparkles, Zap, 
-  ChevronDown, Gauge, Cpu, Clock, Info, ArrowDown, ArrowUp, Calendar } from 'lucide-react';
+  ChevronDown, Gauge, Cpu, Clock, ArrowDown, ArrowUp } from 'lucide-react';
 import { AIModel } from '../../../types/ai';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -67,19 +67,10 @@ export function ModelSelector({
     }, {} as Record<string, AIModel[]>);
   }, [filteredModels]);
 
-  const handleChangeModel = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent event bubbling
-    onModelSelect(null); // Clear the selection
-  };
 
   const toggleDetails = () => {
     setShowDetails(!showDetails);
     onDetailsToggle(!showDetails);
-  };
-
-  // New function to toggle model selector visibility
-  const toggleModelSelector = () => {
-    setShowModelSelector(!showModelSelector);
   };
 
   const getModelIcon = () => {

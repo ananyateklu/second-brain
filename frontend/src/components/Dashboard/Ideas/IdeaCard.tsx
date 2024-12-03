@@ -1,7 +1,7 @@
 import { Star, Link2, Tag, Lightbulb, Archive, Pin, CheckSquare, Clock } from 'lucide-react';
-import { Note } from '../../../contexts/NotesContext';
+import type { Note } from '../../../types/note';
 import { formatDate } from '../../../utils/dateUtils';
-import { useNotes } from '../../../contexts/NotesContext';
+import { useNotes } from '../../../contexts/notesContextUtils';
 import { useState } from 'react';
 import { WarningModal } from '../../shared/WarningModal';
 
@@ -119,7 +119,7 @@ export function IdeaCard({ idea, viewMode = 'grid', isSelected, isArchiveView }:
 
           {idea.tags.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-2">
-              {idea.tags.map(tag => (
+              {idea.tags.map((tag: string) => (
                 <span
                   key={tag}
                   className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#64ab6f]/10 text-[#64ab6f] rounded-full text-xs border border-[#64ab6f]/20"

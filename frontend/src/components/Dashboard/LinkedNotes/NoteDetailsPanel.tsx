@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { X, Link2, Tag, Plus, Type, Lightbulb, CheckSquare, Clock } from 'lucide-react';
-import { useNotes } from '../../../contexts/NotesContext';
+import { useNotes } from '../../../contexts/notesContextUtils';
 import { formatDistanceToNow } from 'date-fns';
 import { AddLinkModal } from './AddLinkModal';
 import { Note, LinkedTask } from '../../../types/note';

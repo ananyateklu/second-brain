@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { X, Search, Link2, Lightbulb, FileText } from 'lucide-react';
-import { useNotes } from '../../../contexts/NotesContext';
+import { useState } from 'react';
+import { X, Search, Lightbulb, FileText } from 'lucide-react';
+import { useNotes } from '../../../contexts/notesContextUtils';
 
 interface AddLinkModalProps {
   isOpen: boolean;
@@ -19,8 +19,6 @@ export function AddLinkModal({ isOpen, onClose, sourceNoteId, onLinkAdded }: Add
 
   const sourceNote = notes.find(note => note.id === sourceNoteId);
   if (!sourceNote) return null;
-
-  const isSourceIdea = sourceNote.isIdea;
 
   const filteredItems = notes.filter(note => 
     note.id !== sourceNoteId && // Don't show the source note

@@ -1,13 +1,13 @@
 import { useState, useMemo } from 'react';
 import { Tag, ChevronRight, Hash, FileText, Lightbulb, CheckSquare, Search, SlidersHorizontal, Grid, List, Bell } from 'lucide-react';
-import { useNotes } from '../../../contexts/NotesContext';
-import { useTasks } from '../../../contexts/TasksContext';
-import { useReminders } from '../../../contexts/RemindersContext';
+import { useNotes } from '../../../contexts/notesContextUtils';
+import { useTasks } from '../../../contexts/tasksContextUtils';
+import { useReminders } from '../../../contexts/remindersContextUtils';
 import { EditTaskModal } from '../Tasks/EditTaskModal';
 import { EditReminderModal } from '../Reminders/EditReminderModal';
 import { EditNoteModal } from '../Notes/EditNoteModal';
 import { EditIdeaModal } from '../Ideas/EditIdeaModal';
-import { useModal } from '../../../contexts/ModalContext';
+import { useModal } from '../../../contexts/modalContextUtils';
 import { NoteCard } from '../NoteCard';
 import { TaskCard } from '../Tasks/TaskCard';
 import { ReminderCard } from '../Reminders/ReminderCard';

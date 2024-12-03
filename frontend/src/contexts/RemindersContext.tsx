@@ -1,40 +1,18 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { reminderService } from '../api/services/reminderService';
-import { useActivities } from './ActivityContext';
-import { Reminder as ApiReminder } from '../api/types/reminder';
-import { useTrash } from './TrashContext';
-
-export interface Reminder extends ApiReminder {
-  tags: string[];
-}
-
-interface RemindersContextType {
-  reminders: Reminder[];
-  addReminder: (reminderData: Omit<Reminder, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => Promise<void>;
-  updateReminder: (id: string, updates: Partial<Reminder>) => Promise<void>;
-  deleteReminder: (id: string) => Promise<void>;
-  snoozeReminder: (id: string, until: string) => Promise<void>;
-  toggleReminderCompletion: (id: string) => Promise<void>;
-  getDueReminders: () => Reminder[];
-  getUpcomingReminders: () => Reminder[];
-  restoreReminder: (reminder: Reminder) => Promise<void>;
-  fetchReminders: () => Promise<void>;
-  isLoading: boolean;
-}
-
-const RemindersContext = createContext<RemindersContextType | null>(null);
+import { useActivities } from './activityContextUtils';
+import { useTrash } from './trashContextUtils';
+import { Reminder, RemindersContext } from './remindersContextUtils';
 
 export function RemindersProvider({ children }: { children: React.ReactNode }) {
   const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { createActivity } = useActivities();
   const { moveToTrash } = useTrash();
 
-  useEffect(() => {
-    fetchReminders();
-  }, []);
-
   const fetchReminders = useCallback(async () => {
     try {
+      setIsLoading(true);
       const remindersData = await reminderService.getReminders();
       const remindersWithTags = remindersData.map(reminder => ({
         ...reminder,
@@ -43,8 +21,14 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
       setReminders(remindersWithTags);
     } catch (error) {
       console.error('Failed to fetch reminders:', error);
+    } finally {
+      setIsLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    fetchReminders();
+  }, [fetchReminders]);
 
   const addReminder = useCallback(async (reminderData: Omit<Reminder, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
     try {
@@ -186,7 +170,7 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
     try {
       await reminderService.updateReminder(reminder.id, {
         isDeleted: false,
-        deletedAt: null
+        deletedAt: undefined
       });
 
       await fetchReminders();
@@ -216,25 +200,10 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
       getDueReminders,
       getUpcomingReminders,
       restoreReminder,
-      fetchReminders
+      fetchReminders,
+      isLoading
     }}>
       {children}
     </RemindersContext.Provider>
   );
 }
-
-export function useReminders() {
-  const context = useContext(RemindersContext);
-  if (!context) {
-    throw new Error('useReminders must be used within a RemindersProvider');
-  }
-  return context;
-}
-
-const repeatIntervalMapping: { [key: string]: number } = {
-  Daily: 0,
-  Weekly: 1,
-  Monthly: 2,
-  Yearly: 3,
-  Custom: 4,
-};

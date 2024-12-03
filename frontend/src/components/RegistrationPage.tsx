@@ -90,7 +90,7 @@ export function RegistrationPage() {
       await register(formData.email, formData.password, formData.fullName);
       navigate('/dashboard');
     } catch (error) {
-      // Error is handled by the auth context
+      console.error('Registration error:', error);
     }
   };
 

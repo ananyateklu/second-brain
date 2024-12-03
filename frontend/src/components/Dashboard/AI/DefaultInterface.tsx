@@ -5,7 +5,11 @@ import { AIModel } from '../../../types/ai';
 
 interface DefaultInterfaceProps {
   model: AIModel;
-  onMessageSend: (message: { role: 'user' | 'assistant'; content: string; type: 'text' | 'image' | 'audio' }) => void;
+  onMessageSend: (message: { 
+    role: 'user' | 'assistant'; 
+    content: string; 
+    type: 'text' | 'image' | 'audio' | 'embedding' 
+  }) => void;
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -47,8 +51,9 @@ export function DefaultInterface({
         content: response.content,
         type: response.type
       });
-    } catch (error: any) {
-      setError(error.message || 'Failed to get response');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to get response';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

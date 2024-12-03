@@ -108,6 +108,7 @@ export class GrokService {
         name: 'Grok Beta',
         provider: 'grok',
         category: 'chat',
+        isReasoner: false,
         description: 'Grok Beta - Comparable performance to Grok 2 but with improved efficiency, speed and capabilities',
         isConfigured: this.isConfigured(),
         color: '#1DA1F2',

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useTrash, TrashedItem } from '../../../contexts/TrashContext';
+import { useState } from 'react';
+import { useTrash } from '../../../contexts/trashContextUtils';
 import { TrashItemCard } from './TrashItemCard';
 import { ConfirmationDialog } from './ConfirmationDialog';
 import { Trash2, RotateCcw } from 'lucide-react';

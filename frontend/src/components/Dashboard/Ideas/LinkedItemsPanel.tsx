@@ -1,6 +1,4 @@
-import React from 'react';
-import { Link2, Plus } from 'lucide-react';
-import { Note } from '../../../contexts/NotesContext';
+import { Link2, Plus, X } from 'lucide-react';
 
 interface LinkedItemsPanelProps {
   linkedItems: Array<{ id: string; type: string; title: string }>;
@@ -12,7 +10,6 @@ interface LinkedItemsPanelProps {
 export function LinkedItemsPanel({
   linkedItems,
   onShowAddLink,
-  currentIdeaId,
   onUnlink
 }: LinkedItemsPanelProps) {
   return (

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { X, Search, CheckSquare, AlertCircle, Calendar } from 'lucide-react';
-import { useTasks } from '../../../../contexts/TasksContext';
+import { useTasks } from '../../../../contexts/tasksContextUtils';
 
 interface AddTaskLinkModalProps {
     isOpen: boolean;
@@ -32,7 +32,7 @@ export function AddTaskLinkModal({ isOpen, onClose, noteId, onLinkAdded }: AddTa
             await addTaskLink({
                 taskId,
                 linkedItemId: noteId,
-                linkType: 'note'
+                itemType: 'note'
             });
             onLinkAdded();
             onClose();

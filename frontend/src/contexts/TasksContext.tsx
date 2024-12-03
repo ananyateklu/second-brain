@@ -1,26 +1,9 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { Task, UpdateTaskDto } from '../api/types/task';
+import React, { useState, useCallback, useEffect } from 'react';
+import { TasksContext } from './tasksContextUtils';
+import type { Task, UpdateTaskDto } from '../api/types/task';
 import { useAuth } from '../hooks/useAuth';
-import { useActivities } from './ActivityContext';
+import { useActivities } from './activityContextUtils';
 import { tasksService, TaskLinkData, CreateTaskData } from '../services/api/tasks.service';
-
-// Re-export the Task type
-export type { Task };
-
-interface TasksContextType {
-  tasks: Task[];
-  isLoading: boolean;
-  addTask: (taskData: CreateTaskData) => Promise<void>;
-  updateTask: (id: string, updates: UpdateTaskDto) => Promise<void>;
-  deleteTask: (id: string) => Promise<void>;
-  addTaskLink: (data: TaskLinkData) => Promise<void>;
-  removeTaskLink: (taskId: string, linkedItemId: string) => Promise<void>;
-  toggleTaskStatus: (id: string) => Promise<void>;
-  fetchDeletedTasks: () => Promise<Task[]>;
-  restoreTask: (id: string) => Promise<void>;
-}
-
-const TasksContext = createContext<TasksContextType | null>(null);
 
 export function TasksProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -179,11 +162,3 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     </TasksContext.Provider>
   );
 }
-
-export const useTasks = () => {
-  const context = useContext(TasksContext);
-  if (!context) {
-    throw new Error('useTasks must be used within a TasksProvider');
-  }
-  return context;
-};

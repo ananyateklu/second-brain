@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { X, Search, Link2, Lightbulb, FileText, CheckSquare } from 'lucide-react';
-import { useNotes } from '../../../contexts/NotesContext';
-import { useTasks } from '../../../contexts/TasksContext';
+import { useState } from 'react';
+import { X, Search, Lightbulb, FileText } from 'lucide-react';
+import { useNotes } from '../../../contexts/notesContextUtils';
+import { useTasks } from '../../../contexts/tasksContextUtils';
 
 interface AddLinkModalProps {
   isOpen: boolean;
@@ -24,9 +24,9 @@ export function AddLinkModal({ isOpen, onClose, taskId, onLinkAdded }: AddLinkMo
 
   const filteredItems = notes.filter(item => {
     const isIdea = item.tags.includes('idea');
-    const isAlreadyLinked = isIdea
-      ? task.linkedIdeas.includes(item.id)
-      : task.linkedNotes.includes(item.id);
+    const isAlreadyLinked = task.linkedItems.some(item => 
+      item.id === item.id && item.type === (isIdea ? 'idea' : 'note')
+    );
 
     return !isAlreadyLinked && // Don't show already linked items
       (selectedType === 'all' ||
@@ -40,7 +40,11 @@ export function AddLinkModal({ isOpen, onClose, taskId, onLinkAdded }: AddLinkMo
     setIsLoading(true);
     try {
       const isIdea = notes.find(n => n.id === itemId)?.tags.includes('idea');
-      await addTaskLink(taskId, itemId, isIdea ? 'idea' : 'note');
+      await addTaskLink({
+        taskId,
+        linkedItemId: itemId,
+        itemType: isIdea ? 'idea' : 'note'
+      });
       onLinkAdded?.();
       onClose();
     } catch (error) {

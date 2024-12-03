@@ -1,4 +1,4 @@
-import { Reminder } from '../../../contexts/RemindersContext';
+import { Reminder } from '../../../contexts/remindersContextUtils';
 import { ReminderCard } from './ReminderCard';
 
 interface ReminderListProps {

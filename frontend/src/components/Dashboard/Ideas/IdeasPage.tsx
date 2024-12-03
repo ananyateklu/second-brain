@@ -1,13 +1,13 @@
 import { useState, useMemo } from 'react';
-import { Lightbulb, Plus, Search, SlidersHorizontal, Grid, List, Network } from 'lucide-react';
-import { Note, useNotes } from '../../../contexts/NotesContext';
+import { Lightbulb, Plus, Search, Grid, List, Network } from 'lucide-react';
+import { useNotes } from '../../../contexts/notesContextUtils';
 import { IdeasList } from './IdeasList';
 import { IdeasGrid } from './IdeasGrid';
 import { IdeasMindMap } from './IdeasMindMap';
 import { NewIdeaModal } from './NewIdeaModal';
 import { FilterDropdown } from '../Notes/FilterDropdown'; // Reuse the Notes filter component
 import { Input } from '../../shared/Input';
-import { useModal } from '../../../contexts/ModalContext';
+import { useModal } from '../../../contexts/modalContextUtils';
 
 type ViewMode = 'list' | 'grid' | 'mindmap';
 
@@ -19,6 +19,8 @@ interface Filters {
   showFavorites: boolean;
   tags: string[];
 }
+
+type FilterValue = string | string[] | boolean | 'createdAt' | 'updatedAt' | 'title' | 'asc' | 'desc';
 
 const defaultFilters: Filters = {
   search: '',
@@ -34,7 +36,7 @@ export function IdeasPage() {
   const { setSelectedIdea } = useModal();
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [filters, setFilters] = useState<Filters>(defaultFilters);
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters] = useState(false);
   const [showNewIdeaModal, setShowNewIdeaModal] = useState(false);
 
   // Get all ideas and their tags
@@ -75,7 +77,7 @@ export function IdeasPage() {
       });
   }, [allIdeas, filters]);
 
-  const handleFilterChange = (key: keyof Filters, value: any) => {
+  const handleFilterChange = (key: keyof Filters, value: FilterValue) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
 

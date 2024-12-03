@@ -1,4 +1,3 @@
-import React from 'react';
 import { useAuth } from '../../../hooks/useAuth';
 import {
     User,
@@ -13,40 +12,19 @@ import {
     Clock,
     Shield
 } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { ExperienceBar } from './ExperienceBar';
 
 export function PersonalPage() {
     const { user } = useAuth();
 
+    const joinDate = user?.createdAt 
+        ? new Date(user.createdAt).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        })
+        : 'N/A';
 
-    // Animation variants
-    const containerVariants = {
-        hidden: { opacity: 0 },
-        visible: {
-            opacity: 1,
-            transition: {
-                staggerChildren: 0.1
-            }
-        }
-    };
-
-    const itemVariants = {
-        hidden: { y: 20, opacity: 0 },
-        visible: {
-            y: 0,
-            opacity: 1
-        }
-    };
-
-    // Calculate join date
-    const joinDate = new Date(user.createdAt).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
-
-    // Add level thresholds constant
     const LevelThresholds = [
         0,      // Level 1: 0-99
         100,    // Level 2: 100-249
@@ -59,6 +37,10 @@ export function PersonalPage() {
         2200,   // Level 9: 2200-2699
         2700    // Level 10: 2700+
     ];
+
+    if (!user) {
+        return <div>Loading...</div>;
+    }
 
     return (
         <div className="space-y-6">

@@ -1,5 +1,6 @@
-import React, { useRef, useMemo } from 'react';
+import React, { useRef } from 'react';
 import CytoscapeComponent from 'react-cytoscapejs';
+import cytoscape from 'cytoscape';
 import { useTheme } from '../../../contexts/ThemeContext';
 import type { Stylesheet } from 'cytoscape';
 import { Note } from '../../../types/note';
@@ -11,7 +12,7 @@ interface NotesGraphProps {
 
 export function NotesGraph({ notes, onNoteClick }: NotesGraphProps) {
   const { theme } = useTheme();
-  const cyRef = useRef<Cytoscape.Core | null>(null);
+  const cyRef = useRef<cytoscape.Core | null>(null);
 
   const elements = React.useMemo(() => {
     // Only show notes that have connections
@@ -54,7 +55,7 @@ export function NotesGraph({ notes, onNoteClick }: NotesGraphProps) {
     padding: 50,
     spacingFactor: 0.85,
     minNodeSpacing: 50,
-    concentric: (node: any) => node.connectedEdges().length,
+    concentric: (node: cytoscape.NodeSingular) => node.connectedEdges().length,
     levelWidth: () => 2.5,
     animate: false,
     animationDuration: 500,
@@ -83,7 +84,7 @@ export function NotesGraph({ notes, onNoteClick }: NotesGraphProps) {
         'text-outline-width': 1.5,
         'min-zoomed-font-size': 8,
         'transition-property': 'border-color, border-width',
-        'transition-duration': '0.2s'
+        'transition-duration': 200
       }
     },
     {

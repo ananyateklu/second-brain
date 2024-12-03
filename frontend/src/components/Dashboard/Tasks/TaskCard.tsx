@@ -1,14 +1,16 @@
 import { Square, CheckSquare, Calendar, Tag } from 'lucide-react';
 import { Task } from '../../../api/types/task';
-import { useTasks } from '../../../contexts/TasksContext';
+import { useTasks } from '../../../contexts/tasksContextUtils';
 
 interface TaskCardProps {
   task: Task;
   onEdit?: () => void;
   viewMode?: 'grid' | 'list';
+  isSelected?: boolean;
+  className?: string;
 }
 
-export function TaskCard({ task, onEdit, viewMode = 'list' }: TaskCardProps) {
+export function TaskCard({ task, onEdit, viewMode = 'list', isSelected, className }: TaskCardProps) {
   const { updateTask } = useTasks();
 
   const handleStatusToggle = async (e: React.MouseEvent) => {
@@ -44,6 +46,8 @@ export function TaskCard({ task, onEdit, viewMode = 'list' }: TaskCardProps) {
         transition-all duration-200
         cursor-pointer
         ${task.status.toLowerCase() === 'completed' ? 'opacity-75' : ''}
+        ${isSelected ? 'border-primary-500 dark:border-primary-500' : ''}
+        ${className}
       `}
     >
       {task.priority && (

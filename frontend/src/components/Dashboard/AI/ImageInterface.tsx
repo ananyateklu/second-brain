@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Send, Loader, Image, Wand2 } from 'lucide-react';
+import { Loader, Image, Wand2 } from 'lucide-react';
 import { useAI } from '../../../contexts/AIContext';
 import { AIModel } from '../../../types/ai';
 import { Message } from '../../../types/message';
@@ -94,13 +94,17 @@ export function ImageInterface({
         progress: 100,
         metadata: response.metadata
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 
+        typeof error === 'object' && error && 'message' in error ? error.message : 
+        'Failed to generate image';
+        
       updateMessage(assistantMessageId, {
         content: 'Failed to generate image',
         type: 'text',
         isLoading: false,
       });
-      setError(error.message || 'Failed to generate image');
+      setError(errorMessage as string);
     } finally {
       clearInterval(progressInterval);
       setIsLoading(false);

@@ -1,18 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { ActivityContext } from './activityContextUtils';
 import { Activity, activityService } from '../api/services/activityService';
 import { useAuth } from '../hooks/useAuth';
 
-interface ActivityContextType {
-  activities: Activity[];
-  isLoading: boolean;
-  error: string | null;
-  fetchActivities: () => Promise<void>;
-  createActivity: (activityData: Omit<Activity, 'id' | 'timestamp'>) => Promise<void>;
-}
-
-const ActivityContext = createContext<ActivityContextType | undefined>(undefined);
-
-export const ActivityProvider = ({ children }: { children: React.ReactNode }) => {
+export function ActivityProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -66,12 +57,4 @@ export const ActivityProvider = ({ children }: { children: React.ReactNode }) =>
       {children}
     </ActivityContext.Provider>
   );
-};
-
-export const useActivities = (): ActivityContextType => {
-  const context = useContext(ActivityContext);
-  if (!context) {
-    throw new Error('useActivities must be used within an ActivityProvider');
-  }
-  return context;
-};
+}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Type, Tag as TagIcon, Loader, Save, Trash2, Calendar } from 'lucide-react';
 import { Input } from '../../shared/Input';
-import { Reminder, useReminders } from '../../../contexts/RemindersContext';
+import { Reminder, useReminders } from '../../../contexts/remindersContextUtils';
 
 type RepeatIntervalType = 'Daily' | 'Weekly' | 'Monthly' | 'Yearly' | 'Custom' | undefined;
 type LowerRepeatIntervalType = 'daily' | 'weekly' | 'monthly' | 'yearly' | '';
