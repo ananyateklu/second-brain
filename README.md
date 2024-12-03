@@ -1,6 +1,69 @@
-# Second Brain - AI-Powered Knowledge Management System
+# Second Brain - Your AI-Powered Digital Intelligence Hub
 
-An AI-powered system to organize notes, ideas, tasks, and reminders with intelligent suggestions. Built with React, TypeScript, Tailwind CSS, and .NET 8.0.
+Second Brain is a personal knowledge management system designed to help you organize and connect your thoughts, ideas, and knowledge. It combines AI-powered tools with structured organization to help you:
+
+- **Capture Knowledge**: Take notes, save ideas, and record thoughts with AI assistance for better organization
+- **Make Connections**: Discover relationships between your notes and ideas through interactive mind mapping
+- **Stay Organized**: Manage tasks and reminders with intelligent scheduling and priority management
+- **Learn & Grow**: Track your progress with gamification elements as you build your knowledge base
+
+## What Makes Second Brain Different?
+
+- **Seamless AI Integration**
+  - Use multiple AI models (OpenAI, Claude, Gemini, Grok, or local models) for different needs
+  - Get smart suggestions for content organization and improvement
+  - Convert voice to text and text to speech
+  - Generate and edit images to enhance your notes
+  - Query your data using natural language
+
+- **Smart Organization**:
+  - Connect related notes automatically through AI-powered suggestions
+  - Visualize your knowledge with interactive graph views
+  - Tag and categorize content intelligently
+  - Create bi-directional links between notes, tasks, and ideas
+
+- **Productivity Tools**:
+  - Focus Mode for distraction-free work sessions
+  - Priority-based task management
+  - Smart reminders with natural language scheduling
+  - Archive system for long-term knowledge storage
+
+- **Personal Growth**:
+  - Earn XP and level up as you organize and connect ideas
+  - Track your progress with achievements
+  - Monitor your knowledge management habits
+  - Customize your experience with themes and avatars
+
+## Core Features
+
+- **Knowledge Management**
+  - Rich text editing with Markdown support
+  - Automated content organization
+  - Visual relationship mapping
+  - Version history and soft deletion
+  - Comprehensive archiving system
+
+- **Task & Reminder System**
+  - Priority-based organization
+  - Smart scheduling suggestions
+  - Task linking and dependencies
+  - Progress tracking
+  - Context-aware notifications
+
+- **AI Capabilities**
+  - Multi-model AI support
+  - Natural language queries
+  - Content enhancement
+  - Image generation
+  - Voice transcription
+  - Context-aware responses using RAG
+
+- **Privacy & Security**
+  - Optional local AI model support
+  - Secure authentication
+  - Data encryption
+  - Regular backup options
+  - Privacy controls
 
 ## Table of Contents
 
