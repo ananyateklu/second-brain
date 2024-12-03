@@ -1,4 +1,12 @@
-# Second Brain - AI-Powered Personal Knowledge Management System
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="frontend/src/assets/second-brain-logo-dark-mode.png">
+    <source media="(prefers-color-scheme: light)" srcset="frontend/src/assets/second-brain-logo-light-mode.png">
+    <img alt="Second Brain Logo" src="frontend/src/assets/second-brain-logo-light-mode.png" width="400">
+  </picture>
+</p>
+
+# AI-Powered Personal Knowledge Management System
 
 Second Brain is a modern note-taking and knowledge management system that helps you organize your thoughts with AI assistance. Built for those who want to:
 
