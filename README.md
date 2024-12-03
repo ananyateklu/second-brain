@@ -1,20 +1,29 @@
-# Second Brain - Your AI-Powered Digital Intelligence Hub
+# Second Brain - AI-Powered Personal Knowledge Management System
 
-Second Brain is a personal knowledge management system designed to help you organize and connect your thoughts, ideas, and knowledge. It combines AI-powered tools with structured organization to help you:
+Second Brain is a modern note-taking and knowledge management system that helps you organize your thoughts with AI assistance. Built for those who want to:
 
-- **Capture Knowledge**: Take notes, save ideas, and record thoughts with AI assistance for better organization
-- **Make Connections**: Discover relationships between your notes and ideas through interactive mind mapping
-- **Stay Organized**: Manage tasks and reminders with intelligent scheduling and priority management
-- **Learn & Grow**: Track your progress with gamification elements as you build your knowledge base
+- **Capture Ideas Efficiently**: Take smart notes with AI-powered organization and tagging
+- **Connect Information**: Discover hidden relationships in your knowledge through interactive visualizations
+- **Manage Code & Documentation**: Store and organize code snippets with syntax highlighting and documentation
+- **Enhance Productivity**: Manage tasks and reminders with intelligent scheduling
+- **Learn Continuously**: Build and explore your personal knowledge base while tracking your progress
 
 ## Key Features
 
 - **Knowledge Management**
   - Rich text editing with Markdown support
   - Interactive mind mapping and visual relationship graphs
+  - Code block support with syntax highlighting for 15+ languages
   - Automated content organization with AI suggestions
   - Bi-directional linking between notes, tasks, and ideas
   - Version history and comprehensive archiving
+
+- **Code & Documentation**
+  - Syntax highlighting for multiple programming languages
+  - Code snippet organization and tagging
+  - AI-powered code explanations and suggestions
+  - Markdown support for technical documentation
+  - Easy code sharing and export
 
 - **AI Integration**
   - Multiple AI model support (OpenAI, Claude, Gemini, Grok, local models)
@@ -280,6 +289,8 @@ The application provides RESTful API endpoints for various resources. Below is a
 
 ## Roadmap
 
+Current Focus:
+
 - User authentication system
 - Gamification features
 - Profile page with leveling
@@ -287,10 +298,19 @@ The application provides RESTful API endpoints for various resources. Below is a
 - Focus mode
 - AI integrations
 - Local AI model support
-- **RAG (Retrieval Augmented Generation) implementation**
-- **Agent implementation**
+- RAG (Retrieval Augmented Generation) implementation
+- Agent implementation
 
-*Planned:*
+Upcoming Features:
+
+- Calendar & Email Integration
+- Calendar sync with Google Calendar/Outlook
+- Email-based task creation and reminders
+- Automated meeting notes and summaries
+- Smart email digests of your knowledge base
+- Calendar-based task scheduling
+
+Future Plans:
 
 - Real-time collaboration
 - Mobile applications
