@@ -1,4 +1,6 @@
 import { Activity } from '../../../contexts/ActivityContext';
+import { FileText, Lightbulb, CheckSquare, Bell, File } from 'lucide-react';
+import { ElementType } from 'react';
 
 export function formatTimeAgo(timestamp: string): string {
   const date = new Date(timestamp);
@@ -58,3 +60,18 @@ export function groupActivitiesByDate(activities: Activity[]): Record<string, Ac
 
   return groups;
 }
+
+export const getActivityIcon = (itemType: string): ElementType => {
+  switch (itemType.toLowerCase()) {
+    case 'note':
+      return FileText;
+    case 'idea':
+      return Lightbulb;
+    case 'task':
+      return CheckSquare;
+    case 'reminder':
+      return Bell;
+    default:
+      return File;
+  }
+};

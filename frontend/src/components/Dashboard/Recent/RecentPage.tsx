@@ -60,12 +60,12 @@ export function RecentPage() {
       <div className="space-y-8 relative">
         {/* Page Header with gradient overlay */}
         <div className="relative overflow-hidden rounded-xl bg-white/30 dark:bg-zinc-800/30 border border-zinc-200/30 dark:border-zinc-700/30 shadow-sm backdrop-blur-sm">
-          <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 dark:from-emerald-500/5 to-transparent" />
           <div className="relative p-6">
             <div className="flex flex-col sm:flex-row gap-6 justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-emerald-100/50 dark:bg-emerald-900/30 rounded-lg">
-                  <History className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                <div className="flex items-center justify-center w-10 h-10 bg-emerald-100/50 dark:bg-emerald-500/10 rounded-lg">
+                  <History className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">Recent Activity</h1>
@@ -88,7 +88,7 @@ export function RecentPage() {
               placeholder="Search activities..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-white/70 dark:bg-zinc-800/70 border-zinc-200/50 dark:border-zinc-700/50 text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400"
+              className="bg-white/20 dark:bg-zinc-800/40 border-zinc-200/30 dark:border-zinc-700/30 text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:ring-emerald-500/30 dark:focus:ring-emerald-500/20"
             />
           </div>
 
@@ -96,8 +96,8 @@ export function RecentPage() {
             onClick={() => setShowFilters(!showFilters)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg border border-zinc-200/30 dark:border-zinc-700/30 transition-all ${
               showFilters
-                ? 'bg-emerald-100/20 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400'
-                : 'bg-white/20 dark:bg-zinc-800/20 hover:bg-white/30 dark:hover:bg-zinc-800/30 text-zinc-900 dark:text-zinc-100'
+                ? 'bg-emerald-100/20 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200/30 dark:border-emerald-700/30'
+                : 'bg-white/20 dark:bg-zinc-800/40 hover:bg-white/30 dark:hover:bg-zinc-800/60 text-zinc-900 dark:text-zinc-100'
             }`}
           >
             <SlidersHorizontal className="w-5 h-5" />
@@ -107,7 +107,7 @@ export function RecentPage() {
 
         {/* Filters Panel */}
         {showFilters && (
-          <div className="bg-white/20 dark:bg-zinc-800/20 border border-zinc-200/30 dark:border-zinc-700/30 shadow-sm rounded-xl p-4 backdrop-blur-sm">
+          <div className="bg-white/20 dark:bg-zinc-800/40 border border-zinc-200/30 dark:border-zinc-700/30 shadow-sm rounded-xl p-4 backdrop-blur-sm">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
                 Filters
@@ -118,7 +118,7 @@ export function RecentPage() {
                   itemTypes: [],
                   dateRange: 'all'
                 })}
-                className="text-sm text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-50"
+                className="text-sm text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50 transition-colors"
               >
                 Clear all
               </button>
@@ -140,7 +140,7 @@ export function RecentPage() {
           onActivityClick={handleActivityClick}
         />
 
-        {/* Add Modals */}
+        {/* Modals */}
         {selectedNote && (
           <EditNoteModal
             isOpen={!!selectedNoteId}

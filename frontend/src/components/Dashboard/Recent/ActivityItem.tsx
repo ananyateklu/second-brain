@@ -1,132 +1,101 @@
-import React from 'react';
-import {
-  FileText,
-  Lightbulb,
-  CheckSquare,
-  Bell,
-  Pencil,
-  Plus,
-  Trash2,
-  Star,
-  Archive,
-  Pin,
-} from 'lucide-react';
 import { Activity } from '../../../api/services/activityService';
-import { formatTimeAgo } from './utils';
+import { getActivityIcon } from './utils';
 
 interface ActivityItemProps {
   activity: Activity;
   onClick: () => void;
 }
 
-const itemTypeIcons: Record<string, React.ElementType> = {
-  note: FileText,
-  task: CheckSquare,
-  idea: Lightbulb,
-  reminder: Bell,
-  // Add more item types if needed
-};
-
-const actionTypeIcons: Record<string, React.ElementType> = {
-  create: Plus,
-  edit: Pencil,
-  delete: Trash2,
-  archive: Archive,
-  unarchive: Archive,
-  favorite: Star,
-  unfavorite: Star,
-  pin: Pin,
-  unpin: Pin,
-  // Add more action types if needed
-};
-
-const itemTypeColors: Record<string, string> = {
-  note: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
-  task: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400',
-  idea: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
-  reminder: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400',
-  // Add more item types if needed
-};
+interface ActivityMetadata {
+  dueDate?: string;
+  tags?: string[];
+  additionalInfo?: Record<string, string | number | boolean>;
+}
 
 export function ActivityItem({ activity, onClick }: ActivityItemProps) {
-  const ItemTypeIcon = itemTypeIcons[activity.itemType] || FileText;
-  const ActionTypeIcon = actionTypeIcons[activity.actionType] || Pencil;
-  const itemTypeColorClass = itemTypeColors[activity.itemType] || 'bg-gray-100 text-gray-600';
+  const Icon = getActivityIcon(activity.itemType);
+  const metadata = activity.metadata as ActivityMetadata | undefined;
+
+  const getItemTypeColor = (type: string) => {
+    switch (type.toLowerCase()) {
+      case 'note':
+        return 'text-blue-500 dark:text-blue-400 bg-blue-100/50 dark:bg-blue-500/10';
+      case 'task':
+        return 'text-green-500 dark:text-green-400 bg-green-100/50 dark:bg-green-500/10';
+      case 'reminder':
+        return 'text-purple-500 dark:text-purple-400 bg-purple-100/50 dark:bg-purple-500/10';
+      case 'idea':
+        return 'text-yellow-500 dark:text-yellow-400 bg-yellow-100/50 dark:bg-yellow-500/10';
+      default:
+        return 'text-zinc-500 dark:text-zinc-400 bg-zinc-100/50 dark:bg-zinc-600/20';
+    }
+  };
+
+  const getActionTypeColor = (type: string) => {
+    switch (type.toLowerCase()) {
+      case 'create':
+        return 'text-emerald-500 dark:text-emerald-400';
+      case 'update':
+        return 'text-blue-500 dark:text-blue-400';
+      case 'delete':
+        return 'text-red-500 dark:text-red-400';
+      case 'complete':
+        return 'text-green-500 dark:text-green-400';
+      case 'edit':
+        return 'text-blue-500 dark:text-blue-400';
+      default:
+        return 'text-zinc-500 dark:text-zinc-400';
+    }
+  };
 
   return (
     <div
       onClick={onClick}
-      className={`
-        w-full text-left cursor-pointer
-        group backdrop-blur-sm bg-white/40 dark:bg-zinc-800/40 
-        border border-zinc-200/50 dark:border-zinc-700/50 
-        shadow-sm hover:shadow-md dark:shadow-zinc-900/10
-        rounded-lg p-4
-        hover:bg-white/50 dark:hover:bg-zinc-800/50
-        transition-all duration-200
-      `}
+      className="group relative flex gap-4 bg-white/20 dark:bg-zinc-800/40 hover:bg-white/30 dark:hover:bg-zinc-800/60 border border-zinc-200/30 dark:border-zinc-700/30 rounded-lg p-4 cursor-pointer transition-all items-start"
     >
-      <div className="flex items-start gap-4">
-        {/* Item Type Icon */}
-        <div className={`p-2 rounded-lg ${itemTypeColorClass}`}>
-          <ItemTypeIcon className="w-5 h-5" />
+      <div className={`shrink-0 flex items-center justify-center w-9 h-9 rounded-lg ${getItemTypeColor(activity.itemType)}`}>
+        <Icon className="w-[18px] h-[18px]" />
+      </div>
+
+      <div className="flex-1 min-w-0 pt-0.5">
+        <div className="flex items-center gap-2">
+          <h4 className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">
+            {activity.itemTitle}
+          </h4>
+          <span className={`text-xs font-medium ${getActionTypeColor(activity.actionType)}`}>
+            {activity.actionType}
+          </span>
         </div>
 
-        <div className="flex-1 min-w-0">
-          {/* Activity Header */}
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              {/* Replace Link with button styled as a link */}
-              <h4 className="text-base font-medium text-gray-900 dark:text-white flex items-center gap-1">
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation(); // Prevent double handling
-                    onClick();
-                  }}
-                  className="hover:underline"
-                >
-                  {activity.itemTitle}
-                </button>
-              </h4>
-              {/* Activity Description */}
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                <span className="flex items-center gap-1">
-                  {/* Action Icon */}
-                  <ActionTypeIcon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                  {activity.description}
-                </span>
-              </p>
-            </div>
-            <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
-              {formatTimeAgo(activity.timestamp)}
-            </span>
-          </div>
+        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+          {activity.description}
+        </p>
 
-          {/* Metadata */}
-          {activity.metadata && (
-            <div className="mt-3 text-sm text-gray-700 dark:text-gray-300">
-              {/* Display due date for tasks */}
-              {activity.metadata.dueDate && (
-                <div>
-                  Due Date:{' '}
-                  {new Date(activity.metadata.dueDate).toLocaleDateString()}
-                </div>
-              )}
-              {/* Display tags */}
-              {activity.metadata.tags && activity.metadata.tags.length > 0 && (
-                <div className="mt-1 flex flex-wrap gap-1">
-                  {activity.metadata.tags.map((tag: string) => (
-                    <span
-                      key={tag}
-                      className="px-2 py-0.5 bg-gray-200 dark:bg-gray-700 text-xs rounded-full"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+        {metadata && (
+          <div className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
+            {metadata.dueDate && (
+              <div>
+                Due Date:{' '}
+                {new Date(metadata.dueDate).toLocaleDateString()}
+              </div>
+            )}
+            {metadata.tags && metadata.tags.length > 0 && (
+              <div className="mt-1 flex flex-wrap gap-1">
+                {metadata.tags.map((tag: string) => (
+                  <span
+                    key={tag}
+                    className="px-2 py-0.5 bg-zinc-100 dark:bg-zinc-700/50 text-xs rounded-full text-zinc-700 dark:text-zinc-300"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+          {new Date(activity.timestamp).toLocaleString()}
         </div>
       </div>
     </div>

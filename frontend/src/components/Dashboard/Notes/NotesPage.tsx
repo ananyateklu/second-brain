@@ -141,14 +141,14 @@ export function NotesPage() {
               placeholder="Search notes..."
               value={filters.search}
               onChange={(e) => handleFilterChange('search', e.target.value)}
-              className="bg-[var(--color-surface)] border-[var(--color-border)]"
+              className="w-full"
             />
           </div>
 
           <div className="flex gap-2">
             <button
               onClick={toggleFilters}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface)]/80 transition-all text-[var(--color-text)]"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200/30 dark:border-gray-700/30 bg-white/20 dark:bg-gray-800/20 hover:bg-white/30 dark:hover:bg-gray-800/30 text-gray-900 dark:text-white transition-colors"
             >
               <SlidersHorizontal className="w-5 h-5" />
               <span>Filters</span>
@@ -156,10 +156,10 @@ export function NotesPage() {
 
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-lg border border-[var(--color-border)] transition-all ${
+              className={`p-2 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${
                 viewMode === 'grid'
-                  ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
-                  : 'bg-[var(--color-surface)] hover:bg-[var(--color-surface)]/80 text-[var(--color-text)]'
+                  ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400'
+                  : 'bg-white/20 dark:bg-gray-800/20 hover:bg-white/30 dark:hover:bg-gray-800/30 text-gray-900 dark:text-white'
               }`}
               title="Grid View"
             >
@@ -168,10 +168,10 @@ export function NotesPage() {
 
             <button
               onClick={() => setViewMode('list')}
-              className={`p-2 rounded-lg border border-[var(--color-border)] transition-all ${
+              className={`p-2 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${
                 viewMode === 'list'
-                  ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
-                  : 'bg-[var(--color-surface)] hover:bg-[var(--color-surface)]/80 text-[var(--color-text)]'
+                  ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400'
+                  : 'bg-white/20 dark:bg-gray-800/20 hover:bg-white/30 dark:hover:bg-gray-800/30 text-gray-900 dark:text-white'
               }`}
               title="List View"
             >
@@ -180,10 +180,10 @@ export function NotesPage() {
 
             <button
               onClick={() => setViewMode('graph')}
-              className={`p-2 rounded-lg border border-[var(--color-border)] transition-all ${
+              className={`p-2 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${
                 viewMode === 'graph'
-                  ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
-                  : 'bg-[var(--color-surface)] hover:bg-[var(--color-surface)]/80 text-[var(--color-text)]'
+                  ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400'
+                  : 'bg-white/20 dark:bg-gray-800/20 hover:bg-white/30 dark:hover:bg-gray-800/30 text-gray-900 dark:text-white'
               }`}
               title="Graph View"
             >
@@ -194,12 +194,12 @@ export function NotesPage() {
 
         {/* Filters Panel */}
         {showFilters && (
-          <div className="p-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg">
+          <div className="p-4 rounded-lg border border-gray-200/30 dark:border-gray-700/30 bg-white/20 dark:bg-gray-800/20 shadow-lg">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-[var(--color-text)]">Filters</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Filters</h3>
               <button
                 onClick={clearFilters}
-                className="text-sm text-[var(--color-textSecondary)] hover:text-[var(--color-accent)]"
+                className="text-sm text-gray-600 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
               >
                 Clear all
               </button>
