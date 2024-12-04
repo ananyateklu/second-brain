@@ -251,83 +251,116 @@ export function TagsPage() {
       <div className="space-y-8 relative">
         {/* Page Header with gradient overlay */}
         <div className="relative overflow-hidden rounded-xl bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm">
-          <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-transparent" />
           <div className="relative p-6">
-            <div className="flex flex-col sm:flex-row gap-6 justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-indigo-100/50 dark:bg-indigo-900/30 rounded-lg">
-                  <Tag className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            <div className="flex flex-col gap-4">
+              {/* Title and View Toggle */}
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-cyan-100/50 dark:bg-cyan-900/30 rounded-lg">
+                    <Hash className="w-6 h-6 text-cyan-600 dark:text-cyan-400" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Tags</h1>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {tagStats.length} tags • {allItems.flatMap(item => item.tags).length} total uses
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Tags</h1>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {tagStats.length} tags • {allItems.filter(item => item.tags.length > 0).length} tagged items
-                  </p>
+
+                {/* View Toggle Buttons */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`p-2 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${
+                      viewMode === 'grid'
+                        ? 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-400'
+                        : 'bg-white/20 dark:bg-gray-800/20 text-gray-600 dark:text-gray-400 hover:bg-white/30 dark:hover:bg-gray-800/30'
+                    }`}
+                    title="Grid View"
+                  >
+                    <Grid className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`p-2 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${
+                      viewMode === 'list'
+                        ? 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-400'
+                        : 'bg-white/20 dark:bg-gray-800/20 text-gray-600 dark:text-gray-400 hover:bg-white/30 dark:hover:bg-gray-800/30'
+                    }`}
+                    title="List View"
+                  >
+                    <List className="w-5 h-5" />
+                  </button>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          <div className="flex items-center gap-3 p-4 bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 rounded-xl">
-            <div className="p-2 bg-indigo-100/50 dark:bg-indigo-900/30 rounded-lg">
-              <Hash className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-            </div>
-            <div>
-              <div className="text-lg font-semibold text-indigo-600 dark:text-indigo-400">
-                {tagStats.length}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Total Tags</div>
-            </div>
-          </div>
+              {/* Stats Row */}
+              <div className="grid grid-cols-4 gap-3">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                  <div className="text-sm">
+                    <span className="font-medium text-cyan-600 dark:text-cyan-400">
+                      {tagStats.reduce((sum, tag) => sum + tag.byType.note, 0)}
+                    </span>
+                    <span className="text-gray-600 dark:text-gray-400"> Notes</span>
+                  </div>
+                </div>
 
-          <div className="flex items-center gap-3 p-4 bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 rounded-xl">
-            <div className="p-2 bg-blue-100/50 dark:bg-blue-900/30 rounded-lg">
-              <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-            </div>
-            <div>
-              <div className="text-lg font-semibold text-blue-600 dark:text-blue-400">
-                {allItems.filter(item => item.type === 'note' && item.tags.length > 0).length}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Tagged Notes</div>
-            </div>
-          </div>
+                <div className="flex items-center gap-2">
+                  <Lightbulb className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                  <div className="text-sm">
+                    <span className="font-medium text-yellow-600 dark:text-yellow-400">
+                      {tagStats.reduce((sum, tag) => sum + tag.byType.idea, 0)}
+                    </span>
+                    <span className="text-gray-600 dark:text-gray-400"> Ideas</span>
+                  </div>
+                </div>
 
-          <div className="flex items-center gap-3 p-4 bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 rounded-xl">
-            <div className="p-2 bg-yellow-100/50 dark:bg-yellow-900/30 rounded-lg">
-              <Lightbulb className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
-            </div>
-            <div>
-              <div className="text-lg font-semibold text-yellow-600 dark:text-yellow-400">
-                {allItems.filter(item => item.type === 'idea' && item.tags.length > 0).length}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Tagged Ideas</div>
-            </div>
-          </div>
+                <div className="flex items-center gap-2">
+                  <CheckSquare className="w-4 h-4 text-green-600 dark:text-green-400" />
+                  <div className="text-sm">
+                    <span className="font-medium text-green-600 dark:text-green-400">
+                      {tagStats.reduce((sum, tag) => sum + tag.byType.task, 0)}
+                    </span>
+                    <span className="text-gray-600 dark:text-gray-400"> Tasks</span>
+                  </div>
+                </div>
 
-          <div className="flex items-center gap-3 p-4 bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 rounded-xl">
-            <div className="p-2 bg-green-100/50 dark:bg-green-900/30 rounded-lg">
-              <CheckSquare className="w-4 h-4 text-green-600 dark:text-green-400" />
-            </div>
-            <div>
-              <div className="text-lg font-semibold text-green-600 dark:text-green-400">
-                {allItems.filter(item => item.type === 'task' && item.tags.length > 0).length}
+                <div className="flex items-center gap-2">
+                  <Bell className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  <div className="text-sm">
+                    <span className="font-medium text-purple-600 dark:text-purple-400">
+                      {tagStats.reduce((sum, tag) => sum + tag.byType.reminder, 0)}
+                    </span>
+                    <span className="text-gray-600 dark:text-gray-400"> Reminders</span>
+                  </div>
+                </div>
               </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Tagged Tasks</div>
-            </div>
-          </div>
 
-          <div className="flex items-center gap-3 p-4 bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 rounded-xl">
-            <div className="p-2 bg-purple-100/50 dark:bg-purple-900/30 rounded-lg">
-              <Bell className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-            </div>
-            <div>
-              <div className="text-lg font-semibold text-purple-600 dark:text-purple-400">
-                {allItems.filter(item => item.type === 'reminder' && item.tags.length > 0).length}
+              {/* Search and Filters */}
+              <div className="flex gap-3">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search tags..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+                  />
+                </div>
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={`p-2 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${
+                    showFilters
+                      ? 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-400'
+                      : 'bg-white/20 dark:bg-gray-800/20 text-gray-600 dark:text-gray-400 hover:bg-white/30 dark:hover:bg-gray-800/30'
+                  }`}
+                >
+                  <SlidersHorizontal className="w-5 h-5" />
+                </button>
               </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Tagged Reminders</div>
             </div>
           </div>
         </div>

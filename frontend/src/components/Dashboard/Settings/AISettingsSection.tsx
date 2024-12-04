@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Bot, Settings2, AlertCircle, CheckCircle, Loader, Save } from 'lucide-react';
+import { Bot, Settings2, AlertCircle, CheckCircle, Loader, Save, Cpu } from 'lucide-react';
 import { useAI } from '../../../contexts/AIContext';
 import { AISettings } from '../../../types/ai';
+
+type AIProvider = 'openai' | 'anthropic' | 'gemini' | 'llama';
 
 interface TestResult {
   success: boolean;
@@ -22,21 +24,20 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
     isGrokConfigured,
     checkConfigurations 
   } = useAI();
+  
   const [settings, setSettings] = useState<AISettings>({
     contentSuggestions: {
-      provider: (localStorage.getItem('content_suggestions_provider') as 'openai' | 'anthropic' | 'gemini' | 'llama') || 'openai',
-      modelId: localStorage.getItem('content_suggestions_model') || 'gpt-4',
+      provider: (localStorage.getItem('content_suggestions_provider') as AIProvider) || 'openai',
+      modelId: localStorage.getItem('content_suggestions_model') ?? 'gpt-4',
     },
     promptEnhancement: {
-      provider: (localStorage.getItem('prompt_enhancement_provider') as 'openai' | 'anthropic' | 'gemini' | 'llama') || 'openai',
-      modelId: localStorage.getItem('prompt_enhancement_model') || 'gpt-4',
+      provider: (localStorage.getItem('prompt_enhancement_provider') as AIProvider) || 'openai',
+      modelId: localStorage.getItem('prompt_enhancement_model') ?? 'gpt-4',
     },
   });
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveResult, setSaveResult] = useState<TestResult | null>(null);
-
-  // Add state for configuration check status
   const [isChecking, setIsChecking] = useState(false);
 
   useEffect(() => {
@@ -45,16 +46,14 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
       .finally(() => setIsChecking(false));
   }, [checkConfigurations]);
 
-  // Configuration status cards
   const configurationStatus = [
-    { name: 'OpenAI', isConfigured: isOpenAIConfigured, color: '#3B7443' },
-    { name: 'Anthropic', isConfigured: isAnthropicConfigured, color: '#F97316' },
-    { name: 'Gemini', isConfigured: isGeminiConfigured, color: '#4285F4' },
-    { name: 'Llama', isConfigured: isLlamaConfigured, color: '#8B5CF6' },
-    { name: 'Grok', isConfigured: isGrokConfigured, color: '#1DA1F2' }
+    { name: 'OpenAI', isConfigured: isOpenAIConfigured },
+    { name: 'Anthropic', isConfigured: isAnthropicConfigured },
+    { name: 'Gemini', isConfigured: isGeminiConfigured },
+    { name: 'Llama', isConfigured: isLlamaConfigured },
+    { name: 'Grok', isConfigured: isGrokConfigured }
   ];
 
-  // Filter models suitable for content generation
   const contentGenerationModels = availableModels.filter(model =>
     model.category === 'chat'
   );
@@ -68,7 +67,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
       setSettings(prev => ({
         ...prev,
         contentSuggestions: {
-          provider: value as 'openai' | 'anthropic' | 'gemini' | 'llama',
+          provider: value as AIProvider,
           modelId: firstModelForProvider ?? prev.contentSuggestions?.modelId ?? '',
         },
       }));
@@ -87,7 +86,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
       setSettings(prev => ({
         ...prev,
         promptEnhancement: {
-          provider: value as 'openai' | 'anthropic' | 'gemini' | 'llama',
+          provider: value as AIProvider,
           modelId: firstModelForProvider ?? prev.promptEnhancement?.modelId ?? '',
         },
       }));
@@ -106,6 +105,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
 
   const handleSave = async () => {
     setIsSaving(true);
+    setSaveResult(null);
     try {
       await onSave(settings);
       setSaveResult({ success: true, message: 'Settings saved successfully!' });
@@ -118,309 +118,253 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
     }
   };
 
-  const selectClasses = `
-    w-full
-    pl-10 pr-10 py-2
-    bg-transparent
-    rounded-lg
-    text-gray-900 dark:text-white
-    placeholder-gray-500/70 dark:placeholder-gray-400/70
-    border border-gray-200/20 dark:border-gray-700/30
-    focus:ring-2
-    focus:ring-[#3B7443]/50
-    focus:border-transparent
-    transition-all duration-200
-    appearance-none
-  `;
-
-  const iconWrapperClasses = `
-    absolute inset-y-0 left-0 pl-3 
-    flex items-center 
-    pointer-events-none
-    z-10
-  `;
-
-  const buttonClasses = `
-    flex items-center gap-2 
-    px-4 py-2 
-    text-sm font-medium 
-    bg-[#3B7443] 
-    text-white 
-    rounded-lg 
-    hover:bg-[#2D5A34] 
-    disabled:opacity-50 disabled:cursor-not-allowed 
-    transition-colors
-  `;
-
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <Bot className="w-6 h-6 text-[#3B7443]" />
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white">AI Settings</h3>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="p-6 border-b border-zinc-200/50 dark:border-zinc-700/50">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/10">
+            <Cpu className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-zinc-900 dark:text-white">AI Configuration</h3>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+              Configure your AI providers and models
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Configuration Status Section */}
-      <div className="space-y-4">
-        <h4 className="text-base font-medium text-gray-900 dark:text-white">Configuration Status</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {configurationStatus.map(({ name, isConfigured, color }) => (
-            <div
-              key={name}
-              className="relative overflow-hidden group"
+      <div className="px-6 space-y-8">
+        {/* Configuration Status */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h4 className="text-base font-medium text-zinc-900 dark:text-white">Provider Status</h4>
+            <button
+              onClick={() => {
+                setIsChecking(true);
+                checkConfigurations().finally(() => setIsChecking(false));
+              }}
+              className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-900 dark:text-white bg-white/5 dark:bg-white/5 hover:bg-white/10 dark:hover:bg-white/10 border border-zinc-200/50 dark:border-zinc-700/50 rounded-lg transition-all duration-200"
+              disabled={isChecking}
             >
-              <div className={`
-                p-4 rounded-lg backdrop-blur-sm
-                bg-white/80 dark:bg-gray-800/80
-                border border-gray-200/30 dark:border-gray-700/30
-                transition-all duration-200
-                hover:shadow-lg
-                ${isConfigured ? 'hover:border-green-500/50' : 'hover:border-red-500/50'}
-              `}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={`
-                      p-2 rounded-lg
-                      ${isConfigured ? 'bg-green-50 dark:bg-green-900/30' : 'bg-red-50 dark:bg-red-900/30'}
-                    `}>
-                      {isConfigured ? (
-                        <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
-                      ) : (
-                        <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
-                      )}
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900 dark:text-white">{name}</p>
-                      <p className={`text-sm ${
+              <div className={`w-4 h-4 ${isChecking ? 'animate-spin' : ''}`}>
+                {isChecking ? <Loader className="w-4 h-4" /> : <Settings2 className="w-4 h-4" />}
+              </div>
+              {isChecking ? 'Checking...' : 'Refresh Status'}
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {configurationStatus.map(({ name, isConfigured }) => (
+              <div
+                key={name}
+                className="group relative overflow-hidden rounded-xl transition-all duration-200"
+              >
+                <div className="p-4 bg-white/5 dark:bg-white/5 border border-zinc-200/50 dark:border-zinc-700/50 rounded-xl backdrop-blur-sm transition-all duration-200 hover:bg-white/10 dark:hover:bg-white/10">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`flex items-center justify-center w-10 h-10 rounded-lg ${
                         isConfigured 
-                          ? 'text-green-600 dark:text-green-400' 
-                          : 'text-red-600 dark:text-red-400'
+                          ? 'bg-emerald-500/10 dark:bg-emerald-500/10' 
+                          : 'bg-red-500/10 dark:bg-red-500/10'
                       }`}>
-                        {isConfigured ? 'Configured' : 'Not Configured'}
-                      </p>
+                        {isConfigured ? (
+                          <CheckCircle className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
+                        ) : (
+                          <AlertCircle className="w-5 h-5 text-red-500 dark:text-red-400" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-medium text-zinc-900 dark:text-white">{name}</p>
+                        <p className={`text-sm ${
+                          isConfigured 
+                            ? 'text-emerald-500 dark:text-emerald-400' 
+                            : 'text-red-500 dark:text-red-400'
+                        }`}>
+                          {isConfigured ? 'Configured' : 'Not Configured'}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                  <div 
-                    className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: color }}
-                  />
                 </div>
               </div>
-              
-              {/* Gradient overlay */}
-              <div 
-                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
-                style={{
-                  background: `linear-gradient(135deg, ${color}10, transparent 50%)`
-                }}
-              />
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
-        {/* Refresh button */}
-        <button
-          onClick={() => {
-            setIsChecking(true);
-            checkConfigurations().finally(() => setIsChecking(false));
-          }}
-          className={`
-            flex items-center gap-2 px-4 py-2 text-sm
-            text-gray-700 dark:text-gray-300
-            bg-white/50 dark:bg-gray-800/50
-            border border-gray-200/30 dark:border-gray-700/30
-            rounded-lg transition-all duration-200
-            hover:bg-white/80 dark:hover:bg-gray-800/80
-            ${isChecking ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-md'}
-          `}
-          disabled={isChecking}
-        >
-          <div className={`w-4 h-4 ${isChecking ? 'animate-spin' : ''}`}>
-            {isChecking ? (
-              <Loader className="w-4 h-4" />
-            ) : (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" 
-                />
-              </svg>
+        {/* Content Suggestions Configuration */}
+        <div className="space-y-4">
+          <h4 className="text-base font-medium text-zinc-900 dark:text-white">Content Generation</h4>
+          <div className="space-y-6 p-6 bg-white/5 dark:bg-white/5 border border-zinc-200/50 dark:border-zinc-700/50 rounded-xl">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-zinc-900 dark:text-white">
+                AI Provider
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Bot className="h-5 w-5 text-emerald-500 dark:text-emerald-400" />
+                </div>
+                <select
+                  name="contentSuggestionsProvider"
+                  value={settings.contentSuggestions?.provider}
+                  onChange={handleInputChange}
+                  className="w-full pl-10 pr-10 py-2.5 bg-white/5 dark:bg-white/5 rounded-lg text-zinc-900 dark:text-white border border-zinc-200/50 dark:border-zinc-700/50 focus:ring-2 focus:ring-emerald-500/20 dark:focus:ring-emerald-500/20 focus:border-transparent transition-all duration-200 appearance-none"
+                >
+                  {isOpenAIConfigured && <option value="openai">OpenAI</option>}
+                  {isGeminiConfigured && <option value="gemini">Google Gemini</option>}
+                  {<option value="anthropic">Anthropic (Claude)</option>}
+                  {isLlamaConfigured && <option value="llama">Llama</option>}
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <svg className="h-5 w-5 text-zinc-400 dark:text-zinc-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-zinc-900 dark:text-white">
+                Model
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Settings2 className="h-5 w-5 text-emerald-500 dark:text-emerald-400" />
+                </div>
+                <select
+                  name="contentSuggestionsModel"
+                  value={settings.contentSuggestions?.modelId}
+                  onChange={handleInputChange}
+                  className="w-full pl-10 pr-10 py-2.5 bg-white/5 dark:bg-white/5 rounded-lg text-zinc-900 dark:text-white border border-zinc-200/50 dark:border-zinc-700/50 focus:ring-2 focus:ring-emerald-500/20 dark:focus:ring-emerald-500/20 focus:border-transparent transition-all duration-200 appearance-none"
+                >
+                  {contentGenerationModels
+                    .filter(model => model.provider === settings.contentSuggestions?.provider)
+                    .map(model => (
+                      <option key={model.id} value={model.id}>
+                        {model.name}
+                      </option>
+                    ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <svg className="h-5 w-5 text-zinc-400 dark:text-zinc-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+              <Bot className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
+              <span>These settings will be used for generating titles, content, and tags.</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Prompt Enhancement Configuration */}
+        <div className="space-y-4">
+          <h4 className="text-base font-medium text-zinc-900 dark:text-white">Prompt Enhancement</h4>
+          <div className="space-y-6 p-6 bg-white/5 dark:bg-white/5 border border-zinc-200/50 dark:border-zinc-700/50 rounded-xl">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-zinc-900 dark:text-white">
+                AI Provider
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Bot className="h-5 w-5 text-emerald-500 dark:text-emerald-400" />
+                </div>
+                <select
+                  name="promptEnhancementProvider"
+                  value={settings.promptEnhancement?.provider}
+                  onChange={handleInputChange}
+                  className="w-full pl-10 pr-10 py-2.5 bg-white/5 dark:bg-white/5 rounded-lg text-zinc-900 dark:text-white border border-zinc-200/50 dark:border-zinc-700/50 focus:ring-2 focus:ring-emerald-500/20 dark:focus:ring-emerald-500/20 focus:border-transparent transition-all duration-200 appearance-none"
+                >
+                  {isOpenAIConfigured && <option value="openai">OpenAI</option>}
+                  {isGeminiConfigured && <option value="gemini">Google Gemini</option>}
+                  {<option value="anthropic">Anthropic (Claude)</option>}
+                  {isLlamaConfigured && <option value="llama">Llama</option>}
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <svg className="h-5 w-5 text-zinc-400 dark:text-zinc-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-zinc-900 dark:text-white">
+                Model
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Settings2 className="h-5 w-5 text-emerald-500 dark:text-emerald-400" />
+                </div>
+                <select
+                  name="promptEnhancementModel"
+                  value={settings.promptEnhancement?.modelId}
+                  onChange={handleInputChange}
+                  className="w-full pl-10 pr-10 py-2.5 bg-white/5 dark:bg-white/5 rounded-lg text-zinc-900 dark:text-white border border-zinc-200/50 dark:border-zinc-700/50 focus:ring-2 focus:ring-emerald-500/20 dark:focus:ring-emerald-500/20 focus:border-transparent transition-all duration-200 appearance-none"
+                >
+                  {contentGenerationModels
+                    .filter(model => model.provider === settings.promptEnhancement?.provider)
+                    .map(model => (
+                      <option key={model.id} value={model.id}>
+                        {model.name}
+                      </option>
+                    ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <svg className="h-5 w-5 text-zinc-400 dark:text-zinc-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+              <Bot className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
+              <span>These settings will be used for enhancing input prompts across the application.</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Save Button */}
+        <div className="flex items-center justify-between pt-4 pb-6">
+          <div className="flex items-center gap-2">
+            {saveResult && (
+              <div className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm ${
+                saveResult.success 
+                  ? 'bg-emerald-500/10 text-emerald-500 dark:text-emerald-400' 
+                  : 'bg-red-500/10 text-red-500 dark:text-red-400'
+              }`}>
+                {saveResult.success ? (
+                  <CheckCircle className="w-4 h-4" />
+                ) : (
+                  <AlertCircle className="w-4 h-4" />
+                )}
+                <span>{saveResult.message}</span>
+              </div>
             )}
           </div>
-          {isChecking ? 'Checking...' : 'Refresh Status'}
-        </button>
-      </div>
-
-      {/* Content Suggestions Configuration */}
-      <div className="space-y-4">
-        <h4 className="text-base font-medium text-gray-900 dark:text-white">Content Suggestions</h4>
-        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6 rounded-lg space-y-4">
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-900 dark:text-white">
-              AI Provider
-            </label>
-            <div className="relative">
-              <div className={iconWrapperClasses}>
-                <Bot className="h-5 w-5 text-[#3B7443]" />
-              </div>
-              <select
-                name="contentSuggestionsProvider"
-                value={settings.contentSuggestions?.provider}
-                onChange={handleInputChange}
-                className={selectClasses}
-              >
-                {isOpenAIConfigured && <option value="openai">OpenAI</option>}
-                {isGeminiConfigured && <option value="gemini">Google Gemini</option>}
-                {<option value="anthropic">Anthropic (Claude)</option>}
-                {isLlamaConfigured && <option value="llama">Llama</option>}
-              </select>
-              <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          {/* Model select */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-900 dark:text-white">
-              Model
-            </label>
-            <div className="relative">
-              <div className={iconWrapperClasses}>
-                <Settings2 className="h-5 w-5 text-[#3B7443]" />
-              </div>
-              <select
-                name="contentSuggestionsModel"
-                value={settings.contentSuggestions?.modelId}
-                onChange={handleInputChange}
-                className={selectClasses}
-              >
-                {contentGenerationModels
-                  .filter(model => model.provider === settings.contentSuggestions?.provider)
-                  .map(model => (
-                    <option key={model.id} value={model.id}>
-                      {model.name}
-                    </option>
-                  ))}
-              </select>
-              <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
-            <Bot className="w-4 h-4 text-[#3B7443]" />
-            <span>These settings will be used for generating titles, content, and tags.</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Prompt Enhancement Configuration */}
-      <div className="space-y-4">
-        <h4 className="text-base font-medium text-gray-900 dark:text-white">Prompt Enhancement</h4>
-        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6 rounded-lg space-y-4">
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-900 dark:text-white">
-              AI Provider
-            </label>
-            <div className="relative">
-              <div className={iconWrapperClasses}>
-                <Bot className="h-5 w-5 text-[#3B7443]" />
-              </div>
-              <select
-                name="promptEnhancementProvider"
-                value={settings.promptEnhancement?.provider}
-                onChange={handleInputChange}
-                className={selectClasses}
-              >
-                {isOpenAIConfigured && <option value="openai">OpenAI</option>}
-                {isGeminiConfigured && <option value="gemini">Google Gemini</option>}
-                {<option value="anthropic">Anthropic (Claude)</option>}
-                {isLlamaConfigured && <option value="llama">Llama</option>}
-              </select>
-              <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-900 dark:text-white">
-              Model
-            </label>
-            <div className="relative">
-              <div className={iconWrapperClasses}>
-                <Settings2 className="h-5 w-5 text-[#3B7443]" />
-              </div>
-              <select
-                name="promptEnhancementModel"
-                value={settings.promptEnhancement?.modelId}
-                onChange={handleInputChange}
-                className={selectClasses}
-              >
-                {contentGenerationModels
-                  .filter(model => model.provider === settings.promptEnhancement?.provider)
-                  .map(model => (
-                    <option key={model.id} value={model.id}>
-                      {model.name}
-                    </option>
-                  ))}
-              </select>
-              <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
-            <Bot className="w-4 h-4 text-[#3B7443]" />
-            <span>These settings will be used for enhancing input prompts across the application.</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Save Button Section */}
-      <div className="mt-6 flex items-center gap-4">
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={isSaving}
-          className={buttonClasses}
-        >
-          {isSaving ? (
-            <>
-              <Loader className="w-4 h-4 animate-spin" />
-              <span>Saving...</span>
-            </>
-          ) : (
-            <>
-              <Save className="w-4 h-4" />
-              <span>Save Settings</span>
-            </>
-          )}
-        </button>
-
-        {saveResult && (
-          <div className={`flex items-center gap-2 text-sm ${
-            saveResult.success
-              ? 'text-green-600 dark:text-green-400'
-              : 'text-red-600 dark:text-red-400'
-          }`}>
-            {saveResult.success ? (
-              <CheckCircle className="w-4 h-4" />
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="flex items-center gap-2 px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSaving ? (
+              <>
+                <Loader className="w-4 h-4 animate-spin" />
+                <span>Saving...</span>
+              </>
             ) : (
-              <AlertCircle className="w-4 h-4" />
+              <>
+                <Save className="w-4 h-4" />
+                <span>Save Changes</span>
+              </>
             )}
-            <span>{saveResult.message}</span>
-          </div>
-        )}
+          </button>
+        </div>
       </div>
     </div>
   );
