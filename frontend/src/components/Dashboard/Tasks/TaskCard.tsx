@@ -5,9 +5,10 @@ import { formatTimeAgo } from '../Recent/utils';
 
 interface TaskCardProps {
   task: Task;
-  onEdit?: () => void;
   viewMode?: 'grid' | 'list';
   isSelected?: boolean;
+  className?: string;
+  onEdit?: () => void;
   context?: 'default' | 'trash' | 'archive' | 'favorites';
   onSelect?: () => void;
   onClick?: () => void;
@@ -25,14 +26,36 @@ export function TaskCard({
   context = 'default',
   onSelect,
   onClick,
-  contextData 
+  onEdit,
+  contextData,
+  className = ''
 }: TaskCardProps) {
   const { updateTask } = useTasks();
 
-  const handleCardClick = (e: React.MouseEvent) => {
+  const getPriorityStyles = (priority: string) => {
+    switch (priority.toLowerCase()) {
+      case 'high':
+        return 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400';
+      case 'medium':
+        return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400';
+      default:
+        return 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400';
+    }
+  };
+
+  const renderStatusIcon = () => {
+    if (context !== 'default') return <CheckSquare className="w-4 h-4" />;
+    return task.status.toLowerCase() === 'completed' 
+      ? <CheckSquare className="w-4 h-4" />
+      : <Square className="w-4 h-4" />;
+  };
+
+  const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (onSelect) {
       e.stopPropagation();
       onSelect();
+    } else if (onEdit) {
+      onEdit();
     } else if (onClick) {
       onClick();
     }
@@ -62,6 +85,7 @@ export function TaskCard({
         ${viewMode === 'list' ? 'w-full' : ''}
         ${onSelect || onClick ? 'cursor-pointer' : ''}
         ${task.status.toLowerCase() === 'completed' ? 'opacity-75' : ''}
+        ${className}
       `}
     >
       <div className="flex items-start gap-4">
@@ -70,7 +94,10 @@ export function TaskCard({
             <input
               type="checkbox"
               checked={isSelected}
-              onChange={() => onSelect()}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                e.stopPropagation();
+                onSelect();
+              }}
               className="w-4 h-4 text-primary-600 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 rounded focus:ring-primary-500"
             />
           </div>
@@ -88,15 +115,7 @@ export function TaskCard({
               }}
               className="flex-shrink-0 p-2 rounded-lg bg-emerald-50/50 dark:bg-emerald-900/20 text-emerald-500 dark:text-emerald-400"
             >
-              {context === 'default' ? (
-                task.status.toLowerCase() === 'completed' ? (
-                  <CheckSquare className="w-4 h-4" />
-                ) : (
-                  <Square className="w-4 h-4" />
-                )
-              ) : (
-                <CheckSquare className="w-4 h-4" />
-              )}
+              {renderStatusIcon()}
             </button>
             
             <div className="flex-1 min-w-0">
@@ -127,12 +146,7 @@ export function TaskCard({
             {task.priority && (
               <span className={`
                 inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium
-                ${task.priority.toLowerCase() === 'high'
-                  ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
-                  : task.priority.toLowerCase() === 'medium'
-                  ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400'
-                  : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
-                }
+                ${getPriorityStyles(task.priority)}
               `}>
                 {task.priority}
               </span>

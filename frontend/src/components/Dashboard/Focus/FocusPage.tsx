@@ -45,7 +45,7 @@ export function DailyFocus() {
   // Simplified task filtering with null checks
   const filteredTasks = tasks?.filter(task => {
     if (!task) return false; // Skip if task is undefined
-    
+
     // Skip completed tasks
     if (task.status === 'Completed') return false;
 
@@ -54,7 +54,7 @@ export function DailyFocus() {
 
     const taskDate = new Date(task.dueDate);
     const today = new Date();
-    
+
     // Reset time parts for comparison
     taskDate.setHours(0, 0, 0, 0);
     today.setHours(0, 0, 0, 0);
@@ -76,8 +76,8 @@ export function DailyFocus() {
     tasks: tasks.map(task => ({
       title: task.title,
       dueDate: task.dueDate ? new Date(task.dueDate).toLocaleDateString() : null,
-      included: task.dueDate ? 
-        new Date(task.dueDate).toLocaleDateString() === new Date().toLocaleDateString() : 
+      included: task.dueDate ?
+        new Date(task.dueDate).toLocaleDateString() === new Date().toLocaleDateString() :
         true
     }))
   });
@@ -120,10 +120,13 @@ export function DailyFocus() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const calculateTotalSeconds = () => {
+    if (!isBreak) return WORK_MINUTES * 60;
+    return (pomodoroCount % 4 === 0) ? LONG_BREAK_MINUTES * 60 : BREAK_MINUTES * 60;
+  };
+
   const calculateProgress = () => {
-    const totalSeconds = isBreak 
-      ? (pomodoroCount % 4 === 0 ? LONG_BREAK_MINUTES : BREAK_MINUTES) * 60
-      : WORK_MINUTES * 60;
+    const totalSeconds = calculateTotalSeconds();
     return ((totalSeconds - timeLeft) / totalSeconds) * 100;
   };
 
@@ -131,10 +134,10 @@ export function DailyFocus() {
     const handleKeyPress = (e: KeyboardEvent) => {
       // Check if we're typing in an input or textarea
       const target = e.target as HTMLElement;
-      const isTyping = target.tagName === 'INPUT' || 
-                      target.tagName === 'TEXTAREA' || 
-                      target.isContentEditable;
-      
+      const isTyping = target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable;
+
       // Only handle shortcuts if we're not typing
       if (!isTyping) {
         if (e.key === ' ') {
@@ -146,7 +149,7 @@ export function DailyFocus() {
         }
       }
     };
-    
+
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [isActive]);
@@ -155,12 +158,12 @@ export function DailyFocus() {
   const progressBarStyles = buildStyles({
     // Size
     textSize: '16px',
-    
+
     // Colors
     pathColor: isBreak ? '#86EFAC' : '#22C55E',
     textColor: '#22C55E',
     trailColor: '#064E3B20',
-    
+
     // Animation and Style
     pathTransitionDuration: 0.5,
     rotation: 0.25,
@@ -182,7 +185,7 @@ export function DailyFocus() {
                   text={formatTime(timeLeft)}
                   styles={progressBarStyles}
                 />
-                
+
                 {/* Optional: Add a label below the timer */}
                 <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 text-sm text-gray-500 dark:text-gray-400">
                   {isBreak ? 'Break Time' : 'Focus Time'}
@@ -193,11 +196,10 @@ export function DailyFocus() {
             <div className="flex justify-center items-center space-x-4">
               <button
                 onClick={() => setIsActive(!isActive)}
-                className={`p-4 rounded-full ${
-                  isActive
+                className={`p-4 rounded-full ${isActive
                     ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
                     : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
-                }`}
+                  }`}
               >
                 {isActive ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
               </button>
@@ -237,11 +239,10 @@ export function DailyFocus() {
                 <button
                   key={sound}
                   onClick={() => setSelectedSound(sound)}
-                  className={`px-4 py-2 rounded-lg ${
-                    selectedSound === sound
+                  className={`px-4 py-2 rounded-lg ${selectedSound === sound
                       ? 'bg-primary-500 text-white'
                       : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
-                  }`}
+                    }`}
                 >
                   {sound.charAt(0).toUpperCase() + sound.slice(1)}
                 </button>
@@ -295,21 +296,19 @@ export function DailyFocus() {
               <div className="flex items-center gap-4 mt-0.5">
                 <button
                   onClick={() => setShowUpcoming(!showUpcoming)}
-                  className={`text-xs ${
-                    showUpcoming 
-                      ? 'text-gray-600 dark:text-gray-400' 
+                  className={`text-xs ${showUpcoming
+                      ? 'text-gray-600 dark:text-gray-400'
                       : 'text-primary-600 dark:text-primary-400 font-medium'
-                  }`}
+                    }`}
                 >
                   Today
                 </button>
                 <button
                   onClick={() => setShowUpcoming(!showUpcoming)}
-                  className={`text-xs ${
-                    showUpcoming 
-                      ? 'text-primary-600 dark:text-primary-400 font-medium' 
+                  className={`text-xs ${showUpcoming
+                      ? 'text-primary-600 dark:text-primary-400 font-medium'
                       : 'text-gray-600 dark:text-gray-400'
-                  }`}
+                    }`}
                 >
                   Upcoming
                 </button>
@@ -327,14 +326,13 @@ export function DailyFocus() {
           <div className="space-y-1.5 max-h-[calc(100vh-180px)] overflow-y-auto pr-2">
             {filteredTasks.length > 0 ? (
               filteredTasks.map(task => (
-                <div 
+                <div
                   key={task.id}
                   onClick={() => setSelectedTask(task)}
-                  className={`cursor-pointer transition-all duration-200 w-full ${
-                    selectedTask?.id === task.id 
+                  className={`cursor-pointer transition-all duration-200 w-full ${selectedTask?.id === task.id
                       ? 'scale-[1.01]'
                       : ''
-                  }`}
+                    }`}
                 >
                   <TaskCard
                     task={task}

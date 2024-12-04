@@ -12,18 +12,10 @@ import { NoteCard } from '../NoteCard';
 import { TaskCard } from '../Tasks/TaskCard';
 import { ReminderCard } from '../Reminders/ReminderCard';
 import { IdeaCard } from '../Ideas/IdeaCard';
-
-type ItemType = 'note' | 'task' | 'idea' | 'reminder';
-
-interface TaggedItem {
-  id: string;
-  title: string;
-  content: string;
-  tags: string[];
-  type: ItemType;
-  updatedAt: string;
-  createdAt: string;
-}
+import { useTagFiltering } from './useTagFiltering';
+import { FiltersPanel } from './FiltersPanel';
+import { ItemType, TaggedItem } from './types';
+import { useHandleEdit } from './useHandleEdit';
 
 export function TagsPage() {
   const { notes } = useNotes();
@@ -41,6 +33,8 @@ export function TagsPage() {
 
   const { selectedNote, selectedIdea, selectedTask, selectedReminder,
     setSelectedNote, setSelectedIdea, setSelectedTask, setSelectedReminder } = useModal();
+
+  const { handleEditNote } = useHandleEdit();
 
   // Combine all tagged items
   const allItems = useMemo(() => {
@@ -96,57 +90,8 @@ export function TagsPage() {
     return items;
   }, [notes, tasks, reminders]);
 
-  // Calculate tag statistics
-  const tagStats = useMemo(() => {
-    // First, create the stats map
-    const stats = new Map<string, { count: number; byType: Record<ItemType, number> }>();
-
-    allItems.forEach(item => {
-      item.tags.forEach(tag => {
-        const current = stats.get(tag) || {
-          count: 0,
-          byType: { note: 0, task: 0, idea: 0, reminder: 0 }
-        };
-        current.count++;
-        current.byType[item.type]++;
-        stats.set(tag, current);
-      });
-    });
-
-    let result = Array.from(stats.entries())
-      .map(([tag, stats]) => ({
-        tag,
-        ...stats
-      }));
-
-    // Apply search filter
-    if (searchQuery) {
-      result = result.filter(item =>
-        item.tag.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    // Apply type filters
-    if (filters.types.length > 0) {
-      result = result.filter(item => {
-        // Only show tags that have items of the selected types
-        return filters.types.some(type => item.byType[type] > 0);
-      });
-    }
-
-    // Apply sorting
-    result.sort((a, b) => {
-      if (filters.sortBy === 'count') {
-        const diff = b.count - a.count;
-        return filters.sortOrder === 'desc' ? diff : -diff;
-      } else { // name
-        const diff = a.tag.localeCompare(b.tag);
-        return filters.sortOrder === 'desc' ? -diff : diff;
-      }
-    });
-
-    return result;
-  }, [allItems, searchQuery, filters.types, filters.sortBy, filters.sortOrder]);
+  // Use the custom hook for tag filtering
+  const tagStats = useTagFiltering(allItems, searchQuery, filters);
 
   // Filter items by selected tag
   const filteredItems = useMemo(() => {
@@ -166,82 +111,6 @@ export function TagsPage() {
       return hasSelectedTag && (!typeFilterApplies || matchesTypeFilter);
     });
   }, [selectedTag, allItems, filters.types]);
-
-  const handleEditNote = (item: TaggedItem) => {
-    // Close all modals first
-    setSelectedNote(null);
-    setSelectedIdea(null);
-    setSelectedTask(null);
-    setSelectedReminder(null);
-
-    // Then open the appropriate modal
-    switch (item.type) {
-      case 'note':
-        setSelectedNote({
-          id: item.id,
-          title: item.title,
-          content: item.content,
-          tags: item.tags,
-          updatedAt: item.updatedAt,
-          createdAt: item.createdAt,
-          isIdea: false,
-          isFavorite: false,
-          isPinned: false,
-          isArchived: false,
-          isDeleted: false,
-          linkedNoteIds: [],
-          linkedTasks: []
-        });
-        break;
-      case 'idea':
-        setSelectedIdea({
-          id: item.id,
-          title: item.title,
-          content: item.content,
-          tags: item.tags,
-          updatedAt: item.updatedAt,
-          createdAt: item.createdAt,
-          isIdea: true,
-          isFavorite: false,
-          isPinned: false,
-          isArchived: false,
-          isDeleted: false,
-          linkedNoteIds: [],
-          linkedTasks: []
-        });
-        break;
-      case 'task':
-        setSelectedTask({
-          id: item.id,
-          title: item.title,
-          description: item.content,
-          tags: item.tags,
-          status: 'Incomplete',
-          priority: 'medium',
-          dueDate: null,
-          updatedAt: item.updatedAt,
-          createdAt: item.createdAt,
-          isDeleted: false,
-          linkedItems: []
-        });
-        break;
-      case 'reminder':
-        setSelectedReminder({
-          id: item.id,
-          title: item.title,
-          description: item.content,
-          tags: item.tags,
-          dueDateTime: item.updatedAt,
-          isCompleted: false,
-          isSnoozed: false,
-          isDeleted: false,
-          userId: '',
-          updatedAt: item.updatedAt,
-          createdAt: item.createdAt
-        });
-        break;
-    }
-  };
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-fixed">
@@ -411,119 +280,7 @@ export function TagsPage() {
 
                 {/* Filters Panel */}
                 {showFilters && (
-                  <div className="mt-3 p-3 bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 rounded-xl">
-                    {/* Type Filters */}
-                    <div className="space-y-2 mb-3">
-                      <h3 className="text-xs font-medium text-gray-900 dark:text-white">Filter by Type</h3>
-                      <div className="flex flex-wrap gap-1.5">
-                        <button
-                          onClick={() => {
-                            setFilters(prev => {
-                              const newTypes = prev.types.includes('note')
-                                ? prev.types.filter(t => t !== 'note')
-                                : [...prev.types, 'note' as ItemType];
-                              return { ...prev, types: newTypes };
-                            });
-                          }}
-                          className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-all ${filters.types.includes('note')
-                            ? 'bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-200 border border-blue-200 dark:border-blue-800'
-                            : 'bg-white/60 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 border border-gray-200/50 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/50'
-                            }`}
-                        >
-                          <FileText className="w-3 h-3" />
-                          Notes
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            setFilters(prev => {
-                              const newTypes = prev.types.includes('idea')
-                                ? prev.types.filter(t => t !== 'idea')
-                                : [...prev.types, 'idea' as ItemType];
-                              return { ...prev, types: newTypes };
-                            });
-                          }}
-                          className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-all ${filters.types.includes('idea')
-                            ? 'bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-200 border border-amber-200 dark:border-amber-800'
-                            : 'bg-white/60 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 border border-gray-200/50 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/50'
-                            }`}
-                        >
-                          <Lightbulb className="w-3 h-3" />
-                          Ideas
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            setFilters(prev => {
-                              const newTypes = prev.types.includes('task')
-                                ? prev.types.filter(t => t !== 'task')
-                                : [...prev.types, 'task' as ItemType];
-                              return { ...prev, types: newTypes };
-                            });
-                          }}
-                          className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-all ${filters.types.includes('task')
-                            ? 'bg-green-100 dark:bg-green-900/60 text-green-700 dark:text-green-200 border border-green-200 dark:border-green-800'
-                            : 'bg-white/60 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 border border-gray-200/50 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/50'
-                            }`}
-                        >
-                          <CheckSquare className="w-3 h-3" />
-                          Tasks
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            setFilters(prev => {
-                              const newTypes = prev.types.includes('reminder')
-                                ? prev.types.filter(t => t !== 'reminder')
-                                : [...prev.types, 'reminder' as ItemType];
-                              return { ...prev, types: newTypes };
-                            });
-                          }}
-                          className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-all ${filters.types.includes('reminder')
-                            ? 'bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-200 border border-purple-200 dark:border-purple-800'
-                            : 'bg-white/60 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 border border-gray-200/50 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/50'
-                            }`}
-                        >
-                          <Bell className="w-3 h-3" />
-                          Reminders
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Sort Options */}
-                    <div className="space-y-2">
-                      <h3 className="text-xs font-medium text-gray-900 dark:text-white">Sort by</h3>
-                      <div className="flex gap-1.5">
-                        <button
-                          onClick={() => setFilters(prev => ({
-                            ...prev,
-                            sortBy: 'count',
-                            sortOrder: prev.sortBy === 'count' && prev.sortOrder === 'desc' ? 'asc' : 'desc'
-                          }))}
-                          className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-all ${filters.sortBy === 'count'
-                            ? 'bg-primary-100 dark:bg-primary-900/60 text-primary-700 dark:text-primary-200 border border-primary-200 dark:border-primary-800'
-                            : 'bg-white/60 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 border border-gray-200/50 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/50'
-                            }`}
-                        >
-                          Count {filters.sortBy === 'count' && (filters.sortOrder === 'desc' ? '↓' : '↑')}
-                        </button>
-
-                        <button
-                          onClick={() => setFilters(prev => ({
-                            ...prev,
-                            sortBy: 'name',
-                            sortOrder: prev.sortBy === 'name' && prev.sortOrder === 'desc' ? 'asc' : 'desc'
-                          }))}
-                          className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-all ${filters.sortBy === 'name'
-                            ? 'bg-primary-100 dark:bg-primary-900/60 text-primary-700 dark:text-primary-200 border border-primary-200 dark:border-primary-800'
-                            : 'bg-white/60 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 border border-gray-200/50 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/50'
-                            }`}
-                        >
-                          Name {filters.sortBy === 'name' && (filters.sortOrder === 'desc' ? '↓' : '↑')}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                  <FiltersPanel filters={filters} setFilters={setFilters} />
                 )}
               </div>
 
