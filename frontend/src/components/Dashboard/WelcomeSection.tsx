@@ -2,7 +2,6 @@ import React from 'react';
 import { Plus, CheckSquare, Lightbulb, Clock, Edit3, CheckCircle } from 'lucide-react';
 import { User } from '../../types/user';
 import { Task } from '../../types/task';
-import { textStyles } from '../../utils/textUtils';
 
 interface WelcomeSectionProps {
   user: User;
@@ -30,15 +29,15 @@ export const WelcomeSection = React.memo(({ user, onNewNote, onNavigate, stats, 
         <div className="space-y-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <h1 className={textStyles.h1}>
+              <h1 className="text-[var(--color-text)] text-2xl font-bold">
                 {getGreeting()},{' '}
-                <span className="text-primary-600 dark:text-primary-400">
+                <span className="text-[var(--color-accent)]">
                   {user?.name}
                 </span>
               </h1>
               <span className="inline-block animate-wave">👋</span>
             </div>
-            <p className={textStyles.bodySmall}>
+            <p className="text-[var(--color-textSecondary)]">
               Ready to capture your thoughts and ideas?
             </p>
           </div>
@@ -68,8 +67,8 @@ export const WelcomeSection = React.memo(({ user, onNewNote, onNavigate, stats, 
           </div>
         </div>
 
-        <div className="relative bg-white/10 dark:bg-[#2C2C2E] rounded-lg p-3 space-y-2 min-w-[260px] border border-gray-200/30 dark:border-[#3C3C3E]/30">
-          <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+        <div className="relative bg-[var(--color-surface)] rounded-lg p-3 space-y-2 min-w-[260px] border border-[var(--color-border)]">
+          <div className="flex items-center gap-3 text-[var(--color-textSecondary)]">
             <div className="p-1.5 bg-gray-100/50 dark:bg-[#3C3C3E]/30 rounded-lg">
               <Clock className="w-3.5 h-3.5" />
             </div>
@@ -77,7 +76,7 @@ export const WelcomeSection = React.memo(({ user, onNewNote, onNavigate, stats, 
               {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             </span>
           </div>
-          <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+          <div className="flex items-center gap-3 text-[var(--color-textSecondary)]">
             <div className="p-1.5 bg-green-100/50 dark:bg-green-500/10 rounded-lg">
               <CheckCircle className="w-3.5 h-3.5 text-green-600 dark:text-green-500" />
             </div>
@@ -88,7 +87,7 @@ export const WelcomeSection = React.memo(({ user, onNewNote, onNavigate, stats, 
               <span className="ml-1 text-sm">tasks completed today</span>
             </div>
           </div>
-          <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+          <div className="flex items-center gap-3 text-[var(--color-textSecondary)]">
             <div className="p-1.5 bg-blue-100/50 dark:bg-blue-500/10 rounded-lg">
               <Edit3 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-500" />
             </div>

@@ -1,8 +1,30 @@
 import { useState } from 'react';
 import { useTrash } from '../../../contexts/trashContextUtils';
-import { TrashItemCard } from './TrashItemCard';
+import { NoteCard } from '../NoteCard';
+import { TaskCard } from '../Tasks/TaskCard';
+import { IdeaCard } from '../Ideas/IdeaCard';
+import { ReminderCard } from '../Reminders/ReminderCard';
 import { ConfirmationDialog } from './ConfirmationDialog';
 import { Trash2, RotateCcw } from 'lucide-react';
+import type { Note } from '../../../types/note';
+import type { Task } from '../../../api/types/task';
+
+interface Reminder {
+  id: string;
+  title: string;
+  description?: string;
+  dueDateTime: string;
+  isCompleted: boolean;
+  isSnoozed: boolean;
+  snoozeUntil?: string;
+  repeatInterval: undefined;
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+  type: 'reminder';
+  isDeleted: boolean;
+  userId: string;
+}
 
 interface TrashListProps {
   filters: {
@@ -127,15 +149,126 @@ export function TrashList({ filters, searchQuery }: TrashListProps) {
 
       {/* Items Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {sortedItems.map(item => (
-          <TrashItemCard
-            key={item.id}
-            item={item}
-            isSelected={selectedItems.includes(item.id)}
-            onSelect={() => handleItemClick(item.id)}
-            showMetadata={item.type === 'reminder'}
-          />
-        ))}
+        {sortedItems.map(item => {
+          const contextData = {
+            expiresAt: item.expiresAt,
+            deletedAt: item.deletedAt
+          };
+
+          // Convert TrashedItem to the appropriate type
+          switch (item.type) {
+            case 'note': {
+              const note: Note = {
+                id: item.id,
+                title: item.title,
+                content: item.content || '',
+                tags: item.metadata?.tags || [],
+                isFavorite: item.metadata?.isFavorite || false,
+                isPinned: false,
+                isIdea: false,
+                linkedNoteIds: item.metadata?.linkedItems || [],
+                linkedTasks: [],
+                isArchived: false,
+                isDeleted: true,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+              };
+              return (
+                <NoteCard
+                  key={item.id}
+                  note={note}
+                  isSelected={selectedItems.includes(item.id)}
+                  onSelect={() => handleItemClick(item.id)}
+                  context="trash"
+                  contextData={contextData}
+                />
+              );
+            }
+            case 'task': {
+              const task: Task = {
+                id: item.id,
+                title: item.title,
+                description: item.content || '',
+                status: 'Incomplete',
+                priority: 'low',
+                dueDate: item.metadata?.dueDate || null,
+                tags: item.metadata?.tags || [],
+                linkedItems: [],
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                isDeleted: true,
+                deletedAt: item.deletedAt
+              };
+              return (
+                <TaskCard
+                  key={item.id}
+                  task={task}
+                  isSelected={selectedItems.includes(item.id)}
+                  onSelect={() => handleItemClick(item.id)}
+                  context="trash"
+                  contextData={contextData}
+                />
+              );
+            }
+            case 'idea': {
+              const idea: Note = {
+                id: item.id,
+                title: item.title,
+                content: item.content || '',
+                tags: item.metadata?.tags || [],
+                isFavorite: item.metadata?.isFavorite || false,
+                isPinned: false,
+                isIdea: true,
+                linkedNoteIds: item.metadata?.linkedItems || [],
+                linkedTasks: [],
+                isArchived: false,
+                isDeleted: true,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+              };
+              return (
+                <IdeaCard
+                  key={item.id}
+                  idea={idea}
+                  isSelected={selectedItems.includes(item.id)}
+                  onSelect={() => handleItemClick(item.id)}
+                  context="trash"
+                  contextData={contextData}
+                />
+              );
+            }
+            case 'reminder': {
+              const reminder: Reminder = {
+                id: item.id,
+                type: 'reminder',
+                title: item.title,
+                description: item.content || '',
+                dueDateTime: item.metadata?.dueDate || new Date().toISOString(),
+                isCompleted: item.metadata?.isCompleted || false,
+                isSnoozed: item.metadata?.isSnoozed || false,
+                snoozeUntil: item.metadata?.snoozeUntil,
+                repeatInterval: undefined,
+                tags: item.metadata?.tags || [],
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                isDeleted: true,
+                userId: 'default'
+              };
+              return (
+                <ReminderCard
+                  key={item.id}
+                  reminder={reminder}
+                  isSelected={selectedItems.includes(item.id)}
+                  onSelect={() => handleItemClick(item.id)}
+                  context="trash"
+                  contextData={contextData}
+                />
+              );
+            }
+            default:
+              return null;
+          }
+        })}
       </div>
 
       {/* Confirmation Dialogs */}

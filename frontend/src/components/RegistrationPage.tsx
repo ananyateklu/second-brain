@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { User, Mail, Lock, ShieldCheck, Sun, Moon, Loader, AlertCircle } from 'lucide-react';
 import { Logo } from './shared/Logo';
 import { Input } from './shared/Input';
-import { useTheme } from '../contexts/ThemeContext';
+import { useTheme } from '../contexts/themeContextUtils';
 import { useAuth } from '../hooks/useAuth';
 import { validateEmail, validatePassword } from '../utils/validation';
 import { motion } from 'framer-motion';

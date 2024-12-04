@@ -1,21 +1,19 @@
-import { useTheme } from '../../contexts/ThemeContext';
+import { useTheme } from '../../contexts/themeContextUtils';
+import darkLogo from '../../assets/second-brain-logo-dark-mode.png';
 import lightLogo from '../../assets/second-brain-logo-light-mode.png';
-import darkLogo from '../../assets/second-brain-logo-dark-mode.png';   
 
-interface LogoProps {
-  className?: string;
-}
-
-export function Logo({ className }: LogoProps) {
+export function Logo({ className = '' }: { className?: string }) {
   const { theme } = useTheme();
+  
+  // Use dark logo for dark and midnight themes
+  const logoSrc = theme === 'dark' || theme === 'midnight' ? darkLogo : lightLogo;
 
   return (
-    <div className={className}>
-      <img
-        src={theme === 'dark' ? darkLogo : lightLogo}
-        alt="Second Brain Logo"
-        className="w-full h-full object-contain" 
-      />
-    </div>
+    <img
+      src={logoSrc}
+      alt="Second Brain Logo"
+      className={className}
+      data-theme={theme}
+    />
   );
 }

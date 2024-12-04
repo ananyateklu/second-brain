@@ -39,21 +39,20 @@ export function RemindersPage() {
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-fixed">
-      <div className="fixed inset-0 bg-fixed dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-slate-800 bg-gradient-to-br from-white to-gray-100 -z-10" />
+      <div className="fixed inset-0 bg-fixed bg-gradient-to-br from-[var(--color-background)] to-[var(--color-surface)] -z-10" />
 
       <div className="space-y-8 relative">
-        {/* Page Header with gradient overlay */}
-        <div className="relative overflow-hidden rounded-xl bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm">
-          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-transparent" />
+        <div className="relative overflow-hidden rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] shadow-sm">
+          <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-reminder)]/10 to-transparent" />
           <div className="relative p-6">
             <div className="flex flex-col sm:flex-row gap-6 justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-purple-100/50 dark:bg-purple-900/30 rounded-lg">
-                  <Bell className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                <div className="p-2.5 bg-[var(--color-reminder)]/10 rounded-lg">
+                  <Bell className="w-6 h-6 text-[var(--color-reminder)]" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Reminders</h1>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <h1 className="text-2xl font-bold text-[var(--color-text)]">Reminders</h1>
+                  <p className="text-sm text-[var(--color-textSecondary)]">
                     {dueCount} due now • {upcomingCount} upcoming
                   </p>
                 </div>
@@ -62,7 +61,7 @@ export function RemindersPage() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowNewReminderModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-all duration-200 hover:scale-105 shadow-sm hover:shadow-md"
+                  className="flex items-center gap-2 px-4 py-2 bg-[var(--color-reminder)] hover:bg-[var(--color-reminder)]/90 text-white rounded-lg transition-all duration-200 hover:scale-105 shadow-sm hover:shadow-md"
                 >
                   <Plus className="w-4 h-4" />
                   <span>New Reminder</span>
@@ -72,7 +71,6 @@ export function RemindersPage() {
           </div>
         </div>
 
-        {/* Search, Filters, and View Toggle */}
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
             <Input
@@ -82,17 +80,16 @@ export function RemindersPage() {
               placeholder="Search reminders..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-white dark:bg-[#1C1C1E] border-gray-200/50 dark:border-[#2C2C2E] text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500"
             />
           </div>
 
           <div className="flex gap-2">
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-lg border border-[#2C2C2E] transition-all ${
+              className={`p-2 rounded-lg border border-[var(--color-border)] transition-all ${
                 viewMode === 'grid'
-                  ? 'bg-[#64ab6f]/20 text-[#64ab6f]'
-                  : 'bg-[#1C1C1E] hover:bg-[#2C2C2E] text-gray-400'
+                  ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
+                  : 'bg-[var(--color-background)] hover:bg-[var(--color-surface)] text-[var(--color-textSecondary)]'
               }`}
               title="Grid View"
             >
@@ -100,10 +97,10 @@ export function RemindersPage() {
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`p-2 rounded-lg border border-[#2C2C2E] transition-all ${
+              className={`p-2 rounded-lg border border-[var(--color-border)] transition-all ${
                 viewMode === 'list'
-                  ? 'bg-[#64ab6f]/20 text-[#64ab6f]'
-                  : 'bg-[#1C1C1E] hover:bg-[#2C2C2E] text-gray-400'
+                  ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
+                  : 'bg-[var(--color-background)] hover:bg-[var(--color-surface)] text-[var(--color-textSecondary)]'
               }`}
               title="List View"
             >
@@ -113,10 +110,10 @@ export function RemindersPage() {
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`
-                flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200/50 dark:border-[#2C2C2E]
-                bg-white dark:bg-[#1C1C1E] hover:bg-gray-50 dark:hover:bg-[#2C2C2E]
-                text-gray-700 dark:text-gray-300 transition-colors
-                ${showFilters ? 'bg-gray-50 dark:bg-[#2C2C2E]' : ''}
+                flex items-center gap-2 px-4 py-2 rounded-lg border border-[var(--color-border)]
+                bg-[var(--color-surface)] hover:bg-[var(--color-surface)]/80
+                text-[var(--color-text)] transition-colors
+                ${showFilters ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]' : ''}
               `}
             >
               <SlidersHorizontal className="w-5 h-5" />
@@ -125,14 +122,13 @@ export function RemindersPage() {
           </div>
         </div>
 
-        {/* Filters Panel */}
         {showFilters && (
-          <div className="bg-white dark:bg-[#1C1C1E] border border-gray-200/50 dark:border-[#2C2C2E] p-4 rounded-xl shadow-lg">
+          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] p-4 rounded-xl shadow-lg">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Filters</h3>
+              <h3 className="text-lg font-semibold text-[var(--color-text)]">Filters</h3>
               <button
                 onClick={() => setSelectedFilter('all')}
-                className="text-sm text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                className="text-sm text-[var(--color-textSecondary)] hover:text-[var(--color-text)]"
               >
                 Clear all
               </button>
@@ -144,7 +140,6 @@ export function RemindersPage() {
           </div>
         )}
 
-        {/* Reminder List */}
         <div className="w-full">
           <ReminderList 
             reminders={filteredReminders} 
@@ -152,7 +147,6 @@ export function RemindersPage() {
           />
         </div>
 
-        {/* New Reminder Modal */}
         <NewReminderModal
           isOpen={showNewReminderModal}
           onClose={() => setShowNewReminderModal(false)}

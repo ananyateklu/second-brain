@@ -1,41 +1,96 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-
-type Theme = 'light' | 'dark';
-
-interface ThemeContextType {
-  theme: Theme;
-  toggleTheme: () => void;
-}
-
-const ThemeContext = createContext<ThemeContextType | null>(null);
+import React, { useState, useEffect } from 'react';
+import { ThemeContext } from './themeContextUtils';
+import { themes, ThemeName } from '../theme/theme.config';
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(() => {
-    const savedTheme = localStorage.getItem('theme');
-    return (savedTheme as Theme) || 
-      (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  const [themeName, setThemeName] = useState<ThemeName>(() => {
+    // Initialize from localStorage or system preference
+    const savedTheme = localStorage.getItem('theme') as ThemeName;
+    if (savedTheme && themes[savedTheme]) {
+      return savedTheme;
+    }
+    // If no saved theme, check system preference
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
+    return 'light';
   });
 
   useEffect(() => {
-    localStorage.setItem('theme', theme);
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-  }, [theme]);
+    const theme = themes[themeName];
+    
+    console.log('Theme Context Update:', {
+      newTheme: themeName,
+      isDark: themeName === 'dark' || themeName === 'midnight',
+      appliedColors: theme.colors
+    });
+    
+    // Save to localStorage
+    localStorage.setItem('theme', themeName);
+    
+    // Apply CSS variables
+    const root = document.documentElement;
+    Object.entries(theme.colors).forEach(([key, value]) => {
+      root.style.setProperty(`--color-${key}`, value);
+    });
+    
+    // Set data-theme attribute for CSS selectors
+    root.setAttribute('data-theme', themeName);
+    
+    // Toggle dark class for Tailwind - midnight should also trigger dark mode
+    root.classList.toggle('dark', themeName === 'dark' || themeName === 'midnight');
+  }, [themeName]);
+
+  // Listen for system theme changes
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = (e: MediaQueryListEvent) => {
+      const savedTheme = localStorage.getItem('theme') as ThemeName;
+      // Only auto-switch if user hasn't explicitly chosen a theme
+      if (!savedTheme) {
+        setThemeName(e.matches ? 'dark' : 'light');
+      }
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
 
   const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+    setThemeName(prev => {
+      switch (prev) {
+        case 'light':
+          return 'dark';
+        case 'dark':
+          return 'midnight';
+        case 'midnight':
+          return 'light';
+        default:
+          return 'light';
+      }
+    });
+  };
+
+  const setTheme = (name: ThemeName) => {
+    console.log('setTheme called:', {
+      requestedTheme: name,
+      currentTheme: themeName,
+      isValidTheme: !!themes[name]
+    });
+    
+    if (themes[name]) {
+      setThemeName(name);
+    }
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ 
+      theme: themeName, 
+      toggleTheme,
+      setTheme,
+      colors: themes[themeName].colors 
+    }}>
       {children}
     </ThemeContext.Provider>
   );
-}
-
-export function useTheme() {
-  const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider');
-  }
-  return context;
 }

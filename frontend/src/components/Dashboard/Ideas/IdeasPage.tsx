@@ -5,7 +5,7 @@ import { IdeasList } from './IdeasList';
 import { IdeasGrid } from './IdeasGrid';
 import { IdeasMindMap } from './IdeasMindMap';
 import { NewIdeaModal } from './NewIdeaModal';
-import { FilterDropdown } from '../Notes/FilterDropdown'; // Reuse the Notes filter component
+import { FilterDropdown } from '../Notes/FilterDropdown';
 import { Input } from '../../shared/Input';
 import { useModal } from '../../../contexts/modalContextUtils';
 
@@ -94,22 +94,22 @@ export function IdeasPage() {
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-fixed">
-      {/* Background gradient - matches Dashboard.tsx */}
-      <div className="fixed inset-0 bg-fixed dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-slate-800 bg-gradient-to-br from-white to-gray-100 -z-10" />
+      {/* Background gradient */}
+      <div className="fixed inset-0 bg-fixed bg-gradient-to-br from-[var(--color-background)] to-[var(--color-surface)] -z-10" />
 
       <div className="space-y-8 relative">
         {/* Page Header with gradient overlay */}
-        <div className="relative overflow-hidden rounded-xl bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm">
-          <div className="absolute inset-0 bg-gradient-to-r from-amber-500/10 to-transparent" />
+        <div className="relative overflow-hidden rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] shadow-sm">
+          <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-idea)]/10 to-transparent" />
           <div className="relative p-6">
             <div className="flex flex-col sm:flex-row gap-6 justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-amber-100/50 dark:bg-amber-900/30 rounded-lg">
-                  <Lightbulb className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                <div className="p-2.5 bg-[var(--color-idea)]/10 rounded-lg">
+                  <Lightbulb className="w-6 h-6 text-[var(--color-idea)]" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Idea Incubator</h1>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <h1 className="text-2xl font-bold text-[var(--color-text)]">Idea Incubator</h1>
+                  <p className="text-sm text-[var(--color-textSecondary)]">
                     {allIdeas.length} ideas captured
                   </p>
                 </div>
@@ -118,7 +118,7 @@ export function IdeasPage() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowNewIdeaModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-all duration-200 hover:scale-105 shadow-sm hover:shadow-md"
+                  className="flex items-center gap-2 px-4 py-2 bg-[var(--color-idea)] hover:bg-[var(--color-idea)]/90 text-white rounded-lg transition-all duration-200 hover:scale-105 shadow-sm hover:shadow-md"
                 >
                   <Plus className="w-4 h-4" />
                   <span>New Idea</span>
@@ -128,7 +128,7 @@ export function IdeasPage() {
           </div>
         </div>
 
-        {/* Search and View Controls - Updated styling */}
+        {/* Search and View Controls */}
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
             <Input
@@ -138,16 +138,17 @@ export function IdeasPage() {
               placeholder="Search ideas..."
               value={filters.search}
               onChange={(e) => handleFilterChange('search', e.target.value)}
+              className="w-full"
             />
           </div>
 
           <div className="flex gap-2">
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-lg border border-[#2C2C2E] transition-all ${
+              className={`p-2 rounded-lg border border-[var(--color-border)] transition-all ${
                 viewMode === 'grid'
-                  ? 'bg-[#64ab6f]/20 text-[#64ab6f]'
-                  : 'bg-[#1C1C1E] hover:bg-[#2C2C2E] text-gray-400'
+                  ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
+                  : 'bg-[var(--color-background)] hover:bg-[var(--color-surface)] text-[var(--color-textSecondary)]'
               }`}
               title="Grid View"
             >
@@ -155,10 +156,10 @@ export function IdeasPage() {
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`p-2 rounded-lg border border-[#2C2C2E] transition-all ${
+              className={`p-2 rounded-lg border border-[var(--color-border)] transition-all ${
                 viewMode === 'list'
-                  ? 'bg-[#64ab6f]/20 text-[#64ab6f]'
-                  : 'bg-[#1C1C1E] hover:bg-[#2C2C2E] text-gray-400'
+                  ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
+                  : 'bg-[var(--color-background)] hover:bg-[var(--color-surface)] text-[var(--color-textSecondary)]'
               }`}
               title="List View"
             >
@@ -166,10 +167,10 @@ export function IdeasPage() {
             </button>
             <button
               onClick={() => setViewMode('mindmap')}
-              className={`p-2 rounded-lg border border-[#2C2C2E] transition-all ${
+              className={`p-2 rounded-lg border border-[var(--color-border)] transition-all ${
                 viewMode === 'mindmap'
-                  ? 'bg-[#64ab6f]/20 text-[#64ab6f]'
-                  : 'bg-[#1C1C1E] hover:bg-[#2C2C2E] text-gray-400'
+                  ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
+                  : 'bg-[var(--color-background)] hover:bg-[var(--color-surface)] text-[var(--color-textSecondary)]'
               }`}
               title="Mind Map View"
             >
@@ -178,14 +179,14 @@ export function IdeasPage() {
           </div>
         </div>
 
-        {/* Filters Panel - Updated styling */}
+        {/* Filters Panel */}
         {showFilters && (
-          <div className="bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm rounded-xl p-4">
+          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] shadow-sm rounded-xl p-4">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Filters</h3>
+              <h3 className="text-lg font-semibold text-[var(--color-text)]">Filters</h3>
               <button
                 onClick={clearFilters}
-                className="text-sm text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                className="text-sm text-[var(--color-textSecondary)] hover:text-[var(--color-text)]"
               >
                 Clear all
               </button>
@@ -213,11 +214,11 @@ export function IdeasPage() {
 
           {filteredIdeas.length === 0 && (
             <div className="flex flex-col items-center justify-center h-[400px] text-center">
-              <Lightbulb className="w-16 h-16 text-gray-300 dark:text-gray-600 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+              <Lightbulb className="w-16 h-16 text-[var(--color-textSecondary)] mb-4" />
+              <h3 className="text-lg font-medium text-[var(--color-text)] mb-2">
                 No ideas found
               </h3>
-              <p className="text-gray-600 dark:text-gray-400 max-w-md">
+              <p className="text-[var(--color-textSecondary)] max-w-md">
                 {filters.search || filters.tags.length > 0
                   ? "Try adjusting your filters to find what you're looking for."
                   : "Start capturing your ideas! Click the 'New Idea' button to create your first idea."}

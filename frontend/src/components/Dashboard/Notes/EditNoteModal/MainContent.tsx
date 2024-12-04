@@ -32,11 +32,11 @@ export function MainContent({
   setError
 }: MainContentProps) {
   return (
-    <div className="flex flex-col min-h-0 p-6 bg-white dark:bg-[#111111]">
+    <div className="flex flex-col min-h-0 p-6 bg-[var(--color-surface)]">
       <div className="space-y-4">
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label htmlFor="note-title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label htmlFor="note-title" className="block text-sm font-medium text-[var(--color-text)]">
               Title
             </label>
             <SuggestionButton
@@ -65,12 +65,13 @@ export function MainContent({
             placeholder="What's your note?"
             error={error}
             disabled={isLoading}
+            className="bg-[var(--color-surface)] border-[var(--color-border)]"
           />
         </div>
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label className="block text-sm font-medium text-[var(--color-text)]">
               Description
             </label>
             <SuggestionButton
@@ -91,13 +92,13 @@ export function MainContent({
             placeholder="Write your note..."
             rows={8}
             disabled={isLoading}
-            className="w-full px-3 py-2 bg-white dark:bg-[#1C1C1E] text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 resize-none rounded-lg border border-gray-200/50 dark:border-[#2C2C2E] focus:ring-2 focus:ring-primary-500/50 focus:border-transparent transition-all"
+            className="w-full px-3 py-2 bg-[var(--color-surface)] text-[var(--color-text)] placeholder-[var(--color-textSecondary)] resize-none rounded-lg border border-[var(--color-border)] focus:ring-2 focus:ring-[var(--color-accent)]/50 focus:border-transparent transition-all"
           />
         </div>
 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label className="block text-sm font-medium text-[var(--color-text)]">
               Tags
             </label>
             <SuggestionButton
@@ -115,13 +116,13 @@ export function MainContent({
             {tags.map(tag => (
               <span
                 key={tag}
-                className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 rounded-full text-sm"
+                className="inline-flex items-center gap-1.5 px-3 py-1 bg-[var(--color-accent)]/20 text-[var(--color-accent)] rounded-full text-sm"
               >
                 {tag}
                 <button
                   type="button"
                   onClick={() => onRemoveTag(tag)}
-                  className="hover:text-primary-900 dark:hover:text-primary-100 transition-colors"
+                  className="hover:text-[var(--color-accent)] transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -137,14 +138,21 @@ export function MainContent({
               icon={TagIcon}
               value={tagInput}
               onChange={(e) => onTagInputChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  onAddTag();
+                }
+              }}
               placeholder="Add a tag"
               disabled={isLoading}
+              className="bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text)] placeholder-[var(--color-textSecondary)]"
             />
             <button
               type="button"
               onClick={onAddTag}
               disabled={!tagInput.trim() || isLoading}
-              className="px-4 py-2 bg-white/70 dark:bg-gray-800/70 backdrop-blur-glass text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-gray-200/50 dark:border-gray-700/50"
+              className="px-4 py-2 bg-[var(--color-surface)] text-[var(--color-textSecondary)] hover:bg-[var(--color-surface)]/80 border border-[var(--color-border)] rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               Add
             </button>

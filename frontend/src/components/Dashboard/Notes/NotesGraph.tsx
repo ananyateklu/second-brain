@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import CytoscapeComponent from 'react-cytoscapejs';
 import cytoscape from 'cytoscape';
-import { useTheme } from '../../../contexts/ThemeContext';
+import { useTheme } from '../../../contexts/themeContextUtils';
 import type { Stylesheet } from 'cytoscape';
 import { Note } from '../../../types/note';
 

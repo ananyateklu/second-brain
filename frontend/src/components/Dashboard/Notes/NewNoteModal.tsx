@@ -68,14 +68,14 @@ export function NewNoteModal({ isOpen, onClose }: NewNoteModalProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       
-      <div className="relative w-full max-w-2xl glass-morphism rounded-xl">
-        <div className="flex items-center justify-between p-4 border-b border-[#2C2C2E] dark:border-[#2C2C2E]">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+      <div className="relative w-full max-w-2xl bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)]">
+        <div className="flex items-center justify-between p-4 border-b border-[var(--color-border)]">
+          <h2 className="text-xl font-semibold text-[var(--color-text)]">
             Create New Note
           </h2>
           <button
             onClick={onClose}
-            className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            className="p-1 text-[var(--color-textSecondary)] hover:text-[var(--color-text)]"
           >
             <X className="w-5 h-5" />
           </button>
@@ -85,7 +85,7 @@ export function NewNoteModal({ isOpen, onClose }: NewNoteModalProps) {
           <div className="space-y-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label htmlFor="note-title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label htmlFor="note-title" className="block text-sm font-medium text-[var(--color-text)]">
                   Title
                 </label>
                 <SuggestionButton
@@ -114,13 +114,13 @@ export function NewNoteModal({ isOpen, onClose }: NewNoteModalProps) {
                 placeholder="Enter note title"
                 error={error}
                 disabled={isLoading}
-                className="bg-[#1C1C1E] dark:bg-[#1C1C1E] border-[#2C2C2E] dark:border-[#2C2C2E]"
+                className="bg-[var(--color-surface)] border-[var(--color-border)]"
               />
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label className="block text-sm font-medium text-[var(--color-text)]">
                   Content
                 </label>
                 <SuggestionButton
@@ -141,13 +141,13 @@ export function NewNoteModal({ isOpen, onClose }: NewNoteModalProps) {
                 placeholder="Write your note content..."
                 rows={6}
                 disabled={isLoading}
-                className="w-full px-4 py-3 bg-[#1C1C1E] dark:bg-[#1C1C1E] border border-[#2C2C2E] dark:border-[#2C2C2E] rounded-lg focus:ring-2 focus:ring-[#64ab6f]/50 focus:border-transparent transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400"
+                className="w-full px-4 py-3 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-accent)]/50 focus:border-transparent transition-all text-[var(--color-text)] placeholder:text-[var(--color-textSecondary)]"
               />
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label className="block text-sm font-medium text-[var(--color-text)]">
                   Tags
                 </label>
                 <SuggestionButton
@@ -165,13 +165,13 @@ export function NewNoteModal({ isOpen, onClose }: NewNoteModalProps) {
                 {tags.map(tag => (
                   <span
                     key={tag}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#64ab6f]/20 text-[#64ab6f] rounded-full text-sm"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-[var(--color-accent)]/20 text-[var(--color-accent)] rounded-full text-sm"
                   >
                     {tag}
                     <button
                       type="button"
                       onClick={() => handleRemoveTag(tag)}
-                      className="p-0.5 hover:text-[#64ab6f]"
+                      className="p-0.5 hover:text-[var(--color-accent)]"
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -195,13 +195,13 @@ export function NewNoteModal({ isOpen, onClose }: NewNoteModalProps) {
                   }}
                   placeholder="Add a tag"
                   disabled={isLoading}
-                  className="bg-[#1C1C1E] dark:bg-[#1C1C1E] border-[#2C2C2E] dark:border-[#2C2C2E]"
+                  className="bg-[var(--color-surface)] border-[var(--color-border)]"
                 />
                 <button
                   type="button"
                   onClick={handleAddTag}
                   disabled={!tagInput.trim() || isLoading}
-                  className="px-4 py-2 bg-[#1C1C1E] text-gray-400 hover:bg-[#2C2C2E] rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-4 py-2 bg-[var(--color-surface)] text-[var(--color-textSecondary)] hover:bg-[var(--color-surface)]/80 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Add
                 </button>
@@ -214,14 +214,14 @@ export function NewNoteModal({ isOpen, onClose }: NewNoteModalProps) {
               type="button"
               onClick={onClose}
               disabled={isLoading}
-              className="px-4 py-2 text-gray-400 hover:bg-[#2C2C2E] rounded-lg transition-colors"
+              className="px-4 py-2 text-[var(--color-textSecondary)] hover:bg-[var(--color-surface)]/80 rounded-lg transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="flex items-center gap-2 px-4 py-2 bg-[#64ab6f] hover:bg-[#64ab6f]/90 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent)] hover:bg-[var(--color-accent)]/90 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isLoading ? (
                 <>

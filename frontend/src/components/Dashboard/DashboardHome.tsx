@@ -157,7 +157,7 @@ const StatCard = ({
       }}
     >
       <motion.div
-        className={`w-full h-full bg-[#1C1C1E] dark:bg-[#1C1C1E] backdrop-blur-md ${size.padding} rounded-lg border border-[#2C2C2E] dark:border-[#2C2C2E] hover:border-[#64ab6f] dark:hover:border-[#64ab6f] transition-all cursor-pointer`}
+        className={`w-full h-full bg-[var(--color-surface)] backdrop-blur-md ${size.padding} rounded-lg border border-[var(--color-border)] hover:border-[var(--color-accent)] transition-all cursor-pointer`}
         whileTap={showStatsEditor ? { scale: 0.95 } : undefined}
       >
         <div className="flex flex-col h-full justify-between">
@@ -170,7 +170,7 @@ const StatCard = ({
                 />
               )}
             </div>
-            <p className={`${size.titleSize} font-medium text-gray-700 dark:text-gray-300`}>
+            <p className={`${size.titleSize} font-medium text-[var(--color-text)]`}>
               {stat.title}
             </p>
           </div>
@@ -178,7 +178,7 @@ const StatCard = ({
           {/* Value and Change */}
           <div className="mt-1">
             <div className="flex items-baseline gap-1">
-              <span className={`${size.valueSize} font-semibold text-gray-900 dark:text-white ${statValue.value === '-' ? 'animate-pulse' : ''
+              <span className={`${size.valueSize} font-semibold text-[var(--color-text)] ${statValue.value === '-' ? 'animate-pulse' : ''
                 }`}>
                 {statValue.value}
               </span>
@@ -189,7 +189,7 @@ const StatCard = ({
               )}
             </div>
             {statValue.timeframe && (
-              <span className="text-[10px] text-gray-500 dark:text-gray-400 block">
+              <span className="text-[10px] text-[var(--color-textSecondary)] block">
                 {statValue.timeframe}
               </span>
             )}
@@ -374,7 +374,7 @@ export function DashboardHome() {
     >
       {/* Welcome Section */}
       <div
-        className="bg-white/20 dark:bg-[#2C2C2E] border border-gray-200/30 dark:border-[#3C3C3E]/30 shadow-sm rounded-xl"
+        className="bg-[var(--color-surface)] border border-[var(--color-border)] shadow-sm rounded-xl"
         data-type="welcome-section"
       >
         <div className="p-6">
@@ -393,7 +393,7 @@ export function DashboardHome() {
       </div>
 
       {/* Quick Stats */}
-      <div className="bg-white/20 dark:bg-[#2C2C2E] border border-gray-200/30 dark:border-[#3C3C3E]/30 shadow-sm p-6 rounded-xl">
+      <div className="bg-[var(--color-surface)] border border-[var(--color-border)] shadow-sm p-6 rounded-xl">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
             Quick Stats
@@ -474,7 +474,7 @@ export function DashboardHome() {
 
       {/* Pinned Notes */}
       {stats.pinnedNotes.length > 0 && (
-        <div className="bg-[#2C2C2E] dark:bg-[#2C2C2E] border border-[#2C2C2E] dark:border-[#2C2C2E] shadow-sm p-6 rounded-xl">
+        <div className="bg-[var(--color-surface)] border border-[var(--color-border)] shadow-sm p-6 rounded-xl">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <PinIcon className="w-5 h-5 text-primary-600 dark:text-primary-500" />
@@ -494,22 +494,23 @@ export function DashboardHome() {
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
           >
             {stats.pinnedNotes.map(note => (
-              <button
-                key={note.id}
+              <div 
+                key={note.id} 
+                role="button" 
+                tabIndex={0}
+                className="cursor-pointer"
                 onClick={() => handleEditNote(note)}
                 onKeyDown={(e) => e.key === 'Enter' && handleEditNote(note)}
-                className="w-full text-left cursor-pointer transition-transform duration-200 hover:-translate-y-0.5"
-                tabIndex={0}
               >
                 <NoteCard note={note} />
-              </button>
+              </div>
             ))}
           </div>
         </div>
       )}
 
       {/* Recent Activity */}
-      <div className="bg-[#2C2C2E] dark:bg-[#2C2C2E] border border-[#2C2C2E] dark:border-[#2C2C2E] shadow-sm p-6 rounded-xl">
+      <div className="bg-[var(--color-surface)] border border-[var(--color-border)] shadow-sm p-6 rounded-xl">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 mb-4">
             <Clock className="w-5 h-5 text-primary-600 dark:text-primary-500" />
@@ -527,15 +528,16 @@ export function DashboardHome() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {notes.slice(0, 3).map(note => (
-            <button
-              key={note.id}
+            <div 
+              key={note.id} 
+              role="button" 
+              tabIndex={0}
+              className="cursor-pointer"
               onClick={() => handleEditNote(note)}
               onKeyDown={(e) => e.key === 'Enter' && handleEditNote(note)}
-              className="w-full text-left cursor-pointer transition-transform duration-200 hover:-translate-y-0.5"
-              tabIndex={0}
             >
               <NoteCard note={note} />
-            </button>
+            </div>
           ))}
         </div>
       </div>

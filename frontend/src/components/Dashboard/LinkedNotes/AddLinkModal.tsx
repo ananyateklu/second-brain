@@ -1,140 +1,132 @@
 import { useState } from 'react';
-import { X, Search, Lightbulb, FileText } from 'lucide-react';
+import { X, Search, Type, Lightbulb, AlertCircle } from 'lucide-react';
 import { useNotes } from '../../../contexts/notesContextUtils';
 
 interface AddLinkModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  sourceNoteId: string;
-  onLinkAdded?: () => void;
+    isOpen: boolean;
+    onClose: () => void;
+    sourceNoteId: string;
+    onLinkAdded: () => void;
 }
 
 export function AddLinkModal({ isOpen, onClose, sourceNoteId, onLinkAdded }: AddLinkModalProps) {
-  const { notes, addLink } = useNotes();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedType, setSelectedType] = useState<'all' | 'notes' | 'ideas'>('all');
+    const { notes, addLink } = useNotes();
+    const [searchQuery, setSearchQuery] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
 
-  if (!isOpen) return null;
+    if (!isOpen) return null;
 
-  const sourceNote = notes.find(note => note.id === sourceNoteId);
-  if (!sourceNote) return null;
+    const filteredNotes = notes
+        .filter(note => note.id !== sourceNoteId && !note.linkedNoteIds?.includes(sourceNoteId))
+        .filter(note =>
+            note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            note.content.toLowerCase().includes(searchQuery.toLowerCase())
+        );
 
-  const filteredItems = notes.filter(note => 
-    note.id !== sourceNoteId && // Don't show the source note
-    !sourceNote?.linkedNoteIds?.includes(note.id) && // Don't show already linked notes
-    (selectedType === 'all' || 
-     (selectedType === 'ideas' && note.isIdea) ||
-     (selectedType === 'notes' && !note.isIdea)) &&
-    (note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-     note.content.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+    const handleLinkNote = async (targetNoteId: string) => {
+        setIsLoading(true);
+        setError('');
 
-  const handleAddLink = async (targetNoteId: string) => {
-    try {
-      setIsLoading(true);
-      await addLink(sourceNoteId, targetNoteId);
-      onLinkAdded?.();
-      onClose();
-    } catch (error) {
-      console.error('Failed to add link:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+        try {
+            await addLink(sourceNoteId, targetNoteId);
+            onLinkAdded();
+            onClose();
+        } catch (err) {
+            console.error('Failed to link note:', err);
+            setError('Failed to link note. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      
-      <div className="relative w-full max-w-lg glass-morphism rounded-xl">
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-dark-border">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-            Link to Note or Idea
-          </h3>
-          <button
-            onClick={onClose}
-            className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-            disabled={isLoading}
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
-        <div className="p-4">
-          <div className="space-y-4">
-            {/* Search and Filter Controls */}
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-white dark:bg-dark-bg border border-gray-200 dark:border-dark-border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
-                  disabled={isLoading}
-                />
-              </div>
-              <select
-                value={selectedType}
-                onChange={(e) => setSelectedType(e.target.value as 'all' | 'notes' | 'ideas')}
-                className="px-3 py-2 bg-white dark:bg-dark-bg border border-gray-200 dark:border-dark-border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
-                disabled={isLoading}
-              >
-                <option value="all">All Items</option>
-                <option value="notes">Notes Only</option>
-                <option value="ideas">Ideas Only</option>
-              </select>
-            </div>
+            <div className="relative w-full max-w-lg bg-[var(--color-surface)] rounded-xl shadow-2xl overflow-hidden border border-[var(--color-border)]">
+                <div className="flex items-center justify-between p-4 border-b border-[var(--color-border)]">
+                    <h3 className="text-lg font-medium text-[var(--color-text)]">
+                        Link to Note or Idea
+                    </h3>
+                    <button
+                        onClick={onClose}
+                        className="p-1 text-[var(--color-textSecondary)] hover:text-[var(--color-text)]"
+                        disabled={isLoading}
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
 
-            {/* Items List */}
-            <div className="max-h-60 overflow-y-auto">
-              {filteredItems.map(item => {
-                const isIdea = item.tags.includes('idea');
-                return (
-                  <button
-                    key={item.id}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleAddLink(item.id);
-                    }}
-                    disabled={isLoading}
-                    className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-dark-hover rounded-lg transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <div className={`p-1.5 rounded-lg ${
-                      isIdea 
-                        ? 'bg-amber-100 dark:bg-amber-900/30' 
-                        : 'bg-blue-100 dark:bg-blue-900/30'
-                    }`}>
-                      {isIdea ? (
-                        <Lightbulb className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                      ) : (
-                        <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                      )}
+                <div className="p-4">
+                    <div className="space-y-4">
+                        {/* Search Input */}
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--color-textSecondary)]" />
+                            <input
+                                type="text"
+                                placeholder="Search..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-accent)]/50 focus:border-transparent transition-colors text-[var(--color-text)] placeholder-[var(--color-textSecondary)]"
+                                disabled={isLoading}
+                            />
+                        </div>
+
+                        {/* Error Message */}
+                        {error && (
+                            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                                <div className="flex items-center gap-2 text-red-500">
+                                    <AlertCircle className="w-4 h-4" />
+                                    <span>{error}</span>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Notes List */}
+                        <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                            {filteredNotes.length > 0 ? (
+                                filteredNotes.map(note => (
+                                    <div
+                                        key={note.id}
+                                        className="group relative p-3 rounded-lg bg-[var(--color-surface)] hover:bg-[var(--color-surface)]/80 transition-colors cursor-pointer border border-[var(--color-border)]"
+                                        onClick={() => handleLinkNote(note.id)}
+                                    >
+                                        <div className="flex items-start gap-3">
+                                            <div className={`p-1.5 rounded-lg ${note.isIdea 
+                                                ? 'bg-[var(--color-idea)]/10' 
+                                                : 'bg-[var(--color-note)]/10'}`}
+                                            >
+                                                {note.isIdea ? (
+                                                    <Lightbulb className="w-4 h-4 text-[var(--color-idea)]" />
+                                                ) : (
+                                                    <Type className="w-4 h-4 text-[var(--color-note)]" />
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <h6 className="font-medium text-[var(--color-text)] truncate">
+                                                    {note.title}
+                                                </h6>
+                                                <p className="text-sm text-[var(--color-textSecondary)] line-clamp-2 mt-0.5">
+                                                    {note.content}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="text-center py-8">
+                                    <p className="text-[var(--color-textSecondary)]">
+                                        {searchQuery
+                                            ? 'No matching notes found'
+                                            : 'No notes available to link'}
+                                    </p>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                        {item.title}
-                      </h4>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">
-                        {item.content}
-                      </p>
-                    </div>
-                  </button>
-                );
-              })}
-
-              {filteredItems.length === 0 && (
-                <p className="text-center py-4 text-gray-500 dark:text-gray-400">
-                  No items available to link
-                </p>
-              )}
+                </div>
             </div>
-          </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 }

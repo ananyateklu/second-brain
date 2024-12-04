@@ -80,20 +80,20 @@ export function WelcomeBar() {
 
   return (
     <>
-      <div className="bg-[#2C2C2E] dark:bg-[#2C2C2E] backdrop-blur-md border border-[#2C2C2E] dark:border-[#2C2C2E] shadow-sm hover:shadow-md transition-shadow rounded-xl p-6 mb-6">
+      <div className="bg-[var(--color-surface)] border border-[var(--color-border)] shadow-sm hover:shadow-md transition-shadow rounded-xl p-6 mb-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-start gap-4 w-full">
             <div className="w-full">
               <div className="flex justify-between items-center mb-3">
-                <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
+                <h1 className="text-lg font-semibold text-[var(--color-text)]">
                   {getGreeting()},{' '}
-                  <span className="text-green-400 dark:text-green-400">
+                  <span className="text-[var(--color-accent)]">
                     {user?.name}
                   </span>
                 </h1>
                 <button
                   onClick={() => setShowStatsEditor(!showStatsEditor)}
-                  className="p-2 hover:bg-[#3C3C3E] dark:hover:bg-[#3C3C3E] rounded-lg text-gray-400 dark:text-gray-400 transition-colors"
+                  className="p-2 hover:bg-[var(--color-surface)]/80 rounded-lg text-[var(--color-textSecondary)] transition-colors"
                   title="Customize stats"
                 >
                   <Settings className="w-5 h-5" />
@@ -152,7 +152,7 @@ export function WelcomeBar() {
                           className={`transform origin-center relative w-full h-[80px]`}
                         >
                           <motion.div
-                            className={`w-full h-full bg-[#1C1C1E] dark:bg-[#1C1C1E] backdrop-blur-md ${size.padding} rounded-lg border border-[#2C2C2E] dark:border-[#2C2C2E] hover:border-[#64ab6f] dark:hover:border-[#64ab6f] transition-all cursor-pointer`}
+                            className={`w-full h-full bg-[var(--color-surface)] backdrop-blur-md ${size.padding} rounded-lg border border-[var(--color-border)] hover:border-[var(--color-accent)] transition-all cursor-pointer`}
                             whileTap={showStatsEditor ? { scale: 0.95 } : undefined}
                           >
                             <div className="flex flex-col h-full justify-between">
@@ -165,7 +165,7 @@ export function WelcomeBar() {
                                     />
                                   )}
                                 </div>
-                                <p className={`${size.titleSize} font-medium text-gray-700 dark:text-gray-300`}>
+                                <p className={`${size.titleSize} font-medium text-[var(--color-text)]`}>
                                   {stat.title}
                                 </p>
                               </div>
@@ -173,18 +173,18 @@ export function WelcomeBar() {
                               {/* Value and Change */}
                               <div className="mt-1">
                                 <div className="flex items-baseline gap-1">
-                                  <span className={`${size.valueSize} font-semibold text-gray-900 dark:text-white ${statValue.value === '-' ? 'animate-pulse' : ''
+                                  <span className={`${size.valueSize} font-semibold text-[var(--color-text)] ${statValue.value === '-' ? 'animate-pulse' : ''
                                     }`}>
                                     {statValue.value}
                                   </span>
                                   {statValue.change && statValue.change > 0 && statValue.value !== '-' && (
-                                    <span className="text-xs text-green-600 dark:text-green-400">
+                                    <span className="text-xs text-[var(--color-accent)]">
                                       +{statValue.change}
                                     </span>
                                   )}
                                 </div>
                                 {statValue.timeframe && (
-                                  <span className="text-[10px] text-gray-500 dark:text-gray-400 block">
+                                  <span className="text-[10px] text-[var(--color-textSecondary)] block">
                                     {statValue.timeframe}
                                   </span>
                                 )}
@@ -223,7 +223,7 @@ export function WelcomeBar() {
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
-                                className="absolute bottom-2 right-2 flex items-center gap-1.5 bg-[#2C2C2E] dark:bg-[#2C2C2E] backdrop-blur-md rounded-lg p-1.5 border border-[#3C3C3E] dark:border-[#3C3C3E]"
+                                className="absolute bottom-2 right-2 flex items-center gap-1.5 bg-[var(--color-surface)] backdrop-blur-md rounded-lg p-1.5 border border-[var(--color-border)]"
                               >
                                 <button
                                   onClick={(e) => {
@@ -306,7 +306,7 @@ export function WelcomeBar() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="bg-white/80 dark:bg-[#111111] backdrop-blur-md border border-gray-200/30 dark:border-[#1C1C1E] shadow-sm mt-4 mb-6 rounded-xl"
+            className="bg-[var(--color-surface)] backdrop-blur-md border border-[var(--color-border)] shadow-sm mt-4 mb-6 rounded-xl"
           >
             <StatsEditor isOpen={showStatsEditor} />
           </motion.div>

@@ -247,13 +247,13 @@ export function TagsPage() {
     <div className="h-[calc(100vh-144px)]">
       <div className="h-full flex flex-col space-y-3">
         {/* Header Section */}
-        <div className="shrink-0 bg-[#2C2C2E] dark:bg-[#2C2C2E] border border-[#2C2C2E] dark:border-[#2C2C2E] shadow-sm p-3 rounded-xl">
+        <div className="shrink-0 bg-[var(--color-surface)] border border-[var(--color-border)] shadow-sm p-3 rounded-xl">
           <div className="flex flex-col gap-3">
             {/* Title and Stats */}
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
-                <Tag className="w-4 h-4 text-[#64ab6f] dark:text-[#64ab6f]" />
-                <h1 className="text-base font-semibold text-gray-100 dark:text-gray-100">
+                <Tag className="w-4 h-4 text-[var(--color-accent)]" />
+                <h1 className="text-base font-semibold text-[var(--color-text)]">
                   Tags
                 </h1>
               </div>
@@ -261,53 +261,53 @@ export function TagsPage() {
 
             {/* Stats Grid - Updated to 5 columns */}
             <div className="grid grid-cols-5 gap-1.5">
-              <div className="flex items-center gap-2 px-2.5 py-1.5 bg-[#1C1C1E] dark:bg-[#1C1C1E] border border-[#2C2C2E] dark:border-[#2C2C2E] rounded-lg">
-                <Hash className="shrink-0 w-3.5 h-3.5 text-[#64ab6f] dark:text-[#64ab6f]" />
+              <div className="flex items-center gap-2 px-2.5 py-1.5 bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg">
+                <Hash className="shrink-0 w-3.5 h-3.5 text-[var(--color-accent)]" />
                 <div className="text-xs truncate">
-                  <span className="text-[#64ab6f] dark:text-[#64ab6f] font-medium">
+                  <span className="text-[var(--color-accent)] font-medium">
                     {tagStats.length}
                   </span>
-                  <span className="text-gray-300 dark:text-gray-300"> Total Tags</span>
+                  <span className="text-[var(--color-textSecondary)]"> Total Tags</span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 px-2.5 py-1.5 bg-[#1C1C1E] dark:bg-[#1C1C1E] border border-[#2C2C2E] dark:border-[#2C2C2E] rounded-lg">
-                <FileText className="shrink-0 w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
+              <div className="flex items-center gap-2 px-2.5 py-1.5 bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg">
+                <FileText className="shrink-0 w-3.5 h-3.5 text-[var(--color-note)]" />
                 <div className="text-xs truncate">
-                  <span className="text-blue-500 dark:text-blue-400 font-medium">
+                  <span className="text-[var(--color-note)] font-medium">
                     {allItems.filter(item => item.type === 'note' && item.tags.length > 0).length}
                   </span>
-                  <span className="text-gray-300 dark:text-gray-300"> Tagged Notes</span>
+                  <span className="text-[var(--color-textSecondary)]"> Tagged Notes</span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 px-2.5 py-1.5 bg-[#1C1C1E] dark:bg-[#1C1C1E] border border-[#2C2C2E] dark:border-[#2C2C2E] rounded-lg">
-                <Lightbulb className="shrink-0 w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
+              <div className="flex items-center gap-2 px-2.5 py-1.5 bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg">
+                <Lightbulb className="shrink-0 w-3.5 h-3.5 text-[var(--color-idea)]" />
                 <div className="text-xs truncate">
-                  <span className="text-amber-500 dark:text-amber-400 font-medium">
+                  <span className="text-[var(--color-idea)] font-medium">
                     {allItems.filter(item => item.type === 'idea' && item.tags.length > 0).length}
                   </span>
-                  <span className="text-gray-300 dark:text-gray-300"> Tagged Ideas</span>
+                  <span className="text-[var(--color-textSecondary)]"> Tagged Ideas</span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 px-2.5 py-1.5 bg-[#1C1C1E] dark:bg-[#1C1C1E] border border-[#2C2C2E] dark:border-[#2C2C2E] rounded-lg">
-                <CheckSquare className="shrink-0 w-3.5 h-3.5 text-purple-500 dark:text-purple-400" />
+              <div className="flex items-center gap-2 px-2.5 py-1.5 bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg">
+                <CheckSquare className="shrink-0 w-3.5 h-3.5 text-[var(--color-task)]" />
                 <div className="text-xs truncate">
-                  <span className="text-purple-500 dark:text-purple-400 font-medium">
+                  <span className="text-[var(--color-task)] font-medium">
                     {allItems.filter(item => item.type === 'task' && item.tags.length > 0).length}
                   </span>
-                  <span className="text-gray-300 dark:text-gray-300"> Tagged Tasks</span>
+                  <span className="text-[var(--color-textSecondary)]"> Tagged Tasks</span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 px-2.5 py-1.5 bg-[#1C1C1E] dark:bg-[#1C1C1E] border border-[#2C2C2E] dark:border-[#2C2C2E] rounded-lg">
-                <Bell className="shrink-0 w-3.5 h-3.5 text-rose-500 dark:text-rose-400" />
+              <div className="flex items-center gap-2 px-2.5 py-1.5 bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg">
+                <Bell className="shrink-0 w-3.5 h-3.5 text-[var(--color-reminder)]" />
                 <div className="text-xs truncate">
-                  <span className="text-rose-500 dark:text-rose-400 font-medium">
+                  <span className="text-[var(--color-reminder)] font-medium">
                     {allItems.filter(item => item.type === 'reminder' && item.tags.length > 0).length}
                   </span>
-                  <span className="text-gray-300 dark:text-gray-300"> Tagged Reminders</span>
+                  <span className="text-[var(--color-textSecondary)]"> Tagged Reminders</span>
                 </div>
               </div>
             </div>
@@ -315,28 +315,28 @@ export function TagsPage() {
         </div>
 
         {/* Main Content Area */}
-        <div className="flex-1 bg-[#2C2C2E] dark:bg-[#2C2C2E] border border-[#2C2C2E] dark:border-[#2C2C2E] shadow-sm rounded-xl p-4 min-h-0">
+        <div className="flex-1 bg-[var(--color-surface)] border border-[var(--color-border)] shadow-sm rounded-xl p-4 min-h-0">
           <div className="h-full flex">
             {/* Tags List Column */}
-            <div className="w-[320px] border-r border-[#1C1C1E] dark:border-[#1C1C1E] flex flex-col overflow-hidden bg-[#1C1C1E] dark:bg-[#1C1C1E] rounded-l-xl">
+            <div className="w-[320px] border-r border-[var(--color-border)] flex flex-col overflow-hidden bg-[var(--color-background)] rounded-l-xl">
               {/* Sticky Search and Filters */}
-              <div className="sticky top-0 z-10 bg-[#1C1C1E] dark:bg-[#1C1C1E] p-3 border-b border-[#1C1C1E] dark:border-[#1C1C1E] rounded-tl-xl">
+              <div className="sticky top-0 z-10 bg-[var(--color-background)] p-3 border-b border-[var(--color-border)] rounded-tl-xl">
                 <div className="flex items-center gap-2">
                   <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-textSecondary)]" />
                     <input
                       type="text"
                       placeholder="Search tags..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-9 pr-4 py-2 bg-[#2C2C2E] dark:bg-[#2C2C2E] border border-[#2C2C2E] dark:border-[#2C2C2E] rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#64ab6f]/30"
+                      className="w-full pl-9 pr-4 py-2 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg text-[var(--color-text)] placeholder-[var(--color-textSecondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]/30"
                     />
                   </div>
                   <button
                     onClick={() => setShowFilters(!showFilters)}
                     className={`p-2 rounded-lg transition-colors ${showFilters
-                      ? 'bg-[#64ab6f]/20 text-[#64ab6f]'
-                      : 'bg-[#2C2C2E] text-gray-400 hover:bg-[#3C3C3E]'
+                      ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
+                      : 'bg-[var(--color-surface)] text-[var(--color-textSecondary)] hover:bg-[var(--color-surface)]/80'
                     }`}
                   >
                     <SlidersHorizontal className="w-4 h-4" />
@@ -344,8 +344,8 @@ export function TagsPage() {
                   <button
                     onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
                     className={`p-2 rounded-lg transition-colors ${viewMode === 'list'
-                      ? 'bg-[#64ab6f]/20 text-[#64ab6f]'
-                      : 'bg-[#2C2C2E] text-gray-400 hover:bg-[#3C3C3E]'
+                      ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
+                      : 'bg-[var(--color-surface)] text-[var(--color-textSecondary)] hover:bg-[var(--color-surface)]/80'
                     }`}
                   >
                     {viewMode === 'grid' ? (
@@ -358,10 +358,10 @@ export function TagsPage() {
 
                 {/* Filters Panel */}
                 {showFilters && (
-                  <div className="mt-3 p-3 bg-[#2C2C2E] dark:bg-[#2C2C2E] border border-[#2C2C2E] dark:border-[#2C2C2E] rounded-xl">
+                  <div className="mt-3 p-3 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl">
                     {/* Type Filters */}
                     <div className="space-y-2 mb-3">
-                      <h3 className="text-xs font-medium text-gray-800 dark:text-gray-200">Filter by Type</h3>
+                      <h3 className="text-xs font-medium text-[var(--color-text)]">Filter by Type</h3>
                       <div className="flex flex-wrap gap-1.5">
                         <button
                           onClick={() => {
@@ -482,8 +482,8 @@ export function TagsPage() {
                       key={tag}
                       onClick={() => setSelectedTag(tag)}
                       className={`group flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors ${selectedTag === tag
-                        ? 'bg-[#64ab6f]/20 text-[#64ab6f]'
-                        : 'text-gray-300 hover:bg-[#2C2C2E]'
+                        ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
+                        : 'text-[var(--color-text)] hover:bg-[var(--color-surface)]'
                         }`}
                     >
                       <div className="flex items-center gap-2">
@@ -498,25 +498,25 @@ export function TagsPage() {
                         {/* Type indicators */}
                         <div className="flex items-center gap-2">
                           {byType.note > 0 && (
-                            <span className="flex items-center gap-1 text-xs text-blue-400">
+                            <span className="flex items-center gap-1 text-xs text-[var(--color-note)]">
                               <FileText className="w-3.5 h-3.5" />
                               {byType.note}
                             </span>
                           )}
                           {byType.idea > 0 && (
-                            <span className="flex items-center gap-1 text-xs text-amber-400">
+                            <span className="flex items-center gap-1 text-xs text-[var(--color-idea)]">
                               <Lightbulb className="w-3.5 h-3.5" />
                               {byType.idea}
                             </span>
                           )}
                           {byType.task > 0 && (
-                            <span className="flex items-center gap-1 text-xs text-purple-400">
+                            <span className="flex items-center gap-1 text-xs text-[var(--color-task)]">
                               <CheckSquare className="w-3.5 h-3.5" />
                               {byType.task}
                             </span>
                           )}
                           {byType.reminder > 0 && (
-                            <span className="flex items-center gap-1 text-xs text-rose-400">
+                            <span className="flex items-center gap-1 text-xs text-[var(--color-reminder)]">
                               <Bell className="w-3.5 h-3.5" />
                               {byType.reminder}
                             </span>
@@ -729,7 +729,7 @@ export function TagsPage() {
                   )}
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
+                <div className="flex-1 flex flex-col items-center justify-center text-[var(--color-textSecondary)]">
                   <Tag className="w-8 h-8 mb-2" />
                   <p>Select a tag to view items</p>
                 </div>

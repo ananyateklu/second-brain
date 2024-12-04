@@ -97,22 +97,22 @@ export function NotesPage() {
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-fixed">
-      {/* Background gradient - matches Dashboard.tsx */}
-      <div className="fixed inset-0 bg-fixed dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-slate-800 bg-gradient-to-br from-white to-gray-100 -z-10" />
+      {/* Background */}
+      <div className="fixed inset-0 bg-[var(--color-background)] -z-10" />
 
       <div className="space-y-8 relative">
-        {/* Page Header with gradient overlay */}
-        <div className="relative overflow-hidden rounded-xl bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-transparent" />
+        {/* Page Header */}
+        <div className="relative overflow-hidden rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] shadow-sm">
+          <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-accent)]/10 to-transparent" />
           <div className="relative p-6">
             <div className="flex flex-col sm:flex-row gap-6 justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-blue-100/50 dark:bg-blue-900/30 rounded-lg">
-                  <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                <div className="p-2.5 bg-[var(--color-surface)]/50 rounded-lg">
+                  <FileText className="w-6 h-6 text-[var(--color-accent)]" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Notes</h1>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <h1 className="text-2xl font-bold text-[var(--color-text)]">Notes</h1>
+                  <p className="text-sm text-[var(--color-textSecondary)]">
                     {regularNotes.length} notes
                   </p>
                 </div>
@@ -121,7 +121,7 @@ export function NotesPage() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowNewNoteModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-all duration-200 hover:scale-105 shadow-sm hover:shadow-md"
+                  className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent)] hover:bg-[var(--color-accent)]/90 text-white rounded-lg transition-all duration-200 hover:scale-105 shadow-sm hover:shadow-md"
                 >
                   <Plus className="w-4 h-4" />
                   <span>New Note</span>
@@ -141,14 +141,14 @@ export function NotesPage() {
               placeholder="Search notes..."
               value={filters.search}
               onChange={(e) => handleFilterChange('search', e.target.value)}
-              className="bg-[#1C1C1E] dark:bg-[#1C1C1E] border-[#2C2C2E] dark:border-[#2C2C2E]"
+              className="bg-[var(--color-surface)] border-[var(--color-border)]"
             />
           </div>
 
           <div className="flex gap-2">
             <button
               onClick={toggleFilters}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[#2C2C2E] dark:border-[#2C2C2E] bg-[#1C1C1E] dark:bg-[#1C1C1E] hover:bg-[#2C2C2E] dark:hover:bg-[#2C2C2E] transition-all text-gray-100 dark:text-gray-100"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] hover:bg-[var(--color-surface)]/80 transition-all text-[var(--color-text)]"
             >
               <SlidersHorizontal className="w-5 h-5" />
               <span>Filters</span>
@@ -156,10 +156,11 @@ export function NotesPage() {
 
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-lg border border-[#2C2C2E] dark:border-[#2C2C2E] transition-all ${viewMode === 'grid'
-                  ? 'bg-[#64ab6f]/20 dark:bg-[#64ab6f]/20 text-[#64ab6f] dark:text-[#64ab6f]'
-                  : 'bg-[#1C1C1E] dark:bg-[#1C1C1E] hover:bg-[#2C2C2E] dark:hover:bg-[#2C2C2E] text-gray-100 dark:text-gray-100'
-                }`}
+              className={`p-2 rounded-lg border border-[var(--color-border)] transition-all ${
+                viewMode === 'grid'
+                  ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
+                  : 'bg-[var(--color-surface)] hover:bg-[var(--color-surface)]/80 text-[var(--color-text)]'
+              }`}
               title="Grid View"
             >
               <Grid className="w-5 h-5" />
@@ -167,10 +168,11 @@ export function NotesPage() {
 
             <button
               onClick={() => setViewMode('list')}
-              className={`p-2 rounded-lg border border-[#2C2C2E] dark:border-[#2C2C2E] transition-all ${viewMode === 'list'
-                  ? 'bg-[#64ab6f]/20 dark:bg-[#64ab6f]/20 text-[#64ab6f] dark:text-[#64ab6f]'
-                  : 'bg-[#1C1C1E] dark:bg-[#1C1C1E] hover:bg-[#2C2C2E] dark:hover:bg-[#2C2C2E] text-gray-100 dark:text-gray-100'
-                }`}
+              className={`p-2 rounded-lg border border-[var(--color-border)] transition-all ${
+                viewMode === 'list'
+                  ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
+                  : 'bg-[var(--color-surface)] hover:bg-[var(--color-surface)]/80 text-[var(--color-text)]'
+              }`}
               title="List View"
             >
               <List className="w-5 h-5" />
@@ -178,10 +180,11 @@ export function NotesPage() {
 
             <button
               onClick={() => setViewMode('graph')}
-              className={`p-2 rounded-lg border border-[#2C2C2E] dark:border-[#2C2C2E] transition-all ${viewMode === 'graph'
-                  ? 'bg-[#64ab6f]/20 dark:bg-[#64ab6f]/20 text-[#64ab6f] dark:text-[#64ab6f]'
-                  : 'bg-[#1C1C1E] dark:bg-[#1C1C1E] hover:bg-[#2C2C2E] dark:hover:bg-[#2C2C2E] text-gray-100 dark:text-gray-100'
-                }`}
+              className={`p-2 rounded-lg border border-[var(--color-border)] transition-all ${
+                viewMode === 'graph'
+                  ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
+                  : 'bg-[var(--color-surface)] hover:bg-[var(--color-surface)]/80 text-[var(--color-text)]'
+              }`}
               title="Graph View"
             >
               <Network className="w-5 h-5" />
@@ -189,13 +192,14 @@ export function NotesPage() {
           </div>
         </div>
 
+        {/* Filters Panel */}
         {showFilters && (
-          <div className="p-4 rounded-lg border border-[#2C2C2E] dark:border-[#2C2C2E] bg-[#1C1C1E] dark:bg-[#1C1C1E] shadow-lg">
+          <div className="p-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-100 dark:text-white">Filters</h3>
+              <h3 className="text-lg font-semibold text-[var(--color-text)]">Filters</h3>
               <button
                 onClick={clearFilters}
-                className="text-sm text-gray-400 hover:text-[#64ab6f] dark:text-gray-400 dark:hover:text-[#64ab6f]"
+                className="text-sm text-[var(--color-textSecondary)] hover:text-[var(--color-accent)]"
               >
                 Clear all
               </button>

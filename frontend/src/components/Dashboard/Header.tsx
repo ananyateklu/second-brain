@@ -1,10 +1,11 @@
-import { Search, Menu, X, Sun, Moon, User as UserIcon, Settings, LogOut } from 'lucide-react';
-import { useTheme } from '../../contexts/ThemeContext';
+import { Search, Menu, X, User as UserIcon, Settings, LogOut } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import type { User } from '../../types/auth';
+import { ThemeSelector } from '../ThemeSelector';
+import { Input } from '../shared/Input';
 
 interface HeaderProps {
   isSidebarOpen: boolean;
@@ -28,7 +29,6 @@ const LevelThresholds = [
 ];
 
 export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQuery }: HeaderProps) {
-  const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
@@ -66,8 +66,8 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
   const xpProgress = calculateXPProgress(user);
 
   return (
-    <header className="fixed top-0 right-0 left-0 lg:left-60 z-20 bg-[#1E1E1E] dark:bg-[#111111] backdrop-blur-md border-b border-[#2C2C2E] dark:border-[#2C2C2E]">
-      <div className="max-w-7xl mx-auto h-20 px-4 sm:px-6 lg:px-8 flex items-center gap-4 border-b border-gray-200 dark:border-[#1C1C1E]">
+    <header className="fixed top-0 right-0 left-0 lg:left-60 z-20 backdrop-blur-md border-b border-[var(--color-border)] bg-[var(--color-background)]">
+      <div className="max-w-7xl mx-auto h-20 px-4 sm:px-6 lg:px-8 flex items-center gap-4">
         <div className="w-10 lg:hidden">
           <button
             onClick={toggleSidebar}
@@ -83,16 +83,16 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
 
         <div className="flex-1 flex justify-center max-w-2xl mx-auto">
           <div className="hidden md:block w-full">
-            <div className="relative group">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500 group-focus-within:text-primary-500" />
-              <input
-                type="text"
-                placeholder="Search notes..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 glass-morphism border border-gray-100/20 dark:border-[#3C3C3E]/20 rounded-xl focus:ring-2 focus:ring-primary-500/50 focus:border-transparent transition-all"
-              />
-            </div>
+            <Input
+              label=""
+              icon={Search}
+              placeholder="Search notes..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              disableEnhancement
+              disableRecording
+              className="!h-11"
+            />
           </div>
         </div>
 
@@ -104,16 +104,7 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
             <Search className="w-5 h-5 text-gray-500 dark:text-gray-400" />
           </button>
 
-          <button
-            onClick={toggleTheme}
-            className="p-2 rounded-lg glass-morphism border border-gray-100/20 dark:border-[#3C3C3E]/20 hover:bg-gray-50/50 dark:hover:bg-[#3C3C3E]/30 transition-all"
-          >
-            {theme === 'dark' ? (
-              <Sun className="w-5 h-5 text-amber-500" />
-            ) : (
-              <Moon className="w-5 h-5 text-gray-500" />
-            )}
-          </button>
+          <ThemeSelector />
 
           <div className="relative" ref={profileMenuRef}>
             <button

@@ -45,7 +45,7 @@ export function Header({ note, onClose, onShowDeleteConfirm }: HeaderProps) {
 
   return (
     <>
-      <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-gray-200/30 dark:border-[#1C1C1E] bg-white dark:bg-[#111111] backdrop-blur-md">
+      <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface)] backdrop-blur-md">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
             <Type className="w-6 h-6 text-blue-600 dark:text-blue-400" />

@@ -168,18 +168,18 @@ export function LinkedNotesPage() {
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-fixed">
-      {/* Keep the existing background gradient */}
-      <div className="fixed inset-0 bg-fixed dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-slate-800 bg-gradient-to-br from-white to-gray-100 -z-10" />
+      {/* Background */}
+      <div className="fixed inset-0 bg-[var(--color-background)] -z-10" />
 
       <div className="space-y-6 relative">
         {/* Stats Container */}
-        <div className="bg-[#2C2C2E] dark:bg-[#2C2C2E] border border-[#2C2C2E] dark:border-[#2C2C2E] shadow-sm p-3 rounded-xl">
+        <div className="bg-[var(--color-surface)] border border-[var(--color-border)] shadow-sm p-3 rounded-xl">
           <div className="flex flex-col gap-3">
             {/* Title and View Toggle */}
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
-                <Link2 className="w-4 h-4 text-[#64ab6f] dark:text-[#64ab6f]" />
-                <h1 className="text-base font-semibold text-gray-100 dark:text-gray-100">
+                <Link2 className="w-4 h-4 text-[var(--color-accent)]" />
+                <h1 className="text-base font-semibold text-[var(--color-text)]">
                   Linked Notes
                 </h1>
               </div>
@@ -188,20 +188,22 @@ export function LinkedNotesPage() {
               <div className="flex gap-1.5">
                 <button
                   onClick={() => setViewMode('graph')}
-                  className={`p-1.5 rounded-lg transition-colors duration-200 ${viewMode === 'graph'
-                      ? 'bg-[#64ab6f]/20 text-[#64ab6f]'
-                      : 'text-gray-400 hover:bg-[#1C1C1E]'
-                    }`}
+                  className={`p-1.5 rounded-lg transition-colors duration-200 ${
+                    viewMode === 'graph'
+                      ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
+                      : 'text-[var(--color-textSecondary)] hover:bg-[var(--color-surface)]/80'
+                  }`}
                   title="Graph View"
                 >
                   <Network className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setViewMode('list')}
-                  className={`p-1.5 rounded-lg transition-colors duration-200 ${viewMode === 'list'
-                      ? 'bg-[#64ab6f]/20 text-[#64ab6f]'
-                      : 'text-gray-400 hover:bg-[#1C1C1E]'
-                    }`}
+                  className={`p-1.5 rounded-lg transition-colors duration-200 ${
+                    viewMode === 'list'
+                      ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
+                      : 'text-[var(--color-textSecondary)] hover:bg-[var(--color-surface)]/80'
+                  }`}
                   title="List View"
                 >
                   <List className="w-4 h-4" />
@@ -209,78 +211,81 @@ export function LinkedNotesPage() {
               </div>
             </div>
 
-            {/* Stats Display Grid - Reorganized to be more compact */}
-            <div className="grid grid-cols-6 gap-1.5"> {/* Changed to 6 columns for better space usage */}
-              {/* Basic Stats Row */}
-              <div className="flex items-center gap-2 px-2.5 py-1.5 bg-[#1C1C1E] dark:bg-[#1C1C1E] border border-[#2C2C2E] dark:border-[#2C2C2E] rounded-lg">
-                <Type className="shrink-0 w-3.5 h-3.5 text-[#64ab6f]" />
+            {/* Stats Display Grid */}
+            <div className="grid grid-cols-6 gap-1.5">
+              {/* Basic Stats Items */}
+              <div className="flex items-center gap-2 px-2.5 py-1.5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg">
+                <Type className="shrink-0 w-3.5 h-3.5 text-[var(--color-accent)]" />
                 <div className="text-xs truncate">
-                  <span className="text-[#64ab6f] font-medium">{stats.notes}</span>
-                  <span className="text-gray-300"> Notes</span>
+                  <span className="text-[var(--color-accent)] font-medium">{stats.notes}</span>
+                  <span className="text-[var(--color-textSecondary)]"> Notes</span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 px-2.5 py-1.5 bg-[#1C1C1E] dark:bg-[#1C1C1E] border border-[#2C2C2E] dark:border-[#2C2C2E] rounded-lg">
-                <Lightbulb className="shrink-0 w-3.5 h-3.5 text-[#64ab6f] dark:text-[#64ab6f]" />
+              <div className="flex items-center gap-2 px-2.5 py-1.5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg">
+                <Lightbulb className="shrink-0 w-3.5 h-3.5 text-[var(--color-accent)]" />
                 <div className="text-xs truncate">
-                  <span className="text-[#64ab6f] font-medium">{stats.ideas}</span>
-                  <span className="text-gray-300"> Ideas</span>
+                  <span className="text-[var(--color-accent)] font-medium">{stats.ideas}</span>
+                  <span className="text-[var(--color-textSecondary)]"> Ideas</span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 px-2.5 py-1.5 bg-[#1C1C1E] dark:bg-[#1C1C1E] border border-[#2C2C2E] dark:border-[#2C2C2E] rounded-lg">
-                <Network className="shrink-0 w-3.5 h-3.5 text-[#64ab6f] dark:text-[#64ab6f]" />
+              <div className="flex items-center gap-2 px-2.5 py-1.5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg">
+                <Network className="shrink-0 w-3.5 h-3.5 text-[var(--color-accent)]" />
                 <div className="text-xs truncate">
-                  <span className="text-[#64ab6f] font-medium">{stats.connectionDensity}%</span>
+                  <span className="text-[var(--color-accent)] font-medium">{stats.connectionDensity}%</span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 px-2.5 py-1.5 bg-[#1C1C1E] dark:bg-[#1C1C1E] border border-[#2C2C2E] dark:border-[#2C2C2E] rounded-lg">
-                <GitBranch className="shrink-0 w-3.5 h-3.5 text-[#64ab6f] dark:text-[#64ab6f]" />
+              <div className="flex items-center gap-2 px-2.5 py-1.5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg">
+                <GitBranch className="shrink-0 w-3.5 h-3.5 text-[var(--color-accent)]" />
                 <div className="text-xs truncate">
-                  <span className="text-[#64ab6f] font-medium">{stats.clusterCount}</span>
-                  <span className="text-gray-300"> Topics</span>
+                  <span className="text-[var(--color-accent)] font-medium">{stats.clusterCount}</span>
+                  <span className="text-[var(--color-textSecondary)]"> Topics</span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 px-2.5 py-1.5 bg-[#1C1C1E] dark:bg-[#1C1C1E] border border-[#2C2C2E] dark:border-[#2C2C2E] rounded-lg">
-                <Type className="shrink-0 w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
+              <div className="flex items-center gap-2 px-2.5 py-1.5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg">
+                <Type className="shrink-0 w-3.5 h-3.5 text-[var(--color-textSecondary)]" />
                 <div className="text-xs truncate">
-                  <span className="text-gray-500 dark:text-gray-400 font-medium">{stats.isolatedNotes}</span>
-                  <span className="text-gray-300"> Unconnected Notes</span>
+                  <span className="text-[var(--color-textSecondary)] font-medium">{stats.isolatedNotes}</span>
+                  <span className="text-[var(--color-textSecondary)]"> Unconnected Notes</span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 px-2.5 py-1.5 bg-[#1C1C1E] dark:bg-[#1C1C1E] border border-[#2C2C2E] dark:border-[#2C2C2E] rounded-lg">
-                <Lightbulb className="shrink-0 w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />
+              <div className="flex items-center gap-2 px-2.5 py-1.5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg">
+                <Lightbulb className="shrink-0 w-3.5 h-3.5 text-[var(--color-textSecondary)]" />
                 <div className="text-xs truncate">
-                  <span className="text-gray-500 dark:text-gray-400 font-medium">{stats.isolatedIdeas}</span>
-                  <span className="text-gray-300"> Unconnected Ideas</span>
+                  <span className="text-[var(--color-textSecondary)] font-medium">{stats.isolatedIdeas}</span>
+                  <span className="text-[var(--color-textSecondary)]"> Unconnected Ideas</span>
                 </div>
               </div>
 
-              {/* Most Connected Items Row */}
+              {/* Most Connected Items */}
               {stats.mostConnectedNote && stats.mostConnectedNote.connectionCount > 0 && (
-                <div className={`col-span-3 flex items-center gap-2 px-3 py-1.5 bg-[#1C1C1E] dark:bg-[#1C1C1E] border transition-colors duration-200 rounded-lg ${selectedNoteId === stats.mostConnectedNote.note.id
-                    ? 'border-[#64ab6f]/50 dark:border-[#64ab6f]/50 bg-[#64ab6f]/10 dark:bg-[#64ab6f]/10'
-                    : 'border-gray-200/50 dark:border-gray-700/30'
-                  }`}>
-                  <Type className={`shrink-0 w-3.5 h-3.5 ${selectedNoteId === stats.mostConnectedNote.note.id
-                      ? 'text-[#64ab6f] dark:text-[#64ab6f]'
-                      : 'text-[#64ab6f]/80 dark:text-[#64ab6f]/80'
-                    }`} />
+                <div className={`col-span-3 flex items-center gap-2 px-3 py-1.5 bg-[var(--color-surface)] border transition-colors duration-200 rounded-lg ${
+                  selectedNoteId === stats.mostConnectedNote.note.id
+                    ? 'border-[var(--color-accent)]/50 bg-[var(--color-accent)]/10'
+                    : 'border-[var(--color-border)]'
+                }`}>
+                  <Type className={`shrink-0 w-3.5 h-3.5 ${
+                    selectedNoteId === stats.mostConnectedNote.note.id
+                      ? 'text-[var(--color-accent)]'
+                      : 'text-[var(--color-textSecondary)]/80'
+                  }`} />
                   <button
                     onClick={() => stats.mostConnectedNote?.note.id ? setSelectedNoteId(stats.mostConnectedNote.note.id) : null}
                     className="flex-1 flex items-center justify-between text-xs transition-colors"
                     title={stats.mostConnectedNote.note.title}
                   >
-                    <span className={`truncate pr-3 ${selectedNoteId === stats.mostConnectedNote.note.id
-                        ? 'text-[#64ab6f] dark:text-[#64ab6f]'
-                        : 'text-gray-700 dark:text-gray-300'
-                      }`}>
+                    <span className={`truncate pr-3 ${
+                      selectedNoteId === stats.mostConnectedNote.note.id
+                        ? 'text-[var(--color-accent)]'
+                        : 'text-[var(--color-text)]'
+                    }`}>
                       Most Connected: {stats.mostConnectedNote.note.title}
                     </span>
-                    <span className="shrink-0 text-[#64ab6f] dark:text-[#64ab6f]">
+                    <span className="shrink-0 text-[var(--color-accent)]">
                       ({stats.mostConnectedNote.connectionCount})
                     </span>
                   </button>
@@ -288,26 +293,29 @@ export function LinkedNotesPage() {
               )}
 
               {stats.mostConnectedIdea && stats.mostConnectedIdea.connectionCount > 0 && (
-                <div className={`col-span-3 flex items-center gap-2 px-3 py-1.5 bg-[#1C1C1E] dark:bg-[#1C1C1E] border transition-colors duration-200 rounded-lg ${selectedNoteId === stats.mostConnectedIdea.note.id
-                    ? 'border-[#64ab6f]/50 dark:border-[#64ab6f]/50 bg-[#64ab6f]/10 dark:bg-[#64ab6f]/10'
-                    : 'border-gray-200/50 dark:border-gray-700/30'
-                  }`}>
-                  <Lightbulb className={`shrink-0 w-3.5 h-3.5 ${selectedNoteId === stats.mostConnectedIdea.note.id
-                      ? 'text-[#64ab6f] dark:text-[#64ab6f]'
-                      : 'text-[#64ab6f]/80 dark:text-[#64ab6f]/80'
-                    }`} />
+                <div className={`col-span-3 flex items-center gap-2 px-3 py-1.5 bg-[var(--color-surface)] border transition-colors duration-200 rounded-lg ${
+                  selectedNoteId === stats.mostConnectedIdea.note.id
+                    ? 'border-[var(--color-accent)]/50 bg-[var(--color-accent)]/10'
+                    : 'border-[var(--color-border)]'
+                }`}>
+                  <Lightbulb className={`shrink-0 w-3.5 h-3.5 ${
+                    selectedNoteId === stats.mostConnectedIdea.note.id
+                      ? 'text-[var(--color-accent)]'
+                      : 'text-[var(--color-textSecondary)]/80'
+                  }`} />
                   <button
                     onClick={() => stats.mostConnectedIdea?.note.id ? setSelectedNoteId(stats.mostConnectedIdea.note.id) : null}
                     className="flex-1 flex items-center justify-between text-xs transition-colors"
                     title={stats.mostConnectedIdea.note.title}
                   >
-                    <span className={`truncate pr-3 ${selectedNoteId === stats.mostConnectedIdea.note.id
-                        ? 'text-[#64ab6f] dark:text-[#64ab6f]'
-                        : 'text-gray-700 dark:text-gray-300'
-                      }`}>
+                    <span className={`truncate pr-3 ${
+                      selectedNoteId === stats.mostConnectedIdea.note.id
+                        ? 'text-[var(--color-accent)]'
+                        : 'text-[var(--color-text)]'
+                    }`}>
                       Most Connected: {stats.mostConnectedIdea.note.title}
                     </span>
-                    <span className="shrink-0 text-[#64ab6f] dark:text-[#64ab6f]">
+                    <span className="shrink-0 text-[var(--color-accent)]">
                       ({stats.mostConnectedIdea.connectionCount})
                     </span>
                   </button>
@@ -318,8 +326,8 @@ export function LinkedNotesPage() {
         </div>
 
         {/* Main Content Area */}
-        <div className="bg-[#2C2C2E] dark:bg-[#2C2C2E] border border-[#2C2C2E] dark:border-[#2C2C2E] shadow-sm rounded-xl">
-          <div className="h-[calc(100vh-320px)] flex relative"> {/* Added relative positioning here */}
+        <div className="bg-[var(--color-surface)] border border-[var(--color-border)] shadow-sm rounded-xl">
+          <div className="h-[calc(100vh-320px)] flex relative">
             {/* Graph/List Container */}
             <div className={`${selectedNoteId ? 'w-[70%]' : 'w-full'} transition-all duration-300`}>
               {viewMode === 'graph' ? (
@@ -346,7 +354,7 @@ export function LinkedNotesPage() {
 
             {/* Details Panel */}
             {selectedNoteId && (
-              <div className="w-[30%] border-l border-[#2C2C2E] dark:border-[#2C2C2E]">
+              <div className="w-[30%] border-l border-[var(--color-border)]/30">
                 <NoteDetailsPanel
                   selectedNoteId={selectedNoteId}
                   onClose={() => setSelectedNoteId(null)}

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import CytoscapeComponent from 'react-cytoscapejs';
-import { useTheme } from '../../../contexts/ThemeContext';
+import { useTheme } from '../../../contexts/themeContextUtils';
 import { useNotes } from '../../../contexts/notesContextUtils';
 import type { Core, NodeSingular, Stylesheet } from 'cytoscape';
 
@@ -243,9 +243,12 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: 
     {
       selector: 'node[type = "note"]',
       style: {
-        'background-color': '#1C1C1E',
+        'background-color': theme === 'dark' ? '#1C1C1E' : '#FFFFFF',
         'border-color': (node: NodeSingular) => {
-          return node.data('isIdea') ? '#FCD34D' : 'rgb(59, 130, 246)';
+          if (node.data('isIdea')) {
+            return theme === 'dark' ? '#FCD34D' : '#F59E0B';
+          }
+          return theme === 'dark' ? 'rgb(59, 130, 246)' : 'rgb(37, 99, 235)';
         },
         'border-width': 2,
         'width': 220,
@@ -261,8 +264,8 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: 
         'font-family': 'system-ui, -apple-system, sans-serif',
         'font-size': 14,
         'font-weight': 500,
-        'color': '#E3E3E3',
-        'text-outline-color': '#1C1C1E',
+        'color': theme === 'dark' ? '#E3E3E3' : '#1F2937',
+        'text-outline-color': theme === 'dark' ? '#1C1C1E' : '#FFFFFF',
         'text-outline-width': 2,
         'text-margin-y': 0,
         'text-margin-x': 0,
@@ -272,8 +275,6 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: 
           const linkedCount = node.data('linkedNoteIds')?.length || 0;
 
           let label = title;
-
-          // Add stats if there are any
           if (linkedCount > 0 || taskCount > 0) {
             label += '\n\n';
             if (linkedCount > 0) {
@@ -284,15 +285,15 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: 
               label += `✅ ${taskCount} tasks`;
             }
           }
-
           return label;
         },
-        // Main note/idea icon
         'background-image': (node: NodeSingular) => {
           const isIdea = node.data('isIdea');
+          const ideaColor = theme === 'dark' ? '#FCD34D' : '#F59E0B';
+          const noteColor = theme === 'dark' ? '#60A5FA' : '#3B82F6';
           return isIdea
-            ? 'data:image/svg+xml;base64,' + btoa(`<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FCD34D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8A6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>`)
-            : 'data:image/svg+xml;base64,' + btoa(`<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>`);
+            ? 'data:image/svg+xml;base64,' + btoa(`<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${ideaColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8A6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>`)
+            : 'data:image/svg+xml;base64,' + btoa(`<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${noteColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>`);
         },
         'background-width': '24px',
         'background-height': '24px',
@@ -306,50 +307,10 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: 
     {
       selector: 'node[type = "note"]:selected',
       style: {
-        'border-color': '#64AB6F',
+        'border-color': theme === 'dark' ? '#64AB6F' : '#059669',
         'border-width': 2,
         'overlay-opacity': 0.1,
-        'overlay-color': '#64AB6F'
-      }
-    },
-    {
-      selector: 'node[type = "note"]:hover',
-      style: {
-        'border-color': 'rgb(59, 130, 246)',
-        'border-width': 2
-      }
-    },
-    {
-      selector: 'node:selected',
-      style: {
-        'border-color': '#64AB6F',
-        'border-width': 2,
-        'overlay-opacity': 0.1,
-        'overlay-color': '#64AB6F'
-      }
-    },
-    {
-      selector: 'node:hover',
-      style: {
-        'border-color': 'rgb(59, 130, 246)',
-        'border-width': 2
-      }
-    },
-    {
-      selector: 'node[?isIdea]',
-      style: {
-        'border-color': theme === 'dark' ? '#FFA726' : '#FB8C00',
-        'border-width': 3,
-        'border-style': 'solid'
-      }
-    },
-    {
-      selector: ':selected',
-      style: {
-        'border-color': '#64AB6F',
-        'background-color': theme === 'dark' ? '#1C1C1E' : '#F0F7F0',
-        'transition-property': 'border-color, background-color',
-        'transition-duration': 20
+        'overlay-color': theme === 'dark' ? '#64AB6F' : '#059669'
       }
     },
     {
@@ -362,8 +323,8 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: 
         'opacity': 0.75,
         'source-distance-from-node': 0,
         'target-distance-from-node': 6,
-        'line-color': theme === 'dark' ? '#5a5a5a' : '#3a3a3a',
-        'target-arrow-color': theme === 'dark' ? '#5a5a5a' : '#3a3a3a'
+        'line-color': theme === 'dark' ? '#5a5a5a' : '#9CA3AF',
+        'target-arrow-color': theme === 'dark' ? '#5a5a5a' : '#9CA3AF'
       }
     }
   ];
@@ -419,7 +380,7 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: 
       />
 
       {/* Zoom Controls - Moved further up */}
-      <div className="absolute bottom-32 right-6 backdrop-blur-sm bg-[#1C1C1E] dark:bg-[#1C1C1E] border border-[#2C2C2E] dark:border-[#2C2C2E] p-3 rounded-lg shadow-lg">
+      <div className="absolute bottom-44 right-6 backdrop-blur-sm bg-[var(--color-surface)] border border-[var(--color-border)] p-3 rounded-lg shadow-lg">
         <div className="flex flex-col gap-2">
           <button
             onClick={() => {
@@ -431,7 +392,7 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: 
                 duration: 200
               });
             }}
-            className="p-2 hover:bg-[#2C2C2E] rounded-lg transition-colors"
+            className="p-2 hover:bg-[var(--color-surface)]/80 rounded-lg transition-colors"
             title="Zoom in"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
@@ -451,7 +412,7 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: 
                 duration: 200
               });
             }}
-            className="p-2 hover:bg-[#2C2C2E] rounded-lg transition-colors"
+            className="p-2 hover:bg-[var(--color-surface)]/80 rounded-lg transition-colors"
             title="Zoom out"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
@@ -466,7 +427,7 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: 
               const cy = cyRef.current;
               cy.fit(undefined, 50);
             }}
-            className="p-2 hover:bg-[#2C2C2E] rounded-lg transition-colors"
+            className="p-2 hover:bg-[var(--color-surface)]/80 rounded-lg transition-colors"
             title="Fit to view"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
@@ -476,24 +437,32 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: 
         </div>
       </div>
 
-      {/* Legend - Position unchanged */}
-      <div className="absolute bottom-6 right-6 backdrop-blur-sm bg-[#1C1C1E] dark:bg-[#1C1C1E] border border-[#2C2C2E] dark:border-[#2C2C2E] p-3 rounded-lg shadow-lg">
+      {/* Legend */}
+      <div className="absolute bottom-6 right-6 backdrop-blur-sm bg-[var(--color-surface)] border border-[var(--color-border)] p-3 rounded-lg shadow-lg">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 border-2 border-blue-500 rounded bg-[#1C1C1E] dark:bg-[#1C1C1E]"></div>
-            <span className="text-sm text-gray-300">Notes</span>
+            <div className={`w-4 h-4 border-2 rounded bg-[var(--color-surface)]`} 
+              style={{ borderColor: theme === 'dark' ? 'rgb(59, 130, 246)' : 'rgb(37, 99, 235)' }}>
+            </div>
+            <span className="text-sm text-[var(--color-textSecondary)]">Notes</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 border-2 border-amber-500 rounded bg-[#1C1C1E] dark:bg-[#1C1C1E]"></div>
-            <span className="text-sm text-gray-300">Ideas</span>
+            <div className={`w-4 h-4 border-2 rounded bg-[var(--color-surface)]`}
+              style={{ borderColor: theme === 'dark' ? '#FCD34D' : '#F59E0B' }}>
+            </div>
+            <span className="text-sm text-[var(--color-textSecondary)]">Ideas</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 border-2 border-[#64ab6f] rounded bg-[#2C2C2E] dark:bg-[#2C2C2E]"></div>
-            <span className="text-sm text-gray-300">Selected</span>
+            <div className={`w-4 h-4 border-2 rounded bg-[var(--color-surface)]/80`}
+              style={{ borderColor: theme === 'dark' ? '#64AB6F' : '#059669' }}>
+            </div>
+            <span className="text-sm text-[var(--color-textSecondary)]">Selected</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 border-2 border-[#64ab6f] rounded bg-[#1C1C1E] dark:bg-[#1C1C1E]"></div>
-            <span className="text-sm text-gray-300">With Tasks</span>
+            <div className={`w-4 h-4 border-2 rounded bg-[var(--color-surface)]`}
+              style={{ borderColor: theme === 'dark' ? '#64AB6F' : '#059669' }}>
+            </div>
+            <span className="text-sm text-[var(--color-textSecondary)]">With Tasks</span>
           </div>
         </div>
       </div>

@@ -5,108 +5,62 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    /* These will be overridden by ThemeContext */
+    --color-primary: #ffffff;
+    --color-secondary: #f1f5f9;
+    --color-background: #f8fafc;
+    --color-surface: #ffffff;
+    --color-text: #1e293b;
+    --color-textSecondary: #64748b;
+    --color-border: #e2e8f0;
+    --color-accent: #3b82f6;
+  }
+
+  /* Add specific midnight theme variables */
+  [data-theme='midnight'] {
+    --color-primary: #1e1e24;
+    --color-secondary: #2c2c34;
+    --color-background: rgb(17, 24, 39);
+    --color-surface: #2c2c34;
+    --color-text: rgba(255, 255, 255, 0.9);
+    --color-textSecondary: rgba(255, 255, 255, 0.8);
+    --color-border: rgba(75, 85, 99, 0.3);
+    --color-accent: #60a5fa;
+  }
+
   html {
     font-family: 'Inter', system-ui, sans-serif;
     @apply overflow-x-hidden;
-    @apply bg-slate-50;
+    background-color: var(--color-background);
+    color: var(--color-text);
     @apply transition-colors duration-200;
-  }
-
-  html.dark {
-    @apply bg-[#1C1C1E] !important;
   }
 
   body {
     @apply overflow-x-hidden;
-    @apply bg-slate-50;
+    background-color: var(--color-background);
     @apply transition-colors duration-200;
-  }
-
-  body.dark {
-    @apply bg-[#1C1C1E] !important;
   }
 
   #root {
     min-height: 100vh;
-    @apply bg-slate-50;
+    background-color: var(--color-background);
     @apply transition-colors duration-200;
-  }
-
-  @supports (-webkit-overflow-scrolling: touch) {
-    html.dark, 
-    body.dark {
-      @apply bg-[#1C1C1E] !important;
-    }
-  }
-
-  @supports (overscroll-behavior-y: contain) {
-    html.dark {
-      @apply bg-[#1C1C1E] !important;
-    }
   }
 }
 
 @layer components {
   .glass-effect {
-    @apply bg-white/90 dark:bg-[#2C2C2E]/90 backdrop-blur-md border border-white/20 dark:border-[#3C3C3E]/30;
-  }
-  
-  .gradient-border {
-    @apply border border-transparent bg-gradient-to-r from-gray-500/20 to-gray-600/20 dark:from-[#2C2C2E]/20 dark:to-[#3C3C3E]/10;
-  }
-
-  .glass-morphism {
-    @apply bg-white/90 dark:bg-[#2C2C2E]/90;
-    isolation: isolate;
-  }
-
-  .glass-morphism-backdrop {
-    @apply bg-white/50 dark:bg-[#2C2C2E]/50;
-  }
-
-  .dark .glass-morphism-backdrop {
-    background-color: rgba(44, 44, 46, 0.5);
-  }
-
-  .glass-card {
-    @apply bg-white/90 dark:bg-[#2C2C2E]/90
-           motion-safe:transition-[background-color,border-color,opacity,box-shadow]
-           motion-safe:duration-200
-           transform-gpu;
-  }
-
-  .glass-card-backdrop {
-    background-color: rgba(255, 255, 255, 0.5);
+    background-color: color-mix(in srgb, var(--color-surface) 90%, transparent);
     backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-  }
-
-  .dark .glass-card-backdrop {
-    background-color: rgba(44, 44, 46, 0.5);
+    border: 1px solid color-mix(in srgb, var(--color-border) 20%, transparent);
   }
 
   .card {
-    @apply bg-white dark:bg-[#2C2C2E]/50 
-           backdrop-blur-md 
-           border border-gray-200 dark:border-[#3C3C3E]/30
-           shadow-lg dark:shadow-dark
-           rounded-lg;
-  }
-
-  .container-dark {
-    @apply bg-gradient-to-br from-[#1C1C1E] via-[#2C2C2E] to-[#3C3C3E]/50;
-  }
-
-  .panel-dark {
-    @apply bg-[#2C2C2E]/50 backdrop-blur-md border border-[#3C3C3E]/30 shadow-dark;
-  }
-
-  .scroll-container {
-    @apply overflow-auto;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-    scroll-behavior: smooth;
-    contain: content;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    @apply shadow-lg rounded-lg;
   }
 }
 
@@ -369,8 +323,22 @@
   }
 }
 
+/* Update the dark mode selectors to include midnight theme */
+:root[data-theme='dark'],
+:root[data-theme='midnight'] {
+  color-scheme: dark;
+}
+
+/* Update any dark-specific styles to also target midnight */
+.dark .dark\:bg-gray-800,
+[data-theme='midnight'] .dark\:bg-gray-800 {
+  @apply bg-gray-800;
+}
+
 /* Global style outside of layers */
 html.dark,
-body.dark {
+html[data-theme='midnight'],
+body.dark,
+body[data-theme='midnight'] {
   @apply bg-[#1C1C1E] !important;
 }

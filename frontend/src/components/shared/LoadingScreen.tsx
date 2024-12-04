@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Logo } from './Logo';
 import { Moon, Sun } from 'lucide-react';
-import { useTheme } from '../../contexts/ThemeContext';
+import { useTheme } from '../../contexts/themeContextUtils';
 
 interface LoadingScreenProps {
   message?: string;
@@ -15,24 +15,24 @@ export function LoadingScreen({ message = 'Loading...' }: LoadingScreenProps) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-white/50 dark:bg-gray-950/50 flex items-center justify-center backdrop-blur-sm z-50 transition-colors duration-200"
+      className="fixed inset-0 bg-[var(--color-surface)]/50 flex items-center justify-center backdrop-blur-sm z-50 transition-colors duration-200"
     >
       <button
         onClick={toggleTheme}
-        className="absolute top-6 right-6 p-2 rounded-lg bg-white/90 dark:bg-gray-800/90 border border-gray-200 dark:border-gray-700/30 shadow-lg transition-all duration-200 hover:scale-105"
+        className="absolute top-6 right-6 p-2 rounded-lg bg-[var(--color-surface)]/90 border border-[var(--color-border)] shadow-lg transition-all duration-200 hover:scale-105"
         aria-label="Toggle theme"
       >
         {theme === 'dark' ? (
-          <Sun className="w-5 h-5 text-amber-500" />
+          <Sun className="w-5 h-5 text-[var(--color-idea)]" />
         ) : (
-          <Moon className="w-5 h-5 text-gray-700" />
+          <Moon className="w-5 h-5 text-[var(--color-text)]" />
         )}
       </button>
 
       <motion.div 
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white/95 dark:bg-gray-800/95 rounded-xl p-8 shadow-lg border border-gray-200 dark:border-gray-700/30 transition-colors duration-200"
+        className="bg-[var(--color-surface)]/95 rounded-xl p-8 shadow-lg border border-[var(--color-border)] transition-colors duration-200"
       >
         {/* Main Content */}
         <motion.div
@@ -60,7 +60,7 @@ export function LoadingScreen({ message = 'Loading...' }: LoadingScreenProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="text-gray-900 dark:text-white/90 font-medium text-base transition-colors duration-200"
+            className="text-[var(--color-text)] font-medium text-base transition-colors duration-200"
           >
             {message}
           </motion.div>
@@ -78,7 +78,7 @@ export function LoadingScreen({ message = 'Loading...' }: LoadingScreenProps) {
                   delay: i * 0.2,
                   ease: "easeInOut"
                 }}
-                className="w-2 h-2 bg-primary-500/80 dark:bg-primary-400/80 rounded-full transition-colors duration-200"
+                className="w-2 h-2 bg-[var(--color-accent)]/80 rounded-full transition-colors duration-200"
               />
             ))}
           </div>

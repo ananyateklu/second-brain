@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import CytoscapeComponent from 'react-cytoscapejs';
-import { useTheme } from '../../../contexts/ThemeContext';
+import { useTheme } from '../../../contexts/themeContextUtils';
 import type { Note } from '../../../types/note';
 import Cytoscape , { Stylesheet } from 'cytoscape';
 

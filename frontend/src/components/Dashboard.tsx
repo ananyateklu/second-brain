@@ -43,15 +43,15 @@ export function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-gray-50 dark:bg-[#111111]">
+    <div className="min-h-screen overflow-x-hidden bg-[var(--color-background)]">
       {/* Fixed background */}
-      <div className="fixed inset-0 bg-gray-50 dark:bg-[#111111] -z-10" />
+      <div className="fixed inset-0 bg-[var(--color-background)] -z-10" />
 
       <div className="flex overflow-x-hidden min-h-screen">
         <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
 
         {/* Main Content Area */}
-        <div className="flex-1 min-w-0 lg:ml-60 flex flex-col">
+        <div className="flex-1 min-w-0 lg:ml-60 flex flex-col bg-[var(--color-background)]">
           <Header
             isSidebarOpen={isSidebarOpen}
             toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}

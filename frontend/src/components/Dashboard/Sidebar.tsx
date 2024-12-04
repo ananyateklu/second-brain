@@ -20,7 +20,7 @@ import {
   LogOut
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { useTheme } from '../../contexts/ThemeContext';
+import { useTheme } from '../../contexts/themeContextUtils';
 import lightLogo from '../../assets/second-brain-logo-light-mode.png';
 import darkLogo from '../../assets/second-brain-logo-dark-mode.png';
 
@@ -99,21 +99,21 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
 
       <aside
         ref={sidebarRef}
-        className={`fixed top-0 left-0 z-40 h-screen w-60 bg-white dark:bg-[#111111] backdrop-blur-md border-r border-gray-200 dark:border-[#1C1C1E] transition-transform duration-200 ease-in-out
+        className={`fixed top-0 left-0 z-40 h-screen w-60 bg-[var(--color-background)] backdrop-blur-md border-r border-[var(--color-border)] transition-transform duration-200 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex justify-center items-center px-4 h-20 border-b border-gray-200 dark:border-[#1C1C1E]">
+          <div className="flex justify-center items-center h-[81px] px-4 border-b border-[var(--color-border)]">
             <img
-              src={theme === 'dark' ? darkLogo : lightLogo}
+              src={theme === 'dark' || theme === 'midnight' ? darkLogo : lightLogo}
               alt="Second Brain Logo"
               className="max-h-12 max-w-full"
             />
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-7">
+          <nav className={`flex-1 overflow-y-auto px-3 py-4 space-y-7 ${theme === 'midnight' ? 'dark:bg-[rgb(17,24,39)]' : ''}`}>
             {navigationItems.map((section) => (
               <div key={section.section}>
                 <h3 className="px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">

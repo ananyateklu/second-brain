@@ -42,12 +42,12 @@ export function LinkedNotesPanel({
   };
 
   return (
-    <div className="border-l border-gray-200/30 dark:border-[#1C1C1E] flex flex-col min-h-0">
-      <div className="shrink-0 px-4 py-3 border-b border-gray-200/30 dark:border-[#1C1C1E] bg-white/50 dark:bg-[#111111] backdrop-blur-md">
+    <div className="border-l border-[var(--color-border)] flex flex-col min-h-0">
+      <div className="shrink-0 px-4 py-3 border-b border-[var(--color-border)] bg-[var(--color-surface)] backdrop-blur-md">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Link2 className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-            <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+            <Link2 className="w-4 h-4 text-[var(--color-textSecondary)]" />
+            <h3 className="text-sm font-medium text-[var(--color-text)]">
               {isIdea ? 'Connected Items' : 'Connections'}
             </h3>
           </div>
@@ -55,7 +55,7 @@ export function LinkedNotesPanel({
             <button
               type="button"
               onClick={onShowAddTask}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 rounded-lg transition-colors"
             >
               <Plus className="w-4 h-4" />
               Task
@@ -63,7 +63,7 @@ export function LinkedNotesPanel({
             <button
               type="button"
               onClick={onShowAddLink}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 rounded-lg transition-colors"
             >
               <Plus className="w-4 h-4" />
               Note
@@ -72,19 +72,19 @@ export function LinkedNotesPanel({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50 dark:bg-[#111111]">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[var(--color-surface)]">
         {linkedNotes.length > 0 || linkedTasks.length > 0 ? (
           <>
             {/* Linked Notes Section */}
             {linkedNotes.length > 0 && (
               <div className="space-y-2.5">
-                <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider px-1">
+                <h4 className="text-xs font-medium text-[var(--color-textSecondary)] uppercase tracking-wider px-1">
                   Notes & Ideas
                 </h4>
                 {linkedNotes.map(linkedNote => (
                   <div
                     key={linkedNote.id}
-                    className="group relative p-3 rounded-lg bg-white dark:bg-[#1C1C1E] hover:bg-gray-50 dark:hover:bg-[#2C2C2E] transition-colors border border-gray-100 dark:border-[#2C2C2E]"
+                    className="group relative p-3 rounded-lg bg-[var(--color-surface)] hover:bg-[var(--color-surface)]/80 transition-colors border border-[var(--color-border)]"
                   >
                     <div className="flex items-start gap-3">
                       <div className={`shrink-0 p-1.5 rounded-lg ${linkedNote.isIdea
@@ -126,13 +126,13 @@ export function LinkedNotesPanel({
             {/* Linked Tasks Section */}
             {linkedTasks.length > 0 && (
               <div className="space-y-2.5">
-                <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider px-1">
+                <h4 className="text-xs font-medium text-[var(--color-textSecondary)] uppercase tracking-wider px-1">
                   Tasks
                 </h4>
                 {linkedTasks.map(task => (
                   <div
                     key={task.id}
-                    className="group relative p-3 rounded-lg bg-white dark:bg-[#1C1C1E] hover:bg-gray-50 dark:hover:bg-[#2C2C2E] transition-colors border border-gray-100 dark:border-[#2C2C2E]"
+                    className="group relative p-3 rounded-lg bg-[var(--color-surface)] hover:bg-[var(--color-surface)]/80 transition-colors border border-[var(--color-border)]"
                   >
                     <div className="flex items-start gap-3">
                       <div className="shrink-0 p-1.5 bg-green-100 dark:bg-green-900/30 rounded-lg">
@@ -187,11 +187,11 @@ export function LinkedNotesPanel({
           </>
         ) : (
           <div className="flex flex-col items-center justify-center py-8 text-center">
-            <Link2 className="w-8 h-8 text-gray-300 dark:text-gray-600 mb-2" />
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <Link2 className="w-8 h-8 text-[var(--color-textSecondary)] mb-2" />
+            <p className="text-sm text-[var(--color-textSecondary)]">
               No connections yet
             </p>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+            <p className="text-xs text-[var(--color-textSecondary)] mt-1">
               Click "+ Task" or "+ Note" to add connections
             </p>
           </div>

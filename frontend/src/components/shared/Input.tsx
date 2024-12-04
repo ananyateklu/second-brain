@@ -3,6 +3,7 @@ import { LucideIcon, Wand2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { promptEnhancementService } from '../../services/ai/promptEnhancementService';
 import { RecordButton } from './RecordButton';
+import { useTheme } from '../../contexts/themeContextUtils';
 
 interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
   label: string;
@@ -30,6 +31,7 @@ export function Input({
 }: InputProps) {
   const [isFocused, setIsFocused] = useState(false);
   const [isEnhancing, setIsEnhancing] = useState(false);
+  const { theme } = useTheme();
 
   const handleEnhancePrompt = async () => {
     if (!props.value || isEnhancing) return;
@@ -71,9 +73,9 @@ export function Input({
           htmlFor={props.id} 
           className={`
             block text-sm font-medium
-            text-gray-900 dark:text-gray-100
+            text-[var(--color-text)]
             transition-colors duration-200
-            ${isFocused ? 'text-gray-900 dark:text-primary-400' : ''}
+            ${isFocused ? 'text-[var(--color-accent)]' : ''}
           `}
         >
           {label}
@@ -82,7 +84,11 @@ export function Input({
       
       <div className="relative">
         <motion.div
-          className="absolute inset-0 backdrop-blur-sm bg-white/50 dark:bg-gray-800/50 rounded-lg -z-10"
+          className={`absolute inset-0 backdrop-blur-sm rounded-lg -z-10 ${
+            theme === 'midnight'
+              ? 'bg-[rgb(17,24,39)]/80'
+              : 'bg-[var(--color-surface)]/50'
+          }`}
           animate={{
             scale: isFocused ? 1.02 : 1,
             opacity: isFocused ? 1 : 0
@@ -102,8 +108,8 @@ export function Input({
             >
               <Icon className={`h-5 w-5 ${
                 isFocused 
-                  ? 'text-gray-700 dark:text-primary-400'
-                  : 'text-gray-500 dark:text-gray-400'
+                  ? 'text-[var(--color-accent)]'
+                  : 'text-[var(--color-textSecondary)]'
               }`} />
             </motion.div>
           )}
@@ -127,15 +133,18 @@ export function Input({
               ${typeof Icon !== 'undefined' ? 'pl-10' : ''}
               ${props.value ? 'pr-10' : ''}
               backdrop-blur-glass
-              bg-[#1C1C1E] dark:bg-[#1C1C1E]
+              ${theme === 'midnight' 
+                ? 'bg-[rgb(17,24,39)]/80 hover:bg-[rgb(17,24,39)]/90' 
+                : 'bg-[var(--color-surface)] hover:bg-[var(--color-surface)]/90'
+              }
               rounded-lg
-              border border-[#2C2C2E] dark:border-[#2C2C2E]
-              text-gray-100 dark:text-gray-100
-              placeholder:text-gray-500 dark:placeholder:text-gray-500
-              focus:text-gray-100 dark:focus:text-[#64ab6f]
+              border border-[var(--color-border)]
+              text-[var(--color-text)]
+              placeholder:text-[var(--color-textSecondary)]
+              focus:text-[var(--color-text)]
               focus:outline-none
               focus:ring-2
-              focus:ring-[#64ab6f]/30
+              focus:ring-[var(--color-accent)]/30
               focus:border-transparent
               transition-all
               duration-200
@@ -163,9 +172,12 @@ export function Input({
                     h-6
                     mr-3
                     rounded-md
-                    text-gray-500 dark:text-gray-400
-                    hover:text-primary-500 dark:hover:text-primary-400
-                    hover:bg-gray-100 dark:hover:bg-gray-700/50
+                    text-[var(--color-textSecondary)]
+                    ${theme === 'midnight'
+                      ? 'hover:bg-[rgb(17,24,39)]/90'
+                      : 'hover:bg-[var(--color-surface)]/80'
+                    }
+                    hover:text-[var(--color-accent)]
                     disabled:opacity-50 
                     disabled:cursor-not-allowed
                     transition-all 
@@ -184,7 +196,7 @@ export function Input({
             </AnimatePresence>
 
             {!disableRecording && (
-              <div className="border-l border-gray-200/50 dark:border-gray-700/50 h-full flex items-center pl-1">
+              <div className="border-l border-[var(--color-border)] h-full flex items-center pl-1">
                 <RecordButton
                   onTranscription={handleTranscription}
                 />
@@ -197,7 +209,7 @@ export function Input({
       <AnimatePresence>
         {error && (
           <motion.p 
-            className="text-sm text-red-500 dark:text-red-400"
+            className="text-sm text-red-500"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}

@@ -9,7 +9,7 @@ interface HeaderProps {
 
 export function Header({ task, onClose, onShowDeleteConfirm }: HeaderProps) {
   return (
-    <div className="shrink-0 px-6 py-4 border-b border-gray-200/30 dark:border-[#1C1C1E] bg-white dark:bg-[#111111] backdrop-blur-md">
+    <div className="shrink-0 px-6 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface)] backdrop-blur-md">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
