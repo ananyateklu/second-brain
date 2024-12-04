@@ -146,7 +146,7 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
                   />
                 </svg>
                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary-500 rounded-full flex items-center justify-center text-[10px] text-white font-medium">
-                  {user?.level || 1}
+                  {user?.level ?? 1}
                 </div>
               </div>
             </button>
@@ -178,7 +178,7 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
                   <div className="mt-3">
                     <div className="flex justify-between text-xs mb-1">
                       <span className="text-gray-600 dark:text-gray-400">
-                        Level {user?.level || 1}
+                        Level {user?.level ?? 1}
                       </span>
                       <span className="text-gray-600 dark:text-gray-400">
                         {xpProgress.currentLevelXP.toLocaleString()} / {xpProgress.nextLevelXP.toLocaleString()} XP
@@ -193,7 +193,7 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
                       />
                     </div>
                     <div className="mt-1 text-xs text-gray-500 dark:text-gray-400 text-right">
-                      {Math.round(xpProgress.progress)}% to Level {(user?.level || 1) + 1}
+                      {Math.round(xpProgress.progress)}% to Level {(user?.level ?? 1) + 1}
                     </div>
                   </div>
                 </div>

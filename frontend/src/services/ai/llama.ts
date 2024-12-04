@@ -4,7 +4,7 @@ import { signalRService } from '../../services/signalR';
 import { AI_MODELS } from './models';
 
 export class LlamaService {
-  private isEnabled = true;
+  private readonly isEnabled = true;
 
   async sendMessage(
     message: string, 
@@ -139,8 +139,8 @@ export class LlamaService {
     } catch (error: unknown) {
       const err = error as { response?: { data?: { error?: string; rawResponse?: string } } };
       console.error(`[LlamaService] Error executing ${modelId} operation:`, err);
-      const errorMessage = err.response?.data?.error || 'Failed to execute operation.';
-      throw new Error(`${errorMessage} Raw response: ${err.response?.data?.rawResponse || 'N/A'}`);
+      const errorMessage = err.response?.data?.error ?? 'Failed to execute operation.';
+      throw new Error(`${errorMessage} Raw response: ${err.response?.data?.rawResponse ?? 'N/A'}`);
     }
   }
 

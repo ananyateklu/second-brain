@@ -39,4 +39,8 @@ export const reminderService = {
     const response = await api.get<Reminder[]>('/api/Reminders/deleted');
     return response.data;
   },
+
+  async deleteReminderPermanently(id: string): Promise<void> {
+    await api.delete(`/api/Reminders/${id}/permanent`);
+  },
 };

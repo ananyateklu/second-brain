@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { ThemeContext } from './themeContextUtils';
 import { themes, ThemeName } from '../theme/theme.config';
 
@@ -56,40 +56,32 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
-  const toggleTheme = () => {
+  const toggleTheme = useCallback(() => {
     setThemeName(prev => {
       switch (prev) {
-        case 'light':
-          return 'dark';
-        case 'dark':
-          return 'midnight';
-        case 'midnight':
-          return 'light';
-        default:
-          return 'light';
+        case 'light': return 'dark';
+        case 'dark': return 'midnight';
+        case 'midnight': return 'light';
+        default: return 'light';
       }
     });
-  };
+  }, []);
 
-  const setTheme = (name: ThemeName) => {
-    console.log('setTheme called:', {
-      requestedTheme: name,
-      currentTheme: themeName,
-      isValidTheme: !!themes[name]
-    });
-    
+  const setTheme = useCallback((name: ThemeName) => {
     if (themes[name]) {
       setThemeName(name);
     }
-  };
+  }, []);
+
+  const contextValue = useMemo(() => ({ 
+    theme: themeName, 
+    toggleTheme,
+    setTheme,
+    colors: themes[themeName].colors 
+  }), [themeName, toggleTheme, setTheme]);
 
   return (
-    <ThemeContext.Provider value={{ 
-      theme: themeName, 
-      toggleTheme,
-      setTheme,
-      colors: themes[themeName].colors 
-    }}>
+    <ThemeContext.Provider value={contextValue}>
       {children}
     </ThemeContext.Provider>
   );

@@ -1,9 +1,12 @@
+export type TaskStatus = 'Incomplete' | 'Completed';
+export type TaskPriority = 'low' | 'medium' | 'high';
+
 export interface Task {
     id: string;
     title: string;
     description: string;
-    status: 'Incomplete' | 'Completed';
-    priority: 'low' | 'medium' | 'high';
+    status: TaskStatus;
+    priority: TaskPriority;
     dueDate: string | null;
     tags: string[];
     linkedItems: Array<{
@@ -21,7 +24,7 @@ export interface Task {
 export interface CreateTaskDto {
     title: string;
     description: string;
-    priority: 'low' | 'medium' | 'high';
+    priority: TaskPriority;
     dueDate?: string | null;
     tags?: string[];
 }
@@ -29,10 +32,10 @@ export interface CreateTaskDto {
 export interface UpdateTaskDto {
     title?: string;
     description?: string;
-    priority?: 'low' | 'medium' | 'high';
+    priority?: TaskPriority;
     dueDate?: string | null;
     tags?: string[];
-    status?: 'Incomplete' | 'Completed';
+    status?: TaskStatus;
     isDeleted?: boolean;
     deletedAt?: string | null;
 }

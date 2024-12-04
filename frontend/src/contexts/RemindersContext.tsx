@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { reminderService } from '../api/services/reminderService';
 import { useActivities } from './activityContextUtils';
 import { useTrash } from './trashContextUtils';
@@ -35,7 +35,6 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
       const newReminder = await reminderService.createReminder(reminderData);
       setReminders(prev => [newReminder, ...prev]);
 
-      // Record activity
       await createActivity({
         actionType: 'create',
         itemType: 'reminder',
@@ -46,6 +45,7 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
       });
     } catch (error) {
       console.error('Failed to add reminder:', error);
+      throw error;
     }
   }, [createActivity]);
 
@@ -56,7 +56,6 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
         prev.map(reminder => (reminder.id === id ? { ...reminder, ...updatedReminder } : reminder))
       );
 
-      // Record activity
       await createActivity({
         actionType: 'edit',
         itemType: 'reminder',
@@ -67,6 +66,7 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
       });
     } catch (error) {
       console.error('Failed to update reminder:', error);
+      throw error;
     }
   }, [createActivity]);
 
@@ -75,7 +75,6 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
       const reminderToDelete = reminders.find(reminder => reminder.id === id);
       if (!reminderToDelete) return;
 
-      // Soft delete in backend by updating isDeleted flag
       await reminderService.updateReminder(id, {
         isDeleted: true,
         deletedAt: new Date().toISOString(),
@@ -86,7 +85,6 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
         isCompleted: reminderToDelete.isCompleted
       });
 
-      // Move to trash
       await moveToTrash({
         id: reminderToDelete.id,
         type: 'reminder',
@@ -98,7 +96,6 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
         }
       });
 
-      // Remove from active reminders list AFTER successful deletion and trash move
       setReminders(prev => prev.filter(reminder => reminder.id !== id));
 
       await createActivity({
@@ -122,11 +119,41 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
     }
   }, [reminders, moveToTrash, createActivity]);
 
+  const deleteReminderPermanently = useCallback(async (id: string) => {
+    try {
+      const reminderToDelete = reminders.find(reminder => reminder.id === id);
+      if (!reminderToDelete) return;
+
+      await reminderService.deleteReminderPermanently(id);
+      setReminders(prev => prev.filter(reminder => reminder.id !== id));
+
+      await createActivity({
+        actionType: 'DELETE_PERMANENT',
+        itemType: 'REMINDER',
+        itemId: id,
+        itemTitle: reminderToDelete.title,
+        description: `Permanently deleted reminder: ${reminderToDelete.title}`,
+        metadata: {
+          reminderId: id,
+          reminderTitle: reminderToDelete.title,
+          dueDateTime: reminderToDelete.dueDateTime,
+          tags: reminderToDelete.tags,
+          isCompleted: reminderToDelete.isCompleted,
+          deletedAt: new Date().toISOString()
+        }
+      });
+    } catch (error) {
+      console.error('Failed to permanently delete reminder:', error);
+      throw error;
+    }
+  }, [reminders, createActivity]);
+
   const snoozeReminder = useCallback(async (id: string, until: string) => {
     try {
       await updateReminder(id, { isSnoozed: true, snoozeUntil: until });
     } catch (error) {
       console.error('Failed to snooze reminder:', error);
+      throw error;
     }
   }, [updateReminder]);
 
@@ -140,6 +167,7 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
       });
     } catch (error) {
       console.error('Failed to toggle reminder completion:', error);
+      throw error;
     }
   }, [reminders, updateReminder]);
 
@@ -189,20 +217,36 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
     }
   }, [createActivity, fetchReminders]);
 
+  const value = useMemo(() => ({
+    reminders,
+    addReminder,
+    updateReminder,
+    deleteReminder,
+    snoozeReminder,
+    toggleReminderCompletion,
+    getDueReminders,
+    getUpcomingReminders,
+    restoreReminder,
+    fetchReminders,
+    isLoading,
+    deleteReminderPermanently
+  }), [
+    reminders,
+    addReminder,
+    updateReminder,
+    deleteReminder,
+    snoozeReminder,
+    toggleReminderCompletion,
+    getDueReminders,
+    getUpcomingReminders,
+    restoreReminder,
+    fetchReminders,
+    isLoading,
+    deleteReminderPermanently
+  ]);
+
   return (
-    <RemindersContext.Provider value={{
-      reminders,
-      addReminder,
-      updateReminder,
-      deleteReminder,
-      snoozeReminder,
-      toggleReminderCompletion,
-      getDueReminders,
-      getUpcomingReminders,
-      restoreReminder,
-      fetchReminders,
-      isLoading
-    }}>
+    <RemindersContext.Provider value={value}>
       {children}
     </RemindersContext.Provider>
   );

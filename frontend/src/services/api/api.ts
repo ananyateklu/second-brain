@@ -19,7 +19,7 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
-    return Promise.reject(error);
+    return Promise.reject(error instanceof Error ? error : new Error(error?.message || 'Request failed'));
   }
 );
 
@@ -27,7 +27,7 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    return Promise.reject(error);
+    return Promise.reject(error instanceof Error ? error : new Error(error?.message || 'Response failed'));
   }
 );
 

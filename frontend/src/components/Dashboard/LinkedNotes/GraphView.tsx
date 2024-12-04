@@ -2,7 +2,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import CytoscapeComponent from 'react-cytoscapejs';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { useNotes } from '../../../contexts/notesContextUtils';
-import type { Core, NodeSingular, Stylesheet } from 'cytoscape';
+import type { Core, NodeSingular, Stylesheet, Position } from 'cytoscape';
 
 interface GraphViewProps {
   onNodeSelect: (noteId: string) => void;
@@ -37,6 +37,69 @@ const graphLayout = {
   quality: "proof",
   infinite: false,
 } as const;
+
+// Helper functions
+const checkNodeOverlap = (
+  pos: Position,
+  existingPos: Position,
+  width: number,
+  height: number,
+  existingNode: NodeSingular,
+  padding: number
+) => {
+  const dx = Math.abs(pos.x - existingPos.x);
+  const dy = Math.abs(pos.y - existingPos.y);
+  const minX = (width + existingNode.width()) / 2 + padding;
+  const minY = (height + existingNode.height()) / 2 + padding;
+  return dx < minX && dy < minY;
+};
+
+const adjustNodePosition = (
+  pos: Position,
+  node: NodeSingular,
+  existingNode: NodeSingular
+) => {
+  if (node.edgesWith(existingNode).length > 0) {
+    pos.x += (Math.random() - 0.5) * 50;
+    pos.y += (Math.random() - 0.5) * 50;
+  } else {
+    pos.x += (Math.random() - 0.5) * 150;
+    pos.y += (Math.random() - 0.5) * 150;
+  }
+  return pos;
+};
+
+const organizeNodes = (cy: Core) => {
+  const nodes = cy.nodes();
+  const nodePositions = new Map<NodeSingular, Position>();
+  const padding = 30;
+
+  nodes.forEach((node: NodeSingular) => {
+    const pos = node.position();
+    const width = node.width();
+    const height = node.height();
+
+    let overlapping = true;
+    let attempts = 0;
+    const maxAttempts = 50;
+
+    while (overlapping && attempts < maxAttempts) {
+      overlapping = false;
+
+      nodePositions.forEach((existingPos: Position, existingNode: NodeSingular) => {
+        if (checkNodeOverlap(pos, existingPos, width, height, existingNode, padding)) {
+          overlapping = true;
+          adjustNodePosition(pos, node, existingNode);
+        }
+      });
+
+      attempts++;
+    }
+
+    node.position(pos);
+    nodePositions.set(node, pos);
+  });
+};
 
 export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: Readonly<GraphViewProps>) {
   const { notes } = useNotes();
@@ -147,58 +210,13 @@ export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: 
       });
     });
 
-    // Function to organize nodes based on connections
-    const organizeNodes = () => {
-      const nodes = cy.nodes();
-      const nodePositions = new Map<NodeSingular, { x: number; y: number }>();
-      const padding = 30;
-
-      nodes.forEach((node) => {
-        const pos = node.position();
-        const width = node.width();
-        const height = node.height();
-
-        let overlapping = true;
-        let attempts = 0;
-        const maxAttempts = 50;
-
-        while (overlapping && attempts < maxAttempts) {
-          overlapping = false;
-
-          nodePositions.forEach((existingPos, existingNode) => {
-            const dx = Math.abs(pos.x - existingPos.x);
-            const dy = Math.abs(pos.y - existingPos.y);
-            const minX = (width + existingNode.width()) / 2 + padding;
-            const minY = (height + existingNode.height()) / 2 + padding;
-
-            if (dx < minX && dy < minY) {
-              overlapping = true;
-              // Move connected nodes closer together
-              if (node.edgesWith(existingNode).length > 0) {
-                pos.x += (Math.random() - 0.5) * 50;
-                pos.y += (Math.random() - 0.5) * 50;
-              } else {
-                pos.x += (Math.random() - 0.5) * 150;
-                pos.y += (Math.random() - 0.5) * 150;
-              }
-            }
-          });
-
-          attempts++;
-        }
-
-        node.position(pos);
-        nodePositions.set(node, pos);
-      });
-    };
-
     // Run initial layout
     cy.layout(graphLayout).run();
 
     // After layout completes, organize nodes and then handle centering
     cy.one('layoutstop', () => {
       // First organize nodes
-      organizeNodes();
+      organizeNodes(cy);
 
       // Then handle centering in a separate animation
       setTimeout(() => {

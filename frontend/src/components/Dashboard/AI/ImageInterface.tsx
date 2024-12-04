@@ -27,6 +27,12 @@ export function ImageInterface({
   const [prompt, setPrompt] = useState('');
   const [isEnhancing, setIsEnhancing] = useState(false);
 
+  const getErrorMessage = (error: unknown) => {
+    if (typeof error === 'string') return error;
+    if (typeof error === 'object' && error && 'message' in error) return error.message;
+    return 'Failed to generate image';
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!prompt.trim() || isLoading) return;
@@ -95,10 +101,7 @@ export function ImageInterface({
         metadata: response.metadata
       });
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 
-        typeof error === 'object' && error && 'message' in error ? error.message : 
-        'Failed to generate image';
-        
+      const errorMessage = getErrorMessage(error);
       updateMessage(assistantMessageId, {
         content: 'Failed to generate image',
         type: 'text',

@@ -37,10 +37,10 @@ export function IdeaCard({
     toggleFavoriteNote(idea.id);
   };
 
-  const handlePin = async (e: React.MouseEvent) => {
+  const handlePin = (e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      await togglePinNote(idea.id);
+      togglePinNote(idea.id);
     } catch (error) {
       console.error('Failed to toggle pin:', error);
     }
@@ -51,9 +51,9 @@ export function IdeaCard({
     setShowArchiveWarning(true);
   };
 
-  const handleArchiveConfirm = async () => {
+  const handleArchiveConfirm = () => {
     try {
-      await archiveNote(idea.id);
+      archiveNote(idea.id);
       setShowArchiveWarning(false);
     } catch (error) {
       console.error('Failed to archive idea:', error);

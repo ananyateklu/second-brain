@@ -1,7 +1,5 @@
 import { createContext, useContext } from 'react';
-import { Note } from './NotesContext';
-import type { Task } from '../types/task';
-import type { Reminder } from '../api/types/reminder';
+import type { Note } from '../types/note';
 
 export interface TrashedItem {
   id: string;

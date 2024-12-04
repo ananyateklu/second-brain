@@ -2,8 +2,10 @@
 import { AIService } from '../aiService';
 import { PROMPT_CONFIG } from './promptConfig';
 
+export type ContentType = 'note' | 'idea' | 'task' | 'reminder';
+
 export class ContentSuggestionService {
-  private aiService: AIService;
+  private readonly aiService: AIService;
 
   constructor() {
     this.aiService = new AIService();
@@ -13,9 +15,9 @@ export class ContentSuggestionService {
   private get modelId(): string {
     const provider = this.provider;
     if (provider === 'llama') {
-      return localStorage.getItem('content_suggestions_model') || 'llama3.1:8b';
+      return localStorage.getItem('content_suggestions_model') ?? 'llama3.1:8b';
     }
-    return localStorage.getItem('content_suggestions_model') || 'gpt-4';
+    return localStorage.getItem('content_suggestions_model') ?? 'gpt-4';
   }
 
   private get provider(): 'openai' | 'anthropic' | 'gemini' | 'llama' {
@@ -33,7 +35,7 @@ export class ContentSuggestionService {
    */
   async generateTitle(
     content: string,
-    type: 'note' | 'idea' | 'task' | 'reminder',
+    type: ContentType,
     context?: {
       currentTitle?: string;
       tags?: string[];
@@ -50,7 +52,7 @@ export class ContentSuggestionService {
    */
   async generateContent(
     title: string,
-    type: 'note' | 'idea' | 'task' | 'reminder',
+    type: ContentType,
     context?: {
       currentContent?: string;
       tags?: string[];
@@ -67,7 +69,7 @@ export class ContentSuggestionService {
    */
   async generateTags(
     input: { title?: string; content?: string },
-    type: 'note' | 'idea' | 'task' | 'reminder',
+    type: ContentType,
     context?: {
       currentTags?: string[];
     }
@@ -146,7 +148,7 @@ export class ContentSuggestionService {
    */
   private createTitlePrompt(
     content: string,
-    type: 'note' | 'idea' | 'task' | 'reminder',
+    type: ContentType,
     context?: {
       currentTitle?: string;
       tags?: string[];
@@ -168,7 +170,7 @@ export class ContentSuggestionService {
    */
   private createContentPrompt(
     title: string,
-    type: 'note' | 'idea' | 'task' | 'reminder',
+    type: ContentType,
     context?: {
       currentContent?: string;
       tags?: string[];
@@ -190,7 +192,7 @@ export class ContentSuggestionService {
    */
   private createTagsPrompt(
     input: { title?: string; content?: string },
-    type: 'note' | 'idea' | 'task' | 'reminder',
+    type: ContentType,
     context?: {
       currentTags?: string[];
     }
@@ -204,10 +206,9 @@ export class ContentSuggestionService {
     const contentSection = input.content
       ? `Content: ${input.content}\n`
       : '';
-    const currentTagsSection =
-      context && context.currentTags && context.currentTags.length > 0
-        ? `Current Tags: ${context.currentTags.join(', ')}\n`
-        : '';
+    const currentTagsSection = context?.currentTags?.length
+      ? `Current Tags: ${context.currentTags.join(', ')}\n`
+      : '';
 
     const replacements: Record<string, string> = {
       titleSection,

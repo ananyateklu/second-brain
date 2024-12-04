@@ -5,11 +5,6 @@ import api from '../api/api';
 export class OpenAIService {
   private isEnabled = false;
 
-  constructor() {
-    // Remove this as it won't complete before isConfigured is called
-    // this.checkConfiguration();
-  }
-
   async isConfigured(): Promise<boolean> {
     try {
       const response = await api.get('/api/ai/openai/status');

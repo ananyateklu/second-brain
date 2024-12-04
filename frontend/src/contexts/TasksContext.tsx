@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { TasksContext } from './tasksContextUtils';
 import type { Task, UpdateTaskDto } from '../api/types/task';
 import { useAuth } from '../hooks/useAuth';
@@ -28,7 +28,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     fetchTasks();
   }, [fetchTasks]);
 
-  const addTask = async (taskData: CreateTaskData) => {
+  const addTask = useCallback(async (taskData: CreateTaskData) => {
     try {
       const newTask = await tasksService.createTask(taskData);
       setTasks(prev => [newTask, ...prev]);
@@ -52,9 +52,9 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
       console.error('Failed to create task:', error);
       throw error;
     }
-  };
+  }, [createActivity]);
 
-  const updateTask = async (id: string, updates: UpdateTaskDto) => {
+  const updateTask = useCallback(async (id: string, updates: UpdateTaskDto) => {
     try {
       const updatedTask = await tasksService.updateTask(id, updates);
       setTasks(prev => prev.map(task => {
@@ -86,9 +86,9 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
       console.error('Failed to update task:', error);
       throw error;
     }
-  };
+  }, [createActivity]);
 
-  const addTaskLink = async (data: TaskLinkData) => {
+  const addTaskLink = useCallback(async (data: TaskLinkData) => {
     try {
       const updatedTask = await tasksService.addTaskLink(data);
       setTasks(prev => prev.map(task => task.id === data.taskId ? updatedTask : task));
@@ -96,9 +96,9 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
       console.error('Failed to add task link:', error);
       throw error;
     }
-  };
+  }, []);
 
-  const removeTaskLink = async (taskId: string, linkedItemId: string) => {
+  const removeTaskLink = useCallback(async (taskId: string, linkedItemId: string) => {
     try {
       const updatedTask = await tasksService.removeTaskLink(taskId, linkedItemId);
       setTasks(prev => prev.map(task => task.id === taskId ? updatedTask : task));
@@ -106,9 +106,9 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
       console.error('Failed to remove task link:', error);
       throw error;
     }
-  };
+  }, []);
 
-  const deleteTask = async (id: string) => {
+  const deleteTask = useCallback(async (id: string) => {
     try {
       await tasksService.deleteTask(id);
       setTasks(prev => prev.filter(task => task.id !== id));
@@ -116,18 +116,18 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
       console.error('Failed to delete task:', error);
       throw error;
     }
-  };
+  }, []);
 
-  const fetchDeletedTasks = async () => {
+  const fetchDeletedTasks = useCallback(async () => {
     try {
       return await tasksService.getDeletedTasks();
     } catch (error) {
       console.error('Failed to fetch deleted tasks:', error);
       throw error;
     }
-  };
+  }, []);
 
-  const restoreTask = async (id: string) => {
+  const restoreTask = useCallback(async (id: string) => {
     try {
       const restoredTask = await tasksService.restoreTask(id);
       setTasks(prev => [...prev, restoredTask]);
@@ -135,29 +135,41 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
       console.error('Failed to restore task:', error);
       throw error;
     }
-  };
+  }, []);
 
-  const toggleTaskStatus = async (id: string) => {
+  const toggleTaskStatus = useCallback(async (id: string) => {
     const task = tasks.find(t => t.id === id);
     if (!task) return;
-
     const newStatus = task.status === 'Completed' ? 'Incomplete' : 'Completed';
     await updateTask(id, { status: newStatus });
-  };
+  }, [tasks, updateTask]);
+
+  const contextValue = useMemo(() => ({
+    tasks,
+    isLoading,
+    addTask,
+    updateTask,
+    deleteTask,
+    addTaskLink,
+    removeTaskLink,
+    toggleTaskStatus,
+    fetchDeletedTasks,
+    restoreTask,
+  }), [
+    tasks,
+    isLoading,
+    addTask,
+    updateTask,
+    deleteTask,
+    addTaskLink,
+    removeTaskLink,
+    toggleTaskStatus,
+    fetchDeletedTasks,
+    restoreTask,
+  ]);
 
   return (
-    <TasksContext.Provider value={{
-      tasks,
-      isLoading,
-      addTask,
-      updateTask,
-      deleteTask,
-      addTaskLink,
-      removeTaskLink,
-      toggleTaskStatus,
-      fetchDeletedTasks,
-      restoreTask,
-    }}>
+    <TasksContext.Provider value={contextValue}>
       {children}
     </TasksContext.Provider>
   );

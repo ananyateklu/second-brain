@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -18,7 +18,7 @@
   }
 
   /* Add specific midnight theme variables */
-  [data-theme='midnight'] {
+  [data-theme="midnight"] {
     --color-primary: #1e1e24;
     --color-secondary: #2c2c34;
     --color-background: rgb(17, 24, 39);
@@ -30,7 +30,7 @@
   }
 
   html {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: "Inter", system-ui, sans-serif;
     @apply overflow-x-hidden;
     background-color: var(--color-background);
     color: var(--color-text);
@@ -90,9 +90,15 @@
 
 /* Animations */
 @keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-  100% { transform: translateY(0px); }
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
 }
 
 .animate-float {
@@ -128,19 +134,41 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes wave {
-  0% { transform: rotate(0deg) translateZ(0); }
-  10% { transform: rotate(14deg) translateZ(0); }
-  20% { transform: rotate(-8deg) translateZ(0); }
-  30% { transform: rotate(14deg) translateZ(0); }
-  40% { transform: rotate(-4deg) translateZ(0); }
-  50% { transform: rotate(10deg) translateZ(0); }
-  60% { transform: rotate(0deg) translateZ(0); }
-  100% { transform: rotate(0deg) translateZ(0); }
+  0% {
+    transform: rotate(0deg) translateZ(0);
+  }
+  10% {
+    transform: rotate(14deg) translateZ(0);
+  }
+  20% {
+    transform: rotate(-8deg) translateZ(0);
+  }
+  30% {
+    transform: rotate(14deg) translateZ(0);
+  }
+  40% {
+    transform: rotate(-4deg) translateZ(0);
+  }
+  50% {
+    transform: rotate(10deg) translateZ(0);
+  }
+  60% {
+    transform: rotate(0deg) translateZ(0);
+  }
+  100% {
+    transform: rotate(0deg) translateZ(0);
+  }
 }
 
 .animate-wave {
@@ -207,22 +235,22 @@
 .dark .custom-audio-player .rhap_time,
 .dark .custom-audio-player .rhap_current-time,
 .dark .custom-audio-player .rhap_total-time {
-  color: var(--dark-text-color, #E5E7EB);
+  color: var(--dark-text-color, #e5e7eb);
 }
 
 .custom-audio-player .rhap_progress-filled,
 .custom-audio-player .rhap_progress-indicator {
-  background-color: var(--theme-color, #6B7280);
+  background-color: var(--theme-color, #6b7280);
 }
 
 .custom-audio-player .rhap_progress-bar,
 .custom-audio-player .rhap_volume-bar {
-  background-color: var(--progress-bg, #E5E7EB);
+  background-color: var(--progress-bg, #e5e7eb);
 }
 
 .dark .custom-audio-player .rhap_progress-bar,
 .dark .custom-audio-player .rhap_volume-bar {
-  background-color: var(--dark-progress-bg, #4B5563);
+  background-color: var(--dark-progress-bg, #4b5563);
 }
 
 .custom-audio-player .rhap_progress-indicator {
@@ -254,9 +282,6 @@
 }
 
 /* Additional Audio Player Styles for Chat */
-.custom-audio-player.rhap_container {
-  padding: 8px;
-}
 
 .custom-audio-player .rhap_main-controls-button {
   width: 32px;
@@ -278,20 +303,18 @@
 }
 
 .dark .custom-audio-player {
-  --rhap-theme-color: var(--theme-color, #6B7280);
-  --rhap-bar-color: #4B5563;
+  --rhap-theme-color: var(--theme-color, #6b7280);
+  --rhap-bar-color: #4b5563;
   --rhap-background-color: transparent;
 }
 
 /* High refresh rate optimizations */
-@media (min-resolution: 120dpi) {
-  .glass-card,
+@media screen and (min-resolution: 120dpi) {
   .glass-morphism {
-    transform: translate3d(0, 0, 0);
+    transform: translateZ(0);
     backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-    perspective: 1000;
-    -webkit-perspective: 1000;
+    perspective: 1000px;
+    contain: paint;
   }
 }
 
@@ -313,32 +336,22 @@
   }
 }
 
-/* Add performance optimizations for high refresh rate displays */
-@media screen and (min-refresh-rate: 120hz) {
-  .glass-morphism {
-    transform: translateZ(0);
-    backface-visibility: hidden;
-    perspective: 1000px;
-    contain: paint;
-  }
-}
-
 /* Update the dark mode selectors to include midnight theme */
-:root[data-theme='dark'],
-:root[data-theme='midnight'] {
+:root[data-theme="dark"],
+:root[data-theme="midnight"] {
   color-scheme: dark;
 }
 
 /* Update any dark-specific styles to also target midnight */
 .dark .dark\:bg-gray-800,
-[data-theme='midnight'] .dark\:bg-gray-800 {
+[data-theme="midnight"] .dark\:bg-gray-800 {
   @apply bg-gray-800;
 }
 
 /* Global style outside of layers */
 html.dark,
-html[data-theme='midnight'],
+html[data-theme="midnight"],
 body.dark,
-body[data-theme='midnight'] {
+body[data-theme="midnight"] {
   @apply bg-[#1C1C1E] !important;
 }

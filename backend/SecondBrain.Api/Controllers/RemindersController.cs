@@ -8,6 +8,8 @@ using System.Threading.Tasks;
 using System.Linq;
 using System.Security.Claims;
 using System;
+using System.Text.Json;
+using Microsoft.Extensions.Logging;
 
 namespace SecondBrain.Api.Controllers
 {
@@ -17,10 +19,13 @@ namespace SecondBrain.Api.Controllers
     public class RemindersController : ControllerBase
     {
         private readonly DataContext _context;
+        private const string REMINDER_NOT_FOUND = "Reminder not found.";
+        private readonly ILogger<RemindersController> _logger;
 
-        public RemindersController(DataContext context)
+        public RemindersController(DataContext context, ILogger<RemindersController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -82,7 +87,7 @@ namespace SecondBrain.Api.Controllers
 
             if (reminder == null)
             {
-                return NotFound(new { error = "Reminder not found." });
+                return NotFound(new { error = REMINDER_NOT_FOUND });
             }
 
             var reminderResponse = ReminderResponse.FromEntity(reminder);
@@ -101,7 +106,7 @@ namespace SecondBrain.Api.Controllers
 
             if (reminder == null)
             {
-                return NotFound(new { error = "Reminder not found." });
+                return NotFound(new { error = REMINDER_NOT_FOUND });
             }
 
             // Update properties if they are provided
@@ -186,7 +191,7 @@ namespace SecondBrain.Api.Controllers
 
             if (reminder == null)
             {
-                return NotFound(new { error = "Reminder not found." });
+                return NotFound(new { error = REMINDER_NOT_FOUND });
             }
 
             _context.Reminders.Remove(reminder);
@@ -208,6 +213,73 @@ namespace SecondBrain.Api.Controllers
                 .ToList();
 
             return Ok(reminderResponses);
+        }
+
+        [HttpDelete("{id}/permanent")]
+        public async Task<IActionResult> DeleteReminderPermanently(string id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { error = "User ID not found in token." });
+            }
+
+            var reminder = await _context.Reminders
+                .Where(r => r.Id == id && r.UserId == userId)
+                .FirstOrDefaultAsync();
+
+            if (reminder == null)
+            {
+                return NotFound(new { error = REMINDER_NOT_FOUND });
+            }
+
+            try
+            {
+                using var transaction = await _context.Database.BeginTransactionAsync();
+
+                try
+                {
+                    // Create activity for permanent deletion
+                    var activity = new Activity
+                    {
+                        UserId = userId,
+                        ActionType = "DELETE_PERMANENT",
+                        ItemType = "REMINDER",
+                        ItemId = reminder.Id,
+                        ItemTitle = reminder.Title,
+                        Description = $"Permanently deleted reminder: {reminder.Title}",
+                        MetadataJson = JsonSerializer.Serialize(new
+                        {
+                            reminderId = reminder.Id,
+                            reminderTitle = reminder.Title,
+                            dueDateTime = reminder.DueDateTime,
+                            tags = reminder.Tags,
+                            isCompleted = reminder.IsCompleted,
+                            deletedAt = DateTime.UtcNow
+                        })
+                    };
+
+                    _context.Activities.Add(activity);
+
+                    // Remove the reminder
+                    _context.Reminders.Remove(reminder);
+                    await _context.SaveChangesAsync();
+
+                    await transaction.CommitAsync();
+                    return NoContent();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to permanently delete reminder {ReminderId}", id);
+                    await transaction.RollbackAsync();
+                    throw new InvalidOperationException($"Failed to permanently delete reminder {id}", ex);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to permanently delete reminder {ReminderId}", id);
+                return StatusCode(500, new { error = $"Failed to permanently delete reminder: {ex.Message}" });
+            }
         }
     }
 }

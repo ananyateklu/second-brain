@@ -2,10 +2,10 @@ import * as signalR from '@microsoft/signalr';
 import { ExecutionStep } from '../types/ai';
 
 export class SignalRService {
-  private connection: signalR.HubConnection;
+  private readonly connection: signalR.HubConnection;
   private executionStepCallbacks: ((step: ExecutionStep) => void)[] = [];
   private isStarting: boolean = false;
-  private autoReconnect: boolean = true;
+  private readonly autoReconnect: boolean = true;
 
   constructor() {
     this.connection = new signalR.HubConnectionBuilder()

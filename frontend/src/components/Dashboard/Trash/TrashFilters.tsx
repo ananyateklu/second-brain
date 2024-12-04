@@ -6,7 +6,7 @@ interface TrashFiltersProps {
     dateRange: 'all' | 'today' | 'week' | 'month';
     tags: string[];
   };
-  onFilterChange: (key: string, value: any) => void;
+  onFilterChange: (key: 'types' | 'dateRange' | 'tags', value: string[] | 'all' | 'today' | 'week' | 'month') => void;
   availableTypes: string[];
 }
 
@@ -19,10 +19,10 @@ export function TrashFilters({ filters, onFilterChange, availableTypes }: TrashF
   };
 
   const dateRanges = [
-    { id: 'all', label: 'All Time' },
-    { id: 'today', label: 'Today' },
-    { id: 'week', label: 'This Week' },
-    { id: 'month', label: 'This Month' }
+    { id: 'all' as const, label: 'All Time' },
+    { id: 'today' as const, label: 'Today' },
+    { id: 'week' as const, label: 'This Week' },
+    { id: 'month' as const, label: 'This Month' }
   ];
 
   const toggleType = (type: string) => {

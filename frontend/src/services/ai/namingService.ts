@@ -1,7 +1,7 @@
 import { AIService } from '../../services/aiService';
 
 export class NamingService {
-  private aiService: AIService;
+  private readonly aiService: AIService;
   private readonly MODEL_ID = 'gpt-4o-mini';
 
   constructor() {
@@ -31,8 +31,8 @@ export class NamingService {
       // Remove any response prefixes
       suggestion = suggestion.replace(/^(Title:|Suggested Title:|Generated Title:|Response:|Here's a title:|How about:|I suggest:|Try this:|Result:)/i, '');
 
-      // Remove all types of quotes and apostrophes
-      suggestion = suggestion.replace(/["''""`]/g, '');
+      // Remove all types of quotes
+      suggestion = suggestion.replace(/["'`]/g, '');
 
       // Clean up whitespace
       suggestion = suggestion.trim();

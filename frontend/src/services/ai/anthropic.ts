@@ -1,6 +1,39 @@
 import { AIModel, AIResponse, AnthropicToolResult, AnthropicResponse, AnthropicGeneratedFields, AccumulatedContext } from '../../types/ai';
 import { AI_MODELS } from './models';
 import api from '../api/api';
+
+interface RequestParameters {
+  max_tokens?: number;
+  temperature?: number;
+  top_p?: number;
+  frequency_penalty?: number;
+  presence_penalty?: number;
+}
+
+interface AccumulatedContextData {
+  title: string;
+  content: string;
+  tags: string[];
+}
+
+interface ContentBlock {
+  type: string;
+  name?: string;
+  id?: string;
+  text?: string;
+  input?: Record<string, unknown>;
+}
+
+interface RequestData {
+  model: string;
+  max_tokens: number;
+  temperature: number;
+  top_p: number;
+  messages: Array<{ role: string; content: string | unknown[] }>;
+  tools: unknown[];
+  tool_choice: string;
+}
+
 export class AnthropicService {
   private isEnabled = false;
 
@@ -15,80 +48,151 @@ export class AnthropicService {
     }
   }
 
+  private getContentSuggestionTools() {
+    return [
+      {
+        name: "generate_content",
+        description: "Generates detailed content based on the provided title and/or tags.",
+        input_schema: {
+          type: "object",
+          properties: {
+            title: { type: "string" },
+            tags: { type: "array", items: { type: "string" } }
+          }
+        }
+      },
+      {
+        name: "generate_title",
+        description: "Generates a title based on the provided content and/or tags.",
+        input_schema: {
+          type: "object",
+          properties: {
+            content: { type: "string" },
+            tags: { type: "array", items: { type: "string" } }
+          }
+        }
+      },
+      {
+        name: "generate_tags",
+        description: "Generates relevant tags based on the title and/or content.",
+        input_schema: {
+          type: "object",
+          properties: {
+            title: { type: "string" },
+            content: { type: "string" }
+          }
+        }
+      }
+    ];
+  }
+
+  private createInitialRequest(
+    message: string,
+    modelId: string,
+    parameters?: RequestParameters,
+    tools: unknown[] = []
+  ): RequestData {
+    return {
+      model: modelId,
+      max_tokens: parameters?.max_tokens ?? 1024,
+      temperature: parameters?.temperature ?? 0.7,
+      top_p: parameters?.top_p ?? 1,
+      messages: [{ role: "user", content: message }],
+      tools,
+      tool_choice: "auto"
+    };
+  }
+
+  private async handleToolUse(
+    contentBlock: ContentBlock,
+    accumulatedContext: AccumulatedContextData,
+    request: RequestData
+  ) {
+    const toolResult = await this.executeTool(
+      contentBlock.name!,
+      { ...contentBlock.input!, accumulatedContext },
+      contentBlock.id!
+    );
+
+    this.updateAccumulatedContext(accumulatedContext, contentBlock.name!, toolResult.content);
+
+    const toolResponse = await api.post<AnthropicResponse>('/api/Claude/send', {
+      ...request,
+      messages: [
+        ...request.messages,
+        { role: "assistant", content: JSON.stringify(accumulatedContext) },
+        { role: "user", content: [toolResult] }
+      ]
+    });
+
+    return { toolResult, toolResponse };
+  }
+
+  private updateAccumulatedContext(
+    context: AccumulatedContextData,
+    toolName: string,
+    content: unknown
+  ) {
+    switch (toolName) {
+      case 'generate_content':
+        context.content = content as string;
+        break;
+      case 'generate_title':
+        context.title = content as string;
+        break;
+      case 'generate_tags':
+        context.tags = content as string[];
+        break;
+    }
+  }
+
+  private async processContentBlock(
+    contentBlock: ContentBlock,
+    isContentSuggestion: boolean,
+    accumulatedContext: AccumulatedContextData,
+    request: RequestData
+  ): Promise<{ content: string; toolResult?: AnthropicToolResult }> {
+    if (contentBlock.type === 'text') {
+      return { content: contentBlock.text ?? '' };
+    }
+
+    if (contentBlock.type === 'tool_use' && isContentSuggestion) {
+      console.log('Tool use requested:', contentBlock);
+      
+      if (contentBlock.input) {
+        this.updateAccumulatedContext(accumulatedContext, contentBlock.name!, contentBlock.input);
+      }
+      
+      const { toolResult, toolResponse } = await this.handleToolUse(
+        contentBlock,
+        accumulatedContext,
+        request
+      );
+
+      let content = '';
+      if (toolResponse.data.content) {
+        content = toolResponse.data.content
+          .filter(block => block.type === 'text')
+          .map(block => block.text)
+          .join('');
+      }
+
+      return { content, toolResult };
+    }
+
+    return { content: '' };
+  }
+
   async sendMessage(
     message: string, 
     modelId: string,
-    parameters?: {
-      max_tokens?: number;
-      temperature?: number;
-      top_p?: number;
-      frequency_penalty?: number;
-      presence_penalty?: number;
-    }
+    parameters?: RequestParameters
   ): Promise<AIResponse> {
     try {
       const isContentSuggestion = this.isContentSuggestionContext();
-      
-      const accumulatedContext = {
-        title: '',
-        content: '',
-        tags: [] as string[]
-      };
-
-      const tools = isContentSuggestion ? [
-        {
-          name: "generate_content",
-          description: "Generates detailed content based on the provided title and/or tags.",
-          input_schema: {
-            type: "object",
-            properties: {
-              title: { type: "string" },
-              tags: {
-                type: "array",
-                items: { type: "string" }
-              }
-            }
-          }
-        },
-        {
-          name: "generate_title",
-          description: "Generates a title based on the provided content and/or tags.",
-          input_schema: {
-            type: "object",
-            properties: {
-              content: { type: "string" },
-              tags: {
-                type: "array",
-                items: { type: "string" }
-              }
-            }
-          }
-        },
-        {
-          name: "generate_tags",
-          description: "Generates relevant tags based on the title and/or content.",
-          input_schema: {
-            type: "object",
-            properties: {
-              title: { type: "string" },
-              content: { type: "string" }
-            }
-          }
-        }
-      ] : [];
-
-      const request = {
-        model: modelId,
-        max_tokens: parameters?.max_tokens ?? 1024,
-        temperature: parameters?.temperature ?? 0.7,
-        top_p: parameters?.top_p ?? 1,
-        messages: [{
-          role: "user",
-          content: message
-        }],
-        tools: tools,
-        tool_choice: "auto"
-      };
+      const accumulatedContext = { title: '', content: '', tags: [] as string[] };
+      const tools = isContentSuggestion ? this.getContentSuggestionTools() : [];
+      const request = this.createInitialRequest(message, modelId, parameters, tools);
 
       console.log('Sending request to Claude:', request);
       const response = await api.post<AnthropicResponse>('/api/Claude/send', request);
@@ -98,73 +202,17 @@ export class AnthropicService {
       const toolResults: AnthropicToolResult[] = [];
 
       if (response.data.content) {
-        for (const contentBlock of response.data.content) {
-          if (contentBlock.type === 'text') {
-            finalContent += contentBlock.text;
-          } 
-          else if (contentBlock.type === 'tool_use' && isContentSuggestion) {
-            console.log('Tool use requested:', contentBlock);
-            
-            // Update accumulated context based on tool input
-            if (contentBlock.input) {
-              if ('content' in contentBlock.input) {
-                accumulatedContext.content = contentBlock.input.content as string;
-              }
-              if ('title' in contentBlock.input) {
-                accumulatedContext.title = contentBlock.input.title as string;
-              }
-              if ('tags' in contentBlock.input) {
-                accumulatedContext.tags = contentBlock.input.tags as string[];
-              }
-            }
-            
-            const toolResult: AnthropicToolResult = await this.executeTool(
-              contentBlock.name!,
-              {
-                ...contentBlock.input!,
-                accumulatedContext // Pass the accumulated context
-              },
-              contentBlock.id!
-            );
+        for (const block of response.data.content) {
+          const { content, toolResult } = await this.processContentBlock(
+            block,
+            isContentSuggestion,
+            accumulatedContext,
+            request
+          );
+          
+          finalContent += content;
+          if (toolResult) {
             toolResults.push(toolResult);
-
-            // Update accumulated context with tool result
-            if (toolResult.content) {
-              switch (contentBlock.name) {
-                case 'generate_content':
-                  accumulatedContext.content = toolResult.content as string;
-                  break;
-                case 'generate_title':
-                  accumulatedContext.title = toolResult.content as string;
-                  break;
-                case 'generate_tags':
-                  accumulatedContext.tags = toolResult.content as string[];
-                  break;
-              }
-            }
-
-            const toolResponse = await api.post<AnthropicResponse>('/api/Claude/send', {
-              ...request,
-              messages: [
-                ...request.messages,
-                {
-                  role: "assistant",
-                  content: JSON.stringify(accumulatedContext) // Include full context
-                },
-                {
-                  role: "user",
-                  content: [toolResult]
-                }
-              ]
-            });
-
-            if (toolResponse.data.content) {
-              for (const block of toolResponse.data.content) {
-                if (block.type === 'text') {
-                  finalContent += block.text;
-                }
-              }
-            }
           }
         }
       }
@@ -240,11 +288,13 @@ export class AnthropicService {
     }
   }
 
-  private async generateContent(title?: string, tags?: string[]): Promise<string> {
-    try {
-      const prompt = `Generate detailed, well-structured content directly:
-      ${title ? `Title: ${title}` : ''}
-      ${tags?.length ? `Tags: ${tags.join(', ')}` : ''}
+  private createContentPrompt(title?: string, tags?: string[]): string {
+    const titleLine = title ? `Title: ${title}` : '';
+    const tagsLine = tags?.length ? `Tags: ${tags.join(', ')}` : '';
+    
+    return `Generate detailed, well-structured content directly:
+      ${titleLine}
+      ${tagsLine}
       
       Requirements:
       - Start with the main content immediately (no introduction or meta-commentary)
@@ -252,23 +302,81 @@ export class AnthropicService {
       - Use clear structure with headers where appropriate
       - Maintain professional tone
       - Stay relevant to the title and tags`;
+  }
 
+  private cleanContent(content: string): string {
+    return content
+      .replace(/^(I'll|Let me|Here's|I will|I have|I've|I can|Sure|Certainly|Here is|Based on|Below is).+?\n/i, '')
+      .replace(/^(The following|This|Here are).+?\n/i, '')
+      .trim();
+  }
+
+  private async generateContent(title?: string, tags?: string[]): Promise<string> {
+    try {
+      const prompt = this.createContentPrompt(title, tags);
       const response = await this.sendMessage(prompt, 'claude-3-5-haiku-20241022', {
         max_tokens: 1024,
         temperature: 0.7
       });
 
-      // Clean the response to remove meta-commentary
-      const cleanedContent = response.content
-        .replace(/^(I'll|Let me|Here's|I will|I have|I've|I can|Sure|Certainly|Here is|Based on|Below is).+?\n/i, '')
-        .replace(/^(The following|This|Here are).+?\n/i, '')
-        .trim();
-
-      return cleanedContent;
+      return this.cleanContent(response.content);
     } catch (error) {
       console.error('Error generating content:', error);
       throw new Error('Failed to generate content');
     }
+  }
+
+  private createTitlePrompt(contextContent?: string, contextTags?: string[]): string {
+    const contentLine = contextContent ? `Content: ${contextContent}` : '';
+    const tagsLine = contextTags?.length ? `Tags: ${contextTags.join(', ')}` : '';
+    
+    return `Generate only a title (no explanation or context):
+      ${contentLine}
+      ${tagsLine}
+      
+      Requirements:
+      - Respond with only the title text
+      - Keep it under 60 characters
+      - Make it specific but not verbose
+      - Use natural language
+      - No explanations or meta-commentary`;
+  }
+
+  private createTagsPrompt(title?: string, content?: string): string {
+    const titleLine = title ? `Title: ${title}` : '';
+    const contentLine = content ? `Content: ${content}` : '';
+    
+    return `Generate only tags as a comma-separated list (no explanations):
+      ${titleLine}
+      ${contentLine}
+      
+      Requirements:
+      - Respond with only the tags, separated by commas
+      - Generate 3-5 tags
+      - Make tags concise and specific
+      - No introductory text or explanations`;
+  }
+
+  private cleanTitle(response: string): string {
+    return response
+      .replace(/^((Here's|Suggested|Proposed|The|A|An) title:?\s*)/i, '')
+      .replace(/^["']/g, '')
+      .replace(/["']$/g, '')
+      .split('\n')[0]
+      .trim();
+  }
+
+  private cleanAndParseTags(response: string): string[] {
+    const cleanedResponse = response
+      .replace(/^((Here are|Suggested|Proposed|The|Generated) tags:?\s*)/i, '')
+      .replace(/^["']/g, '')
+      .replace(/["']$/g, '')
+      .split('\n')[0];
+
+    return cleanedResponse
+      .split(',')
+      .map(tag => tag.trim())
+      .filter(tag => tag.length > 0);
   }
 
   private async generateTitle(
@@ -277,33 +385,16 @@ export class AnthropicService {
     accumulatedContext?: AccumulatedContext
   ): Promise<string> {
     try {
-      // Use accumulated context if available
-      const contextContent = accumulatedContext?.content || content;
+      const contextContent = accumulatedContext?.content ?? content;
       const contextTags = accumulatedContext?.tags || tags;
-
-      const prompt = `Generate only a title (no explanation or context):
-      ${contextContent ? `Content: ${contextContent}` : ''}
-      ${contextTags?.length ? `Tags: ${contextTags.join(', ')}` : ''}
       
-      Requirements:
-      - Respond with only the title text
-      - Keep it under 60 characters
-      - Make it specific but not verbose
-      - Use natural language
-      - No explanations or meta-commentary`;
-
+      const prompt = this.createTitlePrompt(contextContent, contextTags);
       const response = await this.sendMessage(prompt, 'claude-3-5-haiku-20241022', {
         max_tokens: 100,
         temperature: 0.7
       });
 
-      const cleanedTitle = response.content
-        .replace(/^(Here's|Suggested|Proposed|The|A|An) title:?\s*/i, '')
-        .replace(/^["']|["']$/g, '')
-        .split('\n')[0]
-        .trim();
-
-      return cleanedTitle;
+      return this.cleanTitle(response.content);
     } catch (error) {
       console.error('Error generating title:', error);
       throw new Error('Failed to generate title');
@@ -312,31 +403,13 @@ export class AnthropicService {
 
   private async generateTags(title?: string, content?: string): Promise<string[]> {
     try {
-      const prompt = `Generate only tags as a comma-separated list (no explanations):
-      ${title ? `Title: ${title}` : ''}
-      ${content ? `Content: ${content}` : ''}
-      
-      Requirements:
-      - Respond with only the tags, separated by commas
-      - Generate 3-5 tags
-      - Make tags concise and specific
-      - No introductory text or explanations`;
-
+      const prompt = this.createTagsPrompt(title, content);
       const response = await this.sendMessage(prompt, 'claude-3-5-haiku-20241022', {
         max_tokens: 100,
         temperature: 0.7
       });
 
-      // Clean the response and extract tags
-      const cleanedResponse = response.content
-        .replace(/^(Here are|Suggested|Proposed|The|Generated) tags:?\s*/i, '')
-        .replace(/^["']|["']$/g, '') // Remove quotes if present
-        .split('\n')[0]; // Take only the first line
-
-      return cleanedResponse
-        .split(',')
-        .map(tag => tag.trim())
-        .filter(tag => tag.length > 0);
+      return this.cleanAndParseTags(response.content);
     } catch (error) {
       console.error('Error generating tags:', error);
       throw new Error('Failed to generate tags');

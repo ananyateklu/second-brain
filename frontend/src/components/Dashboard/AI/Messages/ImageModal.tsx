@@ -4,7 +4,6 @@ import { motion } from 'framer-motion';
 
 interface ImageModalProps {
   imageUrl: string;
-  revisedPrompt?: string;
   onClose: () => void;
 }
 
@@ -26,8 +25,7 @@ export function ImageModal({ imageUrl, onClose }: ImageModalProps) {
     };
   }, []);
 
-  const handleDownload = async () => {
-    // Open image in new window
+  const handleDownload = () => {
     window.open(imageUrl, '_blank');
   };
 

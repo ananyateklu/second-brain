@@ -1,11 +1,5 @@
 import { useContext } from 'react';
-import { NotesContext } from '../contexts/NotesContext';
-import type { Note } from '../types/note';
-
-interface NotesContextType {
-  getNote: (id: string) => Note | null;
-  // ... other methods from NotesContext
-}
+import { NotesContext, NotesContextType } from '../contexts/notesContextUtils';
 
 export function useNotes(): NotesContextType {
   const context = useContext(NotesContext);

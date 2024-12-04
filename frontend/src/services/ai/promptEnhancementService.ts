@@ -1,7 +1,7 @@
 import { AIService } from '../aiService';
 
 export class PromptEnhancementService {
-  private aiService: AIService;
+  private readonly aiService: AIService;
 
   constructor() {
     this.aiService = new AIService();
@@ -10,9 +10,9 @@ export class PromptEnhancementService {
   private get modelId(): string {
     const provider = this.provider;
     if (provider === 'llama') {
-      return localStorage.getItem('prompt_enhancement_model') || 'llama3.1:8b';
+      return localStorage.getItem('prompt_enhancement_model') ?? 'llama3.1:8b';
     }
-    return localStorage.getItem('prompt_enhancement_model') || 'gpt-4';
+    return localStorage.getItem('prompt_enhancement_model') ?? 'gpt-4';
   }
 
   private get provider(): 'openai' | 'anthropic' | 'gemini' | 'llama' {
