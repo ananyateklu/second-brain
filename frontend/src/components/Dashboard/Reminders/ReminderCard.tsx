@@ -43,6 +43,8 @@ export function ReminderCard({
       onSelect();
     } else if (onClick) {
       onClick();
+    } else if (context === 'default') {
+      setShowEditModal(true);
     }
   };
 
