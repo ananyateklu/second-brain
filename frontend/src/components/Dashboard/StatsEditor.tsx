@@ -2,7 +2,7 @@ import React from 'react';
 import * as Icons from 'lucide-react';
 import { useDashboard } from '../../hooks/useDashboard';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getIconBg } from '../../utils/dashboardUtils';
+import { getIconBg, getIconColor } from '../../utils/dashboardUtils';
 import { DashboardStat } from '../../types/dashboard';
 
 const cardVariants = {
@@ -50,11 +50,11 @@ export function StatsEditor({ isOpen }: { isOpen: boolean }) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
-      className="bg-[#1C1C1E] dark:bg-[#1C1C1E] backdrop-blur-md border border-[#2C2C2E] dark:border-[#2C2C2E] rounded-xl w-full"
+      className="bg-[var(--color-surface)]/80 backdrop-blur-xl border border-[var(--color-border)] rounded-xl w-full shadow-lg"
     >
-      <div className="p-4 border-b border-gray-200/30 dark:border-[#1C1C1E]">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-white flex items-center gap-2">
-          <Icons.Gauge className="w-4 h-4" />
+      <div className="p-4 border-b border-[var(--color-border)]">
+        <h3 className="text-sm font-medium text-[var(--color-text)] flex items-center gap-2">
+          <Icons.Gauge className="w-4 h-4 text-[var(--color-accent)]" />
           Available Stats
         </h3>
       </div>
@@ -79,7 +79,7 @@ export function StatsEditor({ isOpen }: { isOpen: boolean }) {
                   className="transform origin-center cursor-pointer col-span-1"
                 >
                   <motion.div
-                    className="w-full h-[100px] bg-[#1C1C1E] dark:bg-[#1C1C1E] backdrop-blur-md p-3 rounded-lg border border-[#2C2C2E] dark:border-[#2C2C2E] hover:border-[#64ab6f] dark:hover:border-[#64ab6f] transition-all"
+                    className="w-full h-[100px] bg-[var(--color-surface)]/80 backdrop-blur-xl p-3 rounded-lg border border-[var(--color-border)] hover:border-[var(--color-accent)] transition-all duration-300"
                     whileTap={{ scale: 0.95 }}
                   >
                     <div className="flex flex-col h-full justify-between">
@@ -89,18 +89,18 @@ export function StatsEditor({ isOpen }: { isOpen: boolean }) {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.1 }}
                       >
-                        <div className={`p-1 rounded-md ${getIconBg(stat.type)} backdrop-blur-sm`}>
+                        <div className={`p-1 rounded-md ${getIconBg(stat.type)} backdrop-blur-xl`}>
                           {IconComponent && (
-                            <IconComponent className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                            <IconComponent className={`w-4 h-4 ${getIconColor(stat.type)}`} />
                           )}
                         </div>
-                        <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                        <p className="text-xs font-medium text-[var(--color-text)]">
                           {stat.title}
                         </p>
                       </motion.div>
 
                       <div className="flex flex-col gap-1">
-                        <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                        <span className="text-sm font-semibold text-[var(--color-text)]">
                           {statValue.value}
                         </span>
                       </div>
@@ -111,10 +111,10 @@ export function StatsEditor({ isOpen }: { isOpen: boolean }) {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.3 }}
                       >
-                        <span className="text-xs font-medium text-[#64ab6f] dark:text-[#64ab6f] group-hover:text-[#64ab6f] dark:group-hover:text-[#64ab6f] transition-colors">
+                        <span className="text-xs font-medium text-[var(--color-accent)] group-hover:text-[var(--color-accent)]/80 transition-colors">
                           Add
                         </span>
-                        <Icons.Plus className="w-3 h-3 text-primary-600 dark:text-primary-400 group-hover:text-primary-700 dark:group-hover:text-primary-300 transition-colors" />
+                        <Icons.Plus className="w-3 h-3 text-[var(--color-accent)] group-hover:text-[var(--color-accent)]/80 transition-colors" />
                       </motion.div>
                     </div>
                   </motion.div>
@@ -125,7 +125,7 @@ export function StatsEditor({ isOpen }: { isOpen: boolean }) {
         </div>
       ) : (
         <div className="p-8 text-center">
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-[var(--color-textSecondary)]">
             All stats are currently displayed on the dashboard.
           </p>
         </div>

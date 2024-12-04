@@ -34,6 +34,7 @@ import { useTasks } from '../../contexts/tasksContextUtils';
 import { useModal } from '../../contexts/modalContextUtils';
 import { Note } from '../../types/note';
 import { WelcomeSection } from './WelcomeSection';
+import { useTheme } from '../../contexts/themeContextUtils';
 
 // Create an icon map
 const IconMap = {
@@ -126,101 +127,148 @@ interface StatValue {
   };
 }
 
-const StatCard = ({
-  stat,
-  showStatsEditor,
-  onRemove,
-  getStatValue
-}: {
+interface StatCardProps {
   stat: DashboardStat;
   showStatsEditor: boolean;
   onRemove: (id: string) => void;
   getStatValue: (id: string) => StatValue;
-}) => {
-  const { updateStatSize } = useDashboard();
+}
 
-  const IconComponent = IconMap[stat.icon as keyof typeof IconMap];
-  const statValue = getStatValue(stat.id);
-  const size = sizeClasses[stat.size || 'medium'];
+export function DashboardHome() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { notes } = useNotes();
+  const { tasks } = useTasks();
+  const [showNewNoteModal, setShowNewNoteModal] = useState(false);
+  const { setSelectedNote, setSelectedIdea } = useModal();
+  const [showStatsEditor, setShowStatsEditor] = useState(false);
+  const { enabledStats, toggleStat, reorderStats, getStatValue } = useDashboard();
+  const quickStatsRef = useRef<HTMLDivElement>(null);
+  const { theme } = useTheme();
 
-  return (
-    <motion.div
-      layout
-      variants={cardVariants}
-      initial="hidden"
-      animate="visible"
-      exit="exit"
-      whileHover={showStatsEditor ? 'hover' : undefined}
-      className={`transform origin-center relative w-full h-[80px]`}
-      style={{
-        position: showStatsEditor ? 'relative' : 'static',
-      }}
-    >
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        quickStatsRef.current &&
+        !quickStatsRef.current.contains(event.target as Node) &&
+        showStatsEditor
+      ) {
+        setShowStatsEditor(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showStatsEditor]);
+
+  const stats = {
+    totalNotes: notes.length,
+    newThisWeek: notes.filter(note => {
+      const noteDate = new Date(note.createdAt);
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      return noteDate > weekAgo;
+    }).length,
+    pinnedNotes: notes.filter(note => note.isPinned),
+    lastUpdated: notes.length > 0
+      ? new Date(Math.max(...notes.map(note => new Date(note.updatedAt).getTime())))
+      : null,
+    totalTasks: tasks.length,
+    completedTasks: tasks.filter(task => task.status === 'Completed').length
+  };
+
+  const handleEditNote = (note: Note) => {
+    if (note.isIdea) {
+      setSelectedIdea({ ...note, isFavorite: false, isArchived: false, isDeleted: false, linkedNoteIds: [] });
+    } else {
+      setSelectedNote({ ...note, isFavorite: false, isArchived: false, isDeleted: false, linkedNoteIds: [] });
+    }
+  };
+
+  const handleReorder = (newOrder: DashboardStat[]) => {
+    const updatedStats = newOrder.map((stat, index) => ({
+      ...stat,
+      order: index
+    }));
+    reorderStats(0, 0, updatedStats);
+  };
+
+  const getStatSpanClass = (size: string) => {
+    switch (size) {
+      case 'medium': return 'col-span-2';
+      case 'large': return 'col-span-3';
+      default: return 'col-span-1';
+    }
+  };
+
+  const sectionClasses = theme === 'midnight'
+    ? 'bg-[rgb(30,41,59)]/30 backdrop-blur-md border-[rgb(100,116,139)]/20 shadow-[0_0_15px_-3px_rgba(0,0,0,0.1)] hover:shadow-[0_0_15px_-3px_rgba(59,130,246,0.1)]'
+    : 'bg-[var(--color-surface)] border-[var(--color-border)]';
+
+  const statCardClasses = theme === 'midnight'
+    ? 'bg-[rgb(30,41,59)]/40 backdrop-blur-md border-[rgb(100,116,139)]/20 hover:border-blue-500/40'
+    : 'bg-[var(--color-surface)] border-[var(--color-border)] hover:border-[var(--color-accent)]';
+
+  const StatCard = ({ stat, showStatsEditor, onRemove, getStatValue }: StatCardProps) => {
+    const { updateStatSize } = useDashboard();
+    const IconComponent = IconMap[stat.icon as keyof typeof IconMap];
+    const statValue = getStatValue(stat.id);
+    const size = sizeClasses[stat.size || 'medium' as keyof typeof sizeClasses];
+
+    return (
       <motion.div
-        className={`w-full h-full bg-[var(--color-surface)] backdrop-blur-md ${size.padding} rounded-lg border border-[var(--color-border)] hover:border-[var(--color-accent)] transition-all cursor-pointer`}
-        whileTap={showStatsEditor ? { scale: 0.95 } : undefined}
+        layout
+        variants={cardVariants}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+        whileHover={showStatsEditor ? 'hover' : undefined}
+        className={`transform origin-center relative w-full h-[80px]`}
+        style={{
+          position: showStatsEditor ? 'relative' : 'static',
+        }}
       >
-        <div className="flex flex-col h-full justify-between">
-          {/* Icon and Title */}
-          <div className="flex items-center gap-2">
-            <div className={`p-1 rounded-md ${getIconBg(stat.type)} backdrop-blur-sm`}>
-              {IconComponent && (
-                <IconComponent
-                  className={`${size.iconSize} ${getIconColor(stat.type)}`}
-                />
-              )}
+        <motion.div
+          className={`w-full h-full ${statCardClasses} ${size.padding} rounded-lg border transition-all duration-300 cursor-pointer`}
+          whileTap={showStatsEditor ? { scale: 0.95 } : undefined}
+        >
+          <div className="flex flex-col h-full justify-between">
+            {/* Icon and Title */}
+            <div className="flex items-center gap-2">
+              <div className={`p-1 rounded-md ${getIconBg(stat.type)} backdrop-blur-sm`}>
+                {IconComponent && (
+                  <IconComponent
+                    className={`${size.iconSize} ${getIconColor(stat.type)}`}
+                  />
+                )}
+              </div>
+              <p className={`${size.titleSize} font-medium text-[var(--color-text)]`}>
+                {stat.title}
+              </p>
             </div>
-            <p className={`${size.titleSize} font-medium text-[var(--color-text)]`}>
-              {stat.title}
-            </p>
-          </div>
 
-          {/* Value and Change */}
-          <div className="mt-1">
-            <div className="flex items-baseline gap-1">
-              <span className={`${size.valueSize} font-semibold text-[var(--color-text)] ${statValue.value === '-' ? 'animate-pulse' : ''
-                }`}>
-                {statValue.value}
-              </span>
-              {statValue.change && statValue.change > 0 && statValue.value !== '-' && (
-                <span className="text-xs text-green-600 dark:text-green-400">
-                  +{statValue.change}
+            {/* Value and Change */}
+            <div className="mt-1">
+              <div className="flex items-baseline gap-1">
+                <span className={`${size.valueSize} font-semibold text-[var(--color-text)] ${statValue.value === '-' ? 'animate-pulse' : ''}`}>
+                  {statValue.value}
+                </span>
+                {statValue.change && statValue.change > 0 && statValue.value !== '-' && (
+                  <span className="text-xs text-green-500">
+                    +{statValue.change}
+                  </span>
+                )}
+              </div>
+              {statValue.timeframe && (
+                <span className="text-[10px] text-[var(--color-textSecondary)] block">
+                  {statValue.timeframe}
                 </span>
               )}
             </div>
-            {statValue.timeframe && (
-              <span className="text-[10px] text-[var(--color-textSecondary)] block">
-                {statValue.timeframe}
-              </span>
-            )}
-            {stat.type === 'activity' && statValue.metadata?.breakdown && (
-              <div className="absolute left-0 right-0 -bottom-24 hidden group-hover:block">
-                <div className="bg-white dark:bg-dark-card rounded-lg shadow-lg p-2 text-xs">
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="text-center">
-                      <span className="block font-medium text-gray-900 dark:text-white">
-                        {statValue.metadata.breakdown.created}
-                      </span>
-                      <span className="text-gray-500 dark:text-gray-400">Created</span>
-                    </div>
-                    <div className="text-center">
-                      <span className="block font-medium text-gray-900 dark:text-white">
-                        {statValue.metadata.breakdown.edited}
-                      </span>
-                      <span className="text-gray-500 dark:text-gray-400">Edited</span>
-                    </div>
-                    <div className="text-center">
-                      <span className="block font-medium text-gray-900 dark:text-white">
-                        {statValue.metadata.breakdown.deleted}
-                      </span>
-                      <span className="text-gray-500 dark:text-gray-400">Deleted</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
-        </div>
+        </motion.div>
 
         {/* Size controls */}
         {showStatsEditor && (
@@ -228,7 +276,11 @@ const StatCard = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute bottom-2 right-2 flex items-center gap-1.5 glass-morphism rounded-lg p-1.5 border border-gray-100/20 dark:border-white/5"
+            className={`absolute bottom-2 right-2 flex items-center gap-1.5 rounded-lg p-1.5 border ${
+              theme === 'midnight'
+                ? 'bg-[rgb(30,41,59)]/40 border-[rgb(100,116,139)]/20'
+                : 'glass-morphism border-gray-100/20 dark:border-white/5'
+            }`}
           >
             <button
               onClick={(e) => {
@@ -293,76 +345,7 @@ const StatCard = ({
           </motion.button>
         )}
       </motion.div>
-    </motion.div>
-  );
-};
-
-export function DashboardHome() {
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const { notes } = useNotes();
-  const { tasks } = useTasks();
-  const [showNewNoteModal, setShowNewNoteModal] = useState(false);
-  const { setSelectedNote, setSelectedIdea } = useModal();
-  const [showStatsEditor, setShowStatsEditor] = useState(false);
-  const { enabledStats, toggleStat, reorderStats, getStatValue } = useDashboard();
-  const quickStatsRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        quickStatsRef.current &&
-        !quickStatsRef.current.contains(event.target as Node) &&
-        showStatsEditor
-      ) {
-        setShowStatsEditor(false);
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showStatsEditor]);
-
-  const stats = {
-    totalNotes: notes.length,
-    newThisWeek: notes.filter(note => {
-      const noteDate = new Date(note.createdAt);
-      const weekAgo = new Date();
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      return noteDate > weekAgo;
-    }).length,
-    pinnedNotes: notes.filter(note => note.isPinned),
-    lastUpdated: notes.length > 0
-      ? new Date(Math.max(...notes.map(note => new Date(note.updatedAt).getTime())))
-      : null,
-    totalTasks: tasks.length,
-    completedTasks: tasks.filter(task => task.status === 'Completed').length
-  };
-
-  const handleEditNote = (note: Note) => {
-    if (note.isIdea) {
-      setSelectedIdea({ ...note, isFavorite: false, isArchived: false, isDeleted: false, linkedNoteIds: [] });
-    } else {
-      setSelectedNote({ ...note, isFavorite: false, isArchived: false, isDeleted: false, linkedNoteIds: [] });
-    }
-  };
-
-  const handleReorder = (newOrder: DashboardStat[]) => {
-    const updatedStats = newOrder.map((stat, index) => ({
-      ...stat,
-      order: index
-    }));
-    reorderStats(0, 0, updatedStats);
-  };
-
-  const getStatSpanClass = (size: string) => {
-    switch (size) {
-      case 'medium': return 'col-span-2';
-      case 'large': return 'col-span-3';
-      default: return 'col-span-1';
-    }
+    );
   };
 
   return (
@@ -374,7 +357,7 @@ export function DashboardHome() {
     >
       {/* Welcome Section */}
       <div
-        className="bg-[var(--color-surface)] border border-[var(--color-border)] shadow-sm rounded-xl"
+        className={`${sectionClasses} shadow-sm rounded-xl border transition-all duration-300`}
         data-type="welcome-section"
       >
         <div className="p-6">
@@ -393,14 +376,18 @@ export function DashboardHome() {
       </div>
 
       {/* Quick Stats */}
-      <div className="bg-[var(--color-surface)] border border-[var(--color-border)] shadow-sm p-6 rounded-xl">
+      <div className={`${sectionClasses} shadow-sm p-6 rounded-xl border transition-all duration-300`}>
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <h2 className="text-lg font-semibold text-[var(--color-text)]">
             Quick Stats
           </h2>
           <button
             onClick={() => setShowStatsEditor(!showStatsEditor)}
-            className="p-2 hover:bg-gray-100/50 dark:hover:bg-gray-700/50 rounded-lg text-gray-600 dark:text-gray-400 transition-colors"
+            className={`p-2 rounded-lg transition-colors ${
+              theme === 'midnight'
+                ? 'hover:bg-white/10 text-gray-300 hover:text-gray-200'
+                : 'hover:bg-gray-100/50 dark:hover:bg-gray-700/50 text-gray-600 dark:text-gray-400'
+            }`}
             title="Customize stats"
           >
             <Settings className="w-5 h-5" />
@@ -474,17 +461,21 @@ export function DashboardHome() {
 
       {/* Pinned Notes */}
       {stats.pinnedNotes.length > 0 && (
-        <div className="bg-[var(--color-surface)] border border-[var(--color-border)] shadow-sm p-6 rounded-xl">
+        <div className={`${sectionClasses} shadow-sm p-6 rounded-xl border transition-all duration-300`}>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <PinIcon className="w-5 h-5 text-primary-600 dark:text-primary-500" />
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              <PinIcon className={`w-5 h-5 ${theme === 'midnight' ? 'text-blue-400' : 'text-primary-500 dark:text-primary-400'}`} />
+              <h2 className="text-lg font-semibold text-[var(--color-text)]">
                 Pinned Notes
               </h2>
             </div>
             <button
               onClick={() => navigate('/dashboard/notes')}
-              className="flex items-center gap-1 text-sm text-primary-600 dark:text-primary-500 hover:text-primary-700 dark:hover:text-primary-400"
+              className={`flex items-center gap-1 text-sm ${
+                theme === 'midnight' 
+                  ? 'text-blue-400 hover:text-blue-300' 
+                  : 'text-primary-500 hover:text-primary-400'
+              }`}
             >
               View all
               <ChevronRight className="w-4 h-4" />
@@ -510,17 +501,21 @@ export function DashboardHome() {
       )}
 
       {/* Recent Activity */}
-      <div className="bg-[var(--color-surface)] border border-[var(--color-border)] shadow-sm p-6 rounded-xl">
+      <div className={`${sectionClasses} shadow-sm p-6 rounded-xl border transition-all duration-300`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 mb-4">
-            <Clock className="w-5 h-5 text-primary-600 dark:text-primary-500" />
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+            <Clock className={`w-5 h-5 ${theme === 'midnight' ? 'text-blue-400' : 'text-primary-500 dark:text-primary-400'}`} />
+            <h2 className="text-lg font-semibold text-[var(--color-text)]">
               Recent Activity
             </h2>
           </div>
           <button
             onClick={() => navigate('/dashboard/notes')}
-            className="flex items-center gap-1 text-sm text-primary-600 dark:text-primary-500 hover:text-primary-700 dark:hover:text-primary-400"
+            className={`flex items-center gap-1 text-sm ${
+              theme === 'midnight' 
+                ? 'text-blue-400 hover:text-blue-300' 
+                : 'text-primary-500 hover:text-primary-400'
+            }`}
           >
             View all
             <ChevronRight className="w-4 h-4" />

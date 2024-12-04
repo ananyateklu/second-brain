@@ -101,18 +101,18 @@ export function NotesPage() {
       <div className="fixed inset-0 bg-[var(--color-background)] -z-10" />
 
       <div className="space-y-8 relative">
-        {/* Page Header */}
-        <div className="relative overflow-hidden rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] shadow-sm">
-          <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-accent)]/10 to-transparent" />
+        {/* Page Header with gradient overlay */}
+        <div className="relative overflow-hidden rounded-xl bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-transparent" />
           <div className="relative p-6">
             <div className="flex flex-col sm:flex-row gap-6 justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-[var(--color-surface)]/50 rounded-lg">
-                  <FileText className="w-6 h-6 text-[var(--color-accent)]" />
+                <div className="p-2.5 bg-blue-100/50 dark:bg-blue-900/30 rounded-lg">
+                  <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-[var(--color-text)]">Notes</h1>
-                  <p className="text-sm text-[var(--color-textSecondary)]">
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Notes</h1>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     {regularNotes.length} notes
                   </p>
                 </div>
@@ -121,7 +121,7 @@ export function NotesPage() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowNewNoteModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent)] hover:bg-[var(--color-accent)]/90 text-white rounded-lg transition-all duration-200 hover:scale-105 shadow-sm hover:shadow-md"
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 hover:scale-105 shadow-sm hover:shadow-md"
                 >
                   <Plus className="w-4 h-4" />
                   <span>New Note</span>

@@ -99,17 +99,17 @@ export function IdeasPage() {
 
       <div className="space-y-8 relative">
         {/* Page Header with gradient overlay */}
-        <div className="relative overflow-hidden rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] shadow-sm">
-          <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-idea)]/10 to-transparent" />
+        <div className="relative overflow-hidden rounded-xl bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm">
+          <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-transparent" />
           <div className="relative p-6">
             <div className="flex flex-col sm:flex-row gap-6 justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-[var(--color-idea)]/10 rounded-lg">
-                  <Lightbulb className="w-6 h-6 text-[var(--color-idea)]" />
+                <div className="p-2.5 bg-yellow-100/50 dark:bg-yellow-900/30 rounded-lg">
+                  <Lightbulb className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-[var(--color-text)]">Idea Incubator</h1>
-                  <p className="text-sm text-[var(--color-textSecondary)]">
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Idea Incubator</h1>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     {allIdeas.length} ideas captured
                   </p>
                 </div>
@@ -118,7 +118,7 @@ export function IdeasPage() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowNewIdeaModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-[var(--color-idea)] hover:bg-[var(--color-idea)]/90 text-white rounded-lg transition-all duration-200 hover:scale-105 shadow-sm hover:shadow-md"
+                  className="flex items-center gap-2 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-all duration-200 hover:scale-105 shadow-sm hover:shadow-md"
                 >
                   <Plus className="w-4 h-4" />
                   <span>New Idea</span>

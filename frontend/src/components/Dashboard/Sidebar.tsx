@@ -113,10 +113,10 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           </div>
 
           {/* Navigation */}
-          <nav className={`flex-1 overflow-y-auto px-3 py-4 space-y-7 ${theme === 'midnight' ? 'dark:bg-[rgb(17,24,39)]' : ''}`}>
+          <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-7">
             {navigationItems.map((section) => (
               <div key={section.section}>
-                <h3 className="px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <h3 className="px-3 text-xs font-semibold text-[var(--color-textSecondary)] uppercase tracking-wider">
                   {section.section}
                 </h3>
                 <div className="mt-2 space-y-1">
@@ -126,10 +126,10 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                       to={item.to}
                       end={item.exact}
                       className={({ isActive }) =>
-                        `flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors duration-200
+                        `flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-all duration-200
                           ${isActive
-                          ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
-                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#1C1C1E]'
+                          ? 'bg-[var(--color-accent)]/15 text-[var(--color-accent)] shadow-[inset_0_0_0_1.5px_rgba(76,153,89,0.35)] dark:shadow-[inset_0_0_0_1.5px_rgba(76,153,89,0.25)]'
+                          : 'text-[var(--color-text)] hover:bg-[var(--color-surface)]/80 hover:text-[var(--color-accent)]'
                         }`
                       }
                     >
@@ -143,14 +143,14 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           </nav>
 
           {/* Bottom Section */}
-          <div className="p-4 border-t border-gray-200 dark:border-[#1C1C1E] space-y-1">
+          <div className="p-4 border-t border-[var(--color-border)] space-y-1">
             <NavLink
               to="/dashboard/settings"
               className={({ isActive }) =>
-                `flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors duration-200
+                `flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-all duration-200
                   ${isActive
-                  ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#1C1C1E]'
+                  ? 'bg-[var(--color-accent)]/15 text-[var(--color-accent)] shadow-[inset_0_0_0_1.5px_rgba(76,153,89,0.35)] dark:shadow-[inset_0_0_0_1.5px_rgba(76,153,89,0.25)]'
+                  : 'text-[var(--color-text)] hover:bg-[var(--color-surface)]/80 hover:text-[var(--color-accent)]'
                 }`
               }
             >
@@ -160,10 +160,10 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             <NavLink
               to="/dashboard/help"
               className={({ isActive }) =>
-                `flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors duration-200
+                `flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-all duration-200
                   ${isActive
-                  ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 font-medium'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#1C1C1E]'
+                  ? 'bg-[var(--color-accent)]/15 text-[var(--color-accent)] shadow-[inset_0_0_0_1.5px_rgba(76,153,89,0.35)] dark:shadow-[inset_0_0_0_1.5px_rgba(76,153,89,0.25)]'
+                  : 'text-[var(--color-text)] hover:bg-[var(--color-surface)]/80 hover:text-[var(--color-accent)]'
                 }`
               }
             >
@@ -172,7 +172,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             </NavLink>
             <button
               onClick={logout}
-              className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors duration-200"
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg text-red-400 hover:bg-red-500/10 transition-all duration-200"
             >
               <LogOut className="w-5 h-5" />
               <span>Log Out</span>

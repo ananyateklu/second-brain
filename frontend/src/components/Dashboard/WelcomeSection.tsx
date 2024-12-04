@@ -2,6 +2,7 @@ import React from 'react';
 import { Plus, CheckSquare, Lightbulb, Clock, Edit3, CheckCircle } from 'lucide-react';
 import { User } from '../../types/user';
 import { Task } from '../../types/task';
+import { useTheme } from '../../contexts/themeContextUtils';
 
 interface WelcomeSectionProps {
   user: User;
@@ -16,12 +17,38 @@ interface WelcomeSectionProps {
 }
 
 export const WelcomeSection = React.memo(({ user, onNewNote, onNavigate, stats, tasks }: WelcomeSectionProps) => {
+  const { theme } = useTheme();
+  
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good morning';
     if (hour < 18) return 'Good afternoon';
     return 'Good evening';
   };
+
+  const statsBoxClasses = theme === 'midnight'
+    ? 'bg-[rgb(30,41,59)]/40 border-[rgb(100,116,139)]/20 backdrop-blur-md'
+    : 'bg-[var(--color-surface)] border-[var(--color-border)]';
+
+  const iconBoxClasses = theme === 'midnight'
+    ? 'bg-[rgb(30,41,59)]/60'
+    : 'bg-gray-100/50 dark:bg-[#3C3C3E]/30';
+
+  const buttonClasses = {
+    note: theme === 'midnight'
+      ? 'bg-blue-600/80 hover:bg-blue-500/80 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30'
+      : 'bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-600/20 hover:shadow-primary-600/30',
+    task: theme === 'midnight'
+      ? 'bg-green-600/80 hover:bg-green-500/80 shadow-lg shadow-green-500/20 hover:shadow-green-500/30'
+      : 'bg-green-600 hover:bg-green-700 shadow-lg shadow-green-600/20 hover:shadow-green-600/30',
+    idea: theme === 'midnight'
+      ? 'bg-amber-600/80 hover:bg-amber-500/80 shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30'
+      : 'bg-amber-600 hover:bg-amber-700 shadow-lg shadow-amber-600/20 hover:shadow-amber-600/30'
+  };
+
+  const nameColorClass = theme === 'midnight'
+    ? 'text-green-400'
+    : 'text-green-600 dark:text-green-500';
 
   return (
     <div className="relative overflow-hidden">
@@ -31,7 +58,7 @@ export const WelcomeSection = React.memo(({ user, onNewNote, onNavigate, stats, 
             <div className="flex items-center gap-2">
               <h1 className="text-[var(--color-text)] text-2xl font-bold">
                 {getGreeting()},{' '}
-                <span className="text-[var(--color-accent)]">
+                <span className={nameColorClass}>
                   {user?.name}
                 </span>
               </h1>
@@ -45,21 +72,21 @@ export const WelcomeSection = React.memo(({ user, onNewNote, onNavigate, stats, 
           <div className="flex flex-wrap gap-2">
             <button
               onClick={onNewNote}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-all duration-200 shadow-lg shadow-primary-600/20 hover:shadow-primary-600/30 hover:-translate-y-0.5"
+              className={`inline-flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-all duration-200 hover:-translate-y-0.5 ${buttonClasses.note}`}
             >
               <Plus className="w-4 h-4" />
               <span className="font-medium text-sm">New Note</span>
             </button>
             <button
               onClick={() => onNavigate('/dashboard/tasks')}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-200 shadow-lg shadow-green-600/20 hover:shadow-green-600/30 hover:-translate-y-0.5"
+              className={`inline-flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-all duration-200 hover:-translate-y-0.5 ${buttonClasses.task}`}
             >
               <CheckSquare className="w-4 h-4" />
               <span className="font-medium text-sm">New Task</span>
             </button>
             <button
               onClick={() => onNavigate('/dashboard/ideas')}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-all duration-200 shadow-lg shadow-amber-600/20 hover:shadow-amber-600/30 hover:-translate-y-0.5"
+              className={`inline-flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-all duration-200 hover:-translate-y-0.5 ${buttonClasses.idea}`}
             >
               <Lightbulb className="w-4 h-4" />
               <span className="font-medium text-sm">Capture Idea</span>
@@ -67,9 +94,9 @@ export const WelcomeSection = React.memo(({ user, onNewNote, onNavigate, stats, 
           </div>
         </div>
 
-        <div className="relative bg-[var(--color-surface)] rounded-lg p-3 space-y-2 min-w-[260px] border border-[var(--color-border)]">
+        <div className={`relative rounded-lg p-3 space-y-2 min-w-[260px] border transition-all duration-300 ${statsBoxClasses}`}>
           <div className="flex items-center gap-3 text-[var(--color-textSecondary)]">
-            <div className="p-1.5 bg-gray-100/50 dark:bg-[#3C3C3E]/30 rounded-lg">
+            <div className={`p-1.5 ${iconBoxClasses} rounded-lg transition-colors duration-300`}>
               <Clock className="w-3.5 h-3.5" />
             </div>
             <span className="text-sm font-medium">
@@ -77,22 +104,22 @@ export const WelcomeSection = React.memo(({ user, onNewNote, onNavigate, stats, 
             </span>
           </div>
           <div className="flex items-center gap-3 text-[var(--color-textSecondary)]">
-            <div className="p-1.5 bg-green-100/50 dark:bg-green-500/10 rounded-lg">
-              <CheckCircle className="w-3.5 h-3.5 text-green-600 dark:text-green-500" />
+            <div className={`p-1.5 ${theme === 'midnight' ? 'bg-green-900/20' : 'bg-green-100/50 dark:bg-green-500/10'} rounded-lg transition-colors duration-300`}>
+              <CheckCircle className={`w-3.5 h-3.5 ${theme === 'midnight' ? 'text-green-400' : 'text-green-600 dark:text-green-500'}`} />
             </div>
             <div>
-              <span className="text-sm font-semibold text-green-600 dark:text-green-500">
+              <span className={`text-sm font-semibold ${theme === 'midnight' ? 'text-green-400' : 'text-green-600 dark:text-green-500'}`}>
                 {tasks.filter(task => task.status === 'Completed').length}
               </span>
               <span className="ml-1 text-sm">tasks completed today</span>
             </div>
           </div>
           <div className="flex items-center gap-3 text-[var(--color-textSecondary)]">
-            <div className="p-1.5 bg-blue-100/50 dark:bg-blue-500/10 rounded-lg">
-              <Edit3 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-500" />
+            <div className={`p-1.5 ${theme === 'midnight' ? 'bg-blue-900/20' : 'bg-blue-100/50 dark:bg-blue-500/10'} rounded-lg transition-colors duration-300`}>
+              <Edit3 className={`w-3.5 h-3.5 ${theme === 'midnight' ? 'text-blue-400' : 'text-blue-600 dark:text-blue-500'}`} />
             </div>
             <div>
-              <span className="text-sm font-semibold text-blue-600 dark:text-blue-500">
+              <span className={`text-sm font-semibold ${theme === 'midnight' ? 'text-blue-400' : 'text-blue-600 dark:text-blue-500'}`}>
                 {stats.totalNotes}
               </span>
               <span className="ml-1 text-sm">total notes</span>

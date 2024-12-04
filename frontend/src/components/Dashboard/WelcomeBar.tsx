@@ -80,7 +80,7 @@ export function WelcomeBar() {
 
   return (
     <>
-      <div className="bg-[var(--color-surface)] border border-[var(--color-border)] shadow-sm hover:shadow-md transition-shadow rounded-xl p-6 mb-6">
+      <div className="bg-[var(--color-surface)]/80 backdrop-blur-xl border border-[var(--color-border)] shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl p-6 mb-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-start gap-4 w-full">
             <div className="w-full">
@@ -93,7 +93,7 @@ export function WelcomeBar() {
                 </h1>
                 <button
                   onClick={() => setShowStatsEditor(!showStatsEditor)}
-                  className="p-2 hover:bg-[var(--color-surface)]/80 rounded-lg text-[var(--color-textSecondary)] transition-colors"
+                  className="p-2 hover:bg-[var(--color-surface)]/90 rounded-lg text-[var(--color-textSecondary)] hover:text-[var(--color-text)] transition-all duration-200"
                   title="Customize stats"
                 >
                   <Settings className="w-5 h-5" />
@@ -109,9 +109,7 @@ export function WelcomeBar() {
               >
                 <AnimatePresence mode="popLayout">
                   {enabledStats.map((stat: DashboardStat) => {
-                    // Get the icon component from the IconMap
                     const StatIcon = IconMap[stat.icon as keyof typeof IconMap];
-                    // Get the stat value here
                     const statValue = getStatValue(stat.id);
                     const size = sizeClasses[stat.size || 'medium'];
 
@@ -119,15 +117,16 @@ export function WelcomeBar() {
                       <Reorder.Item
                         key={stat.id}
                         value={stat}
-                        className={`group relative w-full ${stat.size === 'small' ? 'col-span-1' :
+                        className={`group relative w-full ${
+                          stat.size === 'small' ? 'col-span-1' :
                           stat.size === 'medium' ? 'col-span-2' :
-                            stat.size === 'large' ? 'col-span-3' :
-                              'col-span-1'
-                          }`}
+                          stat.size === 'large' ? 'col-span-3' :
+                          'col-span-1'
+                        }`}
                         initial={false}
                         whileDrag={{
                           scale: 1.05,
-                          boxShadow: "0 10px 30px -10px rgba(0,0,0,0.2)",
+                          boxShadow: "0 10px 30px -10px rgba(0,0,0,0.3)",
                           cursor: "grabbing",
                           zIndex: 50
                         }}
@@ -152,13 +151,13 @@ export function WelcomeBar() {
                           className={`transform origin-center relative w-full h-[80px]`}
                         >
                           <motion.div
-                            className={`w-full h-full bg-[var(--color-surface)] backdrop-blur-md ${size.padding} rounded-lg border border-[var(--color-border)] hover:border-[var(--color-accent)] transition-all cursor-pointer`}
+                            className={`w-full h-full bg-[var(--color-surface)]/80 backdrop-blur-xl ${size.padding} rounded-lg border border-[var(--color-border)] hover:border-[var(--color-accent)] transition-all duration-300 cursor-pointer`}
                             whileTap={showStatsEditor ? { scale: 0.95 } : undefined}
                           >
                             <div className="flex flex-col h-full justify-between">
                               {/* Icon and Title */}
                               <div className="flex items-center gap-2">
-                                <div className={`p-1 rounded-md ${getIconBg(stat.type)} backdrop-blur-sm`}>
+                                <div className={`p-1 rounded-md ${getIconBg(stat.type)} backdrop-blur-xl`}>
                                   {StatIcon && (
                                     <StatIcon
                                       className={`${size.iconSize} ${getIconColor(stat.type)}`}
@@ -173,8 +172,9 @@ export function WelcomeBar() {
                               {/* Value and Change */}
                               <div className="mt-1">
                                 <div className="flex items-baseline gap-1">
-                                  <span className={`${size.valueSize} font-semibold text-[var(--color-text)] ${statValue.value === '-' ? 'animate-pulse' : ''
-                                    }`}>
+                                  <span className={`${size.valueSize} font-semibold text-[var(--color-text)] ${
+                                    statValue.value === '-' ? 'animate-pulse' : ''
+                                  }`}>
                                     {statValue.value}
                                   </span>
                                   {statValue.change && statValue.change > 0 && statValue.value !== '-' && (
@@ -188,32 +188,6 @@ export function WelcomeBar() {
                                     {statValue.timeframe}
                                   </span>
                                 )}
-                                {stat.type === 'activity' && statValue.metadata?.breakdown && (
-                                  <div className="absolute left-0 right-0 -bottom-24 hidden group-hover:block">
-                                    <div className="bg-white dark:bg-dark-card rounded-lg shadow-lg p-2 text-xs">
-                                      <div className="grid grid-cols-3 gap-2">
-                                        <div className="text-center">
-                                          <span className="block font-medium text-gray-900 dark:text-white">
-                                            {statValue.metadata.breakdown.created}
-                                          </span>
-                                          <span className="text-gray-500 dark:text-gray-400">Created</span>
-                                        </div>
-                                        <div className="text-center">
-                                          <span className="block font-medium text-gray-900 dark:text-white">
-                                            {statValue.metadata.breakdown.edited}
-                                          </span>
-                                          <span className="text-gray-500 dark:text-gray-400">Edited</span>
-                                        </div>
-                                        <div className="text-center">
-                                          <span className="block font-medium text-gray-900 dark:text-white">
-                                            {statValue.metadata.breakdown.deleted}
-                                          </span>
-                                          <span className="text-gray-500 dark:text-gray-400">Deleted</span>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                )}
                               </div>
                             </div>
 
@@ -223,17 +197,18 @@ export function WelcomeBar() {
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
-                                className="absolute bottom-2 right-2 flex items-center gap-1.5 bg-[var(--color-surface)] backdrop-blur-md rounded-lg p-1.5 border border-[var(--color-border)]"
+                                className="absolute bottom-2 right-2 flex items-center gap-1.5 bg-[var(--color-surface)]/90 backdrop-blur-xl rounded-lg p-1.5 border border-[var(--color-border)]"
                               >
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleSizeChange(stat.id, 'small');
                                   }}
-                                  className={`p-0.5 rounded-md transition-all duration-200 ${stat.size === 'small'
-                                    ? 'bg-green-900/30 dark:bg-green-900/30 text-green-400 dark:text-green-400'
-                                    : 'hover:bg-[#3C3C3E] dark:hover:bg-[#3C3C3E] text-gray-400 dark:text-gray-400'
-                                    }`}
+                                  className={`p-0.5 rounded-md transition-all duration-200 ${
+                                    stat.size === 'small'
+                                      ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
+                                      : 'hover:bg-[var(--color-surface)] text-[var(--color-textSecondary)] hover:text-[var(--color-text)]'
+                                  }`}
                                   title="Small"
                                 >
                                   <LayoutGrid className="w-3.5 h-3.5" />
@@ -243,10 +218,11 @@ export function WelcomeBar() {
                                     e.stopPropagation();
                                     handleSizeChange(stat.id, 'medium');
                                   }}
-                                  className={`p-0.5 rounded-md transition-all duration-200 ${stat.size === 'medium'
-                                    ? 'bg-green-900/30 dark:bg-green-900/30 text-green-400 dark:text-green-400'
-                                    : 'hover:bg-[#3C3C3E] dark:hover:bg-[#3C3C3E] text-gray-400 dark:text-gray-400'
-                                    }`}
+                                  className={`p-0.5 rounded-md transition-all duration-200 ${
+                                    stat.size === 'medium'
+                                      ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
+                                      : 'hover:bg-[var(--color-surface)] text-[var(--color-textSecondary)] hover:text-[var(--color-text)]'
+                                  }`}
                                   title="Medium"
                                 >
                                   <Columns className="w-3.5 h-3.5" />
@@ -256,10 +232,11 @@ export function WelcomeBar() {
                                     e.stopPropagation();
                                     handleSizeChange(stat.id, 'large');
                                   }}
-                                  className={`p-0.5 rounded-md transition-all duration-200 ${stat.size === 'large'
-                                    ? 'bg-green-900/30 dark:bg-green-900/30 text-green-400 dark:text-green-400'
-                                    : 'hover:bg-[#3C3C3E] dark:hover:bg-[#3C3C3E] text-gray-400 dark:text-gray-400'
-                                    }`}
+                                  className={`p-0.5 rounded-md transition-all duration-200 ${
+                                    stat.size === 'large'
+                                      ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
+                                      : 'hover:bg-[var(--color-surface)] text-[var(--color-textSecondary)] hover:text-[var(--color-text)]'
+                                  }`}
                                   title="Large"
                                 >
                                   <Layout className="w-3.5 h-3.5" />
@@ -282,8 +259,8 @@ export function WelcomeBar() {
                                   toggleStat(stat.id);
                                 }}
                               >
-                                <div className="p-1 rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-dark-card dark:hover:bg-dark-hover shadow-lg">
-                                  <X className="w-3 h-3 text-gray-500 dark:text-gray-400" />
+                                <div className="p-1 rounded-full bg-[var(--color-surface)]/90 hover:bg-[var(--color-surface)] backdrop-blur-xl border border-[var(--color-border)] shadow-lg transition-all duration-200">
+                                  <X className="w-3 h-3 text-[var(--color-textSecondary)] hover:text-[var(--color-text)]" />
                                 </div>
                               </motion.button>
                             )}
@@ -306,7 +283,7 @@ export function WelcomeBar() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="bg-[var(--color-surface)] backdrop-blur-md border border-[var(--color-border)] shadow-sm mt-4 mb-6 rounded-xl"
+            className="bg-[var(--color-surface)]/80 backdrop-blur-xl border border-[var(--color-border)] shadow-lg mt-4 mb-6 rounded-xl"
           >
             <StatsEditor isOpen={showStatsEditor} />
           </motion.div>

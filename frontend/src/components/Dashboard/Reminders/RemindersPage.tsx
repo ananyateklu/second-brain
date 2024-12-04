@@ -42,17 +42,17 @@ export function RemindersPage() {
       <div className="fixed inset-0 bg-fixed bg-gradient-to-br from-[var(--color-background)] to-[var(--color-surface)] -z-10" />
 
       <div className="space-y-8 relative">
-        <div className="relative overflow-hidden rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] shadow-sm">
-          <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-reminder)]/10 to-transparent" />
+        <div className="relative overflow-hidden rounded-xl bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm">
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-transparent" />
           <div className="relative p-6">
             <div className="flex flex-col sm:flex-row gap-6 justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-[var(--color-reminder)]/10 rounded-lg">
-                  <Bell className="w-6 h-6 text-[var(--color-reminder)]" />
+                <div className="p-2.5 bg-purple-100/50 dark:bg-purple-900/30 rounded-lg">
+                  <Bell className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-[var(--color-text)]">Reminders</h1>
-                  <p className="text-sm text-[var(--color-textSecondary)]">
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Reminders</h1>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     {dueCount} due now • {upcomingCount} upcoming
                   </p>
                 </div>
@@ -61,7 +61,7 @@ export function RemindersPage() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowNewReminderModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-[var(--color-reminder)] hover:bg-[var(--color-reminder)]/90 text-white rounded-lg transition-all duration-200 hover:scale-105 shadow-sm hover:shadow-md"
+                  className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-all duration-200 hover:scale-105 shadow-sm hover:shadow-md"
                 >
                   <Plus className="w-4 h-4" />
                   <span>New Reminder</span>

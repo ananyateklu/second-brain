@@ -32,12 +32,12 @@ export const themes: Record<ThemeName, ThemeConfig> = {
             text: '#1e293b',
             textSecondary: '#64748b',
             border: '#e2e8f0',
-            accent: '#2563eb',
+            accent: '#4c9959',
             note: '#2563eb',
             idea: '#d97706',
-            task: '#3b7443',
+            task: '#4c9959',
             reminder: 'rgb(99, 102, 241)',
-            tag: '#2563eb'
+            tag: '#4c9959'
         },
     },
     dark: {
@@ -50,12 +50,12 @@ export const themes: Record<ThemeName, ThemeConfig> = {
             text: '#ffffff',
             textSecondary: '#a1a1aa',
             border: '#3C3C3E',
-            accent: '#60a5fa',
+            accent: '#4c9959',
             note: 'rgb(59, 130, 246)',
             idea: '#FCD34D',
-            task: '#3b7443',
+            task: '#4c9959',
             reminder: 'rgb(129, 140, 248)',
-            tag: '#60a5fa'
+            tag: '#4c9959'
         },
     },
     midnight: {
@@ -68,12 +68,12 @@ export const themes: Record<ThemeName, ThemeConfig> = {
             text: 'rgba(255, 255, 255, 0.9)',
             textSecondary: 'rgba(255, 255, 255, 0.8)',
             border: 'rgba(75, 85, 99, 0.3)',
-            accent: '#60a5fa',
+            accent: '#4c9959',
             note: 'rgb(59, 130, 246)',
             idea: '#FCD34D',
-            task: '#64AB6F',
+            task: '#4c9959',
             reminder: 'rgb(129, 140, 248)',
-            tag: '#60a5fa'
+            tag: '#4c9959'
         },
     },
 }; 

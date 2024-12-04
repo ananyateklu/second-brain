@@ -32,17 +32,17 @@ export function TasksPage() {
 
       <div className="space-y-8 relative">
         {/* Page Header with gradient overlay */}
-        <div className="relative overflow-hidden rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] shadow-sm">
-          <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-task)]/10 to-transparent" />
+        <div className="relative overflow-hidden rounded-xl bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm">
+          <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-transparent" />
           <div className="relative p-6">
             <div className="flex flex-col sm:flex-row gap-6 justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-[var(--color-task)]/10 rounded-lg">
-                  <CheckSquare className="w-6 h-6 text-[var(--color-task)]" />
+                <div className="p-2.5 bg-green-100/50 dark:bg-green-900/30 rounded-lg">
+                  <CheckSquare className="w-6 h-6 text-green-600 dark:text-green-400" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-[var(--color-text)]">Tasks</h1>
-                  <p className="text-sm text-[var(--color-textSecondary)]">
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Tasks</h1>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
                     {completedTasks} of {tasks.length} tasks completed
                   </p>
                 </div>
@@ -51,7 +51,7 @@ export function TasksPage() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowNewTaskModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-[var(--color-task)] hover:bg-[var(--color-task)]/90 text-white rounded-lg transition-all duration-200 hover:scale-105 shadow-sm hover:shadow-md"
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all duration-200 hover:scale-105 shadow-sm hover:shadow-md"
                 >
                   <Plus className="w-4 h-4" />
                   <span>New Task</span>
