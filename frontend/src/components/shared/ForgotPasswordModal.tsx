@@ -1,10 +1,11 @@
 import { Dialog } from '@headlessui/react';
 import { motion } from 'framer-motion';
-import { Mail, X } from 'lucide-react';
+import { Mail, X, Loader } from 'lucide-react';
 import { useState } from 'react';
 import { Input } from './Input';
 import { Logo } from './Logo';
 import { validateEmail } from '../../utils/validation';
+import { useTheme } from '../../contexts/themeContextUtils';
 
 interface ForgotPasswordModalProps {
   isOpen: boolean;
@@ -12,10 +13,33 @@ interface ForgotPasswordModalProps {
 }
 
 export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProps) {
+  const { theme } = useTheme();
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+
+  const getModalClasses = () => {
+    switch (theme) {
+      case 'midnight':
+        return 'bg-gray-900/40 border-gray-800/40';
+      case 'dark':
+        return 'bg-gray-900/50 border-gray-700/30';
+      default:
+        return 'bg-white/10 border-white/20';
+    }
+  };
+
+  const getButtonClasses = () => {
+    switch (theme) {
+      case 'midnight':
+        return 'bg-primary-500/90 hover:bg-primary-500 text-white';
+      case 'dark':
+        return 'bg-primary-500 hover:bg-primary-600 text-white';
+      default:
+        return 'bg-white hover:bg-gray-50 text-primary-600';
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,6 +57,7 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
       await new Promise(resolve => setTimeout(resolve, 1500)); // Simulated API call
       setIsSuccess(true);
     } catch (err) {
+      console.error('Error sending reset email:', err);
       setError('Failed to send reset email. Please try again.');
     } finally {
       setIsLoading(false);
@@ -48,7 +73,7 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
       <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" aria-hidden="true" />
       
       <div className="fixed inset-0 flex items-center justify-center p-4">
-        <Dialog.Panel className="w-full max-w-md bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20">
+        <Dialog.Panel className={`w-full max-w-md ${getModalClasses()} backdrop-blur-lg rounded-2xl p-8 shadow-2xl border`}>
           <div className="relative">
             <button
               onClick={onClose}
@@ -85,16 +110,31 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
                     disabled={isLoading}
                     disableEnhancement={true}
                     disableRecording={true}
-                    className="bg-white/10 border-white/20 focus:border-primary-400 text-white placeholder:text-white/50"
+                    className={`${
+                      theme === 'midnight'
+                        ? 'bg-gray-800/40 border-gray-700/40'
+                        : theme === 'dark'
+                        ? 'bg-gray-800/50 border-gray-700/30'
+                        : 'bg-white/10 border-white/20'
+                    } focus:border-primary-400 text-white placeholder:text-white/50`}
                   />
 
                   <motion.button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full relative overflow-hidden group bg-white text-primary-600 py-3 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200"
+                    className={`w-full relative overflow-hidden group ${getButtonClasses()} py-3 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200`}
                     whileTap={{ scale: 0.98 }}
                   >
-                    {isLoading ? 'Sending...' : 'Send Reset Instructions'}
+                    <span className="relative z-10">
+                      {isLoading ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <Loader className="w-4 h-4 animate-spin" />
+                          <span>Sending...</span>
+                        </div>
+                      ) : (
+                        'Send Reset Instructions'
+                      )}
+                    </span>
                   </motion.button>
                 </form>
               </>
@@ -112,7 +152,9 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
                 </div>
                 <button
                   onClick={onClose}
-                  className="text-white/90 hover:text-white transition-colors text-sm"
+                  className={`text-white/90 hover:text-white transition-colors text-sm ${
+                    theme === 'midnight' ? 'hover:text-primary-400' : ''
+                  }`}
                 >
                   Back to Login
                 </button>

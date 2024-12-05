@@ -1,7 +1,7 @@
 // LoginPage.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Mail, Lock, AlertCircle, Loader, Sun, Moon } from 'lucide-react';
+import { Mail, Lock, AlertCircle, Loader } from 'lucide-react';
 import { Logo } from './shared/Logo';
 import { Input } from './shared/Input';
 import { useTheme } from '../contexts/themeContextUtils';
@@ -10,6 +10,7 @@ import { ForgotPasswordModal } from './shared/ForgotPasswordModal';
 import { validateEmail, validatePassword } from '../utils/validation';
 import { motion } from 'framer-motion';
 import { LoadingScreen } from './shared/LoadingScreen';
+import { ThemeDropdown } from './shared/ThemeDropdown';
 
 interface LoginFormData {
   email: string;
@@ -26,7 +27,7 @@ interface ValidationErrors {
 export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { theme, toggleTheme } = useTheme();
+  const { theme } = useTheme();
   const { login, isLoading, error: authError } = useAuth();
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
@@ -97,16 +98,39 @@ export function LoginPage() {
     }
   }, [theme]);
 
+  const getGradientClasses = () => {
+    switch (theme) {
+      case 'light':
+        return 'from-primary-600 via-primary-500 to-primary-700';
+      case 'dark':
+        return 'from-gray-900 via-gray-800 to-primary-900/50';
+      case 'midnight':
+        return 'from-[rgb(17,24,39)] via-gray-900 to-primary-950/30';
+      default:
+        return 'from-primary-600 via-primary-500 to-primary-700';
+    }
+  };
+
+  const getBackgroundClasses = () => {
+    if (theme === 'midnight') {
+      return 'bg-gray-900/40 border-gray-800/40';
+    }
+    if (theme === 'dark') {
+      return 'bg-gray-900/50 border-gray-700/30';
+    }
+    return 'bg-white/10 border-white/20';
+  };
+
   // Only show loading screen when actually redirecting after successful login
   if (isRedirecting) {
     return <LoadingScreen message="Logging you in..." />;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-600 via-primary-500 to-primary-700 dark:from-gray-900 dark:via-gray-800 dark:to-primary-900/50 flex">
+    <div className={`min-h-screen bg-gradient-to-br ${getGradientClasses()} flex`}>
       {/* Left Panel - Decorative */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
-        <div className="absolute inset-0 bg-black/10 dark:bg-black/30 backdrop-blur-sm z-10" />
+        <div className={`absolute inset-0 ${theme === 'midnight' ? 'bg-black/40' : 'bg-black/10'} backdrop-blur-sm z-10`} />
         <div className="absolute inset-0 flex flex-col items-center justify-center text-white z-20 p-12">
           <h1 className="text-4xl font-bold mb-6 text-white dark:text-white/90">Welcome to Second Brain</h1>
           <p className="text-xl text-center text-white/90 dark:text-white/80 max-w-md">
@@ -114,8 +138,8 @@ export function LoginPage() {
           </p>
 
           {/* Decorative Elements */}
-          <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-white/10 dark:bg-white/5 rounded-full blur-3xl" />
-          <div className="absolute top-20 -right-20 w-96 h-96 bg-primary-400/20 dark:bg-primary-600/10 rounded-full blur-3xl" />
+          <div className={`absolute -bottom-20 -left-20 w-64 h-64 ${theme === 'midnight' ? 'bg-white/5' : 'bg-white/10'} rounded-full blur-3xl`} />
+          <div className={`absolute top-20 -right-20 w-96 h-96 ${theme === 'midnight' ? 'bg-primary-900/10' : 'bg-primary-400/20'} rounded-full blur-3xl`} />
         </div>
 
         {/* Floating Cards */}
@@ -154,7 +178,7 @@ export function LoginPage() {
       {/* Right Panel - Login Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
         <div className="w-full max-w-md">
-          <div className="bg-white/10 dark:bg-gray-900/50 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20 dark:border-gray-700/30">
+          <div className={`${getBackgroundClasses()} backdrop-blur-lg rounded-2xl p-8 shadow-2xl border`}>
             <div className="flex justify-center mb-8 h-12">
               <Logo className="w-auto h-full" />
             </div>
@@ -270,18 +294,10 @@ export function LoginPage() {
         </div>
       </div>
 
-      {/* Theme Toggle Button */}
-      <button
-        onClick={toggleTheme}
-        className="fixed top-4 right-4 p-2 rounded-full bg-white/10 dark:bg-gray-800/30 hover:bg-white/20 dark:hover:bg-gray-800/50 text-white transition-all duration-200 backdrop-blur-sm z-50"
-        aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-      >
-        {theme === 'dark' ? (
-          <Sun className="w-5 h-5" />
-        ) : (
-          <Moon className="w-5 h-5" />
-        )}
-      </button>
+      {/* Replace Theme Toggle Button with ThemeDropdown */}
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeDropdown />
+      </div>
 
       <ForgotPasswordModal
         isOpen={showForgotPassword}

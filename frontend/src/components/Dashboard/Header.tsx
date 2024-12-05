@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import type { User } from '../../types/auth';
 import { ThemeSelector } from '../ThemeSelector';
 import { Input } from '../shared/Input';
+import { useTheme } from '../../contexts/themeContextUtils';
 
 interface HeaderProps {
   isSidebarOpen: boolean;
@@ -30,6 +31,7 @@ const LevelThresholds = [
 
 export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQuery }: HeaderProps) {
   const { user, logout } = useAuth();
+  const { theme } = useTheme();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -65,18 +67,29 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
 
   const xpProgress = calculateXPProgress(user);
 
+  const getHoverClass = () => {
+    switch (theme) {
+      case 'midnight':
+        return 'hover:bg-[var(--color-secondary)]/30';
+      case 'dark':
+        return 'hover:bg-[var(--color-secondary)]/30';
+      default:
+        return 'hover:bg-[var(--color-secondary)]';
+    }
+  };
+
   return (
-    <header className="fixed top-0 right-0 left-0 lg:left-60 z-20 backdrop-blur-md border-b border-[var(--color-border)] bg-[var(--color-background)]">
+    <header className="fixed top-0 right-0 left-0 lg:left-60 z-20 backdrop-blur-md border-b border-[var(--color-border)] bg-[var(--color-background)] transition-colors duration-200">
       <div className="max-w-7xl mx-auto h-20 px-4 sm:px-6 lg:px-8 flex items-center gap-4">
         <div className="w-10 lg:hidden">
           <button
             onClick={toggleSidebar}
-            className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-[#3C3C3E]/30"
+            className={`p-1.5 rounded-lg ${getHoverClass()} transition-colors duration-200`}
           >
             {isSidebarOpen ? (
-              <X className="w-6 h-6 text-gray-500 dark:text-gray-400" />
+              <X className="w-6 h-6 text-[var(--color-textSecondary)] transition-colors duration-200" />
             ) : (
-              <Menu className="w-6 h-6 text-gray-500 dark:text-gray-400" />
+              <Menu className="w-6 h-6 text-[var(--color-textSecondary)] transition-colors duration-200" />
             )}
           </button>
         </div>
@@ -98,10 +111,10 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
 
         <div className="flex items-center gap-3">
           <button
-            className="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[#3C3C3E]/30"
+            className={`md:hidden p-2 rounded-lg ${getHoverClass()} transition-colors duration-200`}
             onClick={() => navigate('/dashboard/search')}
           >
-            <Search className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+            <Search className="w-5 h-5 text-[var(--color-textSecondary)] transition-colors duration-200" />
           </button>
 
           <ThemeSelector />
@@ -109,10 +122,10 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
           <div className="relative" ref={profileMenuRef}>
             <button
               onClick={() => setShowProfileMenu(!showProfileMenu)}
-              className="flex items-center gap-3 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-[#3C3C3E]/30"
+              className={`flex items-center gap-3 p-1.5 rounded-lg ${getHoverClass()} transition-colors duration-200`}
             >
               <div className="relative">
-                <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center overflow-hidden">
+                <div className="w-8 h-8 rounded-full bg-[var(--color-secondary)]/30 flex items-center justify-center overflow-hidden transition-colors duration-200">
                   {user?.avatar ? (
                     <img
                       src={user.avatar}
@@ -120,7 +133,7 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <UserIcon className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+                    <UserIcon className="w-5 h-5 text-[var(--color-accent)] transition-colors duration-200" />
                   )}
                 </div>
                 <svg className="absolute -inset-0.5 w-9 h-9 rotate-90">
@@ -131,7 +144,7 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
                     stroke="currentColor"
                     strokeWidth="2"
                     fill="none"
-                    className="text-gray-200 dark:text-[#3C3C3E]"
+                    className="text-[var(--color-border)] transition-colors duration-200"
                   />
                   <circle
                     cx="18"
@@ -141,21 +154,21 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
                     strokeWidth="2"
                     fill="none"
                     strokeDasharray={`${user?.levelProgress ?? 0 * 100} 100`}
-                    className="text-primary-500"
+                    className="text-[var(--color-accent)] transition-colors duration-200"
                     transform="rotate(-90 18 18)"
                   />
                 </svg>
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary-500 rounded-full flex items-center justify-center text-[10px] text-white font-medium">
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-[var(--color-accent)] rounded-full flex items-center justify-center text-[10px] text-white font-medium transition-colors duration-200">
                   {user?.level ?? 1}
                 </div>
               </div>
             </button>
 
             {showProfileMenu && (
-              <div className="absolute right-0 mt-2 w-64 glass-morphism rounded-lg shadow-lg border border-gray-100/20 dark:border-[#3C3C3E]/20 py-1 bg-white/95 dark:bg-[#2C2C2E]/95 backdrop-blur-md">
-                <div className="px-4 py-3 border-b border-gray-200 dark:border-[#3C3C3E]/30">
+              <div className={`absolute right-0 mt-2 w-64 glass-morphism rounded-lg shadow-lg border border-[var(--color-border)]/20 py-1 bg-[var(--color-primary)]/95 backdrop-blur-md transition-colors duration-200`}>
+                <div className="px-4 py-3 border-b border-[var(--color-border)]/30 transition-colors duration-200">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center overflow-hidden">
+                    <div className="w-10 h-10 rounded-full bg-[var(--color-secondary)]/30 flex items-center justify-center overflow-hidden transition-colors duration-200">
                       {user?.avatar ? (
                         <img
                           src={user.avatar}
@@ -163,36 +176,36 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <UserIcon className="w-6 h-6 text-primary-600 dark:text-primary-400" />
+                        <UserIcon className="w-6 h-6 text-[var(--color-accent)] transition-colors duration-200" />
                       )}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                      <p className="text-sm font-medium text-[var(--color-text)] transition-colors duration-200">
                         {user?.name}
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                      <p className="text-xs text-[var(--color-textSecondary)] transition-colors duration-200">
                         {user?.email}
                       </p>
                     </div>
                   </div>
                   <div className="mt-3">
                     <div className="flex justify-between text-xs mb-1">
-                      <span className="text-gray-600 dark:text-gray-400">
+                      <span className="text-[var(--color-textSecondary)] transition-colors duration-200">
                         Level {user?.level ?? 1}
                       </span>
-                      <span className="text-gray-600 dark:text-gray-400">
+                      <span className="text-[var(--color-textSecondary)] transition-colors duration-200">
                         {xpProgress.currentLevelXP.toLocaleString()} / {xpProgress.nextLevelXP.toLocaleString()} XP
                       </span>
                     </div>
-                    <div className="h-1.5 bg-gray-200 dark:bg-[#3C3C3E] rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-[var(--color-secondary)] rounded-full overflow-hidden transition-colors duration-200">
                       <motion.div
-                        className="h-full bg-primary-500 rounded-full transition-all duration-300"
+                        className="h-full bg-[var(--color-accent)] rounded-full transition-all duration-300"
                         initial={{ width: 0 }}
                         animate={{ width: `${xpProgress.progress}%` }}
                         transition={{ duration: 0.5, ease: "easeOut" }}
                       />
                     </div>
-                    <div className="mt-1 text-xs text-gray-500 dark:text-gray-400 text-right">
+                    <div className="mt-1 text-xs text-[var(--color-textSecondary)] text-right transition-colors duration-200">
                       {Math.round(xpProgress.progress)}% to Level {(user?.level ?? 1) + 1}
                     </div>
                   </div>
@@ -204,7 +217,7 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
                       navigate('/dashboard/profile');
                       setShowProfileMenu(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50/50 dark:hover:bg-[#3C3C3E]/30 transition-all flex items-center gap-2"
+                    className={`w-full px-4 py-2 text-left text-sm text-[var(--color-text)] ${getHoverClass()} transition-colors duration-200 flex items-center gap-2`}
                   >
                     <UserIcon className="w-4 h-4" />
                     View Profile
@@ -214,7 +227,7 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
                       navigate('/dashboard/settings');
                       setShowProfileMenu(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50/50 dark:hover:bg-[#3C3C3E]/30 transition-all flex items-center gap-2"
+                    className={`w-full px-4 py-2 text-left text-sm text-[var(--color-text)] ${getHoverClass()} transition-colors duration-200 flex items-center gap-2`}
                   >
                     <Settings className="w-4 h-4" />
                     Settings
@@ -224,7 +237,7 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
                       logout();
                       setShowProfileMenu(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                    className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 flex items-center gap-2 transition-colors duration-200"
                   >
                     <LogOut className="w-4 h-4" />
                     Log out

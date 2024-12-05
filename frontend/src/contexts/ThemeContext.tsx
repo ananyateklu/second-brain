@@ -2,20 +2,49 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { ThemeContext } from './themeContextUtils';
 import { themes, ThemeName } from '../theme/theme.config';
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [themeName, setThemeName] = useState<ThemeName>(() => {
-    // Initialize from localStorage or system preference
-    const savedTheme = localStorage.getItem('theme') as ThemeName;
-    if (savedTheme && themes[savedTheme]) {
-      return savedTheme;
-    }
-    // If no saved theme, check system preference
-    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return 'dark';
-    }
-    return 'light';
-  });
+// Immediately apply initial theme before any React code runs
+const getInitialTheme = (): ThemeName => {
+  const savedTheme = localStorage.getItem('theme') as ThemeName;
+  if (savedTheme && themes[savedTheme]) {
+    return savedTheme;
+  }
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+};
 
+// Apply theme immediately during script load
+const initialTheme = getInitialTheme();
+document.documentElement.setAttribute('data-theme', initialTheme);
+document.documentElement.classList.toggle('dark', initialTheme === 'dark' || initialTheme === 'midnight');
+
+// Helper function to apply theme styles
+const applyThemeStyles = (themeName: ThemeName) => {
+  const theme = themes[themeName];
+  const root = document.documentElement;
+  
+  // Apply CSS variables
+  Object.entries(theme.colors).forEach(([key, value]) => {
+    root.style.setProperty(`--color-${key}`, value);
+  });
+  
+  // Set data-theme attribute for CSS selectors
+  root.setAttribute('data-theme', themeName);
+  
+  // Toggle dark class for Tailwind
+  root.classList.toggle('dark', themeName === 'dark' || themeName === 'midnight');
+
+  // Add a small transition to smooth out any theme changes
+  root.style.setProperty('--theme-transition', 'background-color 0.15s ease-in-out, color 0.15s ease-in-out');
+  
+  // Ensure all themed elements update
+  requestAnimationFrame(() => {
+    document.body.style.backgroundColor = getComputedStyle(root).backgroundColor;
+  });
+};
+
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const [themeName, setThemeName] = useState<ThemeName>(initialTheme);
+
+  // Apply theme styles on mount and theme changes
   useEffect(() => {
     const theme = themes[themeName];
     
@@ -28,17 +57,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     // Save to localStorage
     localStorage.setItem('theme', themeName);
     
-    // Apply CSS variables
-    const root = document.documentElement;
-    Object.entries(theme.colors).forEach(([key, value]) => {
-      root.style.setProperty(`--color-${key}`, value);
-    });
-    
-    // Set data-theme attribute for CSS selectors
-    root.setAttribute('data-theme', themeName);
-    
-    // Toggle dark class for Tailwind - midnight should also trigger dark mode
-    root.classList.toggle('dark', themeName === 'dark' || themeName === 'midnight');
+    // Apply theme styles
+    applyThemeStyles(themeName);
+
+    // Clean up transition property
+    return () => {
+      document.documentElement.style.removeProperty('--theme-transition');
+    };
   }, [themeName]);
 
   // Listen for system theme changes

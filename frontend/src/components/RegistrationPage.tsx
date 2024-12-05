@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Mail, Lock, ShieldCheck, Sun, Moon, Loader, AlertCircle } from 'lucide-react';
+import { User, Mail, Lock, ShieldCheck, Loader, AlertCircle } from 'lucide-react';
 import { Logo } from './shared/Logo';
 import { Input } from './shared/Input';
 import { useTheme } from '../contexts/themeContextUtils';
 import { useAuth } from '../hooks/useAuth';
 import { validateEmail, validatePassword } from '../utils/validation';
 import { motion } from 'framer-motion';
+import { ThemeDropdown } from './shared/ThemeDropdown';
 
 interface RegistrationFormData {
   fullName: string;
@@ -43,7 +44,7 @@ const formFieldVariants = {
 
 export function RegistrationPage() {
   const navigate = useNavigate();
-  const { theme, toggleTheme } = useTheme();
+  const { theme } = useTheme();
   const { register, isLoading, error: authError } = useAuth();
   const [formData, setFormData] = useState<RegistrationFormData>({
     fullName: '',
@@ -102,19 +103,31 @@ export function RegistrationPage() {
     }
   };
 
-  // Add dark mode class effect
-  useEffect(() => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-      document.body.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      document.body.classList.remove('dark');
+  const getGradientClasses = () => {
+    switch (theme) {
+      case 'light':
+        return 'from-primary-600 via-primary-500 to-primary-700';
+      case 'dark':
+        return 'from-gray-900 via-gray-800 to-primary-900/50';
+      case 'midnight':
+        return 'from-[rgb(17,24,39)] via-gray-900 to-primary-950/30';
+      default:
+        return 'from-primary-600 via-primary-500 to-primary-700';
     }
-  }, [theme]);
+  };
+
+  const getBackgroundClasses = () => {
+    if (theme === 'midnight') {
+      return 'bg-gray-900/40 border-gray-800/40';
+    }
+    if (theme === 'dark') {
+      return 'bg-gray-900/50 border-gray-700/30';
+    }
+    return 'bg-white/10 border-white/20';
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-600 via-primary-500 to-primary-700 dark:from-gray-900 dark:via-gray-800 dark:to-primary-900/50 flex">
+    <div className={`min-h-screen bg-gradient-to-br ${getGradientClasses()} flex`}>
       {/* Left Panel - Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
         <motion.div 
@@ -123,9 +136,9 @@ export function RegistrationPage() {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
         >
-          <div className="bg-white/10 dark:bg-gray-900/50 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20 dark:border-gray-700/30">
-            <div className="mb-8">
-              <Logo />
+          <div className={`${getBackgroundClasses()} backdrop-blur-lg rounded-2xl p-8 shadow-2xl border`}>
+            <div className="mb-8 flex justify-center">
+              <Logo className="w-32 h-auto" />
             </div>
 
             {errors.general && (
@@ -235,7 +248,15 @@ export function RegistrationPage() {
               <motion.button
                 type="submit"
                 disabled={isLoading}
-                className="w-full relative overflow-hidden group bg-white dark:bg-primary-500 text-primary-600 dark:text-white py-3 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200"
+                className={`w-full relative overflow-hidden group ${
+                  theme === 'midnight'
+                    ? 'bg-primary-500/90 hover:bg-primary-500'
+                    : theme === 'dark'
+                    ? 'bg-primary-500 hover:bg-primary-600'
+                    : 'bg-white hover:bg-gray-50'
+                } ${
+                  theme === 'light' ? 'text-primary-600' : 'text-white'
+                } py-3 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200`}
                 whileTap={{ scale: 0.98 }}
               >
                 <span className="relative z-10">
@@ -248,23 +269,21 @@ export function RegistrationPage() {
                     'Create Account'
                   )}
                 </span>
-                <motion.div
-                  className="absolute inset-0 bg-primary-100 dark:bg-primary-400"
-                  initial={false}
-                  animate={{ scale: isLoading ? 1 : 0 }}
-                  transition={{ duration: 0.2 }}
-                />
               </motion.button>
 
-              <div className="text-center">
-                <p className="text-white/90 dark:text-white/80">
+              <div className="text-center mt-6">
+                <p className="text-white/90">
                   Already have an account?{' '}
                   <button
                     type="button"
                     onClick={() => navigate('/login')}
-                    className="text-white font-medium hover:text-primary-200 dark:hover:text-primary-300 transition-colors"
+                    className={`font-medium ${
+                      theme === 'midnight'
+                        ? 'text-primary-400 hover:text-primary-300'
+                        : 'text-white hover:text-primary-200'
+                    } transition-colors`}
                   >
-                    Log In
+                    Sign in
                   </button>
                 </p>
               </div>
@@ -275,31 +294,23 @@ export function RegistrationPage() {
 
       {/* Right Panel - Decorative */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
-        <div className="absolute inset-0 bg-black/10 dark:bg-black/30 backdrop-blur-sm z-10" />
+        <div className={`absolute inset-0 ${theme === 'midnight' ? 'bg-black/40' : 'bg-black/10'} backdrop-blur-sm z-10`} />
         <div className="absolute inset-0 flex flex-col items-center justify-center text-white z-20 p-12">
           <h1 className="text-4xl font-bold mb-6 text-white dark:text-white/90">Join Second Brain</h1>
           <p className="text-xl text-center text-white/90 dark:text-white/80 max-w-md">
-            Start organizing your thoughts, boosting productivity, and achieving more with Second Brain.
+            Start organizing your thoughts and boosting your productivity today.
           </p>
-          
+
           {/* Decorative Elements */}
-          <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-white/10 dark:bg-white/5 rounded-full blur-3xl" />
-          <div className="absolute top-20 -right-20 w-96 h-96 bg-primary-400/20 dark:bg-primary-600/10 rounded-full blur-3xl" />
+          <div className={`absolute -bottom-20 -left-20 w-64 h-64 ${theme === 'midnight' ? 'bg-white/5' : 'bg-white/10'} rounded-full blur-3xl`} />
+          <div className={`absolute top-20 -right-20 w-96 h-96 ${theme === 'midnight' ? 'bg-primary-900/10' : 'bg-primary-400/20'} rounded-full blur-3xl`} />
         </div>
       </div>
 
-      {/* Theme Toggle */}
-      <button
-        onClick={toggleTheme}
-        className="fixed top-4 right-4 p-2 rounded-full bg-white/10 dark:bg-gray-800/30 hover:bg-white/20 dark:hover:bg-gray-800/50 text-white transition-all duration-200 backdrop-blur-sm z-50"
-        aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-      >
-        {theme === 'dark' ? (
-          <Sun className="w-5 h-5" />
-        ) : (
-          <Moon className="w-5 h-5" />
-        )}
-      </button>
+      {/* Replace Theme Toggle Button with ThemeDropdown */}
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeDropdown />
+      </div>
     </div>
   );
 }
