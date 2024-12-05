@@ -16,6 +16,7 @@ import { useTagFiltering } from './useTagFiltering';
 import { FiltersPanel } from './FiltersPanel';
 import { ItemType, TaggedItem } from './types';
 import { useHandleEdit } from './useHandleEdit';
+import { cardGridStyles } from '../shared/cardStyles';
 
 export function TagsPage() {
   const { notes } = useNotes();
@@ -310,14 +311,17 @@ export function TagsPage() {
               {selectedTag ? (
                 <div className="p-0.5">
                   {viewMode === 'grid' ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-0.5">
+                    <div className={cardGridStyles}>
                       {filteredItems.map(item => {
                         switch (item.type) {
                           case 'task':
                             return (
-                              <div onClick={() => handleEditNote(item)}>
+                              <div 
+                                key={item.id}
+                                onClick={() => handleEditNote(item)}
+                                className="cursor-pointer w-full"
+                              >
                                 <TaskCard
-                                  key={item.id}
                                   task={{
                                     id: item.id,
                                     title: item.title,
@@ -331,33 +335,43 @@ export function TagsPage() {
                                     isDeleted: false,
                                     linkedItems: []
                                   }}
+                                  viewMode="grid"
                                 />
                               </div>
                             );
                           case 'reminder':
                             return (
-                              <ReminderCard
+                              <div 
                                 key={item.id}
-                                reminder={{
-                                  id: item.id,
-                                  title: item.title,
-                                  description: item.content,
-                                  tags: item.tags,
-                                  dueDateTime: item.updatedAt,
-                                  isCompleted: false,
-                                  isSnoozed: false,
-                                  isDeleted: false,
-                                  userId: '',
-                                  updatedAt: item.updatedAt,
-                                  createdAt: item.createdAt
-                                }}
-                              />
+                                onClick={() => handleEditNote(item)}
+                                className="cursor-pointer w-full"
+                              >
+                                <ReminderCard
+                                  reminder={{
+                                    id: item.id,
+                                    title: item.title,
+                                    description: item.content,
+                                    tags: item.tags,
+                                    dueDateTime: item.updatedAt,
+                                    isCompleted: false,
+                                    isSnoozed: false,
+                                    isDeleted: false,
+                                    userId: '',
+                                    updatedAt: item.updatedAt,
+                                    createdAt: item.createdAt
+                                  }}
+                                  viewMode="grid"
+                                />
+                              </div>
                             );
                           case 'idea':
                             return (
-                              <div onClick={() => handleEditNote(item)}>
+                              <div 
+                                key={item.id}
+                                onClick={() => handleEditNote(item)}
+                                className="cursor-pointer w-full"
+                              >
                                 <IdeaCard
-                                  key={item.id}
                                   idea={{
                                     id: item.id,
                                     title: item.title,
@@ -373,14 +387,18 @@ export function TagsPage() {
                                     linkedNoteIds: [],
                                     linkedTasks: []
                                   }}
+                                  viewMode="grid"
                                 />
                               </div>
                             );
                           case 'note':
                             return (
-                              <div onClick={() => handleEditNote(item)}>
+                              <div 
+                                key={item.id}
+                                onClick={() => handleEditNote(item)}
+                                className="cursor-pointer w-full"
+                              >
                                 <NoteCard
-                                  key={item.id}
                                   note={{
                                     id: item.id,
                                     title: item.title,
@@ -396,7 +414,7 @@ export function TagsPage() {
                                     linkedNoteIds: [],
                                     linkedTasks: []
                                   }}
-                                  viewMode={viewMode}
+                                  viewMode="grid"
                                 />
                               </div>
                             );
@@ -404,9 +422,115 @@ export function TagsPage() {
                       })}
                     </div>
                   ) : (
-                    <div className="h-full flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
-                      <Tag className="w-8 h-8 mb-2" />
-                      <p>Select a tag to view items</p>
+                    <div className="space-y-4 px-0.5">
+                      {filteredItems.map(item => {
+                        switch (item.type) {
+                          case 'task':
+                            return (
+                              <div 
+                                key={item.id}
+                                onClick={() => handleEditNote(item)}
+                                className="cursor-pointer w-full"
+                              >
+                                <TaskCard
+                                  task={{
+                                    id: item.id,
+                                    title: item.title,
+                                    description: item.content,
+                                    tags: item.tags,
+                                    status: 'Incomplete',
+                                    priority: 'medium',
+                                    dueDate: null,
+                                    updatedAt: item.updatedAt,
+                                    createdAt: item.createdAt,
+                                    isDeleted: false,
+                                    linkedItems: []
+                                  }}
+                                  viewMode="list"
+                                />
+                              </div>
+                            );
+                          case 'reminder':
+                            return (
+                              <div 
+                                key={item.id}
+                                onClick={() => handleEditNote(item)}
+                                className="cursor-pointer w-full"
+                              >
+                                <ReminderCard
+                                  reminder={{
+                                    id: item.id,
+                                    title: item.title,
+                                    description: item.content,
+                                    tags: item.tags,
+                                    dueDateTime: item.updatedAt,
+                                    isCompleted: false,
+                                    isSnoozed: false,
+                                    isDeleted: false,
+                                    userId: '',
+                                    updatedAt: item.updatedAt,
+                                    createdAt: item.createdAt
+                                  }}
+                                  viewMode="list"
+                                />
+                              </div>
+                            );
+                          case 'idea':
+                            return (
+                              <div 
+                                key={item.id}
+                                onClick={() => handleEditNote(item)}
+                                className="cursor-pointer w-full"
+                              >
+                                <IdeaCard
+                                  idea={{
+                                    id: item.id,
+                                    title: item.title,
+                                    content: item.content,
+                                    tags: item.tags,
+                                    updatedAt: item.updatedAt,
+                                    createdAt: item.createdAt,
+                                    isIdea: true,
+                                    isFavorite: false,
+                                    isPinned: false,
+                                    isArchived: false,
+                                    isDeleted: false,
+                                    linkedNoteIds: [],
+                                    linkedTasks: []
+                                  }}
+                                  viewMode="list"
+                                />
+                              </div>
+                            );
+                          case 'note':
+                            return (
+                              <div 
+                                key={item.id}
+                                onClick={() => handleEditNote(item)}
+                                className="cursor-pointer w-full"
+                              >
+                                <NoteCard
+                                  note={{
+                                    id: item.id,
+                                    title: item.title,
+                                    content: item.content,
+                                    tags: item.tags,
+                                    updatedAt: item.updatedAt,
+                                    createdAt: item.createdAt,
+                                    isIdea: false,
+                                    isFavorite: false,
+                                    isPinned: false,
+                                    isArchived: false,
+                                    isDeleted: false,
+                                    linkedNoteIds: [],
+                                    linkedTasks: []
+                                  }}
+                                  viewMode="list"
+                                />
+                              </div>
+                            );
+                        }
+                      })}
                     </div>
                   )}
                 </div>

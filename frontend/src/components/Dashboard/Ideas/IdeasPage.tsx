@@ -1,14 +1,13 @@
 import { useState, useMemo } from 'react';
 import { Lightbulb, Plus, Search, Grid, List, Network } from 'lucide-react';
 import { useNotes } from '../../../contexts/notesContextUtils';
-import { IdeasList } from './IdeasList';
-import { IdeasGrid } from './IdeasGrid';
 import { IdeasMindMap } from './IdeasMindMap';
 import { NewIdeaModal } from './NewIdeaModal';
 import { FilterDropdown } from '../Notes/FilterDropdown';
 import { Input } from '../../shared/Input';
 import { useModal } from '../../../contexts/modalContextUtils';
 import { cardGridStyles } from '../shared/cardStyles';
+import { IdeaCard } from './IdeaCard';
 
 type ViewMode = 'list' | 'grid' | 'mindmap';
 
@@ -203,10 +202,19 @@ export function IdeasPage() {
 
         {/* Ideas Content */}
         <div className="min-h-[500px]">
-          {viewMode === 'list' && (
-            <IdeasList ideas={filteredIdeas} onIdeaClick={handleIdeaClick} />
-          )}
-          {viewMode === 'grid' && (
+          {viewMode === 'list' ? (
+            <div className="space-y-4 px-0.5">
+              {filteredIdeas.map(idea => (
+                <div
+                  key={idea.id}
+                  onClick={() => handleIdeaClick(idea.id)}
+                  className="cursor-pointer w-full"
+                >
+                  <IdeaCard idea={idea} viewMode="list" />
+                </div>
+              ))}
+            </div>
+          ) : viewMode === 'grid' ? (
             <div className={cardGridStyles}>
               {filteredIdeas.map(idea => (
                 <div
@@ -218,8 +226,7 @@ export function IdeasPage() {
                 </div>
               ))}
             </div>
-          )}
-          {viewMode === 'mindmap' && (
+          ) : (
             <IdeasMindMap ideas={filteredIdeas} onIdeaClick={handleIdeaClick} />
           )}
 
