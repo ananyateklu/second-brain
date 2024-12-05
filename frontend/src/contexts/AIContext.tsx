@@ -40,7 +40,16 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Initialize SignalR connection
-    signalRService.start();
+    const initializeSignalR = async () => {
+      try {
+        await signalRService.stop(); // Ensure we're starting from a clean state
+        await signalRService.start();
+      } catch (error) {
+        console.error('[AIContext] Failed to initialize SignalR:', error);
+      }
+    };
+
+    initializeSignalR();
 
     // Subscribe to execution steps
     const unsubscribe = signalRService.onExecutionStep((step) => {
@@ -67,8 +76,8 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => {
-      signalRService.stop();
       unsubscribe();
+      signalRService.stop();
     };
   }, []);
 
@@ -126,7 +135,7 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
       } else {
         throw new Error('Failed to configure Gemini');
       }
-    } catch (error: Error | unknown) {
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to configure Gemini';
       console.error('Failed to configure Gemini:', errorMessage);
       setError(errorMessage);

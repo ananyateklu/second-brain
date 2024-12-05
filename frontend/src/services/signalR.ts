@@ -39,16 +39,27 @@ export class SignalRService {
   }
 
   async start() {
-    if (this.isStarting || this.connection.state === signalR.HubConnectionState.Connected) {
+    if (this.isStarting) {
+      return;
+    }
+
+    if (this.connection.state === signalR.HubConnectionState.Connected) {
+      console.log('[SignalR] Already connected');
       return;
     }
 
     try {
       this.isStarting = true;
-      await this.connection.start();
-      console.log('[SignalR] Connected successfully');
+      if (this.connection.state === signalR.HubConnectionState.Disconnected) {
+        await this.connection.start();
+        console.log('[SignalR] Connected successfully');
+      } else {
+        console.log(`[SignalR] Connection in ${this.connection.state} state, cannot start`);
+      }
     } catch (err) {
       console.error('[SignalR] Connection Error:', err);
+      // Reset connection state before retrying
+      await this.connection.stop();
       setTimeout(() => this.start(), 1000);
     } finally {
       this.isStarting = false;
