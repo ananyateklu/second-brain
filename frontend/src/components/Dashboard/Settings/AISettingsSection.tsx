@@ -121,14 +121,14 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="p-6 border-b border-zinc-200/50 dark:border-zinc-700/50">
+      <div className="p-6 border-b border-[var(--color-border)]">
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/10">
-            <Cpu className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
+          <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10">
+            <Cpu className="w-5 h-5 text-[var(--color-accent)]" />
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-zinc-900 dark:text-white">AI Configuration</h3>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+            <h3 className="text-lg font-semibold text-[var(--color-text)]">AI Configuration</h3>
+            <p className="text-sm text-[var(--color-textSecondary)]">
               Configure your AI providers and models
             </p>
           </div>
@@ -139,13 +139,13 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
         {/* Configuration Status */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h4 className="text-base font-medium text-zinc-900 dark:text-white">Provider Status</h4>
+            <h4 className="text-base font-medium text-[var(--color-text)]">Provider Status</h4>
             <button
               onClick={() => {
                 setIsChecking(true);
                 checkConfigurations().finally(() => setIsChecking(false));
               }}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-zinc-900 dark:text-white bg-white/5 dark:bg-white/5 hover:bg-white/10 dark:hover:bg-white/10 border border-zinc-200/50 dark:border-zinc-700/50 rounded-lg transition-all duration-200"
+              className="flex items-center gap-2 px-4 py-2 text-sm text-[var(--color-text)] bg-[var(--color-surface)] hover:bg-[var(--color-secondary)] border border-[var(--color-border)] rounded-lg transition-all duration-200"
               disabled={isChecking}
             >
               <div className={`w-4 h-4 ${isChecking ? 'animate-spin' : ''}`}>
@@ -161,26 +161,26 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
                 key={name}
                 className="group relative overflow-hidden rounded-xl transition-all duration-200"
               >
-                <div className="p-4 bg-white/5 dark:bg-white/5 border border-zinc-200/50 dark:border-zinc-700/50 rounded-xl backdrop-blur-sm transition-all duration-200 hover:bg-white/10 dark:hover:bg-white/10">
+                <div className="p-4 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl transition-all duration-200 hover:bg-[var(--color-secondary)]">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className={`flex items-center justify-center w-10 h-10 rounded-lg ${
                         isConfigured 
-                          ? 'bg-emerald-500/10 dark:bg-emerald-500/10' 
-                          : 'bg-red-500/10 dark:bg-red-500/10'
+                          ? 'bg-[var(--color-accent)]/10' 
+                          : 'bg-red-500/10'
                       }`}>
                         {isConfigured ? (
-                          <CheckCircle className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
+                          <CheckCircle className="w-5 h-5 text-[var(--color-accent)]" />
                         ) : (
-                          <AlertCircle className="w-5 h-5 text-red-500 dark:text-red-400" />
+                          <AlertCircle className="w-5 h-5 text-red-500" />
                         )}
                       </div>
                       <div>
-                        <p className="font-medium text-zinc-900 dark:text-white">{name}</p>
+                        <p className="font-medium text-[var(--color-text)]">{name}</p>
                         <p className={`text-sm ${
                           isConfigured 
-                            ? 'text-emerald-500 dark:text-emerald-400' 
-                            : 'text-red-500 dark:text-red-400'
+                            ? 'text-[var(--color-accent)]' 
+                            : 'text-red-500'
                         }`}>
                           {isConfigured ? 'Configured' : 'Not Configured'}
                         </p>
@@ -195,21 +195,21 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
 
         {/* Content Suggestions Configuration */}
         <div className="space-y-4">
-          <h4 className="text-base font-medium text-zinc-900 dark:text-white">Content Generation</h4>
-          <div className="space-y-6 p-6 bg-white/5 dark:bg-white/5 border border-zinc-200/50 dark:border-zinc-700/50 rounded-xl">
+          <h4 className="text-base font-medium text-[var(--color-text)]">Content Generation</h4>
+          <div className="space-y-6 p-6 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl">
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-zinc-900 dark:text-white">
+              <label className="block text-sm font-medium text-[var(--color-text)]">
                 AI Provider
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Bot className="h-5 w-5 text-emerald-500 dark:text-emerald-400" />
+                  <Bot className="h-5 w-5 text-[var(--color-accent)]" />
                 </div>
                 <select
                   name="contentSuggestionsProvider"
                   value={settings.contentSuggestions?.provider}
                   onChange={handleInputChange}
-                  className="w-full pl-10 pr-10 py-2.5 bg-white/5 dark:bg-white/5 rounded-lg text-zinc-900 dark:text-white border border-zinc-200/50 dark:border-zinc-700/50 focus:ring-2 focus:ring-emerald-500/20 dark:focus:ring-emerald-500/20 focus:border-transparent transition-all duration-200 appearance-none"
+                  className="w-full pl-10 pr-10 py-2.5 bg-[var(--color-surface)] hover:bg-[var(--color-secondary)] rounded-lg text-[var(--color-text)] border border-[var(--color-border)] focus:ring-2 focus:ring-[var(--color-accent)]/20 focus:border-transparent transition-all duration-200 appearance-none"
                 >
                   {isOpenAIConfigured && <option value="openai">OpenAI</option>}
                   {isGeminiConfigured && <option value="gemini">Google Gemini</option>}
@@ -217,7 +217,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
                   {isLlamaConfigured && <option value="llama">Llama</option>}
                 </select>
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                  <svg className="h-5 w-5 text-zinc-400 dark:text-zinc-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <svg className="h-5 w-5 text-[var(--color-textSecondary)]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                   </svg>
                 </div>
@@ -225,18 +225,18 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-zinc-900 dark:text-white">
+              <label className="block text-sm font-medium text-[var(--color-text)]">
                 Model
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Settings2 className="h-5 w-5 text-emerald-500 dark:text-emerald-400" />
+                  <Settings2 className="h-5 w-5 text-[var(--color-accent)]" />
                 </div>
                 <select
                   name="contentSuggestionsModel"
                   value={settings.contentSuggestions?.modelId}
                   onChange={handleInputChange}
-                  className="w-full pl-10 pr-10 py-2.5 bg-white/5 dark:bg-white/5 rounded-lg text-zinc-900 dark:text-white border border-zinc-200/50 dark:border-zinc-700/50 focus:ring-2 focus:ring-emerald-500/20 dark:focus:ring-emerald-500/20 focus:border-transparent transition-all duration-200 appearance-none"
+                  className="w-full pl-10 pr-10 py-2.5 bg-[var(--color-surface)] hover:bg-[var(--color-secondary)] rounded-lg text-[var(--color-text)] border border-[var(--color-border)] focus:ring-2 focus:ring-[var(--color-accent)]/20 focus:border-transparent transition-all duration-200 appearance-none"
                 >
                   {contentGenerationModels
                     .filter(model => model.provider === settings.contentSuggestions?.provider)
@@ -247,15 +247,15 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
                     ))}
                 </select>
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                  <svg className="h-5 w-5 text-zinc-400 dark:text-zinc-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <svg className="h-5 w-5 text-[var(--color-textSecondary)]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                   </svg>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
-              <Bot className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
+            <div className="flex items-center gap-2 text-sm text-[var(--color-textSecondary)]">
+              <Bot className="w-4 h-4 text-[var(--color-accent)]" />
               <span>These settings will be used for generating titles, content, and tags.</span>
             </div>
           </div>
@@ -263,21 +263,21 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
 
         {/* Prompt Enhancement Configuration */}
         <div className="space-y-4">
-          <h4 className="text-base font-medium text-zinc-900 dark:text-white">Prompt Enhancement</h4>
-          <div className="space-y-6 p-6 bg-white/5 dark:bg-white/5 border border-zinc-200/50 dark:border-zinc-700/50 rounded-xl">
+          <h4 className="text-base font-medium text-[var(--color-text)]">Prompt Enhancement</h4>
+          <div className="space-y-6 p-6 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl">
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-zinc-900 dark:text-white">
+              <label className="block text-sm font-medium text-[var(--color-text)]">
                 AI Provider
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Bot className="h-5 w-5 text-emerald-500 dark:text-emerald-400" />
+                  <Bot className="h-5 w-5 text-[var(--color-accent)]" />
                 </div>
                 <select
                   name="promptEnhancementProvider"
                   value={settings.promptEnhancement?.provider}
                   onChange={handleInputChange}
-                  className="w-full pl-10 pr-10 py-2.5 bg-white/5 dark:bg-white/5 rounded-lg text-zinc-900 dark:text-white border border-zinc-200/50 dark:border-zinc-700/50 focus:ring-2 focus:ring-emerald-500/20 dark:focus:ring-emerald-500/20 focus:border-transparent transition-all duration-200 appearance-none"
+                  className="w-full pl-10 pr-10 py-2.5 bg-[var(--color-surface)] hover:bg-[var(--color-secondary)] rounded-lg text-[var(--color-text)] border border-[var(--color-border)] focus:ring-2 focus:ring-[var(--color-accent)]/20 focus:border-transparent transition-all duration-200 appearance-none"
                 >
                   {isOpenAIConfigured && <option value="openai">OpenAI</option>}
                   {isGeminiConfigured && <option value="gemini">Google Gemini</option>}
@@ -285,7 +285,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
                   {isLlamaConfigured && <option value="llama">Llama</option>}
                 </select>
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                  <svg className="h-5 w-5 text-zinc-400 dark:text-zinc-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <svg className="h-5 w-5 text-[var(--color-textSecondary)]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                   </svg>
                 </div>
@@ -293,18 +293,18 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-zinc-900 dark:text-white">
+              <label className="block text-sm font-medium text-[var(--color-text)]">
                 Model
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Settings2 className="h-5 w-5 text-emerald-500 dark:text-emerald-400" />
+                  <Settings2 className="h-5 w-5 text-[var(--color-accent)]" />
                 </div>
                 <select
                   name="promptEnhancementModel"
                   value={settings.promptEnhancement?.modelId}
                   onChange={handleInputChange}
-                  className="w-full pl-10 pr-10 py-2.5 bg-white/5 dark:bg-white/5 rounded-lg text-zinc-900 dark:text-white border border-zinc-200/50 dark:border-zinc-700/50 focus:ring-2 focus:ring-emerald-500/20 dark:focus:ring-emerald-500/20 focus:border-transparent transition-all duration-200 appearance-none"
+                  className="w-full pl-10 pr-10 py-2.5 bg-[var(--color-surface)] hover:bg-[var(--color-secondary)] rounded-lg text-[var(--color-text)] border border-[var(--color-border)] focus:ring-2 focus:ring-[var(--color-accent)]/20 focus:border-transparent transition-all duration-200 appearance-none"
                 >
                   {contentGenerationModels
                     .filter(model => model.provider === settings.promptEnhancement?.provider)
@@ -315,15 +315,15 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
                     ))}
                 </select>
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                  <svg className="h-5 w-5 text-zinc-400 dark:text-zinc-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <svg className="h-5 w-5 text-[var(--color-textSecondary)]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
                   </svg>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
-              <Bot className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
+            <div className="flex items-center gap-2 text-sm text-[var(--color-textSecondary)]">
+              <Bot className="w-4 h-4 text-[var(--color-accent)]" />
               <span>These settings will be used for enhancing input prompts across the application.</span>
             </div>
           </div>
@@ -335,8 +335,8 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
             {saveResult && (
               <div className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm ${
                 saveResult.success 
-                  ? 'bg-emerald-500/10 text-emerald-500 dark:text-emerald-400' 
-                  : 'bg-red-500/10 text-red-500 dark:text-red-400'
+                  ? 'bg-[var(--color-accent)]/10 text-[var(--color-accent)]' 
+                  : 'bg-red-500/10 text-red-500'
               }`}>
                 {saveResult.success ? (
                   <CheckCircle className="w-4 h-4" />
@@ -350,7 +350,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="flex items-center gap-2 px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-6 py-2.5 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white text-sm font-medium rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSaving ? (
               <>

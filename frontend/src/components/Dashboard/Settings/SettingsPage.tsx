@@ -31,20 +31,20 @@ export function SettingsPage() {
   return (
     <div className="min-h-screen pb-12">
       {/* Background with subtle gradient */}
-      <div className="fixed inset-0 bg-gradient-to-br from-background via-background to-surface dark:from-background dark:via-background dark:to-surface opacity-50 -z-10" />
+      <div className="fixed inset-0 bg-gradient-to-br from-[var(--color-background)] via-[var(--color-background)] to-[var(--color-surface)] opacity-50 -z-10" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         {/* Page Header */}
-        <div className="relative overflow-hidden rounded-2xl bg-white/5 dark:bg-white/5 border border-white/10 dark:border-white/10 backdrop-blur-sm">
-          <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent" />
+        <div className="relative overflow-hidden rounded-2xl bg-[var(--color-primary)] border border-[var(--color-border)] backdrop-blur-sm">
+          <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-accent)]/10 via-[var(--color-accent)]/5 to-transparent" />
           <div className="relative p-8">
             <div className="flex items-center gap-4">
-              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/10">
-                <Settings2 className="w-6 h-6 text-emerald-500 dark:text-emerald-400" />
+              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-[var(--color-accent)]/10">
+                <Settings2 className="w-6 h-6 text-[var(--color-accent)]" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-zinc-900 dark:text-white">Settings</h1>
-                <p className="mt-1 text-base text-zinc-600 dark:text-zinc-400">
+                <h1 className="text-3xl font-bold text-[var(--color-text)]">Settings</h1>
+                <p className="mt-1 text-base text-[var(--color-textSecondary)]">
                   Customize your Second Brain experience
                 </p>
               </div>
@@ -57,13 +57,18 @@ export function SettingsPage() {
           {/* Left Column */}
           <div className="space-y-8">
             {/* Appearance Section */}
-            <div className="group rounded-2xl bg-white/5 dark:bg-white/5 border border-white/10 dark:border-white/10 backdrop-blur-sm overflow-hidden transition-all duration-300 hover:bg-white/10 dark:hover:bg-white/10">
-              <div className="p-6 border-b border-white/10 dark:border-white/10">
+            <div className="group rounded-2xl bg-[var(--color-primary)]/80 border border-[var(--color-border)] backdrop-blur-sm overflow-hidden transition-all duration-300">
+              <div className="p-6 border-b border-[var(--color-border)]">
                 <div className="flex items-center gap-3">
-                  <Palette className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
-                  <h3 className="text-lg font-semibold text-zinc-900 dark:text-white">
-                    Appearance
-                  </h3>
+                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10">
+                    <Palette className="w-5 h-5 text-[var(--color-accent)]" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-[var(--color-text)]">Appearance</h3>
+                    <p className="text-sm text-[var(--color-textSecondary)]">
+                      Customize your Second Brain experience
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -71,14 +76,14 @@ export function SettingsPage() {
                 {/* Theme Options */}
                 <div className="space-y-3">
                   {/* Light Theme */}
-                  <label className="flex items-center justify-between p-4 rounded-xl bg-white/5 dark:bg-white/5 border border-white/10 dark:border-white/10 cursor-pointer transition-all duration-200 hover:bg-white/10 dark:hover:bg-white/10">
+                  <label className="flex items-center justify-between p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] cursor-pointer transition-all duration-200 hover:bg-[var(--color-secondary)]">
                     <div className="flex items-center gap-4">
-                      <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/10">
-                        <Sun className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
+                      <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10">
+                        <Sun className="w-5 h-5 text-[var(--color-accent)]" />
                       </div>
                       <div>
-                        <p className="font-medium text-zinc-900 dark:text-white">Light</p>
-                        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                        <p className="font-medium text-[var(--color-text)]">Light</p>
+                        <p className="text-sm text-[var(--color-textSecondary)]">
                           Clean and bright appearance
                         </p>
                       </div>
@@ -88,19 +93,19 @@ export function SettingsPage() {
                       name="theme"
                       checked={theme === 'light'}
                       onChange={() => handleThemeChange('light')}
-                      className="w-5 h-5 text-emerald-500 bg-white/5 border-white/10 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:ring-2 dark:bg-white/5 dark:border-white/10"
+                      className="w-5 h-5 text-[var(--color-accent)] bg-[rgb(31,41,55)] border-[var(--color-border)] focus:ring-[var(--color-accent)] focus:ring-2 focus:ring-offset-0"
                     />
                   </label>
 
                   {/* Dark Theme */}
-                  <label className="flex items-center justify-between p-4 rounded-xl bg-white/5 dark:bg-white/5 border border-white/10 dark:border-white/10 cursor-pointer transition-all duration-200 hover:bg-white/10 dark:hover:bg-white/10">
+                  <label className="flex items-center justify-between p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] cursor-pointer transition-all duration-200 hover:bg-[var(--color-secondary)]">
                     <div className="flex items-center gap-4">
-                      <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/10">
-                        <Moon className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
+                      <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10">
+                        <Moon className="w-5 h-5 text-[var(--color-accent)]" />
                       </div>
                       <div>
-                        <p className="font-medium text-zinc-900 dark:text-white">Dark</p>
-                        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                        <p className="font-medium text-[var(--color-text)]">Dark</p>
+                        <p className="text-sm text-[var(--color-textSecondary)]">
                           Easy on the eyes
                         </p>
                       </div>
@@ -110,19 +115,19 @@ export function SettingsPage() {
                       name="theme"
                       checked={theme === 'dark'}
                       onChange={() => handleThemeChange('dark')}
-                      className="w-5 h-5 text-emerald-500 bg-white/5 border-white/10 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:ring-2 dark:bg-white/5 dark:border-white/10"
+                      className="w-5 h-5 text-[var(--color-accent)] bg-[var(--color-secondary)] border-[var(--color-border)] focus:ring-[var(--color-accent)] focus:ring-2"
                     />
                   </label>
 
                   {/* Midnight Theme */}
-                  <label className="flex items-center justify-between p-4 rounded-xl bg-white/5 dark:bg-white/5 border border-white/10 dark:border-white/10 cursor-pointer transition-all duration-200 hover:bg-white/10 dark:hover:bg-white/10">
+                  <label className="flex items-center justify-between p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] cursor-pointer transition-all duration-200 hover:bg-[var(--color-secondary)]">
                     <div className="flex items-center gap-4">
-                      <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/10">
-                        <Sparkles className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
+                      <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10">
+                        <Sparkles className="w-5 h-5 text-[var(--color-accent)]" />
                       </div>
                       <div>
-                        <p className="font-medium text-zinc-900 dark:text-white">Midnight</p>
-                        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                        <p className="font-medium text-[var(--color-text)]">Midnight</p>
+                        <p className="text-sm text-[var(--color-textSecondary)]">
                           Deep dark experience
                         </p>
                       </div>
@@ -132,7 +137,7 @@ export function SettingsPage() {
                       name="theme"
                       checked={theme === 'midnight'}
                       onChange={() => handleThemeChange('midnight')}
-                      className="w-5 h-5 text-emerald-500 bg-white/5 border-white/10 focus:ring-emerald-500 dark:focus:ring-emerald-400 focus:ring-2 dark:bg-white/5 dark:border-white/10"
+                      className="w-5 h-5 text-[var(--color-accent)] bg-[var(--color-secondary)] border-[var(--color-border)] focus:ring-[var(--color-accent)] focus:ring-2"
                     />
                   </label>
                 </div>
@@ -140,25 +145,25 @@ export function SettingsPage() {
             </div>
 
             {/* Notifications Section */}
-            <div className="group rounded-2xl bg-white/5 dark:bg-white/5 border border-white/10 dark:border-white/10 backdrop-blur-sm overflow-hidden transition-all duration-300 hover:bg-white/10 dark:hover:bg-white/10">
-              <div className="p-6 border-b border-white/10 dark:border-white/10">
+            <div className="group rounded-2xl bg-[var(--color-primary)]/80 border border-[var(--color-border)] backdrop-blur-sm overflow-hidden transition-all duration-300">
+              <div className="p-6 border-b border-[var(--color-border)]">
                 <div className="flex items-center gap-3">
-                  <Bell className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
-                  <h3 className="text-lg font-semibold text-zinc-900 dark:text-white">
+                  <Bell className="w-5 h-5 text-[var(--color-accent)]" />
+                  <h3 className="text-lg font-semibold text-[var(--color-text)]">
                     Notifications
                   </h3>
                 </div>
               </div>
 
               <div className="p-6">
-                <label className="flex items-center justify-between p-4 rounded-xl bg-white/5 dark:bg-white/5 border border-white/10 dark:border-white/10 cursor-pointer transition-all duration-200 hover:bg-white/10 dark:hover:bg-white/10">
+                <label className="flex items-center justify-between p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] cursor-pointer transition-all duration-200 hover:bg-[var(--color-secondary)]">
                   <div className="flex items-center gap-4">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/10">
-                      <Bell className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
+                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10">
+                      <Bell className="w-5 h-5 text-[var(--color-accent)]" />
                     </div>
                     <div>
-                      <p className="font-medium text-zinc-900 dark:text-white">Push Notifications</p>
-                      <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                      <p className="font-medium text-[var(--color-text)]">Push Notifications</p>
+                      <p className="text-sm text-[var(--color-textSecondary)]">
                         Get notified about updates and reminders
                       </p>
                     </div>
@@ -170,7 +175,7 @@ export function SettingsPage() {
                       onChange={() => setPushNotifications(!pushNotifications)} 
                       className="sr-only peer" 
                     />
-                    <div className="w-14 h-7 bg-white/5 dark:bg-white/5 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-emerald-500"></div>
+                    <div className="w-14 h-7 bg-[rgb(31,41,55)] rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-[var(--color-accent)]"></div>
                   </div>
                 </label>
               </div>
@@ -180,30 +185,30 @@ export function SettingsPage() {
           {/* Right Column */}
           <div className="space-y-8">
             {/* Security Section */}
-            <div className="group rounded-2xl bg-white/5 dark:bg-white/5 border border-white/10 dark:border-white/10 backdrop-blur-sm overflow-hidden transition-all duration-300 hover:bg-white/10 dark:hover:bg-white/10">
-              <div className="p-6 border-b border-white/10 dark:border-white/10">
+            <div className="group rounded-2xl bg-[var(--color-primary)]/80 border border-[var(--color-border)] backdrop-blur-sm overflow-hidden transition-all duration-300">
+              <div className="p-6 border-b border-[var(--color-border)]">
                 <div className="flex items-center gap-3">
-                  <Shield className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
-                  <h3 className="text-lg font-semibold text-zinc-900 dark:text-white">
+                  <Shield className="w-5 h-5 text-[var(--color-accent)]" />
+                  <h3 className="text-lg font-semibold text-[var(--color-text)]">
                     Security
                   </h3>
                 </div>
               </div>
 
               <div className="p-6">
-                <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 dark:bg-white/5 border border-white/10 dark:border-white/10">
+                <div className="flex items-center justify-between p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">
                   <div className="flex items-center gap-4">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/10">
-                      <Shield className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
+                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10">
+                      <Shield className="w-5 h-5 text-[var(--color-accent)]" />
                     </div>
                     <div>
-                      <p className="font-medium text-zinc-900 dark:text-white">Two-Factor Authentication</p>
-                      <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                      <p className="font-medium text-[var(--color-text)]">Two-Factor Authentication</p>
+                      <p className="text-sm text-[var(--color-textSecondary)]">
                         Add an extra layer of security
                       </p>
                     </div>
                   </div>
-                  <button className="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium transition-colors">
+                  <button className="px-4 py-2 rounded-lg bg-[var(--color-accent)] hover:bg-[var(--color-accent)]/90 text-white text-sm font-medium transition-colors">
                     Enable
                   </button>
                 </div>
@@ -211,30 +216,30 @@ export function SettingsPage() {
             </div>
 
             {/* Data Management Section */}
-            <div className="group rounded-2xl bg-white/5 dark:bg-white/5 border border-white/10 dark:border-white/10 backdrop-blur-sm overflow-hidden transition-all duration-300 hover:bg-white/10 dark:hover:bg-white/10">
-              <div className="p-6 border-b border-white/10 dark:border-white/10">
+            <div className="group rounded-2xl bg-[var(--color-primary)]/80 border border-[var(--color-border)] backdrop-blur-sm overflow-hidden transition-all duration-300">
+              <div className="p-6 border-b border-[var(--color-border)]">
                 <div className="flex items-center gap-3">
-                  <Database className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
-                  <h3 className="text-lg font-semibold text-zinc-900 dark:text-white">
+                  <Database className="w-5 h-5 text-[var(--color-accent)]" />
+                  <h3 className="text-lg font-semibold text-[var(--color-text)]">
                     Data Management
                   </h3>
                 </div>
               </div>
 
               <div className="p-6">
-                <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 dark:bg-white/5 border border-white/10 dark:border-white/10">
+                <div className="flex items-center justify-between p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">
                   <div className="flex items-center gap-4">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/10">
-                      <Database className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
+                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10">
+                      <Database className="w-5 h-5 text-[var(--color-accent)]" />
                     </div>
                     <div>
-                      <p className="font-medium text-zinc-900 dark:text-white">Export Data</p>
-                      <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                      <p className="font-medium text-[var(--color-text)]">Export Data</p>
+                      <p className="text-sm text-[var(--color-textSecondary)]">
                         Download all your notes and data
                       </p>
                     </div>
                   </div>
-                  <button className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 dark:bg-white/5 dark:hover:bg-white/10 text-zinc-900 dark:text-white text-sm font-medium transition-colors border border-white/10 dark:border-white/10">
+                  <button className="px-4 py-2 rounded-lg bg-[var(--color-primary)]/50 hover:bg-[var(--color-primary)] text-[var(--color-text)] text-sm font-medium transition-colors border border-[var(--color-border)]">
                     Export
                   </button>
                 </div>
@@ -244,7 +249,7 @@ export function SettingsPage() {
         </div>
 
         {/* AI Settings Section - Full Width */}
-        <div className="group rounded-2xl bg-white/5 dark:bg-white/5 border border-white/10 dark:border-white/10 backdrop-blur-sm overflow-hidden transition-all duration-300 hover:bg-white/10 dark:hover:bg-white/10">
+        <div className="group rounded-2xl bg-[var(--color-primary)]/80 border border-[var(--color-border)] backdrop-blur-sm overflow-hidden transition-all duration-300">
           <AISettingsSection onSave={handleSaveAISettings} />
         </div>
       </div>

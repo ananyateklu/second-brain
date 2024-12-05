@@ -167,114 +167,100 @@ export function LinkedNotesPage() {
   });
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-fixed">
+    <div className="h-[calc(100vh-9rem)] overflow-hidden bg-fixed">
       {/* Background gradient */}
       <div className="fixed inset-0 bg-fixed dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-slate-800 bg-gradient-to-br from-white to-gray-100 -z-10" />
 
-      <div className="space-y-8 relative">
-        {/* Page Header with gradient overlay */}
-        <div className="relative overflow-hidden rounded-xl bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm">
+      {/* Main content container */}
+      <div className="flex flex-col h-full p-0.5">
+        {/* Header - more compact version */}
+        <div className="flex-none relative overflow-hidden rounded-lg bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm mb-2">
           <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-transparent" />
-          <div className="relative p-6">
-            <div className="flex flex-col gap-4">
-              {/* Title and View Toggle */}
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-cyan-100/50 dark:bg-cyan-900/30 rounded-lg">
-                    <Link2 className="w-6 h-6 text-cyan-600 dark:text-cyan-400" />
-                  </div>
-                  <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Linked Notes</h1>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {stats.totalConnections} connections • {stats.connectionDensity}% density
-                    </p>
-                  </div>
+          <div className="relative px-4 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-cyan-100/50 dark:bg-cyan-900/30 rounded-lg">
+                  <Link2 className="w-6 h-6 text-cyan-600 dark:text-cyan-400" />
                 </div>
-
-                {/* View Toggle Buttons */}
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setViewMode('graph')}
-                    className={`p-2 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${
-                      viewMode === 'graph'
-                        ? 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-400'
-                        : 'bg-white/20 dark:bg-gray-800/20 text-gray-600 dark:text-gray-400 hover:bg-white/30 dark:hover:bg-gray-800/30'
-                    }`}
-                    title="Graph View"
-                  >
-                    <Network className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode('list')}
-                    className={`p-2 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${
-                      viewMode === 'list'
-                        ? 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-400'
-                        : 'bg-white/20 dark:bg-gray-800/20 text-gray-600 dark:text-gray-400 hover:bg-white/30 dark:hover:bg-gray-800/30'
-                    }`}
-                    title="List View"
-                  >
-                    <List className="w-5 h-5" />
-                  </button>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Linked Notes</h1>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {stats.totalConnections} connections • {stats.connectionDensity}% density
+                  </p>
                 </div>
               </div>
 
-              {/* Stats Row */}
-              <div className="grid grid-cols-6 gap-3">
-                <div className="flex items-center gap-2">
-                  <Type className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                  <div className="text-sm">
-                    <span className="font-medium text-cyan-600 dark:text-cyan-400">{stats.notes}</span>
-                    <span className="text-gray-600 dark:text-gray-400"> Notes</span>
-                  </div>
-                </div>
+              {/* View Toggle Buttons */}
+              <div className="flex gap-0.5">
+                <button
+                  onClick={() => setViewMode('graph')}
+                  className={`p-1.5 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${
+                    viewMode === 'graph'
+                      ? 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-400'
+                      : 'bg-white/20 dark:bg-gray-800/20 text-gray-600 dark:text-gray-400 hover:bg-white/30 dark:hover:bg-gray-800/30'
+                  }`}
+                  title="Graph View"
+                >
+                  <Network className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-1.5 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${
+                    viewMode === 'list'
+                      ? 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-400'
+                      : 'bg-white/20 dark:bg-gray-800/20 text-gray-600 dark:text-gray-400 hover:bg-white/30 dark:hover:bg-gray-800/30'
+                  }`}
+                  title="List View"
+                >
+                  <List className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
 
-                <div className="flex items-center gap-2">
-                  <Lightbulb className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
-                  <div className="text-sm">
-                    <span className="font-medium text-yellow-600 dark:text-yellow-400">{stats.ideas}</span>
-                    <span className="text-gray-600 dark:text-gray-400"> Ideas</span>
-                  </div>
-                </div>
+            {/* Stats Row - more compact */}
+            <div className="flex gap-3 text-sm mt-3">
+              <div className="flex items-center gap-1">
+                <Type className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                <span className="font-medium text-cyan-600 dark:text-cyan-400">{stats.notes}</span>
+                <span className="text-gray-600 dark:text-gray-400">Notes</span>
+              </div>
 
-                <div className="flex items-center gap-2">
-                  <Network className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                  <div className="text-sm">
-                    <span className="font-medium text-cyan-600 dark:text-cyan-400">{stats.connectionDensity}%</span>
-                    <span className="text-gray-600 dark:text-gray-400"> Density</span>
-                  </div>
-                </div>
+              <div className="flex items-center gap-1">
+                <Lightbulb className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-400" />
+                <span className="font-medium text-yellow-600 dark:text-yellow-400">{stats.ideas}</span>
+                <span className="text-gray-600 dark:text-gray-400">Ideas</span>
+              </div>
 
-                <div className="flex items-center gap-2">
-                  <GitBranch className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                  <div className="text-sm">
-                    <span className="font-medium text-cyan-600 dark:text-cyan-400">{stats.clusterCount}</span>
-                    <span className="text-gray-600 dark:text-gray-400"> Topics</span>
-                  </div>
-                </div>
+              <div className="flex items-center gap-1">
+                <Network className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                <span className="font-medium text-cyan-600 dark:text-cyan-400">{stats.connectionDensity}%</span>
+                <span className="text-gray-600 dark:text-gray-400">Density</span>
+              </div>
 
-                <div className="flex items-center gap-2">
-                  <Type className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                  <div className="text-sm">
-                    <span className="font-medium text-gray-600 dark:text-gray-400">{stats.isolatedNotes}</span>
-                    <span className="text-gray-600 dark:text-gray-400"> Unlinked</span>
-                  </div>
-                </div>
+              <div className="flex items-center gap-1">
+                <GitBranch className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                <span className="font-medium text-cyan-600 dark:text-cyan-400">{stats.clusterCount}</span>
+                <span className="text-gray-600 dark:text-gray-400">Topics</span>
+              </div>
 
-                <div className="flex items-center gap-2">
-                  <Lightbulb className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                  <div className="text-sm">
-                    <span className="font-medium text-gray-600 dark:text-gray-400">{stats.isolatedIdeas}</span>
-                    <span className="text-gray-600 dark:text-gray-400"> Unlinked</span>
-                  </div>
-                </div>
+              <div className="flex items-center gap-1">
+                <Type className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
+                <span className="font-medium text-gray-600 dark:text-gray-400">{stats.isolatedNotes}</span>
+                <span className="text-gray-600 dark:text-gray-400">Unlinked</span>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <Lightbulb className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
+                <span className="font-medium text-gray-600 dark:text-gray-400">{stats.isolatedIdeas}</span>
+                <span className="text-gray-600 dark:text-gray-400">Unlinked</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Main Content Area */}
-        <div className="bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm rounded-xl">
-          <div className="h-[calc(100vh-240px)] flex relative">
+        <div className="flex-1 bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm rounded-xl overflow-hidden">
+          <div className="h-full flex relative">
             {/* Graph/List Container */}
             <div className={`${selectedNoteId ? 'w-[70%]' : 'w-full'} transition-all duration-300`}>
               {viewMode === 'graph' ? (

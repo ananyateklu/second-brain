@@ -70,7 +70,7 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
   const getHoverClass = () => {
     switch (theme) {
       case 'midnight':
-        return 'hover:bg-[var(--color-secondary)]/30';
+        return 'hover:bg-[var(--color-secondary)]/50';
       case 'dark':
         return 'hover:bg-[var(--color-secondary)]/30';
       default:
@@ -165,10 +165,10 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
             </button>
 
             {showProfileMenu && (
-              <div className={`absolute right-0 mt-2 w-64 glass-morphism rounded-lg shadow-lg border border-[var(--color-border)]/20 py-1 bg-[var(--color-primary)]/95 backdrop-blur-md transition-colors duration-200`}>
-                <div className="px-4 py-3 border-b border-[var(--color-border)]/30 transition-colors duration-200">
+              <div className="absolute right-0 mt-2 w-64 rounded-lg shadow-lg border border-[var(--color-border)] bg-[var(--color-background)] transition-colors duration-200">
+                <div className="px-4 py-3 border-b border-[var(--color-border)] transition-colors duration-200">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[var(--color-secondary)]/30 flex items-center justify-center overflow-hidden transition-colors duration-200">
+                    <div className="w-10 h-10 rounded-full bg-[var(--color-secondary)]/50 flex items-center justify-center overflow-hidden transition-colors duration-200">
                       {user?.avatar ? (
                         <img
                           src={user.avatar}
@@ -197,7 +197,7 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
                         {xpProgress.currentLevelXP.toLocaleString()} / {xpProgress.nextLevelXP.toLocaleString()} XP
                       </span>
                     </div>
-                    <div className="h-1.5 bg-[var(--color-secondary)] rounded-full overflow-hidden transition-colors duration-200">
+                    <div className="h-1.5 bg-[var(--color-secondary)]/50 rounded-full overflow-hidden transition-colors duration-200">
                       <motion.div
                         className="h-full bg-[var(--color-accent)] rounded-full transition-all duration-300"
                         initial={{ width: 0 }}

@@ -113,162 +113,122 @@ export function TagsPage() {
   }, [selectedTag, allItems, filters.types]);
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-fixed">
+    <div className="h-[calc(100vh-9rem)] overflow-hidden bg-fixed">
       {/* Background gradient */}
       <div className="fixed inset-0 bg-fixed dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-slate-800 bg-gradient-to-br from-white to-gray-100 -z-10" />
 
-      <div className="space-y-8 relative">
-        {/* Page Header with gradient overlay */}
-        <div className="relative overflow-hidden rounded-xl bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm">
+      {/* Main content container */}
+      <div className="flex flex-col h-full p-0.5">
+        {/* Header - make more compact */}
+        <div className="flex-none relative overflow-hidden rounded-lg bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm mb-2">
           <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-transparent" />
-          <div className="relative p-6">
-            <div className="flex flex-col gap-4">
-              {/* Title and View Toggle */}
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-cyan-100/50 dark:bg-cyan-900/30 rounded-lg">
-                    <Hash className="w-6 h-6 text-cyan-600 dark:text-cyan-400" />
-                  </div>
-                  <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Tags</h1>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {tagStats.length} tags • {allItems.flatMap(item => item.tags).length} total uses
-                    </p>
-                  </div>
+          <div className="relative px-4 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-cyan-100/50 dark:bg-cyan-900/30 rounded-lg">
+                  <Hash className="w-6 h-6 text-cyan-600 dark:text-cyan-400" />
                 </div>
-
-                {/* View Toggle Buttons */}
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setViewMode('grid')}
-                    className={`p-2 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${
-                      viewMode === 'grid'
-                        ? 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-400'
-                        : 'bg-white/20 dark:bg-gray-800/20 text-gray-600 dark:text-gray-400 hover:bg-white/30 dark:hover:bg-gray-800/30'
-                    }`}
-                    title="Grid View"
-                  >
-                    <Grid className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode('list')}
-                    className={`p-2 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${
-                      viewMode === 'list'
-                        ? 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-400'
-                        : 'bg-white/20 dark:bg-gray-800/20 text-gray-600 dark:text-gray-400 hover:bg-white/30 dark:hover:bg-gray-800/30'
-                    }`}
-                    title="List View"
-                  >
-                    <List className="w-5 h-5" />
-                  </button>
-                </div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Tags</h1>
               </div>
 
-              {/* Stats Row */}
-              <div className="grid grid-cols-4 gap-3">
-                <div className="flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                  <div className="text-sm">
-                    <span className="font-medium text-cyan-600 dark:text-cyan-400">
-                      {tagStats.reduce((sum, tag) => sum + tag.byType.note, 0)}
-                    </span>
-                    <span className="text-gray-600 dark:text-gray-400"> Notes</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Lightbulb className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
-                  <div className="text-sm">
-                    <span className="font-medium text-yellow-600 dark:text-yellow-400">
-                      {tagStats.reduce((sum, tag) => sum + tag.byType.idea, 0)}
-                    </span>
-                    <span className="text-gray-600 dark:text-gray-400"> Ideas</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <CheckSquare className="w-4 h-4 text-green-600 dark:text-green-400" />
-                  <div className="text-sm">
-                    <span className="font-medium text-green-600 dark:text-green-400">
-                      {tagStats.reduce((sum, tag) => sum + tag.byType.task, 0)}
-                    </span>
-                    <span className="text-gray-600 dark:text-gray-400"> Tasks</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Bell className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                  <div className="text-sm">
-                    <span className="font-medium text-purple-600 dark:text-purple-400">
-                      {tagStats.reduce((sum, tag) => sum + tag.byType.reminder, 0)}
-                    </span>
-                    <span className="text-gray-600 dark:text-gray-400"> Reminders</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Search and Filters */}
-              <div className="flex gap-3">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search tags..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
-                  />
-                </div>
+              {/* View Toggle Buttons - make more compact */}
+              <div className="flex gap-0.5">
                 <button
-                  onClick={() => setShowFilters(!showFilters)}
-                  className={`p-2 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${
-                    showFilters
+                  onClick={() => setViewMode('grid')}
+                  className={`p-1 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${
+                    viewMode === 'grid'
                       ? 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-400'
                       : 'bg-white/20 dark:bg-gray-800/20 text-gray-600 dark:text-gray-400 hover:bg-white/30 dark:hover:bg-gray-800/30'
                   }`}
+                  title="Grid View"
                 >
-                  <SlidersHorizontal className="w-5 h-5" />
+                  <Grid className="w-3.5 h-3.5" />
                 </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-1.5 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${
+                    viewMode === 'list'
+                      ? 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-400'
+                      : 'bg-white/20 dark:bg-gray-800/20 text-gray-600 dark:text-gray-400 hover:bg-white/30 dark:hover:bg-gray-800/30'
+                  }`}
+                  title="List View"
+                >
+                  <List className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Stats Row - even more compact */}
+            <div className="flex gap-3 text-sm mt-3">
+              <div className="flex items-center gap-1">
+                <Tag className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                <span className="font-medium text-indigo-600 dark:text-indigo-400">{tagStats.length}</span>
+                <span className="text-gray-600 dark:text-gray-400">Tags</span>
+                <span className="text-gray-400 dark:text-gray-500 mx-0.5">•</span>
+                <span className="font-medium text-indigo-600 dark:text-indigo-400">{allItems.flatMap(item => item.tags).length}</span>
+                <span className="text-gray-600 dark:text-gray-400">Total Uses</span>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <FileText className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                <span className="font-medium text-cyan-600 dark:text-cyan-400">{tagStats.reduce((sum, tag) => sum + tag.byType.note, 0)}</span>
+                <span className="text-gray-600 dark:text-gray-400">Notes</span>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <Lightbulb className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-400" />
+                <span className="font-medium text-yellow-600 dark:text-yellow-400">{tagStats.reduce((sum, tag) => sum + tag.byType.idea, 0)}</span>
+                <span className="text-gray-600 dark:text-gray-400">Ideas</span>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <CheckSquare className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
+                <span className="font-medium text-green-600 dark:text-green-400">{tagStats.reduce((sum, tag) => sum + tag.byType.task, 0)}</span>
+                <span className="text-gray-600 dark:text-gray-400">Tasks</span>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <Bell className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                <span className="font-medium text-purple-600 dark:text-purple-400">{tagStats.reduce((sum, tag) => sum + tag.byType.reminder, 0)}</span>
+                <span className="text-gray-600 dark:text-gray-400">Reminders</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Main Content Area */}
-        <div className="flex-1 bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm rounded-xl min-h-0">
+        {/* Main content area */}
+        <div className="flex-1 bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm rounded-xl overflow-hidden">
           <div className="h-full flex">
-            {/* Tags List Column */}
-            <div className="w-[320px] border-r border-gray-200/30 dark:border-gray-700/30 flex flex-col overflow-hidden bg-white/10 dark:bg-gray-800/10 rounded-l-xl">
-              {/* Sticky Search and Filters */}
-              <div className="sticky top-0 z-10 bg-white/20 dark:bg-gray-800/20 p-3 border-b border-gray-200/30 dark:border-gray-700/30 rounded-tl-xl">
-                <div className="flex items-center gap-2">
+            {/* Tags List Column - adjust width and padding */}
+            <div className="w-[320px] border-r border-gray-200/30 dark:border-gray-700/30 flex flex-col bg-white/10 dark:bg-gray-800/10 rounded-l-xl">
+              {/* Search and filters - add more padding */}
+              <div className="flex-none sticky top-0 z-10 bg-white/20 dark:bg-gray-800/20 p-2 border-b border-gray-200/30 dark:border-gray-700/30">
+                <div className="flex items-center gap-0.5">
                   <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-gray-400" />
+                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
                     <input
                       type="text"
                       placeholder="Search tags..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-9 pr-4 py-2 bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                      className="w-full pl-7 pr-2 py-1.5 bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 rounded-lg text-sm"
                     />
                   </div>
                   <button
                     onClick={() => setShowFilters(!showFilters)}
-                    className={`p-2 rounded-lg transition-colors ${
-                      showFilters
+                    className={`p-2 rounded-lg transition-colors ${showFilters
                         ? 'bg-indigo-500/20 text-indigo-600 dark:text-indigo-400'
                         : 'bg-white/20 dark:bg-gray-800/20 text-gray-600 dark:text-gray-400 hover:bg-white/30 dark:hover:bg-gray-800/30'
-                    }`}
+                      }`}
                   >
                     <SlidersHorizontal className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-                    className={`p-2 rounded-lg transition-colors ${
-                      viewMode === 'list'
+                    className={`p-2 rounded-lg transition-colors ${viewMode === 'list'
                         ? 'bg-indigo-500/20 text-indigo-600 dark:text-indigo-400'
                         : 'bg-white/20 dark:bg-gray-800/20 text-gray-600 dark:text-gray-400 hover:bg-white/30 dark:hover:bg-gray-800/30'
-                    }`}
+                      }`}
                   >
                     {viewMode === 'grid' ? (
                       <List className="w-4 h-4" />
@@ -284,25 +244,24 @@ export function TagsPage() {
                 )}
               </div>
 
-              {/* Scrollable Tags List */}
-              <div className="flex-1 overflow-y-auto rounded-bl-xl">
-                <div className="space-y-0.5 p-2">
+              {/* Tags list - add more padding */}
+              <div className="flex-1 overflow-y-auto">
+                <div className="space-y-1 p-2">
                   {tagStats.map(({ tag, byType }) => (
                     <div
                       key={tag}
                       onClick={() => setSelectedTag(tag)}
-                      className={`group flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors ${
+                      className={`group flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition-colors ${
                         selectedTag === tag
                           ? 'bg-indigo-500/20 text-indigo-600 dark:text-indigo-400'
                           : 'text-gray-900 dark:text-white hover:bg-white/20 dark:hover:bg-gray-800/20'
                       }`}
                     >
                       <div className="flex items-center gap-2">
-                        <Hash className={`w-4 h-4 ${
-                          selectedTag === tag
+                        <Hash className={`w-4 h-4 ${selectedTag === tag
                             ? 'text-indigo-600 dark:text-indigo-400'
                             : 'text-gray-400 dark:text-gray-500'
-                        }`} />
+                          }`} />
                         <span className="text-sm font-medium">{tag}</span>
                       </div>
 
@@ -335,11 +294,10 @@ export function TagsPage() {
                           )}
                         </div>
 
-                        <ChevronRight className={`w-4 h-4 transition-colors ${
-                          selectedTag === tag
+                        <ChevronRight className={`w-4 h-4 transition-colors ${selectedTag === tag
                             ? 'text-indigo-600 dark:text-indigo-400'
                             : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-500 dark:group-hover:text-gray-400'
-                        }`} />
+                          }`} />
                       </div>
                     </div>
                   ))}
@@ -347,12 +305,12 @@ export function TagsPage() {
               </div>
             </div>
 
-            {/* Tagged Items View */}
-            <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Tagged Items View - add padding */}
+            <div className="flex-1 overflow-y-auto p-2">
               {selectedTag ? (
-                <div className="flex-1 overflow-y-auto p-4">
+                <div className="p-0.5">
                   {viewMode === 'grid' ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-0.5">
                       {filteredItems.map(item => {
                         switch (item.type) {
                           case 'task':
@@ -446,103 +404,14 @@ export function TagsPage() {
                       })}
                     </div>
                   ) : (
-                    <div className="space-y-2">
-                      {filteredItems.map(item => {
-                        switch (item.type) {
-                          case 'task':
-                            return (
-                              <div onClick={() => handleEditNote(item)}>
-                                <TaskCard
-                                  key={item.id}
-                                  task={{
-                                    id: item.id,
-                                    title: item.title,
-                                    description: item.content,
-                                    tags: item.tags,
-                                    status: 'Incomplete',
-                                    priority: 'medium',
-                                    dueDate: null,
-                                    updatedAt: item.updatedAt,
-                                    createdAt: item.createdAt,
-                                    isDeleted: false,
-                                    linkedItems: []
-                                  }}
-                                />
-                              </div>
-                            );
-                          case 'reminder':
-                            return (
-                              <ReminderCard
-                                key={item.id}
-                                reminder={{
-                                  id: item.id,
-                                  title: item.title,
-                                  description: item.content,
-                                  tags: item.tags,
-                                  dueDateTime: item.updatedAt,
-                                  isCompleted: false,
-                                  isSnoozed: false,
-                                  isDeleted: false,
-                                  userId: '',
-                                  updatedAt: item.updatedAt,
-                                  createdAt: item.createdAt
-                                }}
-                              />
-                            );
-                          case 'idea':
-                            return (
-                              <div onClick={() => handleEditNote(item)}>
-                                <IdeaCard
-                                  key={item.id}
-                                  idea={{
-                                    id: item.id,
-                                    title: item.title,
-                                    content: item.content,
-                                    tags: item.tags,
-                                    updatedAt: item.updatedAt,
-                                    createdAt: item.createdAt,
-                                    isIdea: true,
-                                    isFavorite: false,
-                                    isPinned: false,
-                                    isArchived: false,
-                                    isDeleted: false,
-                                    linkedNoteIds: [],
-                                    linkedTasks: []
-                                  }}
-                                />
-                              </div>
-                            );
-                          case 'note':
-                            return (
-                              <div onClick={() => handleEditNote(item)}>
-                                <NoteCard
-                                  key={item.id}
-                                  note={{
-                                    id: item.id,
-                                    title: item.title,
-                                    content: item.content,
-                                    tags: item.tags,
-                                    updatedAt: item.updatedAt,
-                                    createdAt: item.createdAt,
-                                    isIdea: false,
-                                    isFavorite: false,
-                                    isPinned: false,
-                                    isArchived: false,
-                                    isDeleted: false,
-                                    linkedNoteIds: [],
-                                    linkedTasks: []
-                                  }}
-                                  viewMode={viewMode}
-                                />
-                              </div>
-                            );
-                        }
-                      })}
+                    <div className="h-full flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
+                      <Tag className="w-8 h-8 mb-2" />
+                      <p>Select a tag to view items</p>
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
+                <div className="h-full flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
                   <Tag className="w-8 h-8 mb-2" />
                   <p>Select a tag to view items</p>
                 </div>
@@ -554,31 +423,31 @@ export function TagsPage() {
 
       {/* Modals */}
       {selectedNote && (
-        <EditNoteModal 
-          note={selectedNote} 
-          onClose={() => setSelectedNote(null)} 
-          isOpen={!!selectedNote} 
+        <EditNoteModal
+          note={selectedNote}
+          onClose={() => setSelectedNote(null)}
+          isOpen={!!selectedNote}
         />
       )}
       {selectedIdea && (
-        <EditIdeaModal 
-          idea={selectedIdea} 
-          onClose={() => setSelectedIdea(null)} 
-          isOpen={!!selectedIdea} 
+        <EditIdeaModal
+          idea={selectedIdea}
+          onClose={() => setSelectedIdea(null)}
+          isOpen={!!selectedIdea}
         />
       )}
       {selectedTask && (
-        <EditTaskModal 
-          task={selectedTask} 
-          onClose={() => setSelectedTask(null)} 
-          isOpen={!!selectedTask} 
+        <EditTaskModal
+          task={selectedTask}
+          onClose={() => setSelectedTask(null)}
+          isOpen={!!selectedTask}
         />
       )}
       {selectedReminder && (
-        <EditReminderModal 
-          reminder={selectedReminder} 
-          onClose={() => setSelectedReminder(null)} 
-          isOpen={!!selectedReminder} 
+        <EditReminderModal
+          reminder={selectedReminder}
+          onClose={() => setSelectedReminder(null)}
+          isOpen={!!selectedReminder}
         />
       )}
     </div>
