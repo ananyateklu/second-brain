@@ -7,6 +7,7 @@ import { Input } from '../../shared/Input';
 import { TaskCard } from './TaskCard';
 import { EditTaskModal } from './EditTaskModal';
 import { Task } from '../../../api/types/task';
+import { cardGridStyles } from '../shared/cardStyles';
 
 export function TasksPage() {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -135,19 +136,31 @@ export function TasksPage() {
         )}
 
         {/* Tasks Grid/List */}
-        <div className={viewMode === 'grid'
-          ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'
-          : 'space-y-2'
-        }>
-          {tasks.map((task: Task) => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              viewMode={viewMode}
-              onEdit={() => setSelectedTaskId(task.id)}
-            />
-          ))}
-        </div>
+        {viewMode === 'grid' ? (
+          <div className={cardGridStyles}>
+            {tasks.map((task: Task) => (
+              <div
+                key={task.id}
+                onClick={() => setSelectedTaskId(task.id)}
+                className="cursor-pointer w-full"
+              >
+                <TaskCard task={task} viewMode="grid" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-4 px-0.5">
+            {tasks.map((task: Task) => (
+              <div
+                key={task.id}
+                onClick={() => setSelectedTaskId(task.id)}
+                className="cursor-pointer w-full"
+              >
+                <TaskCard task={task} viewMode="list" />
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Modals */}
         {selectedTask && (

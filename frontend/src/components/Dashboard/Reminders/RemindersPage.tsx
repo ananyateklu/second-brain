@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Bell, Plus, Search, SlidersHorizontal, LayoutGrid, List } from 'lucide-react';
 import { useReminders } from '../../../contexts/remindersContextUtils';
-import { ReminderList } from './ReminderList';
 import { NewReminderModal } from './NewReminderModal';
 import { ReminderFilters } from './ReminderFilters';
 import { Input } from '../../shared/Input';
+import { cardGridStyles } from '../shared/cardStyles';
+import { ReminderCard } from './ReminderCard';
+import { Reminder } from '../../../contexts/remindersContextUtils';
 
 export function RemindersPage() {
   const { reminders, getDueReminders, getUpcomingReminders } = useReminders();
@@ -36,6 +38,10 @@ export function RemindersPage() {
 
   const dueCount = getDueReminders().length;
   const upcomingCount = getUpcomingReminders().length;
+
+  const handleEditReminder = (reminder: Reminder) => {
+    console.log('Edit reminder:', reminder);
+  };
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-fixed">
@@ -141,10 +147,31 @@ export function RemindersPage() {
         )}
 
         <div className="w-full">
-          <ReminderList 
-            reminders={filteredReminders} 
-            viewMode={viewMode}
-          />
+          {viewMode === 'grid' ? (
+            <div className={cardGridStyles}>
+              {filteredReminders.map(reminder => (
+                <div
+                  key={reminder.id}
+                  onClick={() => handleEditReminder(reminder)}
+                  className="cursor-pointer w-full"
+                >
+                  <ReminderCard reminder={reminder} viewMode="grid" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-4 px-0.5">
+              {filteredReminders.map(reminder => (
+                <div
+                  key={reminder.id}
+                  onClick={() => handleEditReminder(reminder)}
+                  className="cursor-pointer w-full"
+                >
+                  <ReminderCard reminder={reminder} viewMode="list" />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <NewReminderModal

@@ -11,6 +11,7 @@ import { Input } from '../../shared/Input';
 import { useModal } from '../../../contexts/modalContextUtils';
 import { sortNotes } from '../../../utils/noteUtils';
 import { Filters } from '../../../types/filters';
+import { cardGridStyles } from '../shared/cardStyles';
 
 const defaultFilters: Filters = {
   search: '',
@@ -214,7 +215,7 @@ export function NotesPage() {
         )}
 
         {viewMode === 'grid' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-0.5">
+          <div className={cardGridStyles}>
             {filteredNotes.map(note => (
               <div
                 key={note.id}

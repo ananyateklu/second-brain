@@ -8,6 +8,7 @@ import { NewIdeaModal } from './NewIdeaModal';
 import { FilterDropdown } from '../Notes/FilterDropdown';
 import { Input } from '../../shared/Input';
 import { useModal } from '../../../contexts/modalContextUtils';
+import { cardGridStyles } from '../shared/cardStyles';
 
 type ViewMode = 'list' | 'grid' | 'mindmap';
 
@@ -206,7 +207,17 @@ export function IdeasPage() {
             <IdeasList ideas={filteredIdeas} onIdeaClick={handleIdeaClick} />
           )}
           {viewMode === 'grid' && (
-            <IdeasGrid ideas={filteredIdeas} onIdeaClick={handleIdeaClick} />
+            <div className={cardGridStyles}>
+              {filteredIdeas.map(idea => (
+                <div
+                  key={idea.id}
+                  onClick={() => handleIdeaClick(idea.id)}
+                  className="cursor-pointer w-full"
+                >
+                  <IdeaCard idea={idea} viewMode="grid" />
+                </div>
+              ))}
+            </div>
           )}
           {viewMode === 'mindmap' && (
             <IdeasMindMap ideas={filteredIdeas} onIdeaClick={handleIdeaClick} />
