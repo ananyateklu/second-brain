@@ -85,9 +85,6 @@ export function NewNoteModal({ isOpen, onClose }: NewNoteModalProps) {
           <div className="space-y-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label htmlFor="note-title" className="block text-sm font-medium text-[var(--color-text)]">
-                  Title
-                </label>
                 <SuggestionButton
                   type="title"
                   itemType="note"

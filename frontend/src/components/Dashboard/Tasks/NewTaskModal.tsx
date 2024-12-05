@@ -84,9 +84,6 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
           <div className="space-y-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label htmlFor="task-title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Title
-                </label>
                 <SuggestionButton
                   type="title"
                   itemType="task"
