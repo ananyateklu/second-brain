@@ -9,80 +9,49 @@
 
 # AI-Powered Personal Knowledge Management System
 
-Second Brain is a modern note-taking and knowledge management system that combines traditional note-taking with AI assistance to help you organize and connect your ideas. It's designed for:
-
-- **Smart Note Organization**
-  - Write and organize notes with AI-powered suggestions
-  - Auto-generate tags and categories
-  - Find connections between related notes
-  - Keep your knowledge base structured
-
-- **Code and Technical Notes**
-  - Save code snippets with syntax highlighting
-  - Get AI explanations for complex code
-  - Link documentation to code
-  - Search across your technical notes
-
-- **Task Management**
-  - Create and track tasks
-  - Set reminders with smart scheduling
-  - Connect tasks to relevant notes
-  - Monitor project progress
-
-- **Knowledge Discovery**
-  - Visualize connections between notes
-  - Get AI-suggested related content
-  - Build a personal wiki
-  - Track learning progress
-
-- **Focus on Privacy**
-  - Keep your data secure
-  - Use local AI models
-  - Control your data sharing
-  - Regular backups
+Second Brain is a modern note-taking and knowledge management system that combines traditional note-taking with AI assistance to help you organize and connect your ideas. It features:
 
 ## Core Features
 
 - **Knowledge Management**
   - Rich text editing with Markdown support
-  - Interactive mind mapping and visual relationship graphs
-  - Code block support with syntax highlighting for 15+ languages
-  - Automated content organization with AI suggestions
-  - Bi-directional linking between notes, tasks, and ideas
-  - Version history and comprehensive archiving
+  - Interactive mind mapping and relationship graphs
+  - AI-powered organization and tagging
+  - Bi-directional linking between notes
+  - Version history and archiving
+  - Visual knowledge graphs
 
 - **Code & Documentation**
-  - Syntax highlighting for multiple programming languages
-  - Code snippet organization and tagging
-  - AI-powered code explanations and suggestions
-  - Markdown support for technical documentation
-  - Easy code sharing and export
-
-- **AI Integration**
-  - Multiple AI model support (OpenAI, Claude, Gemini, Grok, local models)
-  - Natural language queries and content enhancement
-  - Voice transcription and text-to-speech
-  - Image generation and editing
-  - Context-aware responses using RAG technology
+  - Syntax highlighting for 15+ languages
+  - Code snippet organization
+  - AI-powered code explanations
+  - Technical documentation support
+  - Easy sharing and export
 
 - **Task & Reminder System**
   - Priority-based organization
-  - Smart scheduling with AI suggestions
+  - Smart scheduling with AI
   - Task linking and dependencies
   - Progress tracking
   - Context-aware notifications
 
-- **Productivity & Growth**
-  - Focus Mode for distraction-free work
-  - Achievement system with XP and levels
-  - Progress tracking and analytics
-  - Customizable themes and avatars
-  - Activity monitoring
+- **AI Integration**
+  - Multiple AI model support:
+    - OpenAI (GPT-4, DALL-E 3)
+    - Anthropic Claude
+    - Google Gemini
+    - Grok API
+    - Local models via Ollama
+  - Natural language queries
+  - Voice transcription and text-to-speech
+  - Image generation
+  - Context-aware responses using RAG
 
 - **Privacy & Security**
-  - Optional local AI model support via Ollama
-  - Secure authentication and data encryption
-  - Regular backup options
+  - Local AI model support
+  - Secure authentication
+  - Data encryption
+  - Regular backups
   - Granular privacy controls
 
 ## Technical Stack
