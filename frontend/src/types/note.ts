@@ -15,7 +15,16 @@ export interface Note {
   linkedNotes?: Note[];
   archivedAt?: string;
   linkedTasks?: LinkedTask[];
-  linkedReminders?: LinkedReminder[];
+  linkedReminders: Array<{
+    id: string;
+    title: string;
+    description: string;
+    dueDateTime: string;
+    isCompleted: boolean;
+    isSnoozed: boolean;
+    createdAt: string;
+    updatedAt: string;
+  }>;
 }
 
 export interface NoteLink {

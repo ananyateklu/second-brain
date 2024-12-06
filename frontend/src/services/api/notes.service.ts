@@ -28,6 +28,16 @@ interface NoteResponse {
     createdAt: string;
     updatedAt: string;
   }>;
+  linkedReminders?: Array<{
+    id: string;
+    title: string;
+    description: string;
+    dueDateTime: string;
+    isCompleted: boolean;
+    isSnoozed: boolean;
+    createdAt: string;
+    updatedAt: string;
+  }>;
 }
 
 export interface CreateNoteData {
@@ -87,6 +97,12 @@ const processNoteResponse = (note: NoteResponse): Note => ({
       status: processTaskStatus(task.status),
       priority: processTaskPriority(task.priority)
     }))
+    : [],
+  linkedReminders: Array.isArray(note.linkedReminders) 
+    ? note.linkedReminders.map(reminder => ({
+      ...reminder,
+      description: reminder.description || ''
+    }))
     : []
 });
 
@@ -142,12 +158,25 @@ export const notesService = {
   },
 
   async linkReminder(noteId: string, reminderId: string): Promise<Note> {
-    const response = await api.post<NoteResponse>(`/api/Notes/${noteId}/reminders/${reminderId}`);
-    return processNoteResponse(response.data);
+    try {
+      console.log('Making API call to link reminder:', { noteId, reminderId }); // Add debug logging
+      const response = await api.post<NoteResponse>(`/api/Notes/${noteId}/reminders`, { 
+        reminderId: reminderId 
+      });
+      
+      if (!response.data) {
+        throw new Error('No data received from server');
+      }
+      
+      return processNoteResponse(response.data);
+    } catch (error) {
+      console.error('API error in linkReminder:', error);
+      throw error;
+    }
   },
 
   async unlinkReminder(noteId: string, reminderId: string): Promise<Note> {
-    const response = await api.delete<NoteResponse>(`/api/Notes/${noteId}/reminders/${reminderId}`);
+    const response = await api.delete<Note>(`/api/Notes/${noteId}/reminders/${reminderId}`);
     return processNoteResponse(response.data);
   },
 
@@ -183,5 +212,15 @@ export const notesService = {
       console.error('Error unarchiving note:', error);
       throw error;
     }
+  },
+
+  async addReminderToNote(noteId: string, reminderId: string): Promise<Note> {
+    const response = await api.post<Note>(`/api/Notes/${noteId}/reminders`, { reminderId });
+    return response.data;
+  },
+
+  async removeReminderFromNote(noteId: string, reminderId: string): Promise<Note> {
+    const response = await api.delete<Note>(`/api/Notes/${noteId}/reminders/${reminderId}`);
+    return response.data;
   }
 };

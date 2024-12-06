@@ -50,10 +50,36 @@ namespace SecondBrain.Api.Controllers
                     .ThenInclude(nl => nl.LinkedNote)
                 .Include(n => n.TaskLinks.Where(tl => !tl.IsDeleted))
                     .ThenInclude(tl => tl.Task)
+                .Include(n => n.ReminderLinks.Where(rl => !rl.IsDeleted))
+                    .ThenInclude(rl => rl.Reminder)
                 .Where(n => n.UserId == userId && !n.IsDeleted)
                 .ToListAsync();
 
-            var responses = notes.Select(note => NoteResponse.FromEntity(note));
+            var reminderLinks = await _context.ReminderLinks
+                .Where(rl => !rl.IsDeleted && notes.Select(n => n.Id).Contains(rl.LinkedItemId))
+                .Include(rl => rl.Reminder)
+                .ToListAsync();
+
+            var responses = notes.Select(note =>
+            {
+                var response = NoteResponse.FromEntity(note);
+                response.LinkedReminders = reminderLinks
+                    .Where(rl => rl.LinkedItemId == note.Id && !rl.IsDeleted)
+                    .Select(rl => new LinkedReminderDto
+                    {
+                        Id = rl.ReminderId,
+                        Title = rl.Reminder.Title,
+                        Description = rl.Reminder.Description ?? string.Empty,
+                        DueDateTime = rl.Reminder.DueDateTime,
+                        IsCompleted = rl.Reminder.IsCompleted,
+                        IsSnoozed = rl.Reminder.IsSnoozed,
+                        CreatedAt = rl.Reminder.CreatedAt,
+                        UpdatedAt = rl.Reminder.UpdatedAt
+                    })
+                    .ToList();
+                return response;
+            });
+
             return Ok(responses);
         }
 
@@ -139,6 +165,8 @@ namespace SecondBrain.Api.Controllers
                     .ThenInclude(nl => nl.LinkedNote)
                 .Include(n => n.TaskLinks.Where(tl => !tl.IsDeleted))
                     .ThenInclude(tl => tl.Task)
+                .Include(n => n.ReminderLinks.Where(rl => !rl.IsDeleted))
+                    .ThenInclude(rl => rl.Reminder)
                 .FirstOrDefaultAsync(n => n.Id == id && n.UserId == userId);
 
             if (note == null)
@@ -146,7 +174,27 @@ namespace SecondBrain.Api.Controllers
                 return NotFound();
             }
 
-            return Ok(NoteResponse.FromEntity(note));
+            var reminderLinks = await _context.ReminderLinks
+                .Where(rl => !rl.IsDeleted && rl.LinkedItemId == id)
+                .Include(rl => rl.Reminder)
+                .ToListAsync();
+
+            var response = NoteResponse.FromEntity(note);
+            response.LinkedReminders = reminderLinks
+                .Select(rl => new LinkedReminderDto
+                {
+                    Id = rl.ReminderId,
+                    Title = rl.Reminder.Title,
+                    Description = rl.Reminder.Description ?? string.Empty,
+                    DueDateTime = rl.Reminder.DueDateTime,
+                    IsCompleted = rl.Reminder.IsCompleted,
+                    IsSnoozed = rl.Reminder.IsSnoozed,
+                    CreatedAt = rl.Reminder.CreatedAt,
+                    UpdatedAt = rl.Reminder.UpdatedAt
+                })
+                .ToList();
+
+            return Ok(response);
         }
 
         [HttpDelete("{id}/links/{targetNoteId}")]
@@ -512,6 +560,124 @@ namespace SecondBrain.Api.Controllers
 
             await _context.SaveChangesAsync();
             return Ok(NoteResponse.FromEntity(note));
+        }
+
+        [HttpPost("{id}/reminders")]
+        public async Task<ActionResult<NoteResponse>> LinkReminder(string id, [FromBody] LinkReminderRequest request)
+        {
+            try 
+            {
+                _logger.LogInformation($"Attempting to link reminder {request.ReminderId} to note {id}");
+                
+                var userId = GetUserId();
+                var note = await _context.Notes
+                    .Include(n => n.NoteLinks)
+                    .Include(n => n.TaskLinks)
+                    .Include(n => n.ReminderLinks)
+                    .FirstOrDefaultAsync(n => n.Id == id && n.UserId == userId);
+
+                if (note == null)
+                {
+                    _logger.LogWarning($"Note {id} not found");
+                    return NotFound(new { error = "Note not found." });
+                }
+
+                var reminder = await _context.Reminders
+                    .FirstOrDefaultAsync(r => r.Id == request.ReminderId && r.UserId == userId);
+
+                if (reminder == null)
+                {
+                    _logger.LogWarning($"Reminder {request.ReminderId} not found");
+                    return NotFound(new { error = "Reminder not found." });
+                }
+
+                // Check if link already exists
+                var existingLink = await _context.ReminderLinks
+                    .AnyAsync(rl => rl.ReminderId == request.ReminderId && 
+                                   rl.LinkedItemId == id && 
+                                   !rl.IsDeleted);
+
+                if (existingLink)
+                {
+                    _logger.LogWarning($"Link already exists between note {id} and reminder {request.ReminderId}");
+                    return BadRequest(new { error = "Reminder is already linked to this note." });
+                }
+
+                var reminderLink = new ReminderLink
+                {
+                    ReminderId = request.ReminderId,
+                    LinkedItemId = id,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = userId,
+                    LinkType = note.IsIdea ? "idea" : "note"
+                };
+
+                _context.ReminderLinks.Add(reminderLink);
+                await _context.SaveChangesAsync();
+
+                // Reload the note with all its relationships
+                note = await _context.Notes
+                    .Include(n => n.NoteLinks)
+                        .ThenInclude(nl => nl.LinkedNote)
+                    .Include(n => n.TaskLinks.Where(tl => !tl.IsDeleted))
+                        .ThenInclude(tl => tl.Task)
+                    .Include(n => n.ReminderLinks.Where(rl => !rl.IsDeleted))
+                        .ThenInclude(rl => rl.Reminder)
+                    .FirstOrDefaultAsync(n => n.Id == id);
+
+                _logger.LogInformation($"Successfully linked reminder {request.ReminderId} to note {id}");
+                return Ok(NoteResponse.FromEntity(note!));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error linking reminder to note {id}");
+                return StatusCode(500, new { error = "An error occurred while linking the reminder." });
+            }
+        }
+
+        public class LinkReminderRequest
+        {
+            public string ReminderId { get; set; } = string.Empty;
+        }
+
+        [HttpDelete("{id}/reminders/{reminderId}")]
+        public async Task<ActionResult<NoteResponse>> UnlinkReminder(string id, string reminderId)
+        {
+            var userId = GetUserId();
+            var note = await _context.Notes
+                .Include(n => n.ReminderLinks)
+                .FirstOrDefaultAsync(n => n.Id == id && n.UserId == userId);
+
+            if (note == null)
+            {
+                return NotFound(new { error = "Note not found." });
+            }
+
+            var reminderLink = await _context.ReminderLinks
+                .FirstOrDefaultAsync(rl => rl.ReminderId == reminderId && 
+                                         rl.LinkedItemId == id && 
+                                         !rl.IsDeleted);
+
+            if (reminderLink == null)
+            {
+                return NotFound(new { error = "Reminder link not found." });
+            }
+
+            reminderLink.IsDeleted = true;
+            reminderLink.DeletedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            // Reload the note with all its relationships
+            note = await _context.Notes
+                .Include(n => n.NoteLinks)
+                    .ThenInclude(nl => nl.LinkedNote)
+                .Include(n => n.TaskLinks.Where(tl => !tl.IsDeleted))
+                    .ThenInclude(tl => tl.Task)
+                .Include(n => n.ReminderLinks.Where(rl => !rl.IsDeleted))
+                    .ThenInclude(rl => rl.Reminder)
+                .FirstOrDefaultAsync(n => n.Id == id);
+
+            return Ok(NoteResponse.FromEntity(note!));
         }
 
     }

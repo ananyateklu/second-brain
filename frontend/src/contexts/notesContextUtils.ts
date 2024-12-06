@@ -20,6 +20,8 @@ export interface NotesContextType {
   restoreMultipleNotes: (ids: string[]) => Promise<PromiseSettledResult<Note>[]>;
   restoreNote: (restoredNote: Note) => Promise<void>;
   fetchNotes: () => Promise<void>;
+  addReminderToNote: (noteId: string, reminderId: string) => Promise<void>;
+  removeReminderFromNote: (noteId: string, reminderId: string) => Promise<void>;
 }
 
 export const NotesContext = createContext<NotesContextType | null>(null);

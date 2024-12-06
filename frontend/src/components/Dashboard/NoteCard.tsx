@@ -197,6 +197,13 @@ export function NoteCard({
                   </div>
                 )}
 
+                {note.linkedReminders && note.linkedReminders.length > 0 && (
+                  <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                    <Clock className="w-4 h-4" />
+                    <span>{note.linkedReminders.length} reminders</span>
+                  </div>
+                )}
+
                 <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
                   <Clock className="w-4 h-4" />
                   <span>{formatDate(note.updatedAt)}</span>

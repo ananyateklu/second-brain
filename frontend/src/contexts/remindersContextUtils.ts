@@ -18,6 +18,8 @@ export interface RemindersContextType {
   fetchReminders: () => Promise<void>;
   isLoading: boolean;
   deleteReminderPermanently: (id: string) => Promise<void>;
+  addReminderLink: (reminderId: string, linkedItemId: string, linkType: string) => Promise<void>;
+  removeReminderLink: (reminderId: string, linkedItemId: string) => Promise<void>;
 }
 
 export const RemindersContext = createContext<RemindersContextType | null>(null);

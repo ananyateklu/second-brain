@@ -49,9 +49,16 @@ export function LinkedNotesPanel({
     }
   };
 
-  const handleAddReminder = (reminderId: string) => {
-    onLinkReminder?.(reminderId);
-    setShowAddReminderModal(false);
+  const handleAddReminder = async (reminderId: string) => {
+    try {
+      const success = await onLinkReminder?.(reminderId);
+      if (success) {
+        setShowAddReminderModal(false);
+      }
+    } catch (error) {
+      console.error('Error linking reminder:', error);
+      // Error is now handled by the parent component
+    }
   };
 
   const hasLinkedItems = linkedNotes.length > 0 || linkedTasks.length > 0 || linkedReminders.length > 0;

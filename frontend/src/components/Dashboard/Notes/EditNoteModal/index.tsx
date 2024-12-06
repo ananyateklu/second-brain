@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { Note, LinkedReminder } from '../../../../types/note';
+import type { Note } from '../../../../types/note';
 import { useNotes } from '../../../../contexts/notesContextUtils';
 import { useTasks } from '../../../../contexts/tasksContextUtils';
-import { Task } from '../../../../api/types/task';
+import type { Task } from '../../../../api/types/task';
 import { Header } from './Header';
 import { MainContent } from './MainContent';
 import { LinkedNotesPanel } from './LinkedNotesPanel';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import { AddLinkModal } from '../../LinkedNotes/AddLinkModal';
 import { AddTaskLinkModal } from './AddTaskLinkModal';
-import { useReminders } from '../../../../contexts/remindersContextUtils';
 
 interface EditNoteModalProps {
   isOpen: boolean;
@@ -26,9 +25,9 @@ export interface HeaderProps {
 
 export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
   const navigate = useNavigate();
-  const { notes, updateNote, deleteNote } = useNotes();
+  const { notes, updateNote, deleteNote, linkReminder, unlinkReminder } = useNotes();
   const { tasks, removeTaskLink } = useTasks();
-  const { reminders } = useReminders();
+
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [tagInput, setTagInput] = useState('');
@@ -46,7 +45,6 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
     if (!isOpen) {
       setShowDeleteConfirm(false);
       setError('');
-      // Reset other states if needed
     }
   }, [isOpen]);
 
@@ -106,10 +104,7 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
 
   const handleUnlinkReminder = async (reminderId: string) => {
     try {
-      await updateNote(currentNote.id, {
-        ...currentNote,
-        linkedReminders: currentNote.linkedReminders?.filter(r => r.id !== reminderId) || []
-      });
+      await unlinkReminder(currentNote.id, reminderId);
     } catch (err) {
       console.error('Failed to unlink reminder:', err);
       setError('Failed to unlink reminder. Please try again.');
@@ -118,32 +113,26 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
 
   const handleLinkReminder = async (reminderId: string) => {
     try {
-      const reminderToLink = reminders.find(r => r.id === reminderId);
-      if (!reminderToLink) return;
-
-      const newLinkedReminder: LinkedReminder = {
-        id: reminderToLink.id,
-        title: reminderToLink.title,
-        dueDateTime: reminderToLink.dueDateTime,
-        isCompleted: reminderToLink.isCompleted,
-        isSnoozed: reminderToLink.isSnoozed,
-        description: reminderToLink.description,
-        createdAt: reminderToLink.createdAt,
-        updatedAt: reminderToLink.updatedAt
-      };
-
-      const updatedReminders = [
-        ...(currentNote.linkedReminders || []),
-        newLinkedReminder
-      ];
-
-      await updateNote(currentNote.id, {
-        ...currentNote,
-        linkedReminders: updatedReminders
-      });
-    } catch (err) {
-      console.error('Failed to link reminder:', err);
+      setIsLoading(true);
+      setError('');
+      await linkReminder(currentNote.id, reminderId);
+      
+      // Force refresh of the current note to get updated linked items
+      const updatedNote = notes.find(n => n.id === currentNote.id);
+      if (updatedNote) {
+        const updatedLinkedNotes = notes.filter(n =>
+          updatedNote.linkedNoteIds?.includes(n.id)
+        );
+        setLinkedNotes(updatedLinkedNotes);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Failed to link reminder:', error);
       setError('Failed to link reminder. Please try again.');
+      return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
