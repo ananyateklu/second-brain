@@ -1,3 +1,10 @@
+export interface LinkedItem {
+  id: string;
+  title: string;
+  type: string; // 'note' or 'idea'
+  createdAt: string;
+}
+
 export interface Reminder {
   id: string;
   title: string;
@@ -10,9 +17,17 @@ export interface Reminder {
   isSnoozed: boolean;
   completedAt?: string;
   tags: string[];
+  linkedItems: LinkedItem[];
   createdAt: string;
   updatedAt: string;
   userId: string;
   isDeleted: boolean;
   deletedAt?: string;
+}
+
+export interface ReminderLinkData {
+  reminderId: string;
+  linkedItemId: string;
+  itemType: 'note' | 'idea';
+  description?: string;
 }

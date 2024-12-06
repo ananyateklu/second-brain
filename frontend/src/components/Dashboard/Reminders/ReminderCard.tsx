@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Calendar, Tag as TagIcon, Clock, AlertCircle, CheckSquare, Square, Bell } from 'lucide-react';
+import { Calendar, Tag as TagIcon, Clock, AlertCircle, CheckSquare, Square, Bell, Link2, Type, Lightbulb } from 'lucide-react';
 import { Reminder, useReminders } from '../../../contexts/remindersContextUtils';
-import { EditReminderModal } from './EditReminderModal';
+import { EditReminderModal } from './EditReminderModal/index';
 import { formatTimeAgo } from '../Recent/utils';
 import { cardBaseStyles, cardContentStyles, cardDescriptionStyles } from '../shared/cardStyles';
 
@@ -208,6 +208,7 @@ export function ReminderCard({
                 )}
               </div>
 
+              {/* Tags */}
               {reminder.tags && reminder.tags.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-2">
                   {reminder.tags.map(tag => (
@@ -217,6 +218,33 @@ export function ReminderCard({
                     >
                       <TagIcon className="w-3 h-3 flex-shrink-0" />
                       <span className="truncate">{tag}</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Linked Items */}
+              {reminder.linkedItems && reminder.linkedItems.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                    <Link2 className="w-4 h-4" />
+                    <span>Linked Items:</span>
+                  </div>
+                  {reminder.linkedItems.map(item => (
+                    <span
+                      key={item.id}
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium max-w-full ${
+                        item.type === 'idea'
+                          ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400'
+                          : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+                      }`}
+                    >
+                      {item.type === 'idea' ? (
+                        <Lightbulb className="w-3 h-3 flex-shrink-0" />
+                      ) : (
+                        <Type className="w-3 h-3 flex-shrink-0" />
+                      )}
+                      <span className="truncate">{item.title}</span>
                     </span>
                   ))}
                 </div>

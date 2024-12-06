@@ -4,7 +4,7 @@ import { useNotes } from '../../../contexts/notesContextUtils';
 import { useTasks } from '../../../contexts/tasksContextUtils';
 import { useReminders } from '../../../contexts/remindersContextUtils';
 import { EditTaskModal } from '../Tasks/EditTaskModal';
-import { EditReminderModal } from '../Reminders/EditReminderModal';
+import { EditReminderModal } from '../Reminders/EditReminderModal/index';
 import { EditNoteModal } from '../Notes/EditNoteModal';
 import { EditIdeaModal } from '../Ideas/EditIdeaModal';
 import { useModal } from '../../../contexts/modalContextUtils';
@@ -84,7 +84,8 @@ export function TagsPage() {
         tags: reminder.tags,
         type: 'reminder' as ItemType,
         updatedAt: reminder.updatedAt,
-        createdAt: reminder.createdAt
+        createdAt: reminder.createdAt,
+        linkedItems: []
       }))
     ];
 
@@ -136,22 +137,20 @@ export function TagsPage() {
               <div className="flex gap-0.5">
                 <button
                   onClick={() => setViewMode('grid')}
-                  className={`p-1 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${
-                    viewMode === 'grid'
+                  className={`p-1 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${viewMode === 'grid'
                       ? 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-400'
                       : 'bg-white/20 dark:bg-gray-800/20 text-gray-600 dark:text-gray-400 hover:bg-white/30 dark:hover:bg-gray-800/30'
-                  }`}
+                    }`}
                   title="Grid View"
                 >
                   <Grid className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => setViewMode('list')}
-                  className={`p-1.5 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${
-                    viewMode === 'list'
+                  className={`p-1.5 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${viewMode === 'list'
                       ? 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-400'
                       : 'bg-white/20 dark:bg-gray-800/20 text-gray-600 dark:text-gray-400 hover:bg-white/30 dark:hover:bg-gray-800/30'
-                  }`}
+                    }`}
                   title="List View"
                 >
                   <List className="w-3.5 h-3.5" />
@@ -218,8 +217,8 @@ export function TagsPage() {
                   <button
                     onClick={() => setShowFilters(!showFilters)}
                     className={`p-2 rounded-lg transition-colors ${showFilters
-                        ? 'bg-indigo-500/20 text-indigo-600 dark:text-indigo-400'
-                        : 'bg-white/20 dark:bg-gray-800/20 text-gray-600 dark:text-gray-400 hover:bg-white/30 dark:hover:bg-gray-800/30'
+                      ? 'bg-indigo-500/20 text-indigo-600 dark:text-indigo-400'
+                      : 'bg-white/20 dark:bg-gray-800/20 text-gray-600 dark:text-gray-400 hover:bg-white/30 dark:hover:bg-gray-800/30'
                       }`}
                   >
                     <SlidersHorizontal className="w-4 h-4" />
@@ -227,8 +226,8 @@ export function TagsPage() {
                   <button
                     onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
                     className={`p-2 rounded-lg transition-colors ${viewMode === 'list'
-                        ? 'bg-indigo-500/20 text-indigo-600 dark:text-indigo-400'
-                        : 'bg-white/20 dark:bg-gray-800/20 text-gray-600 dark:text-gray-400 hover:bg-white/30 dark:hover:bg-gray-800/30'
+                      ? 'bg-indigo-500/20 text-indigo-600 dark:text-indigo-400'
+                      : 'bg-white/20 dark:bg-gray-800/20 text-gray-600 dark:text-gray-400 hover:bg-white/30 dark:hover:bg-gray-800/30'
                       }`}
                   >
                     {viewMode === 'grid' ? (
@@ -252,16 +251,15 @@ export function TagsPage() {
                     <div
                       key={tag}
                       onClick={() => setSelectedTag(tag)}
-                      className={`group flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition-colors ${
-                        selectedTag === tag
+                      className={`group flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition-colors ${selectedTag === tag
                           ? 'bg-indigo-500/20 text-indigo-600 dark:text-indigo-400'
                           : 'text-gray-900 dark:text-white hover:bg-white/20 dark:hover:bg-gray-800/20'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center gap-2">
                         <Hash className={`w-4 h-4 ${selectedTag === tag
-                            ? 'text-indigo-600 dark:text-indigo-400'
-                            : 'text-gray-400 dark:text-gray-500'
+                          ? 'text-indigo-600 dark:text-indigo-400'
+                          : 'text-gray-400 dark:text-gray-500'
                           }`} />
                         <span className="text-sm font-medium">{tag}</span>
                       </div>
@@ -296,8 +294,8 @@ export function TagsPage() {
                         </div>
 
                         <ChevronRight className={`w-4 h-4 transition-colors ${selectedTag === tag
-                            ? 'text-indigo-600 dark:text-indigo-400'
-                            : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-500 dark:group-hover:text-gray-400'
+                          ? 'text-indigo-600 dark:text-indigo-400'
+                          : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-500 dark:group-hover:text-gray-400'
                           }`} />
                       </div>
                     </div>
@@ -316,7 +314,7 @@ export function TagsPage() {
                         switch (item.type) {
                           case 'task':
                             return (
-                              <div 
+                              <div
                                 key={item.id}
                                 onClick={() => handleEditNote(item)}
                                 className="cursor-pointer w-full"
@@ -341,7 +339,7 @@ export function TagsPage() {
                             );
                           case 'reminder':
                             return (
-                              <div 
+                              <div
                                 key={item.id}
                                 onClick={() => handleEditNote(item)}
                                 className="cursor-pointer w-full"
@@ -352,13 +350,14 @@ export function TagsPage() {
                                     title: item.title,
                                     description: item.content,
                                     tags: item.tags,
-                                    dueDateTime: item.updatedAt,
+                                    dueDateTime: item.dueDateTime,
                                     isCompleted: false,
                                     isSnoozed: false,
                                     isDeleted: false,
-                                    userId: '',
+                                    userId: item.userId,
                                     updatedAt: item.updatedAt,
-                                    createdAt: item.createdAt
+                                    createdAt: item.createdAt,
+                                    linkedItems: []
                                   }}
                                   viewMode="grid"
                                 />
@@ -366,7 +365,7 @@ export function TagsPage() {
                             );
                           case 'idea':
                             return (
-                              <div 
+                              <div
                                 key={item.id}
                                 onClick={() => handleEditNote(item)}
                                 className="cursor-pointer w-full"
@@ -393,7 +392,7 @@ export function TagsPage() {
                             );
                           case 'note':
                             return (
-                              <div 
+                              <div
                                 key={item.id}
                                 onClick={() => handleEditNote(item)}
                                 className="cursor-pointer w-full"
@@ -427,7 +426,7 @@ export function TagsPage() {
                         switch (item.type) {
                           case 'task':
                             return (
-                              <div 
+                              <div
                                 key={item.id}
                                 onClick={() => handleEditNote(item)}
                                 className="cursor-pointer w-full"
@@ -452,7 +451,7 @@ export function TagsPage() {
                             );
                           case 'reminder':
                             return (
-                              <div 
+                              <div
                                 key={item.id}
                                 onClick={() => handleEditNote(item)}
                                 className="cursor-pointer w-full"
@@ -463,13 +462,14 @@ export function TagsPage() {
                                     title: item.title,
                                     description: item.content,
                                     tags: item.tags,
-                                    dueDateTime: item.updatedAt,
+                                    dueDateTime: item.dueDateTime,
                                     isCompleted: false,
                                     isSnoozed: false,
                                     isDeleted: false,
-                                    userId: '',
+                                    userId: item.userId,
                                     updatedAt: item.updatedAt,
-                                    createdAt: item.createdAt
+                                    createdAt: item.createdAt,
+                                    linkedItems: []
                                   }}
                                   viewMode="list"
                                 />
@@ -477,7 +477,7 @@ export function TagsPage() {
                             );
                           case 'idea':
                             return (
-                              <div 
+                              <div
                                 key={item.id}
                                 onClick={() => handleEditNote(item)}
                                 className="cursor-pointer w-full"
@@ -504,7 +504,7 @@ export function TagsPage() {
                             );
                           case 'note':
                             return (
-                              <div 
+                              <div
                                 key={item.id}
                                 onClick={() => handleEditNote(item)}
                                 className="cursor-pointer w-full"

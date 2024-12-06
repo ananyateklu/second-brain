@@ -6,7 +6,7 @@ import { useActivities } from '../../../contexts/activityContextUtils';
 import { Input } from '../../shared/Input';
 import { EditNoteModal } from '../Notes/EditNoteModal';
 import { EditTaskModal } from '../Tasks/EditTaskModal';
-import { EditReminderModal } from '../Reminders/EditReminderModal';
+import { EditReminderModal } from '../Reminders/EditReminderModal/index';
 import { EditIdeaModal } from '../Ideas/EditIdeaModal';
 import { useNotes } from '../../../contexts/notesContextUtils';
 import { useTasks } from '../../../contexts/tasksContextUtils';

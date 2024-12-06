@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -39,5 +40,8 @@ namespace SecondBrain.Data.Entities
         // Add these properties
         public bool IsDeleted { get; set; }
         public DateTime? DeletedAt { get; set; }
+
+        // Navigation property for linked items
+        public ICollection<ReminderLink> ReminderLinks { get; set; } = new List<ReminderLink>();
     }
 }

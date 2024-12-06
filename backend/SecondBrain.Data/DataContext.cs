@@ -14,7 +14,7 @@ namespace SecondBrain.Data
         public DbSet<Note> Notes { get; set; } = null!;
         public DbSet<TaskItem> Tasks { get; set; } = null!;
         public DbSet<TaskLink> TaskLinks { get; set; } = null!;
-        public DbSet<Reminder> Reminders { get; set; }
+        public DbSet<Reminder> Reminders { get; set; } = null!;
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<TaskItemNote> TaskItemNotes { get; set; }
         public DbSet<Activity> Activities { get; set; }
@@ -24,6 +24,7 @@ namespace SecondBrain.Data
         public DbSet<Achievement> Achievements { get; set; }
         public DbSet<UserAchievement> UserAchievements { get; set; }
         public DbSet<NexusStorage> NexusStorage { get; set; }
+        public DbSet<ReminderLink> ReminderLinks { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -234,6 +235,49 @@ namespace SecondBrain.Data
                 entity.HasIndex(e => e.NoteId);
                 entity.HasIndex(e => e.LinkedNoteId);
                 entity.HasIndex(e => e.IsDeleted);
+            });
+
+            // Configure ReminderLink entity
+            modelBuilder.Entity<ReminderLink>(entity =>
+            {
+                // Configure composite key
+                entity.HasKey(e => new { e.ReminderId, e.LinkedItemId });
+
+                // Configure relationships
+                entity.HasOne(e => e.Reminder)
+                    .WithMany(r => r.ReminderLinks)
+                    .HasForeignKey(e => e.ReminderId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                // Add this relationship configuration
+                entity.HasOne(e => e.LinkedItem)
+                    .WithMany()
+                    .HasForeignKey(e => e.LinkedItemId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                // Configure relationship with Creator
+                entity.HasOne(e => e.Creator)
+                    .WithMany()
+                    .HasForeignKey(e => e.CreatedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                // Configure LinkType property
+                entity.Property(e => e.LinkType)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                // Set default value for IsDeleted
+                entity.Property(e => e.IsDeleted)
+                    .HasDefaultValue(false);
+
+                // Configure indexes
+                entity.HasIndex(e => e.ReminderId);
+                entity.HasIndex(e => e.LinkedItemId);
+                entity.HasIndex(e => e.CreatedBy);
+                entity.HasIndex(e => e.IsDeleted);
+
+                // Configure query filter for soft delete
+                entity.HasQueryFilter(e => !e.IsDeleted);
             });
         }
     }

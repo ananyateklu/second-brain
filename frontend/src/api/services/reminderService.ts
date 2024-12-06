@@ -1,5 +1,5 @@
 import api from '../../services/api/api';
-import { Reminder } from '../types/reminder';
+import { Reminder, ReminderLinkData } from '../types/reminder';
 
 export interface CreateReminderData {
   title: string;
@@ -43,4 +43,20 @@ export const reminderService = {
   async deleteReminderPermanently(id: string): Promise<void> {
     await api.delete(`/api/Reminders/${id}/permanent`);
   },
+
+  async addReminderLink(data: ReminderLinkData): Promise<Reminder> {
+    console.log('Adding reminder link:', data);
+    const response = await api.post<Reminder>(`/api/Reminders/${data.reminderId}/links`, {
+      linkedItemId: data.linkedItemId,
+      linkType: data.itemType,
+      description: data.description
+    });
+    console.log('Reminder link response:', response.data);
+    return response.data;
+  },
+
+  async removeReminderLink(reminderId: string, linkedItemId: string): Promise<Reminder> {
+    const response = await api.delete<Reminder>(`/api/Reminders/${reminderId}/links/${linkedItemId}`);
+    return response.data;
+  }
 };
