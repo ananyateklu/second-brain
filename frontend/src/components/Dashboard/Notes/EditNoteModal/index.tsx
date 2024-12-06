@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { Note } from '../../../../types/note';
+import type { Note, LinkedReminder } from '../../../../types/note';
 import { useNotes } from '../../../../contexts/notesContextUtils';
 import { useTasks } from '../../../../contexts/tasksContextUtils';
 import { Task } from '../../../../api/types/task';
@@ -10,6 +10,7 @@ import { LinkedNotesPanel } from './LinkedNotesPanel';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import { AddLinkModal } from '../../LinkedNotes/AddLinkModal';
 import { AddTaskLinkModal } from './AddTaskLinkModal';
+import { useReminders } from '../../../../contexts/remindersContextUtils';
 
 interface EditNoteModalProps {
   isOpen: boolean;
@@ -23,26 +24,11 @@ export interface HeaderProps {
   onShowDeleteConfirm: () => void;
 }
 
-export interface LinkedNotesPanelProps {
-  linkedNotes: Note[];
-  linkedTasks: Array<{
-    id: string;
-    title: string;
-    status: string;
-    priority: string;
-    dueDate: string | null | undefined;
-  }>;
-  onShowAddLink: () => void;
-  onShowAddTask: () => void;
-  currentNoteId: string;
-  isIdea?: boolean;
-  onUnlinkTask: (taskId: string) => void;
-}
-
 export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
   const navigate = useNavigate();
   const { notes, updateNote, deleteNote } = useNotes();
   const { tasks, removeTaskLink } = useTasks();
+  const { reminders } = useReminders();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [tagInput, setTagInput] = useState('');
@@ -115,6 +101,49 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
     } catch (err) {
       console.error('Failed to unlink task:', err);
       setError('Failed to unlink task. Please try again.');
+    }
+  };
+
+  const handleUnlinkReminder = async (reminderId: string) => {
+    try {
+      await updateNote(currentNote.id, {
+        ...currentNote,
+        linkedReminders: currentNote.linkedReminders?.filter(r => r.id !== reminderId) || []
+      });
+    } catch (err) {
+      console.error('Failed to unlink reminder:', err);
+      setError('Failed to unlink reminder. Please try again.');
+    }
+  };
+
+  const handleLinkReminder = async (reminderId: string) => {
+    try {
+      const reminderToLink = reminders.find(r => r.id === reminderId);
+      if (!reminderToLink) return;
+
+      const newLinkedReminder: LinkedReminder = {
+        id: reminderToLink.id,
+        title: reminderToLink.title,
+        dueDateTime: reminderToLink.dueDateTime,
+        isCompleted: reminderToLink.isCompleted,
+        isSnoozed: reminderToLink.isSnoozed,
+        description: reminderToLink.description,
+        createdAt: reminderToLink.createdAt,
+        updatedAt: reminderToLink.updatedAt
+      };
+
+      const updatedReminders = [
+        ...(currentNote.linkedReminders || []),
+        newLinkedReminder
+      ];
+
+      await updateNote(currentNote.id, {
+        ...currentNote,
+        linkedReminders: updatedReminders
+      });
+    } catch (err) {
+      console.error('Failed to link reminder:', err);
+      setError('Failed to link reminder. Please try again.');
     }
   };
 
@@ -195,10 +224,13 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
             <LinkedNotesPanel
               linkedNotes={linkedNotes}
               linkedTasks={formattedTasks}
+              linkedReminders={currentNote.linkedReminders || []}
               onShowAddLink={() => setShowAddLinkModal(true)}
               onShowAddTask={() => setShowAddTaskModal(true)}
               currentNoteId={currentNote.id}
               onUnlinkTask={handleUnlinkTask}
+              onUnlinkReminder={handleUnlinkReminder}
+              onLinkReminder={handleLinkReminder}
             />
           </div>
 

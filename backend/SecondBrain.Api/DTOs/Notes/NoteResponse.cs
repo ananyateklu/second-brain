@@ -7,6 +7,18 @@ using SecondBrain.Services.Gamification;
 
 namespace SecondBrain.Api.DTOs.Notes
 {
+    public class LinkedReminderDto
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public DateTime DueDateTime { get; set; }
+        public bool IsCompleted { get; set; }
+        public bool IsSnoozed { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+    }
+
     public class NoteResponse
     {
         public string Id { get; set; } = string.Empty;
@@ -24,6 +36,7 @@ namespace SecondBrain.Api.DTOs.Notes
         public bool IsIdea { get; set; }
         public List<string> LinkedNoteIds { get; set; } = new List<string>();
         public List<LinkedTaskDto> LinkedTasks { get; set; } = new List<LinkedTaskDto>();
+        public List<LinkedReminderDto> LinkedReminders { get; set; } = new List<LinkedReminderDto>();
         
         // Gamification properties
         public int XPAwarded { get; set; }
@@ -65,6 +78,20 @@ namespace SecondBrain.Api.DTOs.Notes
                         Priority = tl.Task.Priority.ToString().ToLower(),
                         DueDate = tl.Task.DueDate,
                         CreatedAt = tl.CreatedAt
+                    })
+                    .ToList(),
+                LinkedReminders = note.ReminderLinks
+                    .Where(rl => !rl.IsDeleted && rl.Reminder != null)
+                    .Select(rl => new LinkedReminderDto
+                    {
+                        Id = rl.ReminderId,
+                        Title = rl.Reminder.Title,
+                        Description = rl.Reminder.Description,
+                        DueDateTime = rl.Reminder.DueDateTime,
+                        IsCompleted = rl.Reminder.IsCompleted,
+                        IsSnoozed = rl.Reminder.IsSnoozed,
+                        CreatedAt = rl.Reminder.CreatedAt,
+                        UpdatedAt = rl.Reminder.UpdatedAt
                     })
                     .ToList()
             };

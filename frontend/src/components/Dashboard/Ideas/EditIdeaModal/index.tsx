@@ -1,222 +1,114 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import type { Note } from '../../../../types/note';
+import { useState } from 'react';
 import { useNotes } from '../../../../contexts/notesContextUtils';
-import { useTasks } from '../../../../contexts/tasksContextUtils';
-import { Task } from '../../../../api/types/task';
+import { Note } from '../../../../types/note';
 import { Header } from './Header';
 import { MainContent } from './MainContent';
-import { LinkedNotesPanel } from '../../Notes/EditNoteModal/LinkedNotesPanel';
-import { DeleteConfirmDialog } from '../../Notes/EditNoteModal/DeleteConfirmDialog';
-import { AddLinkModal } from '../../LinkedNotes/AddLinkModal';
-import { AddTaskLinkModal } from '../../Notes/EditNoteModal/AddTaskLinkModal';
+import { DeleteConfirmDialog } from '../../Tasks/EditTaskModal/DeleteConfirmDialog';
+import { Save } from 'lucide-react';
 
 interface EditIdeaModalProps {
   isOpen: boolean;
   onClose: () => void;
-  idea: Note | null;
+  idea: Note;
 }
 
+export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaModalProps) {
+  const { updateNote, deleteNote } = useNotes();
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [pendingChanges, setPendingChanges] = useState<Partial<Note>>({});
+  const [idea] = useState(initialIdea);
 
-export function EditIdeaModal({ isOpen, onClose, idea }: EditIdeaModalProps) {
-  const navigate = useNavigate();
-  const { notes, updateNote, deleteNote } = useNotes();
-  const { tasks, removeTaskLink } = useTasks();
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [tagInput, setTagInput] = useState('');
-  const [tags, setTags] = useState<string[]>([]);
-  const [linkedNotes, setLinkedNotes] = useState<Note[]>([]);
-  const [linkedTasks, setLinkedTasks] = useState<Task[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showAddLinkModal, setShowAddLinkModal] = useState(false);
-  const [showAddTaskModal, setShowAddTaskModal] = useState(false);
+  if (!isOpen) return null;
 
-  // Get current idea from context to ensure we have latest data
-  const currentIdea = notes.find(n => n.id === idea?.id);
+  const handleUpdate = async (updates: Partial<Note>) => {
+    setPendingChanges(prev => ({ ...prev, ...updates }));
+  };
 
-  useEffect(() => {
-    if (currentIdea) {
-      setTitle(currentIdea.title);
-      setContent(currentIdea.content);
-      setTags(currentIdea.tags);
-      setError('');
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      await updateNote(idea.id, pendingChanges);
+      setPendingChanges({});
+      onClose();
+    } catch (error) {
+      console.error('Failed to save idea:', error);
+    } finally {
+      setIsSaving(false);
     }
-  }, [currentIdea]);
+  };
 
-  // Update linked notes whenever they change
-  useEffect(() => {
-    if (currentIdea) {
-      const linkedNotesList = notes.filter(n =>
-        currentIdea.linkedNoteIds?.includes(n.id)
-      );
-      setLinkedNotes(linkedNotesList);
-
-      // Update linked tasks
-      const linkedTasksList = tasks.filter(t =>
-        t.linkedItems?.some(item => item.id === currentIdea.id)
-      );
-      setLinkedTasks(linkedTasksList);
-    }
-  }, [currentIdea, currentIdea?.linkedNoteIds, notes, tasks]);
-
-  if (!isOpen || !currentIdea) return null;
+  const handleCancel = () => {
+    setPendingChanges({});
+    onClose();
+  };
 
   const handleDelete = async () => {
-    setIsLoading(true);
     try {
-      await deleteNote(currentIdea.id);
-      setShowDeleteConfirm(false);
-      navigate('/dashboard/ideas');
+      setIsDeleting(true);
+      await deleteNote(idea.id);
       onClose();
-    } catch (err) {
-      console.error('Failed to delete idea:', err);
-      setError('Failed to delete idea');
+    } catch (error) {
+      console.error('Failed to delete idea:', error);
     } finally {
-      setIsLoading(false);
+      setIsDeleting(false);
+      setIsDeleteConfirmOpen(false);
     }
   };
-
-  const handleUnlinkTask = async (taskId: string) => {
-    try {
-      await removeTaskLink(taskId, currentIdea.id);
-    } catch (err) {
-      console.error('Failed to unlink task:', err);
-      setError('Failed to unlink task. Please try again.');
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!title.trim()) {
-      setError('Title is required');
-      return;
-    }
-
-    setIsLoading(true);
-    setError('');
-
-    try {
-      await updateNote(currentIdea.id, {
-        title: title.trim(),
-        content: content.trim(),
-        tags: tags.includes('idea') ? tags : ['idea', ...tags]
-      });
-      onClose();
-    } catch (err) {
-      console.error('Failed to update idea:', err);
-      setError('Failed to update idea. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const formattedTasks = linkedTasks.map(task => ({
-    ...task,
-    dueDate: task.dueDate || undefined
-  }));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-
-      <div
-        className="relative w-full max-w-6xl max-h-[90vh] bg-white dark:bg-[#111111] rounded-2xl shadow-2xl overflow-hidden backdrop-blur-md border border-gray-200/30 dark:border-[#1C1C1E]"
-        style={{
-          transform: 'translate3d(0, 0, 0)',
-          backfaceVisibility: 'hidden',
-        }}
-      >
-        <form onSubmit={handleSubmit} className="flex flex-col h-full">
+    <>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={handleCancel} />
+        
+        <div className="relative w-full max-w-4xl h-[calc(75vh-8rem)] bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl flex flex-col overflow-hidden">
           <Header
-            idea={currentIdea}
-            onClose={onClose}
-            onShowDeleteConfirm={() => setShowDeleteConfirm(true)}
+            idea={{ ...idea, ...pendingChanges }}
+            onClose={handleCancel}
+            onShowDeleteConfirm={() => setIsDeleteConfirmOpen(true)}
+            isSaving={isSaving}
           />
 
-          <div className="flex-1 grid grid-cols-[1fr,300px] min-h-0 overflow-hidden">
-            <MainContent
-              title={title}
-              content={content}
-              tags={tags}
-              tagInput={tagInput}
-              error={error}
-              isLoading={isLoading}
-              onTitleChange={setTitle}
-              onContentChange={setContent}
-              onTagInputChange={(value) => {
-                if (Array.isArray(value)) {
-                  setTags(['idea', ...value]);
-                  setTagInput('');
-                } else {
-                  setTagInput(value);
-                }
-              }}
-              onAddTag={() => {
-                const trimmedTag = tagInput.trim();
-                if (trimmedTag && !tags.includes(trimmedTag)) {
-                  setTags([...tags, trimmedTag]);
-                  setTagInput('');
-                }
-              }}
-              onRemoveTag={(tag) => tag !== 'idea' && setTags(tags.filter(t => t !== tag))}
-              setError={setError}
-            />
-
-            <LinkedNotesPanel
-              linkedNotes={linkedNotes}
-              linkedTasks={formattedTasks}
-              onShowAddLink={() => setShowAddLinkModal(true)}
-              onShowAddTask={() => setShowAddTaskModal(true)}
-              currentNoteId={currentIdea?.id || ''}
-              isIdea={true}
-              onUnlinkTask={handleUnlinkTask}
-            />
+          <div className="flex flex-1 min-h-0">
+            <div className="flex-1 flex flex-col min-w-0">
+              <MainContent
+                idea={{ ...idea, ...pendingChanges }}
+                onUpdate={handleUpdate}
+              />
+            </div>
           </div>
 
-          <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-gray-200/30 dark:border-[#1C1C1E] bg-white dark:bg-[#111111] backdrop-blur-md">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isLoading}
-              className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#2C2C2E] rounded-lg transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isLoading ? 'Saving...' : 'Save Changes'}
-            </button>
+          <div className="shrink-0 px-6 py-4 border-t border-[var(--color-border)] bg-[var(--color-background)]">
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={handleCancel}
+                disabled={isSaving}
+                className="px-4 py-2 text-[var(--color-textSecondary)] hover:text-[var(--color-text)] rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={isSaving}
+                className="px-4 py-2 flex items-center gap-2 bg-[var(--color-accent)] text-white rounded-lg hover:bg-[var(--color-accent)]/90 transition-colors disabled:opacity-50"
+              >
+                <Save className="w-4 h-4" />
+                {isSaving ? 'Saving...' : 'Save'}
+              </button>
+            </div>
           </div>
-        </form>
-
-        <DeleteConfirmDialog
-          isOpen={showDeleteConfirm}
-          isLoading={isLoading}
-          onClose={() => setShowDeleteConfirm(false)}
-          onConfirm={handleDelete}
-        />
-
-        <AddLinkModal
-          isOpen={showAddLinkModal}
-          onClose={() => setShowAddLinkModal(false)}
-          sourceNoteId={currentIdea.id}
-          onLinkAdded={() => setShowAddLinkModal(false)}
-        />
-
-        <AddTaskLinkModal
-          isOpen={showAddTaskModal}
-          onClose={() => setShowAddTaskModal(false)}
-          noteId={currentIdea.id}
-          onLinkAdded={() => setShowAddTaskModal(false)}
-        />
+        </div>
       </div>
-    </div>
+
+      <DeleteConfirmDialog
+        isOpen={isDeleteConfirmOpen}
+        isLoading={isDeleting}
+        onClose={() => setIsDeleteConfirmOpen(false)}
+        onConfirm={handleDelete}
+      />
+    </>
   );
 }

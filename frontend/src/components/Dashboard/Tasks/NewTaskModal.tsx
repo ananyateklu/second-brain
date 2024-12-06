@@ -67,23 +67,28 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative w-full max-w-2xl glass-morphism rounded-xl">
-        <div className="flex items-center justify-between p-4 border-b border-[#2C2C2E] dark:border-[#2C2C2E]">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-            Create New Task
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-          >
-            <X className="w-5 h-5" />
-          </button>
+      <div className="relative w-full max-w-2xl bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl overflow-hidden">
+        <div className="shrink-0 px-6 py-4 border-b border-[var(--color-border)] bg-[var(--color-background)]">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-[var(--color-text)]">
+              Create New Task
+            </h2>
+            <button
+              onClick={onClose}
+              className="p-1.5 text-[var(--color-textSecondary)] hover:text-[var(--color-text)] rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4">
-          <div className="space-y-4">
+        <form onSubmit={handleSubmit}>
+          <div className="p-6 space-y-6">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-[var(--color-text)]">
+                  Title
+                </label>
                 <SuggestionButton
                   type="title"
                   itemType="task"
@@ -99,10 +104,8 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
                 />
               </div>
               <Input
-                id="task-title"
-                name="title"
+                label=""
                 type="text"
-                label="Title"
                 icon={Type}
                 value={title}
                 onChange={(e) => {
@@ -112,13 +115,13 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
                 placeholder="Enter task title"
                 error={error}
                 disabled={isLoading}
-                className="bg-[#1C1C1E] dark:bg-[#1C1C1E] border-[#2C2C2E] dark:border-[#2C2C2E]"
+                className="!bg-[var(--color-background)]"
               />
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label className="text-sm font-medium text-[var(--color-text)]">
                   Description
                 </label>
                 <SuggestionButton
@@ -139,29 +142,30 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Describe your task..."
-                rows={4}
+                rows={3}
                 disabled={isLoading}
-                className="w-full px-4 py-3 bg-[#1C1C1E] dark:bg-[#1C1C1E] border border-[#2C2C2E] dark:border-[#2C2C2E] rounded-lg focus:ring-2 focus:ring-[#64ab6f]/50 focus:border-transparent transition-all placeholder:text-gray-500 dark:placeholder:text-gray-400"
+                className="w-full min-h-[46px] px-4 py-3 bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent text-[var(--color-text)] placeholder-[var(--color-textSecondary)] resize-none"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-[var(--color-text)]">
+                  Due Date
+                </label>
                 <Input
-                  id="due-date"
-                  name="dueDate"
+                  label=""
                   type="datetime-local"
-                  label="Due Date"
                   icon={Calendar}
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
                   disabled={isLoading}
-                  className="bg-[#1C1C1E] dark:bg-[#1C1C1E] border-[#2C2C2E] dark:border-[#2C2C2E]"
+                  className="!bg-[var(--color-background)]"
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-[var(--color-text)]">
                   Priority
                 </label>
                 <div className="flex gap-2">
@@ -178,7 +182,7 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
                             : p === 'medium'
                               ? 'bg-yellow-900/20 text-yellow-400'
                               : 'bg-green-900/20 text-green-400'
-                          : 'bg-[#1C1C1E] text-gray-400 hover:bg-[#2C2C2E]'
+                          : 'bg-[var(--color-background)] text-[var(--color-textSecondary)] hover:bg-[var(--color-surface)]'
                       }`}
                     >
                       <span className="capitalize">{p}</span>
@@ -190,7 +194,7 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label className="text-sm font-medium text-[var(--color-text)]">
                   Tags
                 </label>
                 <SuggestionButton
@@ -208,13 +212,13 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
                 {tags.map(tag => (
                   <span
                     key={tag}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#64ab6f]/20 text-[#64ab6f] rounded-full text-sm"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-[var(--color-accent)]/20 text-[var(--color-accent)] rounded-full text-sm"
                   >
                     {tag}
                     <button
                       type="button"
                       onClick={() => handleRemoveTag(tag)}
-                      className="p-0.5 hover:text-[#64ab6f]"
+                      className="p-0.5 hover:text-[var(--color-accent)]"
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -223,10 +227,8 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
               </div>
               <div className="flex gap-2">
                 <Input
-                  id="tag-input"
-                  name="tag"
-                  type="text"
                   label=""
+                  type="text"
                   icon={TagIcon}
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
@@ -238,13 +240,13 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
                   }}
                   placeholder="Add a tag"
                   disabled={isLoading}
-                  className="bg-[#1C1C1E] dark:bg-[#1C1C1E] border-[#2C2C2E] dark:border-[#2C2C2E]"
+                  className="!bg-[var(--color-background)]"
                 />
                 <button
                   type="button"
                   onClick={handleAddTag}
                   disabled={!tagInput.trim() || isLoading}
-                  className="px-4 py-2 bg-[#1C1C1E] text-gray-400 hover:bg-[#2C2C2E] rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-4 py-2 text-[var(--color-textSecondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface)] rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   Add
                 </button>
@@ -252,29 +254,31 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 mt-6">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isLoading}
-              className="px-4 py-2 text-gray-400 hover:bg-[#2C2C2E] rounded-lg transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="flex items-center gap-2 px-4 py-2 bg-[#64ab6f] hover:bg-[#64ab6f]/90 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isLoading ? (
-                <>
-                  <Loader className="w-4 h-4 animate-spin" />
-                  <span>Creating...</span>
-                </>
-              ) : (
-                'Create Task'
-              )}
-            </button>
+          <div className="shrink-0 px-6 py-4 border-t border-[var(--color-border)] bg-[var(--color-background)]">
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isLoading}
+                className="px-4 py-2 text-[var(--color-textSecondary)] hover:text-[var(--color-text)] rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="px-4 py-2 flex items-center gap-2 bg-[var(--color-accent)] text-white rounded-lg hover:bg-[var(--color-accent)]/90 transition-colors disabled:opacity-50"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader className="w-4 h-4 animate-spin" />
+                    <span>Creating...</span>
+                  </>
+                ) : (
+                  'Create Task'
+                )}
+              </button>
+            </div>
           </div>
         </form>
       </div>

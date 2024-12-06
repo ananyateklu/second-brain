@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using SecondBrain.Data.Entities;
+using Microsoft.EntityFrameworkCore.Design;
 
 namespace SecondBrain.Data
 {
@@ -33,23 +34,25 @@ namespace SecondBrain.Data
             // Configure User entity
             modelBuilder.Entity<User>(entity =>
             {
-                // Configure ExperiencePoints for concurrency checking
-                entity.Property(u => u.ExperiencePoints)
-                    .IsConcurrencyToken();
+                entity.HasKey(u => u.Id);
 
-                // Configure Level as computed by the database
+                // Configure Level with a default value of 1
                 entity.Property(u => u.Level)
+                    .HasDefaultValue(1)
                     .ValueGeneratedOnAddOrUpdate()
                     .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
+
+                entity.Property(u => u.ExperiencePoints)
+                    .HasDefaultValue(0)
+                    .IsConcurrencyToken();
+
+                entity.Property(u => u.Avatar)
+                    .HasMaxLength(1000)
+                    .IsRequired(false);
+
+                entity.HasIndex(u => u.Email)
+                    .IsUnique();
             });
-
-            // Configure User entity
-            modelBuilder.Entity<User>()
-                .HasKey(u => u.Id);
-
-            modelBuilder.Entity<User>()
-                .HasIndex(u => u.Email)
-                .IsUnique();
 
             // User-Notes (One-to-Many)
             modelBuilder.Entity<User>()
@@ -75,21 +78,41 @@ namespace SecondBrain.Data
                 .WithOne(rt => rt.User)
                 .HasForeignKey(rt => rt.UserId);
 
-            // TaskItemNote (Join Entity) Configuration
-            modelBuilder.Entity<TaskItemNote>()
-                .HasKey(tn => new { tn.TaskItemId, tn.NoteId });
+            // Configure Task entity
+            modelBuilder.Entity<TaskItem>(entity =>
+            {
+                entity.Property(e => e.Id)
+                    .HasMaxLength(36);  // Ensure consistent length with foreign keys
+            });
 
-            modelBuilder.Entity<TaskItemNote>()
-                .HasOne(tn => tn.TaskItem)
-                .WithMany(t => t.TaskItemNotes)
-                .HasForeignKey(tn => tn.TaskItemId)
-                .OnDelete(DeleteBehavior.Restrict);
+            // Configure TaskItemNote (Join Entity) Configuration
+            modelBuilder.Entity<TaskItemNote>(entity =>
+            {
+                entity.HasKey(tn => new { tn.TaskItemId, tn.NoteId });
 
-            modelBuilder.Entity<TaskItemNote>()
-                .HasOne(tn => tn.Note)
-                .WithMany(n => n.TaskItemNotes)
-                .HasForeignKey(tn => tn.NoteId)
-                .OnDelete(DeleteBehavior.Restrict);
+                entity.Property(e => e.TaskItemId)
+                    .HasMaxLength(36);  // Match the Task.Id length
+
+                entity.Property(e => e.NoteId)
+                    .HasMaxLength(36);  // Match the Note.Id length
+
+                entity.HasOne(tn => tn.TaskItem)
+                    .WithMany(t => t.TaskItemNotes)
+                    .HasForeignKey(tn => tn.TaskItemId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(tn => tn.Note)
+                    .WithMany(n => n.TaskItemNotes)
+                    .HasForeignKey(tn => tn.NoteId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // Configure Note entity
+            modelBuilder.Entity<Note>(entity =>
+            {
+                entity.Property(e => e.Id)
+                    .HasMaxLength(36);  // Ensure consistent length
+            });
 
             // Configure composite key
             modelBuilder.Entity<NoteLink>()
@@ -124,26 +147,24 @@ namespace SecondBrain.Data
                 .OnDelete(DeleteBehavior.Restrict);
 
             // Configure Achievement entity
-            modelBuilder.Entity<Achievement>()
-                .HasKey(a => a.Id);
+            modelBuilder.Entity<Achievement>(entity =>
+            {
+                entity.HasKey(a => a.Id);
 
-            modelBuilder.Entity<Achievement>()
-                .Property(a => a.Name)
-                .IsRequired()
-                .HasMaxLength(100);
+                entity.Property(a => a.Name)
+                    .IsRequired()
+                    .HasMaxLength(100);
 
-            modelBuilder.Entity<Achievement>()
-                .Property(a => a.Description)
-                .HasMaxLength(500);
+                entity.Property(a => a.Description)
+                    .HasMaxLength(500);
 
-            modelBuilder.Entity<Achievement>()
-                .Property(a => a.Icon)
-                .HasMaxLength(255);
+                entity.Property(a => a.Icon)
+                    .HasMaxLength(255);
 
-            modelBuilder.Entity<Achievement>()
-                .Property(a => a.Type)
-                .IsRequired()
-                .HasMaxLength(50);
+                entity.Property(a => a.Type)
+                    .IsRequired()
+                    .HasMaxLength(50);
+            });
 
             // Configure UserAchievement composite key
             modelBuilder.Entity<UserAchievement>()
@@ -240,45 +261,53 @@ namespace SecondBrain.Data
             // Configure ReminderLink entity
             modelBuilder.Entity<ReminderLink>(entity =>
             {
-                // Configure composite key
                 entity.HasKey(e => new { e.ReminderId, e.LinkedItemId });
 
-                // Configure relationships
                 entity.HasOne(e => e.Reminder)
                     .WithMany(r => r.ReminderLinks)
                     .HasForeignKey(e => e.ReminderId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                    .OnDelete(DeleteBehavior.Restrict);
 
-                // Add this relationship configuration
                 entity.HasOne(e => e.LinkedItem)
                     .WithMany()
                     .HasForeignKey(e => e.LinkedItemId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                // Configure relationship with Creator
                 entity.HasOne(e => e.Creator)
                     .WithMany()
                     .HasForeignKey(e => e.CreatedBy)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                // Configure LinkType property
-                entity.Property(e => e.LinkType)
-                    .IsRequired()
-                    .HasMaxLength(50);
-
-                // Set default value for IsDeleted
-                entity.Property(e => e.IsDeleted)
-                    .HasDefaultValue(false);
-
-                // Configure indexes
-                entity.HasIndex(e => e.ReminderId);
+                // Add indexes
                 entity.HasIndex(e => e.LinkedItemId);
                 entity.HasIndex(e => e.CreatedBy);
-                entity.HasIndex(e => e.IsDeleted);
-
-                // Configure query filter for soft delete
-                entity.HasQueryFilter(e => !e.IsDeleted);
             });
+
+            // Configure Reminder entity
+            modelBuilder.Entity<Reminder>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.Tags)
+                    .HasMaxLength(255)
+                    .IsRequired(false);
+
+                entity.HasOne(e => e.User)
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+        }
+    }
+
+    public class DataContextFactory : IDesignTimeDbContextFactory<DataContext>
+    {
+        public DataContext CreateDbContext(string[] args)
+        {
+            var optionsBuilder = new DbContextOptionsBuilder<DataContext>();
+            optionsBuilder.UseSqlServer("Server=localhost,7800;Database=SecondBrainDb;User Id=sa;Password=Anu685904;TrustServerCertificate=True;");
+
+            return new DataContext(optionsBuilder.Options);
         }
     }
 }

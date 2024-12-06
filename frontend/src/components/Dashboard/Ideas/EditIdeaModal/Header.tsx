@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Lightbulb, Star, Trash2, Archive } from 'lucide-react';
+import { X, Star, Trash2, Archive, Clock } from 'lucide-react';
 import type { Note } from '../../../../types/note';
 import { useNotes } from '../../../../contexts/notesContextUtils';
 import { WarningModal } from '../../../shared/WarningModal';
@@ -8,9 +8,10 @@ interface HeaderProps {
   idea: Note;
   onClose: () => void;
   onShowDeleteConfirm: () => void;
+  isSaving?: boolean;
 }
 
-export function Header({ idea, onClose, onShowDeleteConfirm }: HeaderProps) {
+export function Header({ idea, onClose, onShowDeleteConfirm, isSaving = false }: HeaderProps) {
   const { toggleFavoriteNote, archiveNote } = useNotes();
   const [showArchiveWarning, setShowArchiveWarning] = useState(false);
 
@@ -39,54 +40,57 @@ export function Header({ idea, onClose, onShowDeleteConfirm }: HeaderProps) {
 
   return (
     <>
-      <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface)] backdrop-blur-md">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
-            <Lightbulb className="w-6 h-6 text-amber-600 dark:text-amber-400" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+      <div className="shrink-0 px-6 py-4 border-b border-[var(--color-border)] bg-[var(--color-background)]">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <h2 className="text-xl font-semibold text-[var(--color-text)]">
               Edit Idea
             </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Last updated {new Date(idea.updatedAt).toLocaleDateString()}
-            </p>
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-[var(--color-textSecondary)]" />
+              <span className="text-sm text-[var(--color-textSecondary)]">
+                Last updated {new Date(idea.updatedAt).toLocaleDateString()}
+              </span>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              toggleFavoriteNote(idea.id);
-            }}
-            className={`p-2 rounded-lg transition-colors ${idea.isFavorite
-                ? 'text-amber-500 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20'
-                : 'text-gray-400 hover:text-amber-500 dark:text-gray-500 dark:hover:text-amber-400 hover:bg-gray-100 dark:hover:bg-dark-hover'
+          <div className="flex items-center gap-2">
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleFavoriteNote(idea.id);
+              }}
+              disabled={isSaving}
+              className={`p-1.5 rounded-lg transition-colors ${
+                idea.isFavorite
+                  ? 'text-amber-500 bg-amber-500/10'
+                  : 'text-[var(--color-textSecondary)] hover:text-amber-500 hover:bg-amber-500/10'
               }`}
-          >
-            <Star className="w-5 h-5" fill={idea.isFavorite ? 'currentColor' : 'none'} />
-          </button>
-          <button
-            onClick={handleArchiveClick}
-            className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-dark-hover rounded-lg transition-colors"
-            title="Archive idea"
-          >
-            <Archive className="w-5 h-5" />
-          </button>
-          <button
-            onClick={handleDeleteClick}
-            className="p-2 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-dark-hover rounded-lg transition-colors"
-            title="Delete idea"
-          >
-            <Trash2 className="w-5 h-5" />
-          </button>
-          <button
-            onClick={onClose}
-            className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-          >
-            <X className="w-5 h-5" />
-          </button>
+            >
+              <Star className="w-5 h-5" fill={idea.isFavorite ? 'currentColor' : 'none'} />
+            </button>
+            <button
+              onClick={handleArchiveClick}
+              disabled={isSaving}
+              className="p-1.5 text-[var(--color-textSecondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface)] rounded-lg transition-colors"
+            >
+              <Archive className="w-5 h-5" />
+            </button>
+            <button
+              onClick={handleDeleteClick}
+              disabled={isSaving}
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-sm text-red-500 hover:bg-red-500/10 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete
+            </button>
+            <button
+              onClick={onClose}
+              className="p-1.5 text-[var(--color-textSecondary)] hover:text-[var(--color-text)] rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       </div>
 

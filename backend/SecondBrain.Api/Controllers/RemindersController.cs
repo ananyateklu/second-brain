@@ -66,8 +66,10 @@ namespace SecondBrain.Api.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var reminders = await _context.Reminders
-                .Include(r => r.ReminderLinks)
+                .Include(r => r.ReminderLinks.Where(rl => !rl.IsDeleted))
+                    .ThenInclude(rl => rl.LinkedItem)
                 .Where(r => r.UserId == userId && !r.IsDeleted)
+                .AsNoTracking()
                 .ToListAsync();
 
             var reminderResponses = new List<ReminderResponse>();
@@ -75,8 +77,13 @@ namespace SecondBrain.Api.Controllers
             {
                 if (reminder.ReminderLinks?.Any() == true)
                 {
-                    var (linkedItems, validLinks) = await LoadLinkedItems(reminder.ReminderLinks);
-                    reminder.ReminderLinks = validLinks;
+                    var linkedItems = reminder.ReminderLinks
+                        .Where(rl => !rl.IsDeleted && rl.LinkedItem != null)
+                        .ToDictionary(
+                            rl => rl.LinkedItemId,
+                            rl => (dynamic)rl.LinkedItem
+                        );
+                    
                     reminderResponses.Add(ReminderResponse.FromEntity(reminder, linkedItems));
                 }
                 else

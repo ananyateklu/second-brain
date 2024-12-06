@@ -1,156 +1,98 @@
 import { Type, Tag as TagIcon, X } from 'lucide-react';
-import { Input } from '../../../shared/Input';
-import { SuggestionButton } from '../../../shared/SuggestionButton';
+import { Note } from '../../../../types/note';
 
 interface MainContentProps {
-  title: string;
-  content: string;
-  tags: string[];
-  tagInput: string;
-  error: string;
-  isLoading: boolean;
-  onTitleChange: (title: string) => void;
-  onContentChange: (content: string) => void;
-  onTagInputChange: (tagInput: string | string[]) => void;
-  onAddTag: () => void;
-  onRemoveTag: (tag: string) => void;
-  setError: (error: string) => void;
+  idea: Note;
+  onUpdate: (updates: Partial<Note>) => void;
 }
 
-export function MainContent({
-  title,
-  content,
-  tags,
-  tagInput,
-  error,
-  isLoading,
-  onTitleChange,
-  onContentChange,
-  onTagInputChange,
-  onAddTag,
-  onRemoveTag,
-  setError
-}: MainContentProps) {
+export function MainContent({ idea, onUpdate }: MainContentProps) {
+  const handleAddTag = (value: string) => {
+    const trimmedTag = value.trim();
+    if (trimmedTag && !(idea.tags || []).includes(trimmedTag)) {
+      onUpdate({ tags: [...(idea.tags || []), trimmedTag] });
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    onUpdate({ tags: (idea.tags || []).filter(tag => tag !== tagToRemove) });
+  };
+
   return (
-    <div className="flex flex-col min-h-0 p-6 bg-white dark:bg-[#111111]">
-      <div className="space-y-4">
+    <div className="flex-1 overflow-y-auto">
+      <div className="p-6 space-y-6">
+        {/* Title */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <label htmlFor="idea-title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Title
-            </label>
-            <SuggestionButton
-              type="title"
-              itemType="idea"
-              input={{ content }}
-              onSuggestion={(suggestion) => onTitleChange(suggestion as string)}
-              disabled={isLoading}
-              context={{
-                currentTitle: title,
-                tags
-              }}
-            />
-          </div>
-          <Input
-            id="idea-title"
-            name="title"
+          <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-text)]">
+            <Type className="w-4 h-4" />
+            Title
+          </label>
+          <input
             type="text"
-            label=""
-            icon={Type}
-            value={title}
-            onChange={(e) => {
-              onTitleChange(e.target.value);
-              setError('');
-            }}
-            placeholder="What's your idea?"
-            error={error}
-            disabled={isLoading}
+            value={idea.title || ''}
+            onChange={(e) => onUpdate({ title: e.target.value })}
+            className="w-full h-[42px] px-4 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent text-[var(--color-text)] placeholder-[var(--color-textSecondary)]"
+            placeholder="Enter idea title"
           />
         </div>
 
+        {/* Content */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Description
-            </label>
-            <SuggestionButton
-              type="content"
-              itemType="idea"
-              input={{ title }}
-              onSuggestion={(suggestion) => onContentChange(suggestion as string)}
-              disabled={isLoading}
-              context={{
-                currentContent: content,
-                tags
-              }}
-            />
-          </div>
+          <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-text)]">
+            <Type className="w-4 h-4" />
+            Content
+          </label>
           <textarea
-            value={content}
-            onChange={(e) => onContentChange(e.target.value)}
-            placeholder="Describe your idea..."
+            value={idea.content || ''}
+            onChange={(e) => onUpdate({ content: e.target.value })}
             rows={8}
-            disabled={isLoading}
-            className="w-full px-3 py-2 bg-white dark:bg-[#1C1C1E] text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 resize-none rounded-lg border border-gray-200/50 dark:border-[#2C2C2E] focus:ring-2 focus:ring-primary-500/50 focus:border-transparent transition-all"
+            className="w-full min-h-[200px] px-4 py-3 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent text-[var(--color-text)] placeholder-[var(--color-textSecondary)] resize-none"
+            placeholder="Write your idea here..."
           />
         </div>
 
+        {/* Tags */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Tags
-            </label>
-            <SuggestionButton
-              type="tags"
-              itemType="idea"
-              input={{ title, content }}
-              onSuggestion={(suggestion) => onTagInputChange(suggestion as string[])}
-              disabled={isLoading}
-              context={{
-                currentTags: tags
+          <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-text)]">
+            <TagIcon className="w-4 h-4" />
+            Tags
+          </label>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Add a tag"
+              className="w-full h-[42px] px-4 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent text-[var(--color-text)] placeholder-[var(--color-textSecondary)]"
+              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  const value = (e.target as HTMLInputElement).value.trim();
+                  if (value) {
+                    handleAddTag(value);
+                    (e.target as HTMLInputElement).value = '';
+                  }
+                }
               }}
             />
           </div>
-          <div className="flex flex-wrap gap-2 mb-2">
-            {tags.map(tag => (
-              <span
-                key={tag}
-                className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 rounded-full text-sm"
-              >
-                {tag}
-                {tag !== 'idea' && (
+          {(idea.tags || []).length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {(idea.tags || []).map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-[var(--color-accent)]/20 text-[var(--color-accent)] rounded-full text-sm"
+                >
+                  {tag}
                   <button
                     type="button"
-                    onClick={() => onRemoveTag(tag)}
-                    className="hover:text-primary-900 dark:hover:text-primary-100 transition-colors"
+                    onClick={() => handleRemoveTag(tag)}
+                    className="p-0.5 hover:text-[var(--color-accent)]"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-3 h-3" />
                   </button>
-                )}
-              </span>
-            ))}
-          </div>
-          <div className="flex gap-2">
-            <Input
-              id="tag-input"
-              name="tag"
-              type="text"
-              label=""
-              icon={TagIcon}
-              value={tagInput}
-              onChange={(e) => onTagInputChange(e.target.value)}
-              placeholder="Add a tag"
-              disabled={isLoading}
-            />
-            <button
-              type="button"
-              onClick={onAddTag}
-              disabled={!tagInput.trim() || isLoading}
-              className="px-4 py-2 bg-white/70 dark:bg-gray-800/70 backdrop-blur-glass text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-gray-200/50 dark:border-gray-700/50"
-            >
-              Add
-            </button>
-          </div>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

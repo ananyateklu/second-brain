@@ -1,4 +1,4 @@
-import { Trash2 } from 'lucide-react';
+import { Trash2, Clock } from 'lucide-react';
 import { Reminder } from '../../../../api/types/reminder';
 
 interface HeaderProps {
@@ -13,26 +13,28 @@ export function Header({
   isSaving = false 
 }: HeaderProps) {
   return (
-    <div className="shrink-0 px-6 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface)] backdrop-blur-md">
+    <div className="shrink-0 px-6 py-4 border-b border-[var(--color-border)] bg-[var(--color-background)]">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+          <h2 className="text-xl font-semibold text-[var(--color-text)]">
             Edit Reminder
           </h2>
-          <span className="text-sm text-gray-500 dark:text-gray-400">
-            Last updated {new Date(reminder.updatedAt).toLocaleDateString()}
-          </span>
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-[var(--color-textSecondary)]" />
+            <span className="text-sm text-[var(--color-textSecondary)]">
+              Last updated {new Date(reminder.updatedAt).toLocaleDateString()}
+            </span>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={onShowDeleteConfirm}
-            disabled={isSaving}
-            className="p-2 text-gray-500 hover:text-red-500 dark:text-gray-400 dark:hover:text-red-400 rounded-lg transition-colors"
-          >
-            <Trash2 className="w-5 h-5" />
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={onShowDeleteConfirm}
+          disabled={isSaving}
+          className="inline-flex items-center gap-2 px-3 py-1.5 text-sm text-red-500 hover:bg-red-500/10 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Trash2 className="w-4 h-4" />
+          Delete
+        </button>
       </div>
     </div>
   );

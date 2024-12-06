@@ -109,7 +109,7 @@ export const notesService = {
   },
 
   async updateNote(id: string, data: Partial<UpdateNoteData>): Promise<Note> {
-    const response = await api.put<Note>(`/api/Notes/${id}`, {
+    const response = await api.put<NoteResponse>(`/api/Notes/${id}`, {
       ...data,
       ...(data.isDeleted && { deletedAt: new Date().toISOString() })
     });
@@ -141,9 +141,19 @@ export const notesService = {
     }
   },
 
+  async linkReminder(noteId: string, reminderId: string): Promise<Note> {
+    const response = await api.post<NoteResponse>(`/api/Notes/${noteId}/reminders/${reminderId}`);
+    return processNoteResponse(response.data);
+  },
+
+  async unlinkReminder(noteId: string, reminderId: string): Promise<Note> {
+    const response = await api.delete<NoteResponse>(`/api/Notes/${noteId}/reminders/${reminderId}`);
+    return processNoteResponse(response.data);
+  },
+
   async getArchivedNotes(): Promise<Note[]> {
     try {
-      const response = await api.get<Note[]>('/api/Notes/archived');
+      const response = await api.get<NoteResponse[]>('/api/Notes/archived');
       return response.data.map(processNoteResponse);
     } catch (error) {
       console.error('Error fetching archived notes:', error);
@@ -152,12 +162,12 @@ export const notesService = {
   },
 
   async restoreNote(id: string): Promise<Note> {
-    const response = await api.post<Note>(`/api/Notes/${id}/restore`);
+    const response = await api.post<NoteResponse>(`/api/Notes/${id}/restore`);
     return processNoteResponse(response.data);
   },
 
   async getDeletedNotes(): Promise<Note[]> {
-    const response = await api.get<Note[]>('/api/Notes/deleted');
+    const response = await api.get<NoteResponse[]>('/api/Notes/deleted');
     return response.data.map(processNoteResponse);
   },
 
@@ -167,7 +177,7 @@ export const notesService = {
 
   async unarchiveNote(id: string): Promise<Note> {
     try {
-      const response = await api.post<Note>(`/api/Notes/${id}/unarchive`);
+      const response = await api.post<NoteResponse>(`/api/Notes/${id}/unarchive`);
       return processNoteResponse(response.data);
     } catch (error) {
       console.error('Error unarchiving note:', error);

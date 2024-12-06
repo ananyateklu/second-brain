@@ -1,5 +1,4 @@
-import { AlertCircle, X, Tag, Calendar } from 'lucide-react';
-import { Input } from '../../../shared/Input';
+import { Type, Calendar, Tag as TagIcon, AlertCircle, X } from 'lucide-react';
 
 interface MainContentProps {
     title: string;
@@ -35,200 +34,194 @@ export function MainContent({
     onTagsChange,
 }: MainContentProps) {
     return (
-        <div className="p-6 overflow-y-auto bg-white dark:bg-[#111111]">
-            {error && (
-                <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/30 border border-red-100 dark:border-red-900/50 rounded-lg">
-                    <div className="flex items-center gap-2 text-red-700 dark:text-red-400">
-                        <AlertCircle className="w-4 h-4" />
-                        <span>{error}</span>
+        <div className="flex-1 overflow-y-auto">
+            <div className="p-6 space-y-6">
+                {error && (
+                    <div className="p-4 bg-red-500/10 rounded-lg">
+                        <div className="flex items-center gap-2 text-red-500">
+                            <AlertCircle className="w-4 h-4" />
+                            <span>{error}</span>
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
 
-            <div className="space-y-4">
                 {/* Title */}
-                <div>
-                    <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <div className="space-y-2">
+                    <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-text)]">
+                        <Type className="w-4 h-4" />
                         Title
                     </label>
                     <input
                         type="text"
-                        id="title"
                         value={title}
                         onChange={(e) => onTitleChange(e.target.value)}
-                        className="mt-1 block w-full px-3 py-2 bg-white dark:bg-[#1C1C1E] text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 rounded-lg border border-gray-200/50 dark:border-[#2C2C2E] focus:ring-2 focus:ring-primary-500/50 focus:border-transparent transition-all"
-                        placeholder="Task title"
+                        className="w-full h-[42px] px-4 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent text-[var(--color-text)] placeholder-[var(--color-textSecondary)]"
+                        placeholder="Enter task title"
                         disabled={isLoading}
                     />
                 </div>
 
                 {/* Description */}
-                <div>
-                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                <div className="space-y-2">
+                    <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-text)]">
+                        <Type className="w-4 h-4" />
                         Description
                     </label>
                     <textarea
-                        id="description"
                         value={description}
                         onChange={(e) => onDescriptionChange(e.target.value)}
-                        rows={4}
-                        className="mt-1 block w-full px-3 py-2 bg-white dark:bg-[#1C1C1E] text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 resize-none rounded-lg border border-gray-200/50 dark:border-[#2C2C2E] focus:ring-2 focus:ring-primary-500/50 focus:border-transparent transition-all"
-                        placeholder="Task description"
+                        rows={3}
+                        className="w-full min-h-[90px] px-4 py-3 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent text-[var(--color-text)] placeholder-[var(--color-textSecondary)] resize-none"
+                        placeholder="Add a description"
                         disabled={isLoading}
                     />
                 </div>
 
-                {/* Priority */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Priority
-                    </label>
-                    <div className="flex gap-2">
-                        <button
-                            type="button"
-                            onClick={() => onPriorityChange('low')}
-                            disabled={isLoading}
-                            className={`
-                px-4 py-2 rounded-lg font-medium text-sm
-                ${priority === 'low'
-                                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-2 border-green-500'
-                                    : 'bg-white dark:bg-[#1C1C1E] text-gray-700 dark:text-gray-300 border border-gray-200/50 dark:border-[#2C2C2E] hover:bg-gray-50 dark:hover:bg-[#2C2C2E]'
-                                }
-                transition-colors
-              `}
-                        >
-                            Low
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => onPriorityChange('medium')}
-                            disabled={isLoading}
-                            className={`
-                px-4 py-2 rounded-lg font-medium text-sm
-                ${priority === 'medium'
-                                    ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border-2 border-yellow-500'
-                                    : 'bg-white dark:bg-[#1C1C1E] text-gray-700 dark:text-gray-300 border border-gray-200/50 dark:border-[#2C2C2E] hover:bg-gray-50 dark:hover:bg-[#2C2C2E]'
-                                }
-                transition-colors
-              `}
-                        >
-                            Medium
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => onPriorityChange('high')}
-                            disabled={isLoading}
-                            className={`
-                px-4 py-2 rounded-lg font-medium text-sm
-                ${priority === 'high'
-                                    ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-2 border-red-500'
-                                    : 'bg-white dark:bg-[#1C1C1E] text-gray-700 dark:text-gray-300 border border-gray-200/50 dark:border-[#2C2C2E] hover:bg-gray-50 dark:hover:bg-[#2C2C2E]'
-                                }
-                transition-colors
-              `}
-                        >
-                            High
-                        </button>
-                    </div>
-                </div>
-
-                {/* Due Date */}
-                <div className="max-w-sm">
-                    <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-300" />
-                        <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Due Date
-                        </label>
-                    </div>
-                    <input
-                        type="datetime-local"
-                        id="dueDate"
-                        value={dueDate || ''}
-                        onChange={(e) => onDueDateChange(e.target.value || null)}
-                        className="mt-1 block w-full px-3 py-2 bg-white dark:bg-[#1C1C1E] text-gray-700 dark:text-gray-300 placeholder-gray-400 dark:placeholder-gray-500 rounded-lg border border-gray-200/50 dark:border-[#2C2C2E] focus:ring-2 focus:ring-primary-500/50 focus:border-transparent transition-all"
-                        disabled={isLoading}
-                    />
-                </div>
-
-                {/* Status */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Status
-                    </label>
-                    <div className="flex gap-2">
-                        <button
-                            type="button"
-                            onClick={() => onStatusChange('Incomplete')}
-                            disabled={isLoading}
-                            className={`
-                px-4 py-2 rounded-lg font-medium text-sm
-                ${status === 'Incomplete'
-                                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-2 border-blue-500'
-                                    : 'bg-white dark:bg-[#1C1C1E] text-gray-700 dark:text-gray-300 border border-gray-200/50 dark:border-[#2C2C2E] hover:bg-gray-50 dark:hover:bg-[#2C2C2E]'
-                                }
-                transition-colors
-              `}
-                        >
-                            Incomplete
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => onStatusChange('Completed')}
-                            disabled={isLoading}
-                            className={`
-                px-4 py-2 rounded-lg font-medium text-sm
-                ${status === 'Completed'
-                                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-2 border-green-500'
-                                    : 'bg-white dark:bg-[#1C1C1E] text-gray-700 dark:text-gray-300 border border-gray-200/50 dark:border-[#2C2C2E] hover:bg-gray-50 dark:hover:bg-[#2C2C2E]'
-                                }
-                transition-colors
-              `}
-                        >
-                            Completed
-                        </button>
-                    </div>
-                </div>
-
-                {/* Tags */}
-                <div className="max-w-sm">
-                    <Input
-                        label="Tags"
-                        icon={Tag}
-                        placeholder="Add tag..."
-                        disabled={isLoading}
-                        disableEnhancement
-                        disableRecording
-                        onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-                                const value = (e.target as HTMLInputElement).value.trim();
-                                if (value && !tags.includes(value)) {
-                                    onTagsChange([...tags, value]);
-                                    (e.target as HTMLInputElement).value = '';
-                                }
-                            }
-                        }}
-                    />
-                    {tags.length > 0 && (
-                        <div className="mt-2 flex flex-wrap gap-2">
-                            {tags.map((tag) => (
-                                <span
-                                    key={tag}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 rounded-full text-sm"
-                                >
-                                    {tag}
-                                    <button
-                                        type="button"
-                                        onClick={() => onTagsChange(tags.filter(t => t !== tag))}
-                                        className="hover:text-primary-900 dark:hover:text-primary-100 transition-colors"
-                                        disabled={isLoading}
-                                    >
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                </span>
-                            ))}
+                <div className="grid grid-cols-2 gap-6">
+                    {/* Left Column */}
+                    <div className="space-y-6">
+                        {/* Due Date */}
+                        <div className="space-y-2">
+                            <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-text)]">
+                                <Calendar className="w-4 h-4" />
+                                Due Date
+                            </label>
+                            <input
+                                type="datetime-local"
+                                value={dueDate || ''}
+                                onChange={(e) => onDueDateChange(e.target.value || null)}
+                                className="w-full h-[42px] px-4 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent text-[var(--color-text)]"
+                                disabled={isLoading}
+                            />
                         </div>
-                    )}
+
+                        {/* Tags */}
+                        <div className="space-y-2">
+                            <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-text)]">
+                                <TagIcon className="w-4 h-4" />
+                                Tags
+                            </label>
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    placeholder="Add a tag"
+                                    disabled={isLoading}
+                                    className="w-full h-[42px] px-4 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent text-[var(--color-text)] placeholder-[var(--color-textSecondary)]"
+                                    onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            const value = (e.target as HTMLInputElement).value.trim();
+                                            if (value && !tags.includes(value)) {
+                                                onTagsChange([...tags, value]);
+                                                (e.target as HTMLInputElement).value = '';
+                                            }
+                                        }
+                                    }}
+                                />
+                            </div>
+                            {tags.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                    {tags.map((tag) => (
+                                        <span
+                                            key={tag}
+                                            className="inline-flex items-center gap-1.5 px-3 py-1 bg-[var(--color-accent)]/20 text-[var(--color-accent)] rounded-full text-sm"
+                                        >
+                                            {tag}
+                                            <button
+                                                type="button"
+                                                onClick={() => onTagsChange(tags.filter(t => t !== tag))}
+                                                className="p-0.5 hover:text-[var(--color-accent)]"
+                                                disabled={isLoading}
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Right Column */}
+                    <div className="space-y-6">
+                        {/* Priority */}
+                        <div className="space-y-2">
+                            <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-text)]">
+                                Priority
+                            </label>
+                            <div className="flex gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => onPriorityChange('low')}
+                                    disabled={isLoading}
+                                    className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                        priority === 'low'
+                                            ? 'bg-green-500/20 text-green-500'
+                                            : 'bg-[var(--color-surface)] text-[var(--color-textSecondary)] hover:bg-[var(--color-surface)]/80'
+                                    }`}
+                                >
+                                    Low
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => onPriorityChange('medium')}
+                                    disabled={isLoading}
+                                    className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                        priority === 'medium'
+                                            ? 'bg-yellow-500/20 text-yellow-500'
+                                            : 'bg-[var(--color-surface)] text-[var(--color-textSecondary)] hover:bg-[var(--color-surface)]/80'
+                                    }`}
+                                >
+                                    Medium
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => onPriorityChange('high')}
+                                    disabled={isLoading}
+                                    className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                        priority === 'high'
+                                            ? 'bg-red-500/20 text-red-500'
+                                            : 'bg-[var(--color-surface)] text-[var(--color-textSecondary)] hover:bg-[var(--color-surface)]/80'
+                                    }`}
+                                >
+                                    High
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Status */}
+                        <div className="space-y-2">
+                            <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-text)]">
+                                Status
+                            </label>
+                            <div className="flex gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => onStatusChange('Incomplete')}
+                                    disabled={isLoading}
+                                    className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                        status === 'Incomplete'
+                                            ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
+                                            : 'bg-[var(--color-surface)] text-[var(--color-textSecondary)] hover:bg-[var(--color-surface)]/80'
+                                    }`}
+                                >
+                                    Incomplete
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => onStatusChange('Completed')}
+                                    disabled={isLoading}
+                                    className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                        status === 'Completed'
+                                            ? 'bg-green-500/20 text-green-500'
+                                            : 'bg-[var(--color-surface)] text-[var(--color-textSecondary)] hover:bg-[var(--color-surface)]/80'
+                                    }`}
+                                >
+                                    Completed
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

@@ -1,6 +1,9 @@
 import { Link2, Plus, Type, Lightbulb, CheckSquare, X, Calendar } from 'lucide-react';
 import type { Note } from '../../../../types/note';
 import { useNotes } from '../../../../contexts/notesContextUtils';
+import { LinkedRemindersPanel } from './LinkedRemindersPanel';
+import { useState } from 'react';
+import { AddReminderLinkModal } from './AddReminderLinkModal';
 
 interface LinkedNotesPanelProps {
   linkedNotes: Note[];
@@ -11,23 +14,28 @@ interface LinkedNotesPanelProps {
     priority: string;
     dueDate: string | null | undefined;
   }>;
+  linkedReminders?: Note['linkedReminders'];
   onShowAddLink: () => void;
   onShowAddTask: () => void;
   currentNoteId: string;
-  isIdea?: boolean;
   onUnlinkTask: (taskId: string) => void;
+  onUnlinkReminder?: (reminderId: string) => void;
+  onLinkReminder?: (reminderId: string) => void;
 }
 
 export function LinkedNotesPanel({
   linkedNotes,
   linkedTasks = [],
+  linkedReminders = [],
   onShowAddLink,
   onShowAddTask,
   currentNoteId,
-  isIdea,
-  onUnlinkTask
+  onUnlinkTask,
+  onUnlinkReminder,
+  onLinkReminder
 }: LinkedNotesPanelProps) {
   const { removeLink } = useNotes();
+  const [showAddReminderModal, setShowAddReminderModal] = useState(false);
 
   const handleUnlinkNote = async (linkedNoteId: string) => {
     if (!currentNoteId) {
@@ -41,162 +49,184 @@ export function LinkedNotesPanel({
     }
   };
 
+  const handleAddReminder = (reminderId: string) => {
+    onLinkReminder?.(reminderId);
+    setShowAddReminderModal(false);
+  };
+
+  const hasLinkedItems = linkedNotes.length > 0 || linkedTasks.length > 0 || linkedReminders.length > 0;
+
   return (
-    <div className="border-l border-[var(--color-border)] flex flex-col min-h-0">
-      <div className="shrink-0 px-4 py-3 border-b border-[var(--color-border)] bg-[var(--color-surface)] backdrop-blur-md">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Link2 className="w-4 h-4 text-[var(--color-textSecondary)]" />
-            <h3 className="text-sm font-medium text-[var(--color-text)]">
-              {isIdea ? 'Connected Items' : 'Connections'}
-            </h3>
+    <>
+      <div className="w-80 border-l border-[var(--color-border)] flex flex-col min-h-0 bg-[var(--color-background)]">
+        {/* Header */}
+        <div className="shrink-0 px-4 py-3 border-b border-[var(--color-border)] bg-[var(--color-background)]">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Link2 className="w-4 h-4 text-[var(--color-textSecondary)]" />
+              <span className="text-sm font-medium text-[var(--color-text)]">
+                Linked Items
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={onShowAddTask}
+                className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 rounded-md transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Task
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowAddReminderModal(true)}
+                className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 rounded-md transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Reminder
+              </button>
+              <button
+                type="button"
+                onClick={onShowAddLink}
+                className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 rounded-md transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Note
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onShowAddTask}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 rounded-lg transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              Task
-            </button>
-            <button
-              type="button"
-              onClick={onShowAddLink}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 rounded-lg transition-colors"
-            >
-              <Plus className="w-4 h-4" />
-              Note
-            </button>
-          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto">
+          {hasLinkedItems ? (
+            <div className="p-4 space-y-6">
+              {/* Notes Section */}
+              {linkedNotes.length > 0 && (
+                <div>
+                  <h6 className="text-xs font-medium text-[var(--color-textSecondary)] uppercase tracking-wider mb-2">
+                    Notes & Ideas
+                  </h6>
+                  <div className="space-y-2">
+                    {linkedNotes.map(linkedNote => (
+                      <div
+                        key={linkedNote.id}
+                        className="group flex items-start gap-3 p-3 rounded-lg hover:bg-[var(--color-surface)] transition-colors"
+                      >
+                        <div className={`shrink-0 p-2 rounded-lg ${
+                          linkedNote.isIdea 
+                            ? 'bg-[var(--color-idea)]/10' 
+                            : 'bg-[var(--color-note)]/10'
+                        }`}>
+                          {linkedNote.isIdea ? (
+                            <Lightbulb className="w-4 h-4 text-[var(--color-idea)]" />
+                          ) : (
+                            <Type className="w-4 h-4 text-[var(--color-note)]" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h6 className="font-medium text-[var(--color-text)] truncate">
+                            {linkedNote.title}
+                          </h6>
+                          <p className="text-xs text-[var(--color-textSecondary)] mt-0.5">
+                            {linkedNote.isIdea ? 'Idea' : 'Note'}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleUnlinkNote(linkedNote.id)}
+                          className="opacity-0 group-hover:opacity-100 p-1 text-[var(--color-textSecondary)] hover:text-red-500 hover:bg-red-500/10 rounded transition-all"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Tasks Section */}
+              {linkedTasks.length > 0 && (
+                <div>
+                  <h6 className="text-xs font-medium text-[var(--color-textSecondary)] uppercase tracking-wider mb-2">
+                    Tasks
+                  </h6>
+                  <div className="space-y-2">
+                    {linkedTasks.map(task => (
+                      <div
+                        key={task.id}
+                        className="group flex items-start gap-3 p-3 rounded-lg hover:bg-[var(--color-surface)] transition-colors"
+                      >
+                        <div className="shrink-0 p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                          <CheckSquare className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h6 className="font-medium text-[var(--color-text)] truncate">
+                            {task.title}
+                          </h6>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`text-xs px-1.5 py-0.5 rounded ${
+                              task.status === 'completed'
+                                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                                : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'
+                            }`}>
+                              {task.status}
+                            </span>
+                            {task.dueDate && (
+                              <span className="flex items-center gap-1 text-xs text-[var(--color-textSecondary)]">
+                                <Calendar className="w-3 h-3" />
+                                {new Date(task.dueDate).toLocaleDateString()}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => onUnlinkTask(task.id)}
+                          className="opacity-0 group-hover:opacity-100 p-1 text-[var(--color-textSecondary)] hover:text-red-500 hover:bg-red-500/10 rounded transition-all"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Reminders Section */}
+              {linkedReminders && linkedReminders.length > 0 && (
+                <div>
+                  <h6 className="text-xs font-medium text-[var(--color-textSecondary)] uppercase tracking-wider mb-2">
+                    Reminders
+                  </h6>
+                  <LinkedRemindersPanel
+                    reminders={linkedReminders}
+                    onUnlink={onUnlinkReminder}
+                  />
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full py-6 text-center">
+              <div className="p-3 bg-[var(--color-surface)]/50 rounded-full mb-3">
+                <Link2 className="w-5 h-5 text-[var(--color-textSecondary)]" />
+              </div>
+              <p className="text-sm font-medium text-[var(--color-text)]">
+                No linked items yet
+              </p>
+              <p className="text-xs text-[var(--color-textSecondary)] mt-1 max-w-[200px]">
+                Click the buttons above to link notes, tasks, or reminders
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[var(--color-surface)]">
-        {linkedNotes.length > 0 || linkedTasks.length > 0 ? (
-          <>
-            {/* Linked Notes Section */}
-            {linkedNotes.length > 0 && (
-              <div className="space-y-2.5">
-                <h4 className="text-xs font-medium text-[var(--color-textSecondary)] uppercase tracking-wider px-1">
-                  Notes & Ideas
-                </h4>
-                {linkedNotes.map(linkedNote => (
-                  <div
-                    key={linkedNote.id}
-                    className="group relative p-3 rounded-lg bg-[var(--color-surface)] hover:bg-[var(--color-surface)]/80 transition-colors border border-[var(--color-border)]"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={`shrink-0 p-1.5 rounded-lg ${linkedNote.isIdea
-                          ? 'bg-amber-100 dark:bg-amber-900/30'
-                          : 'bg-blue-100 dark:bg-blue-900/30'
-                        }`}>
-                        {linkedNote.isIdea ? (
-                          <Lightbulb className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                        ) : (
-                          <Type className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
-                          <h6 className="font-medium text-gray-900 dark:text-white truncate">
-                            {linkedNote.title}
-                          </h6>
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleUnlinkNote(linkedNote.id);
-                            }}
-                            className="shrink-0 opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 rounded transition-opacity"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mt-0.5">
-                          {linkedNote.content}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Linked Tasks Section */}
-            {linkedTasks.length > 0 && (
-              <div className="space-y-2.5">
-                <h4 className="text-xs font-medium text-[var(--color-textSecondary)] uppercase tracking-wider px-1">
-                  Tasks
-                </h4>
-                {linkedTasks.map(task => (
-                  <div
-                    key={task.id}
-                    className="group relative p-3 rounded-lg bg-[var(--color-surface)] hover:bg-[var(--color-surface)]/80 transition-colors border border-[var(--color-border)]"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="shrink-0 p-1.5 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                        <CheckSquare className="w-4 h-4 text-green-600 dark:text-green-400" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
-                          <h6 className="font-medium text-gray-900 dark:text-white truncate">
-                            {task.title}
-                          </h6>
-                          {onUnlinkTask && (
-                            <button
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                onUnlinkTask(task.id);
-                              }}
-                              className="shrink-0 opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 rounded transition-opacity"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
-                        <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                          <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full ${task.status === 'Completed'
-                              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                              : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-                            }`}>
-                            {task.status}
-                          </span>
-                          <span className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full ${task.priority === 'high'
-                              ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                              : task.priority === 'medium'
-                                ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
-                                : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                            }`}>
-                            {task.priority}
-                          </span>
-                          {task.dueDate && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-full">
-                              <Calendar className="w-3 h-3" />
-                              {new Date(task.dueDate).toLocaleDateString()}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <Link2 className="w-8 h-8 text-[var(--color-textSecondary)] mb-2" />
-            <p className="text-sm text-[var(--color-textSecondary)]">
-              No connections yet
-            </p>
-            <p className="text-xs text-[var(--color-textSecondary)] mt-1">
-              Click "+ Task" or "+ Note" to add connections
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
+      {/* Add Reminder Modal */}
+      <AddReminderLinkModal
+        isOpen={showAddReminderModal}
+        onClose={() => setShowAddReminderModal(false)}
+        onSelect={handleAddReminder}
+        currentLinkedReminderIds={linkedReminders?.map(r => r.id) || []}
+      />
+    </>
   );
 }

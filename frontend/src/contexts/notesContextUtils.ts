@@ -5,7 +5,7 @@ export interface NotesContextType {
   notes: Note[];
   archivedNotes: Note[];
   isLoading: boolean;
-  addNote: (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'linkedNoteIds' | 'linkedNotes' | 'linkedTasks'>) => void;
+  addNote: (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'linkedNoteIds' | 'linkedNotes' | 'linkedTasks' | 'linkedReminders'>) => void;
   updateNote: (id: string, updates: Partial<Note>) => Promise<Note>;
   deleteNote: (id: string) => Promise<void>;
   togglePinNote: (id: string) => void;
@@ -14,6 +14,8 @@ export interface NotesContextType {
   unarchiveNote: (id: string) => Promise<Note>;
   addLink: (sourceId: string, targetId: string) => void;
   removeLink: (sourceId: string, targetId: string) => void;
+  linkReminder: (noteId: string, reminderId: string) => Promise<Note>;
+  unlinkReminder: (noteId: string, reminderId: string) => Promise<Note>;
   loadArchivedNotes: () => Promise<void>;
   restoreMultipleNotes: (ids: string[]) => Promise<PromiseSettledResult<Note>[]>;
   restoreNote: (restoredNote: Note) => Promise<void>;

@@ -13,71 +13,75 @@ export function LinkedItemsPanel({
   onUnlink
 }: LinkedItemsPanelProps) {
   return (
-    <div className="border-l border-gray-200/30 dark:border-[#1C1C1E] flex flex-col min-h-0">
-      <div className="shrink-0 px-4 py-3 border-b border-gray-200/30 dark:border-[#1C1C1E] bg-white dark:bg-[#111111] backdrop-blur-md">
+    <div className="w-80 border-l border-[var(--color-border)] flex flex-col min-h-0 bg-[var(--color-background)]">
+      <div className="shrink-0 px-4 py-3 border-b border-[var(--color-border)] bg-[var(--color-background)]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Link2 className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-            <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+            <Link2 className="w-4 h-4 text-[var(--color-textSecondary)]" />
+            <span className="text-sm font-medium text-[var(--color-text)]">
               Linked Items
-            </h3>
+            </span>
           </div>
           <button
             type="button"
             onClick={onShowAddLink}
-            className="flex items-center gap-1.5 px-2 py-1 text-sm text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
+            className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 rounded-md transition-colors"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             Link Item
           </button>
         </div>
       </div>
       
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-white dark:bg-[#111111]">
+      <div className="flex-1 overflow-y-auto">
         {linkedItems.length > 0 ? (
-          linkedItems.map(item => (
-            <div
-              key={item.id}
-              className="group relative p-3 rounded-lg bg-white dark:bg-[#1C1C1E] hover:bg-gray-50 dark:hover:bg-[#2C2C2E] transition-colors border border-gray-200/50 dark:border-[#2C2C2E]"
-            >
-              <div className="flex items-start gap-3">
-                {item.type === 'idea' ? (
-                  <div className="p-1.5 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
-                    <Lightbulb className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+          <div className="divide-y divide-[var(--color-border)]">
+            {linkedItems.map(item => (
+              <div
+                key={item.id}
+                className="group relative hover:bg-[var(--color-surface)] transition-colors"
+              >
+                <div className="flex items-start gap-3 p-4">
+                  {item.type === 'idea' ? (
+                    <div className="shrink-0 p-2 bg-[var(--color-idea)]/10 rounded-lg">
+                      <Lightbulb className="w-4 h-4 text-[var(--color-idea)]" />
+                    </div>
+                  ) : (
+                    <div className="shrink-0 p-2 bg-[var(--color-note)]/10 rounded-lg">
+                      <Type className="w-4 h-4 text-[var(--color-note)]" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <h6 className="font-medium text-[var(--color-text)] truncate">
+                      {item.title}
+                    </h6>
+                    <p className="text-xs text-[var(--color-textSecondary)] mt-0.5">
+                      {item.type === 'idea' ? 'Idea' : 'Note'}
+                    </p>
                   </div>
-                ) : (
-                  <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                    <Type className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <h6 className="font-medium text-gray-900 dark:text-white truncate">
-                    {item.title}
-                  </h6>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {item.type === 'idea' ? 'Idea' : 'Note'}
-                  </p>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onUnlink(item.id);
+                    }}
+                    className="opacity-0 group-hover:opacity-100 p-1 text-[var(--color-textSecondary)] hover:text-red-500 hover:bg-red-500/10 rounded transition-all"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onUnlink(item.id);
-                  }}
-                  className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 rounded transition-opacity"
-                >
-                  <X className="w-4 h-4" />
-                </button>
               </div>
-            </div>
-          ))
+            ))}
+          </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <Link2 className="w-8 h-8 text-gray-300 dark:text-gray-600 mb-2" />
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+          <div className="flex flex-col items-center justify-center h-full py-6 text-center">
+            <div className="p-3 bg-[var(--color-surface)]/50 rounded-full mb-3">
+              <Link2 className="w-5 h-5 text-[var(--color-textSecondary)]" />
+            </div>
+            <p className="text-sm font-medium text-[var(--color-text)]">
               No linked items yet
             </p>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+            <p className="text-xs text-[var(--color-textSecondary)] mt-1 max-w-[200px]">
               Click "Link Item" to connect with notes or ideas
             </p>
           </div>

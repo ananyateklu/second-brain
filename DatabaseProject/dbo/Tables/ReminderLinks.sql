@@ -3,7 +3,7 @@ CREATE TABLE [dbo].[ReminderLinks] (
     [LinkedItemId] NVARCHAR (36)  NOT NULL,
     [CreatedAt]    DATETIME2 (7)  NOT NULL,
     [CreatedBy]    NVARCHAR (450) NOT NULL,
-    [LinkType]     NVARCHAR (50)  NOT NULL,  -- 'note' or 'idea'
+    [LinkType]     NVARCHAR (50)  NOT NULL,
     [Description]  NVARCHAR (MAX) NULL,
     [IsDeleted]    BIT            DEFAULT ((0)) NOT NULL,
     [DeletedAt]    DATETIME2 (7)  NULL,

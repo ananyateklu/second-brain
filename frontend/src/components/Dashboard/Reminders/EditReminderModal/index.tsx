@@ -89,7 +89,7 @@ export function EditReminderModal({ reminder: initialReminder, isOpen, onClose }
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={handleCancel} />
         
-        <div className="relative w-full max-w-6xl h-[calc(100vh-8rem)] glass-morphism rounded-xl flex flex-col">
+        <div className="relative w-full max-w-4xl h-[calc(75vh-8rem)] bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl flex flex-col overflow-hidden">
           <Header
             reminder={{ ...reminder, ...pendingChanges }}
             onShowDeleteConfirm={() => setIsDeleteConfirmOpen(true)}
@@ -104,22 +104,20 @@ export function EditReminderModal({ reminder: initialReminder, isOpen, onClose }
               />
             </div>
 
-            <div className="w-80">
-              <LinkedItemsPanel
-                linkedItems={reminder.linkedItems}
-                onShowAddLink={() => setIsAddLinkOpen(true)}
-                onUnlink={handleUnlink}
-              />
-            </div>
+            <LinkedItemsPanel
+              linkedItems={reminder.linkedItems}
+              onShowAddLink={() => setIsAddLinkOpen(true)}
+              onUnlink={handleUnlink}
+            />
           </div>
 
-          <div className="shrink-0 px-6 py-4 border-t border-[var(--color-border)] bg-[var(--color-surface)] backdrop-blur-md">
+          <div className="shrink-0 px-6 py-4 border-t border-[var(--color-border)] bg-[var(--color-background)]">
             <div className="flex items-center justify-end gap-3">
               <button
                 type="button"
                 onClick={handleCancel}
                 disabled={isSaving}
-                className="px-4 py-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-lg transition-colors"
+                className="px-4 py-2 text-[var(--color-textSecondary)] hover:text-[var(--color-text)] rounded-lg transition-colors"
               >
                 Cancel
               </button>
