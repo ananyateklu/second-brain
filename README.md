@@ -17,7 +17,11 @@ Second Brain is a modern note-taking and knowledge management system that combin
   - Rich text editing with Markdown support
   - Interactive mind mapping and relationship graphs
   - AI-powered organization and tagging
-  - Bi-directional linking between notes
+  - Comprehensive linking system:
+    - Note-to-note bi-directional links
+    - Link notes to tasks and reminders
+    - Connect ideas with related content
+    - Automatic link suggestions
   - Version history and archiving
   - Visual knowledge graphs
 
@@ -31,7 +35,10 @@ Second Brain is a modern note-taking and knowledge management system that combin
 - **Task & Reminder System**
   - Priority-based organization
   - Smart scheduling with AI
-  - Task linking and dependencies
+  - Rich content linking:
+    - Link tasks to relevant notes
+    - Connect reminders with documentation
+    - Attach reference materials
   - Progress tracking
   - Context-aware notifications
 
@@ -340,3 +347,33 @@ Future Plans:
 - Data export/import
 - API documentation
 - Integration tests
+
+## Content Linking Features
+
+The system provides comprehensive content linking capabilities:
+
+- **Notes**
+  - Link to other notes for reference
+  - Connect to tasks for project documentation
+  - Attach to reminders for follow-ups
+  - Link to ideas for brainstorming
+
+- **Tasks**
+  - Link to reference notes
+  - Connect related documentation
+  - Attach meeting notes
+  - Link dependencies
+
+- **Reminders**
+  - Link to notes for context
+  - Attach reference materials
+  - Connect to related tasks
+  - Link to documentation
+
+- **Ideas**
+  - Link to supporting notes
+  - Connect related concepts
+  - Attach research materials
+  - Link to implementation tasks
+
+All links are bi-directional, allowing you to navigate your knowledge base from any starting point.
