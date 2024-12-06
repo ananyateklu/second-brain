@@ -9,15 +9,39 @@
 
 # AI-Powered Personal Knowledge Management System
 
-Second Brain is a modern note-taking and knowledge management system that helps you organize your thoughts with AI assistance. Built for those who want to:
+Second Brain is a modern note-taking and knowledge management system that combines traditional note-taking with AI assistance to help you organize and connect your ideas. It's designed for:
 
-- **Capture Ideas Efficiently**: Take smart notes with AI-powered organization and tagging
-- **Connect Information**: Discover hidden relationships in your knowledge through interactive visualizations
-- **Manage Code & Documentation**: Store and organize code snippets with syntax highlighting and documentation
-- **Enhance Productivity**: Manage tasks and reminders with intelligent scheduling
-- **Learn Continuously**: Build and explore your personal knowledge base while tracking your progress
+- **Smart Note Organization**
+  - Write and organize notes with AI-powered suggestions
+  - Auto-generate tags and categories
+  - Find connections between related notes
+  - Keep your knowledge base structured
 
-## Key Features
+- **Code and Technical Notes**
+  - Save code snippets with syntax highlighting
+  - Get AI explanations for complex code
+  - Link documentation to code
+  - Search across your technical notes
+
+- **Task Management**
+  - Create and track tasks
+  - Set reminders with smart scheduling
+  - Connect tasks to relevant notes
+  - Monitor project progress
+
+- **Knowledge Discovery**
+  - Visualize connections between notes
+  - Get AI-suggested related content
+  - Build a personal wiki
+  - Track learning progress
+
+- **Focus on Privacy**
+  - Keep your data secure
+  - Use local AI models
+  - Control your data sharing
+  - Regular backups
+
+## Core Features
 
 - **Knowledge Management**
   - Rich text editing with Markdown support
@@ -64,27 +88,47 @@ Second Brain is a modern note-taking and knowledge management system that helps 
 ## Technical Stack
 
 - **Frontend**
-  - React 18, TypeScript, Tailwind CSS, Vite.
-  - State management with React Context and custom hooks.
-  - AI libraries: OpenAI, Anthropic AI SDK, Google Generative AI.
-  - Mind mapping with Cytoscape.js.
-  - UI/UX with Headless UI, Framer Motion, Lucide Icons.
+  - React 18 with TypeScript and Vite for fast development
+  - Tailwind CSS for responsive styling
+  - State management with React Context API and custom hooks
+  - AI integrations with OpenAI, Anthropic, and Google AI SDKs
+  - Interactive visualizations with Cytoscape.js
+  - Modern UI components with Headless UI and Framer Motion
+  - Icon system using Lucide Icons
+  - Date handling with date-fns
+  - Comprehensive test coverage with Vitest and Testing Library
 
 - **Backend**
-  - .NET 8.0, ASP.NET Core Web API, Entity Framework Core, SQL Server.
-  - JWT authentication with role-based access control.
-  - AI integrations with OpenAI, Anthropic Claude, Grok API, Google Gemini, and local models via **Ollama**.
-  - **Natural language database operations through AI services.**
+  - .NET 8.0 with ASP.NET Core Web API
+  - Entity Framework Core for data access
+  - SQL Server for reliable data storage
+  - Clean Architecture with CQRS pattern
+  - JWT authentication with refresh tokens
+  - AI integrations:
+    - OpenAI (GPT-4, DALL-E 3)
+    - Anthropic Claude
+    - Google Gemini
+    - Grok API
+    - Local models via Ollama
+  - Vector storage with Pinecone for semantic search
+  - Natural language database operations through AI services
+  - Comprehensive logging and monitoring
+  - API documentation with Swagger/OpenAPI
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 18+ and npm
 - .NET SDK 8.0
-- SQL Server
-- API keys for OpenAI, Google Cloud, Anthropic, Grok
-- Optional: Local AI models and **Ollama setup**
+- SQL Server 2019+
+- API keys for:
+  - OpenAI
+  - Anthropic
+  - Google Cloud
+  - Grok
+  - Pinecone
+- Optional: Ollama for local AI models
 
 ### Installation
 
