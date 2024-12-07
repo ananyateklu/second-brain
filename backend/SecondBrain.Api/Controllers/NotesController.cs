@@ -591,28 +591,33 @@ namespace SecondBrain.Api.Controllers
                     return NotFound(new { error = "Reminder not found." });
                 }
 
-                // Check if link already exists
+                // Check for existing soft-deleted link
                 var existingLink = await _context.ReminderLinks
-                    .AnyAsync(rl => rl.ReminderId == request.ReminderId && 
-                                   rl.LinkedItemId == id && 
-                                   !rl.IsDeleted);
+                    .FirstOrDefaultAsync(rl => rl.ReminderId == request.ReminderId && 
+                                             rl.LinkedItemId == id);
 
-                if (existingLink)
+                if (existingLink != null)
                 {
-                    _logger.LogWarning($"Link already exists between note {id} and reminder {request.ReminderId}");
-                    return BadRequest(new { error = "Reminder is already linked to this note." });
+                    // Update existing link instead of creating new one
+                    existingLink.IsDeleted = false;
+                    existingLink.DeletedAt = null;
+                    existingLink.CreatedAt = DateTime.UtcNow;
+                    existingLink.CreatedBy = userId;
+                }
+                else
+                {
+                    // Create new link
+                    var reminderLink = new ReminderLink
+                    {
+                        ReminderId = request.ReminderId,
+                        LinkedItemId = id,
+                        CreatedAt = DateTime.UtcNow,
+                        CreatedBy = userId,
+                        LinkType = note.IsIdea ? "idea" : "note"
+                    };
+                    _context.ReminderLinks.Add(reminderLink);
                 }
 
-                var reminderLink = new ReminderLink
-                {
-                    ReminderId = request.ReminderId,
-                    LinkedItemId = id,
-                    CreatedAt = DateTime.UtcNow,
-                    CreatedBy = userId,
-                    LinkType = note.IsIdea ? "idea" : "note"
-                };
-
-                _context.ReminderLinks.Add(reminderLink);
                 await _context.SaveChangesAsync();
 
                 // Reload the note with all its relationships
@@ -644,31 +649,21 @@ namespace SecondBrain.Api.Controllers
         public async Task<ActionResult<NoteResponse>> UnlinkReminder(string id, string reminderId)
         {
             var userId = GetUserId();
-            var note = await _context.Notes
-                .Include(n => n.ReminderLinks)
-                .FirstOrDefaultAsync(n => n.Id == id && n.UserId == userId);
-
-            if (note == null)
-            {
-                return NotFound(new { error = "Note not found." });
-            }
-
             var reminderLink = await _context.ReminderLinks
                 .FirstOrDefaultAsync(rl => rl.ReminderId == reminderId && 
-                                         rl.LinkedItemId == id && 
-                                         !rl.IsDeleted);
+                                         rl.LinkedItemId == id);
 
             if (reminderLink == null)
             {
                 return NotFound(new { error = "Reminder link not found." });
             }
 
-            reminderLink.IsDeleted = true;
-            reminderLink.DeletedAt = DateTime.UtcNow;
+            // Actually remove the link instead of soft delete
+            _context.ReminderLinks.Remove(reminderLink);
             await _context.SaveChangesAsync();
 
-            // Reload the note with all its relationships
-            note = await _context.Notes
+            // Reload the note with remaining links
+            var note = await _context.Notes
                 .Include(n => n.NoteLinks)
                     .ThenInclude(nl => nl.LinkedNote)
                 .Include(n => n.TaskLinks.Where(tl => !tl.IsDeleted))

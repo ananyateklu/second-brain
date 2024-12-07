@@ -353,26 +353,56 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
 
   const removeLink = useCallback(async (sourceId: string, targetId: string) => {
     try {
-      await notesService.removeLink(sourceId, targetId);
+      // Get updated notes from the backend after unlinking
+      const { sourceNote, targetNote } = await notesService.removeLink(sourceId, targetId);
+      
+      // Update notes state with the fresh data from backend
       setNotes(prev => {
         const updatedNotes = prev.map(note => {
-          if (note.id === sourceId || note.id === targetId) {
-            const otherNoteId = note.id === sourceId ? targetId : sourceId;
+          if (note.id === sourceId) {
+            // Use the fresh source note data
             return {
               ...note,
-              linkedNoteIds: note.linkedNoteIds.filter(id => id !== otherNoteId),
-              linkedNotes: (note.linkedNotes || []).filter(n => n.id !== otherNoteId)
+              ...sourceNote,
+              linkedNoteIds: sourceNote.linkedNoteIds,
+              linkedNotes: sourceNote.linkedNotes || []
+            };
+          }
+          if (note.id === targetId) {
+            // Use the fresh target note data
+            return {
+              ...note,
+              ...targetNote,
+              linkedNoteIds: targetNote.linkedNoteIds,
+              linkedNotes: targetNote.linkedNotes || []
             };
           }
           return note;
         });
-        return updatedNotes;
+        
+        // Return a new array to ensure React detects the change
+        return [...updatedNotes];
       });
+
+      // Create activity if available
+      if (createActivity) {
+        createActivity({
+          actionType: 'unlink',
+          itemType: 'note',
+          itemId: targetId,
+          itemTitle: targetNote.title,
+          description: `Unlinked note "${targetNote.title}" from "${sourceNote.title}"`,
+          metadata: {
+            sourceNoteId: sourceId,
+            targetNoteId: targetId
+          }
+        });
+      }
     } catch (error) {
       console.error('Failed to remove link:', error);
       throw error;
     }
-  }, []);
+  }, [createActivity]);
 
   const linkReminder = useCallback(async (noteId: string, reminderId: string) => {
     try {
@@ -397,7 +427,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
           actionType: 'link',
           itemType: 'reminder',
           itemId: reminderId,
-          itemTitle: note?.title || '',
+          itemTitle: note?.title ?? '',
           description: `Linked reminder to note: ${note?.title}`,
           metadata: {
             noteId,

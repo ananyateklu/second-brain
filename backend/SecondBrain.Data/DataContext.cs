@@ -66,12 +66,6 @@ namespace SecondBrain.Data
                 .WithOne(t => t.User)
                 .HasForeignKey(t => t.UserId);
 
-            // User-Reminders (One-to-Many)
-            modelBuilder.Entity<User>()
-                .HasMany(u => u.Reminders)
-                .WithOne(r => r.User)
-                .HasForeignKey(r => r.UserId);
-
             // User-RefreshTokens (One-to-Many)
             modelBuilder.Entity<User>()
                 .HasMany(u => u.RefreshTokens)
@@ -202,7 +196,7 @@ namespace SecondBrain.Data
             modelBuilder.Entity<TaskLink>(entity =>
             {
                 // Configure composite key
-                entity.HasKey(e => new { e.TaskId, e.LinkedItemId });
+                entity.HasKey(e => new { e.TaskId, e.LinkedItemId, e.IsDeleted });
 
                 // Configure relationships
                 entity.HasOne(e => e.Task)
@@ -261,7 +255,7 @@ namespace SecondBrain.Data
             // Configure ReminderLink entity
             modelBuilder.Entity<ReminderLink>(entity =>
             {
-                entity.HasKey(e => new { e.ReminderId, e.LinkedItemId });
+                entity.HasKey(e => new { e.ReminderId, e.LinkedItemId, e.IsDeleted });
 
                 entity.HasOne(e => e.Reminder)
                     .WithMany(r => r.ReminderLinks)
@@ -293,7 +287,7 @@ namespace SecondBrain.Data
                     .IsRequired(false);
 
                 entity.HasOne(e => e.User)
-                    .WithMany()
+                    .WithMany(u => u.Reminders)
                     .HasForeignKey(e => e.UserId)
                     .OnDelete(DeleteBehavior.Restrict);
             });

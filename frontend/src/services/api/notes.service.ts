@@ -144,13 +144,24 @@ export const notesService = {
     return response.data;
   },
 
-  async removeLink(sourceId: string, targetId: string): Promise<void> {
+  async removeLink(sourceId: string, targetId: string): Promise<{ sourceNote: Note; targetNote: Note }> {
     if (!sourceId || !targetId) {
       throw new Error('Both sourceId and targetId are required to remove a link');
     }
 
     try {
       await api.delete(`/api/Notes/${sourceId}/links/${targetId}`);
+      
+      // Fetch fresh data for both notes after unlinking
+      const [sourceResponse, targetResponse] = await Promise.all([
+        api.get<NoteResponse>(`/api/Notes/${sourceId}`),
+        api.get<NoteResponse>(`/api/Notes/${targetId}`)
+      ]);
+
+      return {
+        sourceNote: processNoteResponse(sourceResponse.data),
+        targetNote: processNoteResponse(targetResponse.data)
+      };
     } catch (error) {
       console.error('Error removing link:', error);
       throw error;

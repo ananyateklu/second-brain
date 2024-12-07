@@ -9,7 +9,7 @@
 
 # AI-Powered Personal Knowledge Management System
 
-Second Brain is a modern note-taking and knowledge management system that combines traditional note-taking with AI assistance to help you organize and connect your ideas. It features:
+Second Brain is a modern note-taking and knowledge management system that combines traditional note-taking with AI assistance to help you organize and connect your ideas
 
 ## Core Features
 
