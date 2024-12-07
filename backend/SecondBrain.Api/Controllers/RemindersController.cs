@@ -383,30 +383,44 @@ namespace SecondBrain.Api.Controllers
                 return NotFound("Linked item not found");
             }
 
-            // Check if link already exists
+            // Check if link already exists (including soft-deleted ones)
             var existingLink = await _context.ReminderLinks
-                .AnyAsync(rl => rl.ReminderId == reminderId && rl.LinkedItemId == request.LinkedItemId && !rl.IsDeleted);
+                .FirstOrDefaultAsync(rl => rl.ReminderId == reminderId && rl.LinkedItemId == request.LinkedItemId);
 
-            if (existingLink)
+            if (existingLink != null)
             {
-                _logger.LogWarning("Reminder link already exists. ReminderId: {ReminderId}, LinkedItemId: {LinkedItemId}", 
-                    reminderId, request.LinkedItemId);
-                return BadRequest("Reminder is already linked to this item");
+                if (!existingLink.IsDeleted)
+                {
+                    _logger.LogWarning("Reminder link already exists and is active. ReminderId: {ReminderId}, LinkedItemId: {LinkedItemId}", 
+                        reminderId, request.LinkedItemId);
+                    return BadRequest("Reminder is already linked to this item");
+                }
+
+                // Reactivate the soft-deleted link
+                existingLink.IsDeleted = false;
+                existingLink.DeletedAt = null;
+                existingLink.Description = request.Description; // Update description if provided
+                existingLink.CreatedAt = DateTime.UtcNow;      // Update creation time
+
+                _logger.LogInformation("Reactivating existing reminder link: {@ReminderLink}", existingLink);
             }
-
-            var reminderLink = new ReminderLink
+            else
             {
-                ReminderId = reminderId,
-                LinkedItemId = request.LinkedItemId,
-                LinkType = request.LinkType,
-                Description = request.Description,
-                CreatedAt = DateTime.UtcNow,
-                CreatedBy = userId,
-                IsDeleted = false
-            };
+                // Create new link if no existing link found
+                var reminderLink = new ReminderLink
+                {
+                    ReminderId = reminderId,
+                    LinkedItemId = request.LinkedItemId,
+                    LinkType = request.LinkType,
+                    Description = request.Description,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = userId,
+                    IsDeleted = false
+                };
 
-            _logger.LogInformation("Creating reminder link: {@ReminderLink}", reminderLink);
-            _context.ReminderLinks.Add(reminderLink);
+                _logger.LogInformation("Creating new reminder link: {@ReminderLink}", reminderLink);
+                _context.ReminderLinks.Add(reminderLink);
+            }
 
             try
             {

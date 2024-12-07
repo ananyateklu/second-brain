@@ -4,7 +4,7 @@ import { AlertTriangle, Archive, Trash2, X } from 'lucide-react';
 interface WarningModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;
   type: 'archive' | 'delete';
   title: string;
 }

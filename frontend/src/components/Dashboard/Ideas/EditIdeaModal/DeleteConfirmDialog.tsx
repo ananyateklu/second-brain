@@ -27,10 +27,10 @@ export function DeleteConfirmDialog({
 
           <div className="text-center">
             <h3 className="text-lg font-semibold text-[var(--color-text)] mb-2">
-              Delete Note
+              Delete Idea
             </h3>
             <p className="text-[var(--color-textSecondary)]">
-              Are you sure you want to delete this note? This action cannot be undone.
+              Are you sure you want to delete this idea? This action cannot be undone.
             </p>
           </div>
 
@@ -54,7 +54,7 @@ export function DeleteConfirmDialog({
               ) : (
                 <>
                   <Trash2 className="w-4 h-4" />
-                  <span>Delete Note</span>
+                  <span>Delete Idea</span>
                 </>
               )}
             </button>
@@ -63,4 +63,4 @@ export function DeleteConfirmDialog({
       </div>
     </div>
   );
-}
+} 

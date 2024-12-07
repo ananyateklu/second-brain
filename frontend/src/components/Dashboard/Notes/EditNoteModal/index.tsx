@@ -10,17 +10,12 @@ import { LinkedNotesPanel } from './LinkedNotesPanel';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import { AddLinkModal } from '../../LinkedNotes/AddLinkModal';
 import { AddTaskLinkModal } from './AddTaskLinkModal';
+import { AddReminderLinkModal } from './AddReminderLinkModal';
 
 interface EditNoteModalProps {
   isOpen: boolean;
   onClose: () => void;
   note: Note | null;
-}
-
-export interface HeaderProps {
-  note: Note;
-  onClose: () => void;
-  onShowDeleteConfirm: () => void;
 }
 
 export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
@@ -34,11 +29,13 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
   const [tags, setTags] = useState<string[]>([]);
   const [linkedNotes, setLinkedNotes] = useState<Note[]>([]);
   const [linkedTasks, setLinkedTasks] = useState<Task[]>([]);
+  const [linkedReminders, setLinkedReminders] = useState<Note['linkedReminders']>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showAddLinkModal, setShowAddLinkModal] = useState(false);
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
+  const [showAddReminderModal, setShowAddReminderModal] = useState(false);
 
   // Reset states when modal opens/closes
   useEffect(() => {
@@ -60,7 +57,7 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
     }
   }, [currentNote]);
 
-  // Update linked notes whenever they change
+  // Update linked notes and reminders whenever they change
   useEffect(() => {
     if (currentNote) {
       const linkedNotesList = notes.filter(n =>
@@ -73,8 +70,11 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
         t.linkedItems?.some(item => item.id === currentNote.id)
       );
       setLinkedTasks(linkedTasksList);
+
+      // Update linked reminders
+      setLinkedReminders(currentNote.linkedReminders || []);
     }
-  }, [currentNote, currentNote?.linkedNoteIds, notes, tasks]);
+  }, [currentNote, currentNote?.linkedNoteIds, currentNote?.linkedReminders, notes, tasks]);
 
   if (!isOpen || !currentNote) return null;
 
@@ -104,10 +104,21 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
 
   const handleUnlinkReminder = async (reminderId: string) => {
     try {
+      setIsLoading(true);
       await unlinkReminder(currentNote.id, reminderId);
+      
+      // Optimistically update the UI
+      setLinkedReminders(prev => prev.filter(r => r.id !== reminderId));
     } catch (err) {
       console.error('Failed to unlink reminder:', err);
       setError('Failed to unlink reminder. Please try again.');
+      
+      // Revert the optimistic update on error
+      if (currentNote?.linkedReminders) {
+        setLinkedReminders(currentNote.linkedReminders);
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -115,15 +126,11 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
     try {
       setIsLoading(true);
       setError('');
-      await linkReminder(currentNote.id, reminderId);
+      const updatedNote = await linkReminder(currentNote.id, reminderId);
       
-      // Force refresh of the current note to get updated linked items
-      const updatedNote = notes.find(n => n.id === currentNote.id);
-      if (updatedNote) {
-        const updatedLinkedNotes = notes.filter(n =>
-          updatedNote.linkedNoteIds?.includes(n.id)
-        );
-        setLinkedNotes(updatedLinkedNotes);
+      // Update the linked reminders state with the new data
+      if (updatedNote?.linkedReminders) {
+        setLinkedReminders(updatedNote.linkedReminders);
       }
       
       return true;
@@ -173,14 +180,14 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
   // Format linked tasks before passing to panel
   const formattedTasks = linkedTasks.map(task => ({
     ...task,
-    dueDate: task.dueDate || undefined
+    dueDate: task.dueDate === undefined ? null : task.dueDate
   }));
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative w-full max-w-6xl max-h-[90vh] bg-[var(--color-surface)] rounded-2xl shadow-2xl overflow-hidden border border-[var(--color-border)]">
+      <div className="relative w-full max-w-6xl max-h-[90vh] bg-[var(--color-background)] rounded-2xl shadow-2xl overflow-hidden border border-[var(--color-border)]">
         <form onSubmit={handleSubmit} className="flex flex-col h-full">
           <Header
             note={currentNote}
@@ -188,7 +195,7 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
             onShowDeleteConfirm={() => setShowDeleteConfirm(true)}
           />
 
-          <div className="flex-1 grid grid-cols-[1fr,300px] min-h-0 overflow-hidden">
+          <div className="flex-1 grid grid-cols-[1fr,auto] min-h-0 overflow-hidden">
             <MainContent
               title={title}
               content={content}
@@ -196,6 +203,7 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
               tagInput={tagInput}
               error={error}
               isLoading={isLoading}
+              linkedReminders={linkedReminders}
               onTitleChange={setTitle}
               onContentChange={setContent}
               onTagInputChange={handleTagInputChange}
@@ -207,28 +215,27 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
                 }
               }}
               onRemoveTag={(tag) => setTags(tags.filter(t => t !== tag))}
+              onShowAddReminder={() => setShowAddReminderModal(true)}
+              onUnlinkReminder={handleUnlinkReminder}
               setError={setError}
             />
 
             <LinkedNotesPanel
               linkedNotes={linkedNotes}
               linkedTasks={formattedTasks}
-              linkedReminders={currentNote.linkedReminders || []}
               onShowAddLink={() => setShowAddLinkModal(true)}
               onShowAddTask={() => setShowAddTaskModal(true)}
-              currentNoteId={currentNote.id}
               onUnlinkTask={handleUnlinkTask}
-              onUnlinkReminder={handleUnlinkReminder}
-              onLinkReminder={handleLinkReminder}
+              currentNoteId={currentNote.id}
             />
           </div>
 
-          <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-[var(--color-border)] bg-[var(--color-surface)]">
+          <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-[var(--color-border)] bg-[var(--color-background)]">
             <button
               type="button"
               onClick={onClose}
               disabled={isLoading}
-              className="px-4 py-2 text-[var(--color-text)] hover:bg-[var(--color-surface)]/80 rounded-lg transition-colors"
+              className="px-4 py-2 text-[var(--color-textSecondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface)] rounded-lg transition-colors"
             >
               Cancel
             </button>
@@ -261,6 +268,13 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
           onClose={() => setShowAddTaskModal(false)}
           noteId={currentNote.id}
           onLinkAdded={() => setShowAddTaskModal(false)}
+        />
+
+        <AddReminderLinkModal
+          isOpen={showAddReminderModal}
+          onClose={() => setShowAddReminderModal(false)}
+          onSelect={handleLinkReminder}
+          currentLinkedReminderIds={linkedReminders.map(r => r.id)}
         />
       </div>
     </div>

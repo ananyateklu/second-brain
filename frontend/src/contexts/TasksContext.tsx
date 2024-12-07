@@ -92,6 +92,9 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     try {
       const updatedTask = await tasksService.addTaskLink(data);
       setTasks(prev => prev.map(task => task.id === data.taskId ? updatedTask : task));
+      
+      // Dispatch event to notify note context
+      window.dispatchEvent(new Event('taskChange'));
     } catch (error) {
       console.error('Failed to add task link:', error);
       throw error;
@@ -102,6 +105,9 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     try {
       const updatedTask = await tasksService.removeTaskLink(taskId, linkedItemId);
       setTasks(prev => prev.map(task => task.id === taskId ? updatedTask : task));
+      
+      // Dispatch event to notify note context
+      window.dispatchEvent(new Event('taskChange'));
     } catch (error) {
       console.error('Failed to remove task link:', error);
       throw error;

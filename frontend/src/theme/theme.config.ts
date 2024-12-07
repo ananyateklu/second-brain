@@ -3,6 +3,7 @@ export type ThemeColor = {
     secondary: string;
     background: string;
     surface: string;
+    surfaceHover: string;
     text: string;
     textSecondary: string;
     border: string;
@@ -29,6 +30,7 @@ export const themes: Record<ThemeName, ThemeConfig> = {
             secondary: '#f1f5f9',
             background: '#f8fafc',
             surface: '#ffffff',
+            surfaceHover: '#f8fafc',
             text: '#1e293b',
             textSecondary: '#64748b',
             border: '#e2e8f0',
@@ -47,6 +49,7 @@ export const themes: Record<ThemeName, ThemeConfig> = {
             secondary: '#2C2C2E',
             background: '#1C1C1E',
             surface: '#2C2C2E',
+            surfaceHover: '#252527',
             text: '#ffffff',
             textSecondary: '#a1a1aa',
             border: '#3C3C3E',
@@ -65,6 +68,7 @@ export const themes: Record<ThemeName, ThemeConfig> = {
             secondary: '#1F2937',
             background: '#0F172A',
             surface: '#1F2937',
+            surfaceHover: '#1a2333',
             text: '#F3F4F6',
             textSecondary: '#9CA3AF',
             border: 'rgba(75, 85, 99, 0.4)',

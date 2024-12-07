@@ -1,11 +1,12 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { NotesContext } from './notesContextUtils';
+import { NotesContext, useNotes } from './notesContextUtils';
 import { useActivities } from './activityContextUtils';
 import { notesService, type UpdateNoteData } from '../services/api/notes.service';
 import { useTrash } from './trashContextUtils';
 import { useAuth } from '../hooks/useAuth';
 import { sortNotes } from '../utils/noteUtils';
 import type { Note } from '../types/note';
+import { useReminders } from './remindersContextUtils';
 
 export function NotesProvider({ children }: { children: React.ReactNode }) {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -406,20 +407,11 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
 
   const linkReminder = useCallback(async (noteId: string, reminderId: string) => {
     try {
-      console.log('Linking reminder:', { noteId, reminderId }); // Add debug logging
-      const updatedNote = await notesService.linkReminder(noteId, reminderId);
+      console.log('Linking reminder:', { noteId, reminderId });
+      await notesService.linkReminder(noteId, reminderId);
       
-      setNotes(prev => prev.map(note => {
-        if (note.id === noteId) {
-          // Ensure linkedReminders is initialized
-          const currentReminders = note.linkedReminders || [];
-          return {
-            ...updatedNote,
-            linkedReminders: updatedNote.linkedReminders || currentReminders
-          };
-        }
-        return note;
-      }));
+      // Refresh all notes to get the latest state
+      await fetchNotes();
 
       if (createActivity) {
         const note = notes.find(n => n.id === noteId);
@@ -436,27 +428,39 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
         });
       }
 
+      const updatedNote = notes.find(n => n.id === noteId);
+      if (!updatedNote) {
+        throw new Error('Note not found after linking reminder');
+      }
+
       return updatedNote;
     } catch (error) {
       console.error('Failed to link reminder:', error);
-      // Log the actual error for debugging
       if (error instanceof Error) {
         console.error('Error details:', error.message);
       }
       throw error;
     }
-  }, [notes, createActivity]);
+  }, [notes, createActivity, fetchNotes]);
 
   const unlinkReminder = useCallback(async (noteId: string, reminderId: string) => {
     try {
-      const updatedNote = await notesService.unlinkReminder(noteId, reminderId);
-      setNotes(prev => prev.map(note => note.id === noteId ? updatedNote : note));
+      await notesService.unlinkReminder(noteId, reminderId);
+      
+      // Refresh all notes to get the latest state
+      await fetchNotes();
+
+      const updatedNote = notes.find(n => n.id === noteId);
+      if (!updatedNote) {
+        throw new Error('Note not found after unlinking reminder');
+      }
+
       return updatedNote;
     } catch (error) {
       console.error('Failed to unlink reminder:', error);
       throw error;
     }
-  }, []);
+  }, [fetchNotes, notes]);
 
   const loadArchivedNotes = useCallback(async () => {
     try {
@@ -546,27 +550,70 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
 
   const addReminderToNote = useCallback(async (noteId: string, reminderId: string) => {
     try {
-      const updatedNote = await notesService.addReminderToNote(noteId, reminderId);
-      setNotes(prev => prev.map(note => 
-        note.id === noteId ? updatedNote : note
-      ));
+      const updatedNote = await notesService.linkReminder(noteId, reminderId);
+      
+      // Update the notes state with the new reminder link
+      setNotes(prevNotes =>
+        prevNotes.map(note =>
+          note.id === noteId
+            ? {
+                ...note,
+                linkedReminders: updatedNote.linkedReminders || []
+              }
+            : note
+        )
+      );
+
+      await createActivity({
+        actionType: 'link',
+        itemType: 'note',
+        itemId: noteId,
+        itemTitle: updatedNote.title,
+        description: `Linked reminder to note: ${updatedNote.title}`,
+        metadata: {
+          reminderId,
+        },
+      });
     } catch (error) {
       console.error('Failed to add reminder to note:', error);
       throw error;
     }
-  }, []);
+  }, [createActivity]);
 
   const removeReminderFromNote = useCallback(async (noteId: string, reminderId: string) => {
     try {
-      const updatedNote = await notesService.removeReminderFromNote(noteId, reminderId);
-      setNotes(prev => prev.map(note => 
-        note.id === noteId ? updatedNote : note
-      ));
+      const updatedNote = await notesService.unlinkReminder(noteId, reminderId);
+      
+      // Update the notes state by removing the reminder link
+      setNotes(prevNotes =>
+        prevNotes.map(note =>
+          note.id === noteId
+            ? {
+                ...note,
+                linkedReminders: updatedNote.linkedReminders || []
+              }
+            : note
+        )
+      );
+
+      const note = notes.find(n => n.id === noteId);
+      if (note) {
+        await createActivity({
+          actionType: 'unlink',
+          itemType: 'note',
+          itemId: noteId,
+          itemTitle: note.title,
+          description: `Unlinked reminder from note: ${note.title}`,
+          metadata: {
+            reminderId,
+          },
+        });
+      }
     } catch (error) {
       console.error('Failed to remove reminder from note:', error);
       throw error;
     }
-  }, []);
+  }, [notes, createActivity]);
 
   const contextValue = useMemo(() => ({
     notes,
@@ -588,7 +635,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     restoreNote,
     fetchNotes,
     addReminderToNote,
-    removeReminderFromNote,
+    removeReminderFromNote
   }), [
     notes,
     archivedNotes,
@@ -609,12 +656,52 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     restoreNote,
     fetchNotes,
     addReminderToNote,
-    removeReminderFromNote,
+    removeReminderFromNote
   ]);
+
+  // Add a subscription to task changes
+  useEffect(() => {
+    const handleTaskChange = async () => {
+      // Refresh notes to get updated task links
+      await fetchNotes();
+    };
+
+    // Subscribe to task changes
+    window.addEventListener('taskChange', handleTaskChange);
+
+    return () => {
+      window.removeEventListener('taskChange', handleTaskChange);
+    };
+  }, [fetchNotes]);
 
   return (
     <NotesContext.Provider value={contextValue}>
       {children}
     </NotesContext.Provider>
   );
+}
+
+// Create a wrapper component that handles reminder state updates
+export function NotesWithRemindersProvider({ children }: { children: React.ReactNode }) {
+  return (
+    <NotesProvider>
+      <NotesRemindersSync>
+        {children}
+      </NotesRemindersSync>
+    </NotesProvider>
+  );
+}
+
+// Component to handle reminder state synchronization
+function NotesRemindersSync({ children }: { children: React.ReactNode }) {
+  const { notes } = useNotes();
+  const { fetchReminders } = useReminders();
+
+  useEffect(() => {
+    // Always refresh reminders when notes change, since we can't reliably
+    // track when reminder links are added or removed just by looking at the current state
+    fetchReminders();
+  }, [notes, fetchReminders]);
+
+  return <>{children}</>;
 }

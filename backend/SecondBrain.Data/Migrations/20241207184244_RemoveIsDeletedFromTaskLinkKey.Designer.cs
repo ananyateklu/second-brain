@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SecondBrain.Data;
 
@@ -11,9 +12,11 @@ using SecondBrain.Data;
 namespace SecondBrain.Data.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20241207184244_RemoveIsDeletedFromTaskLinkKey")]
+    partial class RemoveIsDeletedFromTaskLinkKey
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -385,6 +388,9 @@ namespace SecondBrain.Data.Migrations
                         .HasColumnType("nvarchar(36)")
                         .HasColumnOrder(1);
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -398,11 +404,6 @@ namespace SecondBrain.Data.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<bool>("IsDeleted")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
                     b.Property<string>("LinkType")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -410,11 +411,9 @@ namespace SecondBrain.Data.Migrations
                     b.Property<string>("NoteId")
                         .HasColumnType("nvarchar(36)");
 
-                    b.HasKey("ReminderId", "LinkedItemId");
+                    b.HasKey("ReminderId", "LinkedItemId", "IsDeleted");
 
                     b.HasIndex("CreatedBy");
-
-                    b.HasIndex("IsDeleted");
 
                     b.HasIndex("LinkedItemId");
 

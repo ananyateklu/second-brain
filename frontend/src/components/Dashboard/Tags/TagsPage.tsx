@@ -15,7 +15,6 @@ import { IdeaCard } from '../Ideas/IdeaCard';
 import { useTagFiltering } from './useTagFiltering';
 import { FiltersPanel } from './FiltersPanel';
 import { ItemType, TaggedItem } from './types';
-import { useHandleEdit } from './useHandleEdit';
 import { cardGridStyles } from '../shared/cardStyles';
 
 export function TagsPage() {
@@ -34,8 +33,6 @@ export function TagsPage() {
 
   const { selectedNote, selectedIdea, selectedTask, selectedReminder,
     setSelectedNote, setSelectedIdea, setSelectedTask, setSelectedReminder } = useModal();
-
-  const { handleEditNote } = useHandleEdit();
 
   // Combine all tagged items
   const allItems = useMemo(() => {
@@ -113,6 +110,80 @@ export function TagsPage() {
       return hasSelectedTag && (!typeFilterApplies || matchesTypeFilter);
     });
   }, [selectedTag, allItems, filters.types]);
+
+  // Update the handleEditNote function with proper types
+  const handleEditNote = (item: TaggedItem) => {
+    switch (item.type) {
+      case 'note':
+        setSelectedNote({
+          id: item.id,
+          title: item.title,
+          content: item.content,
+          tags: item.tags,
+          updatedAt: item.updatedAt,
+          createdAt: item.createdAt,
+          isIdea: false,
+          isFavorite: false,
+          isPinned: false,
+          isArchived: false,
+          isDeleted: false,
+          linkedNoteIds: [],
+          linkedTasks: [],
+          linkedReminders: []
+        });
+        break;
+      case 'idea':
+        setSelectedIdea({
+          id: item.id,
+          title: item.title,
+          content: item.content,
+          tags: item.tags,
+          updatedAt: item.updatedAt,
+          createdAt: item.createdAt,
+          isIdea: true,
+          isFavorite: false,
+          isPinned: false,
+          isArchived: false,
+          isDeleted: false,
+          linkedNoteIds: [],
+          linkedTasks: [],
+          linkedReminders: []
+        });
+        break;
+      case 'task':
+        setSelectedTask({
+          id: item.id,
+          title: item.title,
+          description: item.content,
+          tags: item.tags,
+          status: 'Incomplete',
+          priority: 'medium',
+          dueDate: null,
+          updatedAt: item.updatedAt,
+          createdAt: item.createdAt,
+          isDeleted: false,
+          linkedItems: []
+        });
+        break;
+      case 'reminder':
+        setSelectedReminder({
+          id: item.id,
+          title: item.title,
+          description: item.content || '',
+          tags: item.tags,
+          dueDateTime: new Date().toISOString(),
+          isCompleted: false,
+          isSnoozed: false,
+          isDeleted: false,
+          userId: '',
+          updatedAt: item.updatedAt,
+          createdAt: item.createdAt,
+          linkedItems: [],
+          repeatInterval: undefined
+        });
+        break;
+    }
+  };
 
   return (
     <div className="h-[calc(100vh-9rem)] overflow-hidden bg-fixed">
@@ -316,7 +387,10 @@ export function TagsPage() {
                             return (
                               <div
                                 key={item.id}
-                                onClick={() => handleEditNote(item)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditNote(item);
+                                }}
                                 className="cursor-pointer w-full"
                               >
                                 <TaskCard
@@ -339,35 +413,35 @@ export function TagsPage() {
                             );
                           case 'reminder':
                             return (
-                              <div
+                              <ReminderCard
                                 key={item.id}
+                                reminder={{
+                                  id: item.id,
+                                  title: item.title,
+                                  description: item.content || '',
+                                  tags: item.tags,
+                                  dueDateTime: new Date().toISOString(),
+                                  isCompleted: false,
+                                  isSnoozed: false,
+                                  isDeleted: false,
+                                  userId: '',
+                                  updatedAt: item.updatedAt,
+                                  createdAt: item.createdAt,
+                                  linkedItems: [],
+                                  repeatInterval: undefined
+                                }}
+                                viewMode={viewMode}
                                 onClick={() => handleEditNote(item)}
-                                className="cursor-pointer w-full"
-                              >
-                                <ReminderCard
-                                  reminder={{
-                                    id: item.id,
-                                    title: item.title,
-                                    description: item.content,
-                                    tags: item.tags,
-                                    dueDateTime: item.dueDateTime,
-                                    isCompleted: false,
-                                    isSnoozed: false,
-                                    isDeleted: false,
-                                    userId: item.userId,
-                                    updatedAt: item.updatedAt,
-                                    createdAt: item.createdAt,
-                                    linkedItems: []
-                                  }}
-                                  viewMode="grid"
-                                />
-                              </div>
+                              />
                             );
                           case 'idea':
                             return (
                               <div
                                 key={item.id}
-                                onClick={() => handleEditNote(item)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditNote(item);
+                                }}
                                 className="cursor-pointer w-full"
                               >
                                 <IdeaCard
@@ -384,7 +458,8 @@ export function TagsPage() {
                                     isArchived: false,
                                     isDeleted: false,
                                     linkedNoteIds: [],
-                                    linkedTasks: []
+                                    linkedTasks: [],
+                                    linkedReminders: []
                                   }}
                                   viewMode="grid"
                                 />
@@ -394,7 +469,10 @@ export function TagsPage() {
                             return (
                               <div
                                 key={item.id}
-                                onClick={() => handleEditNote(item)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditNote(item);
+                                }}
                                 className="cursor-pointer w-full"
                               >
                                 <NoteCard
@@ -411,7 +489,8 @@ export function TagsPage() {
                                     isArchived: false,
                                     isDeleted: false,
                                     linkedNoteIds: [],
-                                    linkedTasks: []
+                                    linkedTasks: [],
+                                    linkedReminders: []
                                   }}
                                   viewMode="grid"
                                 />
@@ -428,7 +507,10 @@ export function TagsPage() {
                             return (
                               <div
                                 key={item.id}
-                                onClick={() => handleEditNote(item)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditNote(item);
+                                }}
                                 className="cursor-pointer w-full"
                               >
                                 <TaskCard
@@ -451,35 +533,35 @@ export function TagsPage() {
                             );
                           case 'reminder':
                             return (
-                              <div
+                              <ReminderCard
                                 key={item.id}
+                                reminder={{
+                                  id: item.id,
+                                  title: item.title,
+                                  description: item.content || '',
+                                  tags: item.tags,
+                                  dueDateTime: new Date().toISOString(),
+                                  isCompleted: false,
+                                  isSnoozed: false,
+                                  isDeleted: false,
+                                  userId: '',
+                                  updatedAt: item.updatedAt,
+                                  createdAt: item.createdAt,
+                                  linkedItems: [],
+                                  repeatInterval: undefined
+                                }}
+                                viewMode={viewMode}
                                 onClick={() => handleEditNote(item)}
-                                className="cursor-pointer w-full"
-                              >
-                                <ReminderCard
-                                  reminder={{
-                                    id: item.id,
-                                    title: item.title,
-                                    description: item.content,
-                                    tags: item.tags,
-                                    dueDateTime: item.dueDateTime,
-                                    isCompleted: false,
-                                    isSnoozed: false,
-                                    isDeleted: false,
-                                    userId: item.userId,
-                                    updatedAt: item.updatedAt,
-                                    createdAt: item.createdAt,
-                                    linkedItems: []
-                                  }}
-                                  viewMode="list"
-                                />
-                              </div>
+                              />
                             );
                           case 'idea':
                             return (
                               <div
                                 key={item.id}
-                                onClick={() => handleEditNote(item)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditNote(item);
+                                }}
                                 className="cursor-pointer w-full"
                               >
                                 <IdeaCard
@@ -496,7 +578,8 @@ export function TagsPage() {
                                     isArchived: false,
                                     isDeleted: false,
                                     linkedNoteIds: [],
-                                    linkedTasks: []
+                                    linkedTasks: [],
+                                    linkedReminders: []
                                   }}
                                   viewMode="list"
                                 />
@@ -506,7 +589,10 @@ export function TagsPage() {
                             return (
                               <div
                                 key={item.id}
-                                onClick={() => handleEditNote(item)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditNote(item);
+                                }}
                                 className="cursor-pointer w-full"
                               >
                                 <NoteCard
@@ -523,7 +609,8 @@ export function TagsPage() {
                                     isArchived: false,
                                     isDeleted: false,
                                     linkedNoteIds: [],
-                                    linkedTasks: []
+                                    linkedTasks: [],
+                                    linkedReminders: []
                                   }}
                                   viewMode="list"
                                 />

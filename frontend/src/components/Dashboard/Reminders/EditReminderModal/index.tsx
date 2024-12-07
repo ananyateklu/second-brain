@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useReminders } from '../../../../contexts/remindersContextUtils';
 import { Reminder } from '../../../../api/types/reminder';
-import { reminderService } from '../../../../api/services/reminderService';
 import { Save } from 'lucide-react';
 import { Header } from './Header';
 import { MainContent } from './MainContent';
@@ -16,7 +15,7 @@ interface EditReminderModalProps {
 }
 
 export function EditReminderModal({ reminder: initialReminder, isOpen, onClose }: EditReminderModalProps) {
-  const { updateReminder, deleteReminder } = useReminders();
+  const { updateReminder, deleteReminder, addReminderLink, removeReminderLink } = useReminders();
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isAddLinkOpen, setIsAddLinkOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -62,12 +61,14 @@ export function EditReminderModal({ reminder: initialReminder, isOpen, onClose }
 
   const handleAddLink = async (itemId: string, itemType: 'note' | 'idea') => {
     try {
-      const updatedReminder = await reminderService.addReminderLink({
-        reminderId: reminder.id,
-        linkedItemId: itemId,
-        itemType: itemType,
-        description: ''
-      });
+      await addReminderLink(reminder.id, itemId, itemType);
+      const updatedReminder = { ...reminder };
+      updatedReminder.linkedItems = [...reminder.linkedItems, {
+        id: itemId,
+        type: itemType,
+        title: '', // This will be updated when the state refreshes
+        createdAt: new Date().toISOString()
+      }];
       setReminder(updatedReminder);
       setIsAddLinkOpen(false);
     } catch (error) {
@@ -77,7 +78,9 @@ export function EditReminderModal({ reminder: initialReminder, isOpen, onClose }
 
   const handleUnlink = async (itemId: string) => {
     try {
-      const updatedReminder = await reminderService.removeReminderLink(reminder.id, itemId);
+      await removeReminderLink(reminder.id, itemId);
+      const updatedReminder = { ...reminder };
+      updatedReminder.linkedItems = reminder.linkedItems.filter(item => item.id !== itemId);
       setReminder(updatedReminder);
     } catch (error) {
       console.error('Failed to remove link:', error);
@@ -93,6 +96,7 @@ export function EditReminderModal({ reminder: initialReminder, isOpen, onClose }
           <Header
             reminder={{ ...reminder, ...pendingChanges }}
             onShowDeleteConfirm={() => setIsDeleteConfirmOpen(true)}
+            onClose={onClose}
             isSaving={isSaving}
           />
 

@@ -195,8 +195,8 @@ namespace SecondBrain.Data
             // Configure TaskLink entity
             modelBuilder.Entity<TaskLink>(entity =>
             {
-                // Configure composite key
-                entity.HasKey(e => new { e.TaskId, e.LinkedItemId, e.IsDeleted });
+                // Configure composite key (removed IsDeleted from key)
+                entity.HasKey(e => new { e.TaskId, e.LinkedItemId });
 
                 // Configure relationships
                 entity.HasOne(e => e.Task)
@@ -255,7 +255,8 @@ namespace SecondBrain.Data
             // Configure ReminderLink entity
             modelBuilder.Entity<ReminderLink>(entity =>
             {
-                entity.HasKey(e => new { e.ReminderId, e.LinkedItemId, e.IsDeleted });
+                // Configure composite key (removed IsDeleted from key)
+                entity.HasKey(e => new { e.ReminderId, e.LinkedItemId });
 
                 entity.HasOne(e => e.Reminder)
                     .WithMany(r => r.ReminderLinks)
@@ -272,9 +273,14 @@ namespace SecondBrain.Data
                     .HasForeignKey(e => e.CreatedBy)
                     .OnDelete(DeleteBehavior.Restrict);
 
+                // Set default value for IsDeleted
+                entity.Property(e => e.IsDeleted)
+                    .HasDefaultValue(false);
+
                 // Add indexes
                 entity.HasIndex(e => e.LinkedItemId);
                 entity.HasIndex(e => e.CreatedBy);
+                entity.HasIndex(e => e.IsDeleted);
             });
 
             // Configure Reminder entity

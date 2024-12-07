@@ -1,15 +1,17 @@
-import { Trash2, Clock } from 'lucide-react';
+import { Trash2, Clock, X } from 'lucide-react';
 import { Reminder } from '../../../../api/types/reminder';
 
 interface HeaderProps {
   reminder: Reminder;
   onShowDeleteConfirm: () => void;
+  onClose: () => void;
   isSaving?: boolean;
 }
 
 export function Header({ 
   reminder, 
   onShowDeleteConfirm,
+  onClose,
   isSaving = false 
 }: HeaderProps) {
   return (
@@ -26,15 +28,23 @@ export function Header({
             </span>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={onShowDeleteConfirm}
-          disabled={isSaving}
-          className="inline-flex items-center gap-2 px-3 py-1.5 text-sm text-red-500 hover:bg-red-500/10 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <Trash2 className="w-4 h-4" />
-          Delete
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onShowDeleteConfirm}
+            disabled={isSaving}
+            className="inline-flex items-center gap-2 px-3 py-1.5 text-sm text-red-500 hover:bg-red-500/10 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Trash2 className="w-4 h-4" />
+            Delete
+          </button>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
       </div>
     </div>
   );

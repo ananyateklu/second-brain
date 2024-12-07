@@ -1,6 +1,7 @@
-import { Type, Tag as TagIcon, X } from 'lucide-react';
-import { Input } from '../../../shared/Input';
-import { SuggestionButton } from '../../../shared/SuggestionButton';
+import { Type, Tag as TagIcon, X, Bell, Plus } from 'lucide-react';
+import { LinkedReminder } from '../../../../types/note';
+import { Editor } from '../../../../components/shared/Editor';
+import { LinkedRemindersPanel } from './LinkedRemindersPanel';
 
 interface MainContentProps {
   title: string;
@@ -9,11 +10,14 @@ interface MainContentProps {
   tagInput: string;
   error: string;
   isLoading: boolean;
-  onTitleChange: (title: string) => void;
-  onContentChange: (content: string) => void;
+  linkedReminders: LinkedReminder[];
+  onTitleChange: (value: string) => void;
+  onContentChange: (value: string) => void;
   onTagInputChange: (value: string | string[]) => void;
   onAddTag: () => void;
   onRemoveTag: (tag: string) => void;
+  onShowAddReminder: () => void;
+  onUnlinkReminder: (reminderId: string) => void;
   setError: (error: string) => void;
 }
 
@@ -24,118 +28,91 @@ export function MainContent({
   tagInput,
   error,
   isLoading,
+  linkedReminders,
   onTitleChange,
   onContentChange,
   onTagInputChange,
   onAddTag,
   onRemoveTag,
-  setError
+  onShowAddReminder,
+  onUnlinkReminder,
 }: MainContentProps) {
   return (
-    <div className="flex flex-col min-h-0 p-6 bg-[var(--color-surface)]">
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <label htmlFor="note-title" className="block text-sm font-medium text-[var(--color-text)]">
-              Title
-            </label>
-            <SuggestionButton
-              type="title"
-              itemType="note"
-              input={{ content }}
-              onSuggestion={(suggestion) => onTitleChange(suggestion as string)}
-              disabled={isLoading}
-              context={{
-                currentTitle: title,
-                tags
-              }}
-            />
+    <div className="flex-1 overflow-y-auto bg-[var(--color-background)]">
+      <div className="p-6 space-y-6">
+        {error && (
+          <div className="p-4 bg-red-900/20 text-red-400 rounded-lg">
+            {error}
           </div>
-          <Input
-            id="note-title"
-            name="title"
+        )}
+
+        {/* Title */}
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-textSecondary)]">
+            <Type className="w-4 h-4" />
+            Title
+          </label>
+          <input
             type="text"
-            label=""
-            icon={Type}
             value={title}
-            onChange={(e) => {
-              onTitleChange(e.target.value);
-              setError('');
-            }}
-            placeholder="What's your note?"
-            error={error}
+            onChange={(e) => onTitleChange(e.target.value)}
             disabled={isLoading}
-            className="bg-[var(--color-surface)] border-[var(--color-border)]"
+            className="w-full h-[42px] px-4 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent text-[var(--color-text)] placeholder-[var(--color-textSecondary)] disabled:opacity-50 transition-colors"
+            placeholder="Enter note title"
           />
         </div>
 
+        {/* Content */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <label className="block text-sm font-medium text-[var(--color-text)]">
-              Description
-            </label>
-            <SuggestionButton
-              type="content"
-              itemType="note"
-              input={{ title }}
-              onSuggestion={(suggestion) => onContentChange(suggestion as string)}
-              disabled={isLoading}
-              context={{
-                currentContent: content,
-                tags
-              }}
+          <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-textSecondary)]">
+            <Type className="w-4 h-4" />
+            Content
+          </label>
+          <div className="min-h-[300px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg overflow-hidden">
+            <Editor
+              value={content}
+              onChange={onContentChange}
+              placeholder="Write your note here..."
             />
           </div>
-          <textarea
-            value={content}
-            onChange={(e) => onContentChange(e.target.value)}
-            placeholder="Write your note..."
-            rows={8}
-            disabled={isLoading}
-            className="w-full px-3 py-2 bg-[var(--color-surface)] text-[var(--color-text)] placeholder-[var(--color-textSecondary)] resize-none rounded-lg border border-[var(--color-border)] focus:ring-2 focus:ring-[var(--color-accent)]/50 focus:border-transparent transition-all"
-          />
         </div>
 
+        {/* Linked Reminders */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label className="block text-sm font-medium text-[var(--color-text)]">
-              Tags
+            <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-textSecondary)]">
+              <Bell className="w-4 h-4" />
+              Linked Reminders
             </label>
-            <SuggestionButton
-              type="tags"
-              itemType="note"
-              input={{ title, content }}
-              onSuggestion={(suggestion) => onTagInputChange(suggestion as string[])}
-              disabled={isLoading}
-              context={{
-                currentTags: tags
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onShowAddReminder();
               }}
+              className="inline-flex items-center justify-center gap-1 px-2 py-1 text-xs font-medium text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 rounded-md transition-colors"
+            >
+              <Plus className="w-3 h-3" />
+              Add Reminder
+            </button>
+          </div>
+          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg overflow-hidden">
+            <LinkedRemindersPanel 
+              reminders={linkedReminders} 
+              onUnlink={onUnlinkReminder}
             />
           </div>
-          <div className="flex flex-wrap gap-2 mb-2">
-            {tags.map(tag => (
-              <span
-                key={tag}
-                className="inline-flex items-center gap-1.5 px-3 py-1 bg-[var(--color-accent)]/20 text-[var(--color-accent)] rounded-full text-sm"
-              >
-                {tag}
-                <button
-                  type="button"
-                  onClick={() => onRemoveTag(tag)}
-                  className="hover:text-[var(--color-accent)] transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </span>
-            ))}
-          </div>
+        </div>
+
+        {/* Tags */}
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-textSecondary)]">
+            <TagIcon className="w-4 h-4" />
+            Tags
+          </label>
           <div className="flex gap-2">
-            <Input
-              id="tag-input"
-              name="tag"
+            <input
               type="text"
-              label=""
-              icon={TagIcon}
               value={tagInput}
               onChange={(e) => onTagInputChange(e.target.value)}
               onKeyDown={(e) => {
@@ -144,19 +121,31 @@ export function MainContent({
                   onAddTag();
                 }
               }}
-              placeholder="Add a tag"
               disabled={isLoading}
-              className="bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text)] placeholder-[var(--color-textSecondary)]"
+              placeholder="Add a tag"
+              className="w-full h-[42px] px-4 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent text-[var(--color-text)] placeholder-[var(--color-textSecondary)] disabled:opacity-50 transition-colors"
             />
-            <button
-              type="button"
-              onClick={onAddTag}
-              disabled={!tagInput.trim() || isLoading}
-              className="px-4 py-2 bg-[var(--color-surface)] text-[var(--color-textSecondary)] hover:bg-[var(--color-surface)]/80 border border-[var(--color-border)] rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              Add
-            </button>
           </div>
+          {tags.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-[var(--color-accent)]/10 text-[var(--color-accent)] rounded-full text-sm"
+                >
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() => onRemoveTag(tag)}
+                    disabled={isLoading}
+                    className="p-0.5 hover:bg-[var(--color-accent)]/20 rounded-full transition-colors disabled:opacity-50"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

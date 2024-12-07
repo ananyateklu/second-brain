@@ -45,16 +45,16 @@ export function Header({ note, onClose, onShowDeleteConfirm }: HeaderProps) {
 
   return (
     <>
-      <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface)] backdrop-blur-md">
+      <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-[var(--color-border)] bg-[var(--color-background)]">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-            <Type className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+          <div className="p-2 bg-[var(--color-note)]/10 rounded-lg">
+            <Type className="w-6 h-6 text-[var(--color-note)]" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+            <h2 className="text-xl font-bold text-[var(--color-text)]">
               Edit Note
             </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-sm text-[var(--color-textSecondary)]">
               Last updated {new Date(note.updatedAt).toLocaleDateString()}
             </p>
           </div>
@@ -62,30 +62,31 @@ export function Header({ note, onClose, onShowDeleteConfirm }: HeaderProps) {
         <div className="flex items-center gap-2">
           <button
             onClick={handleFavorite}
-            className={`p-2 rounded-lg transition-colors ${note.isFavorite
-              ? 'text-amber-500 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20'
-              : 'text-gray-400 hover:text-amber-500 dark:text-gray-500 dark:hover:text-amber-400 hover:bg-gray-100 dark:hover:bg-dark-hover'
-              }`}
+            className={`p-2 rounded-lg transition-colors ${
+              note.isFavorite
+                ? 'text-amber-400 bg-amber-900/20'
+                : 'text-[var(--color-textSecondary)] hover:text-amber-400 hover:bg-[var(--color-surface)]'
+            }`}
           >
             <Star className="w-5 h-5" fill={note.isFavorite ? 'currentColor' : 'none'} />
           </button>
           <button
             onClick={handleArchiveClick}
-            className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-dark-hover rounded-lg transition-colors"
+            className="p-2 text-[var(--color-textSecondary)] hover:text-[var(--color-accent)] hover:bg-[var(--color-surface)] rounded-lg transition-colors"
             title="Archive note"
           >
             <Archive className="w-5 h-5" />
           </button>
           <button
             onClick={handleDeleteClick}
-            className="p-2 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-dark-hover rounded-lg transition-colors"
+            className="p-2 text-[var(--color-textSecondary)] hover:text-red-400 hover:bg-[var(--color-surface)] rounded-lg transition-colors"
             title="Delete note"
           >
             <Trash2 className="w-5 h-5" />
           </button>
           <button
             onClick={onClose}
-            className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            className="p-2 text-[var(--color-textSecondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface)] rounded-lg transition-colors"
           >
             <X className="w-5 h-5" />
           </button>

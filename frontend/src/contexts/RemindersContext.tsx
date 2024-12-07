@@ -217,6 +217,64 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
     }
   }, [createActivity, fetchReminders]);
 
+  const addReminderLink = useCallback(async (reminderId: string, linkedItemId: string, linkType: string) => {
+    try {
+      const updatedReminder = await reminderService.addReminderLink({
+        reminderId,
+        linkedItemId,
+        itemType: linkType as "note" | "idea",
+      });
+
+      // Update the reminders state with the new link
+      setReminders(prev => prev.map(reminder => 
+        reminder.id === reminderId ? updatedReminder : reminder
+      ));
+
+      await createActivity({
+        actionType: 'link',
+        itemType: 'reminder',
+        itemId: reminderId,
+        itemTitle: updatedReminder.title,
+        description: `Linked ${linkType} to reminder: ${updatedReminder.title}`,
+        metadata: {
+          linkedItemId,
+          linkType,
+        },
+      });
+    } catch (error) {
+      console.error('Failed to add reminder link:', error);
+      throw error;
+    }
+  }, [createActivity]);
+
+  const removeReminderLink = useCallback(async (reminderId: string, linkedItemId: string) => {
+    try {
+      const updatedReminder = await reminderService.removeReminderLink(reminderId, linkedItemId);
+
+      // Update the reminders state by removing the link
+      setReminders(prev => prev.map(reminder => 
+        reminder.id === reminderId ? updatedReminder : reminder
+      ));
+
+      const reminder = reminders.find(r => r.id === reminderId);
+      if (reminder) {
+        await createActivity({
+          actionType: 'unlink',
+          itemType: 'reminder',
+          itemId: reminderId,
+          itemTitle: reminder.title,
+          description: `Unlinked item from reminder: ${reminder.title}`,
+          metadata: {
+            linkedItemId,
+          },
+        });
+      }
+    } catch (error) {
+      console.error('Failed to remove reminder link:', error);
+      throw error;
+    }
+  }, [reminders, createActivity]);
+
   const value = useMemo(() => ({
     reminders,
     addReminder,
@@ -229,7 +287,9 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
     restoreReminder,
     fetchReminders,
     isLoading,
-    deleteReminderPermanently
+    deleteReminderPermanently,
+    addReminderLink,
+    removeReminderLink
   }), [
     reminders,
     addReminder,
@@ -242,7 +302,9 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
     restoreReminder,
     fetchReminders,
     isLoading,
-    deleteReminderPermanently
+    deleteReminderPermanently,
+    addReminderLink,
+    removeReminderLink
   ]);
 
   return (

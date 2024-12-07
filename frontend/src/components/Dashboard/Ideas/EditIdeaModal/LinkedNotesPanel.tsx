@@ -1,8 +1,7 @@
 import { Link2, Plus, Type, Lightbulb, CheckSquare, X, Calendar } from 'lucide-react';
 import type { Note } from '../../../../types/note';
-import { useNotes } from '../../../../contexts/notesContextUtils';
 import { useState } from 'react';
-import { EditNoteModal } from '../EditNoteModal';
+import { EditNoteModal } from '../../Notes/EditNoteModal';
 import { EditTaskModal } from '../../Tasks/EditTaskModal';
 import { useTasks } from '../../../../contexts/tasksContextUtils';
 import type { Task } from '../../../../api/types/task';
@@ -20,6 +19,7 @@ interface LinkedNotesPanelProps {
   onShowAddTask: () => void;
   currentNoteId: string;
   onUnlinkTask: (taskId: string) => void;
+  onUnlinkNote: (noteId: string) => void;
 }
 
 export function LinkedNotesPanel({
@@ -28,24 +28,12 @@ export function LinkedNotesPanel({
   onShowAddLink,
   onShowAddTask,
   currentNoteId,
-  onUnlinkTask
+  onUnlinkTask,
+  onUnlinkNote
 }: LinkedNotesPanelProps) {
-  const { removeLink } = useNotes();
   const { tasks } = useTasks();
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-
-  const handleUnlinkNote = async (linkedNoteId: string) => {
-    if (!currentNoteId) {
-      console.error('Missing currentNoteId');
-      return;
-    }
-    try {
-      removeLink(currentNoteId, linkedNoteId);
-    } catch (error) {
-      console.error('Failed to unlink:', error);
-    }
-  };
 
   const handleTaskClick = (taskId: string) => {
     const fullTask = tasks.find(t => t.id === taskId);
@@ -129,7 +117,7 @@ export function LinkedNotesPanel({
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            handleUnlinkNote(linkedNote.id);
+                            onUnlinkNote(linkedNote.id);
                           }}
                           className="opacity-0 group-hover:opacity-100 p-1 text-[var(--color-textSecondary)] hover:text-red-400 hover:bg-red-900/20 rounded transition-all z-10"
                         >
@@ -226,4 +214,4 @@ export function LinkedNotesPanel({
       )}
     </>
   );
-}
+} 

@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
-import { NotesProvider } from './contexts/NotesContext';
+import { NotesWithRemindersProvider } from './contexts/NotesContext';
 import { TasksProvider } from './contexts/TasksContext';
 import { RemindersProvider } from './contexts/RemindersContext';
 import { ActivityProvider } from './contexts/ActivityContext';
@@ -27,9 +27,9 @@ const AuthenticatedApp = () => {
         <ActivityProvider>
           <ModalProvider>
             <TrashProvider>
-              <NotesProvider>
-                <TasksProvider>
-                  <RemindersProvider>
+              <RemindersProvider>
+                <NotesWithRemindersProvider>
+                  <TasksProvider>
                     <DashboardProvider>
                       <Suspense fallback={<LoadingScreen message="Loading application..." />}>
                         <Routes>
@@ -47,9 +47,9 @@ const AuthenticatedApp = () => {
                         </Routes>
                       </Suspense>
                     </DashboardProvider>
-                  </RemindersProvider>
-                </TasksProvider>
-              </NotesProvider>
+                  </TasksProvider>
+                </NotesWithRemindersProvider>
+              </RemindersProvider>
             </TrashProvider>
           </ModalProvider>
         </ActivityProvider>

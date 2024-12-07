@@ -259,29 +259,44 @@ namespace SecondBrain.Api.Controllers
                 return NotFound("Linked item not found");
             }
 
-            // Check if link already exists
+            // Check if link already exists (including soft-deleted ones)
             var existingLink = await _context.TaskLinks
-                .AnyAsync(tl => tl.TaskId == taskId && tl.LinkedItemId == request.LinkedItemId && !tl.IsDeleted);
+                .FirstOrDefaultAsync(tl => tl.TaskId == taskId && tl.LinkedItemId == request.LinkedItemId);
 
-            if (existingLink)
+            if (existingLink != null)
             {
-                _logger.LogWarning("Task link already exists. TaskId: {TaskId}, LinkedItemId: {LinkedItemId}", taskId, request.LinkedItemId);
-                return BadRequest("Task is already linked to this item");
+                if (!existingLink.IsDeleted)
+                {
+                    _logger.LogWarning("Task link already exists and is active. TaskId: {TaskId}, LinkedItemId: {LinkedItemId}", taskId, request.LinkedItemId);
+                    return BadRequest("Task is already linked to this item");
+                }
+
+                // Reactivate the soft-deleted link
+                existingLink.IsDeleted = false;
+                existingLink.DeletedAt = null;
+                existingLink.Description = request.Description; // Update description if provided
+                existingLink.CreatedAt = DateTime.UtcNow;      // Update creation time
+
+                _logger.LogInformation("Reactivating existing task link: {@TaskLink}", existingLink);
             }
-
-            var taskLink = new TaskLink
+            else
             {
-                TaskId = taskId,
-                LinkedItemId = request.LinkedItemId,
-                LinkType = request.LinkType,
-                Description = request.Description,
-                CreatedAt = DateTime.UtcNow,
-                CreatedBy = userId,
-                IsDeleted = false
-            };
+                // Create new link if no existing link found
+                var taskLink = new TaskLink
+                {
+                    TaskId = taskId,
+                    LinkedItemId = request.LinkedItemId,
+                    LinkType = request.LinkType,
+                    Description = request.Description,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = userId,
+                    IsDeleted = false,
+                    DeletedAt = null
+                };
 
-            _logger.LogInformation("Creating task link: {@TaskLink}", taskLink);
-            _context.TaskLinks.Add(taskLink);
+                _logger.LogInformation("Creating new task link: {@TaskLink}", taskLink);
+                _context.TaskLinks.Add(taskLink);
+            }
 
             try
             {
