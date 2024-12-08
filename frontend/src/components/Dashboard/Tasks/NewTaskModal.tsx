@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { X, Type, Tag as TagIcon, Calendar, Loader } from 'lucide-react';
+import { X, Type, Tag as TagIcon, Calendar, Loader, AlignLeft } from 'lucide-react';
 import { Input } from '../../shared/Input';
+import { TextArea } from '../../shared/TextArea';
 import { useTasks } from '../../../contexts/tasksContextUtils';
+import { useTheme } from '../../../contexts/themeContextUtils';
 import { SuggestionButton } from '../../shared/SuggestionButton';
 
 interface NewTaskModalProps {
@@ -9,18 +11,23 @@ interface NewTaskModalProps {
   onClose: () => void;
 }
 
+type PriorityLevel = 'low' | 'medium' | 'high';
+
 export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
+  const { colors } = useTheme();
   const { addTask } = useTasks();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
-  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
+  const [priority, setPriority] = useState<PriorityLevel>('medium');
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [titleTouched, setTitleTouched] = useState(false);
 
   if (!isOpen) return null;
+
+  const taskColor = colors.task;
 
   const handleAddTag = () => {
     const trimmedTag = tagInput.trim();
@@ -36,17 +43,16 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setTitleTouched(true);
 
-    if (!title.trim()) {
-      setError('Title is required');
+    if (!title.trim() || !dueDate) {
       return;
     }
 
     setIsLoading(true);
-    setError('');
 
     try {
-      await addTask({
+      addTask({
         title: title.trim(),
         description: description.trim(),
         priority,
@@ -57,38 +63,62 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
       onClose();
     } catch (error) {
       console.error(error);
-      setError('Failed to create task. Please try again.');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const getPriorityColor = (p: PriorityLevel, isSelected: boolean) => {
+    if (!isSelected) return `${colors.surface}cc`;
+    if (p === 'high') return '#dc262620';
+    if (p === 'medium') return '#fbbf2420';
+    return '#22c55e20';
+  };
+
+  const getPriorityTextColor = (p: PriorityLevel, isSelected: boolean) => {
+    if (!isSelected) return colors.textSecondary;
+    if (p === 'high') return '#dc2626';
+    if (p === 'medium') return '#fbbf24';
+    return '#22c55e';
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative w-full max-w-2xl bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl overflow-hidden">
-        <div className="shrink-0 px-6 py-4 border-b border-[var(--color-border)] bg-[var(--color-background)]">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-[var(--color-text)]">
-              Create New Task
-            </h2>
-            <button
-              onClick={onClose}
-              className="p-1.5 text-[var(--color-textSecondary)] hover:text-[var(--color-text)] rounded-lg transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+      <div
+        style={{
+          backgroundColor: `${colors.background}cc`,
+          borderColor: colors.border,
+        }}
+        className="relative w-full max-w-2xl rounded-xl border backdrop-blur-md shadow-2xl"
+      >
+        <div
+          style={{ borderColor: colors.border }}
+          className="flex items-center justify-between p-4 border-b backdrop-blur-md rounded-t-xl"
+        >
+          <h2
+            style={{ color: colors.textSecondary }}
+            className="text-xl font-semibold"
+          >
+            Create New Task
+          </h2>
+          <button
+            onClick={onClose}
+            style={{
+              color: colors.textSecondary,
+              '--hover-color': colors.text
+            } as React.CSSProperties}
+            className="p-1 transition-colors hover:text-[--hover-color]"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-4">
+          <div className="space-y-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-[var(--color-text)]">
-                  Title
-                </label>
                 <SuggestionButton
                   type="title"
                   itemType="task"
@@ -104,26 +134,24 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
                 />
               </div>
               <Input
-                label=""
+                id="task-title"
+                name="title"
                 type="text"
+                label="Title"
                 icon={Type}
                 value={title}
-                onChange={(e) => {
-                  setTitle(e.target.value);
-                  setError('');
-                }}
+                onChange={(e) => setTitle(e.target.value)}
+                onBlur={() => setTitleTouched(true)}
                 placeholder="Enter task title"
-                error={error}
+                error={titleTouched && !title.trim() ? 'Title is required' : ''}
                 disabled={isLoading}
-                className="!bg-[var(--color-background)]"
+                required
+                requiredIndicatorColor={taskColor}
               />
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-[var(--color-text)]">
-                  Description
-                </label>
                 <SuggestionButton
                   type="content"
                   itemType="task"
@@ -138,34 +166,39 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
                   }}
                 />
               </div>
-              <textarea
+              <TextArea
+                id="task-description"
+                name="description"
+                label="Description"
+                icon={AlignLeft}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Describe your task..."
-                rows={3}
                 disabled={isLoading}
-                className="w-full min-h-[46px] px-4 py-3 bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent text-[var(--color-text)] placeholder-[var(--color-textSecondary)] resize-none"
+                rows={4}
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-[var(--color-text)]">
-                  Due Date
-                </label>
                 <Input
-                  label=""
+                  id="task-due-date"
+                  name="dueDate"
                   type="datetime-local"
+                  label="Due Date"
                   icon={Calendar}
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
+                  error={!dueDate ? 'Due date is required' : ''}
                   disabled={isLoading}
-                  className="!bg-[var(--color-background)]"
+                  disableRecording
+                  required
+                  requiredIndicatorColor={taskColor}
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-[var(--color-text)]">
+                <label className="text-sm font-medium" style={{ color: colors.textSecondary }}>
                   Priority
                 </label>
                 <div className="flex gap-2">
@@ -175,15 +208,12 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
                       type="button"
                       onClick={() => setPriority(p)}
                       disabled={isLoading}
-                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        priority === p
-                          ? p === 'high'
-                            ? 'bg-red-900/20 text-red-400'
-                            : p === 'medium'
-                              ? 'bg-yellow-900/20 text-yellow-400'
-                              : 'bg-green-900/20 text-green-400'
-                          : 'bg-[var(--color-background)] text-[var(--color-textSecondary)] hover:bg-[var(--color-surface)]'
-                      }`}
+                      style={{
+                        backgroundColor: getPriorityColor(p, priority === p),
+                        color: getPriorityTextColor(p, priority === p),
+                        '--hover-bg': colors.surfaceHover,
+                      } as React.CSSProperties}
+                      className="flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[--hover-bg]"
                     >
                       <span className="capitalize">{p}</span>
                     </button>
@@ -194,9 +224,6 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-[var(--color-text)]">
-                  Tags
-                </label>
                 <SuggestionButton
                   type="tags"
                   itemType="task"
@@ -212,13 +239,18 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
                 {tags.map(tag => (
                   <span
                     key={tag}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-[var(--color-accent)]/20 text-[var(--color-accent)] rounded-full text-sm"
+                    style={{
+                      backgroundColor: `${colors.accent}20`,
+                      color: colors.accent,
+                    }}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm"
                   >
                     {tag}
                     <button
                       type="button"
                       onClick={() => handleRemoveTag(tag)}
-                      className="p-0.5 hover:text-[var(--color-accent)]"
+                      style={{ '--hover-color': colors.accent } as React.CSSProperties}
+                      className="p-0.5 hover:text-[--hover-color]"
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -227,8 +259,10 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
               </div>
               <div className="flex gap-2">
                 <Input
-                  label=""
+                  id="tag-input"
+                  name="tag"
                   type="text"
+                  label=""
                   icon={TagIcon}
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
@@ -240,13 +274,17 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
                   }}
                   placeholder="Add a tag"
                   disabled={isLoading}
-                  className="!bg-[var(--color-background)]"
                 />
                 <button
                   type="button"
                   onClick={handleAddTag}
                   disabled={!tagInput.trim() || isLoading}
-                  className="px-4 py-2 text-[var(--color-textSecondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface)] rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  style={{
+                    backgroundColor: `${colors.surface}cc`,
+                    color: colors.textSecondary,
+                    '--hover-bg': colors.surfaceHover,
+                  } as React.CSSProperties}
+                  className="px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-[--hover-bg]"
                 >
                   Add
                 </button>
@@ -254,31 +292,37 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
             </div>
           </div>
 
-          <div className="shrink-0 px-6 py-4 border-t border-[var(--color-border)] bg-[var(--color-background)]">
-            <div className="flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={isLoading}
-                className="px-4 py-2 text-[var(--color-textSecondary)] hover:text-[var(--color-text)] rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="px-4 py-2 flex items-center gap-2 bg-[var(--color-accent)] text-white rounded-lg hover:bg-[var(--color-accent)]/90 transition-colors disabled:opacity-50"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader className="w-4 h-4 animate-spin" />
-                    <span>Creating...</span>
-                  </>
-                ) : (
-                  'Create Task'
-                )}
-              </button>
-            </div>
+          <div className="flex justify-end gap-3 mt-6">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isLoading}
+              style={{
+                color: colors.textSecondary,
+                '--hover-bg': colors.surfaceHover,
+              } as React.CSSProperties}
+              className="px-4 py-2 rounded-lg transition-colors hover:bg-[--hover-bg]"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              style={{
+                backgroundColor: colors.accent,
+                '--hover-bg': `${colors.accent}dd`,
+              } as React.CSSProperties}
+              className="flex items-center gap-2 px-4 py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-[--hover-bg]"
+            >
+              {isLoading ? (
+                <>
+                  <Loader className="w-4 h-4 animate-spin" />
+                  <span>Creating...</span>
+                </>
+              ) : (
+                'Create Task'
+              )}
+            </button>
           </div>
         </form>
       </div>

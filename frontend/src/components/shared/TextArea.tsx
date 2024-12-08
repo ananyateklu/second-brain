@@ -2,23 +2,21 @@ import React, { useState } from 'react';
 import { LucideIcon, Wand2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { promptEnhancementService } from '../../services/ai/promptEnhancementService';
-import { RecordButton } from './RecordButton';
 import { useTheme } from '../../contexts/themeContextUtils';
 
-interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
+interface TextAreaProps extends Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, 'onChange'> {
   label: string;
   icon: LucideIcon;
   error?: string;
   className?: string;
   context?: string;
   onEnhanced?: (value: string) => void;
-  onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange?: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
   disableEnhancement?: boolean;
-  disableRecording?: boolean;
   requiredIndicatorColor?: string;
 }
 
-export function Input({
+export function TextArea({
   label,
   icon: Icon,
   error,
@@ -27,16 +25,13 @@ export function Input({
   onEnhanced,
   onChange,
   disableEnhancement = false,
-  disableRecording = false,
+  rows = 6,
   requiredIndicatorColor,
   ...props
-}: InputProps) {
+}: TextAreaProps) {
   const [isFocused, setIsFocused] = useState(false);
   const [isEnhancing, setIsEnhancing] = useState(false);
   const { theme, colors } = useTheme();
-
-  // Get validation border color
-  const validationColor = error ? (requiredIndicatorColor ?? 'rgb(239, 68, 68)') : undefined;
 
   const handleEnhancePrompt = async () => {
     if (!props.value || isEnhancing) return;
@@ -50,7 +45,7 @@ export function Input({
       
       const syntheticEvent = {
         target: { value: enhanced }
-      } as React.ChangeEvent<HTMLInputElement>;
+      } as React.ChangeEvent<HTMLTextAreaElement>;
       
       onChange?.(syntheticEvent);
       onEnhanced?.(enhanced);
@@ -59,15 +54,6 @@ export function Input({
       console.error('Failed to enhance prompt:', error);
     } finally {
       setIsEnhancing(false);
-    }
-  };
-
-  const handleTranscription = (text: string) => {
-    if (text && onChange) {
-      const syntheticEvent = {
-        target: { value: text }
-      } as React.ChangeEvent<HTMLInputElement>;
-      onChange(syntheticEvent);
     }
   };
 
@@ -107,26 +93,28 @@ export function Input({
           transition={{ duration: 0.2 }}
         />
 
-        <div className="relative flex items-center">
+        <div className="relative">
           {Icon && (
             <motion.div 
-              className="absolute left-3 flex items-center justify-center pointer-events-none z-10"
+              className="absolute left-3 top-3 flex items-center justify-center pointer-events-none z-10"
               animate={{
                 scale: isFocused ? 1.1 : 1,
                 x: isFocused ? 2 : 0
               }}
               transition={{ duration: 0.2 }}
             >
-              <Icon className={`h-5 w-5 ${
-                isFocused 
-                  ? 'text-[var(--color-accent)]'
-                  : 'text-[var(--color-textSecondary)]'
-              }`} />
+              <Icon 
+                style={{ 
+                  color: isFocused ? colors.accent : colors.textSecondary,
+                }}
+                className="h-5 w-5 transition-colors duration-200" 
+              />
             </motion.div>
           )}
 
-          <input
+          <textarea
             {...props}
+            rows={rows}
             onChange={onChange}
             onFocus={(e) => {
               setIsFocused(true);
@@ -136,14 +124,10 @@ export function Input({
               setIsFocused(false);
               props.onBlur?.(e);
             }}
-            style={{
-              borderColor: validationColor,
-              ...props.style
-            }}
             className={`
               w-full
-              h-10
               px-4
+              py-3
               mx-0.5
               ${typeof Icon !== 'undefined' ? 'pl-10' : ''}
               ${props.value ? 'pr-10' : ''}
@@ -159,17 +143,19 @@ export function Input({
               focus:text-[var(--color-text)]
               focus:outline-none
               focus:ring-2
-              ${error ? `focus:ring-[${validationColor}]/30` : 'focus:ring-[var(--color-accent)]/30'}
+              focus:ring-[var(--color-accent)]/30
               focus:border-transparent
               transition-all
               duration-200
               disabled:opacity-50
               disabled:cursor-not-allowed
+              resize-none
+              ${error ? 'border-red-500 focus:border-red-500' : ''}
               ${className}
             `}
           />
 
-          <div className="absolute right-1.5 flex items-center h-full">
+          <div className="absolute right-1.5 top-3">
             <AnimatePresence>
               {props.value && !disableEnhancement && (
                 <motion.button
@@ -208,14 +194,6 @@ export function Input({
                 </motion.button>
               )}
             </AnimatePresence>
-
-            {!disableRecording && (
-              <div className="border-l border-[var(--color-border)] h-full flex items-center pl-1">
-                <RecordButton
-                  onTranscription={handleTranscription}
-                />
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -223,8 +201,7 @@ export function Input({
       <AnimatePresence>
         {error && (
           <motion.p 
-            style={{ color: validationColor }}
-            className="text-sm"
+            className="text-sm text-red-500"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
@@ -236,4 +213,4 @@ export function Input({
       </AnimatePresence>
     </div>
   );
-}
+} 

@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { X, Type, Tag as TagIcon, Loader } from 'lucide-react';
+import { X, Type, Tag as TagIcon, Loader, AlignLeft } from 'lucide-react';
 import { Input } from '../../shared/Input';
+import { TextArea } from '../../shared/TextArea';
 import { useNotes } from '../../../contexts/notesContextUtils';
+import { useTheme } from '../../../contexts/themeContextUtils';
 import { SuggestionButton } from '../../shared/SuggestionButton';
 
 interface NewNoteModalProps {
@@ -10,6 +12,7 @@ interface NewNoteModalProps {
 }
 
 export function NewNoteModal({ isOpen, onClose }: NewNoteModalProps) {
+  const { colors } = useTheme();
   const { addNote } = useNotes();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -34,7 +37,7 @@ export function NewNoteModal({ isOpen, onClose }: NewNoteModalProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!title.trim()) {
       setError('Title is required');
       return;
@@ -44,7 +47,7 @@ export function NewNoteModal({ isOpen, onClose }: NewNoteModalProps) {
     setError('');
 
     try {
-      await addNote({
+      addNote({
         title: title.trim(),
         content: content.trim(),
         tags,
@@ -54,7 +57,7 @@ export function NewNoteModal({ isOpen, onClose }: NewNoteModalProps) {
         isDeleted: false,
         isIdea: false
       });
-      
+
       onClose();
     } catch (error) {
       console.error(error);
@@ -67,15 +70,31 @@ export function NewNoteModal({ isOpen, onClose }: NewNoteModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      
-      <div className="relative w-full max-w-2xl bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)]">
-        <div className="flex items-center justify-between p-4 border-b border-[var(--color-border)]">
-          <h2 className="text-xl font-semibold text-[var(--color-text)]">
+
+      <div
+        style={{
+          backgroundColor: `${colors.background}cc`,
+          borderColor: colors.border,
+        }}
+        className="relative w-full max-w-2xl rounded-xl border backdrop-blur-md shadow-2xl"
+      >
+        <div
+          style={{ borderColor: colors.border }}
+          className="flex items-center justify-between p-4 border-b backdrop-blur-md rounded-t-xl"
+        >
+          <h2
+            style={{ color: colors.textSecondary }}
+            className="text-xl font-semibold"
+          >
             Create New Note
           </h2>
           <button
             onClick={onClose}
-            className="p-1 text-[var(--color-textSecondary)] hover:text-[var(--color-text)]"
+            style={{
+              color: colors.textSecondary,
+              '--hover-color': colors.text
+            } as React.CSSProperties}
+            className="p-1 transition-colors hover:text-[--hover-color]"
           >
             <X className="w-5 h-5" />
           </button>
@@ -111,15 +130,11 @@ export function NewNoteModal({ isOpen, onClose }: NewNoteModalProps) {
                 placeholder="Enter note title"
                 error={error}
                 disabled={isLoading}
-                className="bg-[var(--color-surface)] border-[var(--color-border)]"
               />
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="block text-sm font-medium text-[var(--color-text)]">
-                  Content
-                </label>
                 <SuggestionButton
                   type="content"
                   itemType="note"
@@ -132,21 +147,21 @@ export function NewNoteModal({ isOpen, onClose }: NewNoteModalProps) {
                   }}
                 />
               </div>
-              <textarea
+              <TextArea
+                id="note-content"
+                name="content"
+                label="Content"
+                icon={AlignLeft}
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="Write your note content..."
-                rows={6}
                 disabled={isLoading}
-                className="w-full px-4 py-3 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-accent)]/50 focus:border-transparent transition-all text-[var(--color-text)] placeholder:text-[var(--color-textSecondary)]"
+                rows={6}
               />
             </div>
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="block text-sm font-medium text-[var(--color-text)]">
-                  Tags
-                </label>
                 <SuggestionButton
                   type="tags"
                   itemType="note"
@@ -162,13 +177,18 @@ export function NewNoteModal({ isOpen, onClose }: NewNoteModalProps) {
                 {tags.map(tag => (
                   <span
                     key={tag}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-[var(--color-accent)]/20 text-[var(--color-accent)] rounded-full text-sm"
+                    style={{
+                      backgroundColor: `${colors.accent}20`,
+                      color: colors.accent,
+                    }}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm"
                   >
                     {tag}
                     <button
                       type="button"
                       onClick={() => handleRemoveTag(tag)}
-                      className="p-0.5 hover:text-[var(--color-accent)]"
+                      style={{ '--hover-color': colors.accent } as React.CSSProperties}
+                      className="p-0.5 hover:text-[--hover-color]"
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -192,13 +212,17 @@ export function NewNoteModal({ isOpen, onClose }: NewNoteModalProps) {
                   }}
                   placeholder="Add a tag"
                   disabled={isLoading}
-                  className="bg-[var(--color-surface)] border-[var(--color-border)]"
                 />
                 <button
                   type="button"
                   onClick={handleAddTag}
                   disabled={!tagInput.trim() || isLoading}
-                  className="px-4 py-2 bg-[var(--color-surface)] text-[var(--color-textSecondary)] hover:bg-[var(--color-surface)]/80 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  style={{
+                    backgroundColor: `${colors.surface}cc`,
+                    color: colors.textSecondary,
+                    '--hover-bg': colors.surfaceHover,
+                  } as React.CSSProperties}
+                  className="px-4 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-[--hover-bg]"
                 >
                   Add
                 </button>
@@ -211,14 +235,22 @@ export function NewNoteModal({ isOpen, onClose }: NewNoteModalProps) {
               type="button"
               onClick={onClose}
               disabled={isLoading}
-              className="px-4 py-2 text-[var(--color-textSecondary)] hover:bg-[var(--color-surface)]/80 rounded-lg transition-colors"
+              style={{
+                color: colors.textSecondary,
+                '--hover-bg': colors.surfaceHover,
+              } as React.CSSProperties}
+              className="px-4 py-2 rounded-lg transition-colors hover:bg-[--hover-bg]"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent)] hover:bg-[var(--color-accent)]/90 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              style={{
+                backgroundColor: colors.accent,
+                '--hover-bg': `${colors.accent}dd`,
+              } as React.CSSProperties}
+              className="flex items-center gap-2 px-4 py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:bg-[--hover-bg]"
             >
               {isLoading ? (
                 <>
