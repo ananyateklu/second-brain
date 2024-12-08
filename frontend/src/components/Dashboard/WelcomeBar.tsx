@@ -34,7 +34,7 @@ const getWidthFromSize = (size?: string) => {
   switch (size) {
     case 'small': return 1;
     case 'medium': return 2;
-    case 'large': return 3;
+    case 'large': return 4;
     default: return 1;
   }
 };
@@ -43,7 +43,7 @@ const getColumnSpan = (size?: string) => {
   switch (size) {
     case 'small': return 'col-span-1';
     case 'medium': return 'col-span-2';
-    case 'large': return 'col-span-3';
+    case 'large': return 'col-span-4';
     default: return 'col-span-1';
   }
 };
@@ -319,7 +319,8 @@ export function WelcomeBar({ isDashboardHome = false }: WelcomeBarProps) {
                     >
                       <motion.div
                         className={`
-                          w-full h-full 
+                          w-full
+                          h-full 
                           bg-[color-mix(in_srgb,var(--color-background)_90%,var(--color-surface))]
                           dark:bg-gray-800/20
                           backdrop-blur-xl 
@@ -372,7 +373,7 @@ export function WelcomeBar({ isDashboardHome = false }: WelcomeBarProps) {
                                 >
                                   {statValue.value}
                                 </span>
-                                {statValue.change && statValue.change > 0 && statValue.value !== '-' && (
+                                {statValue.change && statValue.change > 0 && statValue.value !== '-' && stat.size !== 'large' && (
                                   <span
                                     className="text-xs text-[var(--color-accent)]"
                                     style={{ transition: 'var(--theme-transition)' }}
@@ -404,6 +405,14 @@ export function WelcomeBar({ isDashboardHome = false }: WelcomeBarProps) {
                                         <span className="font-medium text-[var(--color-text)]">{statValue.metadata.breakdown.total}</span>
                                         {' '}
                                         <span className="text-[var(--color-textSecondary)]">this week</span>
+                                        {statValue.change && statValue.change !== 0 && (
+                                          <>
+                                            {' '}
+                                            <span className="text-[var(--color-accent)]">
+                                              ({statValue.change > 0 ? '+' : ''}{statValue.change} vs last)
+                                            </span>
+                                          </>
+                                        )}
                                       </span>
                                     </div>
                                   )}

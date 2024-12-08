@@ -111,7 +111,6 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     let dueSoonTasks: number;
     let activeNotes: Note[];
     let archivedNotes: Note[];
-    let todayNotes: number;
     let totalWords: number;
     let threeDaysFromNow: Date;
     let notesWithTags: number;
@@ -123,6 +122,16 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     let weekAgo: Date;
     let sharedWithTasks: number;
     let sharedWithReminders: number;
+    
+    // New declarations for new-notes case
+    let notesToday: number;
+    let notesYesterday: number;
+    let previousWeekNotes: number;
+    let weeklyTotal: number;
+    let weeklyChange: number;
+    let yesterday: Date;
+    let twoWeeksAgo: Date;
+    let dailyBreakdown: number[];
 
     // If still loading, return placeholder values
     if (isLoading || notesLoading) {
@@ -249,20 +258,73 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       case 'new-notes':
         newRegularNotes = getNewNotesCount(regularNotes);
         today = new Date();
-        today.setHours(0, 0, 0, 0);
-        todayNotes = regularNotes.filter(note => new Date(note.createdAt) >= today).length;
+        weekAgo = new Date(today);
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        
+        // Calculate notes created today
+        yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        yesterday.setHours(0, 0, 0, 0);
+        
+        twoWeeksAgo = new Date(weekAgo);
+        twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 7);
+        
+        notesToday = regularNotes.filter(note => {
+          const noteDate = new Date(note.createdAt);
+          noteDate.setHours(0, 0, 0, 0);
+          const todayDate = new Date(today);
+          todayDate.setHours(0, 0, 0, 0);
+          return noteDate.getTime() === todayDate.getTime();
+        }).length;
+        
+        notesYesterday = regularNotes.filter(note => {
+          const noteDate = new Date(note.createdAt);
+          noteDate.setHours(0, 0, 0, 0);
+          return noteDate.getTime() === yesterday.getTime();
+        }).length;
+        
+        previousWeekNotes = regularNotes.filter(note => {
+          const noteDate = new Date(note.createdAt);
+          return noteDate >= twoWeeksAgo && noteDate < weekAgo;
+        }).length;
+        
+        dailyBreakdown = Array.from({ length: 7 }, (_, i) => {
+          const date = new Date(today);
+          date.setDate(date.getDate() - i);
+          date.setHours(0, 0, 0, 0);
+          return regularNotes.filter(note => {
+            const noteDate = new Date(note.createdAt);
+            noteDate.setHours(0, 0, 0, 0);
+            return noteDate.getTime() === date.getTime();
+          }).length;
+        });
+        
+        weeklyTotal = dailyBreakdown.reduce((sum, count) => sum + count, 0);
+        weeklyChange = weeklyTotal - previousWeekNotes;
 
         return {
           value: newRegularNotes,
-          change: calculateWeeklyChange(regularNotes, 'created'),
-          timeframe: 'vs last week',
-          description: 'Notes created in the last 7 days',
+          change: weeklyChange,
+          timeframe: 'This week',
+          description: 'New notes created in the last 7 days',
           additionalInfo: [
             {
-              icon: Calendar,
-              value: `${todayNotes} today`
+              icon: FileText,
+              value: `${notesToday} today`
+            },
+            {
+              icon: Clock,
+              value: `${notesYesterday} yesterday`
             }
-          ]
+          ],
+          metadata: {
+            breakdown: {
+              total: weeklyTotal,
+              created: weeklyTotal,
+              edited: 0,
+              deleted: 0
+            }
+          }
         };
 
       case 'last-update':
