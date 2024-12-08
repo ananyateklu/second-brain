@@ -14,8 +14,48 @@ import { ReminderCard } from '../Reminders/ReminderCard';
 import { IdeaCard } from '../Ideas/IdeaCard';
 import { useTagFiltering } from './useTagFiltering';
 import { FiltersPanel } from './FiltersPanel';
-import { ItemType, TaggedItem } from './types';
+import { ItemType } from './types';
 import { cardGridStyles } from '../shared/cardStyles';
+import { TaskStatus, TaskPriority } from '../../../api/types/task';
+
+// Define interfaces before the component
+interface LinkedItem {
+  id: string;
+  title: string;
+  type: string;
+  createdAt: string;
+}
+
+interface ReminderProperties {
+  dueDateTime: string;
+  repeatInterval?: 'Daily' | 'Weekly' | 'Monthly' | 'Yearly' | 'Custom';
+  customRepeatPattern?: string;
+  snoozeUntil?: string;
+  isCompleted: boolean;
+  isSnoozed: boolean;
+  completedAt?: string;
+  linkedItems: LinkedItem[];
+  userId: string;
+  isDeleted: boolean;
+  deletedAt?: string;
+}
+
+// Define TaggedItem interface with all required properties
+interface TaggedItem extends Partial<ReminderProperties> {
+  id: string;
+  title: string;
+  content: string;
+  tags: string[];
+  type: ItemType;
+  updatedAt: string;
+  createdAt: string;
+  isIdea?: boolean;
+  linkedItems?: LinkedItem[];
+  status?: TaskStatus;
+  priority?: TaskPriority;
+  dueDate?: string | null;
+  description?: string;
+}
 
 export function TagsPage() {
   const { notes } = useNotes();
@@ -48,7 +88,21 @@ export function TagsPage() {
           type: 'note' as ItemType,
           updatedAt: note.updatedAt,
           createdAt: note.createdAt,
-          isIdea: note.isIdea
+          isIdea: note.isIdea,
+          linkedItems: [
+            ...(note.linkedTasks?.map(task => ({
+              id: task.id,
+              title: task.title,
+              type: 'task',
+              createdAt: task.createdAt
+            })) || []),
+            ...(note.linkedReminders?.map(reminder => ({
+              id: reminder.id,
+              title: reminder.title,
+              type: 'reminder',
+              createdAt: reminder.createdAt
+            })) || [])
+          ]
         })),
       // Ideas (notes with isIdea=true)
       ...notes
@@ -61,28 +115,63 @@ export function TagsPage() {
           type: 'idea' as ItemType,
           updatedAt: note.updatedAt,
           createdAt: note.createdAt,
-          isIdea: note.isIdea
+          isIdea: note.isIdea,
+          linkedItems: [
+            ...(note.linkedTasks?.map(task => ({
+              id: task.id,
+              title: task.title,
+              type: 'task',
+              createdAt: task.createdAt
+            })) || []),
+            ...(note.linkedReminders?.map(reminder => ({
+              id: reminder.id,
+              title: reminder.title,
+              type: 'reminder',
+              createdAt: reminder.createdAt
+            })) || [])
+          ]
         })),
       // Tasks
       ...tasks.map(task => ({
         id: task.id,
         title: task.title,
         content: task.description,
+        description: task.description,
         tags: task.tags,
         type: 'task' as ItemType,
+        status: task.status,
+        priority: task.priority,
+        dueDate: task.dueDate,
         updatedAt: task.updatedAt,
-        createdAt: task.createdAt
+        createdAt: task.createdAt,
+        linkedItems: task.linkedItems?.map(item => ({
+          id: item.id,
+          title: item.title,
+          type: item.type,
+          createdAt: item.createdAt
+        })) || []
       })),
       // Reminders
       ...reminders.map(reminder => ({
         id: reminder.id,
         title: reminder.title,
         content: reminder.description ?? '',
+        description: reminder.description,
+        dueDateTime: reminder.dueDateTime,
+        repeatInterval: reminder.repeatInterval,
+        customRepeatPattern: reminder.customRepeatPattern,
+        snoozeUntil: reminder.snoozeUntil,
+        isCompleted: reminder.isCompleted,
+        isSnoozed: reminder.isSnoozed,
+        completedAt: reminder.completedAt,
         tags: reminder.tags,
-        type: 'reminder' as ItemType,
-        updatedAt: reminder.updatedAt,
+        linkedItems: reminder.linkedItems || [],
         createdAt: reminder.createdAt,
-        linkedItems: []
+        updatedAt: reminder.updatedAt,
+        userId: reminder.userId,
+        isDeleted: reminder.isDeleted,
+        deletedAt: reminder.deletedAt,
+        type: 'reminder' as ItemType
       }))
     ];
 
@@ -150,6 +239,27 @@ export function TagsPage() {
           linkedReminders: []
         });
         break;
+      case 'reminder':
+        setSelectedReminder({
+          id: item.id,
+          title: item.title,
+          description: item.content,
+          dueDateTime: item.dueDateTime ?? new Date().toISOString(),
+          repeatInterval: item.repeatInterval,
+          customRepeatPattern: item.customRepeatPattern,
+          snoozeUntil: item.snoozeUntil,
+          isCompleted: item.isCompleted || false,
+          isSnoozed: item.isSnoozed || false,
+          completedAt: item.completedAt,
+          tags: item.tags,
+          linkedItems: item.linkedItems || [],
+          createdAt: item.createdAt,
+          updatedAt: item.updatedAt,
+          userId: item.userId ?? '',
+          isDeleted: item.isDeleted || false,
+          deletedAt: item.deletedAt
+        });
+        break;
       case 'task':
         setSelectedTask({
           id: item.id,
@@ -162,24 +272,7 @@ export function TagsPage() {
           updatedAt: item.updatedAt,
           createdAt: item.createdAt,
           isDeleted: false,
-          linkedItems: []
-        });
-        break;
-      case 'reminder':
-        setSelectedReminder({
-          id: item.id,
-          title: item.title,
-          description: item.content || '',
-          tags: item.tags,
-          dueDateTime: new Date().toISOString(),
-          isCompleted: false,
-          isSnoozed: false,
-          isDeleted: false,
-          userId: '',
-          updatedAt: item.updatedAt,
-          createdAt: item.createdAt,
-          linkedItems: [],
-          repeatInterval: undefined
+          linkedItems: item.linkedItems || []
         });
         break;
     }
@@ -399,15 +492,16 @@ export function TagsPage() {
                                     title: item.title,
                                     description: item.content,
                                     tags: item.tags,
-                                    status: 'Incomplete',
-                                    priority: 'medium',
-                                    dueDate: null,
+                                    status: item.status ?? 'Incomplete',
+                                    priority: item.priority ?? 'medium',
+                                    dueDate: item.dueDate ?? null,
                                     updatedAt: item.updatedAt,
                                     createdAt: item.createdAt,
                                     isDeleted: false,
-                                    linkedItems: []
+                                    linkedItems: item.linkedItems || []
                                   }}
-                                  viewMode="grid"
+                                  viewMode={viewMode}
+                                  onClick={() => handleEditNote(item)}
                                 />
                               </div>
                             );
@@ -416,19 +510,15 @@ export function TagsPage() {
                               <ReminderCard
                                 key={item.id}
                                 reminder={{
-                                  id: item.id,
-                                  title: item.title,
+                                  ...item,
                                   description: item.content || '',
-                                  tags: item.tags,
-                                  dueDateTime: new Date().toISOString(),
-                                  isCompleted: false,
-                                  isSnoozed: false,
-                                  isDeleted: false,
-                                  userId: '',
-                                  updatedAt: item.updatedAt,
-                                  createdAt: item.createdAt,
-                                  linkedItems: [],
-                                  repeatInterval: undefined
+                                  dueDateTime: item.dueDateTime ?? new Date().toISOString(),
+                                  isCompleted: item.isCompleted || false,
+                                  isSnoozed: item.isSnoozed || false,
+                                  isDeleted: item.isDeleted || false,
+                                  userId: item.userId ?? '',
+                                  repeatInterval: item.repeatInterval,
+                                  linkedItems: item.linkedItems || []
                                 }}
                                 viewMode={viewMode}
                                 onClick={() => handleEditNote(item)}
@@ -519,15 +609,16 @@ export function TagsPage() {
                                     title: item.title,
                                     description: item.content,
                                     tags: item.tags,
-                                    status: 'Incomplete',
-                                    priority: 'medium',
-                                    dueDate: null,
+                                    status: item.status ?? 'Incomplete',
+                                    priority: item.priority ?? 'medium',
+                                    dueDate: item.dueDate ?? null,
                                     updatedAt: item.updatedAt,
                                     createdAt: item.createdAt,
                                     isDeleted: false,
-                                    linkedItems: []
+                                    linkedItems: item.linkedItems || []
                                   }}
-                                  viewMode="list"
+                                  viewMode={viewMode}
+                                  onClick={() => handleEditNote(item)}
                                 />
                               </div>
                             );
@@ -536,19 +627,15 @@ export function TagsPage() {
                               <ReminderCard
                                 key={item.id}
                                 reminder={{
-                                  id: item.id,
-                                  title: item.title,
+                                  ...item,
                                   description: item.content || '',
-                                  tags: item.tags,
-                                  dueDateTime: new Date().toISOString(),
-                                  isCompleted: false,
-                                  isSnoozed: false,
-                                  isDeleted: false,
-                                  userId: '',
-                                  updatedAt: item.updatedAt,
-                                  createdAt: item.createdAt,
-                                  linkedItems: [],
-                                  repeatInterval: undefined
+                                  dueDateTime: item.dueDateTime ?? new Date().toISOString(),
+                                  isCompleted: item.isCompleted || false,
+                                  isSnoozed: item.isSnoozed || false,
+                                  isDeleted: item.isDeleted || false,
+                                  userId: item.userId ?? '',
+                                  repeatInterval: item.repeatInterval,
+                                  linkedItems: item.linkedItems || []
                                 }}
                                 viewMode={viewMode}
                                 onClick={() => handleEditNote(item)}

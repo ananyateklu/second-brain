@@ -1,204 +1,255 @@
-import { Square, CheckSquare, Calendar, Tag as TagIcon, Link2 } from 'lucide-react';
+import { useState } from 'react';
+import { Calendar, Tag as TagIcon, Clock, Type, Lightbulb, Square, CheckSquare, Link2 } from 'lucide-react';
 import { Task } from '../../../api/types/task';
 import { useTasks } from '../../../contexts/tasksContextUtils';
-import { formatTimeAgo } from '../Recent/utils';
-import { cardBaseStyles, cardContentStyles, cardDescriptionStyles } from '../shared/cardStyles';
+import { EditTaskModal } from './EditTaskModal/index';
+import { useTheme } from '../../../contexts/themeContextUtils';
 
 interface TaskCardProps {
   task: Task;
   viewMode?: 'grid' | 'list';
   isSelected?: boolean;
-  className?: string;
-  onEdit?: () => void;
   context?: 'default' | 'trash' | 'archive' | 'favorites';
   onSelect?: () => void;
-  onClick?: () => void;
-  contextData?: {
-    expiresAt?: string;
-    deletedAt?: string;
-    archivedAt?: string;
-  };
+  onClick?: (task: Task) => void;
 }
 
-export function TaskCard({ 
-  task, 
-  viewMode = 'grid', 
+export function TaskCard({
+  task,
+  viewMode = 'grid',
   isSelected,
   context = 'default',
   onSelect,
-  onClick,
-  onEdit,
-  contextData,
-  className = ''
+  onClick
 }: TaskCardProps) {
   const { updateTask } = useTasks();
+  const { theme } = useTheme();
+  const [showEditModal, setShowEditModal] = useState(false);
 
-  const getPriorityStyles = (priority: string) => {
-    switch (priority.toLowerCase()) {
-      case 'high':
-        return 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400';
-      case 'medium':
-        return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400';
-      default:
-        return 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400';
-    }
-  };
+  const isDark = theme === 'dark' || theme === 'midnight';
 
-  const renderStatusIcon = () => {
-    if (context !== 'default') return <CheckSquare className="w-4 h-4" />;
-    return task.status.toLowerCase() === 'completed' 
-      ? <CheckSquare className="w-4 h-4" />
-      : <Square className="w-4 h-4" />;
-  };
-
-  const handleCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (onSelect) {
-      e.stopPropagation();
       onSelect();
-    } else if (onEdit) {
-      onEdit();
     } else if (onClick) {
-      onClick();
+      onClick(task);
+    } else if (context === 'default') {
+      setShowEditModal(true);
     }
   };
 
-  // Calculate days until expiration for trash items
-  const getDaysUntilExpiration = () => {
-    if (contextData?.expiresAt) {
-      return Math.ceil(
-        (new Date(contextData.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-      );
-    }
-    return null;
+  // Calculate visible and remaining items
+  const MAX_VISIBLE_ITEMS = viewMode === 'list' ? 8 : 7;
+  const allItems = [
+    ...(task.tags || []).map(tag => ({ type: 'tag', id: tag, title: tag })),
+    ...(task.linkedItems || [])
+  ];
+  const visibleItems = allItems.slice(0, MAX_VISIBLE_ITEMS);
+  const remainingCount = Math.max(0, allItems.length - MAX_VISIBLE_ITEMS);
+
+  const getItemColorClasses = (type: string) => {
+    if (type === 'tag') return isDark ? 'bg-emerald-900/30 text-emerald-400' : 'bg-emerald-100 text-emerald-600';
+    if (type === 'idea') return isDark ? 'bg-amber-900/30 text-amber-400' : 'bg-amber-100 text-amber-600';
+    return isDark ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-600';
   };
+
+  const getItemIcon = (type: string) => {
+    if (type === 'tag') return <TagIcon className="w-2.5 h-2.5 flex-shrink-0" />;
+    if (type === 'idea') return <Lightbulb className="w-2.5 h-2.5 flex-shrink-0" />;
+    return <Type className="w-2.5 h-2.5 flex-shrink-0" />;
+  };
+
+  const getPriorityColorClasses = (priority: string) => {
+    if (isDark) {
+      if (priority === 'high') return 'bg-red-900/30 text-red-400';
+      if (priority === 'medium') return 'bg-yellow-900/30 text-yellow-400';
+      return 'bg-green-900/30 text-green-400';
+    }
+    
+    if (priority === 'high') return 'bg-red-100 text-red-600';
+    if (priority === 'medium') return 'bg-yellow-100 text-yellow-600';
+    return 'bg-green-100 text-green-600';
+  };
+
+  const renderCheckbox = () => {
+    const colorVariants = {
+      dark: {
+        completed: 'bg-green-900/30 text-green-400',
+        pending: 'bg-emerald-900/30 text-emerald-400'
+      },
+      light: {
+        completed: 'bg-green-100 text-green-600',
+        pending: 'bg-emerald-100 text-emerald-600'
+      }
+    };
+
+    const themeMode = isDark ? 'dark' : 'light';
+    const status = task.status.toLowerCase() === 'completed' ? 'completed' : 'pending';
+    const colorClasses = colorVariants[themeMode][status];
+
+    return (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          if (context === 'default') {
+            updateTask(task.id, { 
+              status: task.status.toLowerCase() === 'completed' ? 'Incomplete' : 'Completed' 
+            });
+          }
+        }}
+        className={`flex-shrink-0 p-1.5 rounded transition-colors ${colorClasses}`}
+      >
+        {task.status.toLowerCase() === 'completed' ? (
+          <CheckSquare className="w-3.5 h-3.5" />
+        ) : (
+          <Square className="w-3.5 h-3.5" />
+        )}
+      </button>
+    );
+  };
+
+  const renderPriorityBadge = () => (
+    task.priority && (
+      <span className={`
+        flex items-center gap-0.5 px-1.5 py-0.5 text-[11px] font-medium rounded whitespace-nowrap
+        ${getPriorityColorClasses(task.priority.toLowerCase())}
+      `}>
+        <Clock className="w-3 h-3" />
+        {task.priority}
+      </span>
+    )
+  );
+
+  const renderTags = () => (
+    allItems.length > 0 && (
+      <div className={`
+        flex flex-wrap gap-1
+        ${viewMode === 'list' ? 'items-center' : 'items-start'}
+        max-h-[44px] min-h-[20px] overflow-hidden
+      `}>
+        {visibleItems.map(item => (
+          <span
+            key={item.id}
+            className={`
+              inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap
+              ${getItemColorClasses(item.type)}
+            `}
+          >
+            {getItemIcon(item.type)}
+            <span className="truncate max-w-[120px]">{item.title}</span>
+          </span>
+        ))}
+        {remainingCount > 0 && (
+          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] font-medium bg-[var(--color-secondary)] text-[var(--color-textSecondary)] whitespace-nowrap">
+            +{remainingCount} more
+          </span>
+        )}
+      </div>
+    )
+  );
+
+  const renderMetadata = () => (
+    <div className="flex items-center gap-2 text-[11px] text-[var(--color-textSecondary)]">
+      {task.dueDate && (
+        <div className="flex items-center gap-1">
+          <Calendar className="w-3 h-3" />
+          <span className="whitespace-nowrap">
+            {new Date(task.dueDate).toLocaleString(undefined, {
+              dateStyle: 'short',
+              timeStyle: 'short'
+            })}
+          </span>
+        </div>
+      )}
+      {task.linkedItems && task.linkedItems.length > 0 && (
+        <div className="flex items-center gap-1">
+          <Link2 className="w-3 h-3" />
+          <span>{task.linkedItems.length} linked</span>
+        </div>
+      )}
+    </div>
+  );
 
   return (
-    <div 
-      onClick={handleCardClick}
-      className={`
-        ${cardBaseStyles}
-        bg-emerald-50/5 dark:bg-emerald-900/5
-        ${isSelected 
-          ? 'border-primary-400/50 dark:border-primary-400/50' 
-          : 'border-gray-200/30 dark:border-gray-700/30'
-        }
-        hover:border-primary-400/50 dark:hover:border-primary-400/50
-        ${viewMode === 'list' ? 'w-full' : ''}
-        ${onSelect || onClick ? 'cursor-pointer' : ''}
-        ${task.status.toLowerCase() === 'completed' ? 'opacity-75' : ''}
-        ${className}
-      `}
-    >
-      <div className={cardContentStyles}>
-        <div className="flex items-start gap-4">
-          {context === 'trash' && onSelect && (
-            <div className="flex-shrink-0 pt-1">
-              <input
-                type="checkbox"
-                checked={isSelected}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  e.stopPropagation();
-                  onSelect();
-                }}
-                className="w-4 h-4 text-primary-600 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 rounded focus:ring-primary-500"
-              />
-            </div>
-          )}
-
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start gap-3">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (context === 'default') {
-                    const newStatus = task.status.toLowerCase() === 'completed' ? 'Incomplete' : 'Completed';
-                    updateTask(task.id, { status: newStatus });
-                  }
-                }}
-                className="flex-shrink-0 p-2 rounded-lg bg-emerald-50/50 dark:bg-emerald-900/20 text-emerald-500 dark:text-emerald-400"
-              >
-                {renderStatusIcon()}
-              </button>
-              
+    <>
+      <div 
+        onClick={handleClick}
+        className={`
+          relative group
+          w-full
+          ${onSelect || onClick ? 'cursor-pointer' : ''}
+          ${task.status.toLowerCase() === 'completed' ? 'opacity-85' : ''}
+          bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]
+          border border-[var(--color-border)]
+          hover:border-emerald-400/50
+          rounded-lg
+          transition-all duration-200
+          overflow-hidden
+          ${isSelected ? 'ring-2 ring-emerald-400/50' : ''}
+          ${viewMode === 'list' ? 'h-[84px]' : 'h-[156px]'}
+        `}
+      >
+        {viewMode === 'list' ? (
+          // List View Layout
+          <div className="px-3 py-2.5 h-full flex items-center gap-3">
+            {renderCheckbox()}
+            <div className="flex-1 min-w-0 flex items-center gap-4">
+              <div className="min-w-[200px] max-w-[300px]">
+                <h3 className={`text-sm font-medium text-[var(--color-text)] truncate ${task.status.toLowerCase() === 'completed' ? 'line-through text-[var(--color-textSecondary)]' : ''}`}>
+                  {task.title}
+                </h3>
+                {task.description && (
+                  <p className={`text-xs text-[var(--color-textSecondary)] truncate ${task.status.toLowerCase() === 'completed' ? 'line-through opacity-75' : ''}`}>
+                    {task.description}
+                  </p>
+                )}
+              </div>
+              <div className="min-w-[180px]">
+                {renderMetadata()}
+              </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className={`text-base font-medium text-gray-900 dark:text-white truncate ${
-                    task.status.toLowerCase() === 'completed' ? 'line-through' : ''
-                  }`}>
-                    {task.title}
-                  </h3>
-                  {context === 'trash' && getDaysUntilExpiration() !== null && (
-                    <span className="flex-shrink-0 text-sm text-red-600 dark:text-red-400 whitespace-nowrap">
-                      {getDaysUntilExpiration()}d left
-                    </span>
-                  )}
-                </div>
-                {context === 'trash' && contextData?.deletedAt && (
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Deleted {formatTimeAgo(contextData.deletedAt)}
-                  </p>
-                )}
-                {context === 'archive' && contextData?.archivedAt && (
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Archived {formatTimeAgo(contextData.archivedAt)}
-                  </p>
-                )}
+                {renderTags()}
               </div>
-
-              {task.priority && (
-                <span className={`
-                  inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium
-                  ${getPriorityStyles(task.priority)}
-                `}>
-                  {task.priority}
-                </span>
-              )}
+              {renderPriorityBadge()}
             </div>
-
-            {task.description ? (
-              <p className={`${cardDescriptionStyles} ${
-                task.status.toLowerCase() === 'completed' ? 'line-through' : ''
-              }`}>
-                {task.description}
-              </p>
-            ) : (
-              <p className={`${cardDescriptionStyles} italic opacity-50`}>
-                No description
-              </p>
-            )}
-
-            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-              {task.linkedItems && task.linkedItems.length > 0 && (
-                <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
-                  <Link2 className="w-4 h-4" />
-                  <span>{task.linkedItems.length} linked</span>
-                </div>
-              )}
-
-              {task.dueDate && (
-                <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
-                  <Calendar className="w-4 h-4" />
-                  <span>{new Date(task.dueDate).toLocaleDateString()}</span>
-                </div>
-              )}
-            </div>
-
-            {task.tags && task.tags.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {task.tags.map(tag => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 max-w-full"
-                  >
-                    <TagIcon className="w-3 h-3 flex-shrink-0" />
-                    <span className="truncate">{tag}</span>
-                  </span>
-                ))}
-              </div>
-            )}
           </div>
-        </div>
+        ) : (
+          // Grid View Layout
+          <div className="p-3 h-full flex flex-col">
+            <div className="flex items-start gap-2 mb-2">
+              {renderCheckbox()}
+              <div className="flex-1 min-w-0">
+                <h3 className={`text-sm font-medium text-[var(--color-text)] truncate ${task.status.toLowerCase() === 'completed' ? 'line-through text-[var(--color-textSecondary)]' : ''}`}>
+                  {task.title}
+                </h3>
+                {task.description && (
+                  <p className={`mt-0.5 text-xs text-[var(--color-textSecondary)] line-clamp-2 ${task.status.toLowerCase() === 'completed' ? 'line-through opacity-75' : ''}`}>
+                    {task.description}
+                  </p>
+                )}
+              </div>
+              {renderPriorityBadge()}
+            </div>
+
+            <div className="flex-1 flex flex-col justify-between">
+              <div className="min-h-[44px] mb-3">
+                {renderTags()}
+              </div>
+
+              <div className="flex items-center justify-between pt-3 border-t border-gray-700/30">
+                {renderMetadata()}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-    </div>
+
+      <EditTaskModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        task={task}
+      />
+    </>
   );
 }

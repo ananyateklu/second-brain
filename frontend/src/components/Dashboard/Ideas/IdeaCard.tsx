@@ -1,11 +1,11 @@
+import { useState } from 'react';
 import { Star, Link2, Tag as TagIcon, Lightbulb, Archive, Pin, CheckSquare, Clock } from 'lucide-react';
 import type { Note } from '../../../types/note';
 import { formatDate } from '../../../utils/dateUtils';
 import { useNotes } from '../../../contexts/notesContextUtils';
-import { useState } from 'react';
 import { WarningModal } from '../../shared/WarningModal';
 import { formatTimeAgo } from '../Recent/utils';
-import { cardBaseStyles, cardContentStyles, cardDescriptionStyles } from '../shared/cardStyles';
+import { useTheme } from '../../../contexts/themeContextUtils';
 
 interface IdeaCardProps {
   idea: Note;
@@ -31,7 +31,10 @@ export function IdeaCard({
   contextData 
 }: IdeaCardProps) {
   const { toggleFavoriteNote, togglePinNote, archiveNote } = useNotes();
+  const { theme } = useTheme();
   const [showArchiveWarning, setShowArchiveWarning] = useState(false);
+
+  const isDark = theme === 'dark' || theme === 'midnight';
 
   const handleFavorite = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -81,26 +84,161 @@ export function IdeaCard({
     return null;
   };
 
+  // Calculate visible and remaining items for tags
+  const MAX_VISIBLE_ITEMS = viewMode === 'list' ? 8 : 7;
+  const tags = idea.tags || [];
+  const visibleTags = tags.slice(0, MAX_VISIBLE_ITEMS);
+  const remainingCount = Math.max(0, tags.length - MAX_VISIBLE_ITEMS);
+
+  const getTagColorClasses = () => {
+    return isDark ? 'bg-amber-900/30 text-amber-400' : 'bg-amber-100 text-amber-600';
+  };
+
+  const renderTags = () => (
+    tags.length > 0 && (
+      <div className={`
+        flex flex-wrap gap-1
+        ${viewMode === 'list' ? 'items-center' : 'items-start'}
+        ${viewMode === 'grid' ? 'max-h-[44px]' : ''}
+      `}>
+        {visibleTags.map(tag => (
+          <span
+            key={tag}
+            className={`
+              inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap
+              ${getTagColorClasses()}
+            `}
+          >
+            <TagIcon className="w-2.5 h-2.5 flex-shrink-0" />
+            <span className="truncate max-w-[120px]">{tag}</span>
+          </span>
+        ))}
+        {remainingCount > 0 && (
+          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] font-medium bg-gray-800 text-gray-400 whitespace-nowrap">
+            +{remainingCount} more
+          </span>
+        )}
+      </div>
+    )
+  );
+
+  const renderMetadata = () => (
+    <div className="flex items-center gap-2 text-[11px] text-[var(--color-textSecondary)]">
+      <div className="flex items-center gap-1">
+        <Clock className="w-3 h-3" />
+        <span>{formatDate(idea.updatedAt)}</span>
+      </div>
+      {idea.linkedNoteIds && idea.linkedNoteIds.length > 0 && (
+        <div className="flex items-center gap-1">
+          <Link2 className="w-3 h-3" />
+          <span>{idea.linkedNoteIds.length} linked</span>
+        </div>
+      )}
+      {idea.linkedTasks && idea.linkedTasks.length > 0 && (
+        <div className="flex items-center gap-1">
+          <CheckSquare className="w-3 h-3" />
+          <span>{idea.linkedTasks.length} tasks</span>
+        </div>
+      )}
+      {idea.linkedReminders && idea.linkedReminders.length > 0 && (
+        <div className="flex items-center gap-1">
+          <Clock className="w-3 h-3" />
+          <span>{idea.linkedReminders.length} reminders</span>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderContextInfo = () => {
+    if (context === 'trash' && contextData?.deletedAt) {
+      return (
+        <div className="flex items-center gap-2 text-[11px] text-red-500">
+          <Clock className="w-3 h-3" />
+          <span>Deleted {formatTimeAgo(contextData.deletedAt)}</span>
+          {getDaysUntilExpiration() !== null && (
+            <span className="text-red-600 dark:text-red-400">
+              ({getDaysUntilExpiration()}d left)
+            </span>
+          )}
+        </div>
+      );
+    }
+    if (context === 'archive' && contextData?.archivedAt) {
+      return (
+        <div className="flex items-center gap-2 text-[11px] text-[var(--color-textSecondary)]">
+          <Archive className="w-3 h-3" />
+          <span>Archived {formatTimeAgo(contextData.archivedAt)}</span>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const getPinButtonClasses = () => {
+    if (idea.isPinned) {
+      return isDark ? 'bg-[#64AB6F]/10 text-[#64AB6F]' : 'bg-[#059669]/10 text-[#059669]';
+    }
+    return 'hover:bg-gray-100 dark:hover:bg-gray-800';
+  };
+
+  const getFavoriteButtonClasses = () => {
+    if (idea.isFavorite) {
+      return isDark ? 'bg-amber-900/30 text-amber-400' : 'bg-amber-100 text-amber-600';
+    }
+    return 'hover:bg-gray-100 dark:hover:bg-gray-800';
+  };
+
+  const renderActions = () => (
+    context === 'default' && (
+      <div className="flex gap-1">
+        <button
+          onClick={handlePin}
+          className={`p-1.5 rounded-lg transition-colors ${getPinButtonClasses()}`}
+          title={idea.isPinned ? 'Unpin idea' : 'Pin idea'}
+        >
+          <Pin className="w-3.5 h-3.5" />
+        </button>
+        <button
+          onClick={handleFavorite}
+          className={`p-1.5 rounded-lg transition-colors ${getFavoriteButtonClasses()}`}
+          title={idea.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+        >
+          <Star className="w-3.5 h-3.5" />
+        </button>
+        <button
+          onClick={handleArchiveClick}
+          className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          title="Archive idea"
+        >
+          <Archive className="w-3.5 h-3.5 text-gray-500" />
+        </button>
+      </div>
+    )
+  );
+
   return (
     <>
       <div 
         onClick={handleCardClick}
         className={`
-          ${cardBaseStyles}
-          bg-amber-50/5 dark:bg-amber-900/5
-          ${isSelected 
-            ? 'border-primary-400/50 dark:border-primary-400/50' 
-            : 'border-gray-200/30 dark:border-gray-700/30'
-          }
-          hover:border-primary-400/50 dark:hover:border-primary-400/50
-          ${viewMode === 'list' ? 'w-full' : ''}
+          relative group
+          w-full
           ${onSelect || onClick ? 'cursor-pointer' : ''}
+          bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]
+          border border-[var(--color-border)]
+          hover:border-amber-400/50
+          rounded-lg
+          transition-all duration-200
+          overflow-hidden
+          ${isSelected ? 'ring-2 ring-amber-400/50' : ''}
+          ${viewMode === 'list' ? 'min-h-[64px]' : 'h-[180px]'}
         `}
       >
-        <div className={cardContentStyles}>
-          <div className="flex items-start gap-4">
+        {viewMode === 'list' ? (
+          // List View Layout
+          <div className="px-3 py-2.5 h-full flex gap-3">
             {context === 'trash' && onSelect && (
-              <div className="flex-shrink-0 pt-1">
+              <div className="flex items-start pt-1.5">
                 <input
                   type="checkbox"
                   checked={isSelected}
@@ -109,123 +247,78 @@ export function IdeaCard({
                 />
               </div>
             )}
-
-            <div className="flex-1 min-w-0">
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 p-2 rounded-lg bg-amber-50/50 dark:bg-amber-900/20 text-amber-500 dark:text-amber-400">
-                  <Lightbulb className="w-4 h-4" />
-                </div>
-                
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="text-base font-medium text-gray-900 dark:text-white truncate">
-                      {idea.title}
-                    </h3>
-                    {context === 'trash' && getDaysUntilExpiration() !== null && (
-                      <span className="flex-shrink-0 text-sm text-red-600 dark:text-red-400 whitespace-nowrap">
-                        {getDaysUntilExpiration()}d left
-                      </span>
-                    )}
-                  </div>
-                  {context === 'trash' && contextData?.deletedAt && (
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Deleted {formatTimeAgo(contextData.deletedAt)}
-                    </p>
-                  )}
-                  {context === 'archive' && contextData?.archivedAt && (
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Archived {formatTimeAgo(contextData.archivedAt)}
-                    </p>
-                  )}
-                </div>
-
-                {context === 'default' && (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handlePin}
-                      className={`p-1.5 rounded-lg transition-colors ${idea.isPinned
-                        ? 'bg-gray-100 dark:bg-gray-800'
-                        : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-                      }`}
-                      title={idea.isPinned ? 'Unpin idea' : 'Pin idea'}
-                    >
-                      <Pin className="w-4 h-4 text-gray-500" />
-                    </button>
-                    <button
-                      onClick={handleFavorite}
-                      className={`p-1.5 rounded-lg transition-colors ${idea.isFavorite
-                        ? 'bg-gray-100 dark:bg-gray-800'
-                        : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-                      }`}
-                      title={idea.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-                    >
-                      <Star className="w-4 h-4 text-gray-500" />
-                    </button>
-                    <button
-                      onClick={handleArchiveClick}
-                      className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                      title="Archive idea"
-                    >
-                      <Archive className="w-4 h-4 text-gray-500" />
-                    </button>
-                  </div>
-                )}
+            <div className="flex items-start pt-1">
+              <div className="flex-shrink-0 p-1.5 rounded bg-amber-50/50 dark:bg-amber-900/20 text-amber-500 dark:text-amber-400">
+                <Lightbulb className="w-3.5 h-3.5" />
               </div>
-
-              {idea.content ? (
-                <p className={cardDescriptionStyles}>
-                  {idea.content}
-                </p>
-              ) : (
-                <p className={`${cardDescriptionStyles} italic opacity-50`}>
-                  No description
-                </p>
-              )}
-
-              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-                {idea.linkedNoteIds && idea.linkedNoteIds.length > 0 && (
-                  <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
-                    <Link2 className="w-4 h-4" />
-                    <span>{idea.linkedNoteIds.length} linked</span>
-                  </div>
-                )}
-                
-                {idea.linkedTasks && idea.linkedTasks.length > 0 && (
-                  <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
-                    <CheckSquare className="w-4 h-4" />
-                    <span>{idea.linkedTasks.length} tasks</span>
-                  </div>
-                )}
-
-                {idea.linkedReminders && idea.linkedReminders.length > 0 && (
-                  <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
-                    <Clock className="w-4 h-4" />
-                    <span>{idea.linkedReminders.length} reminders</span>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
-                  <Clock className="w-4 h-4" />
-                  <span>{formatDate(idea.updatedAt)}</span>
+            </div>
+            <div className="flex-1 min-w-0 flex flex-col gap-2">
+              <div className="flex items-start justify-between">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-sm font-medium text-[var(--color-text)] truncate">
+                    {idea.title}
+                  </h3>
+                  {idea.content && (
+                    <p className="text-xs text-[var(--color-textSecondary)] line-clamp-1">
+                      {idea.content}
+                    </p>
+                  )}
+                  {renderContextInfo()}
+                </div>
+                <div className="flex-shrink-0 ml-4">
+                  {renderActions()}
                 </div>
               </div>
 
-              {idea.tags && idea.tags.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {idea.tags.map(tag => (
-                    <span
-                      key={tag}
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 max-w-full"
-                    >
-                      <TagIcon className="w-3 h-3 flex-shrink-0" />
-                      <span className="truncate">{tag}</span>
-                    </span>
-                  ))}
+              <div className="flex items-end justify-between pt-1">
+                <div className="min-w-0 flex-1">
+                  {renderTags()}
                 </div>
-              )}
+                <div className="flex-shrink-0 ml-4">
+                  {renderMetadata()}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          // Grid View Layout
+          <div className="p-3 h-full flex flex-col">
+            <div className="flex items-start gap-2">
+              {context === 'trash' && onSelect && (
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  onChange={() => onSelect()}
+                  className="w-4 h-4 mt-1 text-primary-600 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 rounded focus:ring-primary-500"
+                />
+              )}
+              <div className="flex-shrink-0 p-1.5 mt-0.5 rounded bg-amber-50/50 dark:bg-amber-900/20 text-amber-500 dark:text-amber-400">
+                <Lightbulb className="w-3.5 h-3.5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="text-sm font-medium text-[var(--color-text)] truncate">
+                    {idea.title}
+                  </h3>
+                  {renderActions()}
+                </div>
+                {idea.content && (
+                  <p className="mt-1 text-xs text-[var(--color-textSecondary)] line-clamp-3">
+                    {idea.content}
+                  </p>
+                )}
+                {renderContextInfo()}
+              </div>
+            </div>
+
+            <div className="flex-1 flex flex-col justify-end space-y-2">
+              {renderTags()}
+              <div className="pt-2 border-t border-gray-700/30">
+                {renderMetadata()}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <WarningModal

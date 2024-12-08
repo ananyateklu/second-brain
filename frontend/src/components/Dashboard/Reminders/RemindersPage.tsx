@@ -14,7 +14,7 @@ export function RemindersPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'due' | 'upcoming'>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   const filteredReminders = React.useMemo(() => {
     let filtered = reminders;

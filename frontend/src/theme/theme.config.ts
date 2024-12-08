@@ -13,6 +13,21 @@ export type ThemeColor = {
     task: string;
     reminder: string;
     tag: string;
+    error: string;
+    errorBg: string;
+    success: string;
+    successBg: string;
+    warning: string;
+    warningBg: string;
+    info: string;
+    infoBg: string;
+    tagBg: string;
+    ideaBg: string;
+    noteBg: string;
+    taskBg: string;
+    reminderBg: string;
+    moreItemsBg: string;
+    moreItemsText: string;
 };
 
 export type ThemeConfig = {
@@ -38,8 +53,23 @@ export const themes: Record<ThemeName, ThemeConfig> = {
             note: '#2563eb',
             idea: '#d97706',
             task: '#4c9959',
-            reminder: 'rgb(99, 102, 241)',
-            tag: '#4c9959'
+            reminder: '#9333ea',
+            tag: '#9333ea',
+            error: '#ef4444',
+            errorBg: 'rgba(239, 68, 68, 0.2)',
+            success: '#22c55e',
+            successBg: 'rgba(34, 197, 94, 0.2)',
+            warning: '#f59e0b',
+            warningBg: 'rgba(245, 158, 11, 0.2)',
+            info: '#3b82f6',
+            infoBg: 'rgba(59, 130, 246, 0.2)',
+            tagBg: 'rgba(147, 51, 234, 0.2)',
+            ideaBg: 'rgba(217, 119, 6, 0.2)',
+            noteBg: 'rgba(37, 99, 235, 0.2)',
+            taskBg: 'rgba(76, 153, 89, 0.2)',
+            reminderBg: 'rgba(147, 51, 234, 0.2)',
+            moreItemsBg: '#f1f5f9',
+            moreItemsText: '#64748b',
         },
     },
     dark: {
@@ -54,11 +84,26 @@ export const themes: Record<ThemeName, ThemeConfig> = {
             textSecondary: '#a1a1aa',
             border: '#3C3C3E',
             accent: '#4c9959',
-            note: 'rgb(59, 130, 246)',
+            note: '#3b82f6',
             idea: '#FCD34D',
             task: '#4c9959',
-            reminder: 'rgb(129, 140, 248)',
-            tag: '#4c9959'
+            reminder: '#a855f7',
+            tag: '#a855f7',
+            error: '#ef4444',
+            errorBg: 'rgba(239, 68, 68, 0.2)',
+            success: '#22c55e',
+            successBg: 'rgba(34, 197, 94, 0.2)',
+            warning: '#f59e0b',
+            warningBg: 'rgba(245, 158, 11, 0.2)',
+            info: '#3b82f6',
+            infoBg: 'rgba(59, 130, 246, 0.2)',
+            tagBg: 'rgba(168, 85, 247, 0.2)',
+            ideaBg: 'rgba(252, 211, 77, 0.2)',
+            noteBg: 'rgba(59, 130, 246, 0.2)',
+            taskBg: 'rgba(76, 153, 89, 0.2)',
+            reminderBg: 'rgba(168, 85, 247, 0.2)',
+            moreItemsBg: '#374151',
+            moreItemsText: '#9ca3af',
         },
     },
     midnight: {
@@ -73,11 +118,26 @@ export const themes: Record<ThemeName, ThemeConfig> = {
             textSecondary: '#9CA3AF',
             border: 'rgba(75, 85, 99, 0.4)',
             accent: '#4c9959',
-            note: 'rgb(59, 130, 246)',
+            note: '#3b82f6',
             idea: '#FCD34D',
             task: '#4c9959',
-            reminder: 'rgb(129, 140, 248)',
-            tag: '#4c9959'
+            reminder: '#a855f7',
+            tag: '#a855f7',
+            error: '#ef4444',
+            errorBg: 'rgba(239, 68, 68, 0.2)',
+            success: '#22c55e',
+            successBg: 'rgba(34, 197, 94, 0.2)',
+            warning: '#f59e0b',
+            warningBg: 'rgba(245, 158, 11, 0.2)',
+            info: '#3b82f6',
+            infoBg: 'rgba(59, 130, 246, 0.2)',
+            tagBg: 'rgba(168, 85, 247, 0.2)',
+            ideaBg: 'rgba(252, 211, 77, 0.2)',
+            noteBg: 'rgba(59, 130, 246, 0.2)',
+            taskBg: 'rgba(76, 153, 89, 0.2)',
+            reminderBg: 'rgba(168, 85, 247, 0.2)',
+            moreItemsBg: '#1F2937',
+            moreItemsText: '#9ca3af',
         },
     },
 }; 

@@ -15,7 +15,7 @@ export function TasksPage() {
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [filters, setFilters] = useState({
     status: 'all',
     priority: 'all',
