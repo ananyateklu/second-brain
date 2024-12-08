@@ -1,8 +1,12 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Hosting;
 using SecondBrain.Api.DTOs.Grok;
 using System.Threading.Tasks;
 using System.Net.Http.Json;
+using System.Net.Security;
+using System.Text.Json;
+using System.Security.Authentication;
 
 namespace SecondBrain.Api.Controllers
 {
@@ -14,10 +18,13 @@ namespace SecondBrain.Api.Controllers
         private readonly HttpClient _httpClient;
         private readonly string _baseUrl;
 
-        public GrokController(ILogger<GrokController> logger, IConfiguration configuration)
+        public GrokController(ILogger<GrokController> logger, IConfiguration configuration, IWebHostEnvironment environment)
         {
             _logger = logger;
-            _httpClient = new HttpClient();
+            
+            var handler = new HttpClientHandler();
+            handler.SslProtocols = System.Security.Authentication.SslProtocols.Tls12;
+            _httpClient = new HttpClient(handler);
             
             _baseUrl = configuration["Grok:BaseUrl"] 
                 ?? throw new ArgumentException("Grok base URL not configured");
@@ -27,7 +34,7 @@ namespace SecondBrain.Api.Controllers
             {
                 throw new ArgumentException("Grok API key not configured");
             }
-            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+            _httpClient.DefaultRequestHeaders.Add("x-api-key", apiKey);
         }
 
         [HttpPost("send")]
@@ -36,25 +43,38 @@ namespace SecondBrain.Api.Controllers
         {
             try
             {
+                _logger.LogInformation("Sending message to Grok API. Model: {Model}", request.Model);
+                
                 var response = await _httpClient.PostAsJsonAsync(
                     $"{_baseUrl}/chat/completions",
                     request
                 );
 
+                var responseContent = await response.Content.ReadAsStringAsync();
+                _logger.LogDebug("Grok API Raw Response: {Response}", responseContent);
+
                 if (response.IsSuccessStatusCode)
                 {
-                    var result = await response.Content.ReadFromJsonAsync<SendMessageResponse>();
-                    return Ok(result);
+                    try
+                    {
+                        var result = await response.Content.ReadFromJsonAsync<SendMessageResponse>();
+                        return Ok(result);
+                    }
+                    catch (JsonException ex)
+                    {
+                        _logger.LogError(ex, "Failed to deserialize Grok response: {Response}", responseContent);
+                        return BadRequest(new { error = "Failed to parse Grok response", details = ex.Message });
+                    }
                 }
 
-                var error = await response.Content.ReadAsStringAsync();
-                _logger.LogError("Grok API Error: {Error}", error);
-                return BadRequest(new { error = "Failed to get response from Grok" });
+                _logger.LogError("Grok API Error: {StatusCode} - {Error}", 
+                    response.StatusCode, responseContent);
+                return BadRequest(new { error = $"Failed to get response from Grok: {responseContent}" });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error in GrokController.SendMessage");
-                return StatusCode(500, new { error = "Internal server error" });
+                return StatusCode(500, new { error = "Internal server error", details = ex.Message });
             }
         }
 
@@ -63,6 +83,8 @@ namespace SecondBrain.Api.Controllers
         {
             try
             {
+                _logger.LogInformation("Testing Grok API connection");
+                
                 var testRequest = new SendMessageRequest
                 {
                     Model = "grok-beta",
@@ -79,12 +101,27 @@ namespace SecondBrain.Api.Controllers
                     testRequest
                 );
 
-                return Ok(new { isConnected = response.IsSuccessStatusCode });
+                var responseContent = await response.Content.ReadAsStringAsync();
+                _logger.LogDebug("Grok API Test Response: {Response}", responseContent);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogError("Grok API Test Failed: {StatusCode} - {Error}", 
+                        response.StatusCode, responseContent);
+                }
+
+                return Ok(new { 
+                    isConnected = response.IsSuccessStatusCode,
+                    error = !response.IsSuccessStatusCode ? responseContent : null
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error testing Grok connection");
-                return StatusCode(500, new { error = "Failed to test Grok connection" });
+                return Ok(new { 
+                    isConnected = false, 
+                    error = "Failed to test Grok connection: " + ex.Message 
+                });
             }
         }
 
@@ -94,11 +131,10 @@ namespace SecondBrain.Api.Controllers
         {
             try
             {
-                if (request.Tools == null)
-                {
-                    request.Tools = Array.Empty<Tool>();
-                }
+                _logger.LogInformation("Executing function call with Grok API. Model: {Model}", request.Model);
 
+                request.Tools ??= Array.Empty<Tool>();
+                request.Messages ??= Array.Empty<Message>();
                 foreach (var message in request.Messages)
                 {
                     message.ToolCalls ??= Array.Empty<ToolCall>();
@@ -110,20 +146,31 @@ namespace SecondBrain.Api.Controllers
                     request
                 );
 
+                var responseContent = await response.Content.ReadAsStringAsync();
+                _logger.LogDebug("Grok API Function Call Response: {Response}", responseContent);
+
                 if (response.IsSuccessStatusCode)
                 {
-                    var result = await response.Content.ReadFromJsonAsync<SendMessageResponse>();
-                    return Ok(result);
+                    try
+                    {
+                        var result = await response.Content.ReadFromJsonAsync<SendMessageResponse>();
+                        return Ok(result);
+                    }
+                    catch (JsonException ex)
+                    {
+                        _logger.LogError(ex, "Failed to deserialize Grok function call response: {Response}", responseContent);
+                        return BadRequest(new { error = "Failed to parse Grok response", details = ex.Message });
+                    }
                 }
 
-                var error = await response.Content.ReadAsStringAsync();
-                _logger.LogError("Grok API Error: {Error}", error);
-                return BadRequest(new { error = "Failed to get response from Grok" });
+                _logger.LogError("Grok API Function Call Error: {StatusCode} - {Error}", 
+                    response.StatusCode, responseContent);
+                return BadRequest(new { error = $"Failed to get response from Grok: {responseContent}" });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error in GrokController.ExecuteFunctionCall");
-                return StatusCode(500, new { error = "Internal server error" });
+                return StatusCode(500, new { error = "Internal server error", details = ex.Message });
             }
         }
     }

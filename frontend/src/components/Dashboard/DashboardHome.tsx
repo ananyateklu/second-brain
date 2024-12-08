@@ -13,12 +13,8 @@ import { useModal } from '../../contexts/modalContextUtils';
 import { Note } from '../../types/note';
 import { WelcomeBar } from './WelcomeBar';
 
-const sectionClasses = (theme: string) => 
-  `bg-[var(--color-surface)]/80 backdrop-blur-xl ${
-    theme === 'midnight' 
-      ? 'border-[rgb(51,65,85)]/20' 
-      : 'border-[var(--color-border)]'
-  }`;
+const sectionClasses = () => 
+  `bg-[var(--color-surface)]/80 backdrop-blur-xl border border-[var(--color-border)]`;
 
 export function DashboardHome() {
   const navigate = useNavigate();
@@ -57,22 +53,20 @@ export function DashboardHome() {
     >
       {/* Greeting Section */}
       <div
-        className={`${sectionClasses(theme)} shadow-sm rounded-xl border transition-all duration-300`}
+        className="shadow-sm rounded-xl transition-all duration-300"
         data-type="welcome-section"
       >
-        <div className="p-6">
-          <WelcomeSection
-            user={{ ...user!, experience: user!.experiencePoints }}
-            onNewNote={() => {}}
-            onNavigate={navigate}
-            stats={stats}
-            tasks={tasks.map(task => ({
-              ...task,
-              status: task.status === 'Incomplete' ? 'Pending' : task.status,
-              dueDate: task.dueDate ?? undefined
-            }))}
-          />
-        </div>
+        <WelcomeSection
+          user={{ ...user!, experience: user!.experiencePoints }}
+          onNewNote={() => {}}
+          onNavigate={navigate}
+          stats={stats}
+          tasks={tasks.map(task => ({
+            ...task,
+            status: task.status === 'Incomplete' ? 'Pending' : task.status,
+            dueDate: task.dueDate ?? undefined
+          }))}
+        />
       </div>
 
       {/* Quick Stats */}
@@ -80,7 +74,7 @@ export function DashboardHome() {
 
       {/* Pinned Notes */}
       {stats.pinnedNotes.length > 0 && (
-        <div className={`${sectionClasses(theme)} shadow-sm p-6 rounded-xl border transition-all duration-300`}>
+        <div className={`${sectionClasses()} shadow-sm p-6 rounded-xl border transition-all duration-300`}>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <PinIcon className={`w-5 h-5 ${theme === 'midnight' ? 'text-blue-400' : 'text-primary-500 dark:text-primary-400'}`} />

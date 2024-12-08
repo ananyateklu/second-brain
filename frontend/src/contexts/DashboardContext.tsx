@@ -48,15 +48,24 @@ const calculateConnectionStats = (notes: Note[]) => {
 };
 
 const calculateActivityStats = (activities: Activity[]) => {
+  if (!activities || activities.length === 0) {
+    return {
+      breakdown: {},
+      mostActiveCategory: ['none', 0]
+    };
+  }
+
   const activityBreakdown: Record<string, number> = {};
   activities.forEach(activity => {
     const type = activity.itemType.toLowerCase();
     activityBreakdown[type] = (activityBreakdown[type] || 0) + 1;
   });
 
+  const entries = Object.entries(activityBreakdown);
+  const sortedEntries = entries.length > 0 ? [...entries].sort(([, a]: [string, number], [, b]: [string, number]) => b - a) : [];
   return {
     breakdown: activityBreakdown,
-    mostActiveCategory: Object.entries(activityBreakdown).sort(([, a], [, b]) => b - a)[0]
+    mostActiveCategory: sortedEntries.length > 0 ? sortedEntries[0] : ['none', 0]
   };
 };
 
@@ -455,45 +464,28 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         };
 
       case 'daily-activity': {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const weekAgo = new Date();
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        weekAgo.setHours(0, 0, 0, 0);
-
-        const todayActivities = activities.filter(activity => 
-          new Date(activity.timestamp) >= today
-        );
-
-        const weekActivities = activities.filter(activity => 
-          new Date(activity.timestamp) >= weekAgo
-        );
-
-        const stats = calculateActivityStats(weekActivities);
-
-        const activityChange = weekActivities.length - stats.breakdown[stats.mostActiveCategory[0]];
+        if (!activities || activities.length === 0) {
+          return {
+            value: '0',
+            timeframe: 'No activity yet',
+            description: 'Start creating notes and tasks to see activity'
+          };
+        }
+        
+        const activityStats = calculateActivityStats(activities);
+        const totalActivities = Object.values(activityStats.breakdown).reduce((sum, count) => sum + count, 0);
+        const [mostActiveType, mostActiveCount] = activityStats.mostActiveCategory;
 
         return {
-          value: todayActivities.length,
-          change: activityChange,
-          timeframe: 'Today',
-          description: 'Your activity across all items',
-          additionalInfo: [
-            {
-              icon: Calendar,
-              value: `${weekActivities.length} this week`
-            },
-            stats.mostActiveCategory && {
-              icon: FileText,
-              value: `${stats.mostActiveCategory[0]}: ${stats.mostActiveCategory[1]}`
-            }
-          ].filter(Boolean),
+          value: totalActivities.toString(),
+          timeframe: 'Total activities',
+          description: `Most active: ${mostActiveType} (${mostActiveCount})`,
           metadata: {
             breakdown: {
-              total: weekActivities.length,
-              created: weekActivities.filter(a => a.actionType.toLowerCase() === 'create').length,
-              edited: weekActivities.filter(a => a.actionType.toLowerCase() === 'edit').length,
-              deleted: weekActivities.filter(a => a.actionType.toLowerCase() === 'delete').length
+              total: totalActivities,
+              created: activityStats.breakdown['created'] || 0,
+              edited: activityStats.breakdown['edited'] || 0,
+              deleted: activityStats.breakdown['deleted'] || 0
             }
           }
         };

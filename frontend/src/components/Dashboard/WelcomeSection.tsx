@@ -1,8 +1,10 @@
 import React from 'react';
 import { Plus, CheckSquare, Lightbulb, Clock, Edit3, CheckCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { User } from '../../types/user';
 import { Task } from '../../types/task';
 import { useTheme } from '../../contexts/themeContextUtils';
+import { cardVariants } from '../../utils/welcomeBarUtils';
 
 interface WelcomeSectionProps {
   user: User;
@@ -26,13 +28,33 @@ export const WelcomeSection = React.memo(({ user, onNewNote, onNavigate, stats, 
     return 'Good evening';
   };
 
-  const statsBoxClasses = theme === 'midnight'
-    ? 'bg-[rgb(30,41,59)]/40 border-[rgb(100,116,139)]/20 backdrop-blur-md'
-    : 'bg-[var(--color-surface)] border-[var(--color-border)]';
+  const getIconBg = (type: string) => {
+    const baseClass = 'bg-opacity-20 backdrop-blur-sm';
+    switch (type) {
+      case 'clock':
+        return `${baseClass} bg-purple-100 dark:bg-purple-900/30 midnight:bg-purple-900/20`;
+      case 'task':
+        return `${baseClass} bg-green-100 dark:bg-green-900/30 midnight:bg-green-900/20`;
+      case 'note':
+        return `${baseClass} bg-blue-100 dark:bg-blue-900/30 midnight:bg-blue-900/20`;
+      default:
+        return `${baseClass} bg-gray-100 dark:bg-gray-900/30 midnight:bg-gray-900/20`;
+    }
+  };
 
-  const iconBoxClasses = theme === 'midnight'
-    ? 'bg-[rgb(30,41,59)]/60'
-    : 'bg-gray-100/50 dark:bg-[#3C3C3E]/30';
+  const getIconColor = (type: string) => {
+    const baseClass = 'transition-colors duration-200';
+    switch (type) {
+      case 'clock':
+        return `${baseClass} text-purple-600 dark:text-purple-400 midnight:text-purple-300`;
+      case 'task':
+        return `${baseClass} text-green-600 dark:text-green-400 midnight:text-green-300`;
+      case 'note':
+        return `${baseClass} text-blue-600 dark:text-blue-400 midnight:text-blue-300`;
+      default:
+        return `${baseClass} text-gray-600 dark:text-gray-400 midnight:text-gray-300`;
+    }
+  };
 
   const buttonClasses = {
     note: theme === 'midnight'
@@ -46,19 +68,30 @@ export const WelcomeSection = React.memo(({ user, onNewNote, onNavigate, stats, 
       : 'bg-amber-600 hover:bg-amber-700 shadow-lg shadow-amber-600/20 hover:shadow-amber-600/30'
   };
 
-  const nameColorClass = theme === 'midnight'
-    ? 'text-green-400'
-    : 'text-green-600 dark:text-green-500';
+  const getBorderClass = () => 
+    theme === 'midnight' 
+      ? 'border-[rgb(51,65,85)]/20' 
+      : 'border-[var(--color-border)]';
 
   return (
-    <div className="relative overflow-hidden">
-      <div className="relative flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
-        <div className="space-y-4">
-          <div className="space-y-1">
+    <div className={`relative overflow-hidden p-6 border border-[var(--color-border)] bg-[var(--color-surface)]/80 backdrop-blur-xl rounded-xl shadow-sm transition-all duration-300`}>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, type: "spring", stiffness: 100 }}
+        className="relative flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6"
+      >
+        <div className="space-y-6">
+          <motion.div 
+            variants={cardVariants}
+            initial="hidden"
+            animate="visible"
+            className="space-y-2"
+          >
             <div className="flex items-center gap-2">
               <h1 className="text-[var(--color-text)] text-2xl font-bold">
                 {getGreeting()},{' '}
-                <span className={nameColorClass}>
+                <span className="text-[var(--color-accent)]">
                   {user?.name}
                 </span>
               </h1>
@@ -67,9 +100,15 @@ export const WelcomeSection = React.memo(({ user, onNewNote, onNavigate, stats, 
             <p className="text-[var(--color-textSecondary)]">
               Ready to capture your thoughts and ideas?
             </p>
-          </div>
+          </motion.div>
           
-          <div className="flex flex-wrap gap-2">
+          <motion.div 
+            variants={cardVariants}
+            initial="hidden"
+            animate="visible"
+            transition={{ delay: 0.1 }}
+            className="flex flex-wrap gap-2"
+          >
             <button
               onClick={onNewNote}
               className={`inline-flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-all duration-200 hover:-translate-y-0.5 ${buttonClasses.note}`}
@@ -91,42 +130,50 @@ export const WelcomeSection = React.memo(({ user, onNewNote, onNavigate, stats, 
               <Lightbulb className="w-4 h-4" />
               <span className="font-medium text-sm">Capture Idea</span>
             </button>
-          </div>
+          </motion.div>
         </div>
 
-        <div className={`relative rounded-lg p-3 space-y-2 min-w-[260px] border transition-all duration-300 ${statsBoxClasses}`}>
-          <div className="flex items-center gap-3 text-[var(--color-textSecondary)]">
-            <div className={`p-1.5 ${iconBoxClasses} rounded-lg transition-colors duration-300`}>
-              <Clock className="w-3.5 h-3.5" />
+        <motion.div
+          variants={cardVariants}
+          initial="hidden"
+          animate="visible"
+          transition={{ delay: 0.2 }}
+          className={`relative rounded-lg p-4 space-y-3 min-w-[280px] border ${getBorderClass()} bg-[color-mix(in_srgb,var(--color-background)_90%,var(--color-surface))] dark:bg-gray-800/20 backdrop-blur-xl transition-all duration-300`}
+        >
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-md ${getIconBg('clock')} backdrop-blur-xl`}>
+              <Clock className={`w-4 h-4 ${getIconColor('clock')}`} />
             </div>
-            <span className="text-sm font-medium">
+            <span className="text-sm font-medium text-[var(--color-textSecondary)]">
               {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             </span>
           </div>
-          <div className="flex items-center gap-3 text-[var(--color-textSecondary)]">
-            <div className={`p-1.5 ${theme === 'midnight' ? 'bg-green-900/20' : 'bg-green-100/50 dark:bg-green-500/10'} rounded-lg transition-colors duration-300`}>
-              <CheckCircle className={`w-3.5 h-3.5 ${theme === 'midnight' ? 'text-green-400' : 'text-green-600 dark:text-green-500'}`} />
+
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-md ${getIconBg('task')} backdrop-blur-xl`}>
+              <CheckCircle className={`w-4 h-4 ${getIconColor('task')}`} />
             </div>
-            <div>
-              <span className={`text-sm font-semibold ${theme === 'midnight' ? 'text-green-400' : 'text-green-600 dark:text-green-500'}`}>
-                {tasks.filter(task => task.status === 'Completed').length}
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold text-[var(--color-text)]">
+                {tasks.filter(task => task.status === 'Completed').length} tasks completed
               </span>
-              <span className="ml-1 text-sm">tasks completed today</span>
+              <span className="text-xs text-[var(--color-textSecondary)]">today</span>
             </div>
           </div>
-          <div className="flex items-center gap-3 text-[var(--color-textSecondary)]">
-            <div className={`p-1.5 ${theme === 'midnight' ? 'bg-blue-900/20' : 'bg-blue-100/50 dark:bg-blue-500/10'} rounded-lg transition-colors duration-300`}>
-              <Edit3 className={`w-3.5 h-3.5 ${theme === 'midnight' ? 'text-blue-400' : 'text-blue-600 dark:text-blue-500'}`} />
+
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-md ${getIconBg('note')} backdrop-blur-xl`}>
+              <Edit3 className={`w-4 h-4 ${getIconColor('note')}`} />
             </div>
-            <div>
-              <span className={`text-sm font-semibold ${theme === 'midnight' ? 'text-blue-400' : 'text-blue-600 dark:text-blue-500'}`}>
-                {stats.totalNotes}
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold text-[var(--color-text)]">
+                {stats.totalNotes} notes
               </span>
-              <span className="ml-1 text-sm">total notes</span>
+              <span className="text-xs text-[var(--color-textSecondary)]">in your collection</span>
             </div>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </div>
   );
 }); 

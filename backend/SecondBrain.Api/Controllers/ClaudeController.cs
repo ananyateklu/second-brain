@@ -73,7 +73,7 @@ namespace SecondBrain.Api.Controllers
             {
                 var testRequest = new SendMessageRequest
                 {
-                    Model = "claude-3-5-haiku-20241022",
+                    Model = "claude-3-haiku-20240307",
                     MaxTokens = 1024,
                     Messages = new List<Message>
                     {
@@ -89,12 +89,12 @@ namespace SecondBrain.Api.Controllers
             catch (AnthropicException ex)
             {
                 _logger.LogError(ex, "Anthropic API Error during connection test: {Message}", ex.Message);
-                return StatusCode(500, new { error = ex.Message });
+                return Ok(new { isConnected = false, error = ex.Message });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unexpected Error during connection test: {Message}", ex.Message);
-                return StatusCode(500, new { error = "Internal server error." });
+                return Ok(new { isConnected = false, error = "Internal server error." });
             }
         }
     }
