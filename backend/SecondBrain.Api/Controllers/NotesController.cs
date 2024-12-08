@@ -32,6 +32,8 @@ namespace SecondBrain.Api.Controllers
         private readonly IXPService _xpService;
         private readonly IAchievementService _achievementService;
         private readonly ILogger<NotesController> _logger;
+        private const string USER_ID_NOT_FOUND_ERROR = "User ID not found in token.";
+        private const string NOTE_NOT_FOUND_ERROR = "Note not found.";
 
         public NotesController(DataContext context, IXPService xpService, IAchievementService achievementService, ILogger<NotesController> logger)
         {
@@ -92,7 +94,7 @@ namespace SecondBrain.Api.Controllers
 
                 if (string.IsNullOrEmpty(userId))
                 {
-                    return Unauthorized(new { error = "User ID not found in token." });
+                    return Unauthorized(new { error = USER_ID_NOT_FOUND_ERROR });
                 }
 
                 var note = new Note
@@ -171,7 +173,7 @@ namespace SecondBrain.Api.Controllers
 
             if (note == null)
             {
-                return NotFound();
+                return NotFound(new { error = NOTE_NOT_FOUND_ERROR });
             }
 
             var reminderLinks = await _context.ReminderLinks
@@ -200,8 +202,6 @@ namespace SecondBrain.Api.Controllers
         [HttpDelete("{id}/links/{targetNoteId}")]
         public async Task<IActionResult> RemoveLink(string id, string targetNoteId)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
             var links = await _context.NoteLinks
                 .Where(nl => (nl.NoteId == id && nl.LinkedNoteId == targetNoteId) ||
                              (nl.NoteId == targetNoteId && nl.LinkedNoteId == id))
@@ -294,7 +294,7 @@ namespace SecondBrain.Api.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
             {
-                return Unauthorized(new { error = "User ID not found in token." });
+                return Unauthorized(new { error = USER_ID_NOT_FOUND_ERROR });
             }
 
             var note = await _context.Notes
@@ -303,7 +303,7 @@ namespace SecondBrain.Api.Controllers
 
             if (note == null)
             {
-                return NotFound(new { error = "Note not found." });
+                return NotFound(new { error = NOTE_NOT_FOUND_ERROR });
             }
 
             note.IsDeleted = true;
@@ -320,7 +320,7 @@ namespace SecondBrain.Api.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
             {
-                return Unauthorized(new { error = "User ID not found in token." });
+                return Unauthorized(new { error = USER_ID_NOT_FOUND_ERROR });
             }
 
             var deletedNotes = await _context.Notes
@@ -337,7 +337,7 @@ namespace SecondBrain.Api.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
             {
-                return Unauthorized(new { error = "User ID not found in token." });
+                return Unauthorized(new { error = USER_ID_NOT_FOUND_ERROR });
             }
 
             var note = await _context.Notes
@@ -346,7 +346,7 @@ namespace SecondBrain.Api.Controllers
 
             if (note == null)
             {
-                return NotFound(new { error = "Note not found." });
+                return NotFound(new { error = NOTE_NOT_FOUND_ERROR });
             }
 
             note.IsDeleted = false;
@@ -363,18 +363,20 @@ namespace SecondBrain.Api.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
             {
-                return Unauthorized(new { error = "User ID not found in token." });
+                return Unauthorized(new { error = USER_ID_NOT_FOUND_ERROR });
             }
 
-            // Find the note and include its links
+            // Find the note and include all its links
             var note = await _context.Notes
                 .Include(n => n.NoteLinks)
                     .ThenInclude(nl => nl.LinkedNote)
+                .Include(n => n.ReminderLinks)
+                .Include(n => n.TaskLinks)
                 .FirstOrDefaultAsync(n => n.Id == id && n.UserId == userId);
 
             if (note == null)
             {
-                return NotFound(new { error = "Note not found." });
+                return NotFound(new { error = NOTE_NOT_FOUND_ERROR });
             }
 
             try
@@ -383,47 +385,51 @@ namespace SecondBrain.Api.Controllers
 
                 try
                 {
-                    // 1. Track unlink activities only for the note being deleted
-                    foreach (var link in note.NoteLinks)
+                    // 1. Track unlink activities
+                    var unlinkActivities = note.NoteLinks.Select(link => new Activity
                     {
-                        var linkedNote = link.LinkedNote;
-
-                        // Create single unlink activity from the perspective of the deleted note
-                        var unlinkActivity = new Activity
+                        UserId = userId,
+                        ActionType = ActivityActionType.UNLINK.ToString(),
+                        ItemType = ActivityItemType.NOTELINK.ToString(),
+                        ItemId = note.Id,
+                        ItemTitle = note.Title,
+                        Description = $"Unlinked from '{link.LinkedNote.Title}' (due to deletion)",
+                        MetadataJson = JsonSerializer.Serialize(new
                         {
-                            UserId = userId,
-                            ActionType = ActivityActionType.UNLINK.ToString(),
-                            ItemType = ActivityItemType.NOTELINK.ToString(),
-                            ItemId = note.Id,
-                            ItemTitle = note.Title,
-                            Description = $"Unlinked from '{linkedNote.Title}' (due to deletion)",
-                            MetadataJson = System.Text.Json.JsonSerializer.Serialize(new
-                            {
-                                sourceNoteId = note.Id,
-                                targetNoteId = linkedNote.Id,
-                                sourceNoteTitle = note.Title,
-                                targetNoteTitle = linkedNote.Title,
-                                reason = "deletion"
-                            })
-                        };
+                            sourceNoteId = note.Id,
+                            targetNoteId = link.LinkedNote.Id,
+                            sourceNoteTitle = note.Title,
+                            targetNoteTitle = link.LinkedNote.Title,
+                            reason = "deletion"
+                        })
+                    });
+                    _context.Activities.AddRange(unlinkActivities);
 
-                        _context.Activities.Add(unlinkActivity);
-                    }
+                    // 2. Remove all task links
+                    var taskLinks = await _context.TaskLinks
+                        .Where(tl => tl.LinkedItemId == id)
+                        .ToListAsync();
+                    _context.TaskLinks.RemoveRange(taskLinks);
 
-                    // 2. Remove all links
-                    var linkedNotes = await _context.NoteLinks
+                    // 3. Remove all reminder links
+                    var reminderLinks = await _context.ReminderLinks
+                        .Where(rl => rl.LinkedItemId == id)
+                        .ToListAsync();
+                    _context.ReminderLinks.RemoveRange(reminderLinks);
+
+                    // 4. Remove all note links
+                    var noteLinks = await _context.NoteLinks
                         .Where(nl => nl.NoteId == id || nl.LinkedNoteId == id)
                         .ToListAsync();
+                    _context.NoteLinks.RemoveRange(noteLinks);
 
-                    _context.NoteLinks.RemoveRange(linkedNotes);
-
-                    // 4. Delete the note itself
+                    // 5. Delete the note itself
                     _context.Notes.Remove(note);
 
-                    // 5. Save all changes
+                    // 6. Save all changes
                     await _context.SaveChangesAsync();
 
-                    // 6. Commit transaction
+                    // 7. Commit transaction
                     await transaction.CommitAsync();
 
                     return Ok(new { message = "Note permanently deleted" });
@@ -447,7 +453,7 @@ namespace SecondBrain.Api.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
             {
-                return Unauthorized(new { error = "User ID not found in token." });
+                return Unauthorized(new { error = USER_ID_NOT_FOUND_ERROR });
             }
 
             var note = await _context.Notes
@@ -458,7 +464,7 @@ namespace SecondBrain.Api.Controllers
 
             if (note == null)
             {
-                return NotFound(new { error = "Note not found." });
+                return NotFound(new { error = NOTE_NOT_FOUND_ERROR });
             }
 
             // Update properties if provided
@@ -488,18 +494,11 @@ namespace SecondBrain.Api.Controllers
 
             if (string.IsNullOrEmpty(userId))
             {
-                return Unauthorized(new { error = "User ID not found in token." });
+                return Unauthorized(new { error = USER_ID_NOT_FOUND_ERROR });
             }
 
             // Add logging to check the userId and query
-            Console.WriteLine($"Fetching archived notes for user: {userId}");
-
-            // First, let's check if we can find any archived notes
-            var archivedCount = await _context.Notes
-                .Where(n => n.UserId == userId && n.IsArchived)
-                .CountAsync();
-
-            Console.WriteLine($"Found {archivedCount} archived notes");
+            _logger.LogInformation("Fetching archived notes for user: {UserId}", userId);
 
             // Get the archived notes with more detailed logging
             var archivedNotes = await _context.Notes
@@ -508,7 +507,7 @@ namespace SecondBrain.Api.Controllers
                 .AsNoTracking() // Add this to improve performance for read-only operations
                 .ToListAsync();
 
-            Console.WriteLine($"Retrieved {archivedNotes.Count} notes with their links");
+            _logger.LogInformation("Retrieved {Count} archived notes", archivedNotes.Count);
 
             // Map to response
             var response = archivedNotes.Select(n => new NoteResponse
@@ -531,8 +530,6 @@ namespace SecondBrain.Api.Controllers
                     .ToList()
             }).ToList();
 
-            Console.WriteLine($"Mapped {response.Count} notes to response");
-
             return Ok(response);
         }
 
@@ -542,7 +539,7 @@ namespace SecondBrain.Api.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
             {
-                return Unauthorized(new { error = "User ID not found in token." });
+                return Unauthorized(new { error = USER_ID_NOT_FOUND_ERROR });
             }
 
             var note = await _context.Notes
@@ -551,7 +548,7 @@ namespace SecondBrain.Api.Controllers
 
             if (note == null)
             {
-                return NotFound(new { error = "Note not found." });
+                return NotFound(new { error = NOTE_NOT_FOUND_ERROR });
             }
 
             note.IsArchived = false;
@@ -565,10 +562,10 @@ namespace SecondBrain.Api.Controllers
         [HttpPost("{id}/reminders")]
         public async Task<ActionResult<NoteResponse>> LinkReminder(string id, [FromBody] LinkReminderRequest request)
         {
-            try 
+            try
             {
-                _logger.LogInformation($"Attempting to link reminder {request.ReminderId} to note {id}");
-                
+                _logger.LogInformation("Attempting to link reminder {ReminderId} to note {NoteId}", request.ReminderId, id);
+
                 var userId = GetUserId();
                 var note = await _context.Notes
                     .Include(n => n.NoteLinks)
@@ -578,8 +575,8 @@ namespace SecondBrain.Api.Controllers
 
                 if (note == null)
                 {
-                    _logger.LogWarning($"Note {id} not found");
-                    return NotFound(new { error = "Note not found." });
+                    _logger.LogWarning("Note {NoteId} not found", id);
+                    return NotFound(new { error = NOTE_NOT_FOUND_ERROR });
                 }
 
                 var reminder = await _context.Reminders
@@ -587,13 +584,13 @@ namespace SecondBrain.Api.Controllers
 
                 if (reminder == null)
                 {
-                    _logger.LogWarning($"Reminder {request.ReminderId} not found");
+                    _logger.LogWarning("Reminder {ReminderId} not found", request.ReminderId);
                     return NotFound(new { error = "Reminder not found." });
                 }
 
                 // Check for existing soft-deleted link
                 var existingLink = await _context.ReminderLinks
-                    .FirstOrDefaultAsync(rl => rl.ReminderId == request.ReminderId && 
+                    .FirstOrDefaultAsync(rl => rl.ReminderId == request.ReminderId &&
                                              rl.LinkedItemId == id);
 
                 if (existingLink != null)
@@ -630,12 +627,12 @@ namespace SecondBrain.Api.Controllers
                         .ThenInclude(rl => rl.Reminder)
                     .FirstOrDefaultAsync(n => n.Id == id);
 
-                _logger.LogInformation($"Successfully linked reminder {request.ReminderId} to note {id}");
+                _logger.LogInformation("Successfully linked reminder {ReminderId} to note {NoteId}", request.ReminderId, id);
                 return Ok(NoteResponse.FromEntity(note!));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Error linking reminder to note {id}");
+                _logger.LogError(ex, "Error linking reminder to note {NoteId}", id);
                 return StatusCode(500, new { error = "An error occurred while linking the reminder." });
             }
         }
@@ -648,9 +645,8 @@ namespace SecondBrain.Api.Controllers
         [HttpDelete("{id}/reminders/{reminderId}")]
         public async Task<ActionResult<NoteResponse>> UnlinkReminder(string id, string reminderId)
         {
-            var userId = GetUserId();
             var reminderLink = await _context.ReminderLinks
-                .FirstOrDefaultAsync(rl => rl.ReminderId == reminderId && 
+                .FirstOrDefaultAsync(rl => rl.ReminderId == reminderId &&
                                          rl.LinkedItemId == id);
 
             if (reminderLink == null)

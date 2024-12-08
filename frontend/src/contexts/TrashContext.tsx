@@ -168,7 +168,12 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
     if (onRestoreNote) {
       await onRestoreNote(restoredNote);
     }
-  }, [onRestoreNote]);
+    await logRestoreActivity(item.type as 'note' | 'idea', item, {
+      tags: item.metadata?.tags,
+      linkedItems: item.metadata?.linkedItems,
+      isFavorite: item.metadata?.isFavorite
+    });
+  }, [onRestoreNote, logRestoreActivity]);
 
   const restoreReminder = useCallback(async (item: TrashedItem) => {
     setTrashedItems(prev => prev.filter(i => i.id !== item.id));
@@ -212,70 +217,131 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
     window.location.reload();
   }, [trashedItems, restoreTask, restoreNoteOrIdea, restoreReminder]);
 
+  // Wrap handlers in useCallback
+  const handleTaskDeletion = useCallback(async (item: TrashedItem) => {
+    const taskLinkedItems = item.metadata?.linkedItems || [];
+    for (const linkedItem of taskLinkedItems) {
+      await tasksService.removeTaskLink(item.id, linkedItem).catch(error => 
+        console.warn(`Failed to unlink item ${linkedItem} from task ${item.id}`, error)
+      );
+    }
+    await tasksService.deleteTaskPermanently(item.id);
+    await createActivity({
+      actionType: 'delete',
+      itemType: 'task',
+      itemId: item.id,
+      itemTitle: item.title,
+      description: `Permanently deleted task: ${item.title}`,
+      metadata: {
+        taskId: item.id,
+        taskTitle: item.title,
+        taskTags: item.metadata?.tags,
+        taskDueDate: item.metadata?.dueDate,
+        taskPriority: item.metadata?.priority,
+        taskStatus: item.metadata?.status,
+        deletedAt: new Date().toISOString()
+      }
+    });
+  }, [createActivity]);
+
+  const handleNoteOrIdeaDeletion = useCallback(async (item: TrashedItem) => {
+    const noteLinkedItems = item.metadata?.linkedItems || [];
+    for (const linkedNoteId of noteLinkedItems) {
+      await notesService.removeLink(item.id, linkedNoteId).catch(error =>
+        console.warn(`Failed to unlink note ${linkedNoteId} from note ${item.id}`, error)
+      );
+    }
+
+    for (const linkedItemId of noteLinkedItems) {
+      await notesService.removeReminderFromNote(item.id, linkedItemId).catch(error =>
+        console.warn(`Failed to unlink item ${linkedItemId} from note ${item.id}`, error)
+      );
+    }
+
+    await notesService.deleteNotePermanently(item.id);
+    await createActivity({
+      actionType: 'delete',
+      itemType: item.type,
+      itemId: item.id,
+      itemTitle: item.title,
+      description: `Permanently deleted ${item.type}: ${item.title}`,
+      metadata: {
+        noteId: item.id,
+        noteTitle: item.title,
+        noteTags: item.metadata?.tags,
+        noteLinkedItems: item.metadata?.linkedItems,
+        isFavorite: item.metadata?.isFavorite,
+        deletedAt: new Date().toISOString()
+      }
+    });
+  }, [createActivity]);
+
+  const handleReminderDeletion = useCallback(async (item: TrashedItem) => {
+    const reminderLinkedItems = item.metadata?.linkedItems || [];
+    for (const linkedItem of reminderLinkedItems) {
+      await reminderService.removeReminderLink(item.id, linkedItem).catch(error =>
+        console.warn(`Failed to unlink item ${linkedItem} from reminder ${item.id}`, error)
+      );
+    }
+    await reminderService.deleteReminderPermanently(item.id);
+    await createActivity({
+      actionType: 'delete',
+      itemType: 'reminder',
+      itemId: item.id,
+      itemTitle: item.title,
+      description: `Permanently deleted reminder: ${item.title}`,
+      metadata: {
+        reminderId: item.id,
+        reminderTitle: item.title,
+        reminderTags: item.metadata?.tags,
+        reminderDueDate: item.metadata?.dueDate,
+        isCompleted: item.metadata?.isCompleted,
+        isSnoozed: item.metadata?.isSnoozed,
+        snoozeUntil: item.metadata?.snoozeUntil,
+        deletedAt: new Date().toISOString()
+      }
+    });
+  }, [createActivity]);
+
+  // Remove createActivity from deleteItemsPermanently dependencies
   const deleteItemsPermanently = useCallback(async (itemIds: string[]) => {
     const itemsToDelete = trashedItems.filter(item => itemIds.includes(item.id));
-    
+    const errors: Array<{ itemId: string; error: Error }> = [];
+
     for (const item of itemsToDelete) {
       try {
         switch (item.type) {
           case 'task':
-            await tasksService.deleteTaskPermanently(item.id);
-            await createActivity({
-              actionType: 'delete',
-              itemType: 'task',
-              itemId: item.id,
-              itemTitle: item.title,
-              description: `Permanently deleted task: ${item.title}`,
-              metadata: {
-                taskId: item.id,
-                taskTitle: item.title,
-                deletedAt: new Date().toISOString()
-              }
-            });
+            await handleTaskDeletion(item);
             break;
-            
           case 'note':
           case 'idea':
-            await notesService.deleteNotePermanently(item.id);
-            await createActivity({
-                actionType: 'delete',
-                itemType: item.type,
-                itemId: item.id,
-                itemTitle: item.title,
-                description: `Permanently deleted ${item.type}: ${item.title}`,
-                metadata: {
-                    noteId: item.id,
-                    noteTitle: item.title,
-                    noteTags: item.metadata?.tags,
-                    deletedAt: new Date().toISOString()
-                }
-            });
+            await handleNoteOrIdeaDeletion(item);
             break;
           case 'reminder':
-            await reminderService.deleteReminderPermanently(item.id);
-            await createActivity({
-              actionType: 'delete',
-              itemType: 'reminder',
-              itemId: item.id,
-              itemTitle: item.title,
-              description: `Permanently deleted reminder: ${item.title}`,
-              metadata: {
-                reminderId: item.id,
-                reminderTitle: item.title,
-                deletedAt: new Date().toISOString()
-              }
-            });
+            await handleReminderDeletion(item);
             break;
         }
+        setTrashedItems(prev => prev.filter(i => i.id !== item.id));
       } catch (error) {
-        console.error(`Failed to permanently delete ${item.type}:`, error);
-        throw error;
+        errors.push({ 
+          itemId: item.id, 
+          error: error instanceof Error ? error : new Error('Unknown error occurred')
+        });
       }
     }
 
-    // Remove deleted items from trash
-    setTrashedItems(prev => prev.filter(item => !itemIds.includes(item.id)));
-  }, [trashedItems, createActivity]);
+    if (errors.length > 0) {
+      throw new Error(
+        `Failed to delete some items:\n${errors
+          .map(({ itemId, error }) => {
+            const item = trashedItems.find(i => i.id === itemId);
+            return `- ${item?.type ?? 'Item'} "${item?.title}" (${itemId}): ${error.message}`;
+          })
+          .join('\n')}`
+      );
+    }
+  }, [trashedItems, handleTaskDeletion, handleNoteOrIdeaDeletion, handleReminderDeletion]);
 
   const emptyTrash = useCallback(async () => {
     try {

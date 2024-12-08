@@ -19,6 +19,8 @@ namespace SecondBrain.Api.Controllers
     {
         private readonly DataContext _context;
         private readonly ILogger<TasksController> _logger;
+        private const string TASK_NOT_FOUND_ERROR = "Task not found.";
+        private const string USER_ID_NOT_FOUND_ERROR = "User ID not found in token.";
 
         public TasksController(DataContext context, ILogger<TasksController> logger)
         {
@@ -89,7 +91,7 @@ namespace SecondBrain.Api.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
             {
-                return Unauthorized(new { error = "User ID not found in token." });
+                return Unauthorized(new { error = USER_ID_NOT_FOUND_ERROR });
             }
 
             var deletedTasks = await _context.Tasks
@@ -106,7 +108,7 @@ namespace SecondBrain.Api.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
             {
-                return Unauthorized(new { error = "User ID not found in token." });
+                return Unauthorized(new { error = USER_ID_NOT_FOUND_ERROR });
             }
 
             var task = await _context.Tasks
@@ -115,7 +117,7 @@ namespace SecondBrain.Api.Controllers
 
             if (task == null)
             {
-                return NotFound(new { error = "Task not found." });
+                return NotFound(new { error = TASK_NOT_FOUND_ERROR });
             }
 
             // Update fields if they are provided
@@ -158,7 +160,7 @@ namespace SecondBrain.Api.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
             {
-                return Unauthorized(new { error = "User ID not found in token." });
+                return Unauthorized(new { error = USER_ID_NOT_FOUND_ERROR });
             }
 
             var task = await _context.Tasks
@@ -167,7 +169,7 @@ namespace SecondBrain.Api.Controllers
 
             if (task == null)
             {
-                return NotFound(new { error = "Task not found." });
+                return NotFound(new { error = TASK_NOT_FOUND_ERROR });
             }
 
             task.IsDeleted = true;
@@ -184,7 +186,7 @@ namespace SecondBrain.Api.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
             {
-                return Unauthorized(new { error = "User ID not found in token." });
+                return Unauthorized(new { error = USER_ID_NOT_FOUND_ERROR });
             }
 
             var task = await _context.Tasks
@@ -193,7 +195,7 @@ namespace SecondBrain.Api.Controllers
 
             if (task == null)
             {
-                return NotFound(new { error = "Task not found." });
+                return NotFound(new { error = TASK_NOT_FOUND_ERROR });
             }
 
             task.IsDeleted = false;
@@ -212,22 +214,30 @@ namespace SecondBrain.Api.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
             {
-                return Unauthorized(new { error = "User ID not found in token." });
+                return Unauthorized(new { error = USER_ID_NOT_FOUND_ERROR });
             }
 
             var task = await _context.Tasks
+                .Include(t => t.TaskLinks)
                 .Where(t => t.Id == id && t.UserId == userId)
                 .FirstOrDefaultAsync();
 
             if (task == null)
             {
-                return NotFound(new { error = "Task not found." });
+                return NotFound(new { error = TASK_NOT_FOUND_ERROR });
             }
 
-            // Permanently remove the task
+            // First remove all task links
+            if (task.TaskLinks != null && task.TaskLinks.Any())
+            {
+                _context.TaskLinks.RemoveRange(task.TaskLinks);
+                await _context.SaveChangesAsync();
+            }
+
+            // Then remove the task
             _context.Tasks.Remove(task);
             await _context.SaveChangesAsync();
-            
+
             return NoContent();
         }
 
@@ -338,9 +348,9 @@ namespace SecondBrain.Api.Controllers
         {
             var userId = User.GetUserId();
             var taskLink = await _context.TaskLinks
-                .FirstOrDefaultAsync(tl => 
-                    tl.TaskId == taskId && 
-                    tl.LinkedItemId == linkedItemId && 
+                .FirstOrDefaultAsync(tl =>
+                    tl.TaskId == taskId &&
+                    tl.LinkedItemId == linkedItemId &&
                     tl.Task.UserId == userId);
 
             if (taskLink == null)
@@ -348,7 +358,7 @@ namespace SecondBrain.Api.Controllers
 
             taskLink.IsDeleted = true;
             taskLink.DeletedAt = DateTime.UtcNow;
-            
+
             await _context.SaveChangesAsync();
 
             var task = await _context.Tasks

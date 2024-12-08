@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useTrash } from '../../../contexts/trashContextUtils';
+import { TrashedItem } from '../../../contexts/trashContextUtils';
 import { NoteCard } from '../NoteCard';
 import { TaskCard } from '../Tasks/TaskCard';
 import { IdeaCard } from '../Ideas/IdeaCard';
@@ -7,37 +7,32 @@ import { ReminderCard } from '../Reminders/ReminderCard';
 import { ConfirmationDialog } from './ConfirmationDialog';
 import { Trash2, RotateCcw } from 'lucide-react';
 import type { Note } from '../../../types/note';
-import type { Task } from '../../../api/types/task';
-
-interface Reminder {
-  id: string;
-  title: string;
-  description?: string;
-  dueDateTime: string;
-  isCompleted: boolean;
-  isSnoozed: boolean;
-  snoozeUntil?: string;
-  repeatInterval: undefined;
-  tags: string[];
-  createdAt: string;
-  updatedAt: string;
-  type: 'reminder';
-  isDeleted: boolean;
-  userId: string;
-}
+import type { Task, TaskStatus, TaskPriority } from '../../../api/types/task';
+import type { Reminder } from '../../../contexts/remindersContextUtils';
 
 interface TrashListProps {
+  trashedItems: TrashedItem[];
   filters: {
     types: string[];
     dateRange: 'all' | 'today' | 'week' | 'month';
     tags: string[];
   };
   searchQuery: string;
+  selectedItems: string[];
+  onSelectionChange: (items: string[]) => void;
+  onRestore: (items: string[]) => void;
+  onDelete: (items: string[]) => void;
 }
 
-export function TrashList({ filters, searchQuery }: TrashListProps) {
-  const { trashedItems, restoreItems, deleteItemsPermanently } = useTrash();
-  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+export function TrashList({ 
+  trashedItems,
+  filters, 
+  searchQuery,
+  selectedItems,
+  onSelectionChange,
+  onRestore,
+  onDelete
+}: TrashListProps) {
   const [showRestoreDialog, setShowRestoreDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
@@ -88,27 +83,15 @@ export function TrashList({ filters, searchQuery }: TrashListProps) {
     new Date(b.deletedAt).getTime() - new Date(a.deletedAt).getTime()
   );
 
-  const handleRestore = async () => {
-    await restoreItems(selectedItems);
-    setSelectedItems([]);
-    setShowRestoreDialog(false);
-  };
-
-  const handleDelete = async () => {
-    await deleteItemsPermanently(selectedItems);
-    setSelectedItems([]);
-    setShowDeleteDialog(false);
-  };
-
   const handleItemClick = (itemId: string) => {
-    setSelectedItems(prev =>
-      prev.includes(itemId)
-        ? prev.filter(id => id !== itemId)
-        : [...prev, itemId]
+    onSelectionChange(
+      selectedItems.includes(itemId)
+        ? selectedItems.filter(id => id !== itemId)
+        : [...selectedItems, itemId]
     );
   };
 
-  if (sortedItems.length === 0) {
+  if (filteredItems.length === 0) {
     return (
       <div className="text-center py-12">
         <Trash2 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
@@ -131,14 +114,14 @@ export function TrashList({ filters, searchQuery }: TrashListProps) {
           </span>
           <div className="flex-1" />
           <button
-            onClick={() => setShowRestoreDialog(true)}
+            onClick={() => onRestore(selectedItems)}
             className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
           >
             <RotateCcw className="w-4 h-4" />
             <span>Restore Selected</span>
           </button>
           <button
-            onClick={() => setShowDeleteDialog(true)}
+            onClick={() => onDelete(selectedItems)}
             className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
           >
             <Trash2 className="w-4 h-4" />
@@ -150,24 +133,20 @@ export function TrashList({ filters, searchQuery }: TrashListProps) {
       {/* Items Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {sortedItems.map(item => {
-          const contextData = {
-            expiresAt: item.expiresAt,
-            deletedAt: item.deletedAt
-          };
-
           // Convert TrashedItem to the appropriate type
           switch (item.type) {
             case 'note': {
               const note: Note = {
                 id: item.id,
                 title: item.title,
-                content: item.content || '',
+                content: item.content ?? '',
                 tags: item.metadata?.tags || [],
                 isFavorite: item.metadata?.isFavorite || false,
                 isPinned: false,
                 isIdea: false,
                 linkedNoteIds: item.metadata?.linkedItems || [],
                 linkedTasks: [],
+                linkedReminders: [],
                 isArchived: false,
                 isDeleted: true,
                 createdAt: new Date().toISOString(),
@@ -180,18 +159,20 @@ export function TrashList({ filters, searchQuery }: TrashListProps) {
                   isSelected={selectedItems.includes(item.id)}
                   onSelect={() => handleItemClick(item.id)}
                   context="trash"
-                  contextData={contextData}
                 />
               );
             }
             case 'task': {
+              const status = (item.metadata?.status ?? 'Incomplete') as TaskStatus;
+              const priority = (item.metadata?.priority ?? 'low') as TaskPriority;
+              
               const task: Task = {
                 id: item.id,
                 title: item.title,
-                description: item.content || '',
-                status: 'Incomplete',
-                priority: 'low',
-                dueDate: item.metadata?.dueDate || null,
+                description: item.content ?? '',
+                status,
+                priority,
+                dueDate: item.metadata?.dueDate ?? null,
                 tags: item.metadata?.tags || [],
                 linkedItems: [],
                 createdAt: new Date().toISOString(),
@@ -206,7 +187,6 @@ export function TrashList({ filters, searchQuery }: TrashListProps) {
                   isSelected={selectedItems.includes(item.id)}
                   onSelect={() => handleItemClick(item.id)}
                   context="trash"
-                  contextData={contextData}
                 />
               );
             }
@@ -214,13 +194,14 @@ export function TrashList({ filters, searchQuery }: TrashListProps) {
               const idea: Note = {
                 id: item.id,
                 title: item.title,
-                content: item.content || '',
+                content: item.content ?? '',
                 tags: item.metadata?.tags || [],
                 isFavorite: item.metadata?.isFavorite || false,
                 isPinned: false,
                 isIdea: true,
                 linkedNoteIds: item.metadata?.linkedItems || [],
                 linkedTasks: [],
+                linkedReminders: [],
                 isArchived: false,
                 isDeleted: true,
                 createdAt: new Date().toISOString(),
@@ -233,26 +214,25 @@ export function TrashList({ filters, searchQuery }: TrashListProps) {
                   isSelected={selectedItems.includes(item.id)}
                   onSelect={() => handleItemClick(item.id)}
                   context="trash"
-                  contextData={contextData}
                 />
               );
             }
             case 'reminder': {
               const reminder: Reminder = {
                 id: item.id,
-                type: 'reminder',
                 title: item.title,
-                description: item.content || '',
-                dueDateTime: item.metadata?.dueDate || new Date().toISOString(),
+                description: item.content ?? '',
+                dueDateTime: item.metadata?.dueDate ?? new Date().toISOString(),
                 isCompleted: item.metadata?.isCompleted || false,
                 isSnoozed: item.metadata?.isSnoozed || false,
                 snoozeUntil: item.metadata?.snoozeUntil,
                 repeatInterval: undefined,
                 tags: item.metadata?.tags || [],
+                linkedItems: [],
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
                 isDeleted: true,
-                userId: 'default'
+                userId: ''
               };
               return (
                 <ReminderCard
@@ -261,7 +241,6 @@ export function TrashList({ filters, searchQuery }: TrashListProps) {
                   isSelected={selectedItems.includes(item.id)}
                   onSelect={() => handleItemClick(item.id)}
                   context="trash"
-                  contextData={contextData}
                 />
               );
             }
@@ -275,7 +254,7 @@ export function TrashList({ filters, searchQuery }: TrashListProps) {
       <ConfirmationDialog
         isOpen={showRestoreDialog}
         onClose={() => setShowRestoreDialog(false)}
-        onConfirm={handleRestore}
+        onConfirm={() => onRestore(selectedItems)}
         title="Restore Items"
         description={`Are you sure you want to restore ${selectedItems.length} selected ${
           selectedItems.length === 1 ? 'item' : 'items'
@@ -287,7 +266,7 @@ export function TrashList({ filters, searchQuery }: TrashListProps) {
       <ConfirmationDialog
         isOpen={showDeleteDialog}
         onClose={() => setShowDeleteDialog(false)}
-        onConfirm={handleDelete}
+        onConfirm={() => onDelete(selectedItems)}
         title="Delete Items Permanently"
         description={`Are you sure you want to permanently delete ${selectedItems.length} selected ${
           selectedItems.length === 1 ? 'item' : 'items'

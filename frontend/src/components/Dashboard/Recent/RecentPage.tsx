@@ -11,9 +11,11 @@ import { EditIdeaModal } from '../Ideas/EditIdeaModal';
 import { useNotes } from '../../../contexts/notesContextUtils';
 import { useTasks } from '../../../contexts/tasksContextUtils';
 import { useReminders } from '../../../contexts/remindersContextUtils';
+import { useTheme } from '../../../contexts/themeContextUtils';
 import { Activity } from '../../../api/services/activityService';
 
 export function RecentPage() {
+  const { theme } = useTheme();
   const { activities } = useActivities();
   const { notes } = useNotes();
   const { tasks } = useTasks();
@@ -52,24 +54,56 @@ export function RecentPage() {
     }
   };
 
+  const getThemeStyles = () => {
+    const defaultStyles = {
+      headerGradient: 'from-emerald-500/10 to-transparent',
+      iconBg: 'bg-emerald-100/50',
+      iconColor: 'text-emerald-600'
+    };
+
+    switch (theme) {
+      case 'dark':
+        return {
+          headerGradient: 'from-emerald-500/20 to-transparent',
+          iconBg: 'bg-emerald-500/20',
+          iconColor: 'text-emerald-400'
+        };
+      case 'midnight':
+        return {
+          headerGradient: 'from-emerald-400/20 to-transparent',
+          iconBg: 'bg-emerald-400/20',
+          iconColor: 'text-emerald-300'
+        };
+      default:
+        return defaultStyles;
+    }
+  };
+
+  const themeStyles = getThemeStyles();
+
+  const getBackgroundGradient = (theme: string) => {
+    if (theme === 'light') return 'from-zinc-50 to-zinc-100';
+    if (theme === 'dark') return 'from-zinc-900 via-zinc-900 to-zinc-800';
+    return 'from-[#0F172A] via-[#1E293B] to-[#334155]';
+  };
+
   return (
     <div className="min-h-screen overflow-x-hidden bg-fixed">
-      {/* Background gradient */}
-      <div className="fixed inset-0 bg-fixed dark:bg-gradient-to-br dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-800 bg-gradient-to-br from-zinc-50 to-zinc-100 -z-10" />
+      <div className={`fixed inset-0 bg-fixed bg-gradient-to-br ${getBackgroundGradient(theme)} -z-10`} />
 
       <div className="space-y-8 relative">
-        {/* Page Header with gradient overlay */}
+        {/* Header */}
         <div className="relative overflow-hidden rounded-xl bg-white/30 dark:bg-zinc-800/30 border border-zinc-200/30 dark:border-zinc-700/30 shadow-sm backdrop-blur-sm">
-          <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 dark:from-emerald-500/5 to-transparent" />
+          <div className={`absolute inset-0 bg-gradient-to-r ${themeStyles.headerGradient}`} />
           <div className="relative p-6">
             <div className="flex flex-col sm:flex-row gap-6 justify-between">
               <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-10 h-10 bg-emerald-100/50 dark:bg-emerald-500/10 rounded-lg">
-                  <History className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                <div className={`flex items-center justify-center w-10 h-10 rounded-lg ${themeStyles.iconBg}`}>
+                  <History className={`w-5 h-5 ${themeStyles.iconColor}`} />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">Recent Activity</h1>
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                  <h1 className="text-2xl font-bold text-[var(--color-text)]">Recent Activity</h1>
+                  <p className="text-sm text-[var(--color-textSecondary)]">
                     Track and manage your recent actions
                   </p>
                 </div>
@@ -78,7 +112,7 @@ export function RecentPage() {
           </div>
         </div>
 
-        {/* Search and Filters */}
+        {/* Updated Search and Filters */}
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1">
             <Input
@@ -88,16 +122,16 @@ export function RecentPage() {
               placeholder="Search activities..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-white/20 dark:bg-zinc-800/40 border-zinc-200/30 dark:border-zinc-700/30 text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-400 focus:ring-emerald-500/30 dark:focus:ring-emerald-500/20"
+              className="bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text)] placeholder-[var(--color-textSecondary)] focus:ring-[var(--color-accent)]/30"
             />
           </div>
 
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg border border-zinc-200/30 dark:border-zinc-700/30 transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
               showFilters
-                ? 'bg-emerald-100/20 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200/30 dark:border-emerald-700/30'
-                : 'bg-white/20 dark:bg-zinc-800/40 hover:bg-white/30 dark:hover:bg-zinc-800/60 text-zinc-900 dark:text-zinc-100'
+                ? 'bg-[var(--color-accent)]/10 text-[var(--color-accent)] border-[var(--color-accent)]/30'
+                : 'bg-[var(--color-surface)] hover:bg-[var(--color-surfaceHover)] text-[var(--color-text)] border-[var(--color-border)]'
             }`}
           >
             <SlidersHorizontal className="w-5 h-5" />
@@ -105,11 +139,11 @@ export function RecentPage() {
           </button>
         </div>
 
-        {/* Filters Panel */}
+        {/* Updated Filters Panel */}
         {showFilters && (
-          <div className="bg-white/20 dark:bg-zinc-800/40 border border-zinc-200/30 dark:border-zinc-700/30 shadow-sm rounded-xl p-4 backdrop-blur-sm">
+          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] shadow-sm rounded-xl p-4 backdrop-blur-sm">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+              <h3 className="text-lg font-semibold text-[var(--color-text)]">
                 Filters
               </h3>
               <button
@@ -118,7 +152,7 @@ export function RecentPage() {
                   itemTypes: [],
                   dateRange: 'all'
                 })}
-                className="text-sm text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50 transition-colors"
+                className="text-sm text-[var(--color-textSecondary)] hover:text-[var(--color-text)] transition-colors"
               >
                 Clear all
               </button>

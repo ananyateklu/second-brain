@@ -316,12 +316,25 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
       setNotes(prevNotes => sortNotes([...prevNotes, restoredNote]));
       setArchivedNotes(prevNotes => prevNotes.filter(note => note.id !== id));
 
+      // Add activity logging for unarchiving
+      createActivity({
+        actionType: 'restore',
+        itemType: restoredNote.tags.includes('idea') ? 'idea' : 'note',
+        itemId: restoredNote.id,
+        itemTitle: restoredNote.title,
+        description: `Restored ${restoredNote.tags.includes('idea') ? 'idea' : 'note'} from archive: ${restoredNote.title}`,
+        metadata: {
+          tags: restoredNote.tags,
+          restoredAt: new Date().toISOString()
+        }
+      });
+
       return restoredNote;
     } catch (error) {
       console.error('Error unarchiving note:', error);
       throw error;
     }
-  }, [archivedNotes]);
+  }, [archivedNotes, createActivity]);
 
   const updateNoteWithLinks = (note: Note, linkedNoteIds: string[], allNotes: Note[]): Note => {
     return {
@@ -482,13 +495,55 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const createBulkRestoreActivity = useCallback((restoredNotes: Note[], totalResults: number) => {
+    const getRestoreDescription = (noteCount: number, ideaCount: number) => {
+      if (noteCount > 0 && ideaCount > 0) {
+        return `Restored ${noteCount} note${noteCount > 1 ? 's' : ''} and ${ideaCount} idea${ideaCount > 1 ? 's' : ''} from archive`;
+      }
+      if (noteCount > 0) {
+        return `Restored ${noteCount} note${noteCount > 1 ? 's' : ''} from archive`;
+      }
+      return `Restored ${ideaCount} idea${ideaCount > 1 ? 's' : ''} from archive`;
+    };
+
+    const getRestoreTitle = (noteCount: number, ideaCount: number) => {
+      if (noteCount > 0 && ideaCount > 0) {
+        return `${noteCount} notes and ${ideaCount} ideas`;
+      }
+      if (noteCount > 0) {
+        return `${noteCount} notes`;
+      }
+      return `${ideaCount} ideas`;
+    };
+
+    const noteCount = restoredNotes.filter(note => !note.tags.includes('idea')).length;
+    const ideaCount = restoredNotes.filter(note => note.tags.includes('idea')).length;
+
+    createActivity({
+      actionType: 'restore_multiple',
+      itemType: 'notes',
+      itemId: 'bulk',
+      itemTitle: getRestoreTitle(noteCount, ideaCount),
+      description: getRestoreDescription(noteCount, ideaCount),
+      metadata: {
+        totalNotes: totalResults,
+        noteCount,
+        ideaCount,
+        successfulRestores: restoredNotes.length,
+        failedRestores: totalResults - restoredNotes.length,
+        restoredNoteIds: restoredNotes.map(note => note.id),
+        restoredNoteTitles: restoredNotes.map(note => note.title),
+        restoredAt: new Date().toISOString()
+      }
+    });
+  }, [createActivity]);
+
   const restoreMultipleNotes = useCallback(async (ids: string[]) => {
     try {
       const results = await Promise.allSettled(
         ids.map(id => unarchiveNote(id))
       );
 
-      // Add activity for bulk restore
       if (results.length > 1) {
         const successfulRestores = results.filter(
           (result): result is PromiseFulfilledResult<Note> =>
@@ -496,22 +551,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
         );
 
         const restoredNotes = successfulRestores.map(result => result.value);
-
-        createActivity({
-          actionType: 'restore_multiple',
-          itemType: 'notes',
-          itemId: 'bulk',
-          itemTitle: `${results.length} notes`,
-          description: `Restored ${results.length} notes from archive`,
-          metadata: {
-            totalNotes: results.length,
-            successfulRestores: successfulRestores.length,
-            failedRestores: results.length - successfulRestores.length,
-            restoredNoteIds: restoredNotes.map(note => note.id),
-            restoredNoteTitles: restoredNotes.map(note => note.title),
-            restoredAt: new Date().toISOString()
-          }
-        });
+        createBulkRestoreActivity(restoredNotes, results.length);
       }
 
       return results;
@@ -519,7 +559,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
       console.error('Failed to restore multiple notes:', error);
       throw error;
     }
-  }, [unarchiveNote, createActivity]);
+  }, [unarchiveNote, createBulkRestoreActivity]);
 
   const restoreNote = useCallback(async (restoredNote: Note) => {
     try {
