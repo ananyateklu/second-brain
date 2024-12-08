@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { Plus, Search, Clock, Hash, Files, CheckSquare, Settings, X, FileText, Lightbulb, Share2, Activity, FolderPlus, Tags, AlignLeft, FolderIcon, TagIcon, LayoutGrid, Layout, Columns } from 'lucide-react';
+import { Plus, Search, Clock, Hash, Files, CheckSquare, Settings, X, FileText, Lightbulb, Share2, Activity, FolderPlus, Tags, AlignLeft, FolderIcon, TagIcon, LayoutGrid, Layout, Columns, Network } from 'lucide-react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { useDashboard } from '../../hooks/useDashboard';
 import { StatsEditor } from './StatsEditor';
@@ -24,7 +24,8 @@ const IconMap = {
   Activity,
   AlignLeft,
   Plus,
-  TagIcon
+  TagIcon,
+  Network
 };
 
 const getBorderClass = () => 'border-[var(--color-border)]';

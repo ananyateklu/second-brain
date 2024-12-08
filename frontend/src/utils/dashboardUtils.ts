@@ -20,8 +20,8 @@ export const getIconBg = (type: string) => {
       return `${baseClass} bg-green-100 dark:bg-green-900/30 midnight:bg-green-900/20`;
     case 'activity':
       return `${baseClass} bg-rose-100 dark:bg-rose-900/30 midnight:bg-rose-900/20`;
-    case 'search':
-      return `${baseClass} bg-indigo-100 dark:bg-indigo-900/30 midnight:bg-indigo-900/20`;
+    case 'connections':
+      return `${baseClass} bg-blue-100 dark:bg-blue-900/30 midnight:bg-blue-900/20`;
     case 'collaboration':
       return `${baseClass} bg-teal-100 dark:bg-teal-900/30 midnight:bg-teal-900/20`;
     default:
@@ -51,8 +51,8 @@ export const getIconColor = (type: string) => {
       return `${baseClass} text-green-600 dark:text-green-400 midnight:text-green-300`;
     case 'activity':
       return `${baseClass} text-rose-600 dark:text-rose-400 midnight:text-rose-300`;
-    case 'search':
-      return `${baseClass} text-indigo-600 dark:text-indigo-400 midnight:text-indigo-300`;
+    case 'connections':
+      return `${baseClass} text-blue-600 dark:text-blue-400 midnight:text-blue-300`;
     case 'collaboration':
       return `${baseClass} text-teal-600 dark:text-teal-400 midnight:text-teal-300`;
     default:

@@ -12,8 +12,8 @@ export const getIconColor = (type: string) => {
       return 'text-green-600 dark:text-green-400';
     case 'tasks':
       return 'text-red-600 dark:text-red-400';
-    case 'search':
-      return 'text-indigo-600 dark:text-indigo-400';
+    case 'connections':
+      return 'text-blue-500 dark:text-blue-400';
     case 'activity':
       return 'text-orange-600 dark:text-orange-400';
     default:
@@ -35,8 +35,8 @@ export const getIconBg = (type: string) => {
       return 'bg-green-100 dark:bg-green-900/30';
     case 'tasks':
       return 'bg-red-100 dark:bg-red-900/30';
-    case 'search':
-      return 'bg-indigo-100 dark:bg-indigo-900/30';
+    case 'connections':
+      return 'bg-blue-100 dark:bg-blue-900/20';
     case 'activity':
       return 'bg-orange-100 dark:bg-orange-900/30';
     default:

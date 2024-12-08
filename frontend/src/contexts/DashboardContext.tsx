@@ -6,9 +6,59 @@ import { useReminders } from './remindersContextUtils';
 import { useActivities } from './activityContextUtils';
 import { calculateWeeklyChange, getNewNotesCount, getLastUpdateTime, DEFAULT_STATS, DashboardContext, isDashboardStat, StatValue } from '../utils/dashboardContextUtils';
 import type { Task } from '../api/types/task';
-import { FileText, Archive, Calendar, Lightbulb, Clock, CheckSquare } from 'lucide-react';
+import { FileText, Archive, Calendar, Clock, CheckSquare, Network, TagIcon } from 'lucide-react';
 import { Note } from '../types/note';
 import { Activity } from '../api/services/activityService';
+
+// Extract these functions outside the component
+const calculateConnectionStats = (notes: Note[]) => {
+  const weekAgo = new Date();
+  weekAgo.setDate(weekAgo.getDate() - 7);
+
+  const totalConnections = notes.reduce((acc, note) => {
+    const linkedNoteCount = note.linkedNoteIds?.length || 0;
+    const linkedTaskCount = note.linkedTasks?.length ?? 0;
+    const linkedReminderCount = note.linkedReminders?.length || 0;
+    return acc + linkedNoteCount + linkedTaskCount + linkedReminderCount;
+  }, 0);
+
+  const notesWithConnections = notes.filter(note => {
+    const hasLinkedNotes = (note.linkedNoteIds?.length || 0) > 0;
+    const hasLinkedTasks = (note.linkedTasks?.length ?? 0) > 0;
+    const hasLinkedReminders = (note.linkedReminders?.length || 0) > 0;
+    return hasLinkedNotes || hasLinkedTasks || hasLinkedReminders;
+  }).length;
+
+  const recentConnections = notes.reduce((acc, note) => {
+    const recentLinks = note.linkedNoteIds?.filter(id => {
+      const linkedNote = notes.find(n => n.id === id);
+      return linkedNote && new Date(linkedNote.updatedAt) >= weekAgo;
+    }).length || 0;
+    return acc + recentLinks;
+  }, 0);
+
+  const mostConnected = notes.reduce((max, note) => {
+    const connections = (note.linkedNoteIds?.length || 0) + 
+                      (note.linkedTasks?.length ?? 0) + 
+                      (note.linkedReminders?.length || 0);
+    return connections > max.connections ? { note, connections } : max;
+  }, { note: null as Note | null, connections: 0 });
+
+  return { totalConnections, notesWithConnections, recentConnections, mostConnected };
+};
+
+const calculateActivityStats = (activities: Activity[]) => {
+  const activityBreakdown: Record<string, number> = {};
+  activities.forEach(activity => {
+    const type = activity.itemType.toLowerCase();
+    activityBreakdown[type] = (activityBreakdown[type] || 0) + 1;
+  });
+
+  return {
+    breakdown: activityBreakdown,
+    mostActiveCategory: Object.entries(activityBreakdown).sort(([, a], [, b]) => b - a)[0]
+  };
+};
 
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const { notes, isLoading: notesLoading } = useNotes();
@@ -51,13 +101,11 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   }, [notes, tasks, notesLoading, isLoading]);
 
   const getStatValue = useCallback((statId: string): StatValue => {
-    // Move declarations outside switch
+    // Keep these declarations
     let allTags: string[];
     let uniqueTags: Set<string>;
     let newRegularNotes: number;
     let today: Date;
-    let todayActivities: Activity[];
-    let weekActivities: Activity[];
     let activeTasks: Task[];
     let completedTasks: Task[];
     let dueSoonTasks: number;
@@ -256,24 +304,60 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           ]
         };
 
-      case 'ideas-count':
+      case 'ideas-count': {
+        const totalIdeas = ideas.length;
+        weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        
+        const newIdeasThisWeek = ideas.filter(idea => {
+          const createdDate = new Date(idea.createdAt);
+          return createdDate >= weekAgo;
+        }).length;
+
+        // Get ideas with linked tasks or reminders
+        const ideasWithLinks = ideas.filter(idea => 
+          (idea.linkedTasks && idea.linkedTasks.length > 0) || 
+          (idea.linkedReminders && idea.linkedReminders.length > 0)
+        ).length;
+
+        // Get ideas with tags
+        const ideasWithTags = ideas.filter(idea => idea.tags?.length > 0).length;
+
+        // Calculate recent activity
+        const recentlyUpdatedIdeas = ideas.filter(idea => {
+          const updatedDate = new Date(idea.updatedAt);
+          return updatedDate >= weekAgo;
+        }).length;
+
         return {
-          value: ideas.length,
+          value: totalIdeas,
+          change: newIdeasThisWeek,
           timeframe: 'Total',
-          change: calculateWeeklyChange(ideas, 'created'),
-          description: 'Total number of ideas captured',
+          description: 'Captured ideas',
           additionalInfo: [
             {
-              icon: Lightbulb,
-              label: 'This week',
-              value: ideas.filter(idea => {
-                const weekAgo = new Date();
-                weekAgo.setDate(weekAgo.getDate() - 7);
-                return new Date(idea.createdAt) >= weekAgo;
-              }).length
+              icon: Clock,
+              value: `${newIdeasThisWeek} this week`
+            },
+            {
+              icon: Network,
+              value: `${ideasWithLinks} linked`
+            },
+            {
+              icon: TagIcon,
+              value: `${ideasWithTags} tagged`
             }
-          ]
+          ],
+          metadata: {
+            breakdown: {
+              total: totalIdeas,
+              created: newIdeasThisWeek,
+              edited: recentlyUpdatedIdeas,
+              deleted: 0
+            }
+          }
         };
+      }
 
       case 'completed':
         today = new Date();
@@ -309,40 +393,23 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         };
 
       case 'daily-activity': {
-        today = new Date();
+        const today = new Date();
         today.setHours(0, 0, 0, 0);
-        weekAgo = new Date();
+        const weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
         weekAgo.setHours(0, 0, 0, 0);
 
-        todayActivities = activities.filter(activity => {
-          const activityDate = new Date(activity.timestamp);
-          return activityDate >= today;
-        });
+        const todayActivities = activities.filter(activity => 
+          new Date(activity.timestamp) >= today
+        );
 
-        weekActivities = activities.filter(activity => {
-          const activityDate = new Date(activity.timestamp);
-          return activityDate >= weekAgo;
-        });
+        const weekActivities = activities.filter(activity => 
+          new Date(activity.timestamp) >= weekAgo
+        );
 
-        const activityBreakdown: Record<string, number> = {};
-        weekActivities.forEach(activity => {
-          const type = activity.itemType.toLowerCase();
-          activityBreakdown[type] = (activityBreakdown[type] || 0) + 1;
-        });
+        const stats = calculateActivityStats(weekActivities);
 
-        const twoWeeksAgo = new Date(weekAgo);
-        twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 7);
-
-        const lastWeekActivities = activities.filter(activity => {
-          const activityDate = new Date(activity.timestamp);
-          return activityDate >= twoWeeksAgo && activityDate < weekAgo;
-        });
-
-        const activityChange = weekActivities.length - lastWeekActivities.length;
-
-        const mostActiveCategory = Object.entries(activityBreakdown)
-          .sort(([, a], [, b]) => b - a)[0];
+        const activityChange = weekActivities.length - stats.breakdown[stats.mostActiveCategory[0]];
 
         return {
           value: todayActivities.length,
@@ -354,9 +421,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
               icon: Calendar,
               value: `${weekActivities.length} this week`
             },
-            mostActiveCategory && {
+            stats.mostActiveCategory && {
               icon: FileText,
-              value: `${mostActiveCategory[0]}: ${mostActiveCategory[1]}`
+              value: `${stats.mostActiveCategory[0]}: ${stats.mostActiveCategory[1]}`
             }
           ].filter(Boolean),
           metadata: {
@@ -390,12 +457,38 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           ]
         };
 
-      case 'search-frequency':
-        // This would need integration with search history
+      case 'connections': {
+        const stats = calculateConnectionStats(notes);
+        const additionalInfo = [
+          {
+            icon: FileText,
+            value: `${stats.notesWithConnections} connected notes`
+          }
+        ];
+
+        if (stats.mostConnected.note) {
+          additionalInfo.push({
+            icon: Network,
+            value: `${stats.mostConnected.connections} max links`
+          });
+        }
+
         return {
-          value: '0',
-          timeframe: 'Today'
+          value: stats.totalConnections,
+          change: stats.recentConnections,
+          timeframe: 'Total connections',
+          description: 'Links between notes, tasks & reminders',
+          additionalInfo,
+          metadata: {
+            breakdown: {
+              total: stats.totalConnections,
+              created: stats.recentConnections,
+              edited: 0,
+              deleted: 0
+            }
+          }
         };
+      }
 
       default:
         return { value: 0 };

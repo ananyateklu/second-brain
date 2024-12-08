@@ -85,7 +85,7 @@ export const isDashboardStat = (obj: unknown): obj is DashboardStat => {
   const validTypes = [
     'notes', 'new-notes', 'categories', 'word-count', 
     'tasks', 'tags', 'time', 'ideas', 'activity', 
-    'search', 'collaboration'
+    'connections', 'collaboration'
   ] as const;
   
   type ValidType = typeof validTypes[number];
@@ -182,30 +182,12 @@ export const DEFAULT_STATS: DashboardStat[] = [
     size: 'large'
   },
   {
-    id: 'search-frequency',
-    type: 'search',
-    title: 'Searches',
-    icon: 'Search',
-    enabled: false,
-    order: 8,
-    size: 'small'
-  },
-  {
-    id: 'shared-notes',
-    type: 'collaboration',
-    title: 'Shared Notes',
-    icon: 'Share2',
-    enabled: false,
-    order: 9,
-    size: 'small'
-  },
-  {
-    id: 'last-update',
-    type: 'time',
-    title: 'Last Update',
-    icon: 'Clock',
+    id: 'connections',
+    type: 'connections',
+    title: 'Connections',
+    icon: 'Network',
     enabled: true,
-    order: 10,
+    order: 8,
     size: 'medium'
   }
 ]; 
