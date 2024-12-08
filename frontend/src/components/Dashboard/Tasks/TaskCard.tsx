@@ -1,8 +1,6 @@
-import { useState } from 'react';
 import { Calendar, Tag as TagIcon, Clock, Type, Lightbulb, Square, CheckSquare, Link2 } from 'lucide-react';
 import { Task } from '../../../api/types/task';
 import { useTasks } from '../../../contexts/tasksContextUtils';
-import { EditTaskModal } from './EditTaskModal/index';
 import { useTheme } from '../../../contexts/themeContextUtils';
 
 interface TaskCardProps {
@@ -24,7 +22,6 @@ export function TaskCard({
 }: TaskCardProps) {
   const { updateTask } = useTasks();
   const { theme } = useTheme();
-  const [showEditModal, setShowEditModal] = useState(false);
 
   const isDark = theme === 'dark' || theme === 'midnight';
 
@@ -34,8 +31,6 @@ export function TaskCard({
       onSelect();
     } else if (onClick) {
       onClick(task);
-    } else if (context === 'default') {
-      setShowEditModal(true);
     }
   };
 
@@ -172,84 +167,76 @@ export function TaskCard({
   );
 
   return (
-    <>
-      <div 
-        onClick={handleClick}
-        className={`
-          relative group
-          w-full
-          ${onSelect || onClick ? 'cursor-pointer' : ''}
-          ${task.status.toLowerCase() === 'completed' ? 'opacity-85' : ''}
-          bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]
-          border border-[var(--color-border)]
-          hover:border-emerald-400/50
-          rounded-lg
-          transition-all duration-200
-          overflow-hidden
-          ${isSelected ? 'ring-2 ring-emerald-400/50' : ''}
-          ${viewMode === 'list' ? 'h-[84px]' : 'h-[156px]'}
-        `}
-      >
-        {viewMode === 'list' ? (
-          // List View Layout
-          <div className="px-3 py-2.5 h-full flex items-center gap-3">
+    <div 
+      onClick={handleClick}
+      className={`
+        relative group
+        w-full
+        ${onSelect || onClick ? 'cursor-pointer' : ''}
+        ${task.status.toLowerCase() === 'completed' ? 'opacity-85' : ''}
+        bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]
+        border border-[var(--color-border)]
+        hover:border-emerald-400/50
+        rounded-lg
+        transition-all duration-200
+        overflow-hidden
+        ${isSelected ? 'ring-2 ring-emerald-400/50' : ''}
+        ${viewMode === 'list' ? 'h-[84px]' : 'h-[156px]'}
+      `}
+    >
+      {viewMode === 'list' ? (
+        // List View Layout
+        <div className="px-3 py-2.5 h-full flex items-center gap-3">
+          {renderCheckbox()}
+          <div className="flex-1 min-w-0 flex items-center gap-4">
+            <div className="min-w-[200px] max-w-[300px]">
+              <h3 className={`text-sm font-medium text-[var(--color-text)] truncate ${task.status.toLowerCase() === 'completed' ? 'line-through text-[var(--color-textSecondary)]' : ''}`}>
+                {task.title}
+              </h3>
+              {task.description && (
+                <p className={`text-xs text-[var(--color-textSecondary)] truncate ${task.status.toLowerCase() === 'completed' ? 'line-through opacity-75' : ''}`}>
+                  {task.description}
+                </p>
+              )}
+            </div>
+            <div className="min-w-[180px]">
+              {renderMetadata()}
+            </div>
+            <div className="flex-1 min-w-0">
+              {renderTags()}
+            </div>
+            {renderPriorityBadge()}
+          </div>
+        </div>
+      ) : (
+        // Grid View Layout
+        <div className="p-3 h-full flex flex-col">
+          <div className="flex items-start gap-2 mb-2">
             {renderCheckbox()}
-            <div className="flex-1 min-w-0 flex items-center gap-4">
-              <div className="min-w-[200px] max-w-[300px]">
-                <h3 className={`text-sm font-medium text-[var(--color-text)] truncate ${task.status.toLowerCase() === 'completed' ? 'line-through text-[var(--color-textSecondary)]' : ''}`}>
-                  {task.title}
-                </h3>
-                {task.description && (
-                  <p className={`text-xs text-[var(--color-textSecondary)] truncate ${task.status.toLowerCase() === 'completed' ? 'line-through opacity-75' : ''}`}>
-                    {task.description}
-                  </p>
-                )}
-              </div>
-              <div className="min-w-[180px]">
-                {renderMetadata()}
-              </div>
-              <div className="flex-1 min-w-0">
-                {renderTags()}
-              </div>
-              {renderPriorityBadge()}
+            <div className="flex-1 min-w-0">
+              <h3 className={`text-sm font-medium text-[var(--color-text)] truncate ${task.status.toLowerCase() === 'completed' ? 'line-through text-[var(--color-textSecondary)]' : ''}`}>
+                {task.title}
+              </h3>
+              {task.description && (
+                <p className={`mt-0.5 text-xs text-[var(--color-textSecondary)] line-clamp-2 ${task.status.toLowerCase() === 'completed' ? 'line-through opacity-75' : ''}`}>
+                  {task.description}
+                </p>
+              )}
+            </div>
+            {renderPriorityBadge()}
+          </div>
+
+          <div className="flex-1 flex flex-col justify-between">
+            <div className="min-h-[44px] mb-3">
+              {renderTags()}
+            </div>
+
+            <div className="flex items-center justify-between pt-3 border-t border-gray-700/30">
+              {renderMetadata()}
             </div>
           </div>
-        ) : (
-          // Grid View Layout
-          <div className="p-3 h-full flex flex-col">
-            <div className="flex items-start gap-2 mb-2">
-              {renderCheckbox()}
-              <div className="flex-1 min-w-0">
-                <h3 className={`text-sm font-medium text-[var(--color-text)] truncate ${task.status.toLowerCase() === 'completed' ? 'line-through text-[var(--color-textSecondary)]' : ''}`}>
-                  {task.title}
-                </h3>
-                {task.description && (
-                  <p className={`mt-0.5 text-xs text-[var(--color-textSecondary)] line-clamp-2 ${task.status.toLowerCase() === 'completed' ? 'line-through opacity-75' : ''}`}>
-                    {task.description}
-                  </p>
-                )}
-              </div>
-              {renderPriorityBadge()}
-            </div>
-
-            <div className="flex-1 flex flex-col justify-between">
-              <div className="min-h-[44px] mb-3">
-                {renderTags()}
-              </div>
-
-              <div className="flex items-center justify-between pt-3 border-t border-gray-700/30">
-                {renderMetadata()}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <EditTaskModal
-        isOpen={showEditModal}
-        onClose={() => setShowEditModal(false)}
-        task={task}
-      />
-    </>
+        </div>
+      )}
+    </div>
   );
 }

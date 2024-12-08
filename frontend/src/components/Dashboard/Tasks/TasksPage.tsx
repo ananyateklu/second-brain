@@ -26,6 +26,10 @@ export function TasksPage() {
 
   const selectedTask = selectedTaskId ? tasks.find((t: Task) => t.id === selectedTaskId) : null;
 
+  const handleTaskClick = (task: Task) => {
+    setSelectedTaskId(task.id);
+  };
+
   return (
     <div className="min-h-screen overflow-x-hidden bg-fixed">
       {/* Background gradient */}
@@ -139,25 +143,23 @@ export function TasksPage() {
         {viewMode === 'grid' ? (
           <div className={cardGridStyles}>
             {tasks.map((task: Task) => (
-              <div
+              <TaskCard 
                 key={task.id}
-                onClick={() => setSelectedTaskId(task.id)}
-                className="cursor-pointer w-full"
-              >
-                <TaskCard task={task} viewMode="grid" />
-              </div>
+                task={task} 
+                viewMode="grid"
+                onClick={handleTaskClick}
+              />
             ))}
           </div>
         ) : (
           <div className="space-y-4 px-0.5">
             {tasks.map((task: Task) => (
-              <div
+              <TaskCard 
                 key={task.id}
-                onClick={() => setSelectedTaskId(task.id)}
-                className="cursor-pointer w-full"
-              >
-                <TaskCard task={task} viewMode="list" />
-              </div>
+                task={task} 
+                viewMode="list"
+                onClick={handleTaskClick}
+              />
             ))}
           </div>
         )}
