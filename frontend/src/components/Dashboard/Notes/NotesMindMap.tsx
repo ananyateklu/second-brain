@@ -20,26 +20,23 @@ import dagre from 'dagre';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { GraphControls } from '../LinkedNotes/GraphControls';
 import clsx from 'clsx';
+import { NoteCard } from '../NoteCard';
 import type { Note } from '../../../types/note';
-import { IdeaCard } from './IdeaCard';
 
-interface IdeasMindMapProps {
-  ideas: Note[];
-  onIdeaClick: (ideaId: string) => void;
-  selectedIdeaId?: string | null;
+interface NotesMindMapProps {
+  notes: Note[];
+  onNoteSelect?: (noteId: string) => void;
+  selectedNoteId?: string | null;
 }
 
-interface NodeData {
-  idea: Note;
-  selected: boolean;
-  isFavorite: boolean;
-}
-
-type CustomNode = {
+type CustomNodeType = {
   id: string;
   type: string;
   position: { x: number; y: number };
-  data: NodeData;
+  data: {
+    note: Note;
+    selected: boolean;
+  };
   selected: boolean;
 };
 
@@ -48,8 +45,7 @@ const CustomNode = ({ data }: NodeProps) => {
   
   const getBorderColor = () => {
     if (data.selected) return theme === 'dark' ? '#64AB6F' : '#059669';
-    if (data.isFavorite) return theme === 'dark' ? '#FCD34D' : '#F59E0B';
-    return theme === 'dark' ? '#FFA726' : '#FB8C00';
+    return theme === 'dark' ? 'rgb(59, 130, 246)' : 'rgb(37, 99, 235)';
   };
 
   const borderColor = getBorderColor();
@@ -66,8 +62,8 @@ const CustomNode = ({ data }: NodeProps) => {
       <div className={clsx(
         data.selected && 'ring-2 ring-[#64AB6F] dark:ring-[#059669]'
       )}>
-        <IdeaCard
-          idea={data.idea}
+        <NoteCard
+          note={data.note}
           viewMode="mindMap"
           isSelected={data.selected}
         />
@@ -87,20 +83,20 @@ const nodeTypes = {
   custom: CustomNode,
 };
 
-const prepareEdges = (ideas: Note[]): FlowEdge[] => {
+const prepareEdges = (notes: NotesMindMapProps['notes']): FlowEdge[] => {
   const processedPairs = new Set<string>();
   
-  return ideas.flatMap(idea =>
-    (idea.linkedNoteIds || [])
+  return notes.flatMap(note =>
+    (note.linkedNoteIds || [])
       .filter(targetId => {
-        const pairId = [idea.id, targetId].sort((a, b) => a.localeCompare(b)).join('-');
+        const pairId = [note.id, targetId].sort((a, b) => a.localeCompare(b)).join('-');
         if (processedPairs.has(pairId)) return false;
         processedPairs.add(pairId);
-        return ideas.some(i => i.id === targetId);
+        return notes.some(n => n.id === targetId);
       })
       .map(targetId => ({
-        id: `${idea.id}-${targetId}`,
-        source: idea.id,
+        id: `${note.id}-${targetId}`,
+        source: note.id,
         target: targetId,
         type: 'default',
         animated: false,
@@ -119,7 +115,7 @@ const prepareEdges = (ideas: Note[]): FlowEdge[] => {
   );
 };
 
-const getDagreLayout = (nodes: CustomNode[], edges: FlowEdge[]) => {
+const getDagreLayout = (nodes: CustomNodeType[], edges: FlowEdge[]) => {
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
   
@@ -153,32 +149,31 @@ const getDagreLayout = (nodes: CustomNode[], edges: FlowEdge[]) => {
   };
 };
 
-function IdeasMindMapContent({ ideas, onIdeaClick, selectedIdeaId }: IdeasMindMapProps) {
+function NotesMindMapContent({ notes, onNoteSelect, selectedNoteId }: NotesMindMapProps) {
   const { theme } = useTheme();
   const { fitView, zoomIn, zoomOut, setCenter } = useReactFlow();
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  const initialNodes = useMemo<CustomNode[]>(() => {
-    return ideas.map((idea) => ({
-      id: idea.id,
+  const initialNodes = useMemo<CustomNodeType[]>(() => {
+    return notes.map((note) => ({
+      id: note.id,
       type: 'custom',
       position: { x: 0, y: 0 },
       data: {
-        idea,
-        selected: idea.id === selectedIdeaId,
-        isFavorite: idea.isFavorite || false,
+        note,
+        selected: note.id === selectedNoteId,
       },
-      selected: idea.id === selectedIdeaId,
+      selected: note.id === selectedNoteId,
     }));
-  }, [ideas, selectedIdeaId]);
+  }, [notes, selectedNoteId]);
 
-  const edges = useMemo(() => prepareEdges(ideas), [ideas]);
+  const edges = useMemo(() => prepareEdges(notes), [notes]);
 
   const { nodes: layoutedNodes, edges: layoutedEdges } = useMemo(() => {
     return getDagreLayout(initialNodes, edges);
   }, [initialNodes, edges]);
 
-  const [nodes, setNodes] = useState<CustomNode[]>(layoutedNodes);
+  const [nodes, setNodes] = useState<CustomNodeType[]>(layoutedNodes);
   const [flowEdges] = useState<FlowEdge[]>(layoutedEdges);
 
   useEffect(() => {
@@ -197,13 +192,13 @@ function IdeasMindMapContent({ ideas, onIdeaClick, selectedIdeaId }: IdeasMindMa
   }, [nodes.length, fitView, isInitialLoad]);
 
   const onNodesChange: OnNodesChange = useCallback(
-    (changes) => setNodes((nds) => applyNodeChanges(changes, nds) as CustomNode[]),
+    (changes) => setNodes((nds) => applyNodeChanges(changes, nds) as CustomNodeType[]),
     []
   );
 
   const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
-    onIdeaClick(node.id);
-  }, [onIdeaClick]);
+    onNoteSelect?.(node.id);
+  }, [onNoteSelect]);
 
   useEffect(() => {
     setNodes((prevNodes) =>
@@ -211,27 +206,19 @@ function IdeasMindMapContent({ ideas, onIdeaClick, selectedIdeaId }: IdeasMindMa
         ...node,
         data: {
           ...node.data,
-          selected: node.id === selectedIdeaId,
+          selected: node.id === selectedNoteId,
         },
-        selected: node.id === selectedIdeaId,
+        selected: node.id === selectedNoteId,
       }))
     );
-  }, [selectedIdeaId]);
+  }, [selectedNoteId]);
 
   const handleCenter = useCallback(() => {
-    const selectedNode = nodes.find(node => node.id === selectedIdeaId);
+    const selectedNode = nodes.find(node => node.id === selectedNoteId);
     if (selectedNode) {
-      setCenter(selectedNode.position.x + 90, selectedNode.position.y + 35, { duration: 800 });
+      setCenter(selectedNode.position.x + 80, selectedNode.position.y + 45, { duration: 800 });
     }
-  }, [selectedIdeaId, nodes, setCenter]);
-
-  if (ideas.length === 0) {
-    return (
-      <div className="h-[50vh] flex items-center justify-center text-gray-500 dark:text-gray-400">
-        No ideas to display in mind map
-      </div>
-    );
-  }
+  }, [selectedNoteId, nodes, setCenter]);
 
   return (
     <div className="h-[50vh] w-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-xl overflow-hidden">
@@ -283,8 +270,8 @@ function IdeasMindMapContent({ ideas, onIdeaClick, selectedIdeaId }: IdeasMindMa
   );
 }
 
-export const IdeasMindMap = (props: IdeasMindMapProps) => (
+export const NotesMindMap = (props: NotesMindMapProps) => (
   <ReactFlowProvider>
-    <IdeasMindMapContent {...props} />
+    <NotesMindMapContent {...props} />
   </ReactFlowProvider>
-);
+); 

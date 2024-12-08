@@ -9,7 +9,7 @@ import { useTheme } from '../../contexts/themeContextUtils';
 
 interface NoteCardProps {
   note: Note;
-  viewMode?: 'grid' | 'list';
+  viewMode?: 'grid' | 'list' | 'mindMap';
   isSelected?: boolean;
   context?: 'default' | 'trash' | 'archive' | 'favorites';
   onSelect?: () => void;
@@ -215,6 +215,87 @@ export function NoteCard({
       </div>
     )
   );
+
+  if (viewMode === 'mindMap') {
+    return (
+      <div 
+        onClick={handleCardClick}
+        className={`
+          relative group
+          w-[160px]
+          ${onSelect || onClick ? 'cursor-pointer' : ''}
+          bg-white/90 dark:bg-gray-900/90
+          border border-blue-200/30 dark:border-blue-700/30
+          hover:border-blue-400/50 dark:hover:border-blue-500/50
+          rounded-xl
+          transition-all duration-200
+          overflow-hidden
+          backdrop-blur-sm
+          ${isSelected ? 'ring-2 ring-blue-400/50 dark:ring-blue-500/50' : ''}
+          min-h-[90px] max-h-[90px]
+          hover:shadow-lg hover:shadow-blue-900/5
+          hover:-translate-y-0.5
+        `}
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-transparent dark:from-blue-900/20 dark:to-transparent opacity-50" />
+        
+        <div className="p-2 h-full flex flex-col gap-1.5 relative">
+          <div className="flex items-start gap-1.5">
+            <div className="flex-shrink-0 p-1 rounded-lg bg-blue-100/80 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400">
+              <FileText className="w-3 h-3" />
+            </div>
+            
+            <div className="flex-1 min-w-0">
+              <h3 className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate leading-tight">
+                {note.title}
+              </h3>
+              {note.content && (
+                <p className="text-[10px] text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">
+                  {note.content}
+                </p>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-1">
+              {note.isPinned && (
+                <Pin className="w-3 h-3 text-emerald-500 dark:text-emerald-400" />
+              )}
+              {note.isFavorite && (
+                <Star className="w-3 h-3 text-amber-400 dark:text-amber-500 fill-current" />
+              )}
+            </div>
+          </div>
+
+          <div className="mt-auto flex items-center gap-2 text-[10px] text-gray-400 dark:text-gray-500 border-t border-gray-100 dark:border-gray-800 pt-1.5">
+            {((note.linkedNoteIds?.length ?? 0) > 0 || 
+              (note.linkedTasks?.length ?? 0) > 0 || 
+              (note.linkedReminders?.length ?? 0) > 0) && (
+              <div className="flex items-center gap-2">
+                {note.linkedNoteIds && note.linkedNoteIds.length > 0 && (
+                  <div className="flex items-center gap-1">
+                    <Link2 className="w-2.5 h-2.5" />
+                    <span>{note.linkedNoteIds.length}</span>
+                  </div>
+                )}
+                {note.linkedTasks && note.linkedTasks.length > 0 && (
+                  <div className="flex items-center gap-1">
+                    <CheckSquare className="w-2.5 h-2.5" />
+                    <span>{note.linkedTasks.length}</span>
+                  </div>
+                )}
+                {note.linkedReminders && note.linkedReminders.length > 0 && (
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-2.5 h-2.5" />
+                    <span>{note.linkedReminders.length}</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

@@ -5,7 +5,7 @@ import { NoteCard } from '../NoteCard';
 import { Note } from '../../../types/note';
 import { NewNoteModal } from './NewNoteModal';
 import { FilterDropdown } from './FilterDropdown';
-import { NotesGraph } from './NotesGraph';
+import { NotesMindMap as NotesGraph } from './NotesMindMap';
 import { LoadingScreen } from '../../shared/LoadingScreen';
 import { Input } from '../../shared/Input';
 import { useModal } from '../../../contexts/modalContextUtils';
@@ -96,6 +96,62 @@ export function NotesPage() {
 
   const toggleFilters = () => setShowFilters(prev => !prev);
 
+  const getViewModeButtonClass = (mode: 'grid' | 'list' | 'graph') => {
+    const baseClasses = "p-2 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all";
+    return `${baseClasses} ${
+      viewMode === mode
+        ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400'
+        : 'bg-white/20 dark:bg-gray-800/20 hover:bg-white/30 dark:hover:bg-gray-800/30 text-gray-900 dark:text-white'
+    }`;
+  };
+
+  const renderNotesList = (notes: Note[]) => {
+    switch (viewMode) {
+      case 'grid':
+        return (
+          <div className={cardGridStyles}>
+            {notes.map(note => (
+              <div
+                key={note.id}
+                onClick={() => handleEditNote(note)}
+                className="cursor-pointer w-full"
+              >
+                <NoteCard note={note} viewMode="grid" />
+              </div>
+            ))}
+          </div>
+        );
+      
+      case 'list':
+        return (
+          <div className="space-y-4 px-0.5">
+            {notes.map(note => (
+              <div
+                key={note.id}
+                onClick={() => handleEditNote(note)}
+                className="cursor-pointer w-full"
+              >
+                <NoteCard note={note} viewMode="list" />
+              </div>
+            ))}
+          </div>
+        );
+      
+      default:
+        return (
+          <NotesGraph
+            notes={graphNotes}
+            onNoteSelect={(noteId: string) => {
+              const note = notes.find(n => n.id === noteId);
+              if (note) {
+                handleEditNote(note);
+              }
+            }}
+          />
+        );
+    }
+  };
+
   return (
     <div className="min-h-screen overflow-x-hidden bg-fixed">
       {/* Background */}
@@ -157,11 +213,7 @@ export function NotesPage() {
 
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${
-                viewMode === 'grid'
-                  ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400'
-                  : 'bg-white/20 dark:bg-gray-800/20 hover:bg-white/30 dark:hover:bg-gray-800/30 text-gray-900 dark:text-white'
-              }`}
+              className={getViewModeButtonClass('grid')}
               title="Grid View"
             >
               <Grid className="w-5 h-5" />
@@ -169,11 +221,7 @@ export function NotesPage() {
 
             <button
               onClick={() => setViewMode('list')}
-              className={`p-2 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${
-                viewMode === 'list'
-                  ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400'
-                  : 'bg-white/20 dark:bg-gray-800/20 hover:bg-white/30 dark:hover:bg-gray-800/30 text-gray-900 dark:text-white'
-              }`}
+              className={getViewModeButtonClass('list')}
               title="List View"
             >
               <List className="w-5 h-5" />
@@ -181,11 +229,7 @@ export function NotesPage() {
 
             <button
               onClick={() => setViewMode('graph')}
-              className={`p-2 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all ${
-                viewMode === 'graph'
-                  ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400'
-                  : 'bg-white/20 dark:bg-gray-800/20 hover:bg-white/30 dark:hover:bg-gray-800/30 text-gray-900 dark:text-white'
-              }`}
+              className={getViewModeButtonClass('graph')}
               title="Graph View"
             >
               <Network className="w-5 h-5" />
@@ -214,47 +258,13 @@ export function NotesPage() {
           </div>
         )}
 
-        {viewMode === 'grid' ? (
-          <div className={cardGridStyles}>
-            {filteredNotes.map(note => (
-              <div
-                key={note.id}
-                onClick={() => handleEditNote(note)}
-                className="cursor-pointer w-full"
-              >
-                <NoteCard note={note} viewMode="grid" />
-              </div>
-            ))}
-          </div>
-        ) : viewMode === 'list' ? (
-          <div className="space-y-4 px-0.5">
-            {filteredNotes.map(note => (
-              <div
-                key={note.id}
-                onClick={() => handleEditNote(note)}
-                className="cursor-pointer w-full"
-              >
-                <NoteCard note={note} viewMode="list" />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <NotesGraph
-            notes={graphNotes}
-            onNoteClick={(noteId) => {
-              const note = notes.find(n => n.id === noteId);
-              if (note) {
-                handleEditNote(note);
-              }
-            }}
-          />
-        )}
-      </div>
+        {renderNotesList(filteredNotes)}
 
-      <NewNoteModal
-        isOpen={showNewNoteModal}
-        onClose={() => setShowNewNoteModal(false)}
-      />
+        <NewNoteModal
+          isOpen={showNewNoteModal}
+          onClose={() => setShowNewNoteModal(false)}
+        />
+      </div>
     </div>
   );
 }
