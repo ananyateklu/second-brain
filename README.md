@@ -9,100 +9,80 @@
 
 # AI-Powered Personal Knowledge Management System
 
-Second Brain is a modern note-taking and knowledge management system that combines traditional note-taking with AI assistance to help you organize and connect your ideas
+Second Brain is an AI-enhanced knowledge management and note-taking system that unifies your notes, ideas, tasks, and reminders in one interactive environment. It intelligently links related concepts, highlights relevant information, and provides guidance to help you gain clarity, maintain organization, and discover insights you may have overlooked—all within a single, easy-to-use workspace.
 
 ## Core Features
 
-- **Knowledge Management**
-  - Rich text editing with Markdown support
-  - Interactive mind mapping and relationship visualization using React Flow:
-    - Customizable node types and styles
-    - Smooth animations and transitions
-    - Real-time graph updates
-    - Drag and drop interface
-    - Mini-map navigation
-    - Node grouping
-    - Custom edge connections
-  - AI-powered organization and tagging
-  - Comprehensive linking system:
-    - Note-to-note bi-directional links
-    - Link notes to tasks and reminders
-    - Connect ideas with related content
-    - Automatic link suggestions
-  - Version history and archiving
-  - Visual knowledge graphs with React Flow integration
+### Knowledge Management
 
-- **Code & Documentation**
-  - Syntax highlighting for 15+ languages
-  - Code snippet organization
-  - AI-powered code explanations
-  - Technical documentation support
-  - Easy sharing and export
+- Markdown-based rich text editing
+- Bi-directional linking across notes, ideas, tasks, and reminders
+- Graph visualization with React Flow to highlight relationships:
+  - Customizable node types and styles
+  - Smooth animations and transitions
+  - Real-time graph updates
+  - Drag and drop interface
+  - Mini-map navigation
+  - Node grouping
+  - Custom edge connections
+- AI-assisted tagging, content organization, and context-aware suggestions
+- Version history, archiving, and focus mode for concentrated workflows
 
-- **Task & Reminder System**
-  - Priority-based organization
-  - Smart scheduling with AI
-  - Rich content linking:
-    - Link tasks to relevant notes
-    - Connect reminders with documentation
-    - Attach reference materials
-  - Progress tracking
-  - Context-aware notifications
+### Code & Documentation
 
-- **AI Integration**
-  - Multiple AI model support:
-    - OpenAI (GPT-4, DALL-E 3)
-    - Anthropic Claude
-    - Google Gemini
-    - Grok API
-    - Local models via Ollama
-  - Natural language queries
-  - Voice transcription and text-to-speech
-  - Image generation
-  - Context-aware responses using RAG
+- Syntax highlighting for multiple programming languages
+- Code snippet management and AI-driven code explanations
+- Documentation integration and quick export/sharing features
 
-- **Privacy & Security**
-  - Local AI model support
-  - Secure authentication
-  - Data encryption
-  - Regular backups
-  - Granular privacy controls
+### Tasks & Reminders
+
+- Priority-based organization and AI-driven scheduling
+- Context-aware reminders linked to notes, ideas, and other content
+- Progress tracking, archiving, and linking tasks directly with related notes or ideas
+
+### AI Integration
+
+- Multiple AI backends: OpenAI (GPT-4, DALL-E 3), Anthropic Claude, Google Gemini, Grok, and local models via Ollama
+- Unified interface to select AI models and embeddings
+- Natural language queries, voice transcription, text-to-speech, image generation, and vector embeddings
+- Retrieval augmented generation (RAG) for context-rich responses
+- Database operations through natural language queries
+
+### Privacy & Security
+
+- API keys and credentials stored securely on the backend
+- JWT authentication with refresh tokens
+- Data encryption, planned role-based permissions for both users and AI agents
 
 ## Technical Stack
 
-- **Frontend**
-  - React 18 with TypeScript and Vite for fast development
-  - Tailwind CSS for responsive styling
-  - State management with React Context API and custom hooks
-  - AI integrations with OpenAI, Anthropic, and Google AI SDKs
-  - Graph visualization with React Flow:
-    - Custom node and edge components
-    - Interactive graph layouts
-    - Zoom and pan controls
-    - Node selection and multi-select
-    - Edge routing with smooth curves
-    - Real-time graph updates
-  - Modern UI components with Headless UI and Framer Motion
-  - Icon system using Lucide Icons
-  - Date handling with date-fns
-  - Comprehensive test coverage with Vitest and Testing Library
+### Frontend
 
-- **Backend**
-  - .NET 8.0 with ASP.NET Core Web API
-  - Entity Framework Core for data access
-  - SQL Server for reliable data storage
-  - Clean Architecture with CQRS pattern
-  - JWT authentication with refresh tokens
-  - AI integrations:
-    - OpenAI (GPT-4, DALL-E 3)
-    - Anthropic Claude
-    - Google Gemini
-    - Grok API
-    - Local models via Ollama
-  - Vector storage with Pinecone for semantic search
-  - Natural language database operations through AI services
-  - Comprehensive logging and monitoring
-  - API documentation with Swagger/OpenAPI
+- React 18 with TypeScript and Vite
+- Tailwind CSS, Headless UI, Framer Motion
+- State management with React Context and custom hooks
+- React Flow for interactive graph visualization (zoom, pan, custom nodes, and edges)
+- Date handling with date-fns
+- Vitest and Testing Library for comprehensive tests
+
+### Backend
+
+- .NET 8.0 with ASP.NET Core Web API and Clean Architecture using CQRS
+- Entity Framework Core and SQL Server
+- Integrations with OpenAI, Anthropic, Google Gemini, Grok, and Ollama
+- Pinecone for vector embeddings and semantic search
+- Logging, monitoring, and Swagger/OpenAPI documentation
+
+## Execution Steps & Function-Calling Models
+
+User operations—like creating or editing notes—are executed through a series of detailed steps (processing, thinking, function calls, database operations, result formatting). While these steps aren’t fully listed in the README, the system:
+
+- Parses and validates user input.
+- Uses AI models to determine the best operation or function.
+- Interacts with the database through well-defined calls.
+- Returns detailed results and metrics to the UI.
+
+This process ensures transparency, traceability, and context-driven decision-making when performing actions.
 
 ## Getting Started
 
@@ -111,282 +91,264 @@ Second Brain is a modern note-taking and knowledge management system that combin
 - Node.js 18+ and npm
 - .NET SDK 8.0
 - SQL Server 2019+
-- API keys for:
-  - OpenAI
-  - Anthropic
-  - Google Cloud
-  - Grok
-  - Pinecone
+- API keys for OpenAI, Anthropic, Google Cloud, Grok, Pinecone
 - Optional: Ollama for local AI models
 
-### Installation
+### Frontend Setup
 
-#### Frontend
+```bash
+git clone https://github.com/yourusername/second-brain.git
+cd second-brain/frontend
+npm install
+npm run dev
+```
 
-1. **Clone the repository:**
+Configure the `.env` file with the appropriate API URLs and keys before running `npm run dev`.
 
-   ```bash
-   git clone https://github.com/yourusername/second-brain.git
-   cd second-brain/frontend
-   ```
+### Backend Setup
 
-2. **Install dependencies:**
+```bash
+cd ../backend/SecondBrain.Api
+dotnet restore
+dotnet ef database update
+dotnet run
+```
 
-   ```bash
-   npm install
-   ```
+Here's a template for `appsettings.json`:
 
-3. **Configure environment variables in `.env`.**
+```json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=YOUR_SERVER;Database=SecondBrainDb;User Id=YOUR_USER_ID;Password=YOUR_PASSWORD;TrustServerCertificate=True;"
+  },
+  "Authentication": {
+    "Jwt": {
+      "Secret": "YOUR_SECRET_KEY",
+      "Issuer": "SecondBrain",
+      "Audience": "SecondBrain",
+      "AccessTokenExpirationMinutes": "60",
+      "RefreshTokenExpirationDays": "30"
+    }
+  },
+  "Anthropic": {
+    "ApiKey": "YOUR_ANTHROPIC_API_KEY",
+    "ApiEndpoint": "https://api.anthropic.com/v1"
+  },
+  "Grok": {
+    "ApiKey": "YOUR_GROK_API_KEY"
+  },
+  "Llama": {
+    "OllamaUri": "http://localhost:11434/",
+    "NetworkSettings": {
+      "ConnectionTimeoutSeconds": 5,
+      "RetryAttempts": 3,
+      "RequireFirewallPermission": true
+    }
+  },
+  "OpenAI": {
+    "ApiKey": "YOUR_OPENAI_API_KEY",
+    "ApiEndpoint": "https://api.openai.com/v1",
+    "ModelId": "gpt-4"
+  },
+  "Gemini": {
+    "ApiKey": "YOUR_GOOGLE_GEMINI_API_KEY"
+  },
+  "Pinecone": {
+    "ApiKey": "YOUR_PINECONE_API_KEY",
+    "Environment": "YOUR_PINECONE_ENVIRONMENT",
+    "IndexName": "secondbrainindex"
+  },
+  "Storage": {
+    "DocumentsPath": "Storage/Documents"
+  },
+  "DocumentProcessing": {
+    "MaxTokensPerChunk": 500,
+    "OverlapTokens": 50
+  },
+  "AllowedHosts": "*"
+}
+```
 
-4. **Start the development server:**
-
-   ```bash
-   npm run dev
-   ```
-
-#### Backend
-
-1. **Navigate to backend directory:**
-
-   ```bash
-   cd ../backend/SecondBrain.Api
-   ```
-
-2. **Configure `appsettings.json` with your settings.**
-
-   Here's a template for `appsettings.json`:
-
-   ```json:backend/SecondBrain.Api/appsettings.json
-   {
-     "Logging": {
-       "LogLevel": {
-         "Default": "Information",
-         "Microsoft.AspNetCore": "Warning"
-       }
-     },
-     "ConnectionStrings": {
-       "DefaultConnection": "Server=YOUR_SERVER;Database=SecondBrainDb;User Id=YOUR_USER_ID;Password=YOUR_PASSWORD;TrustServerCertificate=True;"
-     },
-     "Authentication": {
-       "Jwt": {
-         "Secret": "YOUR_SECRET_KEY",
-         "Issuer": "SecondBrain",
-         "Audience": "SecondBrain",
-         "AccessTokenExpirationMinutes": "60",
-         "RefreshTokenExpirationDays": "30"
-       }
-     },
-     "Anthropic": {
-       "ApiKey": "YOUR_ANTHROPIC_API_KEY",
-       "ApiEndpoint": "https://api.anthropic.com/v1"
-     },
-     "Grok": {
-       "ApiKey": "YOUR_GROK_API_KEY"
-     },
-     "Llama": {
-       "OllamaUri": "http://localhost:11434/",
-       "NetworkSettings": {
-         "ConnectionTimeoutSeconds": 5,
-         "RetryAttempts": 3,
-         "RequireFirewallPermission": true
-       }
-     },
-     "OpenAI": {
-       "ApiKey": "YOUR_OPENAI_API_KEY",
-       "ApiEndpoint": "https://api.openai.com/v1",
-       "ModelId": "gpt-4"
-     },
-     "Gemini": {
-       "ApiKey": "YOUR_GOOGLE_GEMINI_API_KEY"
-     },
-     "Pinecone": {
-       "ApiKey": "YOUR_PINECONE_API_KEY",
-       "Environment": "YOUR_PINECONE_ENVIRONMENT",
-       "IndexName": "secondbrainindex"
-     },
-     "Storage": {
-       "DocumentsPath": "Storage/Documents"
-     },
-     "DocumentProcessing": {
-       "MaxTokensPerChunk": 500,
-       "OverlapTokens": 50
-     },
-     "AllowedHosts": "*"
-   }
-   ```
-
-   - Replace placeholders (`YOUR_SERVER`, `YOUR_USER_ID`, etc.) with your actual configuration settings.
-   - Generate a strong secret key for JWT authentication.
-   - Ensure all required API keys are provided.
-
-3. **Restore packages and run migrations:**
-
-   ```bash
-   dotnet restore
-   dotnet ef database update
-   dotnet run
-   ```
+Before running these commands, ensure that appsettings.json is configured with the correct database connection string, JWT secrets, and AI keys. After completing the setup, the backend will be ready to accept requests.
 
 ## API Integration
 
-The application provides RESTful API endpoints for various resources. Below is a list of available controllers and their primary routes:
+### Authentication (/auth)
 
-- **Authentication** (`/auth`)
-  - **Endpoints:**
-    - `POST /auth/register` - Register a new user.
-    - `POST /auth/login` - Authenticate a user and obtain tokens.
-    - `POST /auth/refresh-token` - Refresh access tokens using a refresh token.
-    - `GET /auth/me` - Retrieve the authenticated user's profile.
-    - `PUT /auth/me/avatar` - Update user avatar.
+- `POST /auth/register` - Register a new user
+- `POST /auth/login` - Authenticate a user and obtain tokens
+- `POST /auth/refresh-token` - Refresh access tokens
+- `GET /auth/me` - Retrieve authenticated user's profile
+- `PUT /auth/me/avatar` - Update user avatar
 
-- **Notes** (`/api/notes`)
-  - **Endpoints:**
-    - `GET /api/notes` - Get all notes.
-    - `POST /api/notes` - Create a new note.
-    - `GET /api/notes/{id}` - Get a note by ID.
-    - `PUT /api/notes/{id}` - Update a note.
-    - `DELETE /api/notes/{id}` - Soft-delete a note.
-    - `POST /api/notes/{id}/restore` - Restore a soft-deleted note.
-    - `DELETE /api/notes/{id}/permanent` - Permanently delete a note.
-    - `GET /api/notes/deleted` - Get all soft-deleted notes.
-    - `GET /api/notes/archived` - Get all archived notes.
-    - `POST /api/notes/{id}/unarchive` - Unarchive a note.
+### Notes, Ideas, Tasks & Reminders
 
-- **Ideas** (`/api/ideas`)
-  - **Endpoints:**
-    - `POST /api/ideas` - Create a new idea.
-    - `PUT /api/ideas/{id}` - Update an idea.
-    - `DELETE /api/ideas/{id}` - Delete an idea.
-    - `PUT /api/ideas/{id}/favorite` - Toggle favorite status.
-    - `PUT /api/ideas/{id}/pin` - Toggle pin status.
-    - `PUT /api/ideas/{id}/archive` - Toggle archive status.
+- `/api/notes`, `/api/ideas`, `/api/tasks`, `/api/reminders`: CRUD operations, linking, archiving, and restoration.
 
-- **Tasks** (`/api/tasks`)
-  - **Endpoints:**
-    - `GET /api/tasks` - Get all tasks.
-    - `POST /api/tasks` - Create a new task.
-    - `GET /api/tasks/{id}` - Get a task by ID.
-    - `PATCH /api/tasks/{id}` - Update a task.
-    - `DELETE /api/tasks/{id}` - Soft-delete a task.
-    - `POST /api/tasks/{id}/restore` - Restore a soft-deleted task.
-    - `GET /api/tasks/deleted` - Get all soft-deleted tasks.
+### AI Services (/api/ai/...)
 
-- **Reminders** (`/api/reminders`)
-  - **Endpoints:**
-    - `GET /api/reminders` - Get all reminders.
-    - `POST /api/reminders` - Create a new reminder.
-    - `GET /api/reminders/{id}` - Get a reminder by ID.
-    - `PUT /api/reminders/{id}` - Update a reminder.
-    - `DELETE /api/reminders/{id}` - Delete a reminder.
-    - `GET /api/reminders/deleted` - Get all deleted reminders.
+- Endpoints for chatting with AI models, generating embeddings, images, transcriptions, speech synthesis, and RAG-based interactions.
 
-- **Activities** (`/api/activities`)
-  - **Endpoints:**
-    - *(To be defined based on implementation)*
+### Database Operations (/api/nexusstorage)
 
-- **Achievements** (`/api/achievements`)
-  - **Endpoints:**
-    - `GET /api/achievements` - Get all achievements.
-    - `GET /api/achievements/user` - Get user's unlocked achievements.
-    - `GET /api/achievements/progress` - Get user's progress towards achievements.
+- Natural language-driven database operations via integrated AI models.
 
-- **AI Integrations**
+## API Reference
 
-  - **OpenAI** (`/api/ai/openai`)
-    - **Endpoints:**
-      - `GET /api/ai/openai/status` - Check OpenAI API status.
-      - `POST /api/ai/openai/chat` - Send a message to OpenAI Chat API.
-      - `POST /api/ai/openai/embeddings` - Create embeddings.
-      - `POST /api/ai/openai/images/generate` - Generate images.
-      - `POST /api/ai/openai/audio/transcribe` - Transcribe audio.
-      - `POST /api/ai/openai/audio/speech` - Convert text to speech.
+### Notes API (/api/notes)
 
-  - **Anthropic Claude** (`/api/claude`)
-    - **Endpoints:**
-      - `POST /api/claude/send-message` - Send a message to Claude.
-      - `GET /api/claude/status` - Check Claude API status.
+- `GET /api/notes` - Get all notes
+- `POST /api/notes` - Create a new note
+- `GET /api/notes/{id}` - Get a note by ID
+- `PUT /api/notes/{id}` - Update a note
+- `DELETE /api/notes/{id}` - Soft-delete a note
+- `POST /api/notes/{id}/restore` - Restore a soft-deleted note
+- `DELETE /api/notes/{id}/permanent` - Permanently delete a note
+- `GET /api/notes/deleted` - Get all soft-deleted notes
+- `GET /api/notes/archived` - Get all archived notes
+- `POST /api/notes/{id}/unarchive` - Unarchive a note
 
-  - **Grok** (`/api/grok`)
-    - **Endpoints:**
-      - `POST /api/grok/send` - Send a message to Grok API.
+#### Ideas API (/api/ideas)
 
-  - **Google Gemini** (`/api/gemini`)
-    - **Endpoints:**
-      - `POST /api/gemini/chat` - Chat with the Gemini model.
-      - `POST /api/gemini/generate` - Generate content with Gemini.
+- `POST /api/ideas` - Create a new idea
+- `PUT /api/ideas/{id}` - Update an idea
+- `DELETE /api/ideas/{id}` - Delete an idea
+- `PUT /api/ideas/{id}/favorite` - Toggle favorite status
+- `PUT /api/ideas/{id}/pin` - Toggle pin status
+- `PUT /api/ideas/{id}/archive` - Toggle archive status
 
-  - **Llama** (`/api/llama`)
-    - **Endpoints:**
-      - `GET /api/llama/stream` - Stream responses from local Llama models.
-      - **`POST /api/llama/execute-db` - Execute database operations via natural language.**
+#### Tasks API (/api/tasks)
 
-- **Nexus Storage** (`/api/nexusstorage`)
-  - **Endpoints:**
-    - `POST /api/nexusstorage/execute` - Execute database operations via Llama service.
-    - `POST /api/nexusstorage/test` - Test Llama service operations.
+- `GET /api/tasks` - Get all tasks
+- `POST /api/tasks` - Create a new task
+- `GET /api/tasks/{id}` - Get a task by ID
+- `PATCH /api/tasks/{id}` - Update a task
+- `DELETE /api/tasks/{id}` - Soft-delete a task
+- `POST /api/tasks/{id}/restore` - Restore a soft-deleted task
+- `GET /api/tasks/deleted` - Get all soft-deleted tasks
 
-## Acknowledgments
+#### Reminders API (/api/reminders)
 
-- Thanks to OpenAI, Anthropic, Grok, Google, Ollama, Lucide Icons, and Tailwind CSS.
+- `GET /api/reminders` - Get all reminders
+- `POST /api/reminders` - Create a new reminder
+- `GET /api/reminders/{id}` - Get a reminder by ID
+- `PUT /api/reminders/{id}` - Update a reminder
+- `DELETE /api/reminders/{id}` - Delete a reminder
+- `GET /api/reminders/deleted` - Get all deleted reminders
 
-## Roadmap
+#### Activities API (/api/activities)
 
-Current Focus:
+- *(To be defined based on implementation)*
 
-- User authentication system
-- Gamification features
-- Profile page with leveling
-- Archiving and trash management
-- Focus mode
-- AI integrations
-- Local AI model support
-- RAG (Retrieval Augmented Generation) implementation
-- Agent implementation
+## Content Linking Features
 
-Upcoming Features:
+The system provides comprehensive content linking capabilities:
 
-- Calendar & Email Integration
+### Notes
+
+- Link to other notes for reference
+- Connect to tasks for project documentation
+- Attach to reminders for follow-ups
+- Link to ideas for brainstorming
+
+### Tasks
+
+- Link to reference notes
+- Connect related documentation
+- Attach meeting notes
+- Link dependencies
+
+### Reminders
+
+- Link to notes for context
+- Attach reference materials
+- Connect to related tasks
+- Link to documentation
+
+### Ideas
+
+- Link to supporting notes
+- Connect related concepts
+- Attach research materials
+- Link to implementation tasks
+
+All links are bi-directional, allowing you to navigate your knowledge base from any starting point.
+
+## Roadmap Enhancements
+
+### Vector Database & RAG Integration
+
+- Incorporate a vector database to enable fast retrieval and semantic queries
+- Enhance AI-assisted suggestions with full knowledge-base context
+- Move towards a system where RAG informs all aspects of note-taking, content creation, and linking
+
+### Role-Based Permissions
+
+- Introduce dedicated tables and schema for storing user and agent roles
+- Assign specific capabilities to AI agents—some can create or edit content, others remain read-only
+- Scale permissions to support multiple users and maintain a secure environment for both human and AI entities
+
+### Enhanced Linking & Visualization
+
+- Differentiate link types (note-to-note, idea-to-idea, note-to-idea) using visual cues, colors, and line styles
+- Add overlays for relevance, confidence, or thematic grouping
+- Introduce temporal views to track changes and identify content evolution over time
+- Explore hierarchical and dependency links to represent structured project relationships
+
+### Performance & Scalability
+
+- Optimize graph rendering for large-scale datasets
+- Implement caching, indexing, and on-demand rendering strategies
+- Introduce strategies for handling large volumes of notes, tasks, ideas, and reminders efficiently
+
+### Data Integrity & Recovery
+
+- Implement backup and restore processes for critical data
+- Consider versioning, rollback capabilities, and automated integrity checks
+
+### AI Context & Confidence
+
+- Display confidence scores or relevance metrics for AI-generated suggestions
+- Utilize system-wide context, allowing titles, tags, and related content to inform suggestions
+- Improve user understanding of AI logic and rationale
+
+### Customizability & Metrics
+
+- Allow users to adjust AI link suggestion aggressiveness
+- Offer user-selectable default AI models and parameter configurations
+- Provide detailed productivity and knowledge density metrics to evaluate the AI's effectiveness
+
+### Calendar & Email Integration
+
 - Calendar sync with Google Calendar/Outlook
 - Email-based task creation and reminders
 - Automated meeting notes and summaries
 - Smart email digests of your knowledge base
 - Calendar-based task scheduling
 
-Future Plans:
+### Mobile & Platform Expansion
 
-- Real-time collaboration
-- Mobile applications
-- Advanced AI features
-- Data export/import
-- API documentation
-- Integration tests
+- Native mobile applications for iOS and Android
+- Progressive Web App (PWA) support
+- Cross-platform synchronization
+- Offline capabilities
+- Mobile-optimized UI/UX
 
-## Content Linking Features
+## Acknowledgments
 
-The system provides comprehensive content linking capabilities:
+Thanks to the following projects and organizations that make Second Brain possible:
 
-- **Notes**
-  - Link to other notes for reference
-  - Connect to tasks for project documentation
-  - Attach to reminders for follow-ups
-  - Link to ideas for brainstorming
-
-- **Tasks**
-  - Link to reference notes
-  - Connect related documentation
-  - Attach meeting notes
-  - Link dependencies
-
-- **Reminders**
-  - Link to notes for context
-  - Attach reference materials
-  - Connect to related tasks
-  - Link to documentation
-
-- **Ideas**
-  - Link to supporting notes
-  - Connect related concepts
-  - Attach research materials
-  - Link to implementation tasks
-
-All links are bi-directional, allowing you to navigate your knowledge base from any starting point.
+- OpenAI for GPT-4 and DALL-E 3
+- Anthropic for Claude
+- Google for Gemini
+- Grok team for their API
+- Ollama for local AI model support
+- Lucide Icons for the beautiful icon system
+- Tailwind CSS for the styling framework
+- The open-source community for various tools and libraries
