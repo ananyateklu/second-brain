@@ -15,149 +15,156 @@ interface NoteWithConnections extends Note {
   connections?: NoteConnection[];
 }
 
-interface Connection {
-  noteId: string;
-  createdAt: string;
-}
+const renderContent = (
+  viewMode: 'graph' | 'list',
+  notes: Note[],
+  handleNodeSelect: (noteId: string) => void,
+  selectedNoteId: string | null
+) => {
+  if (viewMode !== 'graph') {
+    return <ListView onNoteSelect={handleNodeSelect} />;
+  }
+  
+  if (!notes.length) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center gap-3">
+        <Link2 className="w-8 h-8 text-gray-600 dark:text-gray-400" />
+        <p className="text-gray-600 dark:text-gray-400">
+          No connected notes to display
+        </p>
+      </div>
+    );
+  }
+  
+  return (
+    <GraphView
+      onNodeSelect={handleNodeSelect}
+      selectedNoteId={selectedNoteId}
+    />
+  );
+};
+
+const calculateConnectionStats = (note: Note, notes: Note[]) => {
+  const linkedNoteIds = note.linkedNoteIds || [];
+  const linkedIdeas = linkedNoteIds.filter(id => 
+    notes.find(n => n.id === id)?.tags?.includes('idea')
+  );
+  const linkedNotes = linkedNoteIds.filter(id => 
+    !notes.find(n => n.id === id)?.tags?.includes('idea')
+  );
+  
+  return { linkedNoteIds, linkedIdeas, linkedNotes };
+};
+
+const processNoteConnections = (note: NoteWithConnections, oneWeekAgo: Date, oneMonthAgo: Date) => {
+  let recentWeek = 0;
+  let recentMonth = 0;
+  
+  note.linkedNoteIds?.forEach(id => {
+    const connection = note.connections?.find(c => c.noteId === id);
+    if (connection?.createdAt) {
+      const connectionDate = new Date(connection.createdAt);
+      if (connectionDate > oneWeekAgo) recentWeek++;
+      if (connectionDate > oneMonthAgo) recentMonth++;
+    }
+  });
+  
+  return { recentWeek, recentMonth };
+};
+
+const findClusters = (notes: Note[]) => {
+  const visited = new Set<string>();
+  const clusters = new Set<string>();
+
+  notes.forEach(note => {
+    if (!visited.has(note.id)) {
+      clusters.add(note.id);
+      const stack = [note.id];
+      
+      while (stack.length > 0) {
+        const currentId = stack.pop()!;
+        visited.add(currentId);
+        
+        const currentNote = notes.find(n => n.id === currentId);
+        currentNote?.linkedNoteIds?.forEach(linkedId => {
+          if (!visited.has(linkedId)) {
+            stack.push(linkedId);
+          }
+        });
+      }
+    }
+  });
+
+  return clusters.size;
+};
 
 export function LinkedNotesPage() {
   const { notes } = useNotes();
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'graph' | 'list'>('graph');
 
+  const handleNodeSelect = (noteId: string) => {
+    console.log('handleNodeSelect called with:', noteId);
+    setSelectedNoteId(noteId);
+    console.log('selectedNoteId set to:', noteId);
+  };
+
   // Calculate stats including most connected note and idea
   const stats = useMemo(() => {
-    // Helper function to find clusters
-    const findClusters = (notes: Note[]) => {
-      const clusters = new Set<string>();
-      const visited = new Set<string>();
+    const counts = notes.reduce((acc, note) => {
+      const { linkedNoteIds, linkedIdeas, linkedNotes } = calculateConnectionStats(note, notes);
+      const isIdea = note.tags?.includes('idea');
+      
+      const { recentWeek, recentMonth } = processNoteConnections(
+        note as NoteWithConnections,
+        new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+      );
 
-      const dfs = (noteId: string, clusterId: string) => {
-        if (visited.has(noteId)) return;
-        visited.add(noteId);
-        clusters.add(clusterId);
-
-        const note = notes.find(n => n.id === noteId) as NoteWithConnections;
-        note?.linkedNoteIds?.forEach(linkedId => {
-          dfs(linkedId, clusterId);
-        });
-      };
-
-      notes.forEach(note => {
-        if (!visited.has(note.id)) {
-          dfs(note.id, note.id);
-        }
-      });
-
-      return clusters.size;
-    };
-
-    const counts = notes.reduce(
-      (acc, note) => {
-        const linkedNoteIds = note.linkedNoteIds || [];
-        const linkedIdeas = linkedNoteIds.filter(id =>
-          notes.find(n => n.id === id)?.tags?.includes('idea')
-        );
-        const linkedNotes = linkedNoteIds.filter(id =>
-          !notes.find(n => n.id === id)?.tags?.includes('idea')
-        );
-
-        const isIdea = note.tags?.includes('idea');
-        const hasIdeaConnections = linkedIdeas.length > 0;
-        const hasNoteConnections = linkedNotes.length > 0;
-
-        // Track cross-pollination
-        if (hasIdeaConnections && hasNoteConnections) {
-          acc.crossPollination++;
-        }
-
-        // Track recent connections
-        const oneWeekAgo = new Date();
-        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-        const oneMonthAgo = new Date();
-        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-
-        linkedNoteIds.forEach(id => {
-          const connection = (note as NoteWithConnections).connections?.find((c: Connection) => c.noteId === id);
-          if (connection?.createdAt) {
-            const connectionDate = new Date(connection.createdAt);
-            if (connectionDate > oneWeekAgo) {
-              acc.recentConnectionsWeek++;
-            }
-            if (connectionDate > oneMonthAgo) {
-              acc.recentConnectionsMonth++;
-            }
-          }
-        });
-
-        // Calculate total possible connections
-        if (isIdea) {
-          acc.totalIdeas++;
-          if (linkedNoteIds.length === 0) acc.isolatedIdeas++;
-        } else {
-          acc.totalNotes++;
-          if (linkedNoteIds.length === 0) acc.isolatedNotes++;
-        }
-
-        // Track most connected note and idea
-        if (!isIdea && linkedNoteIds.length > (acc.mostConnectedNote?.connectionCount || 0)) {
-          acc.mostConnectedNote = {
-            note: note,
-            connectionCount: linkedNoteIds.length
-          };
-        }
-
-        if (isIdea && linkedNoteIds.length > (acc.mostConnectedIdea?.connectionCount || 0)) {
-          acc.mostConnectedIdea = {
-            note: note,
-            connectionCount: linkedNoteIds.length
-          };
-        }
-
-        return {
-          ...acc,
-          notes: acc.notes + linkedNotes.length,
-          ideas: acc.ideas + linkedIdeas.length,
-          totalConnections: acc.totalConnections + linkedNoteIds.length,
-        };
-      },
-      {
-        notes: 0,
-        ideas: 0,
-        totalConnections: 0,
-        totalNotes: 0,
-        totalIdeas: 0,
-        isolatedNotes: 0,
-        isolatedIdeas: 0,
-        crossPollination: 0,
-        recentConnectionsWeek: 0,
-        recentConnectionsMonth: 0,
-        mostConnectedNote: null as { note: Note, connectionCount: number } | null,
-        mostConnectedIdea: null as { note: Note, connectionCount: number } | null
+      // Use isIdea for calculations
+      if (isIdea) {
+        acc.totalIdeas++;
+        if (linkedNoteIds.length === 0) acc.isolatedIdeas++;
+      } else {
+        acc.totalNotes++;
+        if (linkedNoteIds.length === 0) acc.isolatedNotes++;
       }
-    );
+
+      return {
+        ...acc,
+        notes: acc.notes + linkedNotes.length,
+        ideas: acc.ideas + linkedIdeas.length,
+        totalConnections: acc.totalConnections + linkedNoteIds.length,
+        recentConnectionsWeek: acc.recentConnectionsWeek + recentWeek,
+        recentConnectionsMonth: acc.recentConnectionsMonth + recentMonth
+      };
+    }, {
+      notes: 0,
+      ideas: 0,
+      totalConnections: 0,
+      totalNotes: 0,
+      totalIdeas: 0,
+      isolatedNotes: 0,
+      isolatedIdeas: 0,
+      crossPollination: 0,
+      recentConnectionsWeek: 0,
+      recentConnectionsMonth: 0,
+      mostConnectedNote: null as { note: Note, connectionCount: number } | null,
+      mostConnectedIdea: null as { note: Note, connectionCount: number } | null,
+      connectionDensity: 0,
+      clusterCount: 0
+    });
 
     // Calculate connection density
     const totalPossibleConnections = (counts.totalNotes + counts.totalIdeas) * (counts.totalNotes + counts.totalIdeas - 1) / 2;
-    const connectionDensity = totalPossibleConnections > 0
+    counts.connectionDensity = totalPossibleConnections > 0
       ? Math.round((counts.totalConnections / totalPossibleConnections) * 100)
       : 0;
 
     // Calculate clusters
-    const clusterCount = findClusters(notes);
+    counts.clusterCount = findClusters(notes);
 
-    // Calculate growth (assuming we store previous month's connection count somewhere)
-    const previousMonthConnections = 0; // This should come from storage/API
-    const growthRate = previousMonthConnections > 0
-      ? Math.round(((counts.totalConnections - previousMonthConnections) / previousMonthConnections) * 100)
-      : 0;
-
-    return {
-      ...counts,
-      connectionDensity,
-      clusterCount,
-      growthRate
-    };
+    return counts;
   }, [notes]);
 
   // Add console.log to debug
@@ -263,24 +270,7 @@ export function LinkedNotesPage() {
           <div className="h-full flex relative">
             {/* Graph/List Container */}
             <div className={`${selectedNoteId ? 'w-[70%]' : 'w-full'} transition-all duration-300`}>
-              {viewMode === 'graph' ? (
-                notes.length > 0 ? (
-                  <GraphView
-                    onNodeSelect={setSelectedNoteId}
-                    selectedNoteId={selectedNoteId}
-                    isDetailsPanelOpen={!!selectedNoteId}
-                  />
-                ) : (
-                  <div className="h-full flex flex-col items-center justify-center gap-3">
-                    <Link2 className="w-8 h-8 text-gray-600 dark:text-gray-400" />
-                    <p className="text-gray-600 dark:text-gray-400">
-                      No connected notes to display
-                    </p>
-                  </div>
-                )
-              ) : (
-                <ListView onNoteSelect={setSelectedNoteId} />
-              )}
+              {renderContent(viewMode, notes, handleNodeSelect, selectedNoteId)}
             </div>
 
             {/* Details Panel */}
@@ -288,7 +278,10 @@ export function LinkedNotesPage() {
               <div className="w-[30%] border-l border-gray-200/30 dark:border-gray-700/30">
                 <NoteDetailsPanel
                   selectedNoteId={selectedNoteId}
-                  onClose={() => setSelectedNoteId(null)}
+                  onClose={() => {
+                    console.log('Closing details panel');
+                    setSelectedNoteId(null);
+                  }}
                 />
               </div>
             )}

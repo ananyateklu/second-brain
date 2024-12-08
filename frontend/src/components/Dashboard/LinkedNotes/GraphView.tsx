@@ -1,489 +1,487 @@
-import { useEffect, useRef, useCallback } from 'react';
-import CytoscapeComponent from 'react-cytoscapejs';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import ReactFlow, {
+  Node,
+  Background,
+  NodeProps,
+  Handle,
+  Position,
+  useReactFlow,
+  Panel,
+  ReactFlowProvider,
+  MarkerType,
+  ConnectionMode,
+  OnNodesChange,
+  applyNodeChanges,
+  Edge as FlowEdge,
+  PanOnScrollMode,
+  SelectionMode
+} from 'reactflow';
+import 'reactflow/dist/style.css';
+import dagre from 'dagre';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { useNotes } from '../../../contexts/notesContextUtils';
-import type { Core, NodeSingular, Stylesheet, Position } from 'cytoscape';
+import { themeConfig } from '../../../config/theme.config';
+import { ThemeConfig } from '../../../types/themeConfig.types';
+import clsx from 'clsx';
 
 interface GraphViewProps {
   onNodeSelect: (noteId: string) => void;
-  isDetailsPanelOpen: boolean;
   selectedNoteId: string | null;
 }
 
-// Layout configuration - moved outside component
-const graphLayout = {
-  name: 'cose',
-  fit: true,
-  padding: 100,
-  animate: 'end',
-  animationDuration: 1000,
-  animationEasing: 'ease-out',
-  nodeDimensionsIncludeLabels: true,
-  nodeRepulsion: () => 100000,
-  nodeOverlap: 50,
-  idealEdgeLength: () => 250,
-  edgeElasticity: 0.45,
-  nestingFactor: 1.2,
-  gravity: 0.1,
-  numIter: 2000,
-  initialTemp: 1000,
-  coolingFactor: 0.99,
-  minTemp: 1.0,
-  randomize: false,
-  refresh: 30,
-  componentSpacing: 150,
-  maxSimulationTime: 8000,
-  weaver: true,
-  quality: "proof",
-  infinite: false,
-} as const;
+interface NodeData {
+  selected: boolean;
+  isIdea: boolean;
+  title: string;
+  taskCount: number;
+  linkedCount: number;
+  preview: string;
+}
 
-// Helper functions
-const checkNodeOverlap = (
-  pos: Position,
-  existingPos: Position,
-  width: number,
-  height: number,
-  existingNode: NodeSingular,
-  padding: number
+// Add a Note interface
+interface NoteType {
+  id: string;
+  title: string;
+  isIdea: boolean;
+  content?: string;
+  linkedNoteIds?: string[];
+  linkedTasks?: Array<{ status: string; priority: string; }>;
+}
+
+// Define a custom node type
+type CustomNode = {
+  id: string;
+  type: string;
+  position: { x: number; y: number };
+  data: NodeData;
+  selected: boolean;
+};
+
+// Helper function to determine the border color of a node
+const getBorderColor = (
+  data: NodeData,
+  colors: ThemeConfig['colors']['light' | 'dark']
 ) => {
-  const dx = Math.abs(pos.x - existingPos.x);
-  const dy = Math.abs(pos.y - existingPos.y);
-  const minX = (width + existingNode.width()) / 2 + padding;
-  const minY = (height + existingNode.height()) / 2 + padding;
-  return dx < minX && dy < minY;
+  if (data.selected) return colors.note;
+  if (data.isIdea) return colors.idea;
+  return colors.note;
 };
 
-const adjustNodePosition = (
-  pos: Position,
-  node: NodeSingular,
-  existingNode: NodeSingular
-) => {
-  if (node.edgesWith(existingNode).length > 0) {
-    pos.x += (Math.random() - 0.5) * 50;
-    pos.y += (Math.random() - 0.5) * 50;
-  } else {
-    pos.x += (Math.random() - 0.5) * 150;
-    pos.y += (Math.random() - 0.5) * 150;
-  }
-  return pos;
-};
-
-const organizeNodes = (cy: Core) => {
-  const nodes = cy.nodes();
-  const nodePositions = new Map<NodeSingular, Position>();
-  const padding = 30;
-
-  nodes.forEach((node: NodeSingular) => {
-    const pos = node.position();
-    const width = node.width();
-    const height = node.height();
-
-    let overlapping = true;
-    let attempts = 0;
-    const maxAttempts = 50;
-
-    while (overlapping && attempts < maxAttempts) {
-      overlapping = false;
-
-      nodePositions.forEach((existingPos: Position, existingNode: NodeSingular) => {
-        if (checkNodeOverlap(pos, existingPos, width, height, existingNode, padding)) {
-          overlapping = true;
-          adjustNodePosition(pos, node, existingNode);
-        }
-      });
-
-      attempts++;
-    }
-
-    node.position(pos);
-    nodePositions.set(node, pos);
-  });
-};
-
-export function GraphView({ onNodeSelect, isDetailsPanelOpen, selectedNoteId }: Readonly<GraphViewProps>) {
-  const { notes } = useNotes();
+// Custom node component
+const CustomNode = ({ data }: NodeProps) => {
   const { theme } = useTheme();
-  const cyRef = useRef<Core | null>(null);
+  const config = themeConfig;
+  const colors = config.colors[theme === 'dark' ? 'dark' : 'light'];
 
-  // Filter notes to only include those with links or tasks
-  const notesWithLinks = notes.filter(note =>
-    (note.linkedNoteIds?.length > 0) || ((note.linkedTasks?.length ?? 0) > 0)
-  );
+  const getSelectedColor = () => {
+    return theme === 'dark' ? '#64AB6F' : '#059669';
+  };
 
-  // Create nodes with task information embedded
-  const elements = [
-    // Note nodes with task information
-    ...notesWithLinks.map(note => {
-      const linkedTasks = note.linkedTasks || [];
-      const hasCompletedTasks = linkedTasks.some(task => task.status === 'completed');
-      const hasHighPriorityTasks = linkedTasks.some(task => task.priority === 'high');
-      const taskCount = linkedTasks.length;
+  const getGlowOpacity = () => {
+    if (data.selected) return "opacity-100";
+    if (theme === 'midnight') return "opacity-40 group-hover:opacity-80";
+    return "opacity-50 group-hover:opacity-100";
+  };
 
-      return {
-        data: {
-          id: note.id,
-          label: note.title,
-          isIdea: note.isIdea,
-          type: 'note',
-          tags: note.tags,
-          createdAt: note.createdAt,
-          updatedAt: note.updatedAt,
-          preview: note.content?.substring(0, 50) + '...',
-          taskCount,
-          hasCompletedTasks,
-          hasHighPriorityTasks,
-          taskSummary: linkedTasks.map(t => `${t.status === 'completed' ? '✓' : '○'} ${t.title}`).join('\n')
-        }
-      };
-    }),
-    // Note-to-note edges
-    ...notesWithLinks.flatMap(note =>
-      (note.linkedNoteIds || [])
-        .filter(targetId => notesWithLinks.some(n => n.id === targetId))
-        .map(targetId => ({
-          data: {
-            id: `${note.id}-${targetId}`,
-            source: note.id,
-            target: targetId
-          }
-        }))
-    )
-  ];
-
-  // Function to smoothly center on a node without disturbing layout
-  const centerOnNode = useCallback((nodeId: string) => {
-    if (!cyRef.current) return;
-
-    const cy = cyRef.current;
-    const node = cy.$id(nodeId);
-
-    if (!node.length) return;
-
-    const currentZoom = cy.zoom();
-    const targetZoom = Math.max(currentZoom, 1); // Reduced from 1.5 to 1.2 for a more zoomed-out view
-    const currentPan = cy.pan();
-    const nodePosition = node.position();
-    const renderedPosition = node.renderedPosition();
-
-    // Calculate the target pan position
-    const targetPan = {
-      x: currentPan.x - (nodePosition.x * targetZoom - renderedPosition.x),
-      y: currentPan.y - (nodePosition.y * targetZoom - renderedPosition.y)
-    };
-
-    // Perform the animation in a single smooth motion
-    cy.animate({
-      zoom: targetZoom,
-      pan: targetPan,
-      duration: 500,
-      easing: 'ease-in-out',
-      queue: false
-    });
-  }, []);
-
-  // Initial layout effect - only runs once
-  useEffect(() => {
-    if (!cyRef.current) return;
-
-    const cy = cyRef.current;
-
-    // Enable node dragging
-    cy.nodes().forEach(node => {
-      node.grabify();
-
-      // Add drag event handlers
-      node.on('dragfree', (event) => {
-        const draggedNode = event.target;
-        const pos = draggedNode.position();
-        draggedNode.unlock();
-        draggedNode.position(pos);
-      });
-
-      // Lock position during selection
-      node.on('select', () => {
-        node.lock();
-      });
-
-      node.on('unselect', () => {
-        node.unlock();
-      });
-    });
-
-    // Run initial layout
-    cy.layout(graphLayout).run();
-
-    // After layout completes, organize nodes and then handle centering
-    cy.one('layoutstop', () => {
-      // First organize nodes
-      organizeNodes(cy);
-
-      // Then handle centering in a separate animation
-      setTimeout(() => {
-        if (selectedNoteId) {
-          centerOnNode(selectedNoteId);
-        } else {
-          cy.animate({
-            fit: {
-              eles: cy.elements(),
-              padding: 50
-            },
-            duration: 500,
-            easing: 'ease-in-out',
-            queue: false
-          });
-        }
-      }, 100); // Small delay to ensure organization is complete
-    });
-
-    return () => {
-      cy.removeListener('layoutstop');
-    };
-  }, [selectedNoteId, centerOnNode]);
-
-  // Handle panel state changes without affecting layout
-  useEffect(() => {
-    const resizeTimer = setTimeout(() => {
-      if (cyRef.current) {
-        cyRef.current.resize();
-        // Only fit to view if no node is selected
-        if (!selectedNoteId) {
-          cyRef.current.fit(undefined, 50);
-        }
-      }
-    }, 300);
-
-    return () => clearTimeout(resizeTimer);
-  }, [isDetailsPanelOpen, selectedNoteId]);
-
-  // Update the stylesheet configuration
-  const stylesheet: Stylesheet[] = [
-    {
-      selector: 'node[type = "note"]',
-      style: {
-        'background-color': theme === 'dark' || theme === 'midnight' ? '#1e1e1e' : '#FFFFFF',
-        'border-color': (node: NodeSingular) => {
-          if (node.data('isIdea')) {
-            return theme === 'dark' || theme === 'midnight' ? '#FCD34D' : '#F59E0B';
-          }
-          return theme === 'dark' || theme === 'midnight' ? 'rgb(59, 130, 246)' : 'rgb(37, 99, 235)';
-        },
-        'border-width': 2,
-        'width': 220,
-        'height': (node: NodeSingular) => {
-          const taskCount = node.data('taskCount') || 0;
-          return Math.max(100, 100 + (taskCount * 20));
-        },
-        'shape': 'round-rectangle',
-        'text-valign': 'center',
-        'text-halign': 'center',
-        'text-wrap': 'wrap',
-        'text-max-width': '160px',
-        'font-family': 'system-ui, -apple-system, sans-serif',
-        'font-size': 14,
-        'font-weight': 500,
-        'color': theme === 'dark' || theme === 'midnight' ? '#E5E7EB' : '#1F2937',
-        'text-outline-color': theme === 'dark' || theme === 'midnight' ? '#1e1e1e' : '#FFFFFF',
-        'text-outline-width': 2,
-        'text-margin-y': 0,
-        'text-margin-x': 0,
-        'label': (node: NodeSingular) => {
-          const title = node.data('label');
-          const taskCount = node.data('taskCount') || 0;
-          const linkedCount = node.data('linkedNoteIds')?.length || 0;
-
-          let label = title;
-          if (linkedCount > 0 || taskCount > 0) {
-            label += '\n\n';
-            if (linkedCount > 0) {
-              label += `${linkedCount} notes`;
-            }
-            if (taskCount > 0) {
-              if (linkedCount > 0) label += '   ';
-              label += `✅ ${taskCount} tasks`;
-            }
-          }
-          return label;
-        },
-        'background-image': (node: NodeSingular) => {
-          const isIdea = node.data('isIdea');
-          const ideaColor = theme === 'dark' || theme === 'midnight' ? '#FCD34D' : '#F59E0B';
-          const noteColor = theme === 'dark' || theme === 'midnight' ? '#60A5FA' : '#3B82F6';
-          return isIdea
-            ? 'data:image/svg+xml;base64,' + btoa(`<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${ideaColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8A6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>`)
-            : 'data:image/svg+xml;base64,' + btoa(`<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${noteColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>`);
-        },
-        'background-width': '24px',
-        'background-height': '24px',
-        'background-position-x': '16px',
-        'background-position-y': '16px',
-        'background-fit': 'none',
-        'background-clip': 'none',
-        'background-image-opacity': 1,
-      }
-    },
-    {
-      selector: 'node[type = "note"]:selected',
-      style: {
-        'border-color': theme === 'dark' || theme === 'midnight' ? '#64AB6F' : '#059669',
-        'border-width': 2,
-        'overlay-opacity': 0.1,
-        'overlay-color': theme === 'dark' || theme === 'midnight' ? '#64AB6F' : '#059669'
-      }
-    },
-    {
-      selector: 'edge',
-      style: {
-        'target-arrow-shape': 'triangle-tee',
-        'arrow-scale': 0.7,
-        'width': 1.4,
-        'curve-style': 'straight',
-        'opacity': 0.75,
-        'source-distance-from-node': 0,
-        'target-distance-from-node': 6,
-        'line-color': theme === 'dark' || theme === 'midnight' ? '#4B5563' : '#9CA3AF',
-        'target-arrow-color': theme === 'dark' || theme === 'midnight' ? '#4B5563' : '#9CA3AF'
-      }
-    }
-  ];
+  const borderColor = data.selected 
+    ? getSelectedColor()
+    : getBorderColor(data, colors);
 
   return (
-    <div className="h-full w-full relative">
-      <CytoscapeComponent
-        elements={elements}
-        stylesheet={stylesheet}
-        layout={graphLayout}
+    <div
+      className={clsx(
+        'relative p-6 rounded-2xl border transition-all duration-300 hover:shadow-2xl hover:scale-105 group',
+        data.selected
+          ? 'bg-task' // You may need a Tailwind class for bg-task
+          : 'bg-white/90 dark:bg-gray-900/90'
+      )}
+      style={{
+        width: 250,
+        minHeight: 100,
+        borderColor: 'transparent',
+        boxShadow:
+          theme === 'dark'
+            ? '0 8px 24px -12px rgba(0, 0, 0, 0.3)'
+            : '0 8px 24px -12px rgba(0, 0, 0, 0.15)',
+        zIndex: 0,
+      }}
+    >
+      <div 
+        className={`absolute inset-0 rounded-2xl transition-opacity duration-300 ${getGlowOpacity()}`}
         style={{
-          width: '100%',
-          height: '100%',
-          minHeight: '600px',
-          maxHeight: '80vh'
-        }}
-        cy={(cy) => {
-          cyRef.current = cy;
-          cy.minZoom(0.2);
-          cy.maxZoom(3.0);
-          cy.userZoomingEnabled(true);
-          cy.userPanningEnabled(true);
-
-          // Add click handlers that only handle selection and centering
-          cy.on('tap', 'node', (event) => {
-            const node = event.target;
-            const nodeId = node.id();
-            cy.nodes().unlock(); // Temporarily unlock for selection
-            onNodeSelect(nodeId);
-            // Delay the centering slightly to ensure selection is processed
-            requestAnimationFrame(() => {
-              centerOnNode(nodeId);
-            });
-            cy.nodes().lock(); // Lock again after selection
-          });
-
-          cy.on('tap', (event) => {
-            if (event.target === cy) {
-              cy.elements().unselect();
-              onNodeSelect('');
-              cy.animate({
-                fit: {
-                  eles: cy.elements(),
-                  padding: 50
-                },
-                duration: 500,
-                easing: 'ease-in-out',
-                queue: false
-              });
-            }
-          });
+          background: `linear-gradient(45deg, ${borderColor}20, ${borderColor}40)`,
         }}
       />
 
-      {/* Zoom Controls */}
-      <div className="absolute bottom-44 right-6 bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 backdrop-blur-sm p-3 rounded-xl shadow-lg">
-        <div className="flex flex-col gap-2">
-          <button
-            onClick={() => {
-              if (!cyRef.current) return;
-              const cy = cyRef.current;
-              const currentZoom = cy.zoom();
-              cy.animate({
-                zoom: currentZoom * 1.2,
-                duration: 200
-              });
-            }}
-            className="p-2 hover:bg-white/30 dark:hover:bg-gray-700/30 rounded-lg transition-colors"
-            title="Zoom in"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600 dark:text-gray-400">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              <line x1="11" y1="8" x2="11" y2="14"></line>
-              <line x1="8" y1="11" x2="14" y2="11"></line>
+      <div className="relative z-10">
+        <div 
+          className="rounded-lg p-2 mb-4 w-10 h-10 flex items-center justify-center"
+          style={{ 
+            backgroundColor: `${borderColor}15`,
+            color: borderColor
+          }}
+        >
+          {data.isIdea ? (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" 
+                 stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8A6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/>
+              <path d="M9 18h6"/>
+              <path d="M10 22h4"/>
             </svg>
-          </button>
-          <button
-            onClick={() => {
-              if (!cyRef.current) return;
-              const cy = cyRef.current;
-              const currentZoom = cy.zoom();
-              cy.animate({
-                zoom: currentZoom / 1.2,
-                duration: 200
-              });
-            }}
-            className="p-2 hover:bg-white/30 dark:hover:bg-gray-700/30 rounded-lg transition-colors"
-            title="Zoom out"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600 dark:text-gray-400">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              <line x1="8" y1="11" x2="14" y2="11"></line>
+          ) : (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" 
+                 stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+              <polyline points="14 2 14 8 20 8"/>
             </svg>
-          </button>
-          <button
-            onClick={() => {
-              if (!cyRef.current) return;
-              const cy = cyRef.current;
-              cy.fit(undefined, 50);
-            }}
-            className="p-2 hover:bg-white/30 dark:hover:bg-gray-700/30 rounded-lg transition-colors"
-            title="Fit to view"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600 dark:text-gray-400">
-              <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
-            </svg>
-          </button>
+          )}
         </div>
+
+        <div className="font-medium text-gray-900 dark:text-gray-100 mb-2">
+          {data.title}
+        </div>
+
+        {(data.linkedCount > 0 || data.taskCount > 0) && (
+          <div className="flex gap-2 text-sm">
+            {data.linkedCount > 0 && (
+              <span 
+                className="px-2 py-1 rounded-md text-xs"
+                style={{ 
+                  backgroundColor: `${borderColor}15`,
+                  color: borderColor
+                }}
+              >
+                🔗 {data.linkedCount} links
+              </span>
+            )}
+            {data.taskCount > 0 && (
+              <span 
+                className="px-2 py-1 rounded-md text-xs"
+                style={{ 
+                  backgroundColor: `${borderColor}15`,
+                  color: borderColor
+                }}
+              >
+                ✓ {data.taskCount} tasks
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Legend */}
-      <div className="absolute bottom-6 right-6 bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 backdrop-blur-sm p-3 rounded-xl shadow-lg">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <div className={`w-4 h-4 border-2 rounded bg-white/20 dark:bg-gray-800/20`} 
-              style={{ borderColor: theme === 'dark' ? 'rgb(59, 130, 246)' : 'rgb(37, 99, 235)' }}>
-            </div>
-            <span className="text-sm text-gray-600 dark:text-gray-400">Notes</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className={`w-4 h-4 border-2 rounded bg-white/20 dark:bg-gray-800/20`}
-              style={{ borderColor: theme === 'dark' ? '#FCD34D' : '#F59E0B' }}>
-            </div>
-            <span className="text-sm text-gray-600 dark:text-gray-400">Ideas</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className={`w-4 h-4 border-2 rounded bg-white/20 dark:bg-gray-800/20`}
-              style={{ borderColor: theme === 'dark' ? '#64AB6F' : '#059669' }}>
-            </div>
-            <span className="text-sm text-gray-600 dark:text-gray-400">Selected</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className={`w-4 h-4 border-2 rounded bg-white/20 dark:bg-gray-800/20`}
-              style={{ borderColor: theme === 'dark' ? '#64AB6F' : '#059669' }}>
-            </div>
-            <span className="text-sm text-gray-600 dark:text-gray-400">With Tasks</span>
-          </div>
+      <Handle 
+        type="target" 
+        position={Position.Top} 
+        className="!w-3 !h-3 !bg-transparent !border-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300" 
+        style={{ borderColor }}
+      />
+      <Handle 
+        type="source" 
+        position={Position.Bottom} 
+        className="!w-3 !h-3 !bg-transparent !border-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300" 
+        style={{ borderColor }}
+      />
+    </div>
+  );
+};
+
+// Node types definition
+const nodeTypes = {
+  custom: CustomNode,
+};
+
+// Zoom controls component
+const ZoomControls = ({ zoomIn, zoomOut, fitView }: { 
+  zoomIn: () => void;
+  zoomOut: () => void;
+  fitView: (params: { padding: number; duration: number; }) => void;
+}) => (
+  <div className="bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 backdrop-blur-sm p-3 rounded-xl shadow-lg">
+    <div className="flex flex-row gap-2">
+      <button
+        onClick={() => zoomIn()}
+        className="p-2 hover:bg-white/30 dark:hover:bg-gray-700/30 rounded-lg transition-colors"
+        title="Zoom in"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" 
+             viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" 
+             strokeLinecap="round" strokeLinejoin="round" className="text-gray-600 dark:text-gray-400">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          <line x1="11" y1="8" x2="11" y2="14"></line>
+          <line x1="8" y1="11" x2="14" y2="11"></line>
+        </svg>
+      </button>
+      <button
+        onClick={() => zoomOut()}
+        className="p-2 hover:bg-white/30 dark:hover:bg-gray-700/30 rounded-lg transition-colors"
+        title="Zoom out"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" 
+             viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" 
+             strokeLinecap="round" strokeLinejoin="round" className="text-gray-600 dark:text-gray-400">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          <line x1="8" y1="11" x2="14" y2="11"></line>
+        </svg>
+      </button>
+      <button
+        onClick={() => fitView({ padding: 0.2, duration: 1000 })}
+        className="p-2 hover:bg-white/30 dark:hover:bg-gray-700/30 rounded-lg transition-colors"
+        title="Fit to view"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" 
+             viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" 
+             strokeLinecap="round" strokeLinejoin="round" className="text-gray-600 dark:text-gray-400">
+          <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+);
+
+// Legend component
+const Legend = ({ theme }: { theme: string }) => (
+  <div className="bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 backdrop-blur-sm p-3 rounded-xl shadow-lg">
+    <div className="flex flex-row gap-4">
+      <div className="flex items-center gap-2">
+        <div className="w-3 h-3 border-2 rounded bg-white/20 dark:bg-gray-800/20"
+          style={{ borderColor: theme === 'dark' ? 'rgb(59, 130, 246)' : 'rgb(37, 99, 235)' }}>
         </div>
+        <span className="text-xs text-gray-600 dark:text-gray-400">Notes</span>
       </div>
+      <div className="flex items-center gap-2">
+        <div className="w-3 h-3 border-2 rounded bg-white/20 dark:bg-gray-800/20"
+          style={{ borderColor: theme === 'dark' ? '#FCD34D' : '#F59E0B' }}>
+        </div>
+        <span className="text-xs text-gray-600 dark:text-gray-400">Ideas</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="w-3 h-3 border-2 rounded bg-white/20 dark:bg-gray-800/20"
+          style={{ borderColor: theme === 'dark' ? '#64AB6F' : '#059669' }}>
+        </div>
+        <span className="text-xs text-gray-600 dark:text-gray-400">Selected</span>
+      </div>
+    </div>
+  </div>
+);
+
+// Prepare edges from notes
+const prepareEdges = (notesWithLinks: NoteType[]): FlowEdge[] => {
+  const processedPairs = new Set<string>();
+  
+  return notesWithLinks.flatMap(note =>
+    (note.linkedNoteIds || [])
+      .filter((targetId: string) => {
+        const pairId = [note.id, targetId].sort((a, b) => a.localeCompare(b)).join('-');
+        if (processedPairs.has(pairId)) return false;
+        processedPairs.add(pairId);
+        return notesWithLinks.some(n => n.id === targetId);
+      })
+      .map((targetId: string) => ({
+        id: `${note.id}-${targetId}`,
+        source: note.id,
+        target: targetId,
+        type: 'default',
+        animated: false,
+        style: {
+          strokeWidth: 1.5,
+          stroke: '#9CA3AFCC',
+          strokeLinecap: 'round',
+          strokeLinejoin: 'round',
+          zIndex: 1
+        },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          width: 20,
+          height: 20
+        }
+      }))
+  );
+};
+
+// Use Dagre to layout the graph
+const getDagreLayoutedElements = (nodes: CustomNode[], edges: FlowEdge[], direction: 'TB' | 'LR' = 'TB') => {
+  const dagreGraph = new dagre.graphlib.Graph();
+  dagreGraph.setDefaultEdgeLabel(() => ({}));
+  
+  dagreGraph.setGraph({ 
+    rankdir: direction, 
+    ranksep: 200,
+    nodesep: 150,
+    edgesep: 100
+  });
+
+  nodes.forEach((node) => {
+    dagreGraph.setNode(node.id, { width: 250, height: 100 });
+  });
+
+  edges.forEach((edge) => {
+    dagreGraph.setEdge(edge.source, edge.target);
+  });
+
+  dagre.layout(dagreGraph);
+
+  const updatedNodes = nodes.map((node) => {
+    const nodeWithPosition = dagreGraph.node(node.id);
+    node.position = {
+      x: nodeWithPosition.x - (250 / 2),
+      y: nodeWithPosition.y - (100 / 2),
+    };
+    return node;
+  });
+
+  return { nodes: updatedNodes, edges };
+};
+
+// Main content component
+function GraphViewContent({ onNodeSelect, selectedNoteId }: Readonly<GraphViewProps>) {
+  const { notes } = useNotes();
+  const { theme } = useTheme();
+  const { fitView, zoomIn, zoomOut } = useReactFlow();
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  // Filter notes that have links or tasks
+  const notesWithLinks = useMemo(() => notes.filter(note =>
+    (note.linkedNoteIds?.length ?? 0) > 0 || (note.linkedTasks?.length ?? 0) > 0
+  ), [notes]);
+
+  // Prepare nodes
+  const initialNodes = useMemo<CustomNode[]>(() => {
+    return notesWithLinks.map((note) => ({
+      id: note.id,
+      type: 'custom',
+      position: { x: 0, y: 0 }, // temporary, Dagre will update this
+      data: {
+        title: note.title,
+        isIdea: note.isIdea,
+        taskCount: note.linkedTasks?.length ?? 0,
+        linkedCount: note.linkedNoteIds?.length ?? 0,
+        preview: (note.content ?? '').substring(0, 50) + '...',
+        selected: note.id === selectedNoteId,
+      },
+      selected: note.id === selectedNoteId,
+    }));
+  }, [notesWithLinks, selectedNoteId]);
+
+  // Prepare edges
+  const edges = useMemo(() => prepareEdges(notesWithLinks), [notesWithLinks]);
+
+  // Layout nodes using Dagre
+  const { nodes: layoutedNodes, edges: layoutedEdges } = useMemo(() => {
+    return getDagreLayoutedElements(initialNodes, edges, 'TB'); // top-to-bottom
+  }, [initialNodes, edges]);
+
+  const [nodes, setNodes] = useState<CustomNode[]>(layoutedNodes);
+  const [flowEdges] = useState<FlowEdge[]>(layoutedEdges);
+
+  useEffect(() => {
+    if (nodes.length === 0) return;
+
+    const timer = setTimeout(() => {
+      fitView({
+        padding: 0.5,
+        duration: isInitialLoad ? 0 : 800,
+        maxZoom: 1.5
+      });
+      setIsInitialLoad(false);
+    }, isInitialLoad ? 0 : 100);
+
+    return () => clearTimeout(timer);
+  }, [nodes.length, fitView, isInitialLoad]);
+
+  const onNodesChange: OnNodesChange = useCallback(
+    (changes) => setNodes((nds) => applyNodeChanges(changes, nds) as CustomNode[]),
+    []
+  );
+
+  const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
+    onNodeSelect(node.id);
+  }, [onNodeSelect]);
+
+  useEffect(() => {
+    setNodes((prevNodes) =>
+      prevNodes.map((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+          selected: node.id === selectedNoteId,
+        },
+        selected: node.id === selectedNoteId,
+      }))
+    );
+  }, [selectedNoteId]);
+
+  return (
+    <div className="h-full w-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      <ReactFlow
+        className="react-flow__edge-path-selector"
+        nodes={nodes}
+        edges={flowEdges}
+        nodeTypes={nodeTypes}
+        onNodeClick={onNodeClick}
+        onNodesChange={onNodesChange}
+        draggable={true}
+        fitView={false}
+        fitViewOptions={{ 
+          padding: 0.5,
+          duration: 800,
+          maxZoom: 1.5
+        }}
+        defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+        minZoom={0.05}
+        maxZoom={2}
+        proOptions={{ hideAttribution: true }}
+        panOnScroll={true}
+        panOnDrag={true}
+        zoomOnScroll={true}
+        zoomOnPinch={true}
+        zoomOnDoubleClick={true}
+        panOnScrollMode={PanOnScrollMode.Free}
+        selectionMode={SelectionMode.Full}
+        panOnScrollSpeed={0.5}
+        connectionMode={ConnectionMode.Loose}
+        defaultEdgeOptions={{
+          type: 'default',
+          animated: false,
+          style: {
+            stroke: theme === 'dark' ? '#4B5563CC' : '#9CA3AFCC',
+            strokeWidth: 1.5,
+            strokeLinecap: 'round',
+            strokeLinejoin: 'round'
+          },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: theme === 'dark' ? '#4B5563CC' : '#9CA3AFCC',
+            width: 20,
+            height: 20
+          }
+        }}
+      >
+        <Background 
+          color={theme === 'dark' ? '#374151' : '#E5E7EB'} 
+          gap={32} 
+          size={1}
+          style={{ opacity: 0.2 }}
+        />
+        <Panel position="bottom-right" className="flex flex-col gap-4 mb-4 mr-4">
+          <div className="flex flex-row gap-4">
+            <ZoomControls zoomIn={zoomIn} zoomOut={zoomOut} fitView={fitView} />
+            <Legend theme={theme} />
+          </div>
+        </Panel>
+      </ReactFlow>
     </div>
   );
 }
+
+// Wrap with provider
+const GraphViewWithProvider = (props: Readonly<GraphViewProps>) => {
+  return (
+    <ReactFlowProvider>
+      <GraphViewContent {...props} />
+    </ReactFlowProvider>
+  );
+};
+
+export const GraphView = GraphViewWithProvider;
