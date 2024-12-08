@@ -2,20 +2,20 @@ namespace SecondBrain.Api.DTOs.Grok
 {
     public class SendMessageResponse
     {
-        public string Id { get; set; }
-        public string Object { get; set; }
+        public required string Id { get; set; }
+        public required string Object { get; set; }
         public long Created { get; set; }
-        public string Model { get; set; }
-        public Choice[] Choices { get; set; }
-        public Usage Usage { get; set; }
-        public string SystemFingerprint { get; set; }
+        public required string Model { get; set; }
+        public required Choice[] Choices { get; set; }
+        public required Usage Usage { get; set; }
+        public required string SystemFingerprint { get; set; }
     }
 
     public class Choice
     {
         public int Index { get; set; }
-        public Message Message { get; set; }
-        public string FinishReason { get; set; }
+        public required Message Message { get; set; }
+        public required string FinishReason { get; set; }
     }
 
     public class Usage

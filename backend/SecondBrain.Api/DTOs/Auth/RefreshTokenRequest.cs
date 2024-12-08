@@ -2,6 +2,6 @@ namespace SecondBrain.Api.DTOs.Auth
 {
     public class RefreshTokenRequest
     {
-        public string RefreshToken { get; set; }
+        public required string RefreshToken { get; set; }
     }
 }

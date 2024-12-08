@@ -7,25 +7,25 @@ namespace SecondBrain.Api.DTOs.Tasks
 {
     public class LinkedItemDto
     {
-        public string Id { get; set; } = string.Empty;
-        public string Title { get; set; } = string.Empty;
-        public string Type { get; set; } = string.Empty; // "note" or "idea"
+        public required string Id { get; set; } = string.Empty;
+        public required string Title { get; set; } = string.Empty;
+        public required string Type { get; set; } = string.Empty; // "note" or "idea"
         public DateTime CreatedAt { get; set; }
     }
 
     public class TaskResponse
     {
-        public string Id { get; set; }
-        public string Title { get; set; }
-        public string Description { get; set; }
-        public string Status { get; set; } // 'incomplete' or 'completed'
-        public string Priority { get; set; } // 'low', 'medium', 'high'
+        public required string Id { get; set; }
+        public required string Title { get; set; }
+        public required string Description { get; set; }
+        public required string Status { get; set; } // 'incomplete' or 'completed'
+        public required string Priority { get; set; } // 'low', 'medium', 'high'
         public DateTime? DueDate { get; set; }
-        public List<string> Tags { get; set; }
-        public List<LinkedItemDto> LinkedItems { get; set; } = new();
+        public required List<string> Tags { get; set; }
+        public required List<LinkedItemDto> LinkedItems { get; set; } = new();
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
-        public string UserId { get; set; }
+        public required string UserId { get; set; }
         public bool IsDeleted { get; set; }
         public DateTime? DeletedAt { get; set; }
 

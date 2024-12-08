@@ -12,15 +12,22 @@ namespace SecondBrain.Api.Controllers
     {
         private readonly ILogger<GrokController> _logger;
         private readonly HttpClient _httpClient;
-        private readonly string _apiKey;
-        private readonly string _baseUrl = "https://api.x.ai/v1";
+        private readonly string _baseUrl;
 
         public GrokController(ILogger<GrokController> logger, IConfiguration configuration)
         {
             _logger = logger;
             _httpClient = new HttpClient();
-            _apiKey = configuration["Grok:ApiKey"];
-            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_apiKey}");
+            
+            _baseUrl = configuration["Grok:BaseUrl"] 
+                ?? throw new ArgumentException("Grok base URL not configured");
+            
+            var apiKey = configuration["Grok:ApiKey"];
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                throw new ArgumentException("Grok API key not configured");
+            }
+            _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
         }
 
         [HttpPost("send")]
@@ -120,4 +127,4 @@ namespace SecondBrain.Api.Controllers
             }
         }
     }
-} 
+}

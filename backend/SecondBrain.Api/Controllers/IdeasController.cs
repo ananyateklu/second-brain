@@ -13,6 +13,7 @@ namespace SecondBrain.Api.Controllers
     [Route("api/[controller]")]
     public class IdeasController : ControllerBase
     {
+        private const string IdeaNotFoundError = "Idea not found.";
         private readonly DataContext _context;
 
         public IdeasController(DataContext context)
@@ -24,6 +25,10 @@ namespace SecondBrain.Api.Controllers
         public async Task<ActionResult<Idea>> CreateIdea([FromBody] CreateIdeaRequest request)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { error = "User ID not found in token." });
+            }
 
             var idea = new Idea
             {
@@ -51,7 +56,7 @@ namespace SecondBrain.Api.Controllers
 
             if (idea == null || idea.UserId != userId)
             {
-                return NotFound(new { error = "Idea not found." });
+                return NotFound(new { error = IdeaNotFoundError });
             }
 
             idea.Title = request.Title;
@@ -72,7 +77,7 @@ namespace SecondBrain.Api.Controllers
 
             if (idea == null || idea.UserId != userId)
             {
-                return NotFound(new { error = "Idea not found." });
+                return NotFound(new { error = IdeaNotFoundError });
             }
 
             _context.Ideas.Remove(idea);
@@ -89,7 +94,7 @@ namespace SecondBrain.Api.Controllers
 
             if (idea == null || idea.UserId != userId)
             {
-                return NotFound(new { error = "Idea not found." });
+                return NotFound(new { error = IdeaNotFoundError });
             }
 
             idea.IsFavorite = !idea.IsFavorite;
@@ -107,7 +112,7 @@ namespace SecondBrain.Api.Controllers
 
             if (idea == null || idea.UserId != userId)
             {
-                return NotFound(new { error = "Idea not found." });
+                return NotFound(new { error = IdeaNotFoundError });
             }
 
             idea.IsPinned = !idea.IsPinned;
@@ -125,7 +130,7 @@ namespace SecondBrain.Api.Controllers
 
             if (idea == null || idea.UserId != userId)
             {
-                return NotFound(new { error = "Idea not found." });
+                return NotFound(new { error = IdeaNotFoundError });
             }
 
             idea.IsArchived = !idea.IsArchived;
@@ -136,4 +141,4 @@ namespace SecondBrain.Api.Controllers
             return Ok(idea);
         }
     }
-} 
+}

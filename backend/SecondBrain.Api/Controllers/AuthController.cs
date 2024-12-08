@@ -17,15 +17,18 @@ namespace SecondBrain.Api.Controllers
         private readonly DataContext _context;
         private readonly ITokenService _tokenService;
         private readonly IXPService _xpService;
+        private readonly ILogger<AuthController> _logger;
 
         public AuthController(
             DataContext context, 
             ITokenService tokenService,
-            IXPService xpService)
+            IXPService xpService,
+            ILogger<AuthController> logger)
         {
             _context = context;
             _tokenService = tokenService;
             _xpService = xpService;
+            _logger = logger;
         }
 
         [HttpPost("register")]
@@ -148,7 +151,7 @@ namespace SecondBrain.Api.Controllers
                     Email = user.Email,
                     Name = user.Name,
                     CreatedAt = user.CreatedAt,
-                    ExperiencePoints = user.ExperiencePoints,
+                    ExperiencePoints = currentXP,
                     Level = user.Level,
                     Avatar = user.Avatar,
                     XpForNextLevel = xpForNextLevel,
@@ -161,6 +164,7 @@ namespace SecondBrain.Api.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error retrieving user profile");
                 return StatusCode(500, new { error = "An error occurred while retrieving user profile." });
             }
         }

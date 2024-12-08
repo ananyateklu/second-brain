@@ -1,12 +1,15 @@
-public interface IActivityLogger
+namespace SecondBrain.Api.Services
 {
-    Task LogActivityAsync(
-        string userId,
-        string actionType,
-        string itemType,
-        string itemId,
-        string itemTitle,
-        string description,
-        object? metadata = null
-    );
+    public interface IActivityLogger
+    {
+        Task LogActivityAsync(
+            string userId,
+            string actionType,
+            string itemType,
+            string itemId,
+            string itemTitle,
+            string description,
+            object? metadata = null
+        );
+    }
 } 

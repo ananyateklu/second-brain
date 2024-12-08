@@ -12,6 +12,6 @@ namespace SecondBrain.Api.Services
         Task<ImageGenerationResponse> GenerateImageAsync(ImageGenerationRequest request);
         Task<AudioTranscriptionResponse> TranscribeAudioAsync(IFormFile file);
         Task<TextToSpeechResponse> TextToSpeechAsync(TextToSpeechRequest request);
-        Task<Stream> GetAudioStreamAsync(TextToSpeechResponse response);
+        Stream GetAudioStream(TextToSpeechResponse response);
     }
 } 

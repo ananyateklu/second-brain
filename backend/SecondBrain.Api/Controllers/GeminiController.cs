@@ -47,7 +47,7 @@ namespace SecondBrain.Api.Controllers
 
     public class ChatRequest
     {
-        public string Message { get; set; }
-        public string ModelId { get; set; }
+        public required string Message { get; set; }
+        public required string ModelId { get; set; }
     }
 }

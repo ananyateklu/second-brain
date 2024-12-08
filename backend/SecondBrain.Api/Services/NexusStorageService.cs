@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using SecondBrain.Api.DTOs.Nexus;
 using SecondBrain.Data;
 using SecondBrain.Data.Entities;
+using Microsoft.Extensions.Logging;
 
 namespace SecondBrain.Api.Services
 {
@@ -19,6 +19,7 @@ namespace SecondBrain.Api.Services
 
         public async Task<NexusStorageItem> GetItemAsync(string key)
         {
+            _logger.LogInformation("Retrieving item with key: {Key}", key);
             var item = await _context.NexusStorage
                 .FirstOrDefaultAsync(x => x.Key == key);
 
@@ -41,10 +42,10 @@ namespace SecondBrain.Api.Services
 
         public async Task<IEnumerable<NexusStorageItem>> SearchByTagsAsync(string tags)
         {
-            var tagArray = tags.Split(',').Select(t => t.Trim().ToLower());
+            var tagArray = tags.Split(',').Select(t => t.Trim());
             
             var items = await _context.NexusStorage
-                .Where(x => tagArray.All(tag => x.Tags.ToLower().Contains(tag)))
+                .Where(x => x.Tags != null && tagArray.All(tag => x.Tags.Contains(tag, StringComparison.OrdinalIgnoreCase)))
                 .Select(x => new NexusStorageItem
                 {
                     Id = x.Id,

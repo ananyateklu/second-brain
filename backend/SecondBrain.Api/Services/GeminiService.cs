@@ -12,14 +12,16 @@ namespace SecondBrain.Api.Services
     {
         private readonly HttpClient _httpClient;
         private readonly ILogger<GeminiService> _logger;
-        private readonly string _apiKey;
+        private readonly string? _apiKey;
 
         public GeminiService(HttpClient httpClient, IConfiguration configuration, ILogger<GeminiService> logger)
         {
             _httpClient = httpClient;
             _logger = logger;
             _apiKey = configuration["Gemini:ApiKey"];
-            _httpClient.BaseAddress = new Uri("https://generativelanguage.googleapis.com/v1beta/");
+            _logger.LogInformation("Initializing Gemini service");
+            _httpClient.BaseAddress = new Uri(configuration["Gemini:BaseUrl"] ??
+                throw new ArgumentException("Gemini API base URL not configured"));
         }
 
         public async Task<GeminiUpdate> ChatAsync(string prompt, string modelId = "gemini-1.5-pro")
@@ -40,12 +42,14 @@ namespace SecondBrain.Api.Services
                             }
                         }
                     },
+                    SafetySettings = new SafetySetting[] { },
                     GenerationConfig = new GenerationConfig
                     {
                         Temperature = 0.7f,
                         MaxOutputTokens = 2048,
                         TopP = 0.8f,
-                        TopK = 40
+                        TopK = 40,
+                        StopSequences = new string[] { }
                     }
                 };
 
@@ -73,12 +77,12 @@ namespace SecondBrain.Api.Services
                     _logger.LogError("Gemini API error: {StatusCode} - {Error}",
                         response.StatusCode, errorContent);
 
-                    throw new Exception($"Gemini API error: {response.StatusCode} - {errorContent}");
+                    throw new HttpRequestException($"Gemini API error: {response.StatusCode} - {errorContent}");
                 }
 
                 var result = await response.Content.ReadFromJsonAsync<GeminiResponse>();
                 var content = result?.Candidates?.FirstOrDefault()?.Content?.Parts?.FirstOrDefault()?.Text
-                    ?? throw new Exception("No content received from Gemini API");
+                    ?? throw new InvalidOperationException("No content received from Gemini API");
 
                 return new GeminiUpdate(
                     "gemini",
@@ -89,7 +93,7 @@ namespace SecondBrain.Api.Services
             catch (Exception ex) when (ex is HttpRequestException || ex is JsonException)
             {
                 _logger.LogError(ex, "Failed to get response from Gemini");
-                throw new Exception("Failed to get response from Gemini", ex);
+                throw new HttpRequestException("Failed to get Gemini chat response", ex);
             }
         }
 
@@ -104,7 +108,7 @@ namespace SecondBrain.Api.Services
 
                 if (response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable)
                 {
-                    throw new Exception("Gemini service is temporarily unavailable. Please try again later.");
+                    throw new HttpRequestException("Gemini service is temporarily unavailable. Please try again later.");
                 }
 
                 if (!response.IsSuccessStatusCode)
@@ -113,42 +117,44 @@ namespace SecondBrain.Api.Services
                     _logger.LogError("Gemini API error: {StatusCode} - {Error}",
                         response.StatusCode, errorContent);
 
-                    throw new Exception($"Gemini API error: {response.StatusCode} - {errorContent}");
+                    throw new HttpRequestException($"Gemini API error: {response.StatusCode} - {errorContent}");
                 }
 
                 return await response.Content.ReadFromJsonAsync<GeminiResponse>()
-                    ?? throw new Exception("Failed to deserialize Gemini response");
+                    ?? throw new InvalidOperationException("Failed to deserialize Gemini response");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to generate content from Gemini");
-                throw;
+                throw new HttpRequestException("Failed to generate content from Gemini", ex);
             }
         }
 
         public bool IsConfigured()
         {
-            return !string.IsNullOrEmpty(_apiKey);
+            var isConfigured = !string.IsNullOrEmpty(_apiKey);
+            _logger.LogDebug("Gemini service configuration status: {IsConfigured}", isConfigured);
+            return isConfigured;
         }
     }
 
     public class GeminiResponse
     {
-        public Candidate[] Candidates { get; set; }
+        public Candidate[]? Candidates { get; set; }
     }
 
     public class Candidate
     {
-        public Content Content { get; set; }
+        public Content? Content { get; set; }
     }
 
     public class Content
     {
-        public Part[] Parts { get; set; }
+        public Part[]? Parts { get; set; }
     }
 
     public class Part
     {
-        public string Text { get; set; }
+        public string? Text { get; set; }
     }
 }

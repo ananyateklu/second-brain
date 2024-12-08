@@ -78,7 +78,8 @@ namespace SecondBrain.Api.Controllers
                     Messages = new List<Message>
                     {
                         new Message { Role = "user", Content = "Hello, Claude!" }
-                    }
+                    },
+                    Tools = new List<Tool>()
                 };
 
                 var testResponse = await _anthropicService.SendMessageAsync(testRequest);

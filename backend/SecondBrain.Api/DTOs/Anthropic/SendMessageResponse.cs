@@ -6,55 +6,52 @@ namespace SecondBrain.Api.DTOs.Anthropic
     public class SendMessageResponse
     {
         [JsonPropertyName("id")]
-        public string Id { get; set; }
+        public required string Id { get; set; }
 
         [JsonPropertyName("type")]
-        public string Type { get; set; }
+        public required string Type { get; set; }
 
         [JsonPropertyName("role")]
-        public string Role { get; set; }
+        public required string Role { get; set; }
 
         [JsonPropertyName("content")]
-        public List<ContentBlock> Content { get; set; }
+        public required List<ContentBlock> Content { get; set; }
 
         [JsonPropertyName("model")]
-        public string Model { get; set; }
+        public required string Model { get; set; }
 
         [JsonPropertyName("stop_reason")]
-        public string StopReason { get; set; }
+        public required string StopReason { get; set; }
 
         [JsonPropertyName("stop_sequence")]
-        public object StopSequence { get; set; }
+        public object? StopSequence { get; set; }
 
         [JsonPropertyName("usage")]
-        public Usage Usage { get; set; }
+        public required Usage Usage { get; set; }
     }
 
     public class ContentBlock
     {
         [JsonPropertyName("type")]
-        public string Type { get; set; } // e.g., "text", "tool_use", "tool_result"
+        public required string Type { get; set; }
 
-        // For "text" type
         [JsonPropertyName("text")]
-        public string Text { get; set; }
+        public string? Text { get; set; }
 
-        // For "tool_use" type
         [JsonPropertyName("id")]
-        public string Id { get; set; }
+        public string? Id { get; set; }
 
         [JsonPropertyName("name")]
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         [JsonPropertyName("input")]
-        public object Input { get; set; }
+        public object? Input { get; set; }
 
-        // For "tool_result" type
         [JsonPropertyName("tool_use_id")]
-        public string ToolUseId { get; set; }
+        public string? ToolUseId { get; set; }
 
         [JsonPropertyName("content")]
-        public object Content { get; set; }
+        public object? Content { get; set; }
 
         [JsonPropertyName("is_error")]
         public bool? IsError { get; set; }

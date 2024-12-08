@@ -2,24 +2,25 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using SecondBrain.Api.DTOs.RAG;
+using SecondBrain.Api.Exceptions;
 
 namespace SecondBrain.Api.Services
 {
-    public class RAGService
+    public class RagService
     {
         private readonly HttpClient _httpClient;
-        private readonly ILogger<RAGService> _logger;
-        private readonly string _apiKey;
+        private readonly ILogger<RagService> _logger;
         private readonly string _apiEndpoint = "https://api.openai.com/v1";
+        private const string JsonMediaType = "application/json";
 
-        public RAGService(IConfiguration configuration, ILogger<RAGService> logger)
+        public RagService(IConfiguration configuration, ILogger<RagService> logger)
         {
             _logger = logger;
-            _apiKey = configuration["OpenAI:ApiKey"];
+            var apiKey = configuration["OpenAI:ApiKey"];
             
             _httpClient = new HttpClient();
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
-            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(JsonMediaType));
             _httpClient.DefaultRequestHeaders.Add("OpenAI-Beta", "assistants=v2");
         }
 
@@ -37,16 +38,17 @@ namespace SecondBrain.Api.Services
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    throw new Exception($"File upload failed: {responseString}");
+                    throw new RagException($"File upload failed: {responseString}");
                 }
 
-                var result = JsonSerializer.Deserialize<FileUploadResponse>(responseString);
-                return result.Id;
+                var result = JsonSerializer.Deserialize<FileUploadResponse>(responseString)
+                    ?? throw new RagException("Failed to deserialize file upload response");
+                return result.Id ?? throw new RagException("File ID was null in response");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error uploading file for RAG");
-                throw;
+                throw new RagException("Failed to upload file", ex);
             }
         }
 
@@ -64,18 +66,24 @@ namespace SecondBrain.Api.Services
                 };
 
                 var json = JsonSerializer.Serialize(createRequest);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var content = new StringContent(json, Encoding.UTF8, JsonMediaType);
 
                 var response = await _httpClient.PostAsync($"{_apiEndpoint}/assistants", content);
                 var responseString = await response.Content.ReadAsStringAsync();
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    throw new Exception($"Assistant creation failed: {responseString}");
+                    throw new RagException($"Assistant creation failed: {responseString}");
                 }
 
-                var result = JsonSerializer.Deserialize<AssistantResponse>(responseString);
+                var result = JsonSerializer.Deserialize<AssistantResponse>(responseString)
+                    ?? throw new RagException("Failed to deserialize assistant response");
                 
+                if (result.Id == null)
+                {
+                    throw new RagException("Assistant ID was null in response");
+                }
+
                 // Then attach the file to the assistant
                 var attachFileRequest = new
                 {
@@ -83,7 +91,7 @@ namespace SecondBrain.Api.Services
                 };
 
                 json = JsonSerializer.Serialize(attachFileRequest);
-                content = new StringContent(json, Encoding.UTF8, "application/json");
+                content = new StringContent(json, Encoding.UTF8, JsonMediaType);
 
                 response = await _httpClient.PostAsync($"{_apiEndpoint}/assistants/{result.Id}/files", content);
                 responseString = await response.Content.ReadAsStringAsync();
@@ -92,7 +100,7 @@ namespace SecondBrain.Api.Services
                 {
                     // If file attachment fails, delete the assistant and throw
                     await DeleteAssistantAsync(result.Id);
-                    throw new Exception($"File attachment failed: {responseString}");
+                    throw new RagException($"File attachment failed: {responseString}");
                 }
 
                 return result.Id;
@@ -100,7 +108,7 @@ namespace SecondBrain.Api.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating assistant");
-                throw;
+                throw new RagException("Failed to create assistant", ex);
             }
         }
 
@@ -125,7 +133,7 @@ namespace SecondBrain.Api.Services
 
                     if (run.Status == "failed")
                     {
-                        throw new Exception("Assistant run failed");
+                        throw new RagException("Assistant run failed");
                     }
                 }
 
@@ -145,22 +153,23 @@ namespace SecondBrain.Api.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting assistant response");
-                throw;
+                throw new RagException("Failed to get assistant response", ex);
             }
         }
 
         private async Task<ThreadResponse> CreateThreadAsync()
         {
-            var response = await _httpClient.PostAsync($"{_apiEndpoint}/threads", new StringContent("", Encoding.UTF8, "application/json"));
+            var response = await _httpClient.PostAsync($"{_apiEndpoint}/threads", new StringContent("", Encoding.UTF8, JsonMediaType));
             var responseString = await response.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<ThreadResponse>(responseString);
+            return JsonSerializer.Deserialize<ThreadResponse>(responseString) 
+                ?? throw new RagException("Failed to deserialize thread response");
         }
 
         private async Task AddMessageToThreadAsync(string threadId, string content)
         {
             var request = new { role = "user", content };
             var json = JsonSerializer.Serialize(request);
-            var httpContent = new StringContent(json, Encoding.UTF8, "application/json");
+            var httpContent = new StringContent(json, Encoding.UTF8, JsonMediaType);
             
             await _httpClient.PostAsync($"{_apiEndpoint}/threads/{threadId}/messages", httpContent);
         }
@@ -169,26 +178,29 @@ namespace SecondBrain.Api.Services
         {
             var request = new { assistant_id = assistantId };
             var json = JsonSerializer.Serialize(request);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var content = new StringContent(json, Encoding.UTF8, JsonMediaType);
             
             var response = await _httpClient.PostAsync($"{_apiEndpoint}/threads/{threadId}/runs", content);
             var responseString = await response.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<RunResponse>(responseString);
+            return JsonSerializer.Deserialize<RunResponse>(responseString)
+                ?? throw new RagException("Failed to deserialize run response");
         }
 
         private async Task<RunResponse> GetRunStatusAsync(string threadId, string runId)
         {
             var response = await _httpClient.GetAsync($"{_apiEndpoint}/threads/{threadId}/runs/{runId}");
             var responseString = await response.Content.ReadAsStringAsync();
-            return JsonSerializer.Deserialize<RunResponse>(responseString);
+            return JsonSerializer.Deserialize<RunResponse>(responseString)
+                ?? throw new RagException("Failed to deserialize run status response");
         }
 
         private async Task<List<MessageResponse>> GetThreadMessagesAsync(string threadId)
         {
             var response = await _httpClient.GetAsync($"{_apiEndpoint}/threads/{threadId}/messages");
             var responseString = await response.Content.ReadAsStringAsync();
-            var result = JsonSerializer.Deserialize<ThreadMessagesResponse>(responseString);
-            return result.Data;
+            var result = JsonSerializer.Deserialize<ThreadMessagesResponse>(responseString)
+                ?? throw new RagException("Failed to deserialize thread messages response");
+            return result.Data ?? throw new RagException("Message data was null in response");
         }
 
         public async Task DeleteAssistantAsync(string assistantId)
@@ -200,7 +212,7 @@ namespace SecondBrain.Api.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting assistant");
-                throw;
+                throw new RagException("Failed to delete assistant", ex);
             }
         }
 
@@ -213,7 +225,7 @@ namespace SecondBrain.Api.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting file");
-                throw;
+                throw new RagException("Failed to delete file", ex);
             }
         }
     }

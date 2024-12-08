@@ -11,20 +11,20 @@ namespace SecondBrain.Data
         public DataContext(DbContextOptions<DataContext> options)
             : base(options) { }
 
-        public DbSet<User> Users { get; set; }
+        public DbSet<User> Users { get; set; } = null!;
         public DbSet<Note> Notes { get; set; } = null!;
         public DbSet<TaskItem> Tasks { get; set; } = null!;
         public DbSet<TaskLink> TaskLinks { get; set; } = null!;
         public DbSet<Reminder> Reminders { get; set; } = null!;
-        public DbSet<RefreshToken> RefreshTokens { get; set; }
-        public DbSet<TaskItemNote> TaskItemNotes { get; set; }
-        public DbSet<Activity> Activities { get; set; }
+        public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
+        public DbSet<TaskItemNote> TaskItemNotes { get; set; } = null!;
+        public DbSet<Activity> Activities { get; set; } = null!;
         public DbSet<NoteLink> NoteLinks { get; set; } = null!;
-        public DbSet<Idea> Ideas { get; set; }
-        public DbSet<IdeaLink> IdeaLinks { get; set; }
-        public DbSet<Achievement> Achievements { get; set; }
-        public DbSet<UserAchievement> UserAchievements { get; set; }
-        public DbSet<NexusStorage> NexusStorage { get; set; }
+        public DbSet<Idea> Ideas { get; set; } = null!;
+        public DbSet<IdeaLink> IdeaLinks { get; set; } = null!;
+        public DbSet<Achievement> Achievements { get; set; } = null!;
+        public DbSet<UserAchievement> UserAchievements { get; set; } = null!;
+        public DbSet<NexusStorage> NexusStorage { get; set; } = null!;
         public DbSet<ReminderLink> ReminderLinks { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -305,7 +305,8 @@ namespace SecondBrain.Data
         public DataContext CreateDbContext(string[] args)
         {
             var optionsBuilder = new DbContextOptionsBuilder<DataContext>();
-            optionsBuilder.UseSqlServer("Server=localhost,7800;Database=SecondBrainDb;User Id=sa;Password=Anu685904;TrustServerCertificate=True;");
+            // Use a placeholder connection string for development
+            optionsBuilder.UseSqlServer("Server=localhost;Database=SecondBrainDb;Trusted_Connection=True;TrustServerCertificate=True");
 
             return new DataContext(optionsBuilder.Options);
         }

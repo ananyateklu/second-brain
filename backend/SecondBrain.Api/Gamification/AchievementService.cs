@@ -222,9 +222,9 @@ namespace SecondBrain.Api.Gamification
 
             return new UnlockedAchievement
             {
-                Name = achievement.Name,
-                Description = achievement.Description,
-                Icon = achievement.Icon,
+                Name = achievement.Name ?? string.Empty,
+                Description = achievement.Description ?? string.Empty,
+                Icon = achievement.Icon ?? string.Empty,
                 XPAwarded = achievement.XPValue,
                 NewTotalXP = newXP,
                 NewLevel = newLevel,

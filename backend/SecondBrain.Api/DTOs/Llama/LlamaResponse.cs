@@ -2,7 +2,7 @@ namespace SecondBrain.Api.DTOs.Llama
 {
     public class LlamaResponse
     {
-        public string Content { get; set; }
-        public string Model { get; set; }
+        public required string Content { get; set; }
+        public required string Model { get; set; }
     }
 } 

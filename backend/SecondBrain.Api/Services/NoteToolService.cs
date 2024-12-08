@@ -4,6 +4,7 @@ using SecondBrain.Data;
 using SecondBrain.Api.DTOs.Llama;
 using SecondBrain.Data.Entities;
 using SecondBrain.Api.Services;
+using SecondBrain.Api.Enums;
 
 namespace SecondBrain.Api.Services
 {
@@ -84,8 +85,8 @@ namespace SecondBrain.Api.Services
 
                 if (!string.IsNullOrEmpty(criteria.Tags))
                 {
-                    var tags = criteria.Tags.Split(',').Select(t => t.Trim().ToLower());
-                    query = query.Where(n => tags.All(tag => n.Tags.ToLower().Contains(tag)));
+                    var tags = criteria.Tags.Split(',').Select(t => t.Trim());
+                    query = query.Where(n => n.Tags != null && tags.All(tag => n.Tags.Contains(tag, StringComparison.OrdinalIgnoreCase)));
                 }
 
                 if (criteria.IsPinned.HasValue)
@@ -103,8 +104,8 @@ namespace SecondBrain.Api.Services
                 if (!string.IsNullOrEmpty(criteria.Query))
                 {
                     query = query.Where(n => 
-                        n.Title.Contains(criteria.Query) || 
-                        n.Content.Contains(criteria.Query));
+                        (n.Title != null && n.Title.Contains(criteria.Query, StringComparison.OrdinalIgnoreCase)) || 
+                        (n.Content != null && n.Content.Contains(criteria.Query, StringComparison.OrdinalIgnoreCase)));
                 }
 
                 var notes = await query.ToListAsync();
@@ -245,7 +246,7 @@ namespace SecondBrain.Api.Services
 
                 if (request.Tags != note.Tags)
                 {
-                    changes["Tags"] = (note.Tags, request.Tags ?? string.Empty);
+                    changes["Tags"] = ((object)(note.Tags ?? string.Empty), (object)(request.Tags ?? string.Empty));
                     note.Tags = request.Tags ?? string.Empty;
                 }
 
@@ -453,8 +454,8 @@ namespace SecondBrain.Api.Services
                 var notes = await _context.Notes
                     .Where(n => n.UserId == userId && !n.IsDeleted)
                     .Where(n => keywords.Any(k => 
-                        n.Title.ToLower().Contains(k) || 
-                        n.Content.ToLower().Contains(k)))
+                        n.Title.Contains(k, StringComparison.OrdinalIgnoreCase) || 
+                        n.Content.Contains(k, StringComparison.OrdinalIgnoreCase)))
                     .ToListAsync();
 
                 return notes;

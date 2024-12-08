@@ -12,30 +12,30 @@ namespace SecondBrain.Data.Entities
 
         [Required]
         [MaxLength(450)]
-        public string UserId { get; set; }
+        public required string UserId { get; set; }
 
         [Required]
-        public string ActionType { get; set; }  // e.g., create, edit, delete
+        public required string ActionType { get; set; }  // e.g., create, edit, delete
 
         [Required]
-        public string ItemType { get; set; }    // e.g., note, task, idea, reminder
+        public required string ItemType { get; set; }    // e.g., note, task, idea, reminder
 
         [Required]
-        public string ItemId { get; set; }
+        public required string ItemId { get; set; }
 
         [Required]
-        public string ItemTitle { get; set; }
+        public required string ItemTitle { get; set; }
 
         [Required]
-        public string Description { get; set; }
+        public required string Description { get; set; }
 
-        public string MetadataJson { get; set; } // JSON serialized metadata
+        public string? MetadataJson { get; set; } // JSON serialized metadata
 
         [Required]
         public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 
         // Navigation property (optional)
         [ForeignKey("UserId")]
-        public User User { get; set; }
+        public User? User { get; set; }
     }
 }

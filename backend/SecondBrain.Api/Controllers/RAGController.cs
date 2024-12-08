@@ -6,12 +6,12 @@ namespace SecondBrain.Api.Controllers
 {
     [ApiController]
     [Route("api/ai/rag")]
-    public class RAGController : ControllerBase
+    public class RagController : ControllerBase
     {
-        private readonly RAGService _ragService;
-        private readonly ILogger<RAGController> _logger;
+        private readonly RagService _ragService;
+        private readonly ILogger<RagController> _logger;
 
-        public RAGController(RAGService ragService, ILogger<RAGController> logger)
+        public RagController(RagService ragService, ILogger<RagController> logger)
         {
             _ragService = ragService;
             _logger = logger;

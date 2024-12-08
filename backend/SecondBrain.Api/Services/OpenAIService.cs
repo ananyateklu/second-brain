@@ -9,16 +9,16 @@ using Microsoft.AspNetCore.Http;
 using SecondBrain.Api.DTOs.OpenAI;
 using System.Net.Http.Headers;
 using System.Diagnostics;
+using SecondBrain.Api.Exceptions;
 
 namespace SecondBrain.Api.Services
 {
     public class OpenAIService : IOpenAIService
     {
         private readonly HttpClient _httpClient;
-        private readonly IConfiguration _configuration;
         private readonly ILogger<OpenAIService> _logger;
-        private readonly string _apiKey;
-        private readonly string _apiEndpoint;
+        public required string ApiEndpoint { get; init; }
+        private const string JsonMediaType = "application/json";
 
         public OpenAIService(
             HttpClient httpClient,
@@ -26,13 +26,13 @@ namespace SecondBrain.Api.Services
             ILogger<OpenAIService> logger)
         {
             _httpClient = httpClient;
-            _configuration = configuration;
             _logger = logger;
-            _apiKey = _configuration["OpenAI:ApiKey"];
-            _apiEndpoint = _configuration["OpenAI:ApiEndpoint"];
+            var apiKey = configuration["OpenAI:ApiKey"];
+            ApiEndpoint = configuration["OpenAI:ApiEndpoint"] ?? 
+                throw new ArgumentException("OpenAI:ApiEndpoint configuration is required");
 
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
-            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(JsonMediaType));
         }
 
         public async Task<SendMessageResponse> SendMessageAsync(SendMessageRequest request)
@@ -66,29 +66,31 @@ namespace SecondBrain.Api.Services
                 };
 
                 var json = JsonSerializer.Serialize(apiRequest, jsonOptions);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var content = new StringContent(json, Encoding.UTF8, JsonMediaType);
 
                 _logger.LogInformation("Sending message to OpenAI. Model: {ModelId}, MaxTokens: {MaxTokens}", 
                     request.Model, maxOutputTokens);
                 _logger.LogDebug("Request Payload: {RequestPayload}", json);
 
-                var response = await _httpClient.PostAsync($"{_apiEndpoint}/chat/completions", content);
+                var response = await _httpClient.PostAsync($"{ApiEndpoint}/chat/completions", content);
                 var responseString = await response.Content.ReadAsStringAsync();
 
                 _logger.LogDebug("Response Content: {ResponseContent}", responseString);
 
                 if (response.IsSuccessStatusCode)
                 {
-                    return JsonSerializer.Deserialize<SendMessageResponse>(responseString, jsonOptions);
+                    var messageResponse = JsonSerializer.Deserialize<SendMessageResponse>(responseString, jsonOptions)
+                        ?? throw new OpenAIException("Failed to deserialize OpenAI response");
+                    return messageResponse;
                 }
 
                 var errorResponse = JsonSerializer.Deserialize<OpenAIErrorResponse>(responseString, jsonOptions);
-                throw new Exception($"OpenAI API Error: {errorResponse?.Error?.Message}");
+                throw new OpenAIException($"OpenAI API Error: {errorResponse?.Error?.Message}");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error sending message to OpenAI");
-                throw;
+                throw new OpenAIException("Failed to send message to OpenAI", ex);
             }
         }
 
@@ -128,26 +130,27 @@ namespace SecondBrain.Api.Services
                 formData.Add(new StringContent("whisper-1"), "model");
                 formData.Add(new StringContent("json"), "response_format");
 
-                var response = await _httpClient.PostAsync($"{_apiEndpoint}/audio/transcriptions", formData);
+                var response = await _httpClient.PostAsync($"{ApiEndpoint}/audio/transcriptions", formData);
                 var responseString = await response.Content.ReadAsStringAsync();
 
                 if (response.IsSuccessStatusCode)
                 {
                     _logger.LogInformation("Successfully transcribed audio");
-                    return JsonSerializer.Deserialize<AudioTranscriptionResponse>(responseString, new JsonSerializerOptions
+                    var transcription = JsonSerializer.Deserialize<AudioTranscriptionResponse>(responseString, new JsonSerializerOptions
                     {
                         PropertyNameCaseInsensitive = true
-                    });
+                    }) ?? throw new OpenAIException("Failed to deserialize audio transcription response");
+                    return transcription;
                 }
 
                 var errorResponse = JsonSerializer.Deserialize<OpenAIErrorResponse>(responseString);
                 _logger.LogError("OpenAI API Error: {ErrorMessage}", errorResponse?.Error?.Message);
-                throw new Exception($"OpenAI API Error: {errorResponse?.Error?.Message}");
+                throw new OpenAIException($"OpenAI API Error: {errorResponse?.Error?.Message}");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error transcribing audio");
-                throw;
+                throw new OpenAIException("Failed to transcribe audio", ex);
             }
         }
 
@@ -168,27 +171,29 @@ namespace SecondBrain.Api.Services
                 };
 
                 var json = JsonSerializer.Serialize(apiRequest, jsonOptions);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var content = new StringContent(json, Encoding.UTF8, JsonMediaType);
 
-                var response = await _httpClient.PostAsync($"{_apiEndpoint}/audio/speech", content);
+                var response = await _httpClient.PostAsync($"{ApiEndpoint}/audio/speech", content);
                 var responseString = await response.Content.ReadAsStringAsync();
 
                 if (!response.IsSuccessStatusCode)
                 {
                     var errorResponse = JsonSerializer.Deserialize<OpenAIErrorResponse>(responseString);
-                    throw new Exception($"OpenAI API Error: {errorResponse?.Error?.Message}");
+                    throw new OpenAIException($"OpenAI API Error: {errorResponse?.Error?.Message}");
                 }
 
                 var audioStream = await response.Content.ReadAsStreamAsync();
                 return new TextToSpeechResponse
                 {
-                    AudioStream = audioStream
+                    AudioStream = audioStream,
+                    Model = request.Model,
+                    Usage = new Usage { PromptTokens = 0, CompletionTokens = 0, TotalTokens = 0 }
                 };
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error converting text to speech");
-                throw;
+                throw new OpenAIException("Failed to convert text to speech", ex);
             }
         }
 
@@ -202,23 +207,25 @@ namespace SecondBrain.Api.Services
                 };
 
                 var json = JsonSerializer.Serialize(request, jsonOptions);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var content = new StringContent(json, Encoding.UTF8, JsonMediaType);
 
-                var response = await _httpClient.PostAsync($"{_apiEndpoint}/embeddings", content);
+                var response = await _httpClient.PostAsync($"{ApiEndpoint}/embeddings", content);
                 var responseString = await response.Content.ReadAsStringAsync();
 
                 if (!response.IsSuccessStatusCode)
                 {
                     var errorResponse = JsonSerializer.Deserialize<OpenAIErrorResponse>(responseString);
-                    throw new Exception($"OpenAI API Error: {errorResponse?.Error?.Message}");
+                    throw new OpenAIException($"OpenAI API Error: {errorResponse?.Error?.Message}");
                 }
 
-                return JsonSerializer.Deserialize<EmbeddingsResponse>(responseString, jsonOptions);
+                var embeddingsResponse = JsonSerializer.Deserialize<EmbeddingsResponse>(responseString, jsonOptions)
+                    ?? throw new OpenAIException("Failed to deserialize embeddings response");
+                return embeddingsResponse;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating embeddings");
-                throw;
+                throw new OpenAIException("Failed to create embeddings", ex);
             }
         }
 
@@ -243,9 +250,9 @@ namespace SecondBrain.Api.Services
                     style = request.Style
                 }, jsonOptions);
 
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var content = new StringContent(json, Encoding.UTF8, JsonMediaType);
 
-                var response = await _httpClient.PostAsync($"{_apiEndpoint}/images/generations", content);
+                var response = await _httpClient.PostAsync($"{ApiEndpoint}/images/generations", content);
                 var responseString = await response.Content.ReadAsStringAsync();
 
                 _logger.LogInformation("Received response from OpenAI: {Response}", responseString);
@@ -253,14 +260,14 @@ namespace SecondBrain.Api.Services
                 if (!response.IsSuccessStatusCode)
                 {
                     var errorResponse = JsonSerializer.Deserialize<OpenAIErrorResponse>(responseString);
-                    throw new Exception($"OpenAI API Error: {errorResponse?.Error?.Message}");
+                    throw new OpenAIException($"OpenAI API Error: {errorResponse?.Error?.Message}");
                 }
 
                 var result = JsonSerializer.Deserialize<ImageGenerationResponse>(responseString, jsonOptions);
                 
                 if (result?.Data == null || !result.Data.Any())
                 {
-                    throw new Exception("No image was generated in the response");
+                    throw new OpenAIException("No image was generated in the response");
                 }
 
                 return result;
@@ -268,17 +275,17 @@ namespace SecondBrain.Api.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error generating image");
-                throw;
+                throw new OpenAIException("Failed to generate image", ex);
             }
         }
 
-        public async Task<Stream> GetAudioStreamAsync(TextToSpeechResponse response)
+        public Stream GetAudioStream(TextToSpeechResponse response)
         {
             try
             {
                 if (response.AudioStream == null)
                 {
-                    throw new Exception("No audio stream available");
+                    throw new OpenAIException("No audio stream available");
                 }
                 
                 return response.AudioStream;
@@ -286,7 +293,7 @@ namespace SecondBrain.Api.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting audio stream");
-                throw;
+                throw new OpenAIException("Failed to get audio stream", ex);
             }
         }
     }

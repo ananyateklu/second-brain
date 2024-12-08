@@ -42,14 +42,16 @@ namespace SecondBrain.Api.Controllers
                         .FirstOrDefaultAsync(n => n.Id == link.LinkedItemId && !n.IsDeleted);
                     if (note != null)
                     {
-                        items[link.LinkedItemId] = note;
+                        items[link.LinkedItemId] = (dynamic)note;
                         validLinks.Add(link);
                     }
                 }
                 else if (link.LinkType.ToLower() == "idea")
                 {
                     var note = await _context.Notes
-                        .FirstOrDefaultAsync(n => n.Id == link.LinkedItemId && n.Tags.Contains("idea") && !n.IsDeleted);
+                        .FirstOrDefaultAsync(n => n.Id == link.LinkedItemId && 
+                            (n.Tags != null && n.Tags.Contains("idea")) && 
+                            !n.IsDeleted);
                     if (note != null)
                     {
                         items[link.LinkedItemId] = note;
@@ -407,6 +409,11 @@ namespace SecondBrain.Api.Controllers
             else
             {
                 // Create new link if no existing link found
+                if (string.IsNullOrEmpty(userId))
+                {
+                    throw new UnauthorizedAccessException("User ID not found in token.");
+                }
+
                 var reminderLink = new ReminderLink
                 {
                     ReminderId = reminderId,

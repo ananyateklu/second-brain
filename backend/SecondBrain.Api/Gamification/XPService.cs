@@ -86,11 +86,11 @@ namespace SecondBrain.Api.Gamification
             {
                 await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error awarding XP to user {UserId}", userId);
-                throw;
+                throw new InvalidOperationException($"Failed to award XP to user {userId}", ex);
             }
         }
 
-        private int GetXPForAction(string action)
+        private static int GetXPForAction(string action)
         {
             return action.ToLower() switch
             {
@@ -127,35 +127,6 @@ namespace SecondBrain.Api.Gamification
             return 1;
         }
 
-        // Add a method to verify level calculation
-        private async Task VerifyAndFixUserLevel(string userId)
-        {
-            var user = await _context.Users.FindAsync(userId);
-            if (user != null)
-            {
-                int calculatedLevel = CalculateLevel(user.ExperiencePoints);
-                if (calculatedLevel != user.Level)
-                {
-                    _logger.LogWarning(
-                        "Level mismatch detected for user {UserId}. Stored: {StoredLevel}, Calculated: {CalculatedLevel}",
-                        userId, user.Level, calculatedLevel
-                    );
-                    user.Level = calculatedLevel;
-                    await _context.SaveChangesAsync();
-                }
-            }
-        }
-
-        // Add a method to get XP needed for next level
-        private int GetXPForNextLevel(int currentLevel)
-        {
-            if (currentLevel >= LevelThresholds.Length)
-            {
-                return LevelThresholds[^1] - LevelThresholds[^2]; // Use the last gap for max level
-            }
-            return LevelThresholds[currentLevel] - LevelThresholds[currentLevel - 1];
-        }
-
         public async Task<(int currentXP, int xpForNextLevel, int progress)> GetLevelProgressAsync(string userId)
         {
             var user = await _context.Users.FindAsync(userId);
@@ -176,24 +147,6 @@ namespace SecondBrain.Api.Gamification
             int progress = (int)((float)(currentXP - currentLevelThreshold) / (nextLevelThreshold - currentLevelThreshold) * 100);
 
             return (currentXP, xpForNextLevel, progress);
-        }
-
-        // Add a helper method to verify level updates
-        private async Task<bool> VerifyLevelUpdate(string userId, int expectedLevel)
-        {
-            var user = await _context.Users.FindAsync(userId);
-            if (user == null) return false;
-
-            bool isCorrect = user.Level == expectedLevel;
-            if (!isCorrect)
-            {
-                _logger.LogWarning(
-                    "Level mismatch for user {UserId}. Expected: {ExpectedLevel}, Actual: {ActualLevel}",
-                    userId, expectedLevel, user.Level
-                );
-            }
-
-            return isCorrect;
         }
     }
 } 

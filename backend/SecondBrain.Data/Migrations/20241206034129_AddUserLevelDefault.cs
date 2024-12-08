@@ -7,12 +7,15 @@ namespace SecondBrain.Data.Migrations
     /// <inheritdoc />
     public partial class AddUserLevelDefault : Migration
     {
+        private const string UsersTable = "Users";
+        private const string NVarChar1000 = "nvarchar(1000)";
+
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AlterColumn<int>(
                 name: "Level",
-                table: "Users",
+                table: UsersTable,
                 type: "int",
                 nullable: false,
                 defaultValue: 1,
@@ -21,12 +24,12 @@ namespace SecondBrain.Data.Migrations
 
             migrationBuilder.AlterColumn<string>(
                 name: "Avatar",
-                table: "Users",
-                type: "nvarchar(1000)",
+                table: UsersTable,
+                type: NVarChar1000,
                 maxLength: 1000,
                 nullable: true,
                 oldClrType: typeof(string),
-                oldType: "nvarchar(1000)",
+                oldType: NVarChar1000,
                 oldMaxLength: 1000);
         }
 
@@ -35,7 +38,7 @@ namespace SecondBrain.Data.Migrations
         {
             migrationBuilder.AlterColumn<int>(
                 name: "Level",
-                table: "Users",
+                table: UsersTable,
                 type: "int",
                 nullable: false,
                 oldClrType: typeof(int),
@@ -44,13 +47,13 @@ namespace SecondBrain.Data.Migrations
 
             migrationBuilder.AlterColumn<string>(
                 name: "Avatar",
-                table: "Users",
-                type: "nvarchar(1000)",
+                table: UsersTable,
+                type: NVarChar1000,
                 maxLength: 1000,
                 nullable: false,
                 defaultValue: "",
                 oldClrType: typeof(string),
-                oldType: "nvarchar(1000)",
+                oldType: NVarChar1000,
                 oldMaxLength: 1000,
                 oldNullable: true);
         }

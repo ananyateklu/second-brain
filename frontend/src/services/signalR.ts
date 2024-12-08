@@ -2,21 +2,39 @@ import * as signalR from '@microsoft/signalr';
 import { ExecutionStep } from '../types/ai';
 
 export class SignalRService {
-  private readonly connection: signalR.HubConnection;
+  private connection: signalR.HubConnection;
   private executionStepCallbacks: ((step: ExecutionStep) => void)[] = [];
   private isStarting: boolean = false;
   private readonly autoReconnect: boolean = true;
 
   constructor() {
-    this.connection = new signalR.HubConnectionBuilder()
-      .withUrl('http://localhost:5127/toolHub')
+    this.connection = this.buildConnection();
+    this.setupConnectionHandlers();
+  }
+
+  private buildConnection(token?: string): signalR.HubConnection {
+    const accessToken = token ?? localStorage.getItem('token') ?? '';
+    
+    return new signalR.HubConnectionBuilder()
+      .withUrl('http://localhost:5127/toolHub', {
+        skipNegotiation: true,
+        transport: signalR.HttpTransportType.WebSockets,
+        logger: signalR.LogLevel.Debug,
+        withCredentials: true,
+        accessTokenFactory: () => accessToken
+      })
       .withAutomaticReconnect({
-        nextRetryDelayInMilliseconds: () => {
-          return 1000; // Retry every second
+        nextRetryDelayInMilliseconds: retryContext => {
+          if (retryContext.previousRetryCount === 0) {
+            return 0;
+          }
+          return 1000;
         }
       })
       .build();
+  }
 
+  private setupConnectionHandlers() {
     this.connection.on('ReceiveExecutionStep', (step: ExecutionStep) => {
       console.log('[SignalR] Received step:', step);
       this.executionStepCallbacks.forEach(callback => callback(step));
@@ -36,6 +54,13 @@ export class SignalRService {
         this.start();
       }
     });
+  }
+
+  async updateToken(newToken: string) {
+    await this.stop();
+    this.connection = this.buildConnection(newToken);
+    this.setupConnectionHandlers();
+    await this.start();
   }
 
   async start() {

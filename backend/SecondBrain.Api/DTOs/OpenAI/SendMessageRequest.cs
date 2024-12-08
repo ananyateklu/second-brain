@@ -6,10 +6,10 @@ namespace SecondBrain.Api.DTOs.OpenAI
     public class SendMessageRequest
     {
         [JsonPropertyName("model")]
-        public string Model { get; set; }
+        public required string Model { get; set; }
 
         [JsonPropertyName("messages")]
-        public List<Message> Messages { get; set; }
+        public required List<Message> Messages { get; set; }
 
         [JsonPropertyName("max_tokens")]
         public int? MaxTokens { get; set; }
@@ -30,9 +30,9 @@ namespace SecondBrain.Api.DTOs.OpenAI
     public class Message
     {
         [JsonPropertyName("role")]
-        public string Role { get; set; }
+        public required string Role { get; set; }
 
         [JsonPropertyName("content")]
-        public string Content { get; set; }
+        public required string Content { get; set; }
     }
 } 

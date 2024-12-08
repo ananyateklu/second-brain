@@ -2,12 +2,10 @@ namespace SecondBrain.Api.DTOs.Tasks
 {
     public class CreateTaskRequest
     {
-        public string Title { get; set; }
-        public string Description { get; set; }
+        public required string Title { get; set; }
+        public required string Description { get; set; }
         public TaskPriority Priority { get; set; }
         public DateTime? DueDate { get; set; }
-        
-        // New Tags property
-        public List<string> Tags { get; set; }
+        public required List<string> Tags { get; set; }
     }
 }

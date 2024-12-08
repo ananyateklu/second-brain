@@ -6,22 +6,22 @@ namespace SecondBrain.Api.DTOs.OpenAI
     public class SendMessageResponse
     {
         [JsonPropertyName("id")]
-        public string Id { get; set; }
+        public required string Id { get; set; }
 
         [JsonPropertyName("object")]
-        public string Object { get; set; }
+        public required string Object { get; set; }
 
         [JsonPropertyName("created")]
         public long Created { get; set; }
 
         [JsonPropertyName("model")]
-        public string Model { get; set; }
+        public required string Model { get; set; }
 
         [JsonPropertyName("choices")]
-        public List<Choice> Choices { get; set; }
+        public required List<Choice> Choices { get; set; }
 
         [JsonPropertyName("usage")]
-        public Usage Usage { get; set; }
+        public required Usage Usage { get; set; }
     }
 
     public class Choice
@@ -30,9 +30,9 @@ namespace SecondBrain.Api.DTOs.OpenAI
         public int Index { get; set; }
 
         [JsonPropertyName("message")]
-        public Message Message { get; set; }
+        public required Message Message { get; set; }
 
         [JsonPropertyName("finish_reason")]
-        public string FinishReason { get; set; }
+        public required string FinishReason { get; set; }
     }
 } 

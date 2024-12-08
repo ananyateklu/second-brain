@@ -83,7 +83,7 @@ namespace SecondBrain.Api.Services
             await _context.SaveChangesAsync();
 
             // Get level progress
-            var (currentXP, xpForNextLevel, progress) = await _xpService.GetLevelProgressAsync(user.Id);
+            var (_, xpForNextLevel, progress) = await _xpService.GetLevelProgressAsync(user.Id);
 
             return new TokenResponse
             {
@@ -132,7 +132,7 @@ namespace SecondBrain.Api.Services
             return newTokens;
         }
 
-        private string GenerateRefreshToken()
+        private static string GenerateRefreshToken()
         {
             return Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
         }

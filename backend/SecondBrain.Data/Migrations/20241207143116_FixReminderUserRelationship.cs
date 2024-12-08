@@ -7,41 +7,47 @@ namespace SecondBrain.Data.Migrations
     /// <inheritdoc />
     public partial class FixReminderUserRelationship : Migration
     {
+        private const string RemindersTable = "Reminders";
+        private const string UsersTable = "Users";
+        private const string UserIdColumn = "UserId1";
+        private const string ForeignKeyName = "FK_Reminders_Users_UserId1";
+        private const string IndexName = "IX_Reminders_UserId1";
+
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropForeignKey(
-                name: "FK_Reminders_Users_UserId1",
-                table: "Reminders");
+                name: ForeignKeyName,
+                table: RemindersTable);
 
             migrationBuilder.DropIndex(
-                name: "IX_Reminders_UserId1",
-                table: "Reminders");
+                name: IndexName,
+                table: RemindersTable);
 
             migrationBuilder.DropColumn(
-                name: "UserId1",
-                table: "Reminders");
+                name: UserIdColumn,
+                table: RemindersTable);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<string>(
-                name: "UserId1",
-                table: "Reminders",
+                name: UserIdColumn,
+                table: RemindersTable,
                 type: "nvarchar(450)",
                 nullable: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Reminders_UserId1",
-                table: "Reminders",
-                column: "UserId1");
+                name: IndexName,
+                table: RemindersTable,
+                column: UserIdColumn);
 
             migrationBuilder.AddForeignKey(
-                name: "FK_Reminders_Users_UserId1",
-                table: "Reminders",
-                column: "UserId1",
-                principalTable: "Users",
+                name: ForeignKeyName,
+                table: RemindersTable,
+                column: UserIdColumn,
+                principalTable: UsersTable,
                 principalColumn: "Id");
         }
     }

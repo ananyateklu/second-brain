@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using SecondBrain.Api.Gamification;
 using System.Text.Json;
+using SecondBrain.Api.Enums;
 
 namespace SecondBrain.Api.Controllers
 {

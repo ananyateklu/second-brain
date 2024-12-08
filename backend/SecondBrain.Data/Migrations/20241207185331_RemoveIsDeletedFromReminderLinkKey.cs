@@ -7,16 +7,20 @@ namespace SecondBrain.Data.Migrations
     /// <inheritdoc />
     public partial class RemoveIsDeletedFromReminderLinkKey : Migration
     {
+        private const string TableName = "ReminderLinks";
+        private const string PrimaryKeyName = "PK_ReminderLinks";
+        private const string IsDeletedColumn = "IsDeleted";
+
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropPrimaryKey(
-                name: "PK_ReminderLinks",
-                table: "ReminderLinks");
+                name: PrimaryKeyName,
+                table: TableName);
 
             migrationBuilder.AlterColumn<bool>(
-                name: "IsDeleted",
-                table: "ReminderLinks",
+                name: IsDeletedColumn,
+                table: TableName,
                 type: "bit",
                 nullable: false,
                 defaultValue: false,
@@ -24,30 +28,30 @@ namespace SecondBrain.Data.Migrations
                 oldType: "bit");
 
             migrationBuilder.AddPrimaryKey(
-                name: "PK_ReminderLinks",
-                table: "ReminderLinks",
+                name: PrimaryKeyName,
+                table: TableName,
                 columns: new[] { "ReminderId", "LinkedItemId" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_ReminderLinks_IsDeleted",
-                table: "ReminderLinks",
-                column: "IsDeleted");
+                table: TableName,
+                column: IsDeletedColumn);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropPrimaryKey(
-                name: "PK_ReminderLinks",
-                table: "ReminderLinks");
+                name: PrimaryKeyName,
+                table: TableName);
 
             migrationBuilder.DropIndex(
                 name: "IX_ReminderLinks_IsDeleted",
-                table: "ReminderLinks");
+                table: TableName);
 
             migrationBuilder.AlterColumn<bool>(
-                name: "IsDeleted",
-                table: "ReminderLinks",
+                name: IsDeletedColumn,
+                table: TableName,
                 type: "bit",
                 nullable: false,
                 oldClrType: typeof(bool),
@@ -55,9 +59,9 @@ namespace SecondBrain.Data.Migrations
                 oldDefaultValue: false);
 
             migrationBuilder.AddPrimaryKey(
-                name: "PK_ReminderLinks",
-                table: "ReminderLinks",
-                columns: new[] { "ReminderId", "LinkedItemId", "IsDeleted" });
+                name: PrimaryKeyName,
+                table: TableName,
+                columns: new[] { "ReminderId", "LinkedItemId", IsDeletedColumn });
         }
     }
 }

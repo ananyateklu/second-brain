@@ -75,7 +75,7 @@ namespace SecondBrain.Api.Controllers
                 // Return a simplified response structure
                 return Ok(new { 
                     data = new[] { 
-                        new { url = response.Data.First().Url } 
+                        new { url = response.Data[0].Url } 
                     }
                 });
             }

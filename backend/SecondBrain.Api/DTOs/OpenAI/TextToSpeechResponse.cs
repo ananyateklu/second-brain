@@ -6,12 +6,12 @@ namespace SecondBrain.Api.DTOs.OpenAI
     public class TextToSpeechResponse
     {
         [JsonIgnore]
-        public Stream AudioStream { get; set; }
+        public required Stream AudioStream { get; set; }
 
         [JsonPropertyName("model")]
-        public string Model { get; set; }
+        public required string Model { get; set; }
 
         [JsonPropertyName("usage")]
-        public Usage Usage { get; set; }
+        public required Usage Usage { get; set; }
     }
 } 

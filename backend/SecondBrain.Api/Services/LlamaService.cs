@@ -15,11 +15,20 @@ using System.Threading;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.SignalR;
 using SecondBrain.Api.Hubs;
+using System.Text;
+using SecondBrain.Api.Exceptions;
 
 namespace SecondBrain.Api.Services
 {
     public class LlamaService : ILlamaService
     {
+        private const string TimestampKey = "timestamp";
+        private const string TitleField = "title";
+        private const string IsPinnedField = "isPinned";
+        private const string IsFavoriteField = "isFavorite";
+        private const string IsArchivedField = "isArchived";
+        private const string DefaultBoolValue = "false";
+        private const string NoteIdPattern = @"\[NOTE:(.*?)\]";
         private readonly ILogger<LlamaService> _logger;
         private readonly OllamaApiClient _ollamaClient;
         private readonly INexusStorageService _nexusStorage;
@@ -132,7 +141,7 @@ Note: Always use double quotes for string values and ""true"" or ""false"" for b
             _nexusStorage = nexusStorage;
             _noteToolService = noteToolService;
             _hubContext = hubContext;
-            var ollamaUri = new Uri(configuration["Llama:OllamaUri"] ?? "http://localhost:11434");
+            var ollamaUri = new Uri(configuration.GetValue<string>("Llama:OllamaUri") ?? throw new InvalidOperationException("Llama:OllamaUri configuration is required"));
             _ollamaClient = new OllamaApiClient(ollamaUri);
         }
 
@@ -140,22 +149,23 @@ Note: Always use double quotes for string values and ""true"" or ""false"" for b
         {
             try
             {
-                // Set the selected model per request
                 _ollamaClient.SelectedModel = modelName;
-
-                string responseText = string.Empty;
+                var responseBuilder = new StringBuilder();
 
                 await foreach (var stream in _ollamaClient.GenerateAsync(prompt))
                 {
-                    responseText += stream.Response;
+                    if (stream?.Response != null)
+                    {
+                        responseBuilder.Append(stream.Response);
+                    }
                 }
 
-                return responseText;
+                return responseBuilder.ToString();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error generating text with Llama model {ModelName}.", modelName);
-                throw new Exception("Failed to generate text with Llama.");
+                throw new LlamaException($"Failed to generate text with Llama model {modelName}", ex);
             }
         }
 
@@ -184,8 +194,7 @@ Note: Always use double quotes for string values and ""true"" or ""false"" for b
                     new Dictionary<string, object> {
                         { "messageId", messageId },
                         { "userId", userId },
-                        { "modelId", modelId },
-                        { "timestamp", DateTime.UtcNow.ToString("o") }
+                        { "modelId", modelId }
                     }
                 );
 
@@ -205,8 +214,7 @@ Note: Always use double quotes for string values and ""true"" or ""false"" for b
                     $"Model {modelId} analyzing request and determining required operation...",
                     new Dictionary<string, object> {
                         { "messageId", messageId },
-                        { "modelId", modelId },
-                        { "timestamp", DateTime.UtcNow.ToString("o") }
+                        { "modelId", modelId }
                     }
                 );
 
@@ -222,8 +230,7 @@ Note: Always use double quotes for string values and ""true"" or ""false"" for b
                     $"Extracted operation from model response: {response}",
                     new Dictionary<string, object> {
                         { "messageId", messageId },
-                        { "rawResponse", response },
-                        { "timestamp", DateTime.UtcNow.ToString("o") }
+                        { "rawResponse", response }
                     }
                 );
 
@@ -239,25 +246,22 @@ Note: Always use double quotes for string values and ""true"" or ""false"" for b
                     if (jsonStart >= 0 && jsonEnd > jsonStart)
                     {
                         var jsonPart = response.Substring(jsonStart, jsonEnd - jsonStart + 1);
-                        var parsedOperation = JsonSerializer.Deserialize<DatabaseOperation>(jsonPart);
-                        if (parsedOperation != null)
+                        var jsonOperation = JsonSerializer.Deserialize<DatabaseOperation>(jsonPart);
+                        if (jsonOperation != null)
                         {
-                            // Database operation step
                             await EmitExecutionStep(
                                 ExecutionStepType.DatabaseOperation,
                                 "Executing database operation...",
                                 new Dictionary<string, object> {
                                     { "messageId", messageId },
-                                    { "operation", parsedOperation },
-                                    { "timestamp", DateTime.UtcNow.ToString("o") }
+                                    { "operation", jsonOperation }
                                 }
                             );
 
-                            // Emit database operation sub-steps
-                            await EmitDatabaseOperationSubSteps(messageId, parsedOperation);
+                            await EmitDatabaseOperationSubSteps(messageId, jsonOperation);
 
-                            parsedOperation.OriginalPrompt = prompt;
-                            var result = await ExecuteOperation(parsedOperation);
+                            jsonOperation.OriginalPrompt = prompt;
+                            var result = await ExecuteOperation(jsonOperation);
 
                             // Result step
                             await EmitExecutionStep(
@@ -265,8 +269,7 @@ Note: Always use double quotes for string values and ""true"" or ""false"" for b
                                 "Operation completed successfully",
                                 new Dictionary<string, object> {
                                     { "messageId", messageId },
-                                    { "result", result },
-                                    { "timestamp", DateTime.UtcNow.ToString("o") }
+                                    { "result", result }
                                 }
                             );
 
@@ -287,8 +290,7 @@ Note: Always use double quotes for string values and ""true"" or ""false"" for b
                             "Executing database operation...",
                             new Dictionary<string, object> {
                                 { "messageId", messageId },
-                                { "operation", operation },
-                                { "timestamp", DateTime.UtcNow.ToString("o") }
+                                { "operation", operation }
                             }
                         );
 
@@ -304,8 +306,7 @@ Note: Always use double quotes for string values and ""true"" or ""false"" for b
                             "Operation completed successfully",
                             new Dictionary<string, object> {
                                 { "messageId", messageId },
-                                { "result", result },
-                                { "timestamp", DateTime.UtcNow.ToString("o") }
+                                { "result", result }
                             }
                         );
 
@@ -318,15 +319,15 @@ Note: Always use double quotes for string values and ""true"" or ""false"" for b
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error executing database operation");
-                    throw;
+                    throw new LlamaException("Failed to execute database operation", ex);
                 }
 
-                throw new Exception("Failed to parse model response");
+                throw new LlamaException("Failed to parse model response");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error in ExecuteDatabaseOperationAsync");
-                throw;
+                throw new LlamaException("Failed to execute database operation", ex);
             }
         }
 
@@ -358,33 +359,17 @@ Note: Always use double quotes for string values and ""true"" or ""false"" for b
                     RegexOptions.Singleline
                 );
 
-                foreach (Match argMatch in argMatches)
-                {
-                    var key = argMatch.Groups[1].Value;
-                    string value = null;
+                var matches = argMatches.Select(m => m.Groups)
+                    .Select(g => new
+                    {
+                        Key = g[1].Value,
+                        Value = GetMatchValue(g)
+                    })
+                    .Where(x => x.Value != null);
 
-                    if (argMatch.Groups[2].Success) // Single-quoted value
-                    {
-                        value = argMatch.Groups[2].Value;
-                    }
-                    else if (argMatch.Groups[3].Success) // Double-quoted value
-                    {
-                        value = argMatch.Groups[3].Value;
-                    }
-                    else if (argMatch.Groups[4].Success) // Array value
-                    {
-                        value = argMatch.Groups[4].Value;
-                        // Convert array to comma-separated string
-                        value = value.Replace("'", "")
-                                     .Replace("[", "")
-                                     .Replace("]", "")
-                                     .Replace(" ", "");
-                    }
-                    else if (argMatch.Groups[5].Success) // Bare value
-                    {
-                        value = argMatch.Groups[5].Value;
-                    }
-                    arguments[key] = value;
+                foreach (var match in matches)
+                {
+                    arguments[match.Key] = match.Value;
                 }
 
                 return new DatabaseOperation
@@ -400,195 +385,59 @@ Note: Always use double quotes for string values and ""true"" or ""false"" for b
             }
         }
 
+        private static string GetMatchValue(GroupCollection groups)
+        {
+            if (groups[2].Success) return groups[2].Value;
+            if (groups[3].Success) return groups[3].Value;
+            if (groups[4].Success) 
+                return groups[4].Value.Replace("'", "").Replace("[", "").Replace("]", "").Replace(" ", "");
+            if (groups[5].Success) return groups[5].Value;
+            return string.Empty;
+        }
 
         private async Task<string> ExecuteOperation(DatabaseOperation operation)
         {
             try
             {
-                // Extract userId from the operation context
-                string userId = ExtractUserId(operation);
-                if (string.IsNullOrEmpty(userId))
-                {
-                    throw new Exception("User context not found in operation");
-                }
+                string userId = ValidateAndExtractUserId(operation);
+                var modelId = ExtractModelId(operation);
 
-                // Add model detection
-                var modelId = operation.OriginalPrompt != null && operation.OriginalPrompt.Contains("[MODEL:")
-                    ? Regex.Match(operation.OriginalPrompt, @"\[MODEL:([^\]]+)\]").Groups[1].Value
-                    : "unknown";
-
-                // Special handling for Qwen models
                 if (modelId.StartsWith("qwen2.5-coder"))
                 {
-                    // Qwen tends to return function calls in a different format
-                    // We need to parse its response differently
                     return await HandleQwenOperation(operation, userId);
                 }
 
-                // Existing operation handling for other models...
-                switch (operation.Function.ToLower())
-                {
-                    case "create_note":
-                        var createRequest = new NoteToolRequest
-                        {
-                            Title = operation.Arguments.GetValueOrDefault("title", ""),
-                            Content = operation.Arguments.GetValueOrDefault("content", ""),
-                            IsPinned = bool.Parse(operation.Arguments.GetValueOrDefault("isPinned", "false")),
-                            IsFavorite = bool.Parse(operation.Arguments.GetValueOrDefault("isFavorite", "false")),
-                            IsArchived = bool.Parse(operation.Arguments.GetValueOrDefault("isArchived", "false")),
-                            IsIdea = bool.Parse(operation.Arguments.GetValueOrDefault("isIdea", "false")),
-                            Tags = operation.Arguments.GetValueOrDefault("tags", ""),
-                            UserId = userId
-                        };
-                        var createResponse = await _noteToolService.CreateNoteAsync(createRequest);
-                        return JsonSerializer.Serialize(createResponse);
-
-                    case "update_note":
-                        var rawIdOrTitle = operation.Arguments.GetValueOrDefault("id", "");
-                        var cleanIdOrTitle = System.Text.RegularExpressions.Regex.Replace(rawIdOrTitle, @"\[(?:NOTE|USER):(.*?)\]", "$1");
-
-                        if (string.IsNullOrEmpty(cleanIdOrTitle))
-                        {
-                            throw new Exception("Note ID or title is required for update operation");
-                        }
-
-                        // First try to find by exact ID
-                        var note = await _noteToolService.GetNoteByIdAsync(cleanIdOrTitle, userId);
-
-                        // If not found by ID, try to find by title
-                        if (note == null)
-                        {
-                            // Extract title from arguments or use the cleanIdOrTitle
-                            var searchTitle = operation.Arguments.GetValueOrDefault("title", cleanIdOrTitle);
-                            var matchingNotes = await _noteToolService.FindNotesByDescriptionAsync(searchTitle, userId);
-
-                            if (!matchingNotes.Any())
-                            {
-                                throw new Exception($"Could not find note matching '{searchTitle}'");
-                            }
-
-                            // If multiple notes found, prefer exact title match first
-                            note = matchingNotes.FirstOrDefault(n =>
-                                n.Title.Equals(searchTitle, StringComparison.OrdinalIgnoreCase))
-                                ?? ChooseBestNoteMatch(matchingNotes, searchTitle);
-                        }
-
-                        var updateRequest = new NoteToolRequest
-                        {
-                            Title = operation.Arguments.GetValueOrDefault("title", note.Title),
-                            Content = operation.Arguments.GetValueOrDefault("content", note.Content),
-                            IsPinned = bool.Parse(operation.Arguments.GetValueOrDefault("isPinned", note.IsPinned.ToString())),
-                            IsFavorite = bool.Parse(operation.Arguments.GetValueOrDefault("isFavorite", note.IsFavorite.ToString())),
-                            IsArchived = bool.Parse(operation.Arguments.GetValueOrDefault("isArchived", note.IsArchived.ToString())),
-                            Tags = operation.Arguments.GetValueOrDefault("tags", note.Tags ?? ""),
-                            UserId = userId
-                        };
-
-                        _logger.LogInformation("Updating note: {NoteId} - {Title}", note.Id, note.Title);
-                        var updateResponse = await _noteToolService.UpdateNoteAsync(note.Id, updateRequest);
-                        return JsonSerializer.Serialize(updateResponse);
-
-                    case "link_notes":
-                        var sourceDesc = operation.Arguments.GetValueOrDefault("sourceDescription", "");
-                        var targetDesc = operation.Arguments.GetValueOrDefault("targetDescription", "");
-
-                        if (string.IsNullOrEmpty(sourceDesc) || string.IsNullOrEmpty(targetDesc))
-                        {
-                            throw new Exception("Source and target note descriptions are required for linking");
-                        }
-
-                        return await HandleNoteLinking(sourceDesc, targetDesc, userId);
-
-                    case "unlink_notes":
-                        var rawSourceId = operation.Arguments.GetValueOrDefault("sourceId", "");
-                        var sourceId = System.Text.RegularExpressions.Regex.Replace(rawSourceId, @"\[NOTE:(.*?)\]", "$1");
-
-                        var targetIdsStr = operation.Arguments.GetValueOrDefault("targetIds", "");
-                        var targetIds = targetIdsStr.Split(',', StringSplitOptions.RemoveEmptyEntries)
-                                                  .Select(id => System.Text.RegularExpressions.Regex.Replace(id.Trim(), @"\[NOTE:(.*?)\]", "$1"))
-                                                  .ToArray();
-
-                        if (string.IsNullOrEmpty(sourceId) || !targetIds.Any())
-                        {
-                            throw new Exception("Source note ID and target note IDs are required for unlink operation");
-                        }
-
-                        var unlinkResponse = await _noteToolService.UnlinkNotesAsync(sourceId, targetIds, userId);
-                        return JsonSerializer.Serialize(unlinkResponse);
-
-                    case "search_notes":
-                        var searchCriteria = new NoteToolSearchCriteria
-                        {
-                            Query = operation.Arguments.GetValueOrDefault("query", ""),
-                            Tags = operation.Arguments.GetValueOrDefault("tags", ""),
-                            UserId = userId
-                        };
-
-                        // Only parse boolean values if they're not "null"
-                        if (operation.Arguments.TryGetValue("isPinned", out var isPinnedStr) && isPinnedStr.ToLower() != "null")
-                        {
-                            searchCriteria.IsPinned = bool.Parse(isPinnedStr);
-                        }
-
-                        if (operation.Arguments.TryGetValue("isFavorite", out var isFavoriteStr) && isFavoriteStr.ToLower() != "null")
-                        {
-                            searchCriteria.IsFavorite = bool.Parse(isFavoriteStr);
-                        }
-
-                        if (operation.Arguments.TryGetValue("isArchived", out var isArchivedStr) && isArchivedStr.ToLower() != "null")
-                        {
-                            searchCriteria.IsArchived = bool.Parse(isArchivedStr);
-                        }
-
-                        if (operation.Arguments.TryGetValue("isIdea", out var isIdeaStr) && isIdeaStr.ToLower() != "null")
-                        {
-                            searchCriteria.IsIdea = bool.Parse(isIdeaStr);
-                        }
-
-                        var searchResponse = await _noteToolService.SearchNotesAsync(searchCriteria);
-                        return JsonSerializer.Serialize(searchResponse);
-
-                    case "archive_note":
-                        var rawArchiveId = operation.Arguments.GetValueOrDefault("id", "");
-                        var archiveNoteId = System.Text.RegularExpressions.Regex.Replace(rawArchiveId, @"\[NOTE:(.*?)\]", "$1");
-
-                        if (string.IsNullOrEmpty(archiveNoteId))
-                        {
-                            throw new Exception("Note ID is required for archive operation");
-                        }
-                        var archiveResponse = await _noteToolService.ArchiveNoteAsync(archiveNoteId, userId);
-                        return JsonSerializer.Serialize(archiveResponse);
-
-                    case "delete_note":
-                        var rawDeleteId = operation.Arguments.GetValueOrDefault("id", "");
-                        var deleteNoteId = System.Text.RegularExpressions.Regex.Replace(rawDeleteId, @"\[NOTE:(.*?)\]", "$1");
-
-                        if (string.IsNullOrEmpty(deleteNoteId))
-                        {
-                            throw new Exception("Note ID is required for delete operation");
-                        }
-                        var deleteResponse = await _noteToolService.DeleteNoteAsync(deleteNoteId, userId);
-                        return JsonSerializer.Serialize(deleteResponse);
-
-                    // Keep existing operations
-                    case "get_item":
-                        if (!operation.Arguments.ContainsKey("key"))
-                            throw new Exception("Get operation requires a key");
-                        var item = await _nexusStorage.GetItemAsync(operation.Arguments["key"]);
-                        return JsonSerializer.Serialize(new { success = true, item });
-
-                    default:
-                        throw new Exception($"Unknown function: {operation.Function}");
-                }
+                return await ExecuteStandardOperation(operation, userId);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error executing operation {Function}", operation.Function);
-                return JsonSerializer.Serialize(new
-                {
-                    success = false,
-                    error = ex.Message
-                });
+                return JsonSerializer.Serialize(new { success = false, error = ex.Message });
+            }
+        }
+
+        private async Task<string> ExecuteStandardOperation(DatabaseOperation operation, string userId)
+        {
+            switch (operation.Function.ToLower())
+            {
+                case "create_note":
+                    return await HandleCreateNote(operation, userId);
+                case "update_note":
+                    return await HandleUpdateNote(operation, userId);
+                case "link_notes":
+                    return await HandleLinkNotes(operation, userId);
+                case "unlink_notes":
+                    return await HandleUnlinkNotes(operation, userId);
+                case "search_notes":
+                    return await HandleSearchNotes(operation, userId);
+                case "archive_note":
+                    return await HandleArchiveNote(operation, userId);
+                case "delete_note":
+                    return await HandleDeleteNote(operation, userId);
+                case "get_item":
+                    return await HandleGetItem(operation);
+                default:
+                    throw new LlamaException($"Unknown function: {operation.Function}");
             }
         }
 
@@ -601,7 +450,7 @@ Note: Always use double quotes for string values and ""true"" or ""false"" for b
                 var functionMatch = Regex.Match(operation.ToString(), @"(\w+)\((.*?)\)");
                 if (!functionMatch.Success)
                 {
-                    throw new Exception("Could not parse Qwen function call format");
+                    throw new LlamaException("Could not parse Qwen function call format");
                 }
 
                 var function = functionMatch.Groups[1].Value;
@@ -609,21 +458,15 @@ Note: Always use double quotes for string values and ""true"" or ""false"" for b
 
                 // Parse arguments from key=value pairs
                 var args = new Dictionary<string, string>();
-                var argMatches = Regex.Matches(argsString, @"(\w+)=""([^""]*)""|(\w+)='([^']*)'");
-                foreach (Match match in argMatches)
-                {
-                    var key = match.Groups[1].Value;
-                    var value = match.Groups[2].Value;
-                    args[key] = value;
-                }
+                var matches = Regex.Matches(argsString, @"(\w+)=""([^""]*)""|(\w+)='([^']*)'")
+                    .Select(match => match.Groups)
+                    .Select(g => new { Key = g[1].Value, Value = g[2].Value })
+                    .Where(x => !string.IsNullOrEmpty(x.Value));
 
-                // Create a new operation with parsed data
-                var parsedOperation = new DatabaseOperation
+                foreach (var match in matches)
                 {
-                    Function = function,
-                    Arguments = args,
-                    OriginalPrompt = operation.OriginalPrompt
-                };
+                    args[match.Key] = match.Value;
+                }
 
                 // Now execute the parsed operation using existing logic
                 switch (function.ToLower())
@@ -631,12 +474,12 @@ Note: Always use double quotes for string values and ""true"" or ""false"" for b
                     case "create_note":
                         var createRequest = new NoteToolRequest
                         {
-                            Title = args.GetValueOrDefault("title", ""),
+                            Title = args.GetValueOrDefault(TitleField, ""),
                             Content = args.GetValueOrDefault("content", ""),
-                            IsPinned = bool.Parse(args.GetValueOrDefault("isPinned", "false")),
-                            IsFavorite = bool.Parse(args.GetValueOrDefault("isFavorite", "false")),
-                            IsArchived = bool.Parse(args.GetValueOrDefault("isArchived", "false")),
-                            IsIdea = bool.Parse(args.GetValueOrDefault("isIdea", "false")),
+                            IsPinned = bool.Parse(args.GetValueOrDefault("isPinned", DefaultBoolValue)),
+                            IsFavorite = bool.Parse(args.GetValueOrDefault("isFavorite", DefaultBoolValue)),
+                            IsArchived = bool.Parse(args.GetValueOrDefault("isArchived", DefaultBoolValue)),
+                            IsIdea = bool.Parse(args.GetValueOrDefault("isIdea", DefaultBoolValue)),
                             Tags = args.GetValueOrDefault("tags", ""),
                             UserId = userId
                         };
@@ -646,7 +489,7 @@ Note: Always use double quotes for string values and ""true"" or ""false"" for b
                     // Add other cases as needed...
 
                     default:
-                        throw new Exception($"Unknown function: {function}");
+                        throw new LlamaException($"Unknown function: {function}");
                 }
             }
             catch (Exception ex)
@@ -658,6 +501,176 @@ Note: Always use double quotes for string values and ""true"" or ""false"" for b
                     error = $"Failed to execute Qwen operation: {ex.Message}"
                 });
             }
+        }
+
+        private string ValidateAndExtractUserId(DatabaseOperation operation)
+        {
+            var userId = ExtractUserId(operation);
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new LlamaException("User context not found in operation");
+            }
+            return userId;
+        }
+
+        private static string ExtractModelId(DatabaseOperation operation)
+        {
+            var prompt = operation.OriginalPrompt ?? "";
+            var modelMatch = Regex.Match(prompt, @"\[MODEL:([^\]]+)\]");
+            return modelMatch.Success ? modelMatch.Groups[1].Value : "nexusraven";
+        }
+
+        private async Task<string> HandleCreateNote(DatabaseOperation operation, string userId)
+        {
+            var request = new NoteToolRequest
+            {
+                Title = operation.Arguments.GetValueOrDefault(TitleField, ""),
+                Content = operation.Arguments.GetValueOrDefault("content", ""),
+                IsPinned = bool.Parse(operation.Arguments.GetValueOrDefault(IsPinnedField, DefaultBoolValue)),
+                IsFavorite = bool.Parse(operation.Arguments.GetValueOrDefault(IsFavoriteField, DefaultBoolValue)),
+                IsArchived = bool.Parse(operation.Arguments.GetValueOrDefault(IsArchivedField, DefaultBoolValue)),
+                IsIdea = bool.Parse(operation.Arguments.GetValueOrDefault("isIdea", DefaultBoolValue)),
+                Tags = operation.Arguments.GetValueOrDefault("tags", ""),
+                UserId = userId
+            };
+            var response = await _noteToolService.CreateNoteAsync(request);
+            return JsonSerializer.Serialize(response);
+        }
+
+        private async Task<string> HandleUpdateNote(DatabaseOperation operation, string userId)
+        {
+            var rawIdOrTitle = operation.Arguments.GetValueOrDefault("id", "");
+            var cleanIdOrTitle = Regex.Replace(rawIdOrTitle, NoteIdPattern, "$1");
+
+            if (string.IsNullOrEmpty(cleanIdOrTitle))
+            {
+                throw new LlamaException("Note ID or title is required for update operation");
+            }
+
+            var note = await _noteToolService.GetNoteByIdAsync(cleanIdOrTitle, userId);
+            if (note == null)
+            {
+                var searchTitle = operation.Arguments.GetValueOrDefault(TitleField, cleanIdOrTitle);
+                var matchingNotes = await _noteToolService.FindNotesByDescriptionAsync(searchTitle, userId);
+                if (!matchingNotes.Any())
+                {
+                    throw new LlamaException($"Could not find note matching '{searchTitle}'");
+                }
+                note = ChooseBestNoteMatch(matchingNotes, searchTitle);
+            }
+
+            var request = new NoteToolRequest
+            {
+                Title = operation.Arguments.GetValueOrDefault(TitleField, note.Title),
+                Content = operation.Arguments.GetValueOrDefault("content", note.Content),
+                IsPinned = bool.Parse(operation.Arguments.GetValueOrDefault(IsPinnedField, note.IsPinned.ToString())),
+                IsFavorite = bool.Parse(operation.Arguments.GetValueOrDefault(IsFavoriteField, note.IsFavorite.ToString())),
+                IsArchived = bool.Parse(operation.Arguments.GetValueOrDefault(IsArchivedField, note.IsArchived.ToString())),
+                Tags = operation.Arguments.GetValueOrDefault("tags", note.Tags ?? ""),
+                UserId = userId
+            };
+
+            var response = await _noteToolService.UpdateNoteAsync(note.Id, request);
+            return JsonSerializer.Serialize(response);
+        }
+
+        private async Task<string> HandleLinkNotes(DatabaseOperation operation, string userId)
+        {
+            var sourceDesc = operation.Arguments.GetValueOrDefault("sourceDescription", "");
+            var targetDesc = operation.Arguments.GetValueOrDefault("targetDescription", "");
+
+            if (string.IsNullOrEmpty(sourceDesc) || string.IsNullOrEmpty(targetDesc))
+            {
+                throw new LlamaException("Source and target note descriptions are required for linking");
+            }
+
+            return await HandleNoteLinking(sourceDesc, targetDesc, userId);
+        }
+
+        private async Task<string> HandleUnlinkNotes(DatabaseOperation operation, string userId)
+        {
+            var rawSourceId = operation.Arguments.GetValueOrDefault("sourceId", "");
+            var sourceId = Regex.Replace(rawSourceId, NoteIdPattern, "$1");
+
+            var targetIdsStr = operation.Arguments.GetValueOrDefault("targetIds", "");
+            var targetIds = targetIdsStr.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                      .Select(id => Regex.Replace(id.Trim(), NoteIdPattern, "$1"))
+                                      .ToArray();
+
+            if (string.IsNullOrEmpty(sourceId) || !targetIds.Any())
+            {
+                throw new LlamaException("Source note ID and target note IDs are required for unlink operation");
+            }
+
+            var response = await _noteToolService.UnlinkNotesAsync(sourceId, targetIds, userId);
+            return JsonSerializer.Serialize(response);
+        }
+
+        private async Task<string> HandleSearchNotes(DatabaseOperation operation, string userId)
+        {
+            var searchCriteria = new NoteToolSearchCriteria
+            {
+                Query = operation.Arguments.GetValueOrDefault("query", ""),
+                Tags = operation.Arguments.GetValueOrDefault("tags", ""),
+                UserId = userId
+            };
+
+            if (operation.Arguments.TryGetValue(IsPinnedField, out var isPinnedStr) && isPinnedStr.ToLower() != "null")
+            {
+                searchCriteria.IsPinned = bool.Parse(isPinnedStr);
+            }
+
+            if (operation.Arguments.TryGetValue(IsFavoriteField, out var isFavoriteStr) && isFavoriteStr.ToLower() != "null")
+            {
+                searchCriteria.IsFavorite = bool.Parse(isFavoriteStr);
+            }
+
+            if (operation.Arguments.TryGetValue(IsArchivedField, out var isArchivedStr) && isArchivedStr.ToLower() != "null")
+            {
+                searchCriteria.IsArchived = bool.Parse(isArchivedStr);
+            }
+
+            var response = await _noteToolService.SearchNotesAsync(searchCriteria);
+            return JsonSerializer.Serialize(response);
+        }
+
+        private async Task<string> HandleArchiveNote(DatabaseOperation operation, string userId)
+        {
+            var rawArchiveId = operation.Arguments.GetValueOrDefault("id", "");
+            var archiveNoteId = Regex.Replace(rawArchiveId, NoteIdPattern, "$1");
+
+            if (string.IsNullOrEmpty(archiveNoteId))
+            {
+                throw new LlamaException("Note ID is required for archive operation");
+            }
+
+            var response = await _noteToolService.ArchiveNoteAsync(archiveNoteId, userId);
+            return JsonSerializer.Serialize(response);
+        }
+
+        private async Task<string> HandleDeleteNote(DatabaseOperation operation, string userId)
+        {
+            var rawDeleteId = operation.Arguments.GetValueOrDefault("id", "");
+            var deleteNoteId = Regex.Replace(rawDeleteId, NoteIdPattern, "$1");
+
+            if (string.IsNullOrEmpty(deleteNoteId))
+            {
+                throw new LlamaException("Note ID is required for delete operation");
+            }
+
+            var response = await _noteToolService.DeleteNoteAsync(deleteNoteId, userId);
+            return JsonSerializer.Serialize(response);
+        }
+
+        private async Task<string> HandleGetItem(DatabaseOperation operation)
+        {
+            if (!operation.Arguments.ContainsKey("key"))
+            {
+                throw new LlamaException("Get operation requires a key");
+            }
+
+            var item = await _nexusStorage.GetItemAsync(operation.Arguments["key"]);
+            return JsonSerializer.Serialize(new { success = true, item });
         }
 
         private string ExtractUserId(DatabaseOperation operation)
@@ -770,7 +783,7 @@ Note: Always use double quotes for string values and ""true"" or ""false"" for b
             return scores.First().Note;
         }
 
-        private double CalculateSimilarityScore(Note note, string description)
+        private static double CalculateSimilarityScore(Note note, string description)
         {
             var descWords = description.ToLower().Split(' ', StringSplitOptions.RemoveEmptyEntries);
             var titleWords = note.Title.ToLower().Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -788,14 +801,19 @@ Note: Always use double quotes for string values and ""true"" or ""false"" for b
         }
 
         private async Task EmitExecutionStep(
-            ExecutionStepType type,
-            string content,
-            Dictionary<string, object> metadata,
+            ExecutionStepType type, 
+            string content, 
+            Dictionary<string, object> metadata, 
             ExecutionStepType? parentStep = null)
         {
-            var step = new ModelUpdate(type, content, metadata, parentStep);
+            metadata[TimestampKey] = DateTime.UtcNow.ToString("o");
+            if (parentStep.HasValue)
+            {
+                metadata["parentStep"] = parentStep.Value;
+            }
+            var step = new ModelUpdate(type, content, metadata);
             await _hubContext.Clients.All.SendAsync("ReceiveExecutionStep", step);
-            _logger.LogInformation($"[SignalR] Emitted step: {type} - {content}");
+            _logger.LogInformation("[SignalR] Emitted step: {StepType} - {Content}", type, content);
         }
 
         private async Task EmitProcessingSubSteps(string messageId, string userId, string modelId)

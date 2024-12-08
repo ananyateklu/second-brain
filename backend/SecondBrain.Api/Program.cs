@@ -11,6 +11,9 @@ using System.Text.Json;
 using SecondBrain.Api.Gamification;
 using SecondBrain.Api.Hubs;
 
+const string BEARER_SCHEME = "Bearer";
+const string CORS_POLICY = "AllowFrontend";
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Bind JwtSettings from configuration
@@ -42,7 +45,23 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = jwtSettings.Issuer,
         ValidAudience = jwtSettings.Audience,
-        IssuerSigningKey = new SymmetricSecurityKey(key)
+        IssuerSigningKey = new SymmetricSecurityKey(key),
+        ClockSkew = TimeSpan.Zero
+    };
+
+    // Add these lines for SignalR support
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/toolHub"))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        }
     };
 });
 
@@ -57,7 +76,7 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 {
     // Accept property names in camelCase (e.g., 'title' instead of 'Title')
     options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-    
+
     // Make property name matching case-insensitive
     options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
 });
@@ -68,14 +87,13 @@ builder.Services.AddHttpClient<IAnthropicService, AnthropicService>();
 // Define CORS policy
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowFrontend",
-        policy =>
-        {
-            policy.WithOrigins("http://localhost:5173") 
-                  .AllowAnyHeader()
-                  .AllowAnyMethod()
-                  .AllowCredentials(); 
-        });
+    options.AddPolicy(CORS_POLICY, policy =>
+    {
+        policy.SetIsOriginAllowed(_ => true) // Warning: In production, be more specific
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
+    });
 });
 
 // Configure EF Core with SQL Server
@@ -89,13 +107,13 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "SecondBrain API", Version = "v1" });
 
     // Define the BearerAuth scheme
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    c.AddSecurityDefinition(BEARER_SCHEME, new OpenApiSecurityScheme
     {
-        Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
+        Description = $"JWT Authorization header using the {BEARER_SCHEME} scheme. Example: \"Authorization: {BEARER_SCHEME} {{token}}\"",
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer"
+        Scheme = BEARER_SCHEME
     });
 
     // Apply the BearerAuth scheme globally
@@ -107,10 +125,10 @@ builder.Services.AddSwaggerGen(c =>
                 Reference = new OpenApiReference
                 {
                     Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
+                    Id = BEARER_SCHEME
                 },
                 Scheme = "oauth2",
-                Name = "Bearer",
+                Name = BEARER_SCHEME,
                 In = ParameterLocation.Header,
             },
             new List<string>()
@@ -133,7 +151,12 @@ builder.Services.AddScoped<INoteToolService, NoteToolService>();
 builder.Services.AddScoped<IActivityLogger, ActivityLogger>();
 
 // Add SignalR services
-builder.Services.AddSignalR();
+builder.Services.AddSignalR(options =>
+{
+    options.EnableDetailedErrors = true;
+    options.HandshakeTimeout = TimeSpan.FromSeconds(15);
+    options.KeepAliveInterval = TimeSpan.FromSeconds(10);
+});
 
 // Register OpenAIService
 builder.Services.AddHttpClient<IOpenAIService, OpenAIService>();
@@ -142,7 +165,13 @@ builder.Services.AddHttpClient<IOpenAIService, OpenAIService>();
 builder.Services.AddHttpClient<IGeminiService, GeminiService>();
 
 // Register RAGService
-builder.Services.AddScoped<RAGService>();
+builder.Services.AddScoped<RagService>();
+
+// Configure Kestrel
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    serverOptions.ListenLocalhost(5127);
+});
 
 var app = builder.Build();
 
@@ -154,13 +183,24 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "SecondBrain API v1"));
 }
 
-app.UseHttpsRedirection();
-// Use the CORS policy
-app.UseCors("AllowFrontend");
-app.UseAuthentication(); 
+// Correct middleware order
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+app.UseRouting();
+app.UseStaticFiles(); // Add this if you serve static files
+app.UseCors(CORS_POLICY);
+app.UseAuthentication();
 app.UseAuthorization();
+app.UseWebSockets();
 
-app.MapControllers();
+// Update the route mappings
+app.MapControllers()
+   .RequireCors(CORS_POLICY);
+
+app.MapHub<ToolHub>("/toolHub")
+   .RequireCors(CORS_POLICY);
 
 // Add this after building the app
 using (var scope = app.Services.CreateScope())
@@ -168,7 +208,5 @@ using (var scope = app.Services.CreateScope())
     var achievementService = scope.ServiceProvider.GetRequiredService<IAchievementService>();
     await achievementService.InitializeAchievementsAsync();
 }
-
-app.MapHub<ToolHub>("/toolHub");
 
 await app.RunAsync();

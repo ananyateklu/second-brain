@@ -18,10 +18,12 @@ namespace SecondBrain.Api.Controllers
     public class ActivitiesController : ControllerBase
     {
         private readonly DataContext _context;
+        private readonly ILogger<ActivitiesController> _logger;
 
-        public ActivitiesController(DataContext context)
+        public ActivitiesController(DataContext context, ILogger<ActivitiesController> logger)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         /// <summary>
@@ -78,7 +80,7 @@ namespace SecondBrain.Api.Controllers
                 ItemId = request.ItemId,
                 ItemTitle = request.ItemTitle,
                 Description = request.Description,
-                MetadataJson = request.Metadata != null ? JsonConvert.SerializeObject(request.Metadata) : null,
+                MetadataJson = request.Metadata is not null ? JsonConvert.SerializeObject(request.Metadata) : null!,
                 Timestamp = DateTime.UtcNow
             };
 
@@ -95,6 +97,7 @@ namespace SecondBrain.Api.Controllers
             catch (Exception ex)
             {
                 // Log the exception here
+                _logger.LogError(ex, "Error creating activity");
                 return StatusCode(StatusCodes.Status500InternalServerError,
                     new { error = "An error occurred while creating the activity." });
             }

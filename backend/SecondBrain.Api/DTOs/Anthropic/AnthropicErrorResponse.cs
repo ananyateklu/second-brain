@@ -5,18 +5,18 @@ namespace SecondBrain.Api.DTOs.Anthropic
     public class AnthropicErrorResponse
     {
         [JsonPropertyName("type")]
-        public string Type { get; set; }
+        public required string Type { get; set; }
 
         [JsonPropertyName("error")]
-        public AnthropicErrorDetail Error { get; set; }
+        public required AnthropicErrorDetail Error { get; set; }
     }
 
     public class AnthropicErrorDetail
     {
         [JsonPropertyName("type")]
-        public string Type { get; set; }
+        public required string Type { get; set; }
 
         [JsonPropertyName("message")]
-        public string Message { get; set; }
+        public required string Message { get; set; }
     }
 }

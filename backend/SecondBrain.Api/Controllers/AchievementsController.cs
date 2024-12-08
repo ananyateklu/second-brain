@@ -131,9 +131,9 @@ namespace SecondBrain.Api.Controllers
             }
         }
 
-        private int GetNextMilestone(int current, int[] milestones)
+        private static int GetNextMilestone(int current, int[] milestones)
         {
-            return milestones.FirstOrDefault(m => m > current, milestones.Last());
+            return milestones.FirstOrDefault(m => m > current, milestones[milestones.Length - 1]);
         }
     }
 } 

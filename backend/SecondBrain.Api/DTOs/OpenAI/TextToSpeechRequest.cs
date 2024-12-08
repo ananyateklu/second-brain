@@ -1,13 +1,16 @@
 using System.Text.Json.Serialization;
 
-public class TextToSpeechRequest
+namespace SecondBrain.Api.DTOs.OpenAI
 {
-    [JsonPropertyName("input")]
-    public string Input { get; set; }
+    public class TextToSpeechRequest
+    {
+        [JsonPropertyName("input")]
+        public required string Input { get; set; }
 
-    [JsonPropertyName("model")]
-    public string Model { get; set; }
+        [JsonPropertyName("model")]
+        public required string Model { get; set; }
 
-    [JsonPropertyName("voice")]
-    public string Voice { get; set; } = "alloy";
+        [JsonPropertyName("voice")]
+        public required string Voice { get; set; } = "alloy";
+    }
 } 

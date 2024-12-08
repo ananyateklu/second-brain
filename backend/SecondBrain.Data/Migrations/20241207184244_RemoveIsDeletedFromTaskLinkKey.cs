@@ -7,16 +7,19 @@ namespace SecondBrain.Data.Migrations
     /// <inheritdoc />
     public partial class RemoveIsDeletedFromTaskLinkKey : Migration
     {
+        private const string TableName = "ReminderLinks";
+        private const string PrimaryKeyName = "PK_ReminderLinks";
+
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropPrimaryKey(
-                name: "PK_ReminderLinks",
-                table: "ReminderLinks");
+                name: PrimaryKeyName,
+                table: TableName);
 
             migrationBuilder.AddPrimaryKey(
-                name: "PK_ReminderLinks",
-                table: "ReminderLinks",
+                name: PrimaryKeyName,
+                table: TableName,
                 columns: new[] { "ReminderId", "LinkedItemId", "IsDeleted" });
         }
 
@@ -24,12 +27,12 @@ namespace SecondBrain.Data.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropPrimaryKey(
-                name: "PK_ReminderLinks",
-                table: "ReminderLinks");
+                name: PrimaryKeyName,
+                table: TableName);
 
             migrationBuilder.AddPrimaryKey(
-                name: "PK_ReminderLinks",
-                table: "ReminderLinks",
+                name: PrimaryKeyName,
+                table: TableName,
                 columns: new[] { "ReminderId", "LinkedItemId" });
         }
     }

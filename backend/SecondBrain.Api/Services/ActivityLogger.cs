@@ -38,7 +38,7 @@ namespace SecondBrain.Api.Services
                     ItemId = itemId,
                     ItemTitle = itemTitle,
                     Description = description,
-                    MetadataJson = metadata != null ? JsonSerializer.Serialize(metadata) : null,
+                    MetadataJson = metadata != null ? JsonSerializer.Serialize(metadata) : null!,
                     Timestamp = DateTime.UtcNow
                 };
 

@@ -13,25 +13,22 @@ namespace SecondBrain.Api.Controllers
     public class LlamaController : ControllerBase
     {
         private readonly ILlamaService _llamaService;
-        private readonly IHubContext<ToolHub> _hubContext;
         private readonly ILogger<LlamaController> _logger;
 
         public LlamaController(
             ILlamaService llamaService,
-            IHubContext<ToolHub> hubContext,
             ILogger<LlamaController> logger)
         {
             _llamaService = llamaService;
-            _hubContext = hubContext;
             _logger = logger;
         }
 
         [HttpGet("stream")]
         public async Task StreamResponse([FromQuery] string prompt, [FromQuery] string modelId)
         {
-            Response.Headers.Add("Content-Type", "text/event-stream");
-            Response.Headers.Add("Cache-Control", "no-cache");
-            Response.Headers.Add("Connection", "keep-alive");
+            Response.Headers.Append("Content-Type", "text/event-stream");
+            Response.Headers.Append("Cache-Control", "no-cache");
+            Response.Headers.Append("Connection", "keep-alive");
 
             try
             {
@@ -74,7 +71,7 @@ namespace SecondBrain.Api.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error processing stream request");
-                throw;
+                throw new InvalidOperationException("Failed to process LLM stream request", ex);
             }
         }
     }

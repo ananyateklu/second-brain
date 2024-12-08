@@ -12,17 +12,20 @@ namespace SecondBrain.Api.Services
     public class AnthropicService : IAnthropicService
     {
         private readonly HttpClient _httpClient;
-        private readonly IConfiguration _configuration;
         private readonly ILogger<AnthropicService> _logger;
-        private string _apiKey;
-        private readonly string _requestUri = "https://api.anthropic.com/v1/messages";
+        private string? _apiKey;
+        private readonly string _requestUri;
+        private const string TITLE_KEY = "title";
+        private const string CONTENT_KEY = "content";
 
         public AnthropicService(HttpClient httpClient, IConfiguration configuration, ILogger<AnthropicService> logger)
         {
             _httpClient = httpClient;
-            _configuration = configuration;
             _logger = logger;
-            _apiKey = _configuration["Anthropic:ApiKey"];
+            _apiKey = configuration["Anthropic:ApiKey"] ??
+                throw new ArgumentException("Anthropic API key not configured");
+            _requestUri = configuration["Anthropic:ApiEndpoint"] ??
+                throw new ArgumentException("Anthropic API endpoint not configured");
         }
 
         public async Task<bool> TestConnectionAsync()
@@ -36,7 +39,8 @@ namespace SecondBrain.Api.Services
                     Messages = new List<Message>
                     {
                         new Message { Role = "user", Content = "Hello, Claude!" }
-                    }
+                    },
+                    Tools = new List<Tool>()
                 };
                 var testResponse = await SendMessageAsync(testRequest);
                 return testResponse.Content != null && testResponse.Content.Any();
@@ -75,6 +79,10 @@ namespace SecondBrain.Api.Services
 
             // Set the required headers
             _httpClient.DefaultRequestHeaders.Clear(); // Clear existing headers to avoid duplication
+            if (_apiKey == null)
+            {
+                throw new InvalidOperationException("API key not configured");
+            }
             _httpClient.DefaultRequestHeaders.Add("x-api-key", _apiKey);
             _httpClient.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
 
@@ -94,13 +102,13 @@ namespace SecondBrain.Api.Services
                     var sendMessageResponse = JsonSerializer.Deserialize<SendMessageResponse>(responseString, new JsonSerializerOptions
                     {
                         PropertyNameCaseInsensitive = true
-                    });
+                    }) ?? throw new AnthropicException("Failed to deserialize response");
 
                     // Check for tool_use in the response
                     if (sendMessageResponse.StopReason == "tool_use")
                     {
                         _logger.LogInformation("Claude requested to use a tool.");
-                        var toolUseContent = sendMessageResponse.Content.FirstOrDefault(c => c.Type == "tool_use");
+                        var toolUseContent = sendMessageResponse.Content?.FirstOrDefault(c => c.Type == "tool_use");
                         if (toolUseContent != null)
                         {
                             _logger.LogInformation("Tool Use Detected: {ToolName}", toolUseContent.Name);
@@ -120,7 +128,8 @@ namespace SecondBrain.Api.Services
                                         Role = "user",
                                         Content = JsonSerializer.Serialize(new List<ContentBlock> { toolResultContent }, jsonOptions)
                                     }
-                                }
+                                },
+                                Tools = new List<Tool>()
                             };
 
                             // Send the tool_result back to Claude
@@ -148,32 +157,28 @@ namespace SecondBrain.Api.Services
             catch (HttpRequestException ex)
             {
                 _logger.LogError(ex, "HTTP Request Exception while sending message to Claude.");
-                throw new AnthropicException($"HTTP Request Exception: {ex.Message}");
-            }
-            catch (AnthropicException ex)
-            {
-                _logger.LogError(ex, "Anthropic Exception: {Message}", ex.Message);
-                throw;
+                throw new AnthropicException($"Failed to communicate with Claude API: {ex.Message}", ex);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unexpected Exception while sending message to Claude.");
-                throw new AnthropicException($"Unexpected Exception: {ex.Message}");
+                throw new AnthropicException($"Unexpected error while processing Claude request: {ex.Message}", ex);
             }
         }
 
         // Add a method to execute the tool
         private async Task<ContentBlock> ExecuteToolAsync(ContentBlock toolUseContent)
         {
-            // Extract tool name and input
             var toolName = toolUseContent.Name;
-            var toolInputJson = toolUseContent.Input.ToString();
+            var toolInputJson = toolUseContent.Input?.ToString()
+                ?? throw new ArgumentException("Tool input is null");
             _logger.LogInformation("Executing tool: {ToolName}", toolName);
             _logger.LogDebug("Tool Input JSON: {ToolInputJson}", toolInputJson);
 
-            var toolInput = JsonSerializer.Deserialize<Dictionary<string, object>>(toolInputJson);
+            var toolInput = JsonSerializer.Deserialize<Dictionary<string, object>>(toolInputJson)
+                ?? throw new ArgumentException("Failed to deserialize tool input");
 
-            object resultContent = null;
+            object resultContent;
             bool isError = false;
 
             try
@@ -214,173 +219,164 @@ namespace SecondBrain.Api.Services
             return toolResultContent;
         }
 
-        // Example implementation of the SuggestTitleAndTagsAsync method
-        private async Task<object> SuggestTitleAndTagsAsync(Dictionary<string, object> input)
-        {
-            // Extract necessary input parameters from the input dictionary
-            if (!input.TryGetValue("noteContent", out var noteContentObj) || noteContentObj == null)
-            {
-                throw new ArgumentException("The 'noteContent' parameter is required.");
-            }
-
-            var noteContent = noteContentObj.ToString();
-
-            // Implement your logic to suggest titles and tags
-            // For this example, let's assume we have some simple logic
-
-            var suggestedTitle = GenerateTitle(noteContent);
-            var suggestedTags = GenerateTags(noteContent);
-
-            // Return the result as an object
-            return new
-            {
-                title = suggestedTitle,
-                tags = suggestedTags
-            };
-        }
-
-        private string GenerateTitle(string content)
-        {
-            // Simple logic to generate a title (you can replace this with your own implementation)
-            // For example, take the first sentence or the first few words
-            var firstSentence = content.Split(new[] { '.', '!', '?' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
-            return firstSentence?.Trim() ?? "Untitled Note";
-        }
-
-        private List<string> GenerateTags(string content)
-        {
-            // Simple logic to generate tags (you can replace this with your own implementation)
-            // For example, extract keywords or use some NLP techniques
-            var words = content.Split(new[] { ' ', '.', ',', '!', '?' }, StringSplitOptions.RemoveEmptyEntries);
-            var commonWords = new HashSet<string> { "the", "and", "a", "to", "is", "in", "it", "you", "of" };
-            var significantWords = words.Where(w => w.Length > 3 && !commonWords.Contains(w.ToLower()));
-            return significantWords.Distinct(StringComparer.OrdinalIgnoreCase).Take(5).ToList();
-        }
-
         private async Task<object> GenerateContentAsync(Dictionary<string, object> input)
         {
-            var title = input.ContainsKey("title") ? input["title"]?.ToString() : null;
-            var tags = input.ContainsKey("tags") ? ((JsonElement)input["tags"]).EnumerateArray().Select(e => e.GetString()).ToList() : null;
+            try
+            {
+                return await Task.Run(() =>
+                {
+                    ValidateInput(input, out string title, out List<string> tags);
+                    var contentBuilder = new StringBuilder();
+                    
+                    AppendHeader(contentBuilder, title, tags);
+                    AppendActionPlan(contentBuilder, title);
+                    ApplyTagSpecificModifications(contentBuilder, tags);
+                    AppendResources(contentBuilder, title);
+                    AppendConclusion(contentBuilder, title);
+
+                    return new { content = contentBuilder.ToString() };
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating content");
+                throw new AnthropicException("Failed to generate content", ex);
+            }
+        }
+
+        private static void ValidateInput(Dictionary<string, object> input, out string title, out List<string> tags)
+        {
+            title = input.ContainsKey(TITLE_KEY) ? input[TITLE_KEY]?.ToString() ?? string.Empty : string.Empty;
+            tags = input.ContainsKey("tags") 
+                ? ((JsonElement)input["tags"]).EnumerateArray()
+                    .Select(e => e.GetString())
+                    .Where(s => s != null)
+                    .Select(s => s!)
+                    .ToList() 
+                : new List<string>();
 
             if (string.IsNullOrEmpty(title))
             {
                 throw new ArgumentException("'title' is required to generate content.");
             }
+        }
 
-            // Generate dynamic content based on the title and tags
-            var contentBuilder = new StringBuilder();
+        private static void AppendHeader(StringBuilder builder, string title, List<string> tags)
+        {
+            builder.AppendLine($"# {title}");
+            builder.AppendLine();
+            builder.AppendLine("## Introduction");
+            builder.AppendLine($"This document provides a comprehensive plan for **{title}**.");
+            builder.AppendLine();
 
-            contentBuilder.AppendLine($"# {title}");
-            contentBuilder.AppendLine();
-
-            // Introduction
-            contentBuilder.AppendLine("## Introduction");
-            contentBuilder.AppendLine($"This document provides a comprehensive plan for **{title}**.");
-            contentBuilder.AppendLine();
-
-            // Include tags if provided
-            if (tags != null && tags.Any())
+            if (tags?.Any() == true)
             {
-                contentBuilder.AppendLine("### Tags");
-                contentBuilder.AppendLine($"Relevant tags: {string.Join(", ", tags)}.");
-                contentBuilder.AppendLine();
+                builder.AppendLine("### Tags");
+                builder.AppendLine($"Relevant tags: {string.Join(", ", tags)}.");
+                builder.AppendLine();
+            }
+        }
+
+        private static void AppendActionPlan(StringBuilder builder, string title)
+        {
+            builder.AppendLine("## Action Plan");
+            builder.AppendLine("1. **Define Objectives**");
+            builder.AppendLine($"   - Clearly outline what you aim to achieve with **{title}**.");
+            builder.AppendLine("   - Identify key success metrics.");
+            builder.AppendLine();
+
+            builder.AppendLine("2. **Conduct Research**");
+            builder.AppendLine($"   - Gather information related to **{title}**.");
+            builder.AppendLine("   - Explore best practices and case studies.");
+            builder.AppendLine("   - Useful resources:");
+            builder.AppendLine("     - [Resource 1](https://example.com/resource1)");
+            builder.AppendLine("     - [Resource 2](https://example.com/resource2)");
+            builder.AppendLine();
+
+            builder.AppendLine("3. **Plan Development**");
+            builder.AppendLine("   - Create a detailed plan with timelines and milestones.");
+            builder.AppendLine("   - Allocate necessary resources and assign responsibilities.");
+            builder.AppendLine();
+
+            builder.AppendLine("4. **Implementation**");
+            builder.AppendLine($"   - Execute the plan for **{title}**.");
+            builder.AppendLine("   - Monitor progress regularly.");
+            builder.AppendLine("   - Address any challenges promptly.");
+            builder.AppendLine();
+
+            builder.AppendLine("5. **Evaluation and Feedback**");
+            builder.AppendLine("   - Assess the outcomes against the objectives.");
+            builder.AppendLine("   - Collect feedback from stakeholders.");
+            builder.AppendLine("   - Document lessons learned.");
+            builder.AppendLine();
+        }
+
+        private static void ApplyTagSpecificModifications(StringBuilder builder, List<string> tags)
+        {
+            if (tags?.Contains("Urgent", StringComparer.OrdinalIgnoreCase) == true)
+            {
+                builder.AppendLine("**Note:** This action plan is marked as **urgent**. Prioritize tasks accordingly and consider accelerating timelines where possible.");
+                builder.AppendLine();
             }
 
-            // Steps
-            contentBuilder.AppendLine("## Action Plan");
-            contentBuilder.AppendLine("1. **Define Objectives**");
-            contentBuilder.AppendLine($"   - Clearly outline what you aim to achieve with **{title}**.");
-            contentBuilder.AppendLine("   - Identify key success metrics.");
-            contentBuilder.AppendLine();
-
-            contentBuilder.AppendLine("2. **Conduct Research**");
-            contentBuilder.AppendLine($"   - Gather information related to **{title}**.");
-            contentBuilder.AppendLine("   - Explore best practices and case studies.");
-            contentBuilder.AppendLine("   - Useful resources:");
-            contentBuilder.AppendLine("     - [Resource 1](https://example.com/resource1)");
-            contentBuilder.AppendLine("     - [Resource 2](https://example.com/resource2)");
-            contentBuilder.AppendLine();
-
-            contentBuilder.AppendLine("3. **Plan Development**");
-            contentBuilder.AppendLine("   - Create a detailed plan with timelines and milestones.");
-            contentBuilder.AppendLine("   - Allocate necessary resources and assign responsibilities.");
-            contentBuilder.AppendLine();
-
-            contentBuilder.AppendLine("4. **Implementation**");
-            contentBuilder.AppendLine($"   - Execute the plan for **{title}**.");
-            contentBuilder.AppendLine("   - Monitor progress regularly.");
-            contentBuilder.AppendLine("   - Address any challenges promptly.");
-            contentBuilder.AppendLine();
-
-            contentBuilder.AppendLine("5. **Evaluation and Feedback**");
-            contentBuilder.AppendLine("   - Assess the outcomes against the objectives.");
-            contentBuilder.AppendLine("   - Collect feedback from stakeholders.");
-            contentBuilder.AppendLine("   - Document lessons learned.");
-            contentBuilder.AppendLine();
-
-            if (tags != null && tags.Contains("Urgent", StringComparer.OrdinalIgnoreCase))
+            if (tags?.Contains("Idea", StringComparer.OrdinalIgnoreCase) == true)
             {
-                contentBuilder.AppendLine("**Note:** This action plan is marked as **urgent**. Prioritize tasks accordingly and consider accelerating timelines where possible.");
-                contentBuilder.AppendLine();
+                builder.Replace("Implementation", "Prototype Development");
             }
+        }
 
-            if (tags != null && tags.Contains("Idea", StringComparer.OrdinalIgnoreCase))
-            {
-                // Modify the action plan steps for an idea
-                contentBuilder.Replace("Implementation", "Prototype Development");
-                // Update steps as necessary
-            }
-
+        private static void AppendResources(StringBuilder builder, string title)
+        {
             var resources = GetRelevantResources(title.Replace(" ", "-").ToLower());
-            contentBuilder.AppendLine("## Additional Resources");
+            builder.AppendLine("## Additional Resources");
             foreach (var resource in resources)
             {
-                contentBuilder.AppendLine($"- [{resource}]({resource})");
+                builder.AppendLine($"- [{resource}]({resource})");
             }
+        }
 
-            // Conclusion
-            contentBuilder.AppendLine("## Conclusion");
-            contentBuilder.AppendLine($"By following this plan, you'll be well on your way to successfully **{title.ToLower()}**. Remember to stay adaptable and refine your approach as needed.");
-
-            var content = contentBuilder.ToString();
-
-            return new
-            {
-                content = content
-            };
+        private static void AppendConclusion(StringBuilder builder, string title)
+        {
+            builder.AppendLine("## Conclusion");
+            builder.AppendLine($"By following this plan, you'll be well on your way to successfully **{title.ToLower()}**. Remember to stay adaptable and refine your approach as needed.");
         }
 
         private async Task<object> GenerateTitleAsync(Dictionary<string, object> input)
         {
-            var content = input.ContainsKey("content") ? input["content"]?.ToString() : null;
-            var tags = input.ContainsKey("tags") ? ((JsonElement)input["tags"]).EnumerateArray().Select(e => e.GetString()).ToList() : null;
-
-            // Logic to generate title based on content and/or tags
-            string title = null;
-
-            if (!string.IsNullOrEmpty(content))
+            try
             {
-                // Extract a summary or key phrase from content
-                title = SummarizeContentIntoTitle(content);
+                return await Task.Run(() =>
+                {
+                    var content = input.ContainsKey(CONTENT_KEY) ? input[CONTENT_KEY]?.ToString() : null;
+                    var tags = input.ContainsKey("tags") ? ((JsonElement)input["tags"]).EnumerateArray().Select(e => e.GetString()).ToList() : null;
+
+                    string? title = null;
+
+                    if (!string.IsNullOrEmpty(content))
+                    {
+                        title = SummarizeContentIntoTitle(content);
+                    }
+                    else if (tags != null && tags.Any())
+                    {
+                        title = $"About {string.Join(" and ", tags)}";
+                    }
+
+                    if (string.IsNullOrEmpty(title))
+                    {
+                        throw new ArgumentException("At least one of 'content' or 'tags' must be provided to generate a title.");
+                    }
+
+                    return new { title = title.Trim() };
+                });
             }
-            else if (tags != null && tags.Any())
+            catch (Exception ex)
             {
-                // Create a title based on tags
-                title = $"About {string.Join(" and ", tags)}";
+                _logger.LogError(ex, "Error generating title");
+                throw new AnthropicException("Failed to generate title", ex);
             }
-
-            if (string.IsNullOrEmpty(title))
-            {
-                throw new ArgumentException("At least one of 'content' or 'tags' must be provided to generate a title.");
-            }
-
-            return new
-            {
-                title = title.Trim()
-            };
         }
 
-        private string SummarizeContentIntoTitle(string content)
+        private static string SummarizeContentIntoTitle(string content)
         {
             // Implement summarization logic here
             var firstSentence = content.Split(new[] { '.', '!', '?' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
@@ -389,26 +385,33 @@ namespace SecondBrain.Api.Services
 
         private async Task<object> GenerateTagsAsync(Dictionary<string, object> input)
         {
-            var title = input.ContainsKey("title") ? input["title"]?.ToString() : null;
-            var content = input.ContainsKey("content") ? input["content"]?.ToString() : null;
-
-            // Logic to generate tags based on title and/or content
-            var textToAnalyze = $"{title} {content}".Trim();
-
-            if (string.IsNullOrEmpty(textToAnalyze))
+            try
             {
-                throw new ArgumentException("At least one of 'title' or 'content' must be provided to generate tags.");
+                return await Task.Run(() =>
+                {
+                    var title = input.ContainsKey(TITLE_KEY) ? input[TITLE_KEY]?.ToString() ?? string.Empty : string.Empty;
+                    var content = input.ContainsKey(CONTENT_KEY) ? input[CONTENT_KEY]?.ToString() ?? string.Empty : string.Empty;
+
+                    var textToAnalyze = $"{title} {content}".Trim();
+
+                    if (string.IsNullOrEmpty(textToAnalyze))
+                    {
+                        throw new ArgumentException("At least one of 'title' or 'content' must be provided to generate tags.");
+                    }
+
+                    var tags = ExtractKeywords(textToAnalyze);
+
+                    return new { tags };
+                });
             }
-
-            var tags = ExtractKeywords(textToAnalyze);
-
-            return new
+            catch (Exception ex)
             {
-                tags = tags
-            };
+                _logger.LogError(ex, "Error generating tags");
+                throw new AnthropicException("Failed to generate tags", ex);
+            }
         }
 
-        private List<string> ExtractKeywords(string text)
+        private static List<string> ExtractKeywords(string text)
         {
             // Simple keyword extraction logic
             var words = text.Split(new[] { ' ', '.', ',', '!', '?' }, StringSplitOptions.RemoveEmptyEntries);
@@ -417,7 +420,7 @@ namespace SecondBrain.Api.Services
             return significantWords.Distinct(StringComparer.OrdinalIgnoreCase).Take(5).ToList();
         }
 
-        private List<string> GetRelevantResources(string topic)
+        private static List<string> GetRelevantResources(string topic)
         {
             // Implement logic to fetch relevant resource links based on the topic
             // This could involve calling an external API or querying a database

@@ -5,40 +5,40 @@ namespace SecondBrain.Api.DTOs.Gemini
     public class GeminiRequest
     {
         [JsonPropertyName("contents")]
-        public GeminiContent[] Contents { get; set; }
+        public required GeminiContent[] Contents { get; set; }
 
         [JsonPropertyName("safetySettings")]
-        public SafetySetting[] SafetySettings { get; set; }
+        public required SafetySetting[] SafetySettings { get; set; }
 
         [JsonPropertyName("generationConfig")]
-        public GenerationConfig GenerationConfig { get; set; }
+        public required GenerationConfig GenerationConfig { get; set; }
     }
 
     public class GeminiContent
     {
         [JsonPropertyName("parts")]
-        public ContentPart[] Parts { get; set; }
+        public required ContentPart[] Parts { get; set; }
     }
 
     public class ContentPart
     {
         [JsonPropertyName("text")]
-        public string Text { get; set; }
+        public required string Text { get; set; }
     }
 
     public class SafetySetting
     {
         [JsonPropertyName("category")]
-        public string Category { get; set; }
+        public required string Category { get; set; }
 
         [JsonPropertyName("threshold")]
-        public string Threshold { get; set; }
+        public required string Threshold { get; set; }
     }
 
     public class GenerationConfig
     {
         [JsonPropertyName("stopSequences")]
-        public string[] StopSequences { get; set; }
+        public required string[] StopSequences { get; set; }
 
         [JsonPropertyName("temperature")]
         public float Temperature { get; set; }
