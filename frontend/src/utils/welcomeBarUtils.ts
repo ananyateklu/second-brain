@@ -15,26 +15,23 @@ export const cardVariants = {
 
 export const sizeClasses = {
   small: {
-    colSpan: 'col-span-1',
-    fontSize: 'text-xs',
-    iconSize: 'w-3.5 h-3.5',
-    padding: 'p-2.5',
+    padding: 'p-3',
+    height: 'h-[100px]',
+    iconSize: 'w-4 h-4',
     titleSize: 'text-xs',
     valueSize: 'text-sm'
   },
   medium: {
-    colSpan: 'col-span-2',
-    fontSize: 'text-sm',
+    padding: 'p-3',
+    height: 'h-[100px]',
     iconSize: 'w-4 h-4',
-    padding: 'p-2.5',
     titleSize: 'text-xs',
     valueSize: 'text-sm'
   },
   large: {
-    colSpan: 'col-span-3',
-    fontSize: 'text-base',
-    iconSize: 'w-5 h-5',
-    padding: 'p-2.5',
+    padding: 'p-3',
+    height: 'h-[100px]',
+    iconSize: 'w-4 h-4',
     titleSize: 'text-xs',
     valueSize: 'text-sm'
   }

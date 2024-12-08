@@ -6,8 +6,15 @@ export interface StatValue {
   value: number | string;
   change?: number;
   timeframe?: string;
+  description?: string;
+  additionalInfo?: Array<{
+    icon?: React.ComponentType<{ className?: string }>;
+    label?: string;
+    value: string | number;
+  }>;
   metadata?: {
     breakdown?: {
+      total: number;
       created: number;
       edited: number;
       deleted: number;
@@ -159,7 +166,7 @@ export const DEFAULT_STATS: DashboardStat[] = [
   {
     id: 'completed-tasks',
     type: 'tasks',
-    title: 'Completed',
+    title: 'Completed Tasks',
     icon: 'CheckSquare',
     enabled: false,
     order: 6,
@@ -172,7 +179,7 @@ export const DEFAULT_STATS: DashboardStat[] = [
     icon: 'Activity',
     enabled: true,
     order: 7,
-    size: 'medium'
+    size: 'large'
   },
   {
     id: 'search-frequency',

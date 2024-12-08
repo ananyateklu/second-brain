@@ -104,13 +104,13 @@ export function DashboardHome() {
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
           >
             {stats.pinnedNotes.map(note => (
-              <button 
+              <div 
                 key={note.id}
                 className="cursor-pointer w-full text-left"
                 onClick={() => handleEditNote(note)}
               >
                 <NoteCard note={note} />
-              </button>
+              </div>
             ))}
           </div>
         </div>

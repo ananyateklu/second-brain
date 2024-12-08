@@ -6,4 +6,5 @@ export interface DashboardStat {
   enabled: boolean;
   order: number;
   size: 'small' | 'medium' | 'large';
+  gridPosition?: { row: number; col: number };
 } 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { DashboardStat } from '../types/dashboard';
 import { useNotes } from './notesContextUtils';
 import { useTasks } from './tasksContextUtils';
@@ -6,11 +6,9 @@ import { useReminders } from './remindersContextUtils';
 import { useActivities } from './activityContextUtils';
 import { calculateWeeklyChange, getNewNotesCount, getLastUpdateTime, DEFAULT_STATS, DashboardContext, isDashboardStat, StatValue } from '../utils/dashboardContextUtils';
 import type { Task } from '../api/types/task';
-
-interface Activity {
-  actionType: string;
-  timestamp: string;
-}
+import { FileText, Archive, Calendar, Lightbulb, Clock, CheckSquare } from 'lucide-react';
+import { Note } from '../types/note';
+import { Activity } from '../api/services/activityService';
 
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const { notes, isLoading: notesLoading } = useNotes();
@@ -26,13 +24,13 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.every(isDashboardStat)) {
-          return parsed as DashboardStat[];
+          return parsed;
         }
       } catch (e) {
         console.error('Failed to parse dashboard stats:', e);
       }
     }
-    return DEFAULT_STATS as DashboardStat[];
+    return DEFAULT_STATS;
   });
 
   // Update loading state when both notes and tasks are ready
@@ -52,7 +50,32 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     });
   }, [notes, tasks, notesLoading, isLoading]);
 
-  const getStatValue = (statId: string): StatValue => {
+  const getStatValue = useCallback((statId: string): StatValue => {
+    // Move declarations outside switch
+    let allTags: string[];
+    let uniqueTags: Set<string>;
+    let newRegularNotes: number;
+    let today: Date;
+    let todayActivities: Activity[];
+    let weekActivities: Activity[];
+    let activeTasks: Task[];
+    let completedTasks: Task[];
+    let dueSoonTasks: number;
+    let activeNotes: Note[];
+    let archivedNotes: Note[];
+    let todayNotes: number;
+    let totalWords: number;
+    let threeDaysFromNow: Date;
+    let notesWithTags: number;
+    let tasksWithTags: number;
+    let lastUpdateTime: string;
+    let recentlyUpdated: number;
+    let completedToday: number;
+    let completedThisWeek: number;
+    let weekAgo: Date;
+    let sharedWithTasks: number;
+    let sharedWithReminders: number;
+
     // If still loading, return placeholder values
     if (isLoading || notesLoading) {
       return {
@@ -65,13 +88,6 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     const regularNotes = notes.filter(note => !note.isIdea);
     const ideas = notes.filter(note => note.isIdea);
 
-    // Move declarations outside switch
-    let allTags: string[];
-    let uniqueTags: Set<string>;
-    let newRegularNotes: number;
-    let today: Date;
-    let todayActivities: Activity[];
-
     switch (statId) {
       case 'categories':
         allTags = [
@@ -80,64 +96,298 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           ...reminders.flatMap((reminder: { tags: string[] }) => reminder.tags)
         ];
         uniqueTags = new Set(allTags);
+        notesWithTags = regularNotes.filter(note => note.tags.length > 0).length;
+        tasksWithTags = tasks.filter(task => task.tags.length > 0).length;
+
         return {
           value: uniqueTags.size,
-          timeframe: 'Total Categories'
+          timeframe: 'Total Categories',
+          description: 'Tags across all items',
+          additionalInfo: [
+            {
+              icon: FileText,
+              value: `${notesWithTags} notes tagged`
+            },
+            {
+              icon: CheckSquare,
+              value: `${tasksWithTags} tasks tagged`
+            }
+          ]
         };
 
       case 'active-tasks':
+        activeTasks = tasks.filter((task: Task) => task.status.toLowerCase() !== 'completed');
+        completedTasks = tasks.filter((task: Task) => task.status.toLowerCase() === 'completed');
+        today = new Date();
+        threeDaysFromNow = new Date();
+        threeDaysFromNow.setDate(today.getDate() + 3);
+        dueSoonTasks = activeTasks.filter(task => {
+          if (!task.dueDate) return false;
+          const dueDate = new Date(task.dueDate);
+          return dueDate >= today && dueDate <= threeDaysFromNow;
+        }).length;
+
         return {
-          value: tasks.filter((task: Task) => task.status === 'Incomplete').length,
-          timeframe: 'Current'
+          value: `${activeTasks.length} of ${tasks.length}`,
+          timeframe: 'Current',
+          description: 'Tasks currently in progress',
+          additionalInfo: [
+            {
+              icon: Clock,
+              value: `${dueSoonTasks} due soon`
+            },
+            {
+              icon: CheckSquare,
+              value: `${completedTasks.length} completed`
+            }
+          ]
         };
 
       case 'completed-tasks':
+        today = new Date();
+        today.setHours(0, 0, 0, 0);
+        completedTasks = tasks.filter((task: Task) => task.status.toLowerCase() === 'completed');
+        weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        weekAgo.setHours(0, 0, 0, 0);
+
+        completedToday = completedTasks.filter(task => {
+          const completedDate = new Date(task.updatedAt);
+          completedDate.setHours(0, 0, 0, 0);
+          return completedDate.getTime() === today.getTime();
+        }).length;
+
+        completedThisWeek = completedTasks.filter(task => {
+          const completedDate = new Date(task.updatedAt);
+          return completedDate >= weekAgo;
+        }).length;
+
         return {
-          value: tasks.filter((task: Task) => task.status === 'Completed').length,
-          timeframe: 'Total'
+          value: `${completedTasks.length} of ${tasks.length}`,
+          timeframe: 'Total',
+          description: 'Tasks marked as completed',
+          additionalInfo: [
+            {
+              icon: Clock,
+              value: `${completedToday} today`
+            },
+            {
+              icon: Calendar,
+              value: `${completedThisWeek} this week`
+            }
+          ]
         };
 
       case 'total-notes':
+        activeNotes = regularNotes.filter(note => !note.isArchived);
+        archivedNotes = regularNotes.filter(note => note.isArchived);
         return {
           value: regularNotes.length,
           change: calculateWeeklyChange(regularNotes, 'created'),
-          timeframe: 'This week'
+          timeframe: 'This week',
+          description: 'Notes in your second brain',
+          additionalInfo: [
+            {
+              icon: FileText,
+              value: `${activeNotes.length} active`
+            },
+            {
+              icon: Archive,
+              value: `${archivedNotes.length} archived`
+            }
+          ]
         };
 
       case 'new-notes':
         newRegularNotes = getNewNotesCount(regularNotes);
+        today = new Date();
+        today.setHours(0, 0, 0, 0);
+        todayNotes = regularNotes.filter(note => new Date(note.createdAt) >= today).length;
+
         return {
           value: newRegularNotes,
           change: calculateWeeklyChange(regularNotes, 'created'),
-          timeframe: 'vs last week'
+          timeframe: 'vs last week',
+          description: 'Notes created in the last 7 days',
+          additionalInfo: [
+            {
+              icon: Calendar,
+              value: `${todayNotes} today`
+            }
+          ]
         };
 
       case 'last-update':
+        lastUpdateTime = getLastUpdateTime(notes);
+        recentlyUpdated = notes.filter(note => {
+          const updateDate = new Date(note.updatedAt);
+          const hourAgo = new Date();
+          hourAgo.setHours(hourAgo.getHours() - 1);
+          return updateDate >= hourAgo;
+        }).length;
+
         return {
-          value: getLastUpdateTime(notes),
-          timeframe: 'Last activity'
+          value: lastUpdateTime,
+          timeframe: 'Last activity',
+          description: 'Recent updates to your notes',
+          additionalInfo: [
+            {
+              icon: Clock,
+              value: `${recentlyUpdated} in last hour`
+            }
+          ]
         };
 
       case 'word-count':
+        totalWords = notes.reduce((total, note) => {
+          const wordCount = note.content.trim().split(/\s+/).length;
+          return total + wordCount;
+        }, 0);
+
         return {
-          value: notes.reduce((total, note) => {
-            const wordCount = note.content.trim().split(/\s+/).length;
-            return total + wordCount;
-          }, 0).toLocaleString(),
-          timeframe: 'Total'
+          value: totalWords.toLocaleString(),
+          timeframe: 'Total',
+          description: 'Total words across all notes',
+          additionalInfo: [
+            {
+              icon: FileText,
+              value: `${Math.round(totalWords / notes.length).toLocaleString()} avg per note`
+            }
+          ]
         };
 
       case 'ideas-count':
         return {
           value: ideas.length,
           timeframe: 'Total',
-          change: calculateWeeklyChange(ideas, 'created')
+          change: calculateWeeklyChange(ideas, 'created'),
+          description: 'Total number of ideas captured',
+          additionalInfo: [
+            {
+              icon: Lightbulb,
+              label: 'This week',
+              value: ideas.filter(idea => {
+                const weekAgo = new Date();
+                weekAgo.setDate(weekAgo.getDate() - 7);
+                return new Date(idea.createdAt) >= weekAgo;
+              }).length
+            }
+          ]
         };
 
-      case 'shared-notes':
+      case 'completed':
+        today = new Date();
+        today.setHours(0, 0, 0, 0);
+        completedTasks = tasks.filter((task: Task) => task.status === 'Completed');
+        weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+
+        completedToday = completedTasks.filter(task => {
+          const completedDate = new Date(task.updatedAt);
+          return completedDate >= today;
+        }).length;
+
+        completedThisWeek = completedTasks.filter(task => {
+          const completedDate = new Date(task.updatedAt);
+          return completedDate >= weekAgo;
+        }).length;
+
         return {
-          value: notes.filter(note => note.linkedTasks && note.linkedTasks.length > 0).length,
-          timeframe: 'Total'
+          value: completedTasks.length,
+          timeframe: 'Total',
+          description: 'Tasks marked as done',
+          additionalInfo: [
+            {
+              icon: Clock,
+              value: `${completedToday} today`
+            },
+            {
+              icon: Calendar,
+              value: `${completedThisWeek} this week`
+            }
+          ]
+        };
+
+      case 'daily-activity': {
+        today = new Date();
+        today.setHours(0, 0, 0, 0);
+        weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        weekAgo.setHours(0, 0, 0, 0);
+
+        todayActivities = activities.filter(activity => {
+          const activityDate = new Date(activity.timestamp);
+          return activityDate >= today;
+        });
+
+        weekActivities = activities.filter(activity => {
+          const activityDate = new Date(activity.timestamp);
+          return activityDate >= weekAgo;
+        });
+
+        const activityBreakdown: Record<string, number> = {};
+        weekActivities.forEach(activity => {
+          const type = activity.itemType.toLowerCase();
+          activityBreakdown[type] = (activityBreakdown[type] || 0) + 1;
+        });
+
+        const twoWeeksAgo = new Date(weekAgo);
+        twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 7);
+
+        const lastWeekActivities = activities.filter(activity => {
+          const activityDate = new Date(activity.timestamp);
+          return activityDate >= twoWeeksAgo && activityDate < weekAgo;
+        });
+
+        const activityChange = weekActivities.length - lastWeekActivities.length;
+
+        const mostActiveCategory = Object.entries(activityBreakdown)
+          .sort(([, a], [, b]) => b - a)[0];
+
+        return {
+          value: todayActivities.length,
+          change: activityChange,
+          timeframe: 'Today',
+          description: 'Your activity across all items',
+          additionalInfo: [
+            {
+              icon: Calendar,
+              value: `${weekActivities.length} this week`
+            },
+            mostActiveCategory && {
+              icon: FileText,
+              value: `${mostActiveCategory[0]}: ${mostActiveCategory[1]}`
+            }
+          ].filter(Boolean),
+          metadata: {
+            breakdown: {
+              total: weekActivities.length,
+              created: weekActivities.filter(a => a.actionType.toLowerCase() === 'create').length,
+              edited: weekActivities.filter(a => a.actionType.toLowerCase() === 'edit').length,
+              deleted: weekActivities.filter(a => a.actionType.toLowerCase() === 'delete').length
+            }
+          }
+        };
+      }
+
+      case 'shared-notes':
+        sharedWithTasks = notes.filter(note => note.linkedTasks && note.linkedTasks.length > 0).length;
+        sharedWithReminders = notes.filter(note => note.linkedReminders && note.linkedReminders.length > 0).length;
+
+        return {
+          value: sharedWithTasks + sharedWithReminders,
+          timeframe: 'Total',
+          description: 'Notes linked with tasks or reminders',
+          additionalInfo: [
+            {
+              icon: CheckSquare,
+              value: `${sharedWithTasks} with tasks`
+            },
+            {
+              icon: Clock,
+              value: `${sharedWithReminders} with reminders`
+            }
+          ]
         };
 
       case 'search-frequency':
@@ -147,29 +397,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           timeframe: 'Today'
         };
 
-      case 'daily-activity':
-        today = new Date();
-        today.setHours(0, 0, 0, 0);
-        todayActivities = activities.filter(activity => {
-          const activityDate = new Date(activity.timestamp);
-          return activityDate >= today;
-        });
-        return {
-          value: todayActivities.length,
-          timeframe: 'Today',
-          metadata: {
-            breakdown: {
-              created: todayActivities.filter(a => a.actionType === 'create').length,
-              edited: todayActivities.filter(a => a.actionType === 'edit').length,
-              deleted: todayActivities.filter(a => a.actionType === 'delete').length,
-            }
-          }
-        };
-
       default:
         return { value: 0 };
     }
-  };
+  }, [isLoading, notesLoading, notes, tasks, reminders, activities]);
 
   const toggleStat = useCallback((statId: string) => {
     setStats(prevStats => {
@@ -184,6 +415,14 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const updateStatsOrder = (prevStats: DashboardStat[], reorderedStats: DashboardStat[]) => {
+    return prevStats.map(stat => {
+      if (!stat.enabled) return stat;
+      const newIndex = reorderedStats.findIndex(s => s.id === stat.id);
+      return { ...stat, order: newIndex };
+    });
+  };
+
   const reorderStats = useCallback((startIndex: number, endIndex: number, newOrder?: DashboardStat[]) => {
     if (newOrder) {
       setStats(newOrder);
@@ -197,12 +436,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       const [removed] = reorderedStats.splice(startIndex, 1);
       reorderedStats.splice(endIndex, 0, removed);
 
-      const newStats = prevStats.map(stat => {
-        if (!stat.enabled) return stat;
-        const newIndex = reorderedStats.findIndex(s => s.id === stat.id);
-        return { ...stat, order: newIndex };
-      });
-
+      const newStats = updateStatsOrder(prevStats, reorderedStats);
       localStorage.setItem('dashboard_stats', JSON.stringify(newStats));
       return newStats;
     });
@@ -222,7 +456,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <DashboardContext.Provider value={{
+    <DashboardContext.Provider value={useMemo(() => ({
       availableStats: stats,
       enabledStats: stats.filter(stat => stat.enabled).sort((a, b) => a.order - b.order),
       toggleStat,
@@ -230,7 +464,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       getStatValue,
       updateStatSize,
       isLoading
-    }}>
+    }), [stats, toggleStat, reorderStats, getStatValue, updateStatSize, isLoading])}>
       {children}
     </DashboardContext.Provider>
   );

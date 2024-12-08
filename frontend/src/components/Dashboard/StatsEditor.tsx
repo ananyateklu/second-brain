@@ -50,7 +50,7 @@ export function StatsEditor({ isOpen }: { isOpen: boolean }) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
-      className="bg-[var(--color-surface)]/80 backdrop-blur-xl border border-[var(--color-border)] rounded-xl w-full shadow-lg"
+      className="bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))] backdrop-blur-xl border border-[var(--color-border)] rounded-xl w-full shadow-lg"
     >
       <div className="p-4 border-b border-[var(--color-border)]">
         <h3 className="text-sm font-medium text-[var(--color-text)] flex items-center gap-2">
@@ -79,7 +79,7 @@ export function StatsEditor({ isOpen }: { isOpen: boolean }) {
                   className="transform origin-center cursor-pointer col-span-1"
                 >
                   <motion.div
-                    className="w-full h-[100px] bg-[var(--color-surface)]/80 backdrop-blur-xl p-3 rounded-lg border border-[var(--color-border)] hover:border-[var(--color-accent)] transition-all duration-300"
+                    className="w-full h-[100px] bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))] backdrop-blur-xl p-3 rounded-lg border border-[var(--color-border)] hover:border-[var(--color-accent)] transition-all duration-300"
                     whileTap={{ scale: 0.95 }}
                   >
                     <div className="flex flex-col h-full justify-between">
