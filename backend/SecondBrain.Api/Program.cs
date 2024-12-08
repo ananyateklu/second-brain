@@ -167,11 +167,6 @@ builder.Services.AddHttpClient<IGeminiService, GeminiService>();
 // Register RAGService
 builder.Services.AddScoped<RagService>();
 
-// Configure Kestrel
-builder.WebHost.ConfigureKestrel(serverOptions =>
-{
-    serverOptions.ListenLocalhost(5127);
-});
 
 var app = builder.Build();
 

@@ -1,4 +1,4 @@
-<!-- markdownlint-disable MD033 -->
+<!-- markdownlint-disable MD041 MD033 -->
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="frontend/src/assets/second-brain-logo-dark-mode.png">
@@ -15,7 +15,14 @@ Second Brain is a modern note-taking and knowledge management system that combin
 
 - **Knowledge Management**
   - Rich text editing with Markdown support
-  - Interactive mind mapping and relationship graphs
+  - Interactive mind mapping and relationship visualization using React Flow:
+    - Customizable node types and styles
+    - Smooth animations and transitions
+    - Real-time graph updates
+    - Drag and drop interface
+    - Mini-map navigation
+    - Node grouping
+    - Custom edge connections
   - AI-powered organization and tagging
   - Comprehensive linking system:
     - Note-to-note bi-directional links
@@ -23,7 +30,7 @@ Second Brain is a modern note-taking and knowledge management system that combin
     - Connect ideas with related content
     - Automatic link suggestions
   - Version history and archiving
-  - Visual knowledge graphs
+  - Visual knowledge graphs with React Flow integration
 
 - **Code & Documentation**
   - Syntax highlighting for 15+ languages
@@ -68,7 +75,13 @@ Second Brain is a modern note-taking and knowledge management system that combin
   - Tailwind CSS for responsive styling
   - State management with React Context API and custom hooks
   - AI integrations with OpenAI, Anthropic, and Google AI SDKs
-  - Interactive visualizations with Cytoscape.js
+  - Graph visualization with React Flow:
+    - Custom node and edge components
+    - Interactive graph layouts
+    - Zoom and pan controls
+    - Node selection and multi-select
+    - Edge routing with smooth curves
+    - Real-time graph updates
   - Modern UI components with Headless UI and Framer Motion
   - Icon system using Lucide Icons
   - Date handling with date-fns
