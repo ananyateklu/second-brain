@@ -1,9 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo, useCallback, memo } from 'react';
 import { Calendar, Tag as TagIcon, Clock, AlertCircle, CheckSquare, Square, Bell, Type, Lightbulb } from 'lucide-react';
 import { Reminder, useReminders } from '../../../contexts/remindersContextUtils';
 import { EditReminderModal } from './EditReminderModal/index';
 import { useTheme } from '../../../contexts/themeContextUtils';
-import { getNoteCardBg } from '../../../utils/dashboardUtils';
 
 interface ReminderCardProps {
   reminder: Reminder;
@@ -12,6 +11,31 @@ interface ReminderCardProps {
   context?: 'default' | 'trash' | 'archive' | 'favorites';
   onSelect?: () => void;
   onClick?: (reminder: Reminder) => void;
+}
+
+interface CheckboxProps {
+  reminder: Reminder;
+  context: ReminderCardProps['context'];
+  toggleReminderCompletion: (id: string) => void;
+  isDark: boolean;
+}
+
+interface StatusBadgesProps {
+  isOverdue: boolean;
+  isSnoozed: boolean;
+  isDark: boolean;
+}
+
+interface TagListProps {
+  visibleItems: Array<{ type: string; id: string; title: string; }>;
+  remainingCount: number;
+  itemColorClasses: (type: string) => string;
+  itemIcon: (type: string) => JSX.Element;
+  viewMode: ReminderCardProps['viewMode'];
+}
+
+interface MetadataProps {
+  reminder: Reminder;
 }
 
 export function ReminderCard({
@@ -26,14 +50,39 @@ export function ReminderCard({
   const { snoozeReminder, toggleReminderCompletion } = useReminders();
   const [showEditModal, setShowEditModal] = useState(false);
 
-  const isOverdue = new Date(reminder.dueDateTime) < new Date() && !reminder.isSnoozed && !reminder.isCompleted;
+  const isDark = useMemo(() => theme === 'dark' || theme === 'midnight', [theme]);
+  const isOverdue = useMemo(() => 
+    new Date(reminder.dueDateTime) < new Date() && !reminder.isSnoozed && !reminder.isCompleted,
+    [reminder.dueDateTime, reminder.isSnoozed, reminder.isCompleted]
+  );
 
-  const handleSnooze = (duration: number) => {
-    const until = new Date(Date.now() + duration);
-    snoozeReminder(reminder.id, until.toISOString());
-  };
+  const containerClasses = useMemo(() => {
+    const base = `
+      relative group w-full
+      ${isSelected ? 'ring-2 ring-[var(--color-accent)]' : ''}
+      ${theme === 'dark'
+        ? 'bg-gray-900/30'
+        : theme === 'midnight'
+          ? 'bg-white/5'
+          : 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]'} 
+      backdrop-blur-xl 
+      border border-purple-200/30 dark:border-purple-700/30
+      hover:border-purple-400/50 dark:hover:border-purple-500/50
+      transition-all duration-300 
+      rounded-lg
+      shadow-[0_4px_12px_-2px_rgba(0,0,0,0.12),0_4px_8px_-2px_rgba(0,0,0,0.08)]
+      dark:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.4),0_4px_8px_-2px_rgba(0,0,0,0.3)]
+      hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.2),0_6px_12px_-4px_rgba(0,0,0,0.15)]
+      dark:hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.5),0_6px_12px_-4px_rgba(0,0,0,0.4)]
+      ring-1 ring-black/5 dark:ring-white/10
+      hover:ring-black/10 dark:hover:ring-white/20
+      ${onSelect || onClick ? 'cursor-pointer hover:-translate-y-1 hover:scale-[1.02]' : ''}
+      ${reminder.isCompleted ? 'opacity-85' : ''}
+    `;
+    return base.trim();
+  }, [isSelected, theme, onSelect, onClick, reminder.isCompleted]);
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     if (onSelect) {
       onSelect();
@@ -42,153 +91,253 @@ export function ReminderCard({
     } else if (context === 'default') {
       setShowEditModal(true);
     }
-  };
+  }, [onSelect, onClick, reminder, context]);
+
+  const handleSnooze = useCallback((duration: number) => {
+    const until = new Date(Date.now() + duration);
+    snoozeReminder(reminder.id, until.toISOString());
+  }, [snoozeReminder, reminder.id]);
 
   // Calculate visible and remaining items
   const MAX_VISIBLE_ITEMS = viewMode === 'list' ? 8 : 7;
-  const allItems = [
+  const allItems = useMemo(() => [
     ...(reminder.tags || []).map(tag => ({ type: 'tag', id: tag, title: tag })),
     ...(reminder.linkedItems || [])
-  ];
-  const visibleItems = allItems.slice(0, MAX_VISIBLE_ITEMS);
-  const remainingCount = Math.max(0, allItems.length - MAX_VISIBLE_ITEMS);
+  ], [reminder.tags, reminder.linkedItems]);
 
-  const getItemColorClasses = (type: string) => {
-    const isDark = theme === 'dark' || theme === 'midnight';
+  const visibleItems = useMemo(() => allItems.slice(0, MAX_VISIBLE_ITEMS), [allItems, MAX_VISIBLE_ITEMS]);
+  const remainingCount = useMemo(() => Math.max(0, allItems.length - MAX_VISIBLE_ITEMS), [allItems.length, MAX_VISIBLE_ITEMS]);
+
+  const itemColorClasses = useCallback((type: string) => {
     if (type === 'tag') return isDark ? 'bg-purple-900/30 text-purple-400' : 'bg-purple-100 text-purple-600';
     if (type === 'idea') return isDark ? 'bg-amber-900/30 text-amber-400' : 'bg-amber-100 text-amber-600';
     return isDark ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-600';
-  };
+  }, [isDark]);
 
-  const getItemIcon = (type: string) => {
+  const itemIcon = useCallback((type: string) => {
     if (type === 'tag') return <TagIcon className="w-2.5 h-2.5 flex-shrink-0" />;
     if (type === 'idea') return <Lightbulb className="w-2.5 h-2.5 flex-shrink-0" />;
     return <Type className="w-2.5 h-2.5 flex-shrink-0" />;
-  };
+  }, []);
 
-  const renderCheckbox = () => {
-    const getCheckboxIcon = () => {
-      if (context !== 'default') return <Bell className="w-3.5 h-3.5" />;
-      return reminder.isCompleted ? <CheckSquare className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />;
-    };
+  const checkboxMemo = useMemo(() => (
+    <Checkbox
+      reminder={reminder}
+      context={context}
+      toggleReminderCompletion={toggleReminderCompletion}
+      isDark={isDark}
+    />
+  ), [reminder, context, toggleReminderCompletion, isDark]);
 
-    const isDark = theme === 'dark' || theme === 'midnight';
-    const colorVariants = {
-      dark: {
-        completed: 'bg-green-900/30 text-green-400',
-        pending: 'text-purple-400'
-      },
-      light: {
-        completed: 'bg-green-100 text-green-600',
-        pending: 'text-purple-600'
-      }
-    };
+  const statusBadgesMemo = useMemo(() => (
+    <StatusBadges
+      isOverdue={isOverdue}
+      isSnoozed={reminder.isSnoozed}
+      isDark={isDark}
+    />
+  ), [isOverdue, reminder.isSnoozed, isDark]);
 
-    const themeMode = isDark ? 'dark' : 'light';
-    const status = reminder.isCompleted ? 'completed' : 'pending';
-    const colorClasses = colorVariants[themeMode][status];
+  const tagsMemo = useMemo(() => (
+    <TagList
+      visibleItems={visibleItems}
+      remainingCount={remainingCount}
+      itemColorClasses={itemColorClasses}
+      itemIcon={itemIcon}
+      viewMode={viewMode}
+    />
+  ), [visibleItems, remainingCount, itemColorClasses, itemIcon, viewMode]);
 
-    return (
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          if (context === 'default') {
-            toggleReminderCompletion(reminder.id);
-          }
-        }}
-        className={`flex-shrink-0 p-1.5 rounded transition-colors ${colorClasses}`}
-      >
-        {getCheckboxIcon()}
-      </button>
-    );
-  };
+  const metadataMemo = useMemo(() => (
+    <Metadata reminder={reminder} />
+  ), [reminder]);
 
-  const renderStatusBadges = () => {
-    const isDark = theme === 'dark' || theme === 'midnight';
-    return (
-      (isOverdue || reminder.isSnoozed) && (
-        <div className="flex items-center gap-1">
-          {isOverdue && (
-            <span className={`flex items-center gap-0.5 px-1.5 py-0.5 text-[11px] font-medium rounded ${isDark ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-600'} whitespace-nowrap`}>
-              <AlertCircle className="w-3 h-3" />
-              Overdue
-            </span>
-          )}
-          {reminder.isSnoozed && (
-            <span className={`flex items-center gap-0.5 px-1.5 py-0.5 text-[11px] font-medium rounded ${isDark ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-600'} whitespace-nowrap`}>
-              <Clock className="w-3 h-3" />
-              Snoozed
-            </span>
-          )}
-        </div>
-      )
-    );
-  };
-
-  const renderSnoozeButtons = () => (
-    !reminder.isSnoozed && !reminder.isCompleted && context === 'default' && (
-      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            handleSnooze(5 * 60 * 1000);
-          }}
-          className="px-1.5 py-0.5 text-[11px] font-medium text-[var(--color-textSecondary)] hover:bg-[var(--color-secondary)] rounded transition-colors"
-        >
-          5m
-        </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            handleSnooze(60 * 60 * 1000);
-          }}
-          className="px-1.5 py-0.5 text-[11px] font-medium text-[var(--color-textSecondary)] hover:bg-[var(--color-secondary)] rounded transition-colors"
-        >
-          1h
-        </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            handleSnooze(24 * 60 * 60 * 1000);
-          }}
-          className="px-1.5 py-0.5 text-[11px] font-medium text-[var(--color-textSecondary)] hover:bg-[var(--color-secondary)] rounded transition-colors"
-        >
-          1d
-        </button>
-      </div>
-    )
+  const titleClasses = useMemo(() =>
+    `text-sm font-medium text-[var(--color-text)] truncate ${reminder.isCompleted ? 'line-through text-[var(--color-textSecondary)]' : ''}`,
+    [reminder.isCompleted]
   );
 
-  const renderTags = () => (
-    allItems.length > 0 && (
-      <div className={`
-        flex flex-wrap gap-1
-        ${viewMode === 'list' ? 'items-center' : 'items-start'}
-        ${viewMode === 'grid' ? 'max-h-[44px]' : ''}
-        min-h-[20px] overflow-hidden
-      `}>
-        {visibleItems.map(item => (
-          <span
-            key={item.id}
-            className={`
-              inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap
-              ${getItemColorClasses(item.type)}
-            `}
-          >
-            {getItemIcon(item.type)}
-            <span className="truncate max-w-[120px]">{item.title}</span>
-          </span>
-        ))}
-        {remainingCount > 0 && (
-          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] font-medium bg-[var(--color-secondary)] text-[var(--color-textSecondary)] whitespace-nowrap">
-            +{remainingCount} more
-          </span>
+  const descriptionClasses = useMemo(() =>
+    `text-xs text-[var(--color-textSecondary)] ${viewMode === 'list' ? 'truncate' : 'line-clamp-2'} ${reminder.isCompleted ? 'line-through opacity-75' : ''}`,
+    [reminder.isCompleted, viewMode]
+  );
+
+  return (
+    <>
+      <div onClick={handleClick} className={containerClasses}>
+        {viewMode === 'list' ? (
+          <div className="px-3 py-2.5 h-full flex items-center gap-3">
+            {checkboxMemo}
+            <div className="flex-1 min-w-0 flex items-center gap-4">
+              <div className="min-w-[200px] max-w-[300px]">
+                <h3 className={titleClasses}>{reminder.title}</h3>
+                {reminder.description && (
+                  <p className={descriptionClasses}>{reminder.description}</p>
+                )}
+              </div>
+              <div className="min-w-[180px]">{metadataMemo}</div>
+              <div className="flex-1 min-w-0">{tagsMemo}</div>
+              {statusBadgesMemo}
+            </div>
+          </div>
+        ) : (
+          <div className="p-3 h-full flex flex-col">
+            <div className="flex items-start gap-2 mb-2">
+              {checkboxMemo}
+              <div className="flex-1 min-w-0">
+                <h3 className={titleClasses}>{reminder.title}</h3>
+                {reminder.description && (
+                  <p className={`mt-0.5 ${descriptionClasses}`}>{reminder.description}</p>
+                )}
+              </div>
+              {statusBadgesMemo}
+            </div>
+
+            <div className="flex-1 flex flex-col min-h-0">
+              <div className="flex-1 overflow-hidden">
+                <div className="min-h-[44px] max-h-[66px] overflow-hidden">
+                  {tagsMemo}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-3 mt-auto border-t border-[var(--color-border)]">
+                {metadataMemo}
+                {!reminder.isSnoozed && !reminder.isCompleted && context === 'default' && (
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSnooze(5 * 60 * 1000);
+                      }}
+                      className="px-1.5 py-0.5 text-[11px] font-medium text-[var(--color-textSecondary)] hover:bg-[var(--color-secondary)] rounded transition-colors"
+                    >
+                      5m
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSnooze(60 * 60 * 1000);
+                      }}
+                      className="px-1.5 py-0.5 text-[11px] font-medium text-[var(--color-textSecondary)] hover:bg-[var(--color-secondary)] rounded transition-colors"
+                    >
+                      1h
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSnooze(24 * 60 * 60 * 1000);
+                      }}
+                      className="px-1.5 py-0.5 text-[11px] font-medium text-[var(--color-textSecondary)] hover:bg-[var(--color-secondary)] rounded transition-colors"
+                    >
+                      1d
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         )}
       </div>
-    )
-  );
 
-  const renderMetadata = () => (
+      {showEditModal && (
+        <EditReminderModal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          reminder={reminder}
+        />
+      )}
+    </>
+  );
+}
+
+// Memoized subcomponents
+const Checkbox = memo(function Checkbox({ reminder, context, toggleReminderCompletion, isDark }: CheckboxProps) {
+  const getCheckboxIcon = () => {
+    if (context !== 'default') return <Bell className="w-3.5 h-3.5" />;
+    return reminder.isCompleted ? <CheckSquare className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />;
+  };
+
+  const colorVariants = {
+    dark: {
+      completed: 'bg-green-900/30 text-green-400',
+      pending: 'text-purple-400'
+    },
+    light: {
+      completed: 'bg-green-100 text-green-600',
+      pending: 'text-purple-600'
+    }
+  };
+
+  const themeMode = isDark ? 'dark' : 'light';
+  const status = reminder.isCompleted ? 'completed' : 'pending';
+  const colorClasses = colorVariants[themeMode][status];
+
+  return (
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        if (context === 'default') {
+          toggleReminderCompletion(reminder.id);
+        }
+      }}
+      className={`flex-shrink-0 p-1.5 rounded transition-colors ${colorClasses}`}
+    >
+      {getCheckboxIcon()}
+    </button>
+  );
+});
+
+const StatusBadges = memo(function StatusBadges({ isOverdue, isSnoozed, isDark }: StatusBadgesProps) {
+  if (!isOverdue && !isSnoozed) return null;
+  return (
+    <div className="flex items-center gap-1">
+      {isOverdue && (
+        <span className={`flex items-center gap-0.5 px-1.5 py-0.5 text-[11px] font-medium rounded ${isDark ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-600'} whitespace-nowrap`}>
+          <AlertCircle className="w-3 h-3" />
+          Overdue
+        </span>
+      )}
+      {isSnoozed && (
+        <span className={`flex items-center gap-0.5 px-1.5 py-0.5 text-[11px] font-medium rounded ${isDark ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-600'} whitespace-nowrap`}>
+          <Clock className="w-3 h-3" />
+          Snoozed
+        </span>
+      )}
+    </div>
+  );
+});
+
+const TagList = memo(function TagList({ visibleItems, remainingCount, itemColorClasses, itemIcon, viewMode }: TagListProps) {
+  if (visibleItems.length === 0) return null;
+  return (
+    <div className={`
+      flex flex-wrap gap-1
+      ${viewMode === 'list' ? 'items-center' : 'items-start'}
+      ${viewMode === 'grid' ? 'max-h-[44px]' : ''}
+      min-h-[20px] overflow-hidden
+    `}>
+      {visibleItems.map(item => (
+        <span
+          key={item.id}
+          className={`
+            inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap
+            ${itemColorClasses(item.type)}
+          `}
+        >
+          {itemIcon(item.type)}
+          <span className="truncate max-w-[120px]">{item.title}</span>
+        </span>
+      ))}
+      {remainingCount > 0 && (
+        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] font-medium bg-[var(--color-secondary)] text-[var(--color-textSecondary)] whitespace-nowrap">
+          +{remainingCount} more
+        </span>
+      )}
+    </div>
+  );
+});
+
+const Metadata = memo(function Metadata({ reminder }: MetadataProps) {
+  return (
     <div className="flex items-center gap-2 text-[11px] text-[var(--color-textSecondary)]">
       <div className="flex items-center gap-1">
         <Calendar className="w-3 h-3" />
@@ -207,94 +356,4 @@ export function ReminderCard({
       )}
     </div>
   );
-
-  return (
-    <>
-      <div
-        onClick={handleClick}
-        className={`
-          relative group
-          w-full
-          ${onSelect || onClick ? 'cursor-pointer' : ''}
-          ${reminder.isCompleted ? 'opacity-85' : ''}
-          ${getNoteCardBg('reminder')}
-          border border-purple-200/30 dark:border-purple-700/30
-          hover:border-purple-400/50 dark:hover:border-purple-500/50
-          rounded-lg
-          transition-all duration-200
-          overflow-hidden
-          ${isSelected ? 'ring-2 ring-purple-400/50 dark:ring-purple-500/50' : ''}
-          ${viewMode === 'list' ? 'h-[84px]' : 'h-[156px]'}
-          hover:shadow-lg hover:shadow-purple-900/5
-          hover:-translate-y-0.5
-        `}
-      >
-        {viewMode === 'list' ? (
-          // List View Layout
-          <div className="px-3 py-2.5 h-full flex items-center gap-3">
-            {renderCheckbox()}
-            <div className="flex-1 min-w-0 flex items-center gap-4">
-              <div className="min-w-[200px] max-w-[300px]">
-                <h3 className={`text-sm font-medium text-[var(--color-text)] truncate ${reminder.isCompleted ? 'line-through text-[var(--color-textSecondary)]' : ''}`}>
-                  {reminder.title}
-                </h3>
-                {reminder.description && (
-                  <p className={`text-xs text-[var(--color-textSecondary)] truncate ${reminder.isCompleted ? 'line-through opacity-75' : ''}`}>
-                    {reminder.description}
-                  </p>
-                )}
-              </div>
-              <div className="min-w-[180px]">
-                {renderMetadata()}
-              </div>
-              <div className="flex-1 min-w-0">
-                {renderTags()}
-              </div>
-              {renderStatusBadges()}
-              {renderSnoozeButtons()}
-            </div>
-          </div>
-        ) : (
-          // Grid View Layout
-          <div className="p-3 h-full flex flex-col">
-            <div className="flex items-start gap-2 mb-2">
-              {renderCheckbox()}
-              <div className="flex-1 min-w-0">
-                <h3 className={`text-sm font-medium text-[var(--color-text)] truncate ${reminder.isCompleted ? 'line-through text-[var(--color-textSecondary)]' : ''}`}>
-                  {reminder.title}
-                </h3>
-                {reminder.description && (
-                  <p className={`mt-0.5 text-xs text-[var(--color-textSecondary)] line-clamp-2 ${reminder.isCompleted ? 'line-through opacity-75' : ''}`}>
-                    {reminder.description}
-                  </p>
-                )}
-              </div>
-              {renderStatusBadges()}
-            </div>
-
-            <div className="flex-1 flex flex-col min-h-0">
-              <div className="flex-1 overflow-hidden">
-                <div className="min-h-[44px] max-h-[66px] overflow-hidden">
-                  {renderTags()}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between pt-3 mt-auto border-t border-[var(--color-border)]">
-                <div className="flex items-center gap-2">
-                  {renderMetadata()}
-                  {renderSnoozeButtons()}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <EditReminderModal
-        isOpen={showEditModal}
-        onClose={() => setShowEditModal(false)}
-        reminder={reminder}
-      />
-    </>
-  );
-}
+});
