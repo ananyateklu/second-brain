@@ -83,7 +83,6 @@ namespace SecondBrain.Data.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("MetadataJson")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("Timestamp")
@@ -126,7 +125,6 @@ namespace SecondBrain.Data.Migrations
                         .HasColumnType("bit");
 
                     b.Property<string>("Tags")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Title")

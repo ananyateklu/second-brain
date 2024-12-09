@@ -305,9 +305,7 @@ namespace SecondBrain.Data
         public DataContext CreateDbContext(string[] args)
         {
             var optionsBuilder = new DbContextOptionsBuilder<DataContext>();
-            // Use a placeholder connection string for development
-            optionsBuilder.UseSqlServer("Server=localhost;Database=SecondBrainDb;Trusted_Connection=True;TrustServerCertificate=True");
-
+            optionsBuilder.UseSqlServer("Server=localhost,7800;Database=SecondBrainDb;User Id=sa;Password=Anu685904;TrustServerCertificate=True;");
             return new DataContext(optionsBuilder.Options);
         }
     }

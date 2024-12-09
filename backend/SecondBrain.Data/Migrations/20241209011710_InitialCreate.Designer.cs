@@ -12,8 +12,8 @@ using SecondBrain.Data;
 namespace SecondBrain.Data.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20241207185331_RemoveIsDeletedFromReminderLinkKey")]
-    partial class RemoveIsDeletedFromReminderLinkKey
+    [Migration("20241209011710_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -86,7 +86,6 @@ namespace SecondBrain.Data.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("MetadataJson")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("Timestamp")
@@ -129,7 +128,6 @@ namespace SecondBrain.Data.Migrations
                         .HasColumnType("bit");
 
                     b.Property<string>("Tags")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Title")

@@ -226,12 +226,14 @@ export function TaskCard({
             {renderPriorityBadge()}
           </div>
 
-          <div className="flex-1 flex flex-col justify-between">
-            <div className="min-h-[44px] mb-3">
-              {renderTags()}
+          <div className="flex-1 flex flex-col min-h-0">
+            <div className="flex-1 overflow-hidden">
+              <div className="min-h-[44px] max-h-[66px] overflow-hidden">
+                {renderTags()}
+              </div>
             </div>
 
-            <div className="flex items-center justify-between pt-3 border-t border-gray-700/30">
+            <div className="flex items-center justify-between pt-3 mt-auto border-t border-[var(--color-border)]">
               {renderMetadata()}
             </div>
           </div>
