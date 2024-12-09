@@ -1,13 +1,14 @@
 import { useState, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { Plus, Search, Clock, Hash, Files, CheckSquare, Settings, X, FileText, Lightbulb, Share2, Activity, FolderPlus, Tags, AlignLeft, FolderIcon, TagIcon, LayoutGrid, Layout, Columns, Network } from 'lucide-react';
+import { Plus, Search, Clock, Hash, Files, CheckSquare, Settings, X, FileText, Lightbulb, Share2, Activity, FolderPlus, Tags, AlignLeft, FolderIcon, TagIcon, LayoutGrid, Layout, Columns, Network, AlertCircle, Bell } from 'lucide-react';
 import { motion, AnimatePresence, Reorder } from 'framer-motion';
 import { useDashboard } from '../../hooks/useDashboard';
 import { StatsEditor } from './StatsEditor';
 import { DashboardStat } from '../../types/dashboard';
 import { getIconBg, getIconColor } from '../../utils/dashboardUtils';
 import { cardVariants, sizeClasses } from '../../utils/welcomeBarUtils';
+import { StatValue } from '../../utils/dashboardContextUtils';
 
 const IconMap = {
   FileText,
@@ -25,7 +26,9 @@ const IconMap = {
   AlignLeft,
   Plus,
   TagIcon,
-  Network
+  Network,
+  AlertCircle,
+  Bell
 };
 
 const getWidthFromSize = (size?: string) => {
@@ -51,7 +54,7 @@ function findNextAvailablePosition(rows: number[][], width: number, columnCount:
     if (!rows[r]) {
       rows[r] = Array(columnCount).fill(0);
     }
-    
+
     for (let col = 0; col <= columnCount - width; col++) {
       if (rows[r].slice(col, col + width).every(cell => cell === 0)) {
         return { row: r, col };
@@ -62,11 +65,11 @@ function findNextAvailablePosition(rows: number[][], width: number, columnCount:
 
 function tryPlaceAtPosition(rows: number[][], row: number, col: number, width: number, columnCount: number): boolean {
   if (col + width > columnCount) return false;
-  
+
   if (!rows[row]) {
     rows[row] = Array(columnCount).fill(0);
   }
-  
+
   const canPlace = rows[row].slice(col, col + width).every(cell => cell === 0);
   if (canPlace) {
     for (let c = 0; c < width; c++) {
@@ -208,15 +211,15 @@ export function WelcomeBar({ isDashboardHome = false }: WelcomeBarProps) {
         overflow-hidden 
         rounded-2xl 
         bg-white/20
-        dark:bg-white/5
+        dark:bg-slate-900/20
         border-[1.5px] 
         border-white/40
-        dark:border-white/30
+        dark:border-white/20
         backdrop-blur-xl 
-        shadow-[0_4px_12px_-2px_rgba(0,0,0,0.12),0_4px_8px_-2px_rgba(0,0,0,0.08),0_0_0_1px_rgba(255,255,255,0.1)]
-        dark:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.4),0_4px_8px_-2px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.1)]
-        hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.2),0_6px_12px_-4px_rgba(0,0,0,0.15),0_0_0_1px_rgba(255,255,255,0.2)]
-        dark:hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.5),0_6px_12px_-4px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.2)]
+        shadow-[0_4px_12px_-2px_rgba(0,0,0,0.12),0_4px_8px_-2px_rgba(0,0,0,0.08)]
+        dark:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.4),0_4px_8px_-2px_rgba(0,0,0,0.3)]
+        hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.2),0_6px_12px_-4px_rgba(0,0,0,0.15)]
+        dark:hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.5),0_6px_12px_-4px_rgba(0,0,0,0.4)]
         ring-1
         ring-black/5
         dark:ring-white/10
@@ -282,7 +285,7 @@ export function WelcomeBar({ isDashboardHome = false }: WelcomeBarProps) {
             <AnimatePresence mode="sync">
               {displayedStats.map((stat: DashboardStat) => {
                 const StatIcon = IconMap[stat.icon as keyof typeof IconMap];
-                const statValue = getStatValue(stat.id);
+                const statValue: StatValue = getStatValue(stat.id);
                 const size = sizeClasses[stat.size || 'medium'];
                 const colSpan = getWidthFromSize(stat.size);
 
@@ -328,25 +331,25 @@ export function WelcomeBar({ isDashboardHome = false }: WelcomeBarProps) {
                         className={`
                           w-full
                           h-full 
-                          bg-white/20
-                          dark:bg-white/5
+                          bg-white/20 
+                          dark:bg-slate-900/20
                           backdrop-blur-xl 
                           ${size.padding} 
                           rounded-lg 
                           border-[1.5px]
                           border-white/40
-                          dark:border-white/30
+                          dark:border-white/20
                           hover:border-[var(--color-accent)]
                           transition-all 
                           duration-300 
                           cursor-pointer
                           ${size.height}
-                          shadow-[0_4px_12px_-2px_rgba(0,0,0,0.12),0_4px_8px_-2px_rgba(0,0,0,0.08),0_0_0_1px_rgba(255,255,255,0.1)]
-                          dark:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.4),0_4px_8px_-2px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.1)]
-                          hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.2),0_6px_12px_-4px_rgba(0,0,0,0.15),0_0_0_1px_rgba(255,255,255,0.2)]
-                          dark:hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.5),0_6px_12px_-4px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.2)]
+                          shadow-[0_4px_12px_-2px_rgba(0,0,0,0.12),0_4px_8px_-2px_rgba(0,0,0,0.08)]
+                          dark:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.4),0_4px_8px_-2px_rgba(0,0,0,0.3)]
+                          hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.2),0_6px_12px_-4px_rgba(0,0,0,0.15)]
+                          dark:hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.5),0_6px_12px_-4px_rgba(0,0,0,0.4)]
                           hover:bg-white/30
-                          dark:hover:bg-white/10
+                          dark:hover:bg-slate-900/30
                           hover:-translate-y-1
                           hover:scale-[1.02]
                           ring-1
@@ -359,40 +362,97 @@ export function WelcomeBar({ isDashboardHome = false }: WelcomeBarProps) {
                       >
                         <div className="flex flex-col h-full justify-between">
                           <div className="flex flex-col gap-1.5">
-                            <div className="flex items-center gap-2">
-                              <div className={`p-1.5 rounded-md ${getIconBg(stat.type)} backdrop-blur-xl shadow-md ring-1 ring-black/5 dark:ring-white/10`}>
-                                {StatIcon && (
-                                  <StatIcon
-                                    className={`${size.iconSize} ${getIconColor(stat.type)}`}
-                                  />
-                                )}
-                              </div>
-                              <div className="flex flex-col">
-                                <p className={`${size.titleSize} font-semibold text-[var(--color-text)]`}>
-                                  {stat.title}
-                                </p>
-                                {(stat.size === 'medium' || stat.size === 'large') && statValue.description && (
-                                  <p className="text-[10px] text-[var(--color-textSecondary)] opacity-90 line-clamp-1">
-                                    {statValue.description}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <div className={`p-1.5 rounded-md ${getIconBg(stat.type)} backdrop-blur-xl shadow-md ring-1 ring-black/5 dark:ring-white/10`}>
+                                  {StatIcon && (
+                                    <StatIcon
+                                      className={`${size.iconSize} ${getIconColor(stat.type)}`}
+                                    />
+                                  )}
+                                </div>
+                                <div className="flex flex-col">
+                                  <p className={`${size.titleSize} font-semibold text-[var(--color-text)]`}>
+                                    {stat.title}
                                   </p>
-                                )}
+                                  {(stat.size === 'medium' || stat.size === 'large') && statValue.description && (
+                                    <p className="text-[10px] text-[var(--color-textSecondary)] opacity-90 line-clamp-1">
+                                      {statValue.description}
+                                    </p>
+                                  )}
+                                </div>
                               </div>
+
+                              {(statValue.metadata?.breakdown || statValue.topBreakdown) && stat.size === 'large' && (
+                                <div className="flex items-center justify-center gap-12">
+                                  {statValue.topBreakdown && (
+                                    <div className="flex items-center gap-8">
+                                      <div className="flex flex-col items-end">
+                                        <span className="text-xs font-medium text-[var(--color-textSecondary)]">
+                                          active
+                                        </span>
+                                        <span className="text-sm font-semibold text-[var(--color-text)]">
+                                          {statValue.topBreakdown.active}
+                                        </span>
+                                      </div>
+                                      <div className="flex flex-col items-end">
+                                        <span className="text-xs font-medium text-[var(--color-textSecondary)]">
+                                          archived
+                                        </span>
+                                        <span className="text-sm font-semibold text-[var(--color-text)]">
+                                          {statValue.topBreakdown.archived}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  )}
+                                  {statValue.metadata?.breakdown && (
+                                    <div className="flex items-center gap-8">
+                                      {Object.entries(statValue.metadata.breakdown).map(([key, value]) => (
+                                        <div key={key} className="flex flex-col items-end">
+                                          <span className="text-xs font-medium text-[var(--color-textSecondary)]">
+                                            {key}
+                                          </span>
+                                          <span className="text-sm font-semibold text-[var(--color-text)]">
+                                            {value}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </div>
 
                           <div className="mt-1">
-                            <div className="flex items-center gap-2">
-                              <div className="flex items-baseline gap-1">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-baseline gap-1.5">
                                 <span className={`${size.valueSize} font-bold text-[var(--color-text)]`}>
                                   {statValue.value}
                                 </span>
-                                {statValue.change && statValue.change > 0 && statValue.value !== '-' && stat.size !== 'large' && (
+                                {statValue.change && statValue.change > 0 && (
                                   <span className="text-xs text-[var(--color-accent)] font-semibold">
                                     +{statValue.change}
                                   </span>
                                 )}
                               </div>
+
+                              {statValue.additionalInfo && stat.size !== 'small' && (
+                                <div className="flex items-center gap-3">
+                                  {statValue.additionalInfo.map((info, index) => (
+                                    <div key={index} className="flex items-center gap-1">
+                                      {info.icon && (
+                                        <info.icon className="w-3.5 h-3.5 text-[var(--color-textSecondary)]" />
+                                      )}
+                                      <span className="text-xs text-[var(--color-textSecondary)]">
+                                        {info.value}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
+
                             {statValue.timeframe && (
                               <span className="text-[10px] text-[var(--color-textSecondary)] opacity-90 mt-0.5 block">
                                 {statValue.timeframe}
@@ -415,8 +475,8 @@ export function WelcomeBar({ isDashboardHome = false }: WelcomeBarProps) {
                                 handleSizeChange(stat.id, 'small');
                               }}
                               className={`p-0.5 rounded-md transition-all duration-200 ${stat.size === 'small'
-                                  ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
-                                  : 'hover:bg-[var(--color-surfaceHover)] text-[var(--color-textSecondary)] hover:text-[var(--color-text)]'
+                                ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
+                                : 'hover:bg-[var(--color-surfaceHover)] text-[var(--color-textSecondary)] hover:text-[var(--color-text)]'
                                 }`}
                               title="Small"
                             >
@@ -428,8 +488,8 @@ export function WelcomeBar({ isDashboardHome = false }: WelcomeBarProps) {
                                 handleSizeChange(stat.id, 'medium');
                               }}
                               className={`p-0.5 rounded-md transition-all duration-200 ${stat.size === 'medium'
-                                  ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
-                                  : 'hover:bg-[var(--color-surfaceHover)] text-[var(--color-textSecondary)] hover:text-[var(--color-text)]'
+                                ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
+                                : 'hover:bg-[var(--color-surfaceHover)] text-[var(--color-textSecondary)] hover:text-[var(--color-text)]'
                                 }`}
                               title="Medium"
                             >
@@ -441,8 +501,8 @@ export function WelcomeBar({ isDashboardHome = false }: WelcomeBarProps) {
                                 handleSizeChange(stat.id, 'large');
                               }}
                               className={`p-0.5 rounded-md transition-all duration-200 ${stat.size === 'large'
-                                  ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
-                                  : 'hover:bg-[var(--color-surfaceHover)] text-[var(--color-textSecondary)] hover:text-[var(--color-text)]'
+                                ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
+                                : 'hover:bg-[var(--color-surfaceHover)] text-[var(--color-textSecondary)] hover:text-[var(--color-text)]'
                                 }`}
                               title="Large"
                             >

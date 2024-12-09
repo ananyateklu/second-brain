@@ -68,13 +68,34 @@ export const WelcomeSection = React.memo(({ user, onNewNote, onNavigate, stats, 
       : 'bg-amber-600 hover:bg-amber-700 shadow-lg shadow-amber-600/20 hover:shadow-amber-600/30'
   };
 
-  const getBorderClass = () => 
-    theme === 'midnight' 
-      ? 'border-[rgb(51,65,85)]/20' 
-      : 'border-[var(--color-border)]';
-
   return (
-    <div className={`relative overflow-hidden p-6 border border-[var(--color-border)] bg-[var(--color-surface)]/80 backdrop-blur-xl rounded-xl shadow-sm transition-all duration-300`}>
+    <div className={`
+        relative 
+        overflow-hidden 
+        rounded-2xl 
+        ${theme === 'midnight'
+          ? 'bg-white/5'
+          : 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]'}
+        backdrop-blur-xl 
+        border-[1.5px]
+        ${theme === 'dark'
+          ? 'border-gray-700/50'
+          : theme === 'midnight'
+            ? 'border-gray-700/50'
+            : 'border-gray-200/20 dark:border-gray-700/50'}
+        shadow-[0_4px_12px_-2px_rgba(0,0,0,0.12),0_4px_8px_-2px_rgba(0,0,0,0.08),0_0_0_1px_rgba(255,255,255,0.1)]
+        dark:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.4),0_4px_8px_-2px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.1)]
+        hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.2),0_6px_12px_-4px_rgba(0,0,0,0.15),0_0_0_1px_rgba(255,255,255,0.2)]
+        dark:hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.5),0_6px_12px_-4px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.2)]
+        ring-1
+        ring-black/5
+        dark:ring-white/10
+        hover:ring-black/10
+        dark:hover:ring-white/20
+        transition-all 
+        duration-300 
+        p-6
+      `}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -138,7 +159,28 @@ export const WelcomeSection = React.memo(({ user, onNewNote, onNavigate, stats, 
           initial="hidden"
           animate="visible"
           transition={{ delay: 0.2 }}
-          className={`relative rounded-lg p-4 space-y-3 min-w-[280px] border ${getBorderClass()} bg-[color-mix(in_srgb,var(--color-background)_90%,var(--color-surface))] dark:bg-gray-800/20 backdrop-blur-xl transition-all duration-300`}
+          className={`
+            relative rounded-lg p-4 space-y-3 min-w-[280px] 
+            border-[1.5px]
+            ${theme === 'dark'
+              ? 'border-gray-700/50'
+              : theme === 'midnight'
+                ? 'border-gray-700/50'
+                : 'border-gray-200/20 dark:border-gray-700/50'}
+            bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]
+            backdrop-blur-xl 
+            shadow-[0_4px_12px_-2px_rgba(0,0,0,0.12),0_4px_8px_-2px_rgba(0,0,0,0.08),0_0_0_1px_rgba(255,255,255,0.1)]
+            dark:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.4),0_4px_8px_-2px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.1)]
+            hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.2),0_6px_12px_-4px_rgba(0,0,0,0.15),0_0_0_1px_rgba(255,255,255,0.2)]
+            dark:hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.5),0_6px_12px_-4px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.2)]
+            ring-1
+            ring-black/5
+            dark:ring-white/10
+            hover:ring-black/10
+            dark:hover:ring-white/20
+            transition-all 
+            duration-300
+          `}
         >
           <div className="flex items-center gap-3">
             <div className={`p-2 rounded-md ${getIconBg('clock')} backdrop-blur-xl`}>

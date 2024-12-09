@@ -103,9 +103,9 @@ export function LoginPage() {
       case 'light':
         return 'bg-gradient-to-br from-primary-50 via-primary-600/5 to-primary-600/70';
       case 'dark':
-        return 'from-gray-900 via-gray-800 to-gray-900';
+        return 'bg-gradient-to-br from-[#1a1d23] via-[#1e2128] to-[#23262d]';
       case 'midnight':
-        return 'from-[#0F172A] via-[#1E293B] to-[#0F172A]';
+        return 'bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A]';
       default:
         return 'from-gray-50 via-gray-50 to-gray-100';
     }
@@ -116,7 +116,7 @@ export function LoginPage() {
       case 'light':
         return 'bg-gradient-to-br from-primary-50 via-primary-600/65 to-primary-400/90';
       case 'dark':
-        return 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900';
+        return 'bg-gradient-to-br from-[#1e2128] via-[#23262d] to-[#1e2128]';
       case 'midnight':
         return 'bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A]';
       default:
@@ -312,12 +312,16 @@ export function LoginPage() {
 
               {/* Sign Up Link */}
               <div className="text-center mt-6">
-                <p className="text-white/90">
+                <p className={`${theme === 'light' ? 'text-gray-600' : 'text-white/90'}`}>
                   Don't have an account?{' '}
                   <button
                     type="button"
                     onClick={() => navigate('/register')}
-                    className="text-white font-medium hover:text-primary-200 transition-colors"
+                    className={`font-medium ${
+                      theme === 'light'
+                        ? 'text-primary-600 hover:text-primary-700'
+                        : 'text-[#4c9959] hover:text-[#64AB6F]'
+                    } transition-colors`}
                   >
                     Create an account
                   </button>

@@ -22,22 +22,22 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
   const getModalClasses = () => {
     switch (theme) {
       case 'midnight':
-        return 'bg-gray-900/40 border-gray-800/40';
+        return 'bg-[#1F2937]/80 border-[#374151]/40';
       case 'dark':
-        return 'bg-gray-900/50 border-gray-700/30';
+        return 'bg-[#2C2C2E]/80 border-[#3C3C3E]/40';
       default:
-        return 'bg-white/10 border-white/20';
+        return 'bg-white/90 border-gray-200/40';
     }
   };
 
-  const getButtonClasses = () => {
+  const getInputClasses = () => {
     switch (theme) {
       case 'midnight':
-        return 'bg-primary-500/90 hover:bg-primary-500 text-white';
+        return 'bg-gray-800/50 border-gray-700/50 focus:border-primary-500';
       case 'dark':
-        return 'bg-primary-500 hover:bg-primary-600 text-white';
+        return 'bg-gray-800/50 border-gray-700/50 focus:border-primary-500';
       default:
-        return 'bg-white hover:bg-gray-50 text-primary-600';
+        return 'bg-white/80 border-gray-300 focus:border-primary-500';
     }
   };
 
@@ -73,26 +73,32 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
       <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" aria-hidden="true" />
       
       <div className="fixed inset-0 flex items-center justify-center p-4">
-        <Dialog.Panel className={`w-full max-w-md ${getModalClasses()} backdrop-blur-lg rounded-2xl p-8 shadow-2xl border`}>
+        <Dialog.Panel className={`w-full max-w-md ${getModalClasses()} backdrop-blur-lg rounded-2xl p-8 shadow-2xl border transition-colors duration-200`}>
           <div className="relative">
             <button
               onClick={onClose}
-              className="absolute right-0 top-0 text-white/70 hover:text-white transition-colors"
+              className={`absolute right-0 top-0 ${
+                theme === 'light' ? 'text-gray-600' : 'text-gray-400'
+              } hover:text-gray-700 dark:hover:text-gray-300 transition-colors`}
             >
               <X className="w-5 h-5" />
             </button>
             
-            <div className="mb-6">
-              <Logo />
+            <div className="mb-6 flex justify-center">
+              <Logo className="w-32 h-auto" />
             </div>
 
             {!isSuccess ? (
               <>
-                <Dialog.Title className="text-xl font-semibold text-white mb-4 text-center">
+                <Dialog.Title className={`text-xl font-semibold ${
+                  theme === 'light' ? 'text-gray-900' : 'text-white'
+                } mb-4 text-center`}>
                   Reset Your Password
                 </Dialog.Title>
                 
-                <Dialog.Description className="text-white/90 text-center mb-6">
+                <Dialog.Description className={`${
+                  theme === 'light' ? 'text-gray-600' : 'text-gray-300'
+                } text-center mb-6`}>
                   Enter your email address and we'll send you instructions to reset your password.
                 </Dialog.Description>
 
@@ -110,19 +116,13 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
                     disabled={isLoading}
                     disableEnhancement={true}
                     disableRecording={true}
-                    className={`${
-                      theme === 'midnight'
-                        ? 'bg-gray-800/40 border-gray-700/40'
-                        : theme === 'dark'
-                        ? 'bg-gray-800/50 border-gray-700/30'
-                        : 'bg-white/10 border-white/20'
-                    } focus:border-primary-400 text-white placeholder:text-white/50`}
+                    className={`${getInputClasses()} transition-colors duration-200`}
                   />
 
                   <motion.button
                     type="submit"
                     disabled={isLoading}
-                    className={`w-full relative overflow-hidden group ${getButtonClasses()} py-3 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200`}
+                    className="w-full relative overflow-hidden group bg-white text-primary-600 py-3 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200"
                     whileTap={{ scale: 0.98 }}
                   >
                     <span className="relative z-10">
@@ -135,6 +135,12 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
                         'Send Reset Instructions'
                       )}
                     </span>
+                    <motion.div
+                      className="absolute inset-0 bg-primary-100"
+                      initial={false}
+                      animate={{ scale: isLoading ? 1 : 0 }}
+                      transition={{ duration: 0.2 }}
+                    />
                   </motion.button>
                 </form>
               </>
@@ -144,17 +150,19 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
                 animate={{ opacity: 1, y: 0 }}
                 className="text-center"
               >
-                <div className="text-white mb-4">
+                <div className={`mb-4 ${theme === 'light' ? 'text-gray-900' : 'text-white'}`}>
                   <h3 className="text-xl font-semibold mb-2">Check Your Email</h3>
-                  <p className="text-white/90">
+                  <p className={theme === 'light' ? 'text-gray-600' : 'text-gray-300'}>
                     We've sent password reset instructions to {email}
                   </p>
                 </div>
                 <button
                   onClick={onClose}
-                  className={`text-white/90 hover:text-white transition-colors text-sm ${
-                    theme === 'midnight' ? 'hover:text-primary-400' : ''
-                  }`}
+                  className={`font-medium ${
+                    theme === 'light'
+                      ? 'text-primary-600 hover:text-primary-700'
+                      : 'text-[#4c9959] hover:text-[#64AB6F]'
+                  } transition-colors`}
                 >
                   Back to Login
                 </button>

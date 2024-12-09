@@ -6,6 +6,7 @@ import { useNotes } from '../../../contexts/notesContextUtils';
 import { WarningModal } from '../../shared/WarningModal';
 import { formatTimeAgo } from '../Recent/utils';
 import { useTheme } from '../../../contexts/themeContextUtils';
+import { getNoteCardBg } from '../../../utils/dashboardUtils';
 
 interface IdeaCardProps {
   idea: Note;
@@ -224,21 +225,18 @@ export function IdeaCard({
           relative group
           w-[160px]
           ${onSelect || onClick ? 'cursor-pointer' : ''}
-          bg-white/90 dark:bg-gray-900/90
+          ${getNoteCardBg('idea')}
           border border-amber-200/30 dark:border-amber-700/30
           hover:border-amber-400/50 dark:hover:border-amber-500/50
           rounded-xl
           transition-all duration-200
           overflow-hidden
-          backdrop-blur-sm
           ${isSelected ? 'ring-2 ring-amber-400/50 dark:ring-amber-500/50' : ''}
           min-h-[90px] max-h-[90px]
           hover:shadow-lg hover:shadow-amber-900/5
           hover:-translate-y-0.5
         `}
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-amber-50/50 to-transparent dark:from-amber-900/20 dark:to-transparent opacity-50" />
-        
         <div className="p-2 h-full flex flex-col gap-1.5 relative">
           <div className="flex items-start gap-1.5">
             <div className="flex-shrink-0 p-1 rounded-lg bg-amber-100/80 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400">
@@ -305,7 +303,7 @@ export function IdeaCard({
           relative group
           w-full
           ${onSelect || onClick ? 'cursor-pointer' : ''}
-          bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]
+          ${getNoteCardBg('idea')}
           border border-[var(--color-border)]
           hover:border-amber-400/50
           rounded-lg

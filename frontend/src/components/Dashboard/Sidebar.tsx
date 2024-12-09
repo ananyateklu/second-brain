@@ -109,22 +109,38 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         ref={sidebarRef}
         className={`
           fixed top-0 left-0 z-40 h-screen w-60 
-          bg-white/20 dark:bg-white/5
+          ${theme === 'dark'
+            ? 'bg-gray-900/30'
+            : theme === 'midnight'
+              ? 'bg-white/5'
+              : 'bg-white/20'} 
+          dark:bg-white/5
           backdrop-blur-xl 
-          border-r-[1.5px] border-white/40 dark:border-white/30
-          shadow-[4px_0_12px_-2px_rgba(0,0,0,0.12),2px_0_8px_-2px_rgba(0,0,0,0.08),0_0_0_1px_rgba(255,255,255,0.1)]
-          dark:shadow-[4px_0_12px_-2px_rgba(0,0,0,0.4),2px_0_8px_-2px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.1)]
-          ring-1 ring-black/5 dark:ring-white/10
+          border-r-[1.5px] 
+          ${theme === 'dark'
+            ? 'border-gray-700/50'
+            : 'border-gray-200/20 dark:border-gray-700/50'}
+          ${theme === 'dark'
+            ? 'shadow-[4px_0_12px_-2px_rgba(0,0,0,0.4),2px_0_8px_-2px_rgba(0,0,0,0.3)]'
+            : 'shadow-[4px_0_12px_-2px_rgba(0,0,0,0.12),2px_0_8px_-2px_rgba(0,0,0,0.08)]'}
+          ring-1 
+          ${theme === 'dark'
+            ? 'ring-white/10'
+            : 'ring-black/5 dark:ring-white/10'}
           transition-transform duration-200 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0
         `}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex justify-center items-center h-[81px] px-4 
-            border-b-[1.5px] border-white/40 dark:border-white/30
-            shadow-[0_4px_12px_-2px_rgba(0,0,0,0.12),0_2px_8px_-2px_rgba(0,0,0,0.08)]
-            dark:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.4),0_2px_8px_-2px_rgba(0,0,0,0.3)]">
+          <div className={`flex justify-center items-center h-[81px] px-4 
+            border-b-[1.5px]
+            ${theme === 'dark'
+              ? 'border-gray-700/50'
+              : 'border-gray-200/20 dark:border-gray-700/50'}
+            ${theme === 'dark'
+              ? 'shadow-[0_4px_12px_-2px_rgba(0,0,0,0.4),0_2px_8px_-2px_rgba(0,0,0,0.3)]'
+              : 'shadow-[0_4px_12px_-2px_rgba(0,0,0,0.12),0_2px_8px_-2px_rgba(0,0,0,0.08)]'}`}>
             <img
               src={theme === 'dark' || theme === 'midnight' ? darkLogo : lightLogo}
               alt="Second Brain Logo"

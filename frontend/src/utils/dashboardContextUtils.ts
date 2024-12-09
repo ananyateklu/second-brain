@@ -20,6 +20,10 @@ export interface StatValue {
       deleted: number;
     }
   };
+  topBreakdown?: {
+    active: number;
+    archived: number;
+  };
 }
 
 export interface DashboardContextType {
@@ -83,9 +87,19 @@ export const formatTimeAgo = (date: Date) => {
 
 export const isDashboardStat = (obj: unknown): obj is DashboardStat => {
   const validTypes = [
-    'notes', 'new-notes', 'categories', 'word-count', 
-    'tasks', 'tags', 'time', 'ideas', 'activity', 
-    'connections', 'collaboration'
+    'notes',
+    'tasks',
+    'reminders',
+    'connections',
+    'categories',
+    'new-notes',
+    'word-count',
+    'tags',
+    'time',
+    'ideas',
+    'activity',
+    'collaboration',
+    'notes-stats'
   ] as const;
   
   type ValidType = typeof validTypes[number];
@@ -110,7 +124,7 @@ export const isDashboardStat = (obj: unknown): obj is DashboardStat => {
 
 export const DEFAULT_STATS: DashboardStat[] = [
   {
-    id: 'total-notes',
+    id: 'total-notes-v2',
     type: 'notes',
     title: 'Total Notes',
     icon: 'Files',
@@ -119,12 +133,21 @@ export const DEFAULT_STATS: DashboardStat[] = [
     size: 'medium'
   },
   {
+    id: 'notes-stats',
+    type: 'notes',
+    title: 'Notes Overview',
+    icon: 'FileText',
+    enabled: true,
+    order: 1,
+    size: 'medium'
+  },
+  {
     id: 'new-notes',
     type: 'new-notes',
     title: 'New Notes',
     icon: 'FolderPlus',
     enabled: true,
-    order: 1,
+    order: 2,
     size: 'medium'
   },
   {
@@ -133,7 +156,7 @@ export const DEFAULT_STATS: DashboardStat[] = [
     title: 'Categories',
     icon: 'Tags',
     enabled: true,
-    order: 2,
+    order: 3,
     size: 'small'
   },
   {
@@ -142,7 +165,7 @@ export const DEFAULT_STATS: DashboardStat[] = [
     title: 'Word Count',
     icon: 'AlignLeft',
     enabled: true,
-    order: 3,
+    order: 4,
     size: 'small'
   },
   {
@@ -151,7 +174,7 @@ export const DEFAULT_STATS: DashboardStat[] = [
     title: 'Ideas',
     icon: 'Lightbulb',
     enabled: true,
-    order: 4,
+    order: 5,
     size: 'small'
   },
   {
@@ -160,7 +183,7 @@ export const DEFAULT_STATS: DashboardStat[] = [
     title: 'Active Tasks',
     icon: 'CheckSquare',
     enabled: true,
-    order: 5,
+    order: 6,
     size: 'small'
   },
   {
@@ -169,7 +192,7 @@ export const DEFAULT_STATS: DashboardStat[] = [
     title: 'Completed Tasks',
     icon: 'CheckSquare',
     enabled: false,
-    order: 6,
+    order: 7,
     size: 'small'
   },
   {
@@ -178,7 +201,7 @@ export const DEFAULT_STATS: DashboardStat[] = [
     title: 'Activity',
     icon: 'Activity',
     enabled: true,
-    order: 7,
+    order: 8,
     size: 'large'
   },
   {
@@ -187,7 +210,16 @@ export const DEFAULT_STATS: DashboardStat[] = [
     title: 'Connections',
     icon: 'Network',
     enabled: true,
-    order: 8,
+    order: 9,
     size: 'medium'
+  },
+  {
+    id: 'reminders',
+    type: 'reminders',
+    title: 'Reminders',
+    icon: 'Bell',
+    enabled: false,
+    order: 10,
+    size: 'small'
   }
 ]; 

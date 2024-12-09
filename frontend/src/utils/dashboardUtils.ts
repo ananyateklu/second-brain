@@ -3,9 +3,9 @@ export const getIconBg = (type: string) => {
   
   switch (type) {
     case 'notes':
-      return `${baseClass} bg-blue-100 dark:bg-blue-900/30 midnight:bg-blue-900/20`;
+      return `${baseClass} bg-blue-100/80 dark:bg-blue-900/30 midnight:bg-blue-900/20`;
     case 'new-notes':
-      return `${baseClass} bg-green-100 dark:bg-green-900/30 midnight:bg-green-900/20`;
+      return `${baseClass} bg-green-100/80 dark:bg-green-900/30 midnight:bg-green-900/20`;
     case 'categories':
       return `${baseClass} bg-yellow-100 dark:bg-yellow-900/30 midnight:bg-yellow-900/20`;
     case 'word-count':
@@ -24,8 +24,10 @@ export const getIconBg = (type: string) => {
       return `${baseClass} bg-blue-100 dark:bg-blue-900/30 midnight:bg-blue-900/20`;
     case 'collaboration':
       return `${baseClass} bg-teal-100 dark:bg-teal-900/30 midnight:bg-teal-900/20`;
+    case 'reminders':
+      return `${baseClass} bg-indigo-100 dark:bg-indigo-900/30 midnight:bg-indigo-900/20`;
     default:
-      return `${baseClass} bg-gray-100 dark:bg-gray-900/30 midnight:bg-gray-900/20`;
+      return `${baseClass} bg-gray-100/80 dark:bg-gray-900/30 midnight:bg-gray-900/20`;
   }
 };
 
@@ -55,7 +57,26 @@ export const getIconColor = (type: string) => {
       return `${baseClass} text-blue-600 dark:text-blue-400 midnight:text-blue-300`;
     case 'collaboration':
       return `${baseClass} text-teal-600 dark:text-teal-400 midnight:text-teal-300`;
+    case 'reminders':
+      return `${baseClass} text-indigo-600 dark:text-indigo-400 midnight:text-indigo-300`;
     default:
       return `${baseClass} text-gray-600 dark:text-gray-400 midnight:text-gray-300`;
   }
-}; 
+};
+
+export function getNoteCardBg(type?: 'note' | 'idea' | 'task' | 'reminder') {
+  const baseClass = 'backdrop-blur-[2px]';
+  
+  switch (type) {
+    case 'note':
+      return `${baseClass} bg-white/50 dark:bg-gray-900/50`;
+    case 'idea':
+      return `${baseClass} bg-white/50 dark:bg-gray-900/50`;
+    case 'task':
+      return `${baseClass} bg-white/50 dark:bg-gray-900/50`;
+    case 'reminder':
+      return `${baseClass} bg-white/50 dark:bg-gray-900/50`;
+    default:
+      return `${baseClass} bg-white/50 dark:bg-gray-900/50`;
+  }
+} 

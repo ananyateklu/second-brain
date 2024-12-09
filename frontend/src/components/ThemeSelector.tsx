@@ -6,12 +6,13 @@ import { useEffect, useState } from 'react';
 export function ThemeSelector() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [isSafari, setIsSafari] = useState(false);
 
   useEffect(() => {
-    // Force an immediate update of theme-specific styles
-    document.documentElement.setAttribute('data-theme', theme);
+    // Check if browser is Safari
+    setIsSafari(/^((?!chrome|android).)*safari/i.test(navigator.userAgent));
     setMounted(true);
-  }, [theme]);
+  }, []);
 
   const handleThemeChange = (newTheme: ThemeName) => {
     setTheme(newTheme);
@@ -19,8 +20,6 @@ export function ThemeSelector() {
 
   const getIconColor = (isSelected: boolean) => {
     if (isSelected) return 'text-[#4c9959]';
-    
-    // Use current theme state even before mount
     return theme === 'light' ? 'text-gray-700' : 'text-gray-200';
   };
 
@@ -39,6 +38,20 @@ export function ThemeSelector() {
     }
   };
 
+  const getContainerBackground = () => {
+    if (isSafari) {
+      switch (theme) {
+        case 'dark':
+          return 'bg-[#2a2d35]/95';
+        case 'midnight':
+          return 'bg-[#1e293b]/95';
+        default:
+          return 'bg-[#f8fafc]/95';
+      }
+    }
+    return 'bg-[var(--color-secondary)]/30 backdrop-blur-sm';
+  };
+
   const getButtonStyles = (isSelected: boolean, themeName: ThemeName) => {
     const baseStyles = "flex items-center gap-2 px-3 py-2 rounded-md transition-colors duration-200";
     
@@ -46,9 +59,19 @@ export function ThemeSelector() {
       return `${baseStyles} bg-[#4c9959]/10 text-[#4c9959] ring-2 ring-[#4c9959]/20`;
     }
 
-    // Base text color that ensures readability in all themes
-    const textColor = theme === 'light' ? 'text-gray-700' : 'text-gray-200';
+    if (isSafari) {
+      switch (theme) {
+        case 'dark':
+          return `${baseStyles} text-gray-200 hover:bg-[#323842]`;
+        case 'midnight':
+          return `${baseStyles} text-gray-200 hover:bg-[#2a3a53]`;
+        default:
+          return `${baseStyles} text-gray-700 hover:bg-[#f1f5f9]`;
+      }
+    }
 
+    const textColor = theme === 'light' ? 'text-gray-700' : 'text-gray-200';
+    
     switch (themeName) {
       case 'midnight':
       case 'dark':
@@ -63,7 +86,7 @@ export function ThemeSelector() {
   }
 
   return (
-    <div className="flex gap-2 p-2 bg-[var(--color-secondary)]/30 rounded-lg backdrop-blur-sm transition-colors duration-200">
+    <div className={`flex gap-2 p-2 rounded-lg transition-colors duration-200 ${getContainerBackground()}`}>
       {Object.keys(themes).map((themeName) => {
         const currentTheme = themes[themeName as ThemeName];
         const isSelected = theme === themeName;

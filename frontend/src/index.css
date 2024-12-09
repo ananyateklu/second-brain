@@ -6,57 +6,53 @@
 
 @layer base {
   :root {
-    /* These will be overridden by ThemeContext */
-    --color-primary: #ffffff;
-    --color-secondary: #f1f5f9;
-    --color-background: transparent;
-    --color-surface: #ffffff;
-    --color-text: #1e293b;
-    --color-textSecondary: #64748b;
-    --color-border: #e2e8f0;
-    --color-accent: #3b82f6;
+    color-scheme: light;
+    --glass-opacity: 0.9;
+    --glass-border-opacity: 0.2;
+    --scrollbar-opacity: 0.2;
+    --scrollbar-hover-opacity: 0.3;
   }
 
-  /* Add specific midnight theme variables */
-  [data-theme="midnight"] {
-    --color-primary: #1e1e24;
-    --color-secondary: #2c2c34;
-    --color-background: transparent;
-    --color-surface: #2c2c34;
-    --color-text: rgba(255, 255, 255, 0.9);
-    --color-textSecondary: rgba(255, 255, 255, 0.8);
-    --color-border: rgba(75, 85, 99, 0.3);
-    --color-accent: #60a5fa;
+  :root[data-theme="dark"],
+  :root[data-theme="midnight"] {
+    color-scheme: dark;
+    --glass-opacity: 0.8;
+    --glass-border-opacity: 0.3;
+    --scrollbar-opacity: 0.3;
+    --scrollbar-hover-opacity: 0.4;
   }
 
   html {
     font-family: "Inter", system-ui, sans-serif;
     @apply overflow-x-hidden;
-    color: var(--color-text);
-    @apply transition-colors duration-200;
+    color: var(--text);
+    background-color: var(--background);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   body {
     @apply overflow-x-hidden;
-    @apply transition-colors duration-200;
+    background-color: var(--background);
   }
 
   #root {
     min-height: 100vh;
-    @apply transition-colors duration-200;
+    background-color: var(--background);
   }
 }
 
 @layer components {
   .glass-effect {
-    background-color: color-mix(in srgb, var(--color-surface) 90%, transparent);
+    background-color: rgba(var(--surface-rgb), var(--glass-opacity));
     backdrop-filter: blur(12px);
-    border: 1px solid color-mix(in srgb, var(--color-border) 20%, transparent);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(var(--border-rgb), var(--glass-border-opacity));
   }
 
   .card {
-    background-color: var(--color-surface);
-    border: 1px solid var(--color-border);
+    background-color: var(--surface);
+    border: 1px solid var(--border);
     @apply shadow-lg rounded-lg;
   }
 }
@@ -64,11 +60,6 @@
 @layer utilities {
   .text-shadow {
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  }
-
-  .overscroll-background {
-    @apply bg-slate-50 dark:bg-[#111827];
-    transition: background-color 0.2s ease;
   }
 }
 
@@ -78,121 +69,56 @@
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-gray-100 dark:bg-dark-bg;
+  background-color: var(--surface);
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 dark:bg-dark-border rounded-full hover:bg-gray-400 dark:hover:bg-dark-hover transition-colors;
+  background-color: rgba(var(--text-rgb), var(--scrollbar-opacity));
+  @apply rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(var(--text-rgb), var(--scrollbar-hover-opacity));
 }
 
 /* Animations */
 @keyframes float {
-  0% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-  100% {
-    transform: translateY(0px);
-  }
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
 }
 
 .animate-float {
   animation: float 6s ease-in-out infinite;
 }
 
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-1rem);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-slideDown {
-  animation: slideDown 0.3s ease-out forwards;
-}
-
-/* Theme transition */
-.theme-transition {
-  @apply transition-colors duration-200;
-}
-
-.stat-card {
-  @apply p-3 rounded-lg bg-white dark:bg-dark-card border border-gray-100 dark:border-gray-800 transition-all duration-300 hover:shadow-sm;
-}
-
-.stat-item {
-  @apply flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors duration-200;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 @keyframes wave {
-  0% {
-    transform: rotate(0deg) translateZ(0);
-  }
-  10% {
-    transform: rotate(14deg) translateZ(0);
-  }
-  20% {
-    transform: rotate(-8deg) translateZ(0);
-  }
-  30% {
-    transform: rotate(14deg) translateZ(0);
-  }
-  40% {
-    transform: rotate(-4deg) translateZ(0);
-  }
-  50% {
-    transform: rotate(10deg) translateZ(0);
-  }
-  60% {
-    transform: rotate(0deg) translateZ(0);
-  }
-  100% {
-    transform: rotate(0deg) translateZ(0);
-  }
+  0% { transform: rotate(0deg); }
+  10% { transform: rotate(14deg); }
+  20% { transform: rotate(-8deg); }
+  30% { transform: rotate(14deg); }
+  40% { transform: rotate(-4deg); }
+  50% { transform: rotate(10deg); }
+  60% { transform: rotate(0deg); }
+  100% { transform: rotate(0deg); }
 }
 
 .animate-wave {
   animation: wave 2.5s ease infinite;
   transform-origin: 70% 70%;
-  display: inline-block;
-  transform: translateZ(0);
-  backface-visibility: hidden;
-  perspective: 1000px;
-  will-change: transform;
 }
 
-.animate-fade-in {
-  animation: fadeIn 0.5s ease-out;
+/* Theme transition */
+.theme-transition * {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
 }
 
-.stat-card-compact {
-  @apply p-2 rounded-lg bg-white dark:bg-dark-card border border-gray-100 dark:border-gray-800 transition-all duration-300 hover:shadow-sm;
-}
-
-.stat-item-compact {
-  @apply flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors duration-200;
-}
-
+/* Custom scrollbar for components */
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: rgba(156, 163, 175, 0.3) transparent;
+  scrollbar-color: rgba(var(--text-rgb), var(--scrollbar-opacity)) transparent;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
@@ -204,151 +130,10 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: rgba(156, 163, 175, 0.3);
+  background-color: rgba(var(--text-rgb), var(--scrollbar-opacity));
   border-radius: 6px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(156, 163, 175, 0.5);
-}
-
-/* Custom Audio Player Styles */
-.custom-audio-player.rhap_container {
-  background-color: transparent !important;
-  box-shadow: none !important;
-  padding: 10px;
-  width: 100%;
-  max-width: 500px;
-}
-
-.custom-audio-player .rhap_main-controls-button,
-.custom-audio-player .rhap_time,
-.custom-audio-player .rhap_current-time,
-.custom-audio-player .rhap_total-time {
-  color: var(--text-color, #374151);
-}
-
-.dark .custom-audio-player .rhap_main-controls-button,
-.dark .custom-audio-player .rhap_time,
-.dark .custom-audio-player .rhap_current-time,
-.dark .custom-audio-player .rhap_total-time {
-  color: var(--dark-text-color, #e5e7eb);
-}
-
-.custom-audio-player .rhap_progress-filled,
-.custom-audio-player .rhap_progress-indicator {
-  background-color: var(--theme-color, #6b7280);
-}
-
-.custom-audio-player .rhap_progress-bar,
-.custom-audio-player .rhap_volume-bar {
-  background-color: var(--progress-bg, #e5e7eb);
-}
-
-.dark .custom-audio-player .rhap_progress-bar,
-.dark .custom-audio-player .rhap_volume-bar {
-  background-color: var(--dark-progress-bg, #4b5563);
-}
-
-.custom-audio-player .rhap_progress-indicator {
-  width: 12px;
-  height: 12px;
-  margin-left: -6px;
-  top: -4px;
-}
-
-.custom-audio-player .rhap_progress-filled,
-.custom-audio-player .rhap_progress-bar {
-  height: 4px;
-}
-
-.custom-audio-player .rhap_controls-section {
-  margin-top: 0;
-}
-
-.custom-audio-player .rhap_additional-controls {
-  flex: 0;
-}
-
-.custom-audio-player .rhap_main-controls {
-  flex: 0 1 auto;
-}
-
-.custom-audio-player .rhap_progress-section {
-  flex: 1 1 auto;
-}
-
-/* Additional Audio Player Styles for Chat */
-
-.custom-audio-player .rhap_main-controls-button {
-  width: 32px;
-  height: 32px;
-}
-
-.custom-audio-player .rhap_play-pause-button {
-  font-size: 32px;
-  width: 32px;
-  height: 32px;
-}
-
-.custom-audio-player .rhap_volume-controls {
-  justify-content: center;
-}
-
-.custom-audio-player .rhap_time {
-  font-size: 12px;
-}
-
-.dark .custom-audio-player {
-  --rhap-theme-color: var(--theme-color, #6b7280);
-  --rhap-bar-color: #4b5563;
-  --rhap-background-color: transparent;
-}
-
-/* High refresh rate optimizations */
-@media screen and (min-resolution: 120dpi) {
-  .glass-morphism {
-    transform: translateZ(0);
-    backface-visibility: hidden;
-    perspective: 1000px;
-    contain: paint;
-  }
-}
-
-/* Update the glass-morphism related styles */
-.glass-morphism {
-  @apply bg-white/90 dark:bg-[#2C2C2E]/90;
-  isolation: isolate;
-}
-
-.glass-morphism-backdrop {
-  @apply bg-white/50 dark:bg-[#2C2C2E]/50;
-}
-
-/* Remove or update problematic backdrop-filter styles */
-@supports (backdrop-filter: blur(12px)) {
-  .glass-morphism {
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-  }
-}
-
-/* Update the dark mode selectors to include midnight theme */
-:root[data-theme="dark"],
-:root[data-theme="midnight"] {
-  color-scheme: dark;
-}
-
-/* Update any dark-specific styles to also target midnight */
-.dark .dark\:bg-gray-800,
-[data-theme="midnight"] .dark\:bg-gray-800 {
-  @apply bg-gray-800;
-}
-
-/* Global style outside of layers */
-html.dark,
-html[data-theme="midnight"],
-body.dark,
-body[data-theme="midnight"] {
-  @apply bg-[#1C1C1E] !important;
+  background-color: rgba(var(--text-rgb), var(--scrollbar-hover-opacity));
 }

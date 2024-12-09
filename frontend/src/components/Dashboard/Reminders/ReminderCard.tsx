@@ -3,6 +3,7 @@ import { Calendar, Tag as TagIcon, Clock, AlertCircle, CheckSquare, Square, Bell
 import { Reminder, useReminders } from '../../../contexts/remindersContextUtils';
 import { EditReminderModal } from './EditReminderModal/index';
 import { useTheme } from '../../../contexts/themeContextUtils';
+import { getNoteCardBg } from '../../../utils/dashboardUtils';
 
 interface ReminderCardProps {
   reminder: Reminder;
@@ -75,11 +76,11 @@ export function ReminderCard({
     const colorVariants = {
       dark: {
         completed: 'bg-green-900/30 text-green-400',
-        pending: 'bg-purple-900/30 text-purple-400'
+        pending: 'text-purple-400'
       },
       light: {
         completed: 'bg-green-100 text-green-600',
-        pending: 'bg-purple-100 text-purple-600'
+        pending: 'text-purple-600'
       }
     };
 
@@ -163,7 +164,8 @@ export function ReminderCard({
       <div className={`
         flex flex-wrap gap-1
         ${viewMode === 'list' ? 'items-center' : 'items-start'}
-        max-h-[44px] min-h-[20px] overflow-hidden
+        ${viewMode === 'grid' ? 'max-h-[44px]' : ''}
+        min-h-[20px] overflow-hidden
       `}>
         {visibleItems.map(item => (
           <span
@@ -215,14 +217,16 @@ export function ReminderCard({
           w-full
           ${onSelect || onClick ? 'cursor-pointer' : ''}
           ${reminder.isCompleted ? 'opacity-85' : ''}
-          bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]
-          border border-[var(--color-border)]
-          hover:border-purple-400/50
+          ${getNoteCardBg('reminder')}
+          border border-purple-200/30 dark:border-purple-700/30
+          hover:border-purple-400/50 dark:hover:border-purple-500/50
           rounded-lg
           transition-all duration-200
           overflow-hidden
-          ${isSelected ? 'ring-2 ring-purple-400/50' : ''}
+          ${isSelected ? 'ring-2 ring-purple-400/50 dark:ring-purple-500/50' : ''}
           ${viewMode === 'list' ? 'h-[84px]' : 'h-[156px]'}
+          hover:shadow-lg hover:shadow-purple-900/5
+          hover:-translate-y-0.5
         `}
       >
         {viewMode === 'list' ? (

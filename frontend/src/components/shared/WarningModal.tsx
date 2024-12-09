@@ -100,4 +100,6 @@ export function WarningModal({ isOpen, onClose, onConfirm, type, title }: Warnin
       </div>
     </div>
   );
-} 
+}
+
+export default WarningModal; 

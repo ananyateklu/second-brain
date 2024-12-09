@@ -38,6 +38,39 @@ export function Input({
   // Get validation border color
   const validationColor = error ? (requiredIndicatorColor ?? 'rgb(239, 68, 68)') : undefined;
 
+  const getBackgroundColor = () => {
+    switch (theme) {
+      case 'dark':
+        return 'rgba(42, 45, 53, 0.7)';  // Increased opacity
+      case 'midnight':
+        return 'rgba(30, 41, 59, 0.7)';  // Increased opacity
+      default:
+        return 'rgba(248, 250, 252, 0.95)';
+    }
+  };
+
+  const getHoverBackgroundColor = () => {
+    switch (theme) {
+      case 'dark':
+        return 'rgba(50, 56, 66, 0.5)';  // Slightly more visible on hover
+      case 'midnight':
+        return 'rgba(42, 58, 83, 0.5)';  // Slightly more visible on hover
+      default:
+        return 'rgba(248, 250, 252, 1)';
+    }
+  };
+
+  const getBorderColor = () => {
+    switch (theme) {
+      case 'dark':
+        return 'rgba(100, 116, 139, 0.5)';  // Lighter slate color with higher opacity
+      case 'midnight':
+        return 'rgba(100, 116, 139, 0.5)';  // Lighter slate color with higher opacity
+      default:
+        return 'rgba(148, 163, 184, 0.8)';  // Darker border for light mode with higher opacity
+    }
+  };
+
   const handleEnhancePrompt = async () => {
     if (!props.value || isEnhancing) return;
 
@@ -95,13 +128,12 @@ export function Input({
       
       <div className="relative">
         <motion.div
-          className={`absolute inset-0 backdrop-blur-sm rounded-lg -z-10 ${
-            theme === 'midnight'
-              ? 'bg-[rgb(17,24,39)]/80'
-              : 'bg-[var(--color-surface)]/50'
-          }`}
+          className="absolute inset-0 rounded-lg -z-10"
+          style={{
+            backgroundColor: getBackgroundColor()
+          }}
           animate={{
-            scale: isFocused ? 1.02 : 1,
+            scale: isFocused ? 1.01 : 1,
             opacity: isFocused ? 1 : 0
           }}
           transition={{ duration: 0.2 }}
@@ -137,7 +169,8 @@ export function Input({
               props.onBlur?.(e);
             }}
             style={{
-              borderColor: validationColor,
+              borderColor: validationColor || getBorderColor(),
+              backgroundColor: getBackgroundColor(),
               ...props.style
             }}
             className={`
@@ -147,24 +180,20 @@ export function Input({
               mx-0.5
               ${typeof Icon !== 'undefined' ? 'pl-10' : ''}
               ${props.value ? 'pr-10' : ''}
-              backdrop-blur-glass
-              ${theme === 'midnight' 
-                ? 'bg-[rgb(17,24,39)]/80 hover:bg-[rgb(17,24,39)]/90' 
-                : 'bg-[var(--color-surface)] hover:bg-[var(--color-surface)]/90'
-              }
               rounded-lg
-              border border-[var(--color-border)]
+              border
               text-[var(--color-text)]
               placeholder:text-[var(--color-textSecondary)]
               focus:text-[var(--color-text)]
               focus:outline-none
               focus:ring-2
-              ${error ? `focus:ring-[${validationColor}]/30` : 'focus:ring-[var(--color-accent)]/30'}
-              focus:border-transparent
+              ${error ? `focus:ring-[${validationColor}]/50` : 'focus:ring-[var(--color-accent)]/50'}
+              focus:border-[var(--color-accent)]/60
               transition-all
               duration-200
               disabled:opacity-50
               disabled:cursor-not-allowed
+              hover:border-[var(--color-accent)]/50
               ${className}
             `}
           />
@@ -178,6 +207,9 @@ export function Input({
                   exit={{ opacity: 0, scale: 0.9 }}
                   onClick={handleEnhancePrompt}
                   disabled={isEnhancing}
+                  style={{
+                    backgroundColor: isFocused ? getHoverBackgroundColor() : getBackgroundColor()
+                  }}
                   className={`
                     flex
                     items-center
@@ -187,10 +219,6 @@ export function Input({
                     mr-3
                     rounded-md
                     text-[var(--color-textSecondary)]
-                    ${theme === 'midnight'
-                      ? 'hover:bg-[rgb(17,24,39)]/90'
-                      : 'hover:bg-[var(--color-surface)]/80'
-                    }
                     hover:text-[var(--color-accent)]
                     disabled:opacity-50 
                     disabled:cursor-not-allowed
@@ -210,7 +238,12 @@ export function Input({
             </AnimatePresence>
 
             {!disableRecording && (
-              <div className="border-l border-[var(--color-border)] h-full flex items-center pl-1">
+              <div 
+                className="h-full flex items-center pl-1"
+                style={{
+                  borderLeft: `0.5px solid ${getBorderColor()}`
+                }}
+              >
                 <RecordButton
                   onTranscription={handleTranscription}
                 />

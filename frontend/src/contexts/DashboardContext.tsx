@@ -6,7 +6,7 @@ import { useReminders } from './remindersContextUtils';
 import { useActivities } from './activityContextUtils';
 import { calculateWeeklyChange, getNewNotesCount, getLastUpdateTime, DEFAULT_STATS, DashboardContext, isDashboardStat, StatValue } from '../utils/dashboardContextUtils';
 import type { Task } from '../api/types/task';
-import { FileText, Archive, Calendar, Clock, CheckSquare, Network, TagIcon } from 'lucide-react';
+import { FileText, Archive, Calendar, Clock, CheckSquare, Network, TagIcon, AlertCircle } from 'lucide-react';
 import { Note } from '../types/note';
 import { Activity } from '../api/services/activityService';
 
@@ -131,6 +131,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     let weekAgo: Date;
     let sharedWithTasks: number;
     let sharedWithReminders: number;
+    let notesCreatedToday: number;
+    let notesCreatedThisWeek: number;
+    let notesWithLinks: number;
+    let recentlyEditedNotes: number;
     
     // New declarations for new-notes case
     let notesToday: number;
@@ -245,6 +249,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         };
 
       case 'total-notes':
+      case 'total-notes-v2':
         activeNotes = regularNotes.filter(note => !note.isArchived);
         archivedNotes = regularNotes.filter(note => note.isArchived);
         return {
@@ -377,9 +382,17 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
       case 'ideas-count': {
         const totalIdeas = ideas.length;
+        today = new Date();
+        today.setHours(0, 0, 0, 0);
         weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
         
+        const ideasCreatedToday = ideas.filter(idea => {
+          const createdDate = new Date(idea.createdAt);
+          createdDate.setHours(0, 0, 0, 0);
+          return createdDate.getTime() === today.getTime();
+        }).length;
+
         const newIdeasThisWeek = ideas.filter(idea => {
           const createdDate = new Date(idea.createdAt);
           return createdDate >= weekAgo;
@@ -394,17 +407,21 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         // Get ideas with tags
         const ideasWithTags = ideas.filter(idea => idea.tags?.length > 0).length;
 
-        // Calculate recent activity
-        const recentlyUpdatedIdeas = ideas.filter(idea => {
+        // Calculate recently edited ideas
+        const recentlyEditedIdeas = ideas.filter(idea => {
           const updatedDate = new Date(idea.updatedAt);
-          return updatedDate >= weekAgo;
+          return updatedDate >= weekAgo && new Date(idea.createdAt) < weekAgo;
         }).length;
+
+        // Calculate active and archived ideas
+        const activeIdeas = ideas.filter(idea => !idea.isArchived).length;
+        const archivedIdeas = ideas.filter(idea => idea.isArchived).length;
 
         return {
           value: totalIdeas,
-          change: newIdeasThisWeek,
-          timeframe: 'Total',
-          description: 'Captured ideas',
+          change: ideasCreatedToday,
+          timeframe: 'Total Ideas',
+          description: 'Overview of your ideas',
           additionalInfo: [
             {
               icon: Clock,
@@ -423,9 +440,13 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
             breakdown: {
               total: totalIdeas,
               created: newIdeasThisWeek,
-              edited: recentlyUpdatedIdeas,
+              edited: recentlyEditedIdeas,
               deleted: 0
             }
+          },
+          topBreakdown: {
+            active: activeIdeas,
+            archived: archivedIdeas
           }
         };
       }
@@ -544,6 +565,101 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         };
       }
 
+      case 'reminders': {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const activeReminders = reminders.filter(reminder => !reminder.isCompleted);
+        const upcomingReminders = activeReminders.filter(reminder => {
+          const dueDate = new Date(reminder.dueDateTime);
+          return dueDate >= today;
+        });
+        const overdue = activeReminders.filter(reminder => {
+          const dueDate = new Date(reminder.dueDateTime);
+          return dueDate < today;
+        });
+
+        return {
+          value: activeReminders.length,
+          timeframe: 'Active reminders',
+          description: 'Upcoming and overdue reminders',
+          additionalInfo: [
+            {
+              icon: Clock,
+              value: `${upcomingReminders.length} upcoming`
+            },
+            {
+              icon: AlertCircle,
+              value: `${overdue.length} overdue`
+            }
+          ]
+        };
+      }
+
+      case 'notes-stats':
+        today = new Date();
+        today.setHours(0, 0, 0, 0);
+        weekAgo = new Date(today);
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        
+        notesCreatedToday = regularNotes.filter(note => {
+          const createdDate = new Date(note.createdAt);
+          createdDate.setHours(0, 0, 0, 0);
+          return createdDate.getTime() === today.getTime();
+        }).length;
+
+        notesCreatedThisWeek = regularNotes.filter(note => {
+          const createdDate = new Date(note.createdAt);
+          return createdDate >= weekAgo;
+        }).length;
+
+        notesWithTags = regularNotes.filter(note => note.tags.length > 0).length;
+        notesWithLinks = regularNotes.filter(note => 
+          (note.linkedNoteIds?.length || 0) > 0 || 
+          (note.linkedTasks?.length || 0) > 0 || 
+          (note.linkedReminders?.length || 0) > 0
+        ).length;
+
+        recentlyEditedNotes = regularNotes.filter(note => {
+          const updatedDate = new Date(note.updatedAt);
+          return updatedDate >= weekAgo && new Date(note.createdAt) < weekAgo;
+        }).length;
+
+        activeNotes = regularNotes.filter(note => !note.isArchived);
+        archivedNotes = regularNotes.filter(note => note.isArchived);
+
+        return {
+          value: regularNotes.length.toString(),
+          change: notesCreatedToday,
+          timeframe: 'Total Notes',
+          description: 'Overview of your notes',
+          additionalInfo: [
+            {
+              icon: Clock,
+              value: `${notesCreatedThisWeek} this week`
+            },
+            {
+              icon: Network,
+              value: `${notesWithLinks} linked`
+            },
+            {
+              icon: TagIcon,
+              value: `${notesWithTags} tagged`
+            }
+          ],
+          metadata: {
+            breakdown: {
+              total: regularNotes.length,
+              created: notesCreatedThisWeek,
+              edited: recentlyEditedNotes,
+              deleted: 0
+            }
+          },
+          topBreakdown: {
+            active: activeNotes.length,
+            archived: archivedNotes.length
+          }
+        };
+
       default:
         return { value: 0 };
     }
@@ -602,16 +718,18 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const contextValue = useMemo(() => ({
+    availableStats: stats,
+    enabledStats: stats.filter(stat => stat.enabled).sort((a, b) => a.order - b.order),
+    toggleStat,
+    reorderStats,
+    getStatValue,
+    updateStatSize,
+    isLoading
+  }), [stats, toggleStat, reorderStats, getStatValue, updateStatSize, isLoading]);
+
   return (
-    <DashboardContext.Provider value={useMemo(() => ({
-      availableStats: stats,
-      enabledStats: stats.filter(stat => stat.enabled).sort((a, b) => a.order - b.order),
-      toggleStat,
-      reorderStats,
-      getStatValue,
-      updateStatSize,
-      isLoading
-    }), [stats, toggleStat, reorderStats, getStatValue, updateStatSize, isLoading])}>
+    <DashboardContext.Provider value={contextValue}>
       {children}
     </DashboardContext.Provider>
   );

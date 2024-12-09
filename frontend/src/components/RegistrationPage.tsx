@@ -106,46 +106,118 @@ export function RegistrationPage() {
   const getGradientClasses = () => {
     switch (theme) {
       case 'light':
-        return 'from-primary-600 via-primary-500 to-primary-700';
+        return 'bg-gradient-to-br from-primary-50 via-primary-600/5 to-primary-600/70';
       case 'dark':
-        return 'from-gray-900 via-gray-800 to-primary-900/50';
+        return 'bg-gradient-to-br from-[#1a1d23] via-[#1e2128] to-[#23262d]';
       case 'midnight':
-        return 'from-[rgb(17,24,39)] via-gray-900 to-primary-950/30';
+        return 'bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A]';
       default:
-        return 'from-primary-600 via-primary-500 to-primary-700';
+        return 'from-gray-50 via-gray-50 to-gray-100';
+    }
+  };
+
+  const getLeftPanelClasses = () => {
+    switch (theme) {
+      case 'light':
+        return 'bg-gradient-to-br from-primary-50 via-primary-600/65 to-primary-400/90';
+      case 'dark':
+        return 'bg-gradient-to-br from-[#1e2128] via-[#23262d] to-[#1e2128]';
+      case 'midnight':
+        return 'bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A]';
+      default:
+        return 'bg-gradient-to-br from-primary-50 via-primary-600/65 to-primary-400/90';
     }
   };
 
   const getBackgroundClasses = () => {
-    if (theme === 'midnight') {
-      return 'bg-gray-900/40 border-gray-800/40';
+    switch (theme) {
+      case 'midnight':
+        return 'bg-[#1F2937]/80 border-[#374151]/40';
+      case 'dark':
+        return 'bg-[#2C2C2E]/80 border-[#3C3C3E]/40';
+      default:
+        return 'bg-white/90 border-gray-200/40';
     }
-    if (theme === 'dark') {
-      return 'bg-gray-900/50 border-gray-700/30';
+  };
+
+  const getInputClasses = () => {
+    switch (theme) {
+      case 'midnight':
+        return 'bg-gray-800/50 border-gray-700/50 focus:border-primary-500';
+      case 'dark':
+        return 'bg-gray-800/50 border-gray-700/50 focus:border-primary-500';
+      default:
+        return 'bg-white/80 border-gray-300 focus:border-primary-500';
     }
-    return 'bg-white/10 border-white/20';
   };
 
   return (
     <div className={`min-h-screen bg-gradient-to-br ${getGradientClasses()} flex`}>
-      {/* Left Panel - Form */}
+      {/* Left Panel - Decorative */}
+      <div className={`hidden lg:flex lg:w-1/2 relative overflow-hidden ${getLeftPanelClasses()}`}>
+        <div className={`absolute inset-0 ${theme === 'midnight' ? 'bg-black/40' : 'bg-black/10'} backdrop-blur-sm z-10`} />
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-white z-20 p-12">
+          <h1 className="text-4xl font-bold mb-6 text-white dark:text-white/90">Join Second Brain</h1>
+          <p className="text-xl text-center text-white/90 dark:text-white/80 max-w-md">
+            Start organizing your thoughts and boosting your productivity today.
+          </p>
+
+          {/* Decorative Elements */}
+          <div className={`absolute -bottom-20 -left-20 w-64 h-64 ${theme === 'midnight' ? 'bg-white/5' : 'bg-white/10'} rounded-full blur-3xl`} />
+          <div className={`absolute top-20 -right-20 w-96 h-96 ${theme === 'midnight' ? 'bg-primary-900/10' : 'bg-primary-400/20'} rounded-full blur-3xl`} />
+        </div>
+
+        {/* Floating Cards */}
+        <div className="absolute inset-0 z-0">
+          {[...Array(3)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute bg-white/5 dark:bg-white/3 backdrop-blur-lg rounded-2xl p-4 shadow-lg"
+              initial={{
+                x: Math.random() * 100,
+                y: Math.random() * 100,
+                rotate: Math.random() * 20 - 10
+              }}
+              animate={{
+                x: Math.random() * 100,
+                y: Math.random() * 100,
+                rotate: Math.random() * 20 - 10
+              }}
+              transition={{
+                duration: 20,
+                repeat: Infinity,
+                repeatType: "reverse",
+                ease: "linear"
+              }}
+              style={{
+                width: 200 + Math.random() * 100,
+                height: 100 + Math.random() * 100,
+                left: `${20 + Math.random() * 60}%`,
+                top: `${20 + Math.random() * 60}%`,
+              }}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Right Panel - Registration Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
-        <motion.div 
-          className="w-full max-w-md"
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className={`${getBackgroundClasses()} backdrop-blur-lg rounded-2xl p-8 shadow-2xl border`}>
-            <div className="mb-8 flex justify-center">
-              <Logo className="w-32 h-auto" />
+        <div className="w-full max-w-md">
+          <div className={`${getBackgroundClasses()} backdrop-blur-lg rounded-2xl p-8 shadow-2xl border transition-colors duration-200`}>
+            <div className="flex justify-between items-center mb-8">
+              <Logo className="w-auto h-12" />
+              <ThemeDropdown />
             </div>
 
             {errors.general && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg flex items-center gap-2 mb-6"
+                className={`${
+                  theme === 'light' 
+                    ? 'bg-red-50 border-red-200 text-red-600' 
+                    : 'bg-red-900/20 border-red-800/50 text-red-400'
+                } border px-4 py-3 rounded-lg flex items-center gap-2 mb-6 transition-colors duration-200`}
               >
                 <AlertCircle className="w-5 h-5 flex-shrink-0" />
                 <p className="text-sm">{errors.general}</p>
@@ -172,7 +244,7 @@ export function RegistrationPage() {
                     error={errors.fullName}
                     disabled={isLoading}
                     disableRecording={true}
-                    className="bg-white/10 dark:bg-gray-800/50 border-white/20 dark:border-gray-700/30 focus:border-primary-400"
+                    className={`${getInputClasses()} transition-colors duration-200`}
                   />
                 </motion.div>
 
@@ -195,7 +267,7 @@ export function RegistrationPage() {
                     disabled={isLoading}
                     disableEnhancement={true}
                     disableRecording={true}
-                    className="bg-white/10 dark:bg-gray-800/50 border-white/20 dark:border-gray-700/30 focus:border-primary-400"
+                    className={`${getInputClasses()} transition-colors duration-200`}
                   />
                 </motion.div>
 
@@ -218,7 +290,7 @@ export function RegistrationPage() {
                     disabled={isLoading}
                     disableEnhancement={true}
                     disableRecording={true}
-                    className="bg-white/10 dark:bg-gray-800/50 border-white/20 dark:border-gray-700/30 focus:border-primary-400"
+                    className={`${getInputClasses()} transition-colors duration-200`}
                   />
                 </motion.div>
 
@@ -241,7 +313,7 @@ export function RegistrationPage() {
                     disabled={isLoading}
                     disableEnhancement={true}
                     disableRecording={true}
-                    className="bg-white/10 dark:bg-gray-800/50 border-white/20 dark:border-gray-700/30 focus:border-primary-400"
+                    className={`${getInputClasses()} transition-colors duration-200`}
                   />
                 </motion.div>
               </div>
@@ -249,15 +321,7 @@ export function RegistrationPage() {
               <motion.button
                 type="submit"
                 disabled={isLoading}
-                className={`w-full relative overflow-hidden group ${
-                  theme === 'midnight'
-                    ? 'bg-primary-500/90 hover:bg-primary-500'
-                    : theme === 'dark'
-                    ? 'bg-primary-500 hover:bg-primary-600'
-                    : 'bg-white hover:bg-gray-50'
-                } ${
-                  theme === 'light' ? 'text-primary-600' : 'text-white'
-                } py-3 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200`}
+                className="w-full relative overflow-hidden group bg-white text-primary-600 py-3 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200"
                 whileTap={{ scale: 0.98 }}
               >
                 <span className="relative z-10">
@@ -270,18 +334,24 @@ export function RegistrationPage() {
                     'Create Account'
                   )}
                 </span>
+                <motion.div
+                  className="absolute inset-0 bg-primary-100"
+                  initial={false}
+                  animate={{ scale: isLoading ? 1 : 0 }}
+                  transition={{ duration: 0.2 }}
+                />
               </motion.button>
 
               <div className="text-center mt-6">
-                <p className="text-white/90">
+                <p className={`${theme === 'light' ? 'text-gray-600' : 'text-white/90'}`}>
                   Already have an account?{' '}
                   <button
                     type="button"
                     onClick={() => navigate('/login')}
                     className={`font-medium ${
-                      theme === 'midnight'
-                        ? 'text-primary-400 hover:text-primary-300'
-                        : 'text-white hover:text-primary-200'
+                      theme === 'light'
+                        ? 'text-primary-600 hover:text-primary-700'
+                        : 'text-[#4c9959] hover:text-[#64AB6F]'
                     } transition-colors`}
                   >
                     Sign in
@@ -290,27 +360,7 @@ export function RegistrationPage() {
               </div>
             </form>
           </div>
-        </motion.div>
-      </div>
-
-      {/* Right Panel - Decorative */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
-        <div className={`absolute inset-0 ${theme === 'midnight' ? 'bg-black/40' : 'bg-black/10'} backdrop-blur-sm z-10`} />
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-white z-20 p-12">
-          <h1 className="text-4xl font-bold mb-6 text-white dark:text-white/90">Join Second Brain</h1>
-          <p className="text-xl text-center text-white/90 dark:text-white/80 max-w-md">
-            Start organizing your thoughts and boosting your productivity today.
-          </p>
-
-          {/* Decorative Elements */}
-          <div className={`absolute -bottom-20 -left-20 w-64 h-64 ${theme === 'midnight' ? 'bg-white/5' : 'bg-white/10'} rounded-full blur-3xl`} />
-          <div className={`absolute top-20 -right-20 w-96 h-96 ${theme === 'midnight' ? 'bg-primary-900/10' : 'bg-primary-400/20'} rounded-full blur-3xl`} />
         </div>
-      </div>
-
-      {/* Replace Theme Toggle Button with ThemeDropdown */}
-      <div className="fixed top-4 right-4 z-50">
-        <ThemeDropdown />
       </div>
     </div>
   );

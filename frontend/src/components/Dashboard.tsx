@@ -36,7 +36,7 @@ export function Dashboard() {
   const { isLoading: tasksLoading } = useTasks();
   const { isLoading: remindersLoading } = useReminders();
   const { selectedNote, selectedIdea, setSelectedNote, setSelectedIdea } = useModal();
-  const { colors } = useTheme();
+  const { colors, theme } = useTheme();
 
   const isLoading = notesLoading || tasksLoading || remindersLoading;
 
@@ -46,7 +46,7 @@ export function Dashboard() {
 
   return (
     <div className="h-screen flex overflow-hidden">
-      {/* Fixed gradient background */}
+      {/* Fixed gradient background - Updated for better dark mode */}
       <div className={`fixed inset-0 ${colors.gradientBackground}`} />
       
       {/* Sidebar */}

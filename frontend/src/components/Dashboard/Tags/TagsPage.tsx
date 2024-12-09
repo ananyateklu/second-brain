@@ -286,13 +286,13 @@ export function TagsPage() {
       {/* Main content container */}
       <div className="flex flex-col h-full p-0.5">
         {/* Header - make more compact */}
-        <div className="flex-none relative overflow-hidden rounded-lg bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm mb-2">
-          <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-transparent" />
+        <div className="flex-none relative overflow-hidden rounded-lg bg-white/20 dark:bg-gray-800/20 border border-white/40 dark:border-white/30 shadow-sm mb-2 backdrop-blur-xl">
+          <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-transparent" />
           <div className="relative px-4 py-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 bg-cyan-100/50 dark:bg-cyan-900/30 rounded-lg">
-                  <Hash className="w-6 h-6 text-cyan-600 dark:text-cyan-400" />
+                <div className="p-1.5 bg-indigo-100/50 dark:bg-indigo-900/30 rounded-lg">
+                  <Hash className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                 </div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Tags</h1>
               </div>
@@ -361,12 +361,12 @@ export function TagsPage() {
         </div>
 
         {/* Main content area */}
-        <div className="flex-1 bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm rounded-xl overflow-hidden">
+        <div className="flex-1 bg-white/20 dark:bg-gray-800/20 border border-white/40 dark:border-white/30 shadow-sm rounded-xl overflow-hidden backdrop-blur-xl">
           <div className="h-full flex">
             {/* Tags List Column - adjust width and padding */}
-            <div className="w-[320px] border-r border-gray-200/30 dark:border-gray-700/30 flex flex-col bg-white/10 dark:bg-gray-800/10 rounded-l-xl">
+            <div className="w-[320px] border-r border-white/40 dark:border-white/30 flex flex-col bg-white/10 dark:bg-gray-800/10 rounded-l-xl">
               {/* Search and filters - add more padding */}
-              <div className="flex-none sticky top-0 z-10 bg-white/20 dark:bg-gray-800/20 p-2 border-b border-gray-200/30 dark:border-gray-700/30">
+              <div className="flex-none sticky top-0 z-10 bg-white/20 dark:bg-gray-800/20 p-2 border-b border-white/40 dark:border-white/30">
                 <div className="flex items-center gap-0.5">
                   <div className="relative flex-1">
                     <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />

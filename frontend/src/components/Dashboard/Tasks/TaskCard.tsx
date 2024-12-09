@@ -2,6 +2,7 @@ import { Calendar, Tag as TagIcon, Clock, Type, Lightbulb, Square, CheckSquare, 
 import { Task } from '../../../api/types/task';
 import { useTasks } from '../../../contexts/tasksContextUtils';
 import { useTheme } from '../../../contexts/themeContextUtils';
+import { getNoteCardBg } from '../../../utils/dashboardUtils';
 
 interface TaskCardProps {
   task: Task;
@@ -71,11 +72,11 @@ export function TaskCard({
     const colorVariants = {
       dark: {
         completed: 'bg-green-900/30 text-green-400',
-        pending: 'bg-emerald-900/30 text-emerald-400'
+        pending: 'text-emerald-400'
       },
       light: {
         completed: 'bg-green-100 text-green-600',
-        pending: 'bg-emerald-100 text-emerald-600'
+        pending: 'text-emerald-600'
       }
     };
 
@@ -121,7 +122,8 @@ export function TaskCard({
       <div className={`
         flex flex-wrap gap-1
         ${viewMode === 'list' ? 'items-center' : 'items-start'}
-        max-h-[44px] min-h-[20px] overflow-hidden
+        ${viewMode === 'grid' ? 'max-h-[44px]' : ''}
+        min-h-[20px] overflow-hidden
       `}>
         {visibleItems.map(item => (
           <span
@@ -174,14 +176,16 @@ export function TaskCard({
         w-full
         ${onSelect || onClick ? 'cursor-pointer' : ''}
         ${task.status.toLowerCase() === 'completed' ? 'opacity-85' : ''}
-        bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]
-        border border-[var(--color-border)]
-        hover:border-emerald-400/50
+        ${getNoteCardBg('task')}
+        border border-green-200/30 dark:border-green-700/30
+        hover:border-green-400/50 dark:hover:border-green-500/50
         rounded-lg
         transition-all duration-200
         overflow-hidden
-        ${isSelected ? 'ring-2 ring-emerald-400/50' : ''}
+        ${isSelected ? 'ring-2 ring-green-400/50 dark:ring-green-500/50' : ''}
         ${viewMode === 'list' ? 'h-[84px]' : 'h-[156px]'}
+        hover:shadow-lg hover:shadow-green-900/5
+        hover:-translate-y-0.5
       `}
     >
       {viewMode === 'list' ? (
