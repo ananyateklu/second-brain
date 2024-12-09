@@ -1,5 +1,6 @@
 import { Bot, Hash, Music } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useTheme } from '../../../../contexts/themeContextUtils';
 
 interface LoadingContentProps {
   type: 'text' | 'embedding' | 'audio';
@@ -7,6 +8,8 @@ interface LoadingContentProps {
 }
 
 export function LoadingContent({ type, themeColor }: LoadingContentProps) {
+  const { colors } = useTheme();
+
   const renderLoadingContent = () => {
     switch (type) {
       case 'text':
@@ -32,11 +35,11 @@ export function LoadingContent({ type, themeColor }: LoadingContentProps) {
             </div>
             
             {/* Animated placeholder lines */}
-            <div className="space-y-1">
+            <div className={`space-y-1 p-2 rounded-lg ${colors.gradientBackground}`}>
               {[...Array(2)].map((_, i) => (
                 <motion.div
                   key={i}
-                  className="h-1 rounded bg-gray-300 dark:bg-gray-700"
+                  className="h-1 rounded bg-[var(--color-surface)]/30"
                   initial={{ width: "0%" }}
                   animate={{ width: ["0%", "100%", "100%", "0%"] }}
                   transition={{
@@ -61,14 +64,14 @@ export function LoadingContent({ type, themeColor }: LoadingContentProps) {
             
             {/* Animated vector visualization */}
             <motion.div 
-              className="h-16 flex items-end gap-px"
+              className={`h-16 flex items-end gap-px p-2 rounded-lg ${colors.gradientBackground}`}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
             >
               {[...Array(50)].map((_, i) => (
                 <motion.div
                   key={i}
-                  className="flex-1 bg-primary-500/20"
+                  className="flex-1"
                   initial={{ height: "0%" }}
                   animate={{ 
                     height: ["0%", "100%", "50%", "80%", "20%"],
@@ -94,7 +97,7 @@ export function LoadingContent({ type, themeColor }: LoadingContentProps) {
             </div>
             
             {/* Animated waveform */}
-            <div className="h-8 flex items-center gap-1">
+            <div className={`h-8 flex items-center gap-1 p-2 rounded-lg ${colors.gradientBackground}`}>
               {[...Array(30)].map((_, i) => (
                 <motion.div
                   key={i}

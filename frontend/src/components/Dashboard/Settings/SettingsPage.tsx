@@ -28,18 +28,88 @@ export function SettingsPage() {
     }
   };
 
-  return (
-    <div className="min-h-screen pb-12">
-      {/* Background with subtle gradient */}
-      <div className="fixed inset-0 bg-gradient-to-br from-[var(--color-background)] via-[var(--color-background)] to-[var(--color-surface)] opacity-50 -z-10" />
+  const sectionClasses = `
+    relative 
+    overflow-hidden 
+    rounded-2xl 
+    bg-white/20
+    dark:bg-white/5
+    border-[1.5px] 
+    border-white/40
+    dark:border-white/30
+    backdrop-blur-xl 
+    shadow-[0_4px_12px_-2px_rgba(0,0,0,0.12),0_4px_8px_-2px_rgba(0,0,0,0.08),0_0_0_1px_rgba(255,255,255,0.1)]
+    dark:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.4),0_4px_8px_-2px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.1)]
+    hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.2),0_6px_12px_-4px_rgba(0,0,0,0.15),0_0_0_1px_rgba(255,255,255,0.2)]
+    dark:hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.5),0_6px_12px_-4px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.2)]
+    ring-1
+    ring-black/5
+    dark:ring-white/10
+    hover:ring-black/10
+    dark:hover:ring-white/20
+    transition-all 
+    duration-300 
+    group
+  `;
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+  const innerElementClasses = `
+    bg-white/20
+    dark:bg-white/5
+    border-[1.5px] 
+    border-white/40
+    dark:border-white/30
+    backdrop-blur-xl
+    rounded-xl
+    transition-all
+    duration-200
+    hover:bg-white/30
+    dark:hover:bg-white/10
+  `;
+
+  const toggleClasses = `
+    w-14 
+    h-7 
+    bg-gray-400/50
+    dark:bg-gray-700/30
+    rounded-full 
+    peer 
+    peer-checked:after:translate-x-full 
+    after:content-[''] 
+    after:absolute 
+    after:top-[2px] 
+    after:left-[2px] 
+    after:bottom-[2px]
+    after:bg-white
+    dark:after:bg-gray-200
+    after:rounded-full 
+    after:w-6 
+    after:transition-all 
+    after:shadow-sm
+    peer-checked:bg-[var(--color-accent)]
+    peer-checked:border-[var(--color-accent)]
+    border-[1.5px]
+    border-gray-400/50
+    dark:border-gray-600/30
+    transition-all
+    duration-300
+    backdrop-blur-sm
+    hover:bg-gray-500/50
+    dark:hover:border-gray-500/40
+    peer-checked:hover:bg-[var(--color-accent)]/90
+    peer-checked:hover:border-[var(--color-accent)]/90
+  `;
+
+  return (
+    <div className="h-full">
+      {/* Background with subtle gradient */}
+      <div className="fixed inset-0 bg-gradient-to-br from-[var(--color-background)]/50 via-[var(--color-background)]/30 to-[var(--color-surface)]/20 -z-10" />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* Page Header */}
-        <div className="relative overflow-hidden rounded-2xl bg-[var(--color-primary)] border border-[var(--color-border)] backdrop-blur-sm">
-          <div className="absolute inset-0 bg-gradient-to-r from-[var(--color-accent)]/10 via-[var(--color-accent)]/5 to-transparent" />
-          <div className="relative p-8">
+        <div className={sectionClasses}>
+          <div className="p-8">
             <div className="flex items-center gap-4">
-              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-[var(--color-accent)]/10">
+              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-white/20 dark:bg-white/5 backdrop-blur-sm border-[1.5px] border-white/40 dark:border-white/30">
                 <Settings2 className="w-6 h-6 text-[var(--color-accent)]" />
               </div>
               <div>
@@ -57,10 +127,10 @@ export function SettingsPage() {
           {/* Left Column */}
           <div className="space-y-8">
             {/* Appearance Section */}
-            <div className="group rounded-2xl bg-[var(--color-primary)]/80 border border-[var(--color-border)] backdrop-blur-sm overflow-hidden transition-all duration-300">
-              <div className="p-6 border-b border-[var(--color-border)]">
+            <div className={sectionClasses}>
+              <div className="p-6 border-b border-white/20 dark:border-white/10">
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-white/20 dark:bg-white/5 backdrop-blur-sm border-[1.5px] border-white/40 dark:border-white/30">
                     <Palette className="w-5 h-5 text-[var(--color-accent)]" />
                   </div>
                   <div>
@@ -76,9 +146,9 @@ export function SettingsPage() {
                 {/* Theme Options */}
                 <div className="space-y-3">
                   {/* Light Theme */}
-                  <label className="flex items-center justify-between p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] cursor-pointer transition-all duration-200 hover:bg-[var(--color-secondary)]">
+                  <label className={`flex items-center justify-between p-4 cursor-pointer ${innerElementClasses}`}>
                     <div className="flex items-center gap-4">
-                      <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10">
+                      <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm">
                         <Sun className="w-5 h-5 text-[var(--color-accent)]" />
                       </div>
                       <div>
@@ -93,14 +163,14 @@ export function SettingsPage() {
                       name="theme"
                       checked={theme === 'light'}
                       onChange={() => handleThemeChange('light')}
-                      className="w-5 h-5 text-[var(--color-accent)] bg-[rgb(31,41,55)] border-[var(--color-border)] focus:ring-[var(--color-accent)] focus:ring-2 focus:ring-offset-0"
+                      className="w-5 h-5 text-[var(--color-accent)] bg-[var(--color-surface)] border-[var(--color-border)] focus:ring-[var(--color-accent)] focus:ring-2"
                     />
                   </label>
 
                   {/* Dark Theme */}
-                  <label className="flex items-center justify-between p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] cursor-pointer transition-all duration-200 hover:bg-[var(--color-secondary)]">
+                  <label className={`flex items-center justify-between p-4 cursor-pointer ${innerElementClasses}`}>
                     <div className="flex items-center gap-4">
-                      <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10">
+                      <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm">
                         <Moon className="w-5 h-5 text-[var(--color-accent)]" />
                       </div>
                       <div>
@@ -115,14 +185,14 @@ export function SettingsPage() {
                       name="theme"
                       checked={theme === 'dark'}
                       onChange={() => handleThemeChange('dark')}
-                      className="w-5 h-5 text-[var(--color-accent)] bg-[var(--color-secondary)] border-[var(--color-border)] focus:ring-[var(--color-accent)] focus:ring-2"
+                      className="w-5 h-5 text-[var(--color-accent)] bg-[var(--color-surface)] border-[var(--color-border)] focus:ring-[var(--color-accent)] focus:ring-2"
                     />
                   </label>
 
                   {/* Midnight Theme */}
-                  <label className="flex items-center justify-between p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] cursor-pointer transition-all duration-200 hover:bg-[var(--color-secondary)]">
+                  <label className={`flex items-center justify-between p-4 cursor-pointer ${innerElementClasses}`}>
                     <div className="flex items-center gap-4">
-                      <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10">
+                      <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm">
                         <Sparkles className="w-5 h-5 text-[var(--color-accent)]" />
                       </div>
                       <div>
@@ -137,7 +207,7 @@ export function SettingsPage() {
                       name="theme"
                       checked={theme === 'midnight'}
                       onChange={() => handleThemeChange('midnight')}
-                      className="w-5 h-5 text-[var(--color-accent)] bg-[var(--color-secondary)] border-[var(--color-border)] focus:ring-[var(--color-accent)] focus:ring-2"
+                      className="w-5 h-5 text-[var(--color-accent)] bg-[var(--color-surface)] border-[var(--color-border)] focus:ring-[var(--color-accent)] focus:ring-2"
                     />
                   </label>
                 </div>
@@ -145,20 +215,25 @@ export function SettingsPage() {
             </div>
 
             {/* Notifications Section */}
-            <div className="group rounded-2xl bg-[var(--color-primary)]/80 border border-[var(--color-border)] backdrop-blur-sm overflow-hidden transition-all duration-300">
-              <div className="p-6 border-b border-[var(--color-border)]">
+            <div className={sectionClasses}>
+              <div className="p-6 border-b border-white/20 dark:border-white/10">
                 <div className="flex items-center gap-3">
-                  <Bell className="w-5 h-5 text-[var(--color-accent)]" />
-                  <h3 className="text-lg font-semibold text-[var(--color-text)]">
-                    Notifications
-                  </h3>
+                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-white/20 dark:bg-white/5 backdrop-blur-sm border-[1.5px] border-white/40 dark:border-white/30">
+                    <Bell className="w-5 h-5 text-[var(--color-accent)]" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-[var(--color-text)]">Notifications</h3>
+                    <p className="text-sm text-[var(--color-textSecondary)]">
+                      Manage your notification preferences
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              <div className="p-6">
-                <label className="flex items-center justify-between p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] cursor-pointer transition-all duration-200 hover:bg-[var(--color-secondary)]">
+              <div className="p-6 space-y-4">
+                <label className={`flex items-center justify-between p-4 cursor-pointer ${innerElementClasses}`}>
                   <div className="flex items-center gap-4">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-white/20 dark:bg-white/5 backdrop-blur-sm border-[1.5px] border-white/40 dark:border-white/30">
                       <Bell className="w-5 h-5 text-[var(--color-accent)]" />
                     </div>
                     <div>
@@ -169,13 +244,13 @@ export function SettingsPage() {
                     </div>
                   </div>
                   <div className="relative inline-flex">
-                    <input 
-                      type="checkbox" 
-                      checked={pushNotifications} 
-                      onChange={() => setPushNotifications(!pushNotifications)} 
-                      className="sr-only peer" 
+                    <input
+                      type="checkbox"
+                      checked={pushNotifications}
+                      onChange={() => setPushNotifications(!pushNotifications)}
+                      className="sr-only peer"
                     />
-                    <div className="w-14 h-7 bg-[rgb(31,41,55)] rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-[var(--color-accent)]"></div>
+                    <div className={toggleClasses}></div>
                   </div>
                 </label>
               </div>
@@ -185,20 +260,25 @@ export function SettingsPage() {
           {/* Right Column */}
           <div className="space-y-8">
             {/* Security Section */}
-            <div className="group rounded-2xl bg-[var(--color-primary)]/80 border border-[var(--color-border)] backdrop-blur-sm overflow-hidden transition-all duration-300">
-              <div className="p-6 border-b border-[var(--color-border)]">
+            <div className={sectionClasses}>
+              <div className="p-6 border-b border-white/20 dark:border-white/10">
                 <div className="flex items-center gap-3">
-                  <Shield className="w-5 h-5 text-[var(--color-accent)]" />
-                  <h3 className="text-lg font-semibold text-[var(--color-text)]">
-                    Security
-                  </h3>
+                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm">
+                    <Shield className="w-5 h-5 text-[var(--color-accent)]" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-[var(--color-text)]">Security</h3>
+                    <p className="text-sm text-[var(--color-textSecondary)]">
+                      Manage your security settings
+                    </p>
+                  </div>
                 </div>
               </div>
 
               <div className="p-6">
-                <div className="flex items-center justify-between p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">
+                <div className="flex items-center justify-between p-4 rounded-xl bg-[var(--color-surface)]/60 border border-[var(--color-border)] transition-all duration-200 hover:bg-[var(--color-surface)] backdrop-blur-sm">
                   <div className="flex items-center gap-4">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm">
                       <Shield className="w-5 h-5 text-[var(--color-accent)]" />
                     </div>
                     <div>
@@ -216,20 +296,25 @@ export function SettingsPage() {
             </div>
 
             {/* Data Management Section */}
-            <div className="group rounded-2xl bg-[var(--color-primary)]/80 border border-[var(--color-border)] backdrop-blur-sm overflow-hidden transition-all duration-300">
-              <div className="p-6 border-b border-[var(--color-border)]">
+            <div className={sectionClasses}>
+              <div className="p-6 border-b border-white/20 dark:border-white/10">
                 <div className="flex items-center gap-3">
-                  <Database className="w-5 h-5 text-[var(--color-accent)]" />
-                  <h3 className="text-lg font-semibold text-[var(--color-text)]">
-                    Data Management
-                  </h3>
+                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm">
+                    <Database className="w-5 h-5 text-[var(--color-accent)]" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-[var(--color-text)]">Data Management</h3>
+                    <p className="text-sm text-[var(--color-textSecondary)]">
+                      Manage your data and exports
+                    </p>
+                  </div>
                 </div>
               </div>
 
               <div className="p-6">
-                <div className="flex items-center justify-between p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">
+                <div className="flex items-center justify-between p-4 rounded-xl bg-[var(--color-surface)]/60 border border-[var(--color-border)] transition-all duration-200 hover:bg-[var(--color-surface)] backdrop-blur-sm">
                   <div className="flex items-center gap-4">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm">
                       <Database className="w-5 h-5 text-[var(--color-accent)]" />
                     </div>
                     <div>
@@ -239,7 +324,7 @@ export function SettingsPage() {
                       </p>
                     </div>
                   </div>
-                  <button className="px-4 py-2 rounded-lg bg-[var(--color-primary)]/50 hover:bg-[var(--color-primary)] text-[var(--color-text)] text-sm font-medium transition-colors border border-[var(--color-border)]">
+                  <button className="px-4 py-2 rounded-lg bg-[var(--color-surface)]/60 hover:bg-[var(--color-surface)] text-[var(--color-text)] text-sm font-medium transition-colors border border-[var(--color-border)]">
                     Export
                   </button>
                 </div>
@@ -249,7 +334,7 @@ export function SettingsPage() {
         </div>
 
         {/* AI Settings Section - Full Width */}
-        <div className="group rounded-2xl bg-[var(--color-primary)]/80 border border-[var(--color-border)] backdrop-blur-sm overflow-hidden transition-all duration-300">
+        <div className={sectionClasses}>
           <AISettingsSection onSave={handleSaveAISettings} />
         </div>
       </div>

@@ -171,6 +171,7 @@ export function RegistrationPage() {
                     placeholder="Enter your full name"
                     error={errors.fullName}
                     disabled={isLoading}
+                    disableRecording={true}
                     className="bg-white/10 dark:bg-gray-800/50 border-white/20 dark:border-gray-700/30 focus:border-primary-400"
                   />
                 </motion.div>

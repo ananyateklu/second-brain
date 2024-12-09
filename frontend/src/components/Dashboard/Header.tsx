@@ -79,7 +79,14 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
   };
 
   return (
-    <header className="fixed top-0 right-0 left-0 lg:left-60 z-20 backdrop-blur-md border-b border-[var(--color-border)] bg-[var(--color-background)] transition-colors duration-200">
+    <header className="fixed top-0 right-0 left-0 lg:left-60 z-20 
+      bg-white/20 dark:bg-white/5
+      backdrop-blur-xl 
+      border-b-[1.5px] border-white/40 dark:border-white/30
+      shadow-[0_4px_12px_-2px_rgba(0,0,0,0.12),0_2px_8px_-2px_rgba(0,0,0,0.08),0_0_0_1px_rgba(255,255,255,0.1)]
+      dark:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.4),0_2px_8px_-2px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.1)]
+      ring-1 ring-black/5 dark:ring-white/10
+      transition-all duration-200">
       <div className="max-w-7xl mx-auto h-20 px-4 sm:px-6 lg:px-8 flex items-center gap-4">
         <div className="w-10 lg:hidden">
           <button

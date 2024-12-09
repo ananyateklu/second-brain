@@ -8,14 +8,14 @@ interface LoadingScreenProps {
 }
 
 export function LoadingScreen({ message = 'Loading...' }: LoadingScreenProps) {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, colors } = useTheme();
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-[var(--color-surface)]/50 flex items-center justify-center backdrop-blur-sm z-50 transition-colors duration-200"
+      className={`fixed inset-0 ${colors.gradientBackground} flex items-center justify-center backdrop-blur-sm z-50 transition-colors duration-200`}
     >
       <button
         onClick={toggleTheme}
@@ -29,10 +29,10 @@ export function LoadingScreen({ message = 'Loading...' }: LoadingScreenProps) {
         )}
       </button>
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-[var(--color-surface)]/95 rounded-xl p-8 shadow-lg border border-[var(--color-border)] transition-colors duration-200"
+        className={`${colors.gradientPanel} rounded-xl p-8 shadow-lg border border-[var(--color-border)]/20 backdrop-blur-sm transition-colors duration-200`}
       >
         {/* Main Content */}
         <motion.div
@@ -52,7 +52,7 @@ export function LoadingScreen({ message = 'Loading...' }: LoadingScreenProps) {
             }}
             className="flex justify-center items-center"
           >
-            <Logo className="w-auto h-12" />
+            <Logo className="w-auto h-12" variant="dark" />
           </motion.div>
 
           {/* Loading Message */}
@@ -60,7 +60,7 @@ export function LoadingScreen({ message = 'Loading...' }: LoadingScreenProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="text-[var(--color-text)] font-medium text-base transition-colors duration-200"
+            className="text-white font-medium text-base transition-colors duration-200"
           >
             {message}
           </motion.div>
@@ -78,7 +78,7 @@ export function LoadingScreen({ message = 'Loading...' }: LoadingScreenProps) {
                   delay: i * 0.2,
                   ease: "easeInOut"
                 }}
-                className="w-2 h-2 bg-[var(--color-accent)]/80 rounded-full transition-colors duration-200"
+                className="w-2 h-2 bg-white/90 rounded-full transition-colors duration-200"
               />
             ))}
           </div>

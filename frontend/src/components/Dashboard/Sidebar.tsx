@@ -88,23 +88,43 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     }
   ];
 
+  const navLinkClasses = ({ isActive }: { isActive: boolean }) => `
+    flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-all duration-200
+    ${isActive
+      ? 'bg-white/95 dark:bg-white/90 text-[var(--color-accent)] border-[1.5px] border-[var(--color-accent)]/70 shadow-[0_2px_8px_-2px_rgba(76,153,89,0.2)]'
+      : 'text-[var(--color-text)] hover:bg-white/10 dark:hover:bg-white/5 hover:text-[var(--color-accent)]'
+    }
+  `;
+
   return (
     <>
       {isOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black opacity-50 lg:hidden"
+          className="fixed inset-0 z-30 bg-black/20 backdrop-blur-sm lg:hidden"
           onClick={() => setIsOpen(false)}
         ></div>
       )}
 
       <aside
         ref={sidebarRef}
-        className={`fixed top-0 left-0 z-40 h-screen w-60 bg-[var(--color-background)] backdrop-blur-md border-r border-[var(--color-border)] transition-transform duration-200 ease-in-out
-          ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}
+        className={`
+          fixed top-0 left-0 z-40 h-screen w-60 
+          bg-white/20 dark:bg-white/5
+          backdrop-blur-xl 
+          border-r-[1.5px] border-white/40 dark:border-white/30
+          shadow-[4px_0_12px_-2px_rgba(0,0,0,0.12),2px_0_8px_-2px_rgba(0,0,0,0.08),0_0_0_1px_rgba(255,255,255,0.1)]
+          dark:shadow-[4px_0_12px_-2px_rgba(0,0,0,0.4),2px_0_8px_-2px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.1)]
+          ring-1 ring-black/5 dark:ring-white/10
+          transition-transform duration-200 ease-in-out
+          ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0
+        `}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex justify-center items-center h-[81px] px-4 border-b border-[var(--color-border)]">
+          <div className="flex justify-center items-center h-[81px] px-4 
+            border-b-[1.5px] border-white/40 dark:border-white/30
+            shadow-[0_4px_12px_-2px_rgba(0,0,0,0.12),0_2px_8px_-2px_rgba(0,0,0,0.08)]
+            dark:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.4),0_2px_8px_-2px_rgba(0,0,0,0.3)]">
             <img
               src={theme === 'dark' || theme === 'midnight' ? darkLogo : lightLogo}
               alt="Second Brain Logo"
@@ -125,13 +145,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                       key={item.name}
                       to={item.to}
                       end={item.exact}
-                      className={({ isActive }) =>
-                        `flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-all duration-200
-                          ${isActive
-                          ? 'bg-[var(--color-accent)]/15 text-[var(--color-accent)] shadow-[inset_0_0_0_1.5px_rgba(76,153,89,0.35)] dark:shadow-[inset_0_0_0_1.5px_rgba(76,153,89,0.25)]'
-                          : 'text-[var(--color-text)] hover:bg-[var(--color-surface)]/80 hover:text-[var(--color-accent)]'
-                        }`
-                      }
+                      className={navLinkClasses}
                     >
                       <item.icon className="w-5 h-5" />
                       <span>{item.name}</span>
@@ -143,29 +157,17 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           </nav>
 
           {/* Bottom Section */}
-          <div className="p-4 border-t border-[var(--color-border)] space-y-1">
+          <div className="p-4 border-t-[1.5px] border-white/20 dark:border-white/10 space-y-1">
             <NavLink
               to="/dashboard/settings"
-              className={({ isActive }) =>
-                `flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-all duration-200
-                  ${isActive
-                  ? 'bg-[var(--color-accent)]/15 text-[var(--color-accent)] shadow-[inset_0_0_0_1.5px_rgba(76,153,89,0.35)] dark:shadow-[inset_0_0_0_1.5px_rgba(76,153,89,0.25)]'
-                  : 'text-[var(--color-text)] hover:bg-[var(--color-surface)]/80 hover:text-[var(--color-accent)]'
-                }`
-              }
+              className={navLinkClasses}
             >
               <Settings className="w-5 h-5" />
               <span>Settings</span>
             </NavLink>
             <NavLink
               to="/dashboard/help"
-              className={({ isActive }) =>
-                `flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-all duration-200
-                  ${isActive
-                  ? 'bg-[var(--color-accent)]/15 text-[var(--color-accent)] shadow-[inset_0_0_0_1.5px_rgba(76,153,89,0.35)] dark:shadow-[inset_0_0_0_1.5px_rgba(76,153,89,0.25)]'
-                  : 'text-[var(--color-text)] hover:bg-[var(--color-surface)]/80 hover:text-[var(--color-accent)]'
-                }`
-              }
+              className={navLinkClasses}
             >
               <HelpCircle className="w-5 h-5" />
               <span>Help</span>

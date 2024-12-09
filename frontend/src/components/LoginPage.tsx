@@ -101,24 +101,49 @@ export function LoginPage() {
   const getGradientClasses = () => {
     switch (theme) {
       case 'light':
-        return 'from-primary-600 via-primary-500 to-primary-700';
+        return 'bg-gradient-to-br from-primary-50 via-primary-600/5 to-primary-600/70';
       case 'dark':
-        return 'from-gray-900 via-gray-800 to-primary-900/50';
+        return 'from-gray-900 via-gray-800 to-gray-900';
       case 'midnight':
-        return 'from-[rgb(17,24,39)] via-gray-900 to-primary-950/30';
+        return 'from-[#0F172A] via-[#1E293B] to-[#0F172A]';
       default:
-        return 'from-primary-600 via-primary-500 to-primary-700';
+        return 'from-gray-50 via-gray-50 to-gray-100';
+    }
+  };
+
+  const getLeftPanelClasses = () => {
+    switch (theme) {
+      case 'light':
+        return 'bg-gradient-to-br from-primary-50 via-primary-600/65 to-primary-400/90';
+      case 'dark':
+        return 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900';
+      case 'midnight':
+        return 'bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A]';
+      default:
+        return 'bg-gradient-to-br from-primary-50 via-primary-600/65 to-primary-400/90';
     }
   };
 
   const getBackgroundClasses = () => {
-    if (theme === 'midnight') {
-      return 'bg-gray-900/40 border-gray-800/40';
+    switch (theme) {
+      case 'midnight':
+        return 'bg-[#1F2937]/80 border-[#374151]/40';
+      case 'dark':
+        return 'bg-[#2C2C2E]/80 border-[#3C3C3E]/40';
+      default:
+        return 'bg-white/90 border-gray-200/40';
     }
-    if (theme === 'dark') {
-      return 'bg-gray-900/50 border-gray-700/30';
+  };
+
+  const getInputClasses = () => {
+    switch (theme) {
+      case 'midnight':
+        return 'bg-gray-800/50 border-gray-700/50 focus:border-primary-500';
+      case 'dark':
+        return 'bg-gray-800/50 border-gray-700/50 focus:border-primary-500';
+      default:
+        return 'bg-white/80 border-gray-300 focus:border-primary-500';
     }
-    return 'bg-white/10 border-white/20';
   };
 
   // Only show loading screen when actually redirecting after successful login
@@ -129,7 +154,7 @@ export function LoginPage() {
   return (
     <div className={`min-h-screen bg-gradient-to-br ${getGradientClasses()} flex`}>
       {/* Left Panel - Decorative */}
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
+      <div className={`hidden lg:flex lg:w-1/2 relative overflow-hidden ${getLeftPanelClasses()}`}>
         <div className={`absolute inset-0 ${theme === 'midnight' ? 'bg-black/40' : 'bg-black/10'} backdrop-blur-sm z-10`} />
         <div className="absolute inset-0 flex flex-col items-center justify-center text-white z-20 p-12">
           <h1 className="text-4xl font-bold mb-6 text-white dark:text-white/90">Welcome to Second Brain</h1>
@@ -178,16 +203,17 @@ export function LoginPage() {
       {/* Right Panel - Login Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
         <div className="w-full max-w-md">
-          <div className={`${getBackgroundClasses()} backdrop-blur-lg rounded-2xl p-8 shadow-2xl border`}>
-            <div className="flex justify-center mb-8 h-12">
-              <Logo className="w-auto h-full" />
+          <div className={`${getBackgroundClasses()} backdrop-blur-lg rounded-2xl p-8 shadow-2xl border transition-colors duration-200`}>
+            <div className="flex justify-between items-center mb-8">
+              <Logo className="w-auto h-12" />
+              <ThemeDropdown />
             </div>
 
             {errors.general && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg flex items-center gap-2 mb-6"
+                className={`${theme === 'light' ? 'bg-red-50 border-red-200 text-red-600' : 'bg-red-900/20 border-red-800/50 text-red-400'} border px-4 py-3 rounded-lg flex items-center gap-2 mb-6 transition-colors duration-200`}
               >
                 <AlertCircle className="w-5 h-5 flex-shrink-0" />
                 <p className="text-sm">{errors.general}</p>
@@ -209,7 +235,7 @@ export function LoginPage() {
                   disabled={isLoading}
                   disableEnhancement={true}
                   disableRecording={true}
-                  className="bg-white/10 dark:bg-gray-800/50 border-white/20 dark:border-gray-700/30 focus:border-primary-400"
+                  className={`${getInputClasses()} transition-colors duration-200`}
                 />
 
                 <Input
@@ -225,27 +251,35 @@ export function LoginPage() {
                   disabled={isLoading}
                   disableEnhancement={true}
                   disableRecording={true}
-                  className="bg-white/10 dark:bg-gray-800/50 border-white/20 dark:border-gray-700/30 focus:border-primary-400"
+                  className={`${getInputClasses()} transition-colors duration-200`}
                 />
               </div>
 
               {/* Remember Me & Forgot Password */}
               <div className="flex items-center justify-between">
-                <label className="flex items-center space-x-2 text-white/90">
+                <label className="flex items-center space-x-2">
                   <input
                     type="checkbox"
                     name="rememberMe"
                     checked={formData.rememberMe}
                     onChange={handleChange}
-                    className="w-4 h-4 bg-white/10 border-white/20 rounded text-primary-500 focus:ring-primary-500/50"
+                    className={`w-4 h-4 rounded focus:ring-offset-0 focus:ring-2 focus:ring-primary-500/50 ${theme === 'light'
+                        ? 'border-gray-300 text-primary-600'
+                        : 'border-gray-600 bg-gray-700/50 text-primary-500'
+                      } transition-colors duration-200`}
                   />
-                  <span className="text-sm">Remember me</span>
+                  <span className={`text-sm ${theme === 'light' ? 'text-gray-700' : 'text-gray-300'}`}>
+                    Remember me
+                  </span>
                 </label>
 
                 <button
                   type="button"
                   onClick={() => setShowForgotPassword(true)}
-                  className="text-sm text-white/90 hover:text-white transition-colors"
+                  className={`text-sm ${theme === 'light'
+                      ? 'text-gray-700 hover:text-gray-900'
+                      : 'text-gray-300 hover:text-white'
+                    } transition-colors duration-200`}
                 >
                   Forgot Password?
                 </button>
@@ -292,11 +326,6 @@ export function LoginPage() {
             </form>
           </div>
         </div>
-      </div>
-
-      {/* Replace Theme Toggle Button with ThemeDropdown */}
-      <div className="fixed top-4 right-4 z-50">
-        <ThemeDropdown />
       </div>
 
       <ForgotPasswordModal

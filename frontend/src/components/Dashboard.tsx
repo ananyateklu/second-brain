@@ -27,6 +27,7 @@ import { PersonalPage } from './Dashboard/Personal/PersonalPage';
 import { EditNoteModal } from './Dashboard/Notes/EditNoteModal';
 import { EditIdeaModal } from './Dashboard/Ideas/EditIdeaModal';
 import { useModal } from '../contexts/modalContextUtils';
+import { useTheme } from '../contexts/themeContextUtils';
 
 export function Dashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -35,6 +36,7 @@ export function Dashboard() {
   const { isLoading: tasksLoading } = useTasks();
   const { isLoading: remindersLoading } = useReminders();
   const { selectedNote, selectedIdea, setSelectedNote, setSelectedIdea } = useModal();
+  const { colors } = useTheme();
 
   const isLoading = notesLoading || tasksLoading || remindersLoading;
 
@@ -43,67 +45,69 @@ export function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[var(--color-background)]">
-      {/* Fixed background */}
-      <div className="fixed inset-0 bg-[var(--color-background)] -z-10" />
-
-      <div className="flex overflow-x-hidden min-h-screen">
+    <div className="h-screen flex overflow-hidden">
+      {/* Fixed gradient background */}
+      <div className={`fixed inset-0 ${colors.gradientBackground}`} />
+      
+      {/* Sidebar */}
+      <div className="fixed inset-y-0 left-0 z-30">
         <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
+      </div>
 
-        {/* Main Content Area */}
-        <div className="flex-1 min-w-0 lg:ml-60 flex flex-col bg-[var(--color-background)]">
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col lg:pl-60 relative">
+        {/* Fixed Header */}
+        <div className="fixed top-0 right-0 left-0 lg:left-60 z-20">
           <Header
             isSidebarOpen={isSidebarOpen}
             toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
           />
-
-          {/* Main Content */}
-          <main
-            className="flex-1 overflow-y-auto overflow-x-hidden mt-20"
-            style={{
-              overscrollBehavior: 'none',
-              backgroundColor: 'transparent'
-            }}
-          >
-            <div className="max-w-[1920px] mx-auto px-6 sm:px-8 lg:px-20 py-8">
-              <WelcomeBar />
-              <Routes>
-                <Route index element={<DashboardHome />} />
-                <Route path="notes" element={<NotesPage />} />
-                <Route path="linked" element={<LinkedNotesPage />} />
-                <Route path="ideas" element={<IdeasPage />} />
-                <Route path="tags" element={<TagsPage />} />
-                <Route path="favorites" element={<FavoritesPage />} />
-                <Route path="archive" element={<ArchivePage />} />
-                <Route path="trash" element={<TrashPage />} />
-                <Route path="tasks" element={<TasksPage />} />
-                <Route path="reminders" element={<RemindersPage />} />
-                <Route path="recent" element={<RecentPage />} />
-                <Route path="focus" element={<DailyFocus />} />
-                <Route path="ai" element={<AIAssistantPage />} />
-                <Route path="profile" element={<PersonalPage />} />
-                <Route path="search" element={<SearchPage />} />
-                <Route path="settings" element={<SettingsPage />} />
-                <Route path="help" element={<HelpPage />} />
-              </Routes>
-            </div>
-          </main>
         </div>
+
+        {/* Scrollable Content */}
+        <main className="flex-1 overflow-y-auto overflow-x-hidden pt-20 relative">
+          <div className="max-w-[1920px] mx-auto px-6 sm:px-8 lg:px-20 py-8">
+            <WelcomeBar />
+            <Routes>
+              <Route index element={<DashboardHome />} />
+              <Route path="notes" element={<NotesPage />} />
+              <Route path="linked" element={<LinkedNotesPage />} />
+              <Route path="ideas" element={<IdeasPage />} />
+              <Route path="tags" element={<TagsPage />} />
+              <Route path="favorites" element={<FavoritesPage />} />
+              <Route path="archive" element={<ArchivePage />} />
+              <Route path="trash" element={<TrashPage />} />
+              <Route path="tasks" element={<TasksPage />} />
+              <Route path="reminders" element={<RemindersPage />} />
+              <Route path="recent" element={<RecentPage />} />
+              <Route path="focus" element={<DailyFocus />} />
+              <Route path="ai" element={<AIAssistantPage />} />
+              <Route path="profile" element={<PersonalPage />} />
+              <Route path="search" element={<SearchPage />} />
+              <Route path="settings" element={<SettingsPage />} />
+              <Route path="help" element={<HelpPage />} />
+            </Routes>
+          </div>
+        </main>
       </div>
 
-      <EditNoteModal
-        isOpen={selectedNote !== null}
-        onClose={() => setSelectedNote(null)}
-        note={selectedNote}
-      />
+      {selectedNote && (
+        <EditNoteModal
+          isOpen={true}
+          onClose={() => setSelectedNote(null)}
+          note={selectedNote}
+        />
+      )}
 
-      <EditIdeaModal
-        isOpen={selectedIdea !== null}
-        onClose={() => setSelectedIdea(null)}
-        idea={selectedIdea}
-      />
+      {selectedIdea && (
+        <EditIdeaModal
+          isOpen={true}
+          onClose={() => setSelectedIdea(null)}
+          idea={selectedIdea}
+        />
+      )}
     </div>
   );
 }

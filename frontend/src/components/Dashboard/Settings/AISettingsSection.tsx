@@ -118,12 +118,49 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
     }
   };
 
+  const innerElementClasses = `
+    bg-white/20
+    dark:bg-white/5
+    border-[1.5px] 
+    border-white/40
+    dark:border-white/30
+    backdrop-blur-xl
+    rounded-xl
+    transition-all
+    duration-200
+    hover:bg-white/30
+    dark:hover:bg-white/10
+  `;
+
+  const selectClasses = `
+    w-full 
+    pl-10 
+    pr-10 
+    py-2.5 
+    bg-white/20
+    dark:bg-white/5
+    hover:bg-white/30
+    dark:hover:bg-white/10
+    rounded-lg 
+    text-[var(--color-text)] 
+    border-[1.5px] 
+    border-white/40
+    dark:border-white/30 
+    focus:ring-2 
+    focus:ring-[var(--color-accent)]/20 
+    focus:border-transparent 
+    transition-all 
+    duration-200 
+    appearance-none 
+    backdrop-blur-sm
+  `;
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="p-6 border-b border-[var(--color-border)]">
+      <div className="p-6 border-b border-white/20 dark:border-white/10">
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10">
+          <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-white/20 dark:bg-white/5 backdrop-blur-sm border-[1.5px] border-white/40 dark:border-white/30">
             <Cpu className="w-5 h-5 text-[var(--color-accent)]" />
           </div>
           <div>
@@ -145,7 +182,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
                 setIsChecking(true);
                 checkConfigurations().finally(() => setIsChecking(false));
               }}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-[var(--color-text)] bg-[var(--color-surface)] hover:bg-[var(--color-secondary)] border border-[var(--color-border)] rounded-lg transition-all duration-200"
+              className={`flex items-center gap-2 px-4 py-2 text-sm text-[var(--color-text)] ${innerElementClasses}`}
               disabled={isChecking}
             >
               <div className={`w-4 h-4 ${isChecking ? 'animate-spin' : ''}`}>
@@ -159,16 +196,16 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
             {configurationStatus.map(({ name, isConfigured }) => (
               <div
                 key={name}
-                className="group relative overflow-hidden rounded-xl transition-all duration-200"
+                className={innerElementClasses}
               >
-                <div className="p-4 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl transition-all duration-200 hover:bg-[var(--color-secondary)]">
+                <div className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className={`flex items-center justify-center w-10 h-10 rounded-lg ${
                         isConfigured 
                           ? 'bg-[var(--color-accent)]/10' 
                           : 'bg-red-500/10'
-                      }`}>
+                      } backdrop-blur-sm border-[1.5px] border-white/40 dark:border-white/30`}>
                         {isConfigured ? (
                           <CheckCircle className="w-5 h-5 text-[var(--color-accent)]" />
                         ) : (
@@ -196,20 +233,20 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
         {/* Content Suggestions Configuration */}
         <div className="space-y-4">
           <h4 className="text-base font-medium text-[var(--color-text)]">Content Generation</h4>
-          <div className="space-y-6 p-6 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl">
+          <div className={`space-y-6 p-6 ${innerElementClasses}`}>
             <div className="space-y-2">
               <label className="block text-sm font-medium text-[var(--color-text)]">
                 AI Provider
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
                   <Bot className="h-5 w-5 text-[var(--color-accent)]" />
                 </div>
                 <select
                   name="contentSuggestionsProvider"
                   value={settings.contentSuggestions?.provider}
                   onChange={handleInputChange}
-                  className="w-full pl-10 pr-10 py-2.5 bg-[var(--color-surface)] hover:bg-[var(--color-secondary)] rounded-lg text-[var(--color-text)] border border-[var(--color-border)] focus:ring-2 focus:ring-[var(--color-accent)]/20 focus:border-transparent transition-all duration-200 appearance-none"
+                  className={selectClasses}
                 >
                   {isOpenAIConfigured && <option value="openai">OpenAI</option>}
                   {isGeminiConfigured && <option value="gemini">Google Gemini</option>}
@@ -229,14 +266,14 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
                 Model
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
                   <Settings2 className="h-5 w-5 text-[var(--color-accent)]" />
                 </div>
                 <select
                   name="contentSuggestionsModel"
                   value={settings.contentSuggestions?.modelId}
                   onChange={handleInputChange}
-                  className="w-full pl-10 pr-10 py-2.5 bg-[var(--color-surface)] hover:bg-[var(--color-secondary)] rounded-lg text-[var(--color-text)] border border-[var(--color-border)] focus:ring-2 focus:ring-[var(--color-accent)]/20 focus:border-transparent transition-all duration-200 appearance-none"
+                  className={selectClasses}
                 >
                   {contentGenerationModels
                     .filter(model => model.provider === settings.contentSuggestions?.provider)
@@ -264,20 +301,20 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
         {/* Prompt Enhancement Configuration */}
         <div className="space-y-4">
           <h4 className="text-base font-medium text-[var(--color-text)]">Prompt Enhancement</h4>
-          <div className="space-y-6 p-6 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl">
+          <div className={`space-y-6 p-6 ${innerElementClasses}`}>
             <div className="space-y-2">
               <label className="block text-sm font-medium text-[var(--color-text)]">
                 AI Provider
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
                   <Bot className="h-5 w-5 text-[var(--color-accent)]" />
                 </div>
                 <select
                   name="promptEnhancementProvider"
                   value={settings.promptEnhancement?.provider}
                   onChange={handleInputChange}
-                  className="w-full pl-10 pr-10 py-2.5 bg-[var(--color-surface)] hover:bg-[var(--color-secondary)] rounded-lg text-[var(--color-text)] border border-[var(--color-border)] focus:ring-2 focus:ring-[var(--color-accent)]/20 focus:border-transparent transition-all duration-200 appearance-none"
+                  className={selectClasses}
                 >
                   {isOpenAIConfigured && <option value="openai">OpenAI</option>}
                   {isGeminiConfigured && <option value="gemini">Google Gemini</option>}
@@ -297,14 +334,14 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
                 Model
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
                   <Settings2 className="h-5 w-5 text-[var(--color-accent)]" />
                 </div>
                 <select
                   name="promptEnhancementModel"
                   value={settings.promptEnhancement?.modelId}
                   onChange={handleInputChange}
-                  className="w-full pl-10 pr-10 py-2.5 bg-[var(--color-surface)] hover:bg-[var(--color-secondary)] rounded-lg text-[var(--color-text)] border border-[var(--color-border)] focus:ring-2 focus:ring-[var(--color-accent)]/20 focus:border-transparent transition-all duration-200 appearance-none"
+                  className={selectClasses}
                 >
                   {contentGenerationModels
                     .filter(model => model.provider === settings.promptEnhancement?.provider)
@@ -337,7 +374,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
                 saveResult.success 
                   ? 'bg-[var(--color-accent)]/10 text-[var(--color-accent)]' 
                   : 'bg-red-500/10 text-red-500'
-              }`}>
+              } backdrop-blur-sm border-[1.5px] border-white/40 dark:border-white/30`}>
                 {saveResult.success ? (
                   <CheckCircle className="w-4 h-4" />
                 ) : (
@@ -350,7 +387,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="flex items-center gap-2 px-6 py-2.5 bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white text-sm font-medium rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 px-6 py-2.5 bg-[var(--color-accent)]/90 hover:bg-[var(--color-accent)] text-white text-sm font-medium rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm border-[1.5px] border-[var(--color-accent)]/20"
           >
             {isSaving ? (
               <>

@@ -28,6 +28,8 @@ export type ThemeColor = {
     reminderBg: string;
     moreItemsBg: string;
     moreItemsText: string;
+    gradientBackground: string;
+    gradientPanel: string;
 };
 
 export type ThemeConfig = {
@@ -70,6 +72,8 @@ export const themes: Record<ThemeName, ThemeConfig> = {
             reminderBg: 'rgba(147, 51, 234, 0.2)',
             moreItemsBg: '#f1f5f9',
             moreItemsText: '#64748b',
+            gradientBackground: 'bg-gradient-to-br from-primary-50 via-primary-600/5 to-primary-600/70',
+            gradientPanel: 'bg-gradient-to-br from-primary-50 via-primary-600/65 to-primary-400/90'
         },
     },
     dark: {
@@ -104,6 +108,8 @@ export const themes: Record<ThemeName, ThemeConfig> = {
             reminderBg: 'rgba(168, 85, 247, 0.2)',
             moreItemsBg: '#374151',
             moreItemsText: '#9ca3af',
+            gradientBackground: 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900',
+            gradientPanel: 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900'
         },
     },
     midnight: {
@@ -138,6 +144,8 @@ export const themes: Record<ThemeName, ThemeConfig> = {
             reminderBg: 'rgba(168, 85, 247, 0.2)',
             moreItemsBg: '#1F2937',
             moreItemsText: '#9ca3af',
+            gradientBackground: 'bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A]',
+            gradientPanel: 'bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A]'
         },
     },
 }; 

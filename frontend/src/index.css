@@ -9,7 +9,7 @@
     /* These will be overridden by ThemeContext */
     --color-primary: #ffffff;
     --color-secondary: #f1f5f9;
-    --color-background: #f8fafc;
+    --color-background: transparent;
     --color-surface: #ffffff;
     --color-text: #1e293b;
     --color-textSecondary: #64748b;
@@ -21,7 +21,7 @@
   [data-theme="midnight"] {
     --color-primary: #1e1e24;
     --color-secondary: #2c2c34;
-    --color-background: rgb(17, 24, 39);
+    --color-background: transparent;
     --color-surface: #2c2c34;
     --color-text: rgba(255, 255, 255, 0.9);
     --color-textSecondary: rgba(255, 255, 255, 0.8);
@@ -32,20 +32,17 @@
   html {
     font-family: "Inter", system-ui, sans-serif;
     @apply overflow-x-hidden;
-    background-color: var(--color-background);
     color: var(--color-text);
     @apply transition-colors duration-200;
   }
 
   body {
     @apply overflow-x-hidden;
-    background-color: var(--color-background);
     @apply transition-colors duration-200;
   }
 
   #root {
     min-height: 100vh;
-    background-color: var(--color-background);
     @apply transition-colors duration-200;
   }
 }

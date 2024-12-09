@@ -28,8 +28,6 @@ const IconMap = {
   Network
 };
 
-const getBorderClass = () => 'border-[var(--color-border)]';
-
 const getWidthFromSize = (size?: string) => {
   switch (size) {
     case 'small': return 1;
@@ -206,19 +204,29 @@ export function WelcomeBar({ isDashboardHome = false }: WelcomeBarProps) {
   return (
     <div
       className={`
-        bg-[var(--color-surface)]/80 
+        relative 
+        overflow-hidden 
+        rounded-2xl 
+        bg-white/20
+        dark:bg-white/5
+        border-[1.5px] 
+        border-white/40
+        dark:border-white/30
         backdrop-blur-xl 
-        border 
-        ${getBorderClass()} 
-        shadow-lg 
-        hover:shadow-2xl 
+        shadow-[0_4px_12px_-2px_rgba(0,0,0,0.12),0_4px_8px_-2px_rgba(0,0,0,0.08),0_0_0_1px_rgba(255,255,255,0.1)]
+        dark:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.4),0_4px_8px_-2px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.1)]
+        hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.2),0_6px_12px_-4px_rgba(0,0,0,0.15),0_0_0_1px_rgba(255,255,255,0.2)]
+        dark:hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.5),0_6px_12px_-4px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.2)]
+        ring-1
+        ring-black/5
+        dark:ring-white/10
+        hover:ring-black/10
+        dark:hover:ring-white/20
         transition-all 
         duration-300 
-        rounded-xl 
         p-6 
         mb-6
       `}
-      style={{ transition: 'var(--theme-transition)' }}
     >
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="w-full">
@@ -233,8 +241,7 @@ export function WelcomeBar({ isDashboardHome = false }: WelcomeBarProps) {
                   <img
                     src={user.avatar}
                     alt="User Avatar"
-                    className="w-8 h-8 rounded-full"
-                    style={{ border: '1px solid var(--color-border)' }}
+                    className="w-8 h-8 rounded-full border border-white/20"
                   />
                 )}
                 <h1 className="text-lg font-semibold text-[var(--color-text)] flex items-center gap-1">
@@ -250,7 +257,7 @@ export function WelcomeBar({ isDashboardHome = false }: WelcomeBarProps) {
               </div>
               <button
                 onClick={() => setShowStatsEditor(!showStatsEditor)}
-                className="p-2 hover:bg-[var(--color-surfaceHover)] rounded-lg text-[var(--color-textSecondary)] hover:text-[var(--color-text)] transition-all duration-200"
+                className="p-2 hover:bg-white/10 rounded-lg text-[var(--color-textSecondary)] hover:text-[var(--color-text)] transition-all duration-200"
                 title="Customize stats"
               >
                 <Settings className="w-5 h-5" />
@@ -261,7 +268,7 @@ export function WelcomeBar({ isDashboardHome = false }: WelcomeBarProps) {
           <Reorder.Group
             values={displayedStats}
             onReorder={handleReorder}
-            className="grid grid-cols-8 auto-rows-[100px] gap-2 list-none"
+            className="grid grid-cols-8 auto-rows-[100px] gap-4"
             layoutScroll
             as="div"
             style={{
@@ -321,42 +328,51 @@ export function WelcomeBar({ isDashboardHome = false }: WelcomeBarProps) {
                         className={`
                           w-full
                           h-full 
-                          bg-[color-mix(in_srgb,var(--color-background)_90%,var(--color-surface))]
-                          dark:bg-gray-800/20
+                          bg-white/20
+                          dark:bg-white/5
                           backdrop-blur-xl 
                           ${size.padding} 
                           rounded-lg 
-                          border 
-                          border-[var(--color-border)] 
-                          hover:border-[var(--color-accent)] 
+                          border-[1.5px]
+                          border-white/40
+                          dark:border-white/30
+                          hover:border-[var(--color-accent)]
                           transition-all 
                           duration-300 
                           cursor-pointer
                           ${size.height}
+                          shadow-[0_4px_12px_-2px_rgba(0,0,0,0.12),0_4px_8px_-2px_rgba(0,0,0,0.08),0_0_0_1px_rgba(255,255,255,0.1)]
+                          dark:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.4),0_4px_8px_-2px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.1)]
+                          hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.2),0_6px_12px_-4px_rgba(0,0,0,0.15),0_0_0_1px_rgba(255,255,255,0.2)]
+                          dark:hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.5),0_6px_12px_-4px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.2)]
+                          hover:bg-white/30
+                          dark:hover:bg-white/10
+                          hover:-translate-y-1
+                          hover:scale-[1.02]
+                          ring-1
+                          ring-black/5
+                          dark:ring-white/10
+                          hover:ring-black/10
+                          dark:hover:ring-white/20
                         `}
                         whileTap={showStatsEditor ? { scale: 0.95 } : undefined}
-                        style={{ transition: 'var(--theme-transition)' }}
                       >
                         <div className="flex flex-col h-full justify-between">
                           <div className="flex flex-col gap-1.5">
                             <div className="flex items-center gap-2">
-                              <div className={`p-1.5 rounded-md ${getIconBg(stat.type)} backdrop-blur-xl`}>
+                              <div className={`p-1.5 rounded-md ${getIconBg(stat.type)} backdrop-blur-xl shadow-md ring-1 ring-black/5 dark:ring-white/10`}>
                                 {StatIcon && (
                                   <StatIcon
                                     className={`${size.iconSize} ${getIconColor(stat.type)}`}
-                                    style={{ transition: 'var(--theme-transition)' }}
                                   />
                                 )}
                               </div>
                               <div className="flex flex-col">
-                                <p
-                                  className={`${size.titleSize} font-medium text-[var(--color-textSecondary)]`}
-                                  style={{ transition: 'var(--theme-transition)' }}
-                                >
+                                <p className={`${size.titleSize} font-semibold text-[var(--color-text)]`}>
                                   {stat.title}
                                 </p>
                                 {(stat.size === 'medium' || stat.size === 'large') && statValue.description && (
-                                  <p className="text-[10px] text-[var(--color-textSecondary)] line-clamp-1">
+                                  <p className="text-[10px] text-[var(--color-textSecondary)] opacity-90 line-clamp-1">
                                     {statValue.description}
                                   </p>
                                 )}
@@ -367,63 +383,18 @@ export function WelcomeBar({ isDashboardHome = false }: WelcomeBarProps) {
                           <div className="mt-1">
                             <div className="flex items-center gap-2">
                               <div className="flex items-baseline gap-1">
-                                <span
-                                  className={`${size.valueSize} font-semibold text-[var(--color-text)] ${statValue.value === '-' ? 'animate-pulse' : ''}`}
-                                  style={{ transition: 'var(--theme-transition)' }}
-                                >
+                                <span className={`${size.valueSize} font-bold text-[var(--color-text)]`}>
                                   {statValue.value}
                                 </span>
                                 {statValue.change && statValue.change > 0 && statValue.value !== '-' && stat.size !== 'large' && (
-                                  <span
-                                    className="text-xs text-[var(--color-accent)]"
-                                    style={{ transition: 'var(--theme-transition)' }}
-                                  >
+                                  <span className="text-xs text-[var(--color-accent)] font-semibold">
                                     +{statValue.change}
                                   </span>
                                 )}
                               </div>
-
-                              {stat.size === 'large' && (
-                                <>
-                                  {statValue.additionalInfo?.map((info) => (
-                                    <div key={`${info.icon?.name}-${info.value}`} className="flex items-center gap-1">
-                                      {info.icon && (
-                                        <info.icon className="w-3.5 h-3.5 text-[var(--color-textSecondary)]" />
-                                      )}
-                                      <span className="text-xs">
-                                        <span className="text-[var(--color-textSecondary)]">•</span>
-                                        {' '}
-                                        <span className="font-medium text-[var(--color-text)]">{info.value}</span>
-                                      </span>
-                                    </div>
-                                  ))}
-                                  {statValue.metadata?.breakdown && (
-                                    <div className="flex items-center gap-1">
-                                      <span className="text-xs">
-                                        <span className="text-[var(--color-textSecondary)]">•</span>
-                                        {' '}
-                                        <span className="font-medium text-[var(--color-text)]">{statValue.metadata.breakdown.total}</span>
-                                        {' '}
-                                        <span className="text-[var(--color-textSecondary)]">this week</span>
-                                        {statValue.change && statValue.change !== 0 && (
-                                          <>
-                                            {' '}
-                                            <span className="text-[var(--color-accent)]">
-                                              ({statValue.change > 0 ? '+' : ''}{statValue.change} vs last)
-                                            </span>
-                                          </>
-                                        )}
-                                      </span>
-                                    </div>
-                                  )}
-                                </>
-                              )}
                             </div>
                             {statValue.timeframe && (
-                              <span
-                                className="text-[10px] text-[var(--color-textSecondary)] mt-0.5 block"
-                                style={{ transition: 'var(--theme-transition)' }}
-                              >
+                              <span className="text-[10px] text-[var(--color-textSecondary)] opacity-90 mt-0.5 block">
                                 {statValue.timeframe}
                               </span>
                             )}

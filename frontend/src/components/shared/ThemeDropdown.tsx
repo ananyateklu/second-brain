@@ -43,11 +43,11 @@ export function ThemeDropdown() {
   const getDropdownClasses = () => {
     switch (theme) {
       case 'midnight':
-        return 'bg-gray-800/40 hover:bg-gray-800/60';
+        return 'bg-gray-800/40 hover:bg-gray-800/60 text-white';
       case 'dark':
-        return 'bg-gray-800/30 hover:bg-gray-800/50';
+        return 'bg-gray-800/30 hover:bg-gray-800/50 text-white';
       default:
-        return 'bg-white/10 hover:bg-white/20';
+        return 'bg-gray-100 hover:bg-gray-200 text-gray-700';
     }
   };
 
@@ -58,18 +58,39 @@ export function ThemeDropdown() {
       case 'dark':
         return 'bg-gray-800/90 border-gray-700/50';
       default:
-        return 'bg-white/90 border-white/20';
+        return 'bg-white border-gray-200 shadow-lg';
+    }
+  };
+
+  const getItemClasses = (isSelected: boolean) => {
+    if (isSelected) {
+      switch (theme) {
+        case 'midnight':
+          return 'text-primary-400 bg-white/5';
+        case 'dark':
+          return 'text-primary-400 bg-white/5';
+        default:
+          return 'text-primary-600 bg-gray-100';
+      }
+    }
+    
+    switch (theme) {
+      case 'midnight':
+      case 'dark':
+        return 'text-white/90 hover:bg-white/10';
+      default:
+        return 'text-gray-700 hover:bg-gray-100';
     }
   };
 
   return (
     <div 
-      className="relative"
+      className="relative z-[9999]"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       <button
-        className={`p-2 rounded-full ${getDropdownClasses()} text-white transition-all duration-200 backdrop-blur-sm`}
+        className={`p-2 rounded-full ${getDropdownClasses()} transition-all duration-200 backdrop-blur-sm`}
         aria-label="Change theme"
         aria-expanded={isOpen}
       >
@@ -83,7 +104,7 @@ export function ThemeDropdown() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className={`absolute right-0 mt-2 py-2 w-40 rounded-lg shadow-lg border backdrop-blur-lg ${getMenuClasses()}`}
+            className={`absolute right-0 mt-2 py-2 w-40 rounded-lg shadow-lg border backdrop-blur-lg z-[9999] ${getMenuClasses()}`}
           >
             {themeOptions.map((option) => {
               const Icon = option.icon;
@@ -94,15 +115,9 @@ export function ThemeDropdown() {
                     setTheme(option.name);
                     setIsOpen(false);
                   }}
-                  className={`w-full px-4 py-2 text-left flex items-center gap-2 transition-colors ${
-                    theme === option.name
-                      ? theme === 'midnight'
-                        ? 'text-primary-400 bg-white/5'
-                        : 'text-primary-600 bg-white/10'
-                      : 'text-white/90 hover:bg-white/10'
-                  }`}
+                  className={`w-full px-4 py-2 text-left flex items-center gap-2 transition-colors ${getItemClasses(theme === option.name)}`}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className={`w-4 h-4 ${theme === 'light' ? 'text-gray-700' : 'text-current'}`} />
                   <span className="text-sm font-medium">{option.label}</span>
                 </button>
               );
