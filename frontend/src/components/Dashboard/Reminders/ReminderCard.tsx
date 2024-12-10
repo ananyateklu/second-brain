@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, memo } from 'react';
-import { Calendar, Tag as TagIcon, Clock, AlertCircle, CheckSquare, Square, Bell, Type, Lightbulb } from 'lucide-react';
+import { Calendar, Tag as TagIcon, AlertCircle, CheckSquare, Square, Bell, Type, Lightbulb } from 'lucide-react';
 import { Reminder, useReminders } from '../../../contexts/remindersContextUtils';
 import { EditReminderModal } from './EditReminderModal/index';
 import { useTheme } from '../../../contexts/themeContextUtils';
@@ -57,17 +57,19 @@ export function ReminderCard({
   );
 
   const containerClasses = useMemo(() => {
+    const getBackgroundColor = () => {
+      if (theme === 'dark') return 'bg-gray-900/30';
+      if (theme === 'midnight') return 'bg-white/5';
+      return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]';
+    };
+
     const base = `
       relative group w-full
       ${isSelected ? 'ring-2 ring-[var(--color-accent)]' : ''}
-      ${theme === 'dark'
-        ? 'bg-gray-900/30'
-        : theme === 'midnight'
-          ? 'bg-white/5'
-          : 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]'} 
+      ${getBackgroundColor()}
       backdrop-blur-xl 
-      border-[0.25px] border-purple-200/30 dark:border-purple-700/30
-      hover:border-purple-400/50 dark:hover:border-purple-500/50
+      border-[0.25px] border-green-200/30 dark:border-green-700/30
+      hover:border-green-400/50 dark:hover:border-green-500/50
       transition-all duration-300 
       rounded-lg
       shadow-[0_4px_12px_-2px_rgba(0,0,0,0.12),0_4px_8px_-2px_rgba(0,0,0,0.08)]
@@ -109,15 +111,17 @@ export function ReminderCard({
   const remainingCount = useMemo(() => Math.max(0, allItems.length - MAX_VISIBLE_ITEMS), [allItems.length, MAX_VISIBLE_ITEMS]);
 
   const itemColorClasses = useCallback((type: string) => {
-    if (type === 'tag') return isDark ? 'bg-purple-900/30 text-purple-400' : 'bg-purple-100 text-purple-600';
+    if (type === 'tag') return isDark
+      ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)] border-[0.5px] border-[var(--color-accent)]'
+      : 'bg-[var(--color-accent)]/10 text-[var(--color-accent)] border border-[var(--color-accent)]/30';
     if (type === 'idea') return isDark ? 'bg-amber-900/30 text-amber-400' : 'bg-amber-100 text-amber-600';
     return isDark ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-600';
   }, [isDark]);
 
   const itemIcon = useCallback((type: string) => {
-    if (type === 'tag') return <TagIcon className="w-2.5 h-2.5 flex-shrink-0" />;
-    if (type === 'idea') return <Lightbulb className="w-2.5 h-2.5 flex-shrink-0" />;
-    return <Type className="w-2.5 h-2.5 flex-shrink-0" />;
+    if (type === 'tag') return <TagIcon className="w-3 h-3 flex-shrink-0" />;
+    if (type === 'idea') return <Lightbulb className="w-3 h-3 flex-shrink-0" />;
+    return <Type className="w-3 h-3 flex-shrink-0" />;
   }, []);
 
   const checkboxMemo = useMemo(() => (
@@ -168,7 +172,7 @@ export function ReminderCard({
           <div className="px-3 py-2.5 h-full flex items-center gap-3">
             {checkboxMemo}
             <div className="flex-1 min-w-0 flex items-center gap-4">
-              <div className="min-w-[200px] max-w-[300px]">
+              <div className="min-w-[200px] max-w-[300px] flex-shrink overflow-hidden">
                 <h3 className={titleClasses}>{reminder.title}</h3>
                 {reminder.description && (
                   <p className={descriptionClasses}>{reminder.description}</p>
@@ -180,10 +184,10 @@ export function ReminderCard({
             </div>
           </div>
         ) : (
-          <div className="p-3 h-full flex flex-col">
+          <div className="p-3 h-[180px] flex flex-col">
             <div className="flex items-start gap-2 mb-2">
               {checkboxMemo}
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 overflow-hidden">
                 <h3 className={titleClasses}>{reminder.title}</h3>
                 {reminder.description && (
                   <p className={`mt-0.5 ${descriptionClasses}`}>{reminder.description}</p>
@@ -192,14 +196,14 @@ export function ReminderCard({
               {statusBadgesMemo}
             </div>
 
-            <div className="flex-1 flex flex-col min-h-0">
-              <div className="flex-1 overflow-hidden">
-                <div className="min-h-[44px] max-h-[66px] overflow-hidden">
+            <div className="flex-1 flex flex-col justify-between min-h-0">
+              <div className="overflow-hidden">
+                <div className="h-[56px] overflow-hidden">
                   {tagsMemo}
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-3 mt-auto border-t border-[var(--color-border)]">
+              <div className="flex items-center justify-between mt-2 pt-2 border-t border-[var(--color-border)]">
                 {metadataMemo}
                 {!reminder.isSnoozed && !reminder.isCompleted && context === 'default' && (
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -251,19 +255,16 @@ export function ReminderCard({
 
 // Memoized subcomponents
 const Checkbox = memo(function Checkbox({ reminder, context, toggleReminderCompletion, isDark }: CheckboxProps) {
-  const getCheckboxIcon = () => {
-    if (context !== 'default') return <Bell className="w-3.5 h-3.5" />;
-    return reminder.isCompleted ? <CheckSquare className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />;
-  };
+  const hasTag = reminder.tags && reminder.tags.length > 0;
 
   const colorVariants = {
     dark: {
-      completed: 'bg-green-900/30 text-green-400',
-      pending: 'text-purple-400'
+      completed: hasTag ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]' : 'bg-purple-900/30 text-purple-400',
+      pending: hasTag ? 'text-[var(--color-accent)]' : 'text-purple-400'
     },
     light: {
-      completed: 'bg-green-100 text-green-600',
-      pending: 'text-purple-600'
+      completed: hasTag ? 'bg-[var(--color-accent)]/10 text-[var(--color-accent)]' : 'bg-purple-100 text-purple-600',
+      pending: hasTag ? 'text-[var(--color-accent)]' : 'text-purple-600'
     }
   };
 
@@ -281,24 +282,39 @@ const Checkbox = memo(function Checkbox({ reminder, context, toggleReminderCompl
       }}
       className={`flex-shrink-0 p-1.5 rounded transition-colors ${colorClasses}`}
     >
-      {getCheckboxIcon()}
+      {reminder.isCompleted ? (
+        <CheckSquare className="w-3.5 h-3.5" />
+      ) : (
+        <Square className="w-3.5 h-3.5" />
+      )}
     </button>
   );
 });
 
 const StatusBadges = memo(function StatusBadges({ isOverdue, isSnoozed, isDark }: StatusBadgesProps) {
   if (!isOverdue && !isSnoozed) return null;
+
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-1.5">
       {isOverdue && (
-        <span className={`flex items-center gap-0.5 px-1.5 py-0.5 text-[11px] font-medium rounded ${isDark ? 'bg-red-900/30 text-red-400' : 'bg-red-100 text-red-600'} whitespace-nowrap`}>
+        <span className={`
+          flex items-center gap-0.5 px-1.5 py-0.5 text-[11px] font-medium rounded whitespace-nowrap
+          ${isDark
+            ? 'bg-red-900/30 text-red-400 border-[0.5px] border-red-500/50'
+            : 'bg-red-100 text-red-600 border border-red-200'}
+        `}>
           <AlertCircle className="w-3 h-3" />
           Overdue
         </span>
       )}
       {isSnoozed && (
-        <span className={`flex items-center gap-0.5 px-1.5 py-0.5 text-[11px] font-medium rounded ${isDark ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-600'} whitespace-nowrap`}>
-          <Clock className="w-3 h-3" />
+        <span className={`
+          flex items-center gap-0.5 px-1.5 py-0.5 text-[11px] font-medium rounded whitespace-nowrap
+          ${isDark
+            ? 'bg-blue-900/30 text-blue-400 border-[0.5px] border-blue-500/50'
+            : 'bg-blue-100 text-blue-600 border border-blue-200'}
+        `}>
+          <Bell className="w-3 h-3" />
           Snoozed
         </span>
       )}
@@ -310,25 +326,24 @@ const TagList = memo(function TagList({ visibleItems, remainingCount, itemColorC
   if (visibleItems.length === 0) return null;
   return (
     <div className={`
-      flex flex-wrap gap-1
+      flex flex-wrap gap-1.5
       ${viewMode === 'list' ? 'items-center' : 'items-start'}
-      ${viewMode === 'grid' ? 'max-h-[44px]' : ''}
       min-h-[20px] overflow-hidden
     `}>
       {visibleItems.map(item => (
         <span
           key={item.id}
           className={`
-            inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap
+            inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap h-[22px]
             ${itemColorClasses(item.type)}
           `}
         >
           {itemIcon(item.type)}
-          <span className="truncate max-w-[120px]">{item.title}</span>
+          <span className="truncate max-w-[120px] leading-none">{item.title}</span>
         </span>
       ))}
       {remainingCount > 0 && (
-        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] font-medium bg-[var(--color-secondary)] text-[var(--color-textSecondary)] whitespace-nowrap">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap h-[22px] bg-[var(--color-surface)] text-[var(--color-textSecondary)] border border-[var(--color-border)]">
           +{remainingCount} more
         </span>
       )}
@@ -339,19 +354,21 @@ const TagList = memo(function TagList({ visibleItems, remainingCount, itemColorC
 const Metadata = memo(function Metadata({ reminder }: MetadataProps) {
   return (
     <div className="flex items-center gap-2 text-[11px] text-[var(--color-textSecondary)]">
-      <div className="flex items-center gap-1">
-        <Calendar className="w-3 h-3" />
-        <span className="whitespace-nowrap">
-          {new Date(reminder.dueDateTime).toLocaleString(undefined, {
-            dateStyle: 'short',
-            timeStyle: 'short'
-          })}
-        </span>
-      </div>
-      {reminder.repeatInterval && (
+      {reminder.dueDateTime && (
         <div className="flex items-center gap-1">
-          <Clock className="w-3 h-3" />
-          <span className="capitalize whitespace-nowrap">{reminder.repeatInterval}</span>
+          <Calendar className="w-3 h-3" />
+          <span className="whitespace-nowrap">
+            {new Date(reminder.dueDateTime).toLocaleString(undefined, {
+              dateStyle: 'short',
+              timeStyle: 'short'
+            })}
+          </span>
+        </div>
+      )}
+      {reminder.linkedItems && reminder.linkedItems.length > 0 && (
+        <div className="flex items-center gap-1">
+          <Bell className="w-3 h-3" />
+          <span>{reminder.linkedItems.length} linked</span>
         </div>
       )}
     </div>

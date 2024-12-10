@@ -24,8 +24,8 @@ export function AddLinkModal({ isOpen, onClose, taskId, onLinkAdded }: AddLinkMo
 
   const filteredItems = notes.filter(item => {
     const isIdea = item.tags.includes('idea');
-    const isAlreadyLinked = task.linkedItems.some(item => 
-      item.id === item.id && item.type === (isIdea ? 'idea' : 'note')
+    const isAlreadyLinked = task.linkedItems.some(linkedItem => 
+      linkedItem.id === item.id && linkedItem.type === (isIdea ? 'idea' : 'note')
     );
 
     return !isAlreadyLinked && // Don't show already linked items
@@ -39,11 +39,15 @@ export function AddLinkModal({ isOpen, onClose, taskId, onLinkAdded }: AddLinkMo
   const handleAddLink = async (itemId: string) => {
     setIsLoading(true);
     try {
-      const isIdea = notes.find(n => n.id === itemId)?.tags.includes('idea');
+      const note = notes.find(n => n.id === itemId);
+      if (!note) return;
+      
+      const isIdea = note.tags.includes('idea');
       await addTaskLink({
         taskId,
         linkedItemId: itemId,
-        itemType: isIdea ? 'idea' : 'note'
+        itemType: isIdea ? 'idea' : 'note',
+        description: ''
       });
       onLinkAdded?.();
       onClose();
@@ -112,13 +116,13 @@ export function AddLinkModal({ isOpen, onClose, taskId, onLinkAdded }: AddLinkMo
                     className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-dark-hover rounded-lg transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <div className={`p-1.5 rounded-lg ${isIdea
-                        ? 'bg-amber-100 dark:bg-amber-900/30'
-                        : 'bg-blue-100 dark:bg-blue-900/30'
+                        ? 'bg-[var(--color-idea)]/10'
+                        : 'bg-[var(--color-note)]/10'
                       }`}>
                       {isIdea ? (
-                        <Lightbulb className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                        <Lightbulb className="w-4 h-4 text-[var(--color-idea)]" />
                       ) : (
-                        <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                        <FileText className="w-4 h-4 text-[var(--color-note)]" />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">

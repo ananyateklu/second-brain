@@ -41,16 +41,28 @@ export function DashboardHome() {
     setSelectedNote(note);
   };
 
+  const getBackgroundClass = (theme: string) => {
+    if (theme === 'dark') return 'bg-gray-900/30'
+    if (theme === 'midnight') return 'bg-[#1e293b]/30'
+    return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]'
+  }
+
+  const getButtonTextClass = (theme: string) => {
+    if (theme === 'dark') return 'text-emerald-400 hover:text-emerald-300'
+    if (theme === 'midnight') return 'text-emerald-300 hover:text-emerald-200'
+    return 'text-emerald-600 hover:text-emerald-500'
+  }
+
   return (
     <div
-      className="space-y-8 px-1"
+      className="space-y-8 px-4 py-4 w-full max-w-[1800px] mx-auto overflow-visible"
       style={{
-        contain: 'content'
+        contain: 'paint'
       }}
     >
       {/* Greeting Section */}
       <div
-        className="shadow-sm rounded-xl transition-all duration-300 overflow-visible"
+        className="shadow-sm rounded-xl transition-all duration-300 overflow-visible mx-6"
         data-type="welcome-section"
       >
         <WelcomeSection
@@ -77,11 +89,7 @@ export function DashboardHome() {
           relative 
           overflow-hidden 
           rounded-2xl 
-          ${theme === 'dark'
-            ? 'bg-gray-900/30'
-            : theme === 'midnight'
-              ? 'bg-[#1e293b]/30'
-              : 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]'} 
+          ${getBackgroundClass(theme)} 
           backdrop-blur-xl 
           border-[0.5px] 
           border-white/10
@@ -92,6 +100,7 @@ export function DashboardHome() {
           transition-all 
           duration-300 
           p-6
+          mx-6
         `}>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -106,12 +115,7 @@ export function DashboardHome() {
               onClick={() => navigate('/dashboard/notes')}
               className={`
                 flex items-center gap-1 text-sm 
-                ${theme === 'dark'
-                  ? 'text-emerald-400 hover:text-emerald-300'
-                  : theme === 'midnight'
-                    ? 'text-emerald-300 hover:text-emerald-200'
-                    : 'text-emerald-600 hover:text-emerald-500'
-                } 
+                ${getButtonTextClass(theme)} 
                 transition-colors duration-200
               `}
             >

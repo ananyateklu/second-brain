@@ -50,17 +50,17 @@ export function LinkedItemsPanel({
                     <div className="shrink-0 p-2 bg-[var(--color-idea)]/10 rounded-lg">
                       <Lightbulb className="w-4 h-4 text-[var(--color-idea)]" />
                     </div>
-                  ) : (
+                  ) : item.type === 'note' ? (
                     <div className="shrink-0 p-2 bg-[var(--color-note)]/10 rounded-lg">
                       <Type className="w-4 h-4 text-[var(--color-note)]" />
                     </div>
-                  )}
+                  ) : null}
                   <div className="flex-1 min-w-0">
                     <h6 className="font-medium text-[var(--color-text)] truncate">
                       {item.title}
                     </h6>
                     <p className="text-xs text-[var(--color-textSecondary)] mt-0.5">
-                      {item.type === 'idea' ? 'Idea' : 'Note'}
+                      {item.type === 'idea' ? 'Idea' : item.type === 'note' ? 'Note' : item.type}
                     </p>
                   </div>
                   <button

@@ -20,7 +20,7 @@ interface Filters {
   tags: string[];
 }
 
-type FilterValue = string | string[] | boolean | 'createdAt' | 'updatedAt' | 'title' | 'asc' | 'desc';
+type FilterValue = string | string[] | boolean;
 
 const defaultFilters: Filters = {
   search: '',
@@ -85,6 +85,15 @@ export function IdeasPage() {
     setFilters(defaultFilters);
   };
 
+  const getViewModeButtonClass = (mode: 'grid' | 'list' | 'mindmap') => {
+    const baseClasses = "p-2 rounded-lg border border-gray-200/30 dark:border-gray-700/30 transition-all";
+    return `${baseClasses} ${
+      viewMode === mode
+        ? 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400'
+        : 'bg-white/20 dark:bg-gray-800/20 hover:bg-white/30 dark:hover:bg-gray-800/30 text-gray-900 dark:text-white'
+    }`;
+  };
+
   const handleIdeaClick = (ideaId: string) => {
     const idea = notes.find(note => note.id === ideaId);
     if (idea) {
@@ -92,14 +101,48 @@ export function IdeasPage() {
     }
   };
 
+  const renderContent = () => {
+    if (viewMode === 'list') {
+      return (
+        <div className="space-y-4 px-0.5">
+          {filteredIdeas.map(idea => (
+            <IdeaCard 
+              key={idea.id}
+              idea={idea} 
+              viewMode="list"
+              onClick={() => handleIdeaClick(idea.id)}
+            />
+          ))}
+        </div>
+      );
+    }
+    
+    if (viewMode === 'grid') {
+      return (
+        <div className={cardGridStyles}>
+          {filteredIdeas.map(idea => (
+            <IdeaCard 
+              key={idea.id}
+              idea={idea} 
+              viewMode="grid"
+              onClick={() => handleIdeaClick(idea.id)}
+            />
+          ))}
+        </div>
+      );
+    }
+    
+    return <IdeasMindMap ideas={filteredIdeas} onIdeaClick={handleIdeaClick} />;
+  };
+
   return (
     <div className="min-h-screen overflow-x-hidden bg-fixed">
-      {/* Background gradient */}
-      <div className="fixed inset-0 bg-fixed bg-gradient-to-br from-[var(--color-background)] to-[var(--color-surface)] -z-10" />
+      {/* Background */}
+      <div className="fixed inset-0 bg-[var(--color-background)] -z-10" />
 
-      <div className="space-y-8 relative">
+      <div className="px-6 space-y-8 relative">
         {/* Page Header with gradient overlay */}
-        <div className="relative overflow-hidden rounded-xl bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-sm">
+        <div className="relative overflow-hidden rounded-xl bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-[4px_0_24px_-2px_rgba(0,0,0,0.12),8px_0_16px_-4px_rgba(0,0,0,0.08)] dark:shadow-[4px_0_24px_-2px_rgba(0,0,0,0.3),8px_0_16px_-4px_rgba(0,0,0,0.2)]">
           <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-transparent" />
           <div className="relative p-6">
             <div className="flex flex-col sm:flex-row gap-6 justify-between">
@@ -145,33 +188,21 @@ export function IdeasPage() {
           <div className="flex gap-2">
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-lg border border-[var(--color-border)] transition-all ${
-                viewMode === 'grid'
-                  ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
-                  : 'bg-[var(--color-background)] hover:bg-[var(--color-surface)] text-[var(--color-textSecondary)]'
-              }`}
+              className={getViewModeButtonClass('grid')}
               title="Grid View"
             >
               <Grid className="w-5 h-5" />
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`p-2 rounded-lg border border-[var(--color-border)] transition-all ${
-                viewMode === 'list'
-                  ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
-                  : 'bg-[var(--color-background)] hover:bg-[var(--color-surface)] text-[var(--color-textSecondary)]'
-              }`}
+              className={getViewModeButtonClass('list')}
               title="List View"
             >
               <List className="w-5 h-5" />
             </button>
             <button
               onClick={() => setViewMode('mindmap')}
-              className={`p-2 rounded-lg border border-[var(--color-border)] transition-all ${
-                viewMode === 'mindmap'
-                  ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
-                  : 'bg-[var(--color-background)] hover:bg-[var(--color-surface)] text-[var(--color-textSecondary)]'
-              }`}
+              className={getViewModeButtonClass('mindmap')}
               title="Mind Map View"
             >
               <Network className="w-5 h-5" />
@@ -181,12 +212,12 @@ export function IdeasPage() {
 
         {/* Filters Panel */}
         {showFilters && (
-          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] shadow-sm rounded-xl p-4">
+          <div className="p-4 rounded-lg border border-gray-200/30 dark:border-gray-700/30 bg-white/20 dark:bg-gray-800/20 shadow-lg">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-[var(--color-text)]">Filters</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Filters</h3>
               <button
                 onClick={clearFilters}
-                className="text-sm text-[var(--color-textSecondary)] hover:text-[var(--color-text)]"
+                className="text-sm text-gray-600 hover:text-yellow-600 dark:text-gray-400 dark:hover:text-yellow-400"
               >
                 Clear all
               </button>
@@ -202,33 +233,7 @@ export function IdeasPage() {
 
         {/* Ideas Content */}
         <div className="min-h-[500px]">
-          {viewMode === 'list' ? (
-            <div className="space-y-4 px-0.5">
-              {filteredIdeas.map(idea => (
-                <div
-                  key={idea.id}
-                  onClick={() => handleIdeaClick(idea.id)}
-                  className="cursor-pointer w-full"
-                >
-                  <IdeaCard idea={idea} viewMode="list" />
-                </div>
-              ))}
-            </div>
-          ) : viewMode === 'grid' ? (
-            <div className={cardGridStyles}>
-              {filteredIdeas.map(idea => (
-                <div
-                  key={idea.id}
-                  onClick={() => handleIdeaClick(idea.id)}
-                  className="cursor-pointer w-full"
-                >
-                  <IdeaCard idea={idea} viewMode="grid" />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <IdeasMindMap ideas={filteredIdeas} onIdeaClick={handleIdeaClick} />
-          )}
+          {renderContent()}
 
           {filteredIdeas.length === 0 && (
             <div className="flex flex-col items-center justify-center h-[400px] text-center">

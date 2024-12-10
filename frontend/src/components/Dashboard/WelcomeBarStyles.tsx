@@ -12,20 +12,22 @@ interface StyledWelcomeBarProps {
   className?: string;
 }
 
+const getContainerBackground = (theme: string) => {
+  if (theme === 'dark') return 'bg-gray-900/30'
+  if (theme === 'midnight') return 'bg-[#1e293b]/30'
+  return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]'
+}
+
 export const StyledWelcomeBarContainer = ({ children, className = '' }: StyledWelcomeBarProps) => {
   const { theme } = useTheme();
-  
+
   return (
     <div
       className={`
         relative 
         overflow-hidden 
         rounded-2xl 
-        ${theme === 'dark'
-          ? 'bg-gray-900/30'
-          : theme === 'midnight'
-            ? 'bg-[#1e293b]/30'
-            : 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]'} 
+        ${getContainerBackground(theme)} 
         backdrop-blur-xl 
         border-[0.5px] 
         border-white/10
@@ -36,6 +38,7 @@ export const StyledWelcomeBarContainer = ({ children, className = '' }: StyledWe
         transition-all 
         duration-300 
         p-6 
+        mx-6 
         mb-6
         ${className}
       `}
@@ -81,14 +84,14 @@ export const StyledSettingsButton = ({ onClick, title }: { onClick: () => void; 
   </button>
 );
 
-export const StyledStatsGrid = <T extends { id: string }>({ 
-  children, 
-  onReorder, 
-  values 
-}: { 
-  children: ReactNode; 
-  onReorder: (newOrder: T[]) => void; 
-  values: T[] 
+export const StyledStatsGrid = <T extends { id: string }>({
+  children,
+  onReorder,
+  values
+}: {
+  children: ReactNode;
+  onReorder: (newOrder: T[]) => void;
+  values: T[]
 }) => (
   <Reorder.Group
     values={values}
@@ -128,13 +131,13 @@ interface StyledStatCardProps {
   onToggleStat?: (statId: string) => void;
 }
 
-export const StyledStatCard = ({ 
-  stat, 
-  statValue, 
-  StatIcon, 
-  showStatsEditor, 
+export const StyledStatCard = ({
+  stat,
+  statValue,
+  StatIcon,
+  showStatsEditor,
   onSizeChange,
-  onToggleStat 
+  onToggleStat
 }: StyledStatCardProps) => {
   const size = sizeClasses[stat.size || 'medium'];
   const { theme } = useTheme();
@@ -144,11 +147,7 @@ export const StyledStatCard = ({
       className={`
         w-full
         h-full 
-        ${theme === 'dark'
-          ? 'bg-gray-900/30'
-          : theme === 'midnight'
-            ? 'bg-[#1e293b]/30'
-            : 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]'} 
+        ${getContainerBackground(theme)} 
         backdrop-blur-xl 
         ${size.padding} 
         rounded-lg 
@@ -174,7 +173,20 @@ export const StyledStatCard = ({
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className={`p-1.5 rounded-md ${getIconBg(stat.type)} backdrop-blur-xl shadow-md ring-1 ring-black/5 dark:ring-white/10`}>
+              <div className={`
+                p-1.5 
+                rounded-md 
+                ${getIconBg(stat.type)} 
+                backdrop-blur-xl 
+                shadow-md 
+                ring-1 
+                ring-black/5 
+                dark:ring-white/10 
+                midnight:ring-white/10
+                dark:shadow-[0_2px_4px_rgba(0,0,0,0.2)] 
+                midnight:shadow-[0_2px_4px_rgba(0,0,0,0.2)]
+                bg-[var(--color-surface)]/10
+              `}>
                 {StatIcon && (
                   <StatIcon
                     className={`${size.iconSize} ${getIconColor(stat.type)}`}
@@ -249,8 +261,8 @@ export const StyledStatCard = ({
 
             {statValue.additionalInfo && stat.size !== 'small' && (
               <div className="flex items-center gap-3">
-                {statValue.additionalInfo.map((info, index) => (
-                  <div key={index} className="flex items-center gap-1">
+                {statValue.additionalInfo.map((info) => (
+                  <div key={`${info.value}-${info.icon?.name}`} className="flex items-center gap-1">
                     {info.icon && (
                       <info.icon className="w-3.5 h-3.5 text-[var(--color-textSecondary)]" />
                     )}
@@ -284,11 +296,10 @@ export const StyledStatCard = ({
               e.stopPropagation();
               onSizeChange?.(stat.id, 'small');
             }}
-            className={`p-0.5 rounded-md transition-all duration-200 ${
-              stat.size === 'small'
+            className={`p-0.5 rounded-md transition-all duration-200 ${stat.size === 'small'
                 ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
                 : 'hover:bg-[var(--color-surfaceHover)] text-[var(--color-textSecondary)] hover:text-[var(--color-text)]'
-            }`}
+              }`}
             title="Small"
           >
             <LayoutGrid className="w-3.5 h-3.5" />
@@ -298,11 +309,10 @@ export const StyledStatCard = ({
               e.stopPropagation();
               onSizeChange?.(stat.id, 'medium');
             }}
-            className={`p-0.5 rounded-md transition-all duration-200 ${
-              stat.size === 'medium'
+            className={`p-0.5 rounded-md transition-all duration-200 ${stat.size === 'medium'
                 ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
                 : 'hover:bg-[var(--color-surfaceHover)] text-[var(--color-textSecondary)] hover:text-[var(--color-text)]'
-            }`}
+              }`}
             title="Medium"
           >
             <Columns className="w-3.5 h-3.5" />
@@ -312,11 +322,10 @@ export const StyledStatCard = ({
               e.stopPropagation();
               onSizeChange?.(stat.id, 'large');
             }}
-            className={`p-0.5 rounded-md transition-all duration-200 ${
-              stat.size === 'large'
+            className={`p-0.5 rounded-md transition-all duration-200 ${stat.size === 'large'
                 ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
                 : 'hover:bg-[var(--color-surfaceHover)] text-[var(--color-textSecondary)] hover:text-[var(--color-text)]'
-            }`}
+              }`}
             title="Large"
           >
             <Layout className="w-3.5 h-3.5" />
@@ -345,16 +354,16 @@ export const StyledStatCard = ({
       )}
     </motion.div>
   );
-}; 
+};
 
-export const StyledReorderItem = <T extends { id: string }>({ 
-  children, 
-  value, 
-  colSpan, 
-  showStatsEditor 
-}: { 
-  children: ReactNode; 
-  value: T; 
+export const StyledReorderItem = <T extends { id: string }>({
+  children,
+  value,
+  colSpan,
+  showStatsEditor
+}: {
+  children: ReactNode;
+  value: T;
   colSpan: number;
   showStatsEditor: boolean;
 }) => (
@@ -390,10 +399,10 @@ export const StyledReorderItem = <T extends { id: string }>({
   </Reorder.Item>
 );
 
-export const StyledStatContainer = ({ 
+export const StyledStatContainer = ({
   children,
-  showStatsEditor 
-}: { 
+  showStatsEditor
+}: {
   children: ReactNode;
   showStatsEditor: boolean;
 }) => (
@@ -408,7 +417,7 @@ export const StyledStatContainer = ({
   >
     {children}
   </motion.div>
-); 
+);
 
 export const StyledFlexContainer = ({ children }: { children: ReactNode }) => (
   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

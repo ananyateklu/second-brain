@@ -250,95 +250,75 @@ namespace SecondBrain.Api.Controllers
             var userId = User.GetUserId();
             _logger.LogInformation("Adding task link. TaskId: {TaskId}, LinkedItemId: {LinkedItemId}, UserId: {UserId}", taskId, request.LinkedItemId, userId);
 
-            var task = await _context.Tasks
-                .Include(t => t.TaskLinks)
-                .FirstOrDefaultAsync(t => t.Id == taskId && t.UserId == userId);
+            var (task, linkedItem) = await GetTaskAndLinkedItem(taskId, request.LinkedItemId, userId);
+            if (task == null) return NotFound();
+            if (linkedItem == null) return NotFound("Linked item not found");
 
-            if (task == null)
-            {
-                _logger.LogWarning("Task not found. TaskId: {TaskId}, UserId: {UserId}", taskId, userId);
-                return NotFound();
-            }
-
-            var linkedItem = await _context.Notes
-                .FirstOrDefaultAsync(n => n.Id == request.LinkedItemId && n.UserId == userId);
-
-            if (linkedItem == null)
-            {
-                _logger.LogWarning("Linked item not found. LinkedItemId: {LinkedItemId}, UserId: {UserId}", request.LinkedItemId, userId);
-                return NotFound("Linked item not found");
-            }
-
-            // Check if link already exists (including soft-deleted ones)
             var existingLink = await _context.TaskLinks
                 .FirstOrDefaultAsync(tl => tl.TaskId == taskId && tl.LinkedItemId == request.LinkedItemId);
 
             if (existingLink != null)
             {
-                if (!existingLink.IsDeleted)
-                {
-                    _logger.LogWarning("Task link already exists and is active. TaskId: {TaskId}, LinkedItemId: {LinkedItemId}", taskId, request.LinkedItemId);
-                    return BadRequest("Task is already linked to this item");
-                }
-
-                // Reactivate the soft-deleted link
-                existingLink.IsDeleted = false;
-                existingLink.DeletedAt = null;
-                existingLink.Description = request.Description; // Update description if provided
-                existingLink.CreatedAt = DateTime.UtcNow;      // Update creation time
-
-                _logger.LogInformation("Reactivating existing task link: {@TaskLink}", existingLink);
+                if (!existingLink.IsDeleted) return BadRequest("Task is already linked to this item");
+                await ReactivateLink(existingLink, linkedItem, request.Description);
             }
             else
             {
-                // Create new link if no existing link found
-                var taskLink = new TaskLink
-                {
-                    TaskId = taskId,
-                    LinkedItemId = request.LinkedItemId,
-                    LinkType = request.LinkType,
-                    Description = request.Description,
-                    CreatedAt = DateTime.UtcNow,
-                    CreatedBy = userId,
-                    IsDeleted = false,
-                    DeletedAt = null
-                };
-
-                _logger.LogInformation("Creating new task link: {@TaskLink}", taskLink);
-                _context.TaskLinks.Add(taskLink);
+                await CreateNewLink(task, linkedItem, userId, request.Description);
             }
 
-            try
+            return await GetUpdatedTaskResponse(taskId);
+        }
+
+        private async Task<(TaskItem? task, Note? linkedItem)> GetTaskAndLinkedItem(string taskId, string linkedItemId, string userId)
+        {
+            var task = await _context.Tasks
+                .Include(t => t.TaskLinks)
+                .FirstOrDefaultAsync(t => t.Id == taskId && t.UserId == userId);
+
+            var linkedItem = await _context.Notes
+                .FirstOrDefaultAsync(n => n.Id == linkedItemId && n.UserId == userId);
+
+            return (task, linkedItem);
+        }
+
+        private async Task ReactivateLink(TaskLink link, Note linkedItem, string? description)
+        {
+            link.IsDeleted = false;
+            link.DeletedAt = null;
+            link.Description = description;
+            link.CreatedAt = DateTime.UtcNow;
+            link.LinkType = linkedItem.Tags != null && linkedItem.Tags.Contains("idea") ? "idea" : "note";
+            await _context.SaveChangesAsync();
+        }
+
+        private async Task CreateNewLink(TaskItem task, Note linkedItem, string userId, string? description)
+        {
+            var taskLink = new TaskLink
             {
-                await _context.SaveChangesAsync();
-                _logger.LogInformation("Task link saved successfully");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error saving task link");
-                return StatusCode(500, new { error = "Failed to save task link" });
-            }
+                TaskId = task.Id,
+                LinkedItemId = linkedItem.Id,
+                LinkType = linkedItem.Tags != null && linkedItem.Tags.Contains("idea") ? "idea" : "note",
+                Description = description,
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = userId,
+                IsDeleted = false,
+                DeletedAt = null
+            };
 
-            // Reload the task with its links
-            try
-            {
-                task = await _context.Tasks
-                    .Include(t => t.TaskLinks.Where(tl => !tl.IsDeleted))
-                        .ThenInclude(tl => tl.LinkedItem)
-                    .FirstAsync(t => t.Id == taskId);
+            _context.TaskLinks.Add(taskLink);
+            await _context.SaveChangesAsync();
+        }
 
-                // Log the task links for debugging
-                _logger.LogInformation("Task links after save: {@TaskLinks}", task.TaskLinks.Select(tl => new { tl.TaskId, tl.LinkedItemId, tl.IsDeleted }));
+        private async Task<IActionResult> GetUpdatedTaskResponse(string taskId)
+        {
+            var task = await _context.Tasks
+                .Include(t => t.TaskLinks.Where(tl => !tl.IsDeleted))
+                    .ThenInclude(tl => tl.LinkedItem)
+                .FirstAsync(t => t.Id == taskId);
 
-                var response = TaskResponse.FromEntity(task);
-                _logger.LogInformation("Task link created successfully. TaskId: {TaskId}, LinkedItemId: {LinkedItemId}, Response: {@Response}", taskId, request.LinkedItemId, response);
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error loading task after saving link");
-                return StatusCode(500, new { error = "Failed to load task after saving link" });
-            }
+            var response = TaskResponse.FromEntity(task);
+            return Ok(response);
         }
 
         [HttpDelete("{taskId}/links/{linkedItemId}")]
@@ -347,17 +327,17 @@ namespace SecondBrain.Api.Controllers
         public async Task<IActionResult> RemoveTaskLink(string taskId, string linkedItemId)
         {
             var userId = User.GetUserId();
-            var taskLink = await _context.TaskLinks
+            var link = await _context.TaskLinks
                 .FirstOrDefaultAsync(tl =>
                     tl.TaskId == taskId &&
                     tl.LinkedItemId == linkedItemId &&
                     tl.Task.UserId == userId);
 
-            if (taskLink == null)
+            if (link == null)
                 return NotFound();
 
-            taskLink.IsDeleted = true;
-            taskLink.DeletedAt = DateTime.UtcNow;
+            link.IsDeleted = true;
+            link.DeletedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
 

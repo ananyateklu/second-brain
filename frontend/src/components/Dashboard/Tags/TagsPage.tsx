@@ -526,65 +526,51 @@ export function TagsPage() {
                             );
                           case 'idea':
                             return (
-                              <div
+                              <IdeaCard
                                 key={item.id}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEditNote(item);
+                                idea={{
+                                  id: item.id,
+                                  title: item.title,
+                                  content: item.content,
+                                  tags: item.tags,
+                                  updatedAt: item.updatedAt,
+                                  createdAt: item.createdAt,
+                                  isIdea: true,
+                                  isFavorite: false,
+                                  isPinned: false,
+                                  isArchived: false,
+                                  isDeleted: false,
+                                  linkedNoteIds: [],
+                                  linkedTasks: [],
+                                  linkedReminders: []
                                 }}
-                                className="cursor-pointer w-full"
-                              >
-                                <IdeaCard
-                                  idea={{
-                                    id: item.id,
-                                    title: item.title,
-                                    content: item.content,
-                                    tags: item.tags,
-                                    updatedAt: item.updatedAt,
-                                    createdAt: item.createdAt,
-                                    isIdea: true,
-                                    isFavorite: false,
-                                    isPinned: false,
-                                    isArchived: false,
-                                    isDeleted: false,
-                                    linkedNoteIds: [],
-                                    linkedTasks: [],
-                                    linkedReminders: []
-                                  }}
-                                  viewMode="grid"
-                                />
-                              </div>
+                                viewMode={viewMode}
+                                onClick={() => handleEditNote(item)}
+                              />
                             );
                           case 'note':
                             return (
-                              <div
+                              <NoteCard
                                 key={item.id}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEditNote(item);
+                                note={{
+                                  id: item.id,
+                                  title: item.title,
+                                  content: item.content,
+                                  tags: item.tags,
+                                  updatedAt: item.updatedAt,
+                                  createdAt: item.createdAt,
+                                  isIdea: false,
+                                  isFavorite: false,
+                                  isPinned: false,
+                                  isArchived: false,
+                                  isDeleted: false,
+                                  linkedNoteIds: [],
+                                  linkedTasks: [],
+                                  linkedReminders: []
                                 }}
-                                className="cursor-pointer w-full"
-                              >
-                                <NoteCard
-                                  note={{
-                                    id: item.id,
-                                    title: item.title,
-                                    content: item.content,
-                                    tags: item.tags,
-                                    updatedAt: item.updatedAt,
-                                    createdAt: item.createdAt,
-                                    isIdea: false,
-                                    isFavorite: false,
-                                    isPinned: false,
-                                    isArchived: false,
-                                    isDeleted: false,
-                                    linkedNoteIds: [],
-                                    linkedTasks: [],
-                                    linkedReminders: []
-                                  }}
-                                  viewMode="grid"
-                                />
-                              </div>
+                                viewMode={viewMode}
+                                onClick={() => handleEditNote(item)}
+                              />
                             );
                         }
                       })}

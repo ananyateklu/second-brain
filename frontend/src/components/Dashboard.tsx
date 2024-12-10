@@ -36,7 +36,7 @@ export function Dashboard() {
   const { isLoading: tasksLoading } = useTasks();
   const { isLoading: remindersLoading } = useReminders();
   const { selectedNote, selectedIdea, setSelectedNote, setSelectedIdea } = useModal();
-  const { colors, theme } = useTheme();
+  const { colors } = useTheme();
 
   const isLoading = notesLoading || tasksLoading || remindersLoading;
 
@@ -68,7 +68,7 @@ export function Dashboard() {
 
         {/* Scrollable Content */}
         <main className="flex-1 overflow-y-auto overflow-x-hidden pt-20 relative">
-          <div className="max-w-[1920px] mx-auto px-6 sm:px-8 lg:px-20 py-8">
+          <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-12 py-8">
             <WelcomeBar />
             <Routes>
               <Route index element={<DashboardHome />} />

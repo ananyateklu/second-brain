@@ -28,49 +28,46 @@ export function FavoritesPage() {
       {/* Background gradient */}
       <div className="fixed inset-0 bg-fixed dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-slate-800 bg-gradient-to-br from-white to-gray-100 -z-10" />
 
-      <div className="flex flex-col h-full p-0.5">
+      <div className="px-6 space-y-8 relative">
         {/* Header */}
-        <div className="flex-none relative overflow-hidden rounded-lg bg-white/20 dark:bg-gray-800/20 border border-white/40 dark:border-white/30 shadow-sm mb-2 backdrop-blur-xl">
+        <div className="relative overflow-hidden rounded-xl bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-[4px_0_24px_-2px_rgba(0,0,0,0.12),8px_0_16px_-4px_rgba(0,0,0,0.08)] dark:shadow-[4px_0_24px_-2px_rgba(0,0,0,0.3),8px_0_16px_-4px_rgba(0,0,0,0.2)]">
           <div className="absolute inset-0 bg-gradient-to-r from-amber-500/10 to-transparent" />
-          <div className="relative px-4 py-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 bg-amber-100/50 dark:bg-amber-900/30 rounded-lg">
-                  <Star className="w-6 h-6 text-amber-600 dark:text-amber-400" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Favorites</h1>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {favoriteNotes.length} items
-                  </p>
-                </div>
+          <div className="relative p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-100/50 dark:bg-amber-900/30 rounded-lg">
+                <Star className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Favorites</h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {favoriteNotes.length} items
+                </p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Main Content Area */}
-        <div className="flex-1 bg-white/20 dark:bg-gray-800/20 border border-white/40 dark:border-white/30 shadow-sm rounded-xl overflow-hidden backdrop-blur-xl">
-          <div className="h-full p-4 overflow-y-auto">
+        <div className="relative overflow-hidden rounded-xl bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-[4px_0_24px_-2px_rgba(0,0,0,0.12),8px_0_16px_-4px_rgba(0,0,0,0.08)] dark:shadow-[4px_0_24px_-2px_rgba(0,0,0,0.3),8px_0_16px_-4px_rgba(0,0,0,0.2)]">
+          <div className="p-6">
             {favoriteNotes.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {favoriteNotes.map(note => (
-                  <div
-                    key={note.id}
-                    onClick={() => handleEditNote(note)}
-                    className="cursor-pointer w-full"
-                  >
-                    {note.isIdea ? (
-                      <IdeaCard 
-                        idea={note} 
-                      />
-                    ) : (
-                      <NoteCard 
-                        note={note}
-                        viewMode="grid"
-                      />
-                    )}
-                  </div>
+                  note.isIdea ? (
+                    <IdeaCard 
+                      key={note.id}
+                      idea={note} 
+                      viewMode="grid"
+                      onClick={() => handleEditNote(note)}
+                    />
+                  ) : (
+                    <NoteCard 
+                      key={note.id}
+                      note={note}
+                      viewMode="grid"
+                      onClick={() => handleEditNote(note)}
+                    />
+                  )
                 ))}
               </div>
             ) : (

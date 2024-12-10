@@ -46,6 +46,7 @@ interface TagListProps {
   itemColorClasses: (type: string) => string;
   itemIcon: (type: string) => JSX.Element;
   viewMode: TaskCardProps['viewMode'];
+  isDark: boolean;
 }
 
 interface MetadataProps {
@@ -98,15 +99,17 @@ export function TaskCard({
 
   const isDark = useMemo(() => theme === 'dark' || theme === 'midnight', [theme]);
 
+  const getBackgroundClass = useMemo(() => {
+    if (theme === 'dark') return 'bg-gray-900/30';
+    if (theme === 'midnight') return 'bg-white/5';
+    return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]';
+  }, [theme]);
+
   const containerClasses = useMemo(() => {
     const base = `
       relative group w-full
       ${isSelected ? 'ring-2 ring-[var(--color-accent)]' : ''}
-      ${theme === 'dark'
-        ? 'bg-gray-900/30'
-        : theme === 'midnight'
-          ? 'bg-white/5'
-          : 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]'} 
+      ${getBackgroundClass}
       backdrop-blur-xl 
       border-[0.25px] border-green-200/30 dark:border-green-700/30
       hover:border-green-400/50 dark:hover:border-green-500/50
@@ -122,7 +125,7 @@ export function TaskCard({
       ${task.status.toLowerCase() === 'completed' ? 'opacity-85' : ''}
     `;
     return base.trim();
-  }, [isSelected, theme, onSelect, onClick, task.status]);
+  }, [isSelected, getBackgroundClass, onSelect, onClick, task.status]);
 
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -148,7 +151,7 @@ export function TaskCard({
     return null;
   }, [contextData?.expiresAt]);
 
-  const MAX_VISIBLE_ITEMS = viewMode === 'list' ? 8 : 7;
+  const MAX_VISIBLE_ITEMS = viewMode === 'list' ? 8 : 5;
 
   const allItems = useMemo(() => [
     ...(task.tags || []).map(tag => ({ type: 'tag', id: tag, title: tag })),
@@ -159,15 +162,23 @@ export function TaskCard({
   const remainingCount = useMemo(() => Math.max(0, allItems.length - MAX_VISIBLE_ITEMS), [allItems.length, MAX_VISIBLE_ITEMS]);
 
   const itemColorClasses = useCallback((type: string) => {
-    if (type === 'tag') return isDark ? 'bg-emerald-900/30 text-emerald-400' : 'bg-emerald-100 text-emerald-600';
-    if (type === 'idea') return isDark ? 'bg-amber-900/30 text-amber-400' : 'bg-amber-100 text-amber-600';
-    return isDark ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-600';
+    if (type === 'tag') return isDark
+      ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)] border-[0.5px] border-[var(--color-accent)]'
+      : 'bg-[var(--color-accent)]/10 text-[var(--color-accent)] border border-[var(--color-accent)]/30';
+    if (type === 'idea') return isDark
+      ? 'bg-[var(--color-idea)]/10 text-[var(--color-idea)] border-[0.5px] border-[var(--color-idea)]'
+      : 'bg-[var(--color-idea)]/10 text-[var(--color-idea)] border border-[var(--color-idea)]/30';
+    if (type === 'note') return isDark
+      ? 'bg-[var(--color-note)]/10 text-[var(--color-note)] border-[0.5px] border-[var(--color-note)]'
+      : 'bg-[var(--color-note)]/10 text-[var(--color-note)] border border-[var(--color-note)]/30';
+    return ''; // Default case
   }, [isDark]);
 
   const itemIcon = useCallback((type: string) => {
-    if (type === 'tag') return <TagIcon className="w-2.5 h-2.5 flex-shrink-0" />;
-    if (type === 'idea') return <Lightbulb className="w-2.5 h-2.5 flex-shrink-0" />;
-    return <Type className="w-2.5 h-2.5 flex-shrink-0" />;
+    if (type === 'tag') return <TagIcon className="w-3 h-3 flex-shrink-0" />;
+    if (type === 'idea') return <Lightbulb className="w-3 h-3 flex-shrink-0" />;
+    if (type === 'note') return <Type className="w-3 h-3 flex-shrink-0" />;
+    return <Type className="w-3 h-3 flex-shrink-0" />; // Default case returns note icon
   }, []);
 
   const checkboxMemo = useMemo(() => (
@@ -193,8 +204,9 @@ export function TaskCard({
       itemColorClasses={itemColorClasses}
       itemIcon={itemIcon}
       viewMode={viewMode}
+      isDark={isDark}
     />
-  ), [visibleItems, remainingCount, itemColorClasses, itemIcon, viewMode]);
+  ), [visibleItems, remainingCount, itemColorClasses, itemIcon, viewMode, isDark]);
 
   const metadataMemo = useMemo(() => (
     <Metadata task={task} />
@@ -285,14 +297,14 @@ export function TaskCard({
               {priorityBadgeMemo}
             </div>
 
-            <div className="flex-1 flex flex-col min-h-0">
-              <div className="flex-1 overflow-hidden">
-                <div className="min-h-[44px] max-h-[66px] overflow-hidden">
+            <div className="flex-1 flex flex-col justify-between min-h-0">
+              <div className="overflow-hidden">
+                <div className="h-[56px] overflow-hidden">
                   {tagsMemo}
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-3 mt-auto border-t border-[var(--color-border)]">
+              <div className="flex items-center justify-between mt-2 pt-2 border-t border-[var(--color-border)]">
                 {metadataMemo}
               </div>
             </div>
@@ -318,14 +330,16 @@ export function TaskCard({
 // Define memoized subcomponents
 
 const Checkbox = memo(function Checkbox({ task, context, updateTask, isDark }: CheckboxProps) {
+  const hasTag = task.tags && task.tags.length > 0;
+
   const colorVariants = {
     dark: {
-      completed: 'bg-green-900/30 text-green-400',
-      pending: 'text-emerald-400'
+      completed: hasTag ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]' : 'bg-green-900/30 text-green-400',
+      pending: hasTag ? 'text-[var(--color-accent)]' : 'text-emerald-400'
     },
     light: {
-      completed: 'bg-green-100 text-green-600',
-      pending: 'text-emerald-600'
+      completed: hasTag ? 'bg-[var(--color-accent)]/10 text-[var(--color-accent)]' : 'bg-green-100 text-green-600',
+      pending: hasTag ? 'text-[var(--color-accent)]' : 'text-emerald-600'
     }
   };
 
@@ -367,29 +381,35 @@ const PriorityBadge = memo(function PriorityBadge({ priority, priorityColorClass
   );
 });
 
-const TagList = memo(function TagList({ visibleItems, remainingCount, itemColorClasses, itemIcon, viewMode }: TagListProps) {
+const TagList = memo(function TagList({ visibleItems, remainingCount, itemColorClasses, itemIcon, viewMode, isDark }: TagListProps) {
   if (visibleItems.length === 0) return null;
   return (
     <div className={`
-      flex flex-wrap gap-1
+      flex flex-wrap gap-1.5
       ${viewMode === 'list' ? 'items-center' : 'items-start'}
-      ${viewMode === 'grid' ? 'max-h-[44px]' : ''}
+      ${viewMode === 'grid' ? 'h-[56px]' : ''}
       min-h-[20px] overflow-hidden
     `}>
       {visibleItems.map(item => (
         <span
           key={item.id}
           className={`
-            inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] font-medium whitespace-nowrap
+            inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap h-[22px]
             ${itemColorClasses(item.type)}
           `}
         >
           {itemIcon(item.type)}
-          <span className="truncate max-w-[120px]">{item.title}</span>
+          <span className="truncate max-w-[120px] leading-none">{item.title}</span>
         </span>
       ))}
       {remainingCount > 0 && (
-        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] font-medium bg-[var(--color-secondary)] text-[var(--color-textSecondary)] whitespace-nowrap">
+        <span className={`
+          inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap h-[22px]
+          ${isDark 
+            ? 'bg-[var(--color-surface)]/80 text-[var(--color-textSecondary)] border-[0.5px] border-[var(--color-border)]'
+            : 'bg-[var(--color-surface)] text-[var(--color-textSecondary)] border border-[var(--color-border)]/30'
+          }
+        `}>
           +{remainingCount} more
         </span>
       )}

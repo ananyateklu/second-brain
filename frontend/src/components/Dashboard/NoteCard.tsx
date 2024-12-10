@@ -5,6 +5,7 @@ import { formatDate } from '../../utils/dateUtils';
 import { Note } from '../../types/note';
 import { formatTimeAgo } from './Recent/utils';
 import { useTheme } from '../../contexts/themeContextUtils';
+import { getIconBg } from '../../utils/dashboardUtils';
 
 // Lazy load the WarningModal so it's only loaded when needed
 const WarningModal = lazy(() => import('../shared/WarningModal').then(module => ({ default: module.WarningModal })));
@@ -110,7 +111,9 @@ export function NoteCard({
   const remainingCount = useMemo(() => Math.max(0, tags.length - MAX_VISIBLE_ITEMS), [tags.length, MAX_VISIBLE_ITEMS]);
 
   const tagClasses = useMemo(() => (
-    isDark ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-600'
+    isDark 
+      ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)] border-[0.5px] border-[var(--color-accent)]' 
+      : 'bg-[var(--color-accent)]/10 text-[var(--color-accent)] border border-[var(--color-accent)]/30'
   ), [isDark]);
 
   const pinButtonClasses = useMemo(() => (
@@ -172,7 +175,7 @@ export function NoteCard({
         <div className="p-2 h-full flex flex-col gap-1.5 relative">
           <div className="flex items-start justify-between gap-1.5">
             <div className="flex items-start gap-1.5 flex-1 min-w-0">
-              <div className="flex-shrink-0 p-1 rounded-lg bg-blue-900/20 backdrop-blur-sm text-blue-300">
+              <div className={`flex-shrink-0 p-1 rounded-lg ${getIconBg('notes')} text-[var(--color-note)] shadow-[0_2px_8px_-2px_rgba(0,0,0,0.12)] dark:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.15)] dark:hover:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.4)] ring-1 ring-black/5 dark:ring-white/10 transition-shadow duration-200`}>
                 <FileText className="w-3 h-3" />
               </div>
               <div className="flex-1 min-w-0">
@@ -220,7 +223,7 @@ export function NoteCard({
                 />
               </div>
             )}
-            <div className="flex-shrink-0 p-1.5 rounded bg-blue-900/20 backdrop-blur-sm text-blue-300 mt-1">
+            <div className={`flex-shrink-0 p-1.5 rounded ${getIconBg('notes')} text-[var(--color-note)] mt-1 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.12)] dark:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.15)] dark:hover:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.4)] ring-1 ring-black/5 dark:ring-white/10 transition-shadow duration-200`}>
               <FileText className="w-3.5 h-3.5" />
             </div>
             <div className="flex-1 min-w-0 flex flex-col gap-2">
@@ -259,7 +262,7 @@ export function NoteCard({
                   className="w-4 h-4 mt-1 text-primary-600 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 rounded focus:ring-primary-500"
                 />
               )}
-              <div className="flex-shrink-0 p-1.5 mt-0.5 rounded bg-blue-900/20 backdrop-blur-sm text-blue-300">
+              <div className={`flex-shrink-0 p-1.5 mt-0.5 rounded ${getIconBg('notes')} text-[var(--color-note)] shadow-[0_2px_8px_-2px_rgba(0,0,0,0.12)] dark:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.15)] dark:hover:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.4)] ring-1 ring-black/5 dark:ring-white/10 transition-shadow duration-200`}>
                 <FileText className="w-3.5 h-3.5" />
               </div>
               <div className="flex-1 min-w-0">
@@ -315,14 +318,14 @@ const TagList = memo(function TagList({ visibleTags, remainingCount, tagClasses 
       {visibleTags.map(tag => (
         <span
           key={tag}
-          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${tagClasses}`}
+          className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] font-medium ${tagClasses}`}
         >
-          <TagIcon className="w-3 h-3 flex-shrink-0" />
+          <TagIcon className="w-2.5 h-2.5 flex-shrink-0" />
           <span className="truncate max-w-[120px]">{tag}</span>
         </span>
       ))}
       {remainingCount > 0 && (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-gray-800 text-gray-400 whitespace-nowrap">
+        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] font-medium bg-[var(--color-secondary)] text-[var(--color-textSecondary)] whitespace-nowrap">
           +{remainingCount} more
         </span>
       )}

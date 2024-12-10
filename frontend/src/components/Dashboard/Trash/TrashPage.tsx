@@ -64,21 +64,37 @@ export function TrashPage() {
   return (
     <div className="min-h-screen overflow-x-hidden bg-fixed">
       {/* Background gradient */}
-      <div className="fixed inset-0 bg-fixed dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-slate-800 bg-gradient-to-br from-white to-gray-100 -z-10" />
+      <div className="fixed inset-0 bg-fixed bg-gradient-to-br from-[var(--color-background)] to-[var(--color-surface)] -z-10" />
 
-      <div className="space-y-8 relative">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Trash</h1>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowEmptyTrashDialog(true)}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-              disabled={trashedItems.length === 0}
-            >
-              <Trash2 className="w-4 h-4" />
-              Empty Trash
-            </button>
+      <div className="px-6 space-y-8 relative">
+        {/* Page Header with gradient overlay */}
+        <div className="relative overflow-hidden rounded-xl bg-white/20 dark:bg-gray-800/20 border border-gray-200/30 dark:border-gray-700/30 shadow-[4px_0_24px_-2px_rgba(0,0,0,0.12),8px_0_16px_-4px_rgba(0,0,0,0.08)] dark:shadow-[4px_0_24px_-2px_rgba(0,0,0,0.3),8px_0_16px_-4px_rgba(0,0,0,0.2)]">
+          <div className="absolute inset-0 bg-gradient-to-r from-red-500/10 to-transparent" />
+          <div className="relative p-6">
+            <div className="flex flex-col sm:flex-row gap-6 justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-red-100/50 dark:bg-red-900/30 rounded-lg">
+                  <Trash2 className="w-6 h-6 text-red-600 dark:text-red-400" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Trash</h1>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {trashedItems.length} items in trash
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowEmptyTrashDialog(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-200 hover:scale-105 shadow-sm hover:shadow-md"
+                  disabled={trashedItems.length === 0}
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Empty Trash</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
