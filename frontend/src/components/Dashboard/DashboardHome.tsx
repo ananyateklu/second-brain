@@ -77,47 +77,49 @@ export function DashboardHome() {
           relative 
           overflow-hidden 
           rounded-2xl 
-          bg-white/20
-          dark:bg-white/5
-          border-[1.5px] 
-          border-white/40
-          dark:border-white/30
+          ${theme === 'dark'
+            ? 'bg-gray-900/30'
+            : theme === 'midnight'
+              ? 'bg-[#1e293b]/30'
+              : 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]'} 
           backdrop-blur-xl 
-          shadow-[0_4px_12px_-2px_rgba(0,0,0,0.12),0_4px_8px_-2px_rgba(0,0,0,0.08),0_0_0_1px_rgba(255,255,255,0.1)]
-          dark:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.4),0_4px_8px_-2px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.1)]
-          hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.2),0_6px_12px_-4px_rgba(0,0,0,0.15),0_0_0_1px_rgba(255,255,255,0.2)]
-          dark:hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.5),0_6px_12px_-4px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.2)]
+          border-[0.5px] 
+          border-white/10
+          shadow-[4px_0_24px_-2px_rgba(0,0,0,0.12),8px_0_16px_-4px_rgba(0,0,0,0.08)]
+          dark:shadow-[4px_0_24px_-2px_rgba(0,0,0,0.3),8px_0_16px_-4px_rgba(0,0,0,0.2)]
           ring-1
-          ring-black/5
-          dark:ring-white/10
-          hover:ring-black/10
-          dark:hover:ring-white/20
+          ring-white/5
           transition-all 
           duration-300 
           p-6
         `}>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <PinIcon className={`w-5 h-5 ${theme === 'midnight' ? 'text-blue-400' : 'text-primary-500 dark:text-primary-400'}`} />
+              <div className={`p-1.5 rounded-lg bg-blue-900/20 backdrop-blur-sm text-blue-300`}>
+                <PinIcon className="w-5 h-5" />
+              </div>
               <h2 className="text-lg font-semibold text-[var(--color-text)]">
                 Pinned Notes
               </h2>
             </div>
             <button
               onClick={() => navigate('/dashboard/notes')}
-              className={`flex items-center gap-1 text-sm ${
-                theme === 'midnight' 
-                  ? 'text-blue-400 hover:text-blue-300' 
-                  : 'text-primary-500 hover:text-primary-400'
-              } transition-colors duration-200`}
+              className={`
+                flex items-center gap-1 text-sm 
+                ${theme === 'dark'
+                  ? 'text-emerald-400 hover:text-emerald-300'
+                  : theme === 'midnight'
+                    ? 'text-emerald-300 hover:text-emerald-200'
+                    : 'text-emerald-600 hover:text-emerald-500'
+                } 
+                transition-colors duration-200
+              `}
             >
               View all
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
-          <div
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-          >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {stats.pinnedNotes.map(note => (
               <div 
                 key={note.id}

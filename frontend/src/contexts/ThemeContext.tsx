@@ -34,17 +34,35 @@ const applyTheme = (themeName: ThemeName) => {
 
   // Safari-specific fixes
   if (isSafari) {
+    // Set note card background colors for Safari
+    if (themeName === 'midnight') {
+      root.style.setProperty('--note-bg-opacity', '0.3');
+      root.style.setProperty('--note-bg-color', '#1e293b');
+      root.style.setProperty('--color-background', '#0f172a');
+      root.style.setProperty('--color-surface', '#1e293b');
+      root.style.backgroundColor = theme.colors.background;
+      document.body.style.backgroundColor = theme.colors.background;
+    } else if (themeName === 'dark') {
+      root.style.setProperty('--note-bg-opacity', '0.3');
+      root.style.setProperty('--note-bg-color', 'rgb(17, 24, 39)');
+      root.style.removeProperty('--color-background');
+      root.style.removeProperty('--color-surface');
+      root.style.backgroundColor = theme.colors.background;
+      document.body.style.backgroundColor = theme.colors.background;
+    } else {
+      root.style.removeProperty('--note-bg-opacity');
+      root.style.removeProperty('--note-bg-color');
+      root.style.removeProperty('--color-background');
+      root.style.removeProperty('--color-surface');
+      root.style.backgroundColor = '';
+      document.body.style.backgroundColor = '';
+    }
+
     // Force a repaint in Safari
     const body = document.body;
     body.style.display = 'none';
     void body.offsetHeight; // Force reflow
     body.style.display = '';
-
-    // Additional Safari color adjustments
-    if (themeName !== 'light') {
-      root.style.backgroundColor = theme.colors.background;
-      body.style.backgroundColor = theme.colors.background;
-    }
 
     // Apply solid background colors for Safari
     const selectorElement = document.querySelector('.theme-selector');

@@ -48,8 +48,8 @@ export function IdeaCard({
           ? 'bg-white/5'
           : 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]'} 
       backdrop-blur-xl 
-      border border-gray-100/10 dark:border-gray-700/50
-      hover:border-[var(--color-accent)]
+      border-[0.25px] border-amber-200/30 dark:border-amber-700/30
+      hover:border-amber-400/50 dark:hover:border-amber-500/50
       transition-all duration-300 
       rounded-lg
       shadow-[0_4px_12px_-2px_rgba(0,0,0,0.12),0_4px_8px_-2px_rgba(0,0,0,0.08)]
@@ -167,32 +167,27 @@ export function IdeaCard({
         className={`${containerClasses} w-[160px] min-h-[90px] max-h-[90px]`}
       >
         <div className="p-2 h-full flex flex-col gap-1.5 relative">
-          <div className="flex items-start gap-1.5">
-            <div className="flex-shrink-0 p-1 rounded-lg bg-amber-100/80 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400">
-              <Lightbulb className="w-3 h-3" />
+          <div className="flex items-start justify-between gap-1.5">
+            <div className="flex items-start gap-1.5 flex-1 min-w-0">
+              <div className="flex-shrink-0 p-1 rounded-lg bg-amber-100/80 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400">
+                <Lightbulb className="w-3 h-3" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate leading-tight">
+                  {idea.title}
+                </h3>
+                {idea.content && (
+                  <p className="text-[9px] text-gray-500 dark:text-gray-400 truncate mt-0.5 max-w-[90px]">
+                    {idea.content.slice(0, 50)}
+                  </p>
+                )}
+              </div>
             </div>
-            
-            <div className="flex-1 min-w-0">
-              <h3 className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate leading-tight">
-                {idea.title}
-              </h3>
-              {idea.content && (
-                <p className="text-[10px] text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">
-                  {idea.content}
-                </p>
-              )}
-            </div>
-
             <div className="flex flex-col gap-1">
-              {idea.isPinned && (
-                <Pin className="w-3 h-3 text-emerald-500 dark:text-emerald-400" />
-              )}
-              {idea.isFavorite && (
-                <Star className="w-3 h-3 text-amber-400 dark:text-amber-500 fill-current" />
-              )}
+              {idea.isPinned && <Pin className="w-3 h-3 text-emerald-500 dark:text-emerald-400" />}
+              {idea.isFavorite && <Star className="w-3 h-3 text-amber-400 dark:text-amber-500 fill-current" />}
             </div>
           </div>
-
           <div className="mt-auto flex items-center gap-2 text-[10px] text-gray-400 dark:text-gray-500 border-t border-gray-100/5 dark:border-gray-800/50 pt-1.5">
             {smallMetadataMemo}
           </div>

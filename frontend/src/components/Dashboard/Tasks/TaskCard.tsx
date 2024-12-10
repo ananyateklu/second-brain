@@ -108,7 +108,7 @@ export function TaskCard({
           ? 'bg-white/5'
           : 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]'} 
       backdrop-blur-xl 
-      border border-green-200/30 dark:border-green-700/30
+      border-[0.25px] border-green-200/30 dark:border-green-700/30
       hover:border-green-400/50 dark:hover:border-green-500/50
       transition-all duration-300 
       rounded-lg

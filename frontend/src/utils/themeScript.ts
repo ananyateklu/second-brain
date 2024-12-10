@@ -4,6 +4,7 @@ export const themeScript = `
     try {
       const savedTheme = localStorage.getItem('theme');
       const systemDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
       
       // Determine the initial theme
       let theme = savedTheme;
@@ -17,6 +18,32 @@ export const themeScript = `
       
       // Add dark class for dark themes
       root.classList.toggle('dark', theme === 'dark' || theme === 'midnight');
+
+      // Safari-specific fixes
+      if (isSafari) {
+        if (theme === 'midnight') {
+          root.style.setProperty('--note-bg-opacity', '0.3');
+          root.style.setProperty('--note-bg-color', '#1e293b');
+          root.style.setProperty('--color-background', '#0f172a');
+          root.style.setProperty('--color-surface', '#1e293b');
+        } else if (theme === 'dark') {
+          root.style.setProperty('--note-bg-opacity', '0.3');
+          root.style.setProperty('--note-bg-color', 'rgb(17, 24, 39)'); // bg-gray-900
+          root.style.removeProperty('--color-background');
+          root.style.removeProperty('--color-surface');
+        } else {
+          root.style.removeProperty('--note-bg-opacity');
+          root.style.removeProperty('--note-bg-color');
+          root.style.removeProperty('--color-background');
+          root.style.removeProperty('--color-surface');
+        }
+        
+        // Force a repaint in Safari
+        const body = document.body;
+        body.style.display = 'none';
+        void body.offsetHeight;
+        body.style.display = '';
+      }
       
       // Store the theme if it wasn't already stored
       if (!savedTheme) {

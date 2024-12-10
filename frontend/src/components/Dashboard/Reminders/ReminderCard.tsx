@@ -51,7 +51,7 @@ export function ReminderCard({
   const [showEditModal, setShowEditModal] = useState(false);
 
   const isDark = useMemo(() => theme === 'dark' || theme === 'midnight', [theme]);
-  const isOverdue = useMemo(() => 
+  const isOverdue = useMemo(() =>
     new Date(reminder.dueDateTime) < new Date() && !reminder.isSnoozed && !reminder.isCompleted,
     [reminder.dueDateTime, reminder.isSnoozed, reminder.isCompleted]
   );
@@ -66,7 +66,7 @@ export function ReminderCard({
           ? 'bg-white/5'
           : 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]'} 
       backdrop-blur-xl 
-      border border-purple-200/30 dark:border-purple-700/30
+      border-[0.25px] border-purple-200/30 dark:border-purple-700/30
       hover:border-purple-400/50 dark:hover:border-purple-500/50
       transition-all duration-300 
       rounded-lg

@@ -84,21 +84,13 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
         ? 'bg-gray-900/30'
         : theme === 'midnight'
           ? 'bg-white/5'
-          : 'bg-white/20'} 
-      dark:bg-white/5
+          : 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]'} 
       backdrop-blur-xl 
-      border-b-[1.5px]
-      ${theme === 'dark'
-        ? 'border-gray-700/50'
-        : 'border-gray-200/20 dark:border-gray-700/50'}
-      ${theme === 'dark'
-        ? 'shadow-[0_4px_12px_-2px_rgba(0,0,0,0.4),0_2px_8px_-2px_rgba(0,0,0,0.3)]'
-        : 'shadow-[0_4px_12px_-2px_rgba(0,0,0,0.12),0_2px_8px_-2px_rgba(0,0,0,0.08)]'}
-      ring-1 
-      ${theme === 'dark'
-        ? 'ring-white/10'
-        : 'ring-black/5 dark:ring-white/10'}
-      transition-all duration-200`}>
+      border-b-[0.5px] border-white/10
+      transition-all duration-200
+      shadow-[0_4px_24px_-2px_rgba(0,0,0,0.12),0_8px_16px_-4px_rgba(0,0,0,0.08)]
+      dark:shadow-[0_4px_24px_-2px_rgba(0,0,0,0.3),0_8px_16px_-4px_rgba(0,0,0,0.2)]
+      ring-1 ring-white/5`}>
       <div className="max-w-7xl mx-auto h-20 px-4 sm:px-6 lg:px-8 flex items-center gap-4">
         <div className="w-10 lg:hidden">
           <button

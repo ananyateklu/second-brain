@@ -25,7 +25,7 @@ export function ThemeSelector() {
 
   const getThemeIcon = (themeName: ThemeName, isSelected: boolean) => {
     const iconColor = getIconColor(isSelected);
-    
+
     switch (themeName) {
       case 'light':
         return <Sun className={`w-4 h-4 ${iconColor}`} />;
@@ -42,7 +42,7 @@ export function ThemeSelector() {
     if (isSafari) {
       switch (theme) {
         case 'dark':
-          return 'bg-[#2a2d35]/95';
+          return 'bg-gray-900/30';
         case 'midnight':
           return 'bg-[#1e293b]/95';
         default:
@@ -54,7 +54,7 @@ export function ThemeSelector() {
 
   const getButtonStyles = (isSelected: boolean, themeName: ThemeName) => {
     const baseStyles = "flex items-center gap-2 px-3 py-2 rounded-md transition-colors duration-200";
-    
+
     if (isSelected) {
       return `${baseStyles} bg-[#4c9959]/10 text-[#4c9959] ring-2 ring-[#4c9959]/20`;
     }
@@ -71,7 +71,7 @@ export function ThemeSelector() {
     }
 
     const textColor = theme === 'light' ? 'text-gray-700' : 'text-gray-200';
-    
+
     switch (themeName) {
       case 'midnight':
       case 'dark':
@@ -86,11 +86,11 @@ export function ThemeSelector() {
   }
 
   return (
-    <div className={`flex gap-2 p-2 rounded-lg transition-colors duration-200 ${getContainerBackground()}`}>
+    <div className={`flex gap-2 p-2 rounded-lg transition-colors duration-200 ${getContainerBackground()} ${theme === 'dark' ? 'border border-white/10' : ''}`}>
       {Object.keys(themes).map((themeName) => {
         const currentTheme = themes[themeName as ThemeName];
         const isSelected = theme === themeName;
-        
+
         return (
           <button
             key={themeName}

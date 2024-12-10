@@ -35,6 +35,7 @@ export function NoteCard({
   const { toggleFavoriteNote, togglePinNote, archiveNote } = useNotes();
   const { theme } = useTheme();
   const [showArchiveWarning, setShowArchiveWarning] = useState(false);
+  const [isSafari] = useState(() => /^((?!chrome|android).)*safari/i.test(navigator.userAgent));
 
   const isDark = useMemo(() => theme === 'dark' || theme === 'midnight', [theme]);
 
@@ -45,11 +46,13 @@ export function NoteCard({
       ${theme === 'dark'
         ? 'bg-gray-900/30'
         : theme === 'midnight'
-          ? 'bg-white/5'
+          ? isSafari
+            ? 'bg-[var(--note-bg-color)] bg-opacity-[var(--note-bg-opacity,0.3)]'
+            : 'bg-[#1e293b]/30'
           : 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]'} 
       backdrop-blur-xl 
-      border border-gray-100/10 dark:border-gray-700/50
-      hover:border-[var(--color-accent)]
+      border-[0.25px] border-blue-200/30 dark:border-blue-700/30
+      hover:border-blue-400/50 dark:hover:border-blue-500/50
       transition-all duration-300 
       rounded-lg
       shadow-[0_4px_12px_-2px_rgba(0,0,0,0.12),0_4px_8px_-2px_rgba(0,0,0,0.08)]
@@ -61,7 +64,7 @@ export function NoteCard({
       ${onSelect || onClick ? 'cursor-pointer hover:-translate-y-1 hover:scale-[1.02]' : ''}
     `;
     return base.trim();
-  }, [isSelected, theme, onSelect, onClick]);
+  }, [isSelected, theme, onSelect, onClick, isSafari]);
 
   const handleFavorite = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -167,19 +170,21 @@ export function NoteCard({
         className={`${containerClasses} w-[160px] min-h-[90px] max-h-[90px]`}
       >
         <div className="p-2 h-full flex flex-col gap-1.5 relative">
-          <div className="flex items-start gap-1.5">
-            <div className="flex-shrink-0 p-1 rounded-lg bg-blue-100/80 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400">
-              <FileText className="w-3 h-3" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate leading-tight">
-                {note.title}
-              </h3>
-              {note.content && (
-                <p className="text-[10px] text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">
-                  {note.content}
-                </p>
-              )}
+          <div className="flex items-start justify-between gap-1.5">
+            <div className="flex items-start gap-1.5 flex-1 min-w-0">
+              <div className="flex-shrink-0 p-1 rounded-lg bg-blue-900/20 backdrop-blur-sm text-blue-300">
+                <FileText className="w-3 h-3" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate leading-tight">
+                  {note.title}
+                </h3>
+                {note.content && (
+                  <p className="text-[9px] text-gray-500 dark:text-gray-400 truncate mt-0.5 max-w-[90px]">
+                    {note.content.slice(0, 50)}
+                  </p>
+                )}
+              </div>
             </div>
             <div className="flex flex-col gap-1">
               {note.isPinned && <Pin className="w-3 h-3 text-emerald-500 dark:text-emerald-400" />}
@@ -215,7 +220,7 @@ export function NoteCard({
                 />
               </div>
             )}
-            <div className="flex-shrink-0 p-1.5 rounded bg-blue-50/50 dark:bg-blue-900/20 text-blue-500 dark:text-blue-400 mt-1">
+            <div className="flex-shrink-0 p-1.5 rounded bg-blue-900/20 backdrop-blur-sm text-blue-300 mt-1">
               <FileText className="w-3.5 h-3.5" />
             </div>
             <div className="flex-1 min-w-0 flex flex-col gap-2">
@@ -254,7 +259,7 @@ export function NoteCard({
                   className="w-4 h-4 mt-1 text-primary-600 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 rounded focus:ring-primary-500"
                 />
               )}
-              <div className="flex-shrink-0 p-1.5 mt-0.5 rounded bg-blue-50/50 dark:bg-blue-900/20 text-blue-500 dark:text-blue-400">
+              <div className="flex-shrink-0 p-1.5 mt-0.5 rounded bg-blue-900/20 backdrop-blur-sm text-blue-300">
                 <FileText className="w-3.5 h-3.5" />
               </div>
               <div className="flex-1 min-w-0">
