@@ -176,11 +176,11 @@ export function IdeaCard({
                 <Lightbulb className="w-3 h-3" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate leading-tight">
+                <h3 className="text-xs font-medium text-[var(--color-text)] truncate leading-tight">
                   {idea.title}
                 </h3>
                 {idea.content && (
-                  <p className="text-[9px] text-gray-500 dark:text-gray-400 truncate mt-0.5 max-w-[90px]">
+                  <p className="text-[9px] text-[var(--color-textSecondary)] truncate mt-0.5 max-w-[90px]">
                     {idea.content.slice(0, 50)}
                   </p>
                 )}

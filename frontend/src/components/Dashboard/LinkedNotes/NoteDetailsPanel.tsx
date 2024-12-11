@@ -11,6 +11,8 @@ interface NoteDetailsPanelProps {
   onClose: () => void;
 }
 
+type IconType = 'notes' | 'idea' | 'task' | 'reminder';
+
 export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelProps) {
   const { colors, theme } = useTheme();
   const { notes, removeLink } = useNotes();
@@ -18,6 +20,49 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
   
   const note = notes.find(n => n.id === selectedNoteId);
   const isIdea = note?.tags?.includes('idea');
+
+  const getIconBg = (type: IconType) => {
+    if (theme === 'light') {
+      switch (type) {
+        case 'notes':
+          return 'bg-blue-100/50';
+        case 'idea':
+          return 'bg-amber-100/50';
+        case 'task':
+          return 'bg-emerald-100/50';
+        case 'reminder':
+          return 'bg-purple-100/50';
+        default:
+          return 'bg-gray-100/50';
+      }
+    } else if (theme === 'midnight') {
+      switch (type) {
+        case 'notes':
+          return 'bg-blue-900/30';
+        case 'idea':
+          return 'bg-amber-900/30';
+        case 'task':
+          return 'bg-emerald-900/30';
+        case 'reminder':
+          return 'bg-purple-900/30';
+        default:
+          return 'bg-gray-900/30';
+      }
+    } else {
+      switch (type) {
+        case 'notes':
+          return 'bg-blue-900/30';
+        case 'idea':
+          return 'bg-amber-900/30';
+        case 'task':
+          return 'bg-emerald-900/30';
+        case 'reminder':
+          return 'bg-purple-900/30';
+        default:
+          return 'bg-gray-900/30';
+      }
+    }
+  };
 
   const linkedItems = useMemo(() => {
     if (!note) return { notes: [], tasks: [] };
@@ -57,15 +102,38 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
   if (!note) return null;
 
   return (
-    <div className="h-full flex flex-col bg-[var(--color-surface)] border-l border-[var(--color-border)] overflow-hidden shadow-lg">
+    <div className={`
+      h-full flex flex-col bg-[var(--color-surface)]/30 overflow-hidden backdrop-blur-xl 
+      shadow-[4px_0_24px_-2px_rgba(0,0,0,0.12),8px_0_16px_-4px_rgba(0,0,0,0.08)] 
+      dark:shadow-[4px_0_24px_-2px_rgba(0,0,0,0.3),8px_0_16px_-4px_rgba(0,0,0,0.2)]
+      ${theme === 'light'
+        ? 'border-l border-[var(--color-border)]/50'
+        : theme === 'midnight'
+          ? 'border-l border-white/[0.02]'
+          : 'border-l border-white/[0.02]'
+      }
+    `}>
       {/* Header */}
-      <div className="shrink-0 p-4 border-b border-[var(--color-border)]">
+      <div className={`
+        shrink-0 p-4
+        ${theme === 'light' 
+          ? 'bg-[var(--color-surface)]/80 border-b border-[var(--color-border)]/50'
+          : theme === 'midnight'
+            ? 'bg-[#1e293b]/20 border-b border-white/[0.02]'
+            : 'bg-[var(--color-surface)]/30 border-b border-white/[0.02]'
+        }
+        backdrop-blur-xl
+      `}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {isIdea ? (
-              <Lightbulb className="w-4 h-4" style={{ color: colors.idea }} />
+              <div className={`p-1.5 rounded-lg ${getIconBg('idea')}`}>
+                <Lightbulb className="w-4 h-4" style={{ color: colors.idea }} />
+              </div>
             ) : (
-              <Type className="w-4 h-4" style={{ color: colors.note }} />
+              <div className={`p-1.5 rounded-lg ${getIconBg('notes')}`}>
+                <Type className="w-4 h-4" style={{ color: colors.note }} />
+              </div>
             )}
             <h3 className="text-base font-medium text-[var(--color-text)]">
               Details
@@ -73,17 +141,38 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg hover:bg-[var(--color-surface)]/80 transition-colors"
+            className={`
+              p-1.5 rounded-lg transition-colors
+              hover:bg-[var(--color-surfaceHover)]
+            `}
           >
-            <X className="w-5 h-5 text-[var(--color-textSecondary)]" />
+            <X className="w-4 h-4 text-[var(--color-textSecondary)]" />
           </button>
         </div>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className={`
+        flex-1 overflow-y-auto p-4 space-y-4
+        ${theme === 'light'
+          ? 'bg-[var(--color-surface)]/80'
+          : theme === 'midnight'
+            ? 'bg-[#0f172a]/30'
+            : 'bg-[var(--color-surface)]/30'
+        }
+        backdrop-blur-xl
+      `}>
         {/* Title and Content */}
-        <div>
+        <div className={`
+          p-4 rounded-lg shadow-sm
+          ${theme === 'light'
+            ? 'bg-[var(--color-surface)]/50 border border-[var(--color-border)]/40'
+            : theme === 'midnight'
+              ? 'bg-[#1e293b]/20 border border-white/[0.02]'
+              : 'bg-[var(--color-surface)]/20 border border-white/[0.02]'
+          }
+          shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] dark:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.3)]
+        `}>
           <h2 className="text-xl font-semibold text-[var(--color-text)] mb-2">
             {note.title}
           </h2>
@@ -94,8 +183,18 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
 
         {/* Tags */}
         {note.tags && note.tags.length > 0 && (
-          <div>
-            <h4 className="text-sm font-medium text-[var(--color-text)] mb-2">
+          <div className={`
+            p-4 rounded-lg shadow-sm
+            ${theme === 'light'
+              ? 'bg-[var(--color-surface)]/50 border border-[var(--color-border)]/40'
+              : theme === 'midnight'
+                ? 'bg-[#1e293b]/20 border border-white/[0.02]'
+                : 'bg-[var(--color-surface)]/20 border border-white/[0.02]'
+            }
+            shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] dark:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.3)]
+          `}>
+            <h4 className="text-sm font-medium text-[var(--color-text)] mb-2 flex items-center gap-2">
+              <Tag className="w-4 h-4 text-[var(--color-textSecondary)]" />
               Tags
             </h4>
             <div className="flex flex-wrap gap-2">
@@ -104,7 +203,7 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
                   key={tag}
                   className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium max-w-full"
                   style={{ 
-                    backgroundColor: theme === 'dark' ? `${colors.tag}20` : `${colors.tag}10`,
+                    backgroundColor: `${colors.tag}10`,
                     color: colors.tag 
                   }}
                 >
@@ -117,14 +216,24 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
         )}
 
         {/* Connected Items */}
-        <div>
+        <div className={`
+          p-4 rounded-lg shadow-sm
+          ${theme === 'light'
+            ? 'bg-[var(--color-surface)]/50 border border-[var(--color-border)]/40'
+            : theme === 'midnight'
+              ? 'bg-[#1e293b]/20 border border-white/[0.02]'
+              : 'bg-[var(--color-surface)]/20 border border-white/[0.02]'
+          }
+          shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] dark:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.3)]
+        `}>
           <div className="flex items-center justify-between mb-3">
-            <h4 className="text-sm font-medium text-[var(--color-text)]">
+            <h4 className="text-sm font-medium text-[var(--color-text)] flex items-center gap-2">
+              <Link2 className="w-4 h-4 text-[var(--color-textSecondary)]" />
               Connected Items ({linkedItems.notes.length + linkedItems.tasks.length})
             </h4>
             <button
               onClick={() => setShowAddLinkModal(true)}
-              className="flex items-center gap-1.5 px-2 py-1 text-sm text-[var(--color-accent)] hover:bg-[var(--color-accent)]/20 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-[var(--color-accent)] bg-[var(--color-accent)]/10 hover:bg-[var(--color-accent)]/20 rounded-lg transition-colors"
             >
               <Plus className="w-4 h-4" />
               Add Link
@@ -140,10 +249,24 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
                   {linkedItems.notes.map(linkedNote => (
                     <div
                       key={linkedNote.id}
-                      className="group relative p-3 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] hover:border-[var(--color-accent)]/50 transition-all"
+                      className={`
+                        group relative p-3 rounded-lg transition-all
+                        ${theme === 'light'
+                          ? 'bg-[var(--color-surface)]/30 border border-[var(--color-border)]/30'
+                          : theme === 'midnight'
+                            ? 'bg-[#0f172a]/20 border border-white/[0.02]'
+                            : 'bg-[var(--color-surface)]/10 border border-white/[0.02]'
+                        }
+                        hover:border-[var(--color-accent)]/50
+                        shadow-[0_1px_4px_-2px_rgba(0,0,0,0.05)] dark:shadow-[0_1px_4px_-2px_rgba(0,0,0,0.2)]
+                      `}
                     >
                       <div className="flex items-start gap-3">
-                        <div className={`p-1.5 rounded-lg bg-[var(--color-surface)]`}>
+                        <div className={`p-1.5 rounded-lg ${
+                          linkedNote.isIdea
+                            ? getIconBg('idea')
+                            : getIconBg('notes')
+                        }`}>
                           {linkedNote.isIdea ? (
                             <Lightbulb className="w-4 h-4" style={{ color: colors.idea }} />
                           ) : (
@@ -160,7 +283,7 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
                         </div>
                         <button
                           onClick={() => handleUnlink(linkedNote.id)}
-                          className="opacity-0 group-hover:opacity-100 p-1 text-[var(--color-textSecondary)] hover:text-[var(--color-accent)] rounded transition-opacity"
+                          className="opacity-0 group-hover:opacity-100 p-1.5 text-[var(--color-textSecondary)] hover:text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 rounded-lg transition-all"
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -179,10 +302,20 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
                   {linkedItems.tasks.map(task => (
                     <div
                       key={task.id}
-                      className="group relative p-3 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] hover:border-[var(--color-accent)]/50 transition-all"
+                      className={`
+                        group relative p-3 rounded-lg transition-all
+                        ${theme === 'light'
+                          ? 'bg-[var(--color-surface)]/30 border border-[var(--color-border)]/30'
+                          : theme === 'midnight'
+                            ? 'bg-[#0f172a]/20 border border-white/[0.02]'
+                            : 'bg-[var(--color-surface)]/10 border border-white/[0.02]'
+                        }
+                        hover:border-[var(--color-accent)]/50
+                        shadow-[0_1px_4px_-2px_rgba(0,0,0,0.05)] dark:shadow-[0_1px_4px_-2px_rgba(0,0,0,0.2)]
+                      `}
                     >
                       <div className="flex items-start gap-3">
-                        <div className="p-1.5 rounded-lg bg-[var(--color-surface)]">
+                        <div className={`p-1.5 rounded-lg ${getIconBg('task')}`}>
                           <CheckSquare className="w-4 h-4" style={{ color: colors.task }} />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -190,7 +323,7 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
                             {task.title}
                           </h6>
                           <div className="flex items-center gap-3 mt-1">
-                            <span className={`text-xs px-2 py-0.5 rounded-full bg-[var(--color-accent)]/20 text-[var(--color-accent)]`}>
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--color-accent)]/10 text-[var(--color-accent)]">
                               {task.status}
                             </span>
                             {task.dueDate && (
@@ -203,7 +336,7 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
                         </div>
                         <button
                           onClick={() => handleUnlink(task.id)}
-                          className="opacity-0 group-hover:opacity-100 p-1 text-[var(--color-textSecondary)] hover:text-[var(--color-accent)] rounded transition-opacity"
+                          className="opacity-0 group-hover:opacity-100 p-1.5 text-[var(--color-textSecondary)] hover:text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 rounded-lg transition-all"
                         >
                           <X className="w-4 h-4" />
                         </button>
@@ -216,7 +349,18 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
 
             {linkedItems.notes.length === 0 && linkedItems.tasks.length === 0 && (
               <div className="flex flex-col items-center justify-center py-8 text-center">
-                <Link2 className="w-8 h-8 text-[var(--color-textSecondary)] mb-2" />
+                <div className={`
+                  p-2 rounded-lg mb-3
+                  ${theme === 'light'
+                    ? 'bg-[var(--color-surface)]/30'
+                    : theme === 'midnight'
+                      ? 'bg-[#0f172a]/20'
+                      : 'bg-[var(--color-surface)]/10'
+                  }
+                  shadow-[0_1px_4px_-2px_rgba(0,0,0,0.05)] dark:shadow-[0_1px_4px_-2px_rgba(0,0,0,0.2)]
+                `}>
+                  <Link2 className="w-6 h-6 text-[var(--color-textSecondary)]" />
+                </div>
                 <p className="text-sm text-[var(--color-textSecondary)]">
                   No connected items yet
                 </p>

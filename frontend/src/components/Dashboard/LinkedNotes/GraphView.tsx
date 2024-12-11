@@ -75,7 +75,7 @@ const CustomNode = memo(({ data }: NodeProps) => {
 
       <div className={clsx(
         'transition-all duration-300',
-        data.selected && 'ring-2 ring-[#64AB6F] dark:ring-[#059669]'
+        data.selected && 'ring-2 ring-[#64AB6F] dark:ring-[#059669] rounded-lg'
       )}>
         {data.note.isIdea ? (
           <IdeaCard
@@ -205,29 +205,29 @@ const getDagreLayout = (nodes: CustomNodeType[], edges: CustomEdge[]) => {
 // Memoize the Legend component
 const Legend = memo(({ theme }: { theme: string }) => (
   <div className={clsx(
-    "bg-white/20 dark:bg-gray-800/20",
-    "border border-white/40 dark:border-white/30",
+    "bg-white/10 dark:bg-white/5",
+    "border border-white/20 dark:border-white/10",
     "backdrop-blur-xl p-3 rounded-xl shadow-lg",
     "transition-all duration-300"
   )}>
     <div className="flex flex-row gap-4">
       <div className="flex items-center gap-2">
-        <div className="w-3 h-3 border-2 rounded bg-white/20 dark:bg-gray-800/20 transition-colors"
+        <div className="w-3 h-3 border-2 rounded bg-white/10 dark:bg-white/5 transition-colors"
           style={{ borderColor: theme === 'dark' ? 'rgb(59, 130, 246)' : 'rgb(37, 99, 235)' }}>
         </div>
-        <span className="text-xs text-gray-600 dark:text-gray-400">Notes</span>
+        <span className="text-xs text-[var(--color-text)]">Notes</span>
       </div>
       <div className="flex items-center gap-2">
-        <div className="w-3 h-3 border-2 rounded bg-white/20 dark:bg-gray-800/20 transition-colors"
+        <div className="w-3 h-3 border-2 rounded bg-white/10 dark:bg-white/5 transition-colors"
           style={{ borderColor: theme === 'dark' ? '#FCD34D' : '#F59E0B' }}>
         </div>
-        <span className="text-xs text-gray-600 dark:text-gray-400">Ideas</span>
+        <span className="text-xs text-[var(--color-text)]">Ideas</span>
       </div>
       <div className="flex items-center gap-2">
-        <div className="w-3 h-3 border-2 rounded bg-white/20 dark:bg-gray-800/20 transition-colors"
+        <div className="w-3 h-3 border-2 rounded bg-white/10 dark:bg-white/5 transition-colors"
           style={{ borderColor: theme === 'dark' ? '#64AB6F' : '#059669' }}>
         </div>
-        <span className="text-xs text-gray-600 dark:text-gray-400">Selected</span>
+        <span className="text-xs text-[var(--color-text)]">Selected</span>
       </div>
     </div>
   </div>
@@ -311,68 +311,66 @@ function GraphViewContent({ onNodeSelect, selectedNoteId }: GraphViewProps) {
   }, [selectedNoteId, setNodes]);
 
   return (
-    <div className={clsx(
-      "h-full w-full rounded-xl overflow-hidden",
-      "bg-gradient-to-br from-white/20 to-gray-100/20",
-      "dark:from-gray-900/20 dark:to-gray-800/20",
-      "backdrop-blur-xl transition-all duration-300"
-    )}>
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
-        onNodeClick={onNodeClick}
-        onNodesChange={onNodesChange}
-        fitView={false}
-        minZoom={0.1}
-        maxZoom={2}
-        proOptions={{ hideAttribution: true }}
-        panOnScroll={true}
-        panOnDrag={true}
-        zoomOnScroll={true}
-        panOnScrollMode={PanOnScrollMode.Free}
-        selectionMode={SelectionMode.Full}
-        connectionMode={ConnectionMode.Loose}
-        defaultEdgeOptions={{
-          type: 'default',
-          animated: false,
-          style: {
-            stroke: 'var(--color-border)',
-            strokeWidth: 1.5,
-            strokeLinecap: 'round' as const,
-            strokeLinejoin: 'round' as const
-          },
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: 'var(--color-border)',
-            width: 15,
-            height: 15
-          }
-        }}
-      >
-        <Background
-          color={theme === 'dark' ? '#374151' : '#E5E7EB'}
-          gap={32}
-          size={1}
-          style={{ opacity: 0.1 }}
-        />
-        <Panel position="bottom-right" className="flex flex-col gap-4 mb-4 mr-4">
-          <div className="flex flex-row gap-4">
-            <GraphControls
-              onZoomIn={zoomIn}
-              onZoomOut={zoomOut}
-              onFit={() => fitView({ padding: 0.2, duration: 800 })}
-              onCenter={() => {
-                const selectedNode = nodes.find(node => node.id === selectedNoteId);
-                if (selectedNode) {
-                  setCenter(selectedNode.position.x + 140, selectedNode.position.y + 60, { duration: 800 });
-                }
-              }}
-            />
+    <div className="h-full flex">
+      <div className="flex-1 relative">
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          nodeTypes={nodeTypes}
+          onNodeClick={onNodeClick}
+          onNodesChange={onNodesChange}
+          fitView={false}
+          minZoom={0.1}
+          maxZoom={2}
+          proOptions={{ hideAttribution: true }}
+          panOnScroll={true}
+          panOnDrag={true}
+          zoomOnScroll={true}
+          panOnScrollMode={PanOnScrollMode.Free}
+          selectionMode={SelectionMode.Full}
+          connectionMode={ConnectionMode.Loose}
+          defaultEdgeOptions={{
+            type: 'default',
+            animated: false,
+            style: {
+              stroke: 'var(--color-border)',
+              strokeWidth: 1.5,
+              strokeLinecap: 'round' as const,
+              strokeLinejoin: 'round' as const
+            },
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              color: 'var(--color-border)',
+              width: 15,
+              height: 15
+            }
+          }}
+        >
+          <Background
+            color={theme === 'light' ? 'var(--color-border)' : 'rgb(255, 255, 255)'}
+            style={{ 
+              backgroundColor: 'transparent',
+              opacity: theme === 'light' ? 0.3 : 0.03 
+            }}
+          />
+          <Panel position="bottom-right" className="flex flex-col gap-4 mb-4 mr-4">
             <Legend theme={theme} />
-          </div>
-        </Panel>
-      </ReactFlow>
+          </Panel>
+        </ReactFlow>
+      </div>
+      <div className="w-16 flex items-center justify-center border-l border-gray-200/10 dark:border-gray-700/10 shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.1)] dark:shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.2)]">
+        <GraphControls
+          onZoomIn={zoomIn}
+          onZoomOut={zoomOut}
+          onFit={() => fitView({ padding: 0.2, duration: 800 })}
+          onCenter={() => {
+            const selectedNode = nodes.find(node => node.id === selectedNoteId);
+            if (selectedNode) {
+              setCenter(selectedNode.position.x + 140, selectedNode.position.y + 60, { duration: 800 });
+            }
+          }}
+        />
+      </div>
     </div>
   );
 }

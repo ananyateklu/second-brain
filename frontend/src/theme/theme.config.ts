@@ -38,7 +38,7 @@ export const themes: Record<ThemeName, ThemeConfig> = {
       primary: '#60a5fa',
       secondary: '#94a3b8',
       background: '#1e2128',
-      surface: '#2a2d35',
+      surface: '#111827',
       text: '#f1f5f9',
       textSecondary: '#94a3b8',
       border: '#374151',
@@ -50,13 +50,13 @@ export const themes: Record<ThemeName, ThemeConfig> = {
       reminder: '#a78bfa',
       tag: '#60a5fa',
       // Additional UI colors
-      surfaceHover: '#323842',
-      surfaceActive: '#3a424f',
+      surfaceHover: '#1f2937',
+      surfaceActive: '#374151',
       divider: '#374151',
       focus: 'rgba(96, 165, 250, 0.5)',
       gradientBackground: 'bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-slate-800',
       // RGB values for opacity support
-      'surface-rgb': '42, 45, 53',
+      'surface-rgb': '17, 24, 39',
       'text-rgb': '241, 245, 249',
       'border-rgb': '55, 65, 81'
     }

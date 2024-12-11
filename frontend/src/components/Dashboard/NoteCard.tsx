@@ -43,7 +43,7 @@ export function NoteCard({
   const containerClasses = useMemo(() => {
     const base = `
       relative group w-full
-      ${isSelected ? 'ring-2 ring-[var(--color-accent)]' : ''}
+      ${isSelected ? 'ring-2 ring-[var(--color-accent)] rounded-lg' : ''}
       ${theme === 'dark'
         ? 'bg-gray-900/30'
         : theme === 'midnight'
@@ -179,11 +179,11 @@ export function NoteCard({
                 <FileText className="w-3 h-3" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate leading-tight">
+                <h3 className="text-xs font-medium text-[var(--color-text)] truncate leading-tight">
                   {note.title}
                 </h3>
                 {note.content && (
-                  <p className="text-[9px] text-gray-500 dark:text-gray-400 truncate mt-0.5 max-w-[90px]">
+                  <p className="text-[9px] text-[var(--color-textSecondary)] truncate mt-0.5 max-w-[90px]">
                     {note.content.slice(0, 50)}
                   </p>
                 )}

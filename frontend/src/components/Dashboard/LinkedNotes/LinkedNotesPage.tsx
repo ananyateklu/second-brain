@@ -5,6 +5,7 @@ import { ListView } from './ListView';
 import { List, Network, Link2, Type, Lightbulb, GitBranch } from 'lucide-react';
 import type { Note } from '../../../types/note';
 import { useNotes } from '../../../contexts/notesContextUtils';
+import { useTheme } from '../../../contexts/themeContextUtils';
 
 interface NoteConnection {
   noteId: string;
@@ -98,8 +99,35 @@ const findClusters = (notes: Note[]) => {
   return clusters.size;
 };
 
+const getContainerBackground = (theme: string) => {
+  if (theme === 'dark') return 'bg-gray-900/30 backdrop-blur-xl';
+  if (theme === 'midnight') return 'bg-[#1e293b]/30 backdrop-blur-xl';
+  return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))] backdrop-blur-xl';
+};
+
+const getHeaderBackground = (theme: string) => {
+  if (theme === 'dark') return 'bg-gray-800/20';
+  if (theme === 'midnight') return 'bg-[#1e293b]/20';
+  return 'bg-white/20';
+};
+
+const getButtonBackground = (isActive: boolean, theme: string) => {
+  if (isActive) {
+    return 'bg-blue-500/20 text-blue-600 dark:text-blue-400';
+  }
+  
+  if (theme === 'dark') {
+    return 'bg-gray-800/20 text-gray-400 hover:bg-gray-800/30';
+  }
+  if (theme === 'midnight') {
+    return 'bg-[#1e293b]/20 text-gray-400 hover:bg-[#1e293b]/30';
+  }
+  return 'bg-white/20 text-gray-600 hover:bg-white/30';
+};
+
 export function LinkedNotesPage() {
   const { notes } = useNotes();
+  const { theme } = useTheme();
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'graph' | 'list'>('graph');
 
@@ -181,7 +209,21 @@ export function LinkedNotesPage() {
       {/* Main content container */}
       <div className="flex flex-col h-full p-0.5">
         {/* Header - more compact version */}
-        <div className="flex-none relative overflow-hidden rounded-lg bg-white/20 dark:bg-gray-800/20 border border-white/40 dark:border-white/30 shadow-sm mb-2 backdrop-blur-xl">
+        <div className={`
+          flex-none 
+          relative 
+          overflow-hidden 
+          rounded-lg 
+          ${getHeaderBackground(theme)} 
+          border-[0.5px] 
+          border-white/10
+          shadow-[4px_0_24px_-2px_rgba(0,0,0,0.12),8px_0_16px_-4px_rgba(0,0,0,0.08)]
+          dark:shadow-[4px_0_24px_-2px_rgba(0,0,0,0.3),8px_0_16px_-4px_rgba(0,0,0,0.2)]
+          ring-1
+          ring-white/5
+          mb-2 
+          backdrop-blur-xl
+        `}>
           <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-transparent" />
           <div className="relative px-4 py-3">
             <div className="flex items-center justify-between">
@@ -190,8 +232,8 @@ export function LinkedNotesPage() {
                   <Link2 className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Linked Notes</h1>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <h1 className="text-2xl font-bold text-[var(--color-text)]">Linked Notes</h1>
+                  <p className="text-sm text-[var(--color-textSecondary)]">
                     {stats.totalConnections} connections • {stats.connectionDensity}% density
                   </p>
                 </div>
@@ -201,22 +243,14 @@ export function LinkedNotesPage() {
               <div className="flex gap-0.5">
                 <button
                   onClick={() => setViewMode('graph')}
-                  className={`p-1.5 rounded-lg border border-white/40 dark:border-white/30 transition-all ${
-                    viewMode === 'graph'
-                      ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400'
-                      : 'bg-white/20 dark:bg-gray-800/20 text-gray-600 dark:text-gray-400 hover:bg-white/30 dark:hover:bg-gray-800/30'
-                  }`}
+                  className={`p-1.5 rounded-lg border border-white/40 dark:border-white/30 transition-all ${getButtonBackground(viewMode === 'graph', theme)}`}
                   title="Graph View"
                 >
                   <Network className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => setViewMode('list')}
-                  className={`p-1.5 rounded-lg border border-white/40 dark:border-white/30 transition-all ${
-                    viewMode === 'list'
-                      ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400'
-                      : 'bg-white/20 dark:bg-gray-800/20 text-gray-600 dark:text-gray-400 hover:bg-white/30 dark:hover:bg-gray-800/30'
-                  }`}
+                  className={`p-1.5 rounded-lg border border-white/40 dark:border-white/30 transition-all ${getButtonBackground(viewMode === 'list', theme)}`}
                   title="List View"
                 >
                   <List className="w-3.5 h-3.5" />
@@ -227,61 +261,55 @@ export function LinkedNotesPage() {
             {/* Stats Row - more compact */}
             <div className="flex gap-3 text-sm mt-3">
               <div className="flex items-center gap-1">
-                <Type className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                <span className="font-medium text-blue-600 dark:text-blue-400">{stats.notes}</span>
-                <span className="text-gray-600 dark:text-gray-400">Notes</span>
+                <Type className="w-3.5 h-3.5 text-[var(--color-note)]" />
+                <span className="font-medium text-[var(--color-note)]">{stats.notes}</span>
+                <span className="text-[var(--color-textSecondary)]">Notes</span>
               </div>
 
               <div className="flex items-center gap-1">
-                <Lightbulb className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-400" />
-                <span className="font-medium text-yellow-600 dark:text-yellow-400">{stats.ideas}</span>
-                <span className="text-gray-600 dark:text-gray-400">Ideas</span>
+                <Lightbulb className="w-3.5 h-3.5 text-[var(--color-idea)]" />
+                <span className="font-medium text-[var(--color-idea)]">{stats.ideas}</span>
+                <span className="text-[var(--color-textSecondary)]">Ideas</span>
               </div>
 
               <div className="flex items-center gap-1">
-                <Network className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                <span className="font-medium text-blue-600 dark:text-blue-400">{stats.connectionDensity}%</span>
-                <span className="text-gray-600 dark:text-gray-400">Density</span>
+                <Network className="w-3.5 h-3.5 text-[var(--color-note)]" />
+                <span className="font-medium text-[var(--color-note)]">{stats.connectionDensity}%</span>
+                <span className="text-[var(--color-textSecondary)]">Density</span>
               </div>
 
               <div className="flex items-center gap-1">
-                <GitBranch className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-                <span className="font-medium text-blue-600 dark:text-blue-400">{stats.clusterCount}</span>
-                <span className="text-gray-600 dark:text-gray-400">Topics</span>
-              </div>
-
-              <div className="flex items-center gap-1">
-                <Type className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
-                <span className="font-medium text-gray-600 dark:text-gray-400">{stats.isolatedNotes}</span>
-                <span className="text-gray-600 dark:text-gray-400">Unlinked</span>
-              </div>
-
-              <div className="flex items-center gap-1">
-                <Lightbulb className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
-                <span className="font-medium text-gray-600 dark:text-gray-400">{stats.isolatedIdeas}</span>
-                <span className="text-gray-600 dark:text-gray-400">Unlinked</span>
+                <GitBranch className="w-3.5 h-3.5 text-[var(--color-note)]" />
+                <span className="font-medium text-[var(--color-note)]">{stats.clusterCount}</span>
+                <span className="text-[var(--color-textSecondary)]">Topics</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Main Content Area */}
-        <div className="flex-1 bg-white/20 dark:bg-gray-800/20 border border-white/40 dark:border-white/30 shadow-sm rounded-xl overflow-hidden backdrop-blur-xl">
-          <div className="h-full flex relative">
-            {/* Graph/List Container */}
-            <div className={`${selectedNoteId ? 'w-[70%]' : 'w-full'} transition-all duration-300`}>
+        {/* Content Area */}
+        <div className={`
+          flex-1 
+          relative 
+          rounded-lg 
+          ${getContainerBackground(theme)} 
+          border-[0.5px] 
+          border-white/10
+          shadow-[4px_0_24px_-2px_rgba(0,0,0,0.12),8px_0_16px_-4px_rgba(0,0,0,0.08)]
+          dark:shadow-[4px_0_24px_-2px_rgba(0,0,0,0.3),8px_0_16px_-4px_rgba(0,0,0,0.2)]
+          ring-1
+          ring-white/5
+          overflow-hidden
+        `}>
+          <div className="flex h-full">
+            <div className={`flex-1 ${selectedNoteId ? 'border-r border-[var(--color-border)]' : ''}`}>
               {renderContent(viewMode, notes, handleNodeSelect, selectedNoteId)}
             </div>
-
-            {/* Details Panel */}
             {selectedNoteId && (
-              <div className="w-[30%] border-l border-white/40 dark:border-white/30">
+              <div className="w-96">
                 <NoteDetailsPanel
                   selectedNoteId={selectedNoteId}
-                  onClose={() => {
-                    console.log('Closing details panel');
-                    setSelectedNoteId(null);
-                  }}
+                  onClose={() => setSelectedNoteId(null)}
                 />
               </div>
             )}
