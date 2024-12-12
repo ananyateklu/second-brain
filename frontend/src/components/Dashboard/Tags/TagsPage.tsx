@@ -237,14 +237,16 @@ export function TagsPage() {
       <div className="fixed inset-0 bg-fixed dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-slate-800 bg-gradient-to-br from-white to-gray-100 -z-10" />
 
       {/* Main content container */}
-      <div className="flex flex-col h-full p-0.5">
-        <TagsHeader
-          tagStats={tagStats}
-          allItemsTagCount={allItems.flatMap(item => item.tags).length}
-        />
+      <div className="flex flex-col h-full">
+        <div className="px-0.5 mb-2">
+          <TagsHeader
+            tagStats={tagStats}
+            allItemsTagCount={allItems.flatMap(item => item.tags).length}
+          />
+        </div>
 
         {/* Main content area */}
-        <div className="flex-1 bg-white/20 dark:bg-gray-800/20 border border-white/40 dark:border-white/30 shadow-sm rounded-xl overflow-hidden backdrop-blur-xl">
+        <div className="flex-1 mx-0.5 bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))] dark:bg-gray-900/30 midnight:bg-[#1e293b]/30 border-[0.5px] border-white/10 shadow-[4px_0_24px_-2px_rgba(0,0,0,0.12),8px_0_16px_-4px_rgba(0,0,0,0.08)] dark:shadow-[4px_0_24px_-2px_rgba(0,0,0,0.3),8px_0_16px_-4px_rgba(0,0,0,0.2)] ring-1 ring-white/5 rounded-2xl overflow-hidden backdrop-blur-xl">
           <div className="h-full flex">
             <TagsList
               tagStats={tagStats}

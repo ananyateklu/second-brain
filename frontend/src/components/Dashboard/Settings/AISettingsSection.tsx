@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Bot, Settings2, AlertCircle, CheckCircle, Loader, Save, Cpu } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useAI } from '../../../contexts/AIContext';
+import { useTheme } from '../../../contexts/themeContextUtils';
 import { AISettings } from '../../../types/ai';
+import { cardVariants } from '../../../utils/welcomeBarUtils';
 
 type AIProvider = 'openai' | 'anthropic' | 'gemini' | 'llama';
 
@@ -24,6 +27,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
     isGrokConfigured,
     checkConfigurations 
   } = useAI();
+  const { theme } = useTheme();
   
   const [settings, setSettings] = useState<AISettings>({
     contentSuggestions: {
@@ -118,18 +122,21 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
     }
   };
 
+  const getContainerBackground = () => {
+    if (theme === 'dark') return 'bg-gray-900/30';
+    if (theme === 'midnight') return 'bg-[#1e293b]/30';
+    return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]';
+  };
+
   const innerElementClasses = `
-    bg-white/20
-    dark:bg-white/5
-    border-[1.5px] 
-    border-white/40
-    dark:border-white/30
+    ${getContainerBackground()}
+    border-[0.5px] 
+    border-white/10
     backdrop-blur-xl
     rounded-xl
     transition-all
     duration-200
-    hover:bg-white/30
-    dark:hover:bg-white/10
+    hover:bg-[var(--color-surfaceHover)]
   `;
 
   const selectClasses = `
@@ -137,15 +144,12 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
     pl-10 
     pr-10 
     py-2.5 
-    bg-white/20
-    dark:bg-white/5
-    hover:bg-white/30
-    dark:hover:bg-white/10
+    ${getContainerBackground()}
+    hover:bg-[var(--color-surfaceHover)]
     rounded-lg 
     text-[var(--color-text)] 
-    border-[1.5px] 
-    border-white/40
-    dark:border-white/30 
+    border-[0.5px] 
+    border-white/10
     focus:ring-2 
     focus:ring-[var(--color-accent)]/20 
     focus:border-transparent 
@@ -158,9 +162,9 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="p-6 border-b border-white/20 dark:border-white/10">
+      <div className="p-6 border-b border-white/10">
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-white/20 dark:bg-white/5 backdrop-blur-sm border-[1.5px] border-white/40 dark:border-white/30">
+          <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm border-[0.5px] border-white/10">
             <Cpu className="w-5 h-5 text-[var(--color-accent)]" />
           </div>
           <div>
@@ -182,7 +186,18 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
                 setIsChecking(true);
                 checkConfigurations().finally(() => setIsChecking(false));
               }}
-              className={`flex items-center gap-2 px-4 py-2 text-sm text-[var(--color-text)] ${innerElementClasses}`}
+              className={`
+                flex items-center gap-2 px-4 py-2 rounded-lg 
+                ${getContainerBackground()}
+                border-[0.5px] border-white/10
+                text-[var(--color-text)] text-sm font-medium 
+                transition-all duration-200 
+                hover:scale-105 hover:-translate-y-0.5 
+                shadow-sm hover:shadow-md
+                hover:bg-[var(--color-surfaceHover)]
+                disabled:opacity-50 disabled:cursor-not-allowed
+                disabled:hover:scale-100 disabled:hover:translate-y-0
+              `}
               disabled={isChecking}
             >
               <div className={`w-4 h-4 ${isChecking ? 'animate-spin' : ''}`}>
@@ -194,18 +209,19 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {configurationStatus.map(({ name, isConfigured }) => (
-              <div
+              <motion.div
                 key={name}
+                variants={cardVariants}
                 className={innerElementClasses}
               >
                 <div className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className={`flex items-center justify-center w-10 h-10 rounded-lg ${
-                        isConfigured 
-                          ? 'bg-[var(--color-accent)]/10' 
-                          : 'bg-red-500/10'
-                      } backdrop-blur-sm border-[1.5px] border-white/40 dark:border-white/30`}>
+                      <div className={`
+                        flex items-center justify-center w-10 h-10 rounded-lg 
+                        ${isConfigured ? 'bg-[var(--color-accent)]/10' : 'bg-red-500/10'}
+                        backdrop-blur-sm border-[0.5px] border-white/10
+                      `}>
                         {isConfigured ? (
                           <CheckCircle className="w-5 h-5 text-[var(--color-accent)]" />
                         ) : (
@@ -225,7 +241,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
                     </div>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -233,7 +249,10 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
         {/* Content Suggestions Configuration */}
         <div className="space-y-4">
           <h4 className="text-base font-medium text-[var(--color-text)]">Content Generation</h4>
-          <div className={`space-y-6 p-6 ${innerElementClasses}`}>
+          <motion.div 
+            variants={cardVariants}
+            className={`space-y-6 p-6 ${innerElementClasses}`}
+          >
             <div className="space-y-2">
               <label className="block text-sm font-medium text-[var(--color-text)]">
                 AI Provider
@@ -295,13 +314,16 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
               <Bot className="w-4 h-4 text-[var(--color-accent)]" />
               <span>These settings will be used for generating titles, content, and tags.</span>
             </div>
-          </div>
+          </motion.div>
         </div>
 
         {/* Prompt Enhancement Configuration */}
         <div className="space-y-4">
           <h4 className="text-base font-medium text-[var(--color-text)]">Prompt Enhancement</h4>
-          <div className={`space-y-6 p-6 ${innerElementClasses}`}>
+          <motion.div 
+            variants={cardVariants}
+            className={`space-y-6 p-6 ${innerElementClasses}`}
+          >
             <div className="space-y-2">
               <label className="block text-sm font-medium text-[var(--color-text)]">
                 AI Provider
@@ -363,44 +385,63 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
               <Bot className="w-4 h-4 text-[var(--color-accent)]" />
               <span>These settings will be used for enhancing input prompts across the application.</span>
             </div>
-          </div>
+          </motion.div>
         </div>
 
-        {/* Save Button */}
-        <div className="flex items-center justify-between pt-4 pb-6">
-          <div className="flex items-center gap-2">
-            {saveResult && (
-              <div className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm ${
-                saveResult.success 
-                  ? 'bg-[var(--color-accent)]/10 text-[var(--color-accent)]' 
-                  : 'bg-red-500/10 text-red-500'
-              } backdrop-blur-sm border-[1.5px] border-white/40 dark:border-white/30`}>
-                {saveResult.success ? (
-                  <CheckCircle className="w-4 h-4" />
-                ) : (
-                  <AlertCircle className="w-4 h-4" />
-                )}
-                <span>{saveResult.message}</span>
-              </div>
-            )}
-          </div>
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            className="flex items-center gap-2 px-6 py-2.5 bg-[var(--color-accent)]/90 hover:bg-[var(--color-accent)] text-white text-sm font-medium rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm border-[1.5px] border-[var(--color-accent)]/20"
-          >
-            {isSaving ? (
-              <>
+        {/* Save Button and Result */}
+        <div className="flex flex-col gap-4 pt-4 pb-6">
+          <div className="flex justify-end">
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className={`
+                flex items-center gap-2 px-4 py-2 
+                ${theme === 'midnight' ? 'bg-[var(--color-accent)]/80 hover:bg-[var(--color-accent)]/70' : 'bg-[var(--color-accent)] hover:bg-[var(--color-accent)]/90'}
+                text-white rounded-lg transition-all duration-200 
+                hover:scale-105 hover:-translate-y-0.5 
+                shadow-sm hover:shadow-md
+                disabled:opacity-50 disabled:cursor-not-allowed
+                disabled:hover:scale-100 disabled:hover:translate-y-0
+              `}
+            >
+              {isSaving ? (
                 <Loader className="w-4 h-4 animate-spin" />
-                <span>Saving...</span>
-              </>
-            ) : (
-              <>
+              ) : (
                 <Save className="w-4 h-4" />
-                <span>Save Changes</span>
-              </>
-            )}
-          </button>
+              )}
+              <span className="font-medium text-sm">
+                {isSaving ? 'Saving...' : 'Save Changes'}
+              </span>
+            </button>
+          </div>
+
+          {/* Save Result Message */}
+          {saveResult && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`
+                p-4 rounded-lg
+                ${saveResult.success ? 'bg-[var(--color-accent)]/10' : 'bg-red-500/10'}
+                border-[0.5px] border-white/10
+              `}
+            >
+              <div className="flex items-center gap-2">
+                {saveResult.success ? (
+                  <CheckCircle className="w-5 h-5 text-[var(--color-accent)]" />
+                ) : (
+                  <AlertCircle className="w-5 h-5 text-red-500" />
+                )}
+                <p className={`text-sm ${
+                  saveResult.success 
+                    ? 'text-[var(--color-accent)]' 
+                    : 'text-red-500'
+                }`}>
+                  {saveResult.message}
+                </p>
+              </div>
+            </motion.div>
+          )}
         </div>
       </div>
     </div>

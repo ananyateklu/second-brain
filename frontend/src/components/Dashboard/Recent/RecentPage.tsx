@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { History, Search, SlidersHorizontal } from 'lucide-react';
+import { Search, SlidersHorizontal, Clock } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { ActivityFeed } from './ActivityFeed';
 import { ActivityFilters } from './ActivityFilters';
 import { useActivities } from '../../../contexts/activityContextUtils';
@@ -79,38 +80,63 @@ export function RecentPage() {
     }
   };
 
-  const themeStyles = getThemeStyles();
-
   const getBackgroundGradient = (theme: string) => {
     if (theme === 'light') return 'from-zinc-50 to-zinc-100';
     if (theme === 'dark') return 'from-zinc-900 via-zinc-900 to-zinc-800';
     return 'from-[#0F172A] via-[#1E293B] to-[#334155]';
   };
 
+  const getContainerBackground = () => {
+    if (theme === 'dark') return 'bg-gray-900/30';
+    if (theme === 'midnight') return 'bg-[#1e293b]/30';
+    return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]';
+  };
+
   return (
     <div className="min-h-screen overflow-x-hidden bg-fixed">
       <div className={`fixed inset-0 bg-fixed bg-gradient-to-br ${getBackgroundGradient(theme)} -z-10`} />
 
-      <div className="space-y-8 relative">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 relative">
         {/* Header */}
-        <div className="relative overflow-hidden rounded-xl bg-white/30 dark:bg-zinc-800/30 border border-zinc-200/30 dark:border-zinc-700/30 shadow-sm backdrop-blur-sm">
-          <div className={`absolute inset-0 bg-gradient-to-r ${themeStyles.headerGradient}`} />
-          <div className="relative p-6">
-            <div className="flex flex-col sm:flex-row gap-6 justify-between">
-              <div className="flex items-center gap-3">
-                <div className={`flex items-center justify-center w-10 h-10 rounded-lg ${themeStyles.iconBg}`}>
-                  <History className={`w-5 h-5 ${themeStyles.iconColor}`} />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-[var(--color-text)]">Recent Activity</h1>
-                  <p className="text-sm text-[var(--color-textSecondary)]">
-                    Track and manage your recent actions
-                  </p>
-                </div>
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={{
+            hidden: { opacity: 0, y: -20 },
+            visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 30 } }
+          }}
+          className={`
+            relative 
+            overflow-hidden 
+            rounded-2xl 
+            ${getContainerBackground()}
+            backdrop-blur-xl 
+            border-[0.5px] 
+            border-white/10
+            shadow-[4px_0_24px_-2px_rgba(0,0,0,0.12),8px_0_16px_-4px_rgba(0,0,0,0.08)]
+            dark:shadow-[4px_0_24px_-2px_rgba(0,0,0,0.3),8px_0_16px_-4px_rgba(0,0,0,0.2)]
+            ring-1
+            ring-white/5
+            transition-all 
+            duration-300 
+            p-6
+          `}
+        >
+          <div className={`absolute inset-0 bg-gradient-to-r ${getThemeStyles().headerGradient}`} />
+          <div className="relative flex flex-col sm:flex-row gap-6 justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`p-2.5 ${getThemeStyles().iconBg} rounded-lg backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/10 midnight:ring-white/10`}>
+                <Clock className={`w-6 h-6 ${getThemeStyles().iconColor}`} />
+              </div>
+              <div className="space-y-1">
+                <h1 className="text-2xl font-bold text-[var(--color-text)]">Recent Activity</h1>
+                <p className="text-sm text-[var(--color-textSecondary)]">
+                  {activities.length} activities recorded
+                </p>
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Updated Search and Filters */}
         <div className="flex flex-col sm:flex-row gap-4">

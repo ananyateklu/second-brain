@@ -1,9 +1,11 @@
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { Moon, Sun, Bell, Shield, Database, Settings2, Palette, Sparkles } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { AISettingsSection } from './AISettingsSection';
 import { AISettings } from '../../../types/ai';
 import { useState } from 'react';
 import { ThemeName } from '../../../theme/theme.config';
+import { cardVariants } from '../../../utils/welcomeBarUtils';
 
 export function SettingsPage() {
   const { theme, setTheme } = useTheme();
@@ -28,42 +30,38 @@ export function SettingsPage() {
     }
   };
 
+  const getContainerBackground = () => {
+    if (theme === 'dark') return 'bg-gray-900/30';
+    if (theme === 'midnight') return 'bg-[#1e293b]/30';
+    return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]';
+  };
+
   const sectionClasses = `
     relative 
     overflow-hidden 
     rounded-2xl 
-    bg-white/20
-    dark:bg-white/5
-    border-[1.5px] 
-    border-white/40
-    dark:border-white/30
+    ${getContainerBackground()}
     backdrop-blur-xl 
-    shadow-[0_4px_12px_-2px_rgba(0,0,0,0.12),0_4px_8px_-2px_rgba(0,0,0,0.08),0_0_0_1px_rgba(255,255,255,0.1)]
-    dark:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.4),0_4px_8px_-2px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.1)]
-    hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.2),0_6px_12px_-4px_rgba(0,0,0,0.15),0_0_0_1px_rgba(255,255,255,0.2)]
-    dark:hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.5),0_6px_12px_-4px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.2)]
+    border-[0.5px] 
+    border-white/10
+    shadow-[4px_0_24px_-2px_rgba(0,0,0,0.12),8px_0_16px_-4px_rgba(0,0,0,0.08)]
+    dark:shadow-[4px_0_24px_-2px_rgba(0,0,0,0.3),8px_0_16px_-4px_rgba(0,0,0,0.2)]
     ring-1
-    ring-black/5
-    dark:ring-white/10
-    hover:ring-black/10
-    dark:hover:ring-white/20
+    ring-white/5
     transition-all 
     duration-300 
     group
   `;
 
   const innerElementClasses = `
-    bg-white/20
-    dark:bg-white/5
-    border-[1.5px] 
-    border-white/40
-    dark:border-white/30
+    ${getContainerBackground()}
+    border-[0.5px] 
+    border-white/10
     backdrop-blur-xl
     rounded-xl
     transition-all
     duration-200
-    hover:bg-white/30
-    dark:hover:bg-white/10
+    hover:bg-[var(--color-surfaceHover)]
   `;
 
   const toggleClasses = `
@@ -87,9 +85,8 @@ export function SettingsPage() {
     after:shadow-sm
     peer-checked:bg-[var(--color-accent)]
     peer-checked:border-[var(--color-accent)]
-    border-[1.5px]
-    border-gray-400/50
-    dark:border-gray-600/30
+    border-[0.5px]
+    border-white/10
     transition-all
     duration-300
     backdrop-blur-sm
@@ -100,16 +97,24 @@ export function SettingsPage() {
   `;
 
   return (
-    <div className="h-full">
-      {/* Background with subtle gradient */}
-      <div className="fixed inset-0 bg-gradient-to-br from-[var(--color-background)]/50 via-[var(--color-background)]/30 to-[var(--color-surface)]/20 -z-10" />
+    <div className="min-h-screen overflow-x-hidden bg-fixed">
+      {/* Background */}
+      <div className="fixed inset-0 bg-[var(--color-background)] -z-10" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* Page Header */}
-        <div className={sectionClasses}>
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={cardVariants}
+          className={sectionClasses}
+        >
           <div className="p-8">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-white/20 dark:bg-white/5 backdrop-blur-sm border-[1.5px] border-white/40 dark:border-white/30">
+            <motion.div 
+              variants={cardVariants}
+              className="flex items-center gap-4"
+            >
+              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-[var(--color-accent)]/10 backdrop-blur-sm border-[0.5px] border-white/10">
                 <Settings2 className="w-6 h-6 text-[var(--color-accent)]" />
               </div>
               <div>
@@ -118,19 +123,22 @@ export function SettingsPage() {
                   Customize your Second Brain experience
                 </p>
               </div>
-            </div>
+            </motion.div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Settings Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Column */}
           <div className="space-y-8">
             {/* Appearance Section */}
-            <div className={sectionClasses}>
-              <div className="p-6 border-b border-white/20 dark:border-white/10">
+            <motion.div 
+              variants={cardVariants}
+              className={sectionClasses}
+            >
+              <div className="p-6 border-b border-white/10">
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-white/20 dark:bg-white/5 backdrop-blur-sm border-[1.5px] border-white/40 dark:border-white/30">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm border-[0.5px] border-white/10">
                     <Palette className="w-5 h-5 text-[var(--color-accent)]" />
                   </div>
                   <div>
@@ -212,13 +220,16 @@ export function SettingsPage() {
                   </label>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
             {/* Notifications Section */}
-            <div className={sectionClasses}>
-              <div className="p-6 border-b border-white/20 dark:border-white/10">
+            <motion.div 
+              variants={cardVariants}
+              className={sectionClasses}
+            >
+              <div className="p-6 border-b border-white/10">
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-white/20 dark:bg-white/5 backdrop-blur-sm border-[1.5px] border-white/40 dark:border-white/30">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm border-[0.5px] border-white/10">
                     <Bell className="w-5 h-5 text-[var(--color-accent)]" />
                   </div>
                   <div>
@@ -233,7 +244,7 @@ export function SettingsPage() {
               <div className="p-6 space-y-4">
                 <label className={`flex items-center justify-between p-4 cursor-pointer ${innerElementClasses}`}>
                   <div className="flex items-center gap-4">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-white/20 dark:bg-white/5 backdrop-blur-sm border-[1.5px] border-white/40 dark:border-white/30">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm">
                       <Bell className="w-5 h-5 text-[var(--color-accent)]" />
                     </div>
                     <div>
@@ -254,16 +265,19 @@ export function SettingsPage() {
                   </div>
                 </label>
               </div>
-            </div>
+            </motion.div>
           </div>
 
           {/* Right Column */}
           <div className="space-y-8">
             {/* Security Section */}
-            <div className={sectionClasses}>
-              <div className="p-6 border-b border-white/20 dark:border-white/10">
+            <motion.div 
+              variants={cardVariants}
+              className={sectionClasses}
+            >
+              <div className="p-6 border-b border-white/10">
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm border-[0.5px] border-white/10">
                     <Shield className="w-5 h-5 text-[var(--color-accent)]" />
                   </div>
                   <div>
@@ -276,7 +290,7 @@ export function SettingsPage() {
               </div>
 
               <div className="p-6">
-                <div className="flex items-center justify-between p-4 rounded-xl bg-[var(--color-surface)]/60 border border-[var(--color-border)] transition-all duration-200 hover:bg-[var(--color-surface)] backdrop-blur-sm">
+                <div className={`flex items-center justify-between p-4 ${innerElementClasses}`}>
                   <div className="flex items-center gap-4">
                     <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm">
                       <Shield className="w-5 h-5 text-[var(--color-accent)]" />
@@ -288,18 +302,28 @@ export function SettingsPage() {
                       </p>
                     </div>
                   </div>
-                  <button className="px-4 py-2 rounded-lg bg-[var(--color-accent)] hover:bg-[var(--color-accent)]/90 text-white text-sm font-medium transition-colors">
+                  <button className={`
+                    px-4 py-2 rounded-lg 
+                    ${theme === 'midnight' ? 'bg-[var(--color-accent)]/80 hover:bg-[var(--color-accent)]/70' : 'bg-[var(--color-accent)] hover:bg-[var(--color-accent)]/90'}
+                    text-white text-sm font-medium 
+                    transition-all duration-200 
+                    hover:scale-105 hover:-translate-y-0.5 
+                    shadow-sm hover:shadow-md
+                  `}>
                     Enable
                   </button>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
             {/* Data Management Section */}
-            <div className={sectionClasses}>
-              <div className="p-6 border-b border-white/20 dark:border-white/10">
+            <motion.div 
+              variants={cardVariants}
+              className={sectionClasses}
+            >
+              <div className="p-6 border-b border-white/10">
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm border-[0.5px] border-white/10">
                     <Database className="w-5 h-5 text-[var(--color-accent)]" />
                   </div>
                   <div>
@@ -312,7 +336,7 @@ export function SettingsPage() {
               </div>
 
               <div className="p-6">
-                <div className="flex items-center justify-between p-4 rounded-xl bg-[var(--color-surface)]/60 border border-[var(--color-border)] transition-all duration-200 hover:bg-[var(--color-surface)] backdrop-blur-sm">
+                <div className={`flex items-center justify-between p-4 ${innerElementClasses}`}>
                   <div className="flex items-center gap-4">
                     <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm">
                       <Database className="w-5 h-5 text-[var(--color-accent)]" />
@@ -324,19 +348,31 @@ export function SettingsPage() {
                       </p>
                     </div>
                   </div>
-                  <button className="px-4 py-2 rounded-lg bg-[var(--color-surface)]/60 hover:bg-[var(--color-surface)] text-[var(--color-text)] text-sm font-medium transition-colors border border-[var(--color-border)]">
+                  <button className={`
+                    px-4 py-2 rounded-lg 
+                    ${getContainerBackground()}
+                    border-[0.5px] border-white/10
+                    text-[var(--color-text)] text-sm font-medium 
+                    transition-all duration-200 
+                    hover:scale-105 hover:-translate-y-0.5 
+                    shadow-sm hover:shadow-md
+                    hover:bg-[var(--color-surfaceHover)]
+                  `}>
                     Export
                   </button>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
 
         {/* AI Settings Section - Full Width */}
-        <div className={sectionClasses}>
+        <motion.div 
+          variants={cardVariants}
+          className={sectionClasses}
+        >
           <AISettingsSection onSave={handleSaveAISettings} />
-        </div>
+        </motion.div>
       </div>
     </div>
   );

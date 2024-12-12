@@ -21,24 +21,26 @@ export function TaggedItemsView({
 }: TaggedItemsViewProps) {
   if (!selectedTag) {
     return (
-      <div className="flex-1 overflow-y-auto p-2">
-        <div className="h-full flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
-          <Tag className="w-8 h-8 mb-2" />
-          <p>Select a tag to view items</p>
+      <div className="flex-1 flex items-center justify-center bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))] dark:bg-gray-900/30 midnight:bg-[#1e293b]/30 backdrop-blur-xl">
+        <div className="flex flex-col items-center gap-3">
+          <div className="p-4 rounded-xl bg-white/5 dark:bg-gray-900/20 midnight:bg-[#0f172a]/20 ring-1 ring-white/10 backdrop-blur-xl">
+            <Tag className="w-8 h-8 text-[var(--color-textSecondary)]" />
+          </div>
+          <p className="text-sm text-[var(--color-textSecondary)]">Select a tag to view items</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-2">
+    <div className="flex-1 overflow-y-auto p-4 bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))] dark:bg-gray-900/30 midnight:bg-[#1e293b]/30 backdrop-blur-xl">
       <div className="p-0.5">
         {viewMode === 'grid' ? (
-          <div className={cardGridStyles}>
+          <div className={`${cardGridStyles} gap-4`}>
             {filteredItems.map(item => renderItem(item, viewMode, onEditItem))}
           </div>
         ) : (
-          <div className="space-y-4 px-0.5">
+          <div className="space-y-3">
             {filteredItems.map(item => renderItem(item, viewMode, onEditItem))}
           </div>
         )}
@@ -53,10 +55,12 @@ function renderItem(item: TaggedItem, viewMode: 'grid' | 'list', onEditItem: (it
     onEditItem(item);
   };
 
+  const wrapperClasses = "cursor-pointer w-full transition-transform duration-200 hover:-translate-y-0.5";
+
   switch (item.type) {
     case 'task':
       return (
-        <div key={item.id} onClick={handleClick} className="cursor-pointer w-full">
+        <div key={item.id} onClick={handleClick} className={wrapperClasses}>
           <TaskCard
             task={{
               id: item.id,
@@ -78,26 +82,27 @@ function renderItem(item: TaggedItem, viewMode: 'grid' | 'list', onEditItem: (it
       );
     case 'reminder':
       return (
-        <ReminderCard
-          key={item.id}
-          reminder={{
-            ...item,
-            description: item.content || '',
-            dueDateTime: item.dueDateTime ?? new Date().toISOString(),
-            isCompleted: item.isCompleted || false,
-            isSnoozed: item.isSnoozed || false,
-            isDeleted: item.isDeleted || false,
-            userId: item.userId ?? '',
-            repeatInterval: item.repeatInterval,
-            linkedItems: item.linkedItems || []
-          }}
-          viewMode={viewMode}
-          onClick={() => onEditItem(item)}
-        />
+        <div key={item.id} className={wrapperClasses}>
+          <ReminderCard
+            reminder={{
+              ...item,
+              description: item.content || '',
+              dueDateTime: item.dueDateTime ?? new Date().toISOString(),
+              isCompleted: item.isCompleted || false,
+              isSnoozed: item.isSnoozed || false,
+              isDeleted: item.isDeleted || false,
+              userId: item.userId ?? '',
+              repeatInterval: item.repeatInterval,
+              linkedItems: item.linkedItems || []
+            }}
+            viewMode={viewMode}
+            onClick={() => onEditItem(item)}
+          />
+        </div>
       );
     case 'idea':
       return (
-        <div key={item.id} onClick={handleClick} className="cursor-pointer w-full">
+        <div key={item.id} onClick={handleClick} className={wrapperClasses}>
           <IdeaCard
             idea={{
               id: item.id,
@@ -122,7 +127,7 @@ function renderItem(item: TaggedItem, viewMode: 'grid' | 'list', onEditItem: (it
       );
     case 'note':
       return (
-        <div key={item.id} onClick={handleClick} className="cursor-pointer w-full">
+        <div key={item.id} onClick={handleClick} className={wrapperClasses}>
           <NoteCard
             note={{
               id: item.id,
