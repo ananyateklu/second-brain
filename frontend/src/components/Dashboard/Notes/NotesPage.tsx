@@ -67,7 +67,7 @@ export function NotesPage() {
   }, [regularNotes]);
 
   if (isLoading) {
-    return <LoadingScreen />;
+    return <LoadingScreen variant="notes" message="Loading your notes..." />;
   }
 
   const handleFilterChange = (key: keyof Filters, value: string | boolean | string[]) => {

@@ -19,15 +19,10 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const getModalClasses = () => {
-    switch (theme) {
-      case 'midnight':
-        return 'bg-[#1F2937]/80 border-[#374151]/40';
-      case 'dark':
-        return 'bg-[#2C2C2E]/80 border-[#3C3C3E]/40';
-      default:
-        return 'bg-white/90 border-gray-200/40';
-    }
+  const getContainerBackground = () => {
+    if (theme === 'dark') return 'bg-[#0f1729]/30';
+    if (theme === 'midnight') return 'bg-[#1e293b]/30';
+    return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]';
   };
 
   const getInputClasses = () => {
@@ -73,7 +68,21 @@ export function ForgotPasswordModal({ isOpen, onClose }: ForgotPasswordModalProp
       <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" aria-hidden="true" />
       
       <div className="fixed inset-0 flex items-center justify-center p-4">
-        <Dialog.Panel className={`w-full max-w-md ${getModalClasses()} backdrop-blur-lg rounded-2xl p-8 shadow-2xl border transition-colors duration-200`}>
+        <Dialog.Panel className={`
+          w-full max-w-md 
+          ${getContainerBackground()}
+          backdrop-blur-xl 
+          rounded-2xl 
+          p-8 
+          border-[0.5px] 
+          border-white/10
+          shadow-[4px_0_24px_-2px_rgba(0,0,0,0.12),8px_0_16px_-4px_rgba(0,0,0,0.08)]
+          dark:shadow-[4px_0_24px_-2px_rgba(0,0,0,0.3),8px_0_16px_-4px_rgba(0,0,0,0.2)]
+          ring-1
+          ring-white/5
+          transition-all 
+          duration-300
+        `}>
           <div className="relative">
             <button
               onClick={onClose}

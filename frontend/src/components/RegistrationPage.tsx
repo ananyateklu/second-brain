@@ -108,7 +108,7 @@ export function RegistrationPage() {
       case 'light':
         return 'bg-gradient-to-br from-primary-50 via-primary-600/5 to-primary-600/70';
       case 'dark':
-        return 'bg-gradient-to-br from-[#1a1d23] via-[#1e2128] to-[#23262d]';
+        return 'bg-gradient-to-br from-[#0f1729] via-[#1e293b] to-[#0f1729]';
       case 'midnight':
         return 'bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A]';
       default:
@@ -121,7 +121,7 @@ export function RegistrationPage() {
       case 'light':
         return 'bg-gradient-to-br from-primary-50 via-primary-600/65 to-primary-400/90';
       case 'dark':
-        return 'bg-gradient-to-br from-[#1e2128] via-[#23262d] to-[#1e2128]';
+        return 'bg-gradient-to-br from-[#0f1729] via-[#1e293b] to-[#0f1729]';
       case 'midnight':
         return 'bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A]';
       default:
@@ -129,15 +129,10 @@ export function RegistrationPage() {
     }
   };
 
-  const getBackgroundClasses = () => {
-    switch (theme) {
-      case 'midnight':
-        return 'bg-[#1F2937]/80 border-[#374151]/40';
-      case 'dark':
-        return 'bg-[#2C2C2E]/80 border-[#3C3C3E]/40';
-      default:
-        return 'bg-white/90 border-gray-200/40';
-    }
+  const getContainerBackground = () => {
+    if (theme === 'dark') return 'bg-[#0f1729]/30';
+    if (theme === 'midnight') return 'bg-[#1e293b]/30';
+    return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]';
   };
 
   const getInputClasses = () => {
@@ -203,7 +198,20 @@ export function RegistrationPage() {
       {/* Right Panel - Registration Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
         <div className="w-full max-w-md">
-          <div className={`${getBackgroundClasses()} backdrop-blur-lg rounded-2xl p-8 shadow-2xl border transition-colors duration-200`}>
+          <div className={`
+            ${getContainerBackground()}
+            backdrop-blur-xl 
+            rounded-2xl 
+            p-8 
+            border-[0.5px] 
+            border-white/10
+            shadow-[4px_0_24px_-2px_rgba(0,0,0,0.12),8px_0_16px_-4px_rgba(0,0,0,0.08)]
+            dark:shadow-[4px_0_24px_-2px_rgba(0,0,0,0.3),8px_0_16px_-4px_rgba(0,0,0,0.2)]
+            ring-1
+            ring-white/5
+            transition-all 
+            duration-300
+          `}>
             <div className="flex justify-between items-center mb-8">
               <Logo className="w-auto h-12" />
               <ThemeDropdown />
