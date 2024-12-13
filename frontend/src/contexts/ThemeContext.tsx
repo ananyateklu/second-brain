@@ -61,7 +61,7 @@ const applyTheme = (themeName: ThemeName) => {
     // Force a repaint in Safari
     const body = document.body;
     body.style.display = 'none';
-    void body.offsetHeight; // Force reflow
+    window.getComputedStyle(body).getPropertyValue('height'); // Force reflow
     body.style.display = '';
 
     // Apply solid background colors for Safari

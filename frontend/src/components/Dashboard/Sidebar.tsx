@@ -33,6 +33,12 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
 
   const sidebarRef = useRef<HTMLDivElement>(null);
 
+  function getBackgroundColor() {
+    if (theme === 'dark') return 'bg-gray-900/30';
+    if (theme === 'midnight') return 'bg-white/5';
+    return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]';
+  }
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
@@ -105,11 +111,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         ref={sidebarRef}
         className={`
           fixed top-0 left-0 z-40 h-screen w-60 
-          ${theme === 'dark'
-            ? 'bg-gray-900/30'
-            : theme === 'midnight'
-              ? 'bg-white/5'
-              : 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]'} 
+          ${getBackgroundColor()} 
           backdrop-blur-xl 
           border-r-[0.5px] border-white/10
           transition-transform duration-200 ease-in-out

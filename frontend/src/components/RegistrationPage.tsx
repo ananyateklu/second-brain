@@ -164,9 +164,13 @@ export function RegistrationPage() {
 
         {/* Floating Cards */}
         <div className="absolute inset-0 z-0">
-          {[...Array(3)].map((_, i) => (
+          {[
+            { id: 'floating-card-1', offset: 20 },
+            { id: 'floating-card-2', offset: 40 },
+            { id: 'floating-card-3', offset: 60 }
+          ].map(({ id, offset }) => (
             <motion.div
-              key={i}
+              key={id}
               className="absolute bg-white/5 dark:bg-white/3 backdrop-blur-lg rounded-2xl p-4 shadow-lg"
               initial={{
                 x: Math.random() * 100,
@@ -187,8 +191,8 @@ export function RegistrationPage() {
               style={{
                 width: 200 + Math.random() * 100,
                 height: 100 + Math.random() * 100,
-                left: `${20 + Math.random() * 60}%`,
-                top: `${20 + Math.random() * 60}%`,
+                left: `${offset}%`,
+                top: `${offset}%`,
               }}
             />
           ))}

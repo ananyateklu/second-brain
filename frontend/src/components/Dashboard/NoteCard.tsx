@@ -41,16 +41,18 @@ export function NoteCard({
   const isDark = useMemo(() => theme === 'dark' || theme === 'midnight', [theme]);
 
   const containerClasses = useMemo(() => {
+    function getBackgroundColor() {
+      if (theme === 'dark') return 'bg-gray-900/30';
+      if (theme === 'midnight') {
+        return isSafari ? 'bg-[var(--note-bg-color)] bg-opacity-[var(--note-bg-opacity,0.3)]' : 'bg-[#1e293b]/30';
+      }
+      return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]';
+    }
+
     const base = `
       relative group w-full
       ${isSelected ? 'ring-2 ring-[var(--color-accent)] rounded-lg' : ''}
-      ${theme === 'dark'
-        ? 'bg-gray-900/30'
-        : theme === 'midnight'
-          ? isSafari
-            ? 'bg-[var(--note-bg-color)] bg-opacity-[var(--note-bg-opacity,0.3)]'
-            : 'bg-[#1e293b]/30'
-          : 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]'} 
+      ${getBackgroundColor()} 
       backdrop-blur-xl 
       border-[0.25px] border-blue-200/30 dark:border-blue-700/30
       hover:border-blue-400/50 dark:hover:border-blue-500/50
@@ -116,17 +118,19 @@ export function NoteCard({
       : 'bg-[var(--color-accent)]/10 text-[var(--color-accent)] border border-[var(--color-accent)]/30'
   ), [isDark]);
 
-  const pinButtonClasses = useMemo(() => (
-    note.isPinned
-      ? (isDark ? 'bg-[#64AB6F]/10 text-[#64AB6F]' : 'bg-[#059669]/10 text-[#059669]')
-      : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-  ), [note.isPinned, isDark]);
+  const pinButtonClasses = useMemo(() => {
+    if (note.isPinned) {
+      return isDark ? 'bg-[#64AB6F]/10 text-[#64AB6F]' : 'bg-[#059669]/10 text-[#059669]';
+    }
+    return 'hover:bg-gray-100 dark:hover:bg-gray-800';
+  }, [note.isPinned, isDark]);
 
-  const favoriteButtonClasses = useMemo(() => (
-    note.isFavorite
-      ? (isDark ? 'bg-amber-900/30 text-amber-400' : 'bg-amber-100 text-amber-600')
-      : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-  ), [note.isFavorite, isDark]);
+  const favoriteButtonClasses = useMemo(() => {
+    if (note.isFavorite) {
+      return isDark ? 'bg-amber-900/30 text-amber-400' : 'bg-amber-100 text-amber-600';
+    }
+    return 'hover:bg-gray-100 dark:hover:bg-gray-800';
+  }, [note.isFavorite, isDark]);
 
   const contextInfoMemo = useMemo(() => (
     <MemoizedContextInfo

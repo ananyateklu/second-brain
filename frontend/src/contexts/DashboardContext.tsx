@@ -615,7 +615,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         notesWithTags = regularNotes.filter(note => note.tags.length > 0).length;
         notesWithLinks = regularNotes.filter(note => 
           (note.linkedNoteIds?.length || 0) > 0 || 
-          (note.linkedTasks?.length || 0) > 0 || 
+          (note.linkedTasks?.length ?? 0) > 0 || 
           (note.linkedReminders?.length || 0) > 0
         ).length;
 

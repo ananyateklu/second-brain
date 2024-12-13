@@ -50,7 +50,7 @@ export function TitleSuggestionButton({
   };
 
   // Check if there's any content to generate from
-  const hasContent = Boolean(content?.trim() || description?.trim() || title?.trim());
+  const hasContent = Boolean(content?.trim() ?? description?.trim() ?? title?.trim());
 
   return (
     <button

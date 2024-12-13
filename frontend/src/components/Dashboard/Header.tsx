@@ -78,13 +78,15 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
     }
   };
 
+  const getBackgroundColor = () => {
+    if (theme === 'dark') return 'bg-gray-900/30';
+    if (theme === 'midnight') return 'bg-white/5';
+    return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]';
+  };
+
   return (
     <header className={`fixed top-0 right-0 left-0 lg:left-60 z-40 
-      ${theme === 'dark'
-        ? 'bg-gray-900/30'
-        : theme === 'midnight'
-          ? 'bg-white/5'
-          : 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]'} 
+      ${getBackgroundColor()} 
       backdrop-blur-xl 
       border-b-[0.5px] border-white/10
       transition-all duration-200

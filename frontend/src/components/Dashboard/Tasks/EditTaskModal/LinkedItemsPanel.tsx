@@ -16,6 +16,30 @@ export function LinkedItemsPanel({
   onShowAddLink,
   onUnlink
 }: LinkedItemsPanelProps) {
+  function getItemIcon(type: string) {
+    if (type === 'idea') {
+      return (
+        <div className="shrink-0 p-2 bg-[var(--color-idea)]/10 rounded-lg">
+          <Lightbulb className="w-4 h-4 text-[var(--color-idea)]" />
+        </div>
+      );
+    }
+    if (type === 'note') {
+      return (
+        <div className="shrink-0 p-2 bg-[var(--color-note)]/10 rounded-lg">
+          <Type className="w-4 h-4 text-[var(--color-note)]" />
+        </div>
+      );
+    }
+    return null;
+  }
+
+  function getItemTypeText(type: string) {
+    if (type === 'idea') return 'Idea';
+    if (type === 'note') return 'Note';
+    return type;
+  }
+
   return (
     <div className="w-80 border-l border-[var(--color-border)] flex flex-col min-h-0 bg-[var(--color-background)]">
       <div className="shrink-0 px-4 py-3 border-b border-[var(--color-border)] bg-[var(--color-background)]">
@@ -46,21 +70,13 @@ export function LinkedItemsPanel({
                 className="group relative hover:bg-[var(--color-surface)] transition-colors"
               >
                 <div className="flex items-start gap-3 p-4">
-                  {item.type === 'idea' ? (
-                    <div className="shrink-0 p-2 bg-[var(--color-idea)]/10 rounded-lg">
-                      <Lightbulb className="w-4 h-4 text-[var(--color-idea)]" />
-                    </div>
-                  ) : item.type === 'note' ? (
-                    <div className="shrink-0 p-2 bg-[var(--color-note)]/10 rounded-lg">
-                      <Type className="w-4 h-4 text-[var(--color-note)]" />
-                    </div>
-                  ) : null}
+                  {getItemIcon(item.type)}
                   <div className="flex-1 min-w-0">
                     <h6 className="font-medium text-[var(--color-text)] truncate">
                       {item.title}
                     </h6>
                     <p className="text-xs text-[var(--color-textSecondary)] mt-0.5">
-                      {item.type === 'idea' ? 'Idea' : item.type === 'note' ? 'Note' : item.type}
+                      {getItemTypeText(item.type)}
                     </p>
                   </div>
                   <button

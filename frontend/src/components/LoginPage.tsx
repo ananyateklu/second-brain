@@ -141,6 +141,13 @@ export function LoginPage() {
     }
   };
 
+  // Add this near the top of the LoginPage component
+  const floatingCards = [
+    { id: 'card-1', width: 250, height: 150 },
+    { id: 'card-2', width: 280, height: 180 },
+    { id: 'card-3', width: 220, height: 140 }
+  ];
+
   // Only show loading screen when actually redirecting after successful login
   if (isRedirecting) {
     return <LoadingScreen message="Logging you in..." />;
@@ -164,9 +171,9 @@ export function LoginPage() {
 
         {/* Floating Cards */}
         <div className="absolute inset-0 z-0">
-          {[...Array(3)].map((_, i) => (
+          {floatingCards.map(card => (
             <motion.div
-              key={i}
+              key={card.id}
               className="absolute bg-white/5 dark:bg-white/3 backdrop-blur-lg rounded-2xl p-4 shadow-lg"
               initial={{
                 x: Math.random() * 100,
@@ -185,8 +192,8 @@ export function LoginPage() {
                 ease: "linear"
               }}
               style={{
-                width: 200 + Math.random() * 100,
-                height: 100 + Math.random() * 100,
+                width: card.width,
+                height: card.height,
                 left: `${20 + Math.random() * 60}%`,
                 top: `${20 + Math.random() * 60}%`,
               }}

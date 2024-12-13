@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import { useAI } from './AIContext';
 
 interface RecordingContextType {
@@ -16,6 +16,25 @@ export function RecordingProvider({ children }: { children: React.ReactNode }) {
   const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
   const [error, setError] = useState<string | null>(null);
   const { transcribeAudio } = useAI();
+
+  const handleRecordingStop = async (
+    mediaRecorder: MediaRecorder,
+    audioChunks: Blob[],
+    transcribeAudio: (file: File) => Promise<{ content: { toString(): string } }>
+  ): Promise<string> => {
+    const audioBlob = new Blob(audioChunks, { type: 'audio/webm;codecs=opus' });
+    const file = new File([audioBlob], 'recording.webm', { 
+      type: 'audio/webm',
+      lastModified: Date.now()
+    });
+
+    const response = await transcribeAudio(file);
+    
+    // Clean up
+    mediaRecorder.stream.getTracks().forEach(track => track.stop());
+    
+    return response.content.toString().trim().replace(/[.]+$/, '');
+  };
 
   const startRecording = useCallback(async () => {
     try {
@@ -50,39 +69,20 @@ export function RecordingProvider({ children }: { children: React.ReactNode }) {
   const stopRecording = useCallback(async (): Promise<string> => {
     return new Promise((resolve, reject) => {
       if (!mediaRecorder) {
-        reject('No recording in progress');
+        reject(new Error('No recording in progress'));
         return;
       }
 
       mediaRecorder.onstop = async () => {
         try {
-          // Create audio blob in webm format
-          const audioBlob = new Blob(audioChunks, { 
-            type: 'audio/webm;codecs=opus' 
-          });
-          
-          // Convert to mp3 file for OpenAI API
-          const file = new File([audioBlob], 'recording.webm', { 
-            type: 'audio/webm',
-            lastModified: Date.now()
-          });
-
-          // Transcribe the audio
-          const response = await transcribeAudio(file);
-          
-          // Clean up
+          const transcription = await handleRecordingStop(mediaRecorder, audioChunks, transcribeAudio);
           setAudioChunks([]);
-          mediaRecorder.stream.getTracks().forEach(track => track.stop());
           setMediaRecorder(null);
           setIsRecording(false);
-
-          // Remove trailing periods from transcription
-          const cleanedTranscription = response.content.toString().trim().replace(/[.]+$/, '');
-          
-          resolve(cleanedTranscription);
+          resolve(transcription);
         } catch (err) {
           setError('Failed to transcribe audio.');
-          reject(err);
+          console.error('Recording error:', err);
         }
       };
 
@@ -90,13 +90,15 @@ export function RecordingProvider({ children }: { children: React.ReactNode }) {
     });
   }, [mediaRecorder, audioChunks, transcribeAudio]);
 
+  const contextValue = useMemo(() => ({
+    isRecording,
+    startRecording,
+    stopRecording,
+    error
+  }), [isRecording, startRecording, stopRecording, error]);
+
   return (
-    <RecordingContext.Provider value={{
-      isRecording,
-      startRecording,
-      stopRecording,
-      error
-    }}>
+    <RecordingContext.Provider value={contextValue}>
       {children}
     </RecordingContext.Provider>
   );
@@ -108,5 +110,5 @@ export function useRecording(): RecordingContextType {
   if (!context) {
     throw new Error('useRecording must be used within a RecordingProvider');
   }
-  return context!;
+  return context;
 } 

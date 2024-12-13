@@ -27,7 +27,8 @@ export function useHandleEdit() {
           isArchived: false,
           isDeleted: false,
           linkedNoteIds: [],
-          linkedTasks: []
+          linkedTasks: [],
+          linkedReminders: []
         });
         break;
       case 'idea':
@@ -44,7 +45,8 @@ export function useHandleEdit() {
           isArchived: false,
           isDeleted: false,
           linkedNoteIds: [],
-          linkedTasks: []
+          linkedTasks: [],
+          linkedReminders: []
         });
         break;
       case 'task':
@@ -74,7 +76,8 @@ export function useHandleEdit() {
           isDeleted: false,
           userId: '',
           updatedAt: item.updatedAt,
-          createdAt: item.createdAt
+          createdAt: item.createdAt,
+          linkedItems: []
         });
         break;
     }

@@ -56,7 +56,7 @@ export function EditTaskModal({ isOpen, onClose, task }: EditTaskModalProps) {
         try {
             setIsLoading(true);
             setError(null);
-            await removeTaskLink(task?.id || '', itemId);
+            await removeTaskLink(task?.id ?? '', itemId);
         } catch (err) {
             console.error('Failed to unlink item:', err);
             setError('Failed to unlink item. Please try again.');
@@ -86,7 +86,7 @@ export function EditTaskModal({ isOpen, onClose, task }: EditTaskModalProps) {
                 tags
             };
 
-            await updateTask(task?.id || '', updates);
+            await updateTask(task?.id ?? '', updates);
             onClose();
         } catch (err) {
             console.error('Failed to update task:', err);
@@ -101,7 +101,7 @@ export function EditTaskModal({ isOpen, onClose, task }: EditTaskModalProps) {
         setError(null);
 
         try {
-            await deleteTask(task?.id || '');
+            await deleteTask(task?.id ?? '');
             onClose();
         } catch (err) {
             console.error('Failed to delete task:', err);
@@ -179,7 +179,7 @@ export function EditTaskModal({ isOpen, onClose, task }: EditTaskModalProps) {
             <AddLinkModal
                 isOpen={showAddLinkModal}
                 onClose={() => setShowAddLinkModal(false)}
-                currentTaskId={task?.id || ''}
+                currentTaskId={task?.id ?? ''}
             />
 
             <DeleteConfirmDialog

@@ -64,19 +64,6 @@ export const getIconColor = (type: string) => {
   }
 };
 
-export function getNoteCardBg(type?: 'note' | 'idea' | 'task' | 'reminder') {
-  const baseClass = 'backdrop-blur-[2px]';
-
-  switch (type) {
-    case 'note':
-      return `${baseClass} bg-white/50 dark:bg-gray-900/50`;
-    case 'idea':
-      return `${baseClass} bg-white/50 dark:bg-gray-900/50`;
-    case 'task':
-      return `${baseClass} bg-white/50 dark:bg-gray-900/50`;
-    case 'reminder':
-      return `${baseClass} bg-white/50 dark:bg-gray-900/50`;
-    default:
-      return `${baseClass} bg-white/50 dark:bg-gray-900/50`;
-  }
+export function getNoteCardBg() {
+  return 'backdrop-blur-[2px] bg-white/50 dark:bg-gray-900/50';
 } 

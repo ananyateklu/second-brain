@@ -58,7 +58,7 @@ export function SuggestionButton({
           break;
         case 'content':
           suggestion = await contentSuggestionService.generateContent(
-            input.title || '',
+            input.title ?? '',
             itemType,
             context
           );
@@ -66,7 +66,7 @@ export function SuggestionButton({
         case 'tags':
           suggestion = await contentSuggestionService.generateTags(
             { 
-              title: input.title || '', 
+              title: input.title ?? '', 
               content: [input.description, input.content].filter(Boolean).join('\n\n')
             },
             itemType,
@@ -83,8 +83,8 @@ export function SuggestionButton({
   };
 
   const hasContent = type === 'tags' 
-    ? Boolean(input.title || input.content || input.description)
-    : Boolean(input.content?.trim() || input.description?.trim() || input.title?.trim());
+    ? Boolean(input.title ?? input.content ?? input.description)
+    : Boolean(input.content?.trim() ?? input.description?.trim() ?? input.title?.trim());
 
   const getButtonText = () => {
     switch (type) {

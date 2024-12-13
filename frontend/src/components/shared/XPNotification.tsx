@@ -13,7 +13,7 @@ interface XPNotificationProps {
   onClose: () => void;
 }
 
-export function XPNotification({ xp, achievement, levelUp }: XPNotificationProps) {
+export function XPNotification({ xp, achievement, levelUp, onClose }: XPNotificationProps) {
   return (
     <AnimatePresence>
       <motion.div
@@ -21,6 +21,7 @@ export function XPNotification({ xp, achievement, levelUp }: XPNotificationProps
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -50 }}
         className="fixed bottom-4 right-4 bg-white dark:bg-dark-card shadow-lg rounded-lg p-4 max-w-sm"
+        onClick={onClose}
       >
         <div className="flex items-center gap-3">
           <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">

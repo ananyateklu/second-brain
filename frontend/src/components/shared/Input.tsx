@@ -169,7 +169,7 @@ export function Input({
               props.onBlur?.(e);
             }}
             style={{
-              borderColor: validationColor || getBorderColor(),
+              borderColor: validationColor ?? getBorderColor(),
               backgroundColor: getBackgroundColor(),
               ...props.style
             }}

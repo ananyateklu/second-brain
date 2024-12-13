@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ActivityContext } from './activityContextUtils';
 import { Activity, activityService } from '../api/services/activityService';
 import { useAuth } from '../hooks/useAuth';
@@ -52,8 +52,13 @@ export function ActivityProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user, fetchActivities]);
 
+  const contextValue = useMemo(
+    () => ({ activities, isLoading, error, fetchActivities, createActivity: createActivityHandler }),
+    [activities, isLoading, error, fetchActivities, createActivityHandler]
+  );
+
   return (
-    <ActivityContext.Provider value={{ activities, isLoading, error, fetchActivities, createActivity: createActivityHandler }}>
+    <ActivityContext.Provider value={contextValue}>
       {children}
     </ActivityContext.Provider>
   );

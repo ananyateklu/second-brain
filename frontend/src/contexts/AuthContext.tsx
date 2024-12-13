@@ -1,4 +1,4 @@
-import React, { createContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useState, useCallback, useEffect, useMemo } from 'react';
 import { AuthState } from '../types/auth';
 import { authService, AuthResponse } from '../services/api/auth.service';
 import { useNavigate } from 'react-router-dom';
@@ -36,7 +36,7 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
         error: null,
         user: response.user,
       });
-    } catch (error: Error | unknown) {
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Invalid credentials';
       setAuthState(prev => ({
         ...prev,
@@ -65,7 +65,7 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
       setAuthState(prev => ({
         ...prev,
         isLoading: false,
-        error: apiError.response?.data?.error || 'Registration failed',
+        error: apiError.response?.data?.error ?? 'Registration failed',
       }));
       throw error;
     }
@@ -84,7 +84,7 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
       setAuthState(prev => ({
         ...prev,
         isLoading: false,
-        error: apiError.response?.data?.error || 'Password reset failed',
+        error: apiError.response?.data?.error ?? 'Password reset failed',
       }));
       throw error;
     }
@@ -93,7 +93,7 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
   const logout = useCallback(async () => {
     setAuthState(prev => ({ ...prev, isLoading: true }));
     try {
-      await authService.logout();
+      authService.logout();
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
@@ -136,19 +136,24 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
     }
   }, [navigate]);
 
-    useEffect(() => {
-      fetchCurrentUser();
-    }, [fetchCurrentUser]);
+  useEffect(() => {
+    fetchCurrentUser();
+  }, [fetchCurrentUser]);
 
-    if (authState.isLoading) {
-      return <LoadingScreen message="Authenticating..." />;
-    }
+  const contextValue = useMemo(
+    () => ({ ...authState, login, register, resetPassword, logout, fetchCurrentUser }),
+    [authState, login, register, resetPassword, logout, fetchCurrentUser]
+  );
 
-    return (
-      <AuthContext.Provider value={{ ...authState, login, register, resetPassword, logout, fetchCurrentUser }}>
-        {children}
-      </AuthContext.Provider>
-    );
+  if (authState.isLoading) {
+    return <LoadingScreen message="Authenticating..." />;
   }
+
+  return (
+    <AuthContext.Provider value={contextValue}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
 
 export { AuthContext };

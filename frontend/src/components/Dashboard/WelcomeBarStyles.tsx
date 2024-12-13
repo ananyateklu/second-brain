@@ -252,7 +252,7 @@ export const StyledStatCard = ({
               <span className={`${size.valueSize} font-bold text-[var(--color-text)]`}>
                 {statValue.value}
               </span>
-              {statValue.change && statValue.change > 0 && (
+              {statValue.change !== undefined && statValue.change !== 0 && (
                 <span className="text-xs text-[var(--color-accent)] font-semibold">
                   +{statValue.change}
                 </span>

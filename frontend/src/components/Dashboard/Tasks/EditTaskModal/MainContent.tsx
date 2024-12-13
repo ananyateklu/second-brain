@@ -88,7 +88,7 @@ export function MainContent({
                             </label>
                             <input
                                 type="datetime-local"
-                                value={dueDate || ''}
+                                value={dueDate ?? ''}
                                 onChange={(e) => onDueDateChange(e.target.value || null)}
                                 className="w-full h-[42px] px-4 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent text-[var(--color-text)]"
                                 disabled={isLoading}
