@@ -17,7 +17,6 @@ namespace SecondBrain.Api.Controllers
         private readonly ILogger<AIAgentsController> _logger;
         private readonly string _aiServiceUrl;
         private readonly JsonSerializerOptions _jsonOptions;
-        private readonly JsonSerializerOptions _pythonJsonOptions;
 
         public AIAgentsController(
             HttpClient httpClient,
@@ -33,13 +32,6 @@ namespace SecondBrain.Api.Controllers
             {
                 PropertyNameCaseInsensitive = true,
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            };
-            
-            // Options for sending requests to Python (snake_case)
-            _pythonJsonOptions = new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = new SnakeCaseNamingPolicy(),
-                PropertyNameCaseInsensitive = true
             };
         }
 
@@ -88,8 +80,8 @@ namespace SecondBrain.Api.Controllers
                 {
                     { "model_id", request.ModelId },
                     { "prompt", request.Prompt },
-                    { "max_tokens", request.MaxTokens },
-                    { "temperature", request.Temperature },
+                    { "max_tokens", request.MaxTokens ?? 1000 },
+                    { "temperature", request.Temperature ?? 0.7 },
                     { "tools", request.Tools ?? new List<Dictionary<string, object>>() }
                 };
                 
