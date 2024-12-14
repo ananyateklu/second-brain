@@ -167,6 +167,8 @@ builder.Services.AddHttpClient<IGeminiService, GeminiService>();
 // Register RAGService
 builder.Services.AddScoped<RagService>();
 
+// Add HttpClient
+builder.Services.AddHttpClient();
 
 var app = builder.Build();
 
