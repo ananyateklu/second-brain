@@ -3,6 +3,7 @@ import { AnthropicService } from './ai/anthropic';
 import { GeminiService } from './ai/gemini';
 import { LlamaService } from './ai/llama';
 import { GrokService } from './ai/grok';
+import { AgentService } from './ai/agent';
 import { AIModel, AIResponse, GrokFunction } from '../types/ai';
 
 interface ModelOptions {
@@ -19,6 +20,7 @@ export class AIService {
   private readonly gemini: GeminiService;
   public readonly llama: LlamaService;
   public readonly grokService: GrokService;
+  private readonly agentService: AgentService;
 
   constructor() {
     this.openai = new OpenAIService();
@@ -26,6 +28,7 @@ export class AIService {
     this.gemini = new GeminiService();
     this.llama = new LlamaService();
     this.grokService = new GrokService();
+    this.agentService = new AgentService();
   }
 
   async sendMessage(message: string, modelId: string, options?: ModelOptions): Promise<AIResponse> {
@@ -34,11 +37,27 @@ export class AIService {
       throw new Error('Invalid model selected');
     }
 
+    switch (model.category) {
+      case 'agent':
+        return this.agentService.sendMessage(message, modelId, options);
+      case 'function':
+        if (model.provider === 'grok') {
+          return this.grokService.executeFunctionCall(message, modelId, []);
+        }
+        break;
+      case 'rag':
+        // Handle RAG models if needed
+        break;
+    }
+
     switch (model.provider) {
       case 'openai':
         return this.openai.sendMessage(message, modelId, options);
       case 'anthropic':
-        return this.anthropic.sendMessage(message, modelId, options);
+        if (!model.category.includes('agent')) {
+          return this.anthropic.sendMessage(message, modelId, options);
+        }
+        return this.agentService.sendMessage(message, modelId, options);
       case 'gemini':
         return this.gemini.sendMessage(message, modelId, options);
       case 'llama':
@@ -59,13 +78,20 @@ export class AIService {
   }
 
   getAvailableModels(): AIModel[] {
-    return [
+    // First get all agent models
+    const agentModels = this.agentService.getModels();
+    const agentModelIds = new Set(agentModels.map(m => m.id));
+
+    // Then get all other models, excluding those that are already in agent models
+    const otherModels = [
       ...this.openai.getModels(),
-      ...this.anthropic.getModels(),
+      ...this.anthropic.getModels().filter(m => !agentModelIds.has(m.id)),
       ...this.gemini.getModels(),
       ...this.llama.getModels(),
       ...this.grokService.getModels(),
     ];
+
+    return [...agentModels, ...otherModels];
   }
 
   isOpenAIConfigured(): Promise<boolean> {
@@ -86,6 +112,10 @@ export class AIService {
 
   async isGrokConfigured(): Promise<boolean> {
     return this.grokService.checkConfiguration();
+  }
+
+  async isAgentConfigured(): Promise<boolean> {
+    return this.agentService.isConfigured();
   }
 
   async executeFunctionCall(

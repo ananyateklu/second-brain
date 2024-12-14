@@ -12,12 +12,12 @@ export interface AIModel {
   id: string;
   name: string;
   provider: 'openai' | 'anthropic' | 'gemini' | 'llama' | 'grok';
-  category: 'chat' | 'completion' | 'embedding' | 'image' | 'audio' | 'function' | 'rag';
+  category: 'chat' | 'completion' | 'embedding' | 'image' | 'audio' | 'function' | 'rag' | 'agent';
   description: string;
   isConfigured: boolean;
   isReasoner: boolean;
   color: string;
-  endpoint: 'chat' | 'completions' | 'images' | 'audio' | 'embeddings' | 'rag';
+  endpoint: 'chat' | 'completions' | 'images' | 'audio' | 'embeddings' | 'rag' | 'agent';
   rateLimits?: RateLimits;
   size?: string;
 }
