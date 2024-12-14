@@ -2,11 +2,14 @@ import { EditTaskModal } from '../Tasks/EditTaskModal';
 import { EditReminderModal } from '../Reminders/EditReminderModal';
 import { EditNoteModal } from '../Notes/EditNoteModal';
 import { EditIdeaModal } from '../Ideas/EditIdeaModal';
-import { Note, Task, Reminder, Idea } from '../../../api/types';
+import { Note } from '../../../types/note';
+import { Task } from '../../../api/types/task';
+import { Reminder } from '../../../api/types/reminder';
+
 
 interface TagsModalsProps {
   selectedNote: Note | null;
-  selectedIdea: Idea | null;
+  selectedIdea: Note | null;
   selectedTask: Task | null;
   selectedReminder: Reminder | null;
   onNoteClose: () => void;

@@ -218,14 +218,19 @@ export function TagsPage() {
           id: item.id,
           title: item.title,
           description: item.content,
-          tags: item.tags,
-          status: 'Incomplete',
-          priority: 'medium',
+          status: item.status === 'Completed' ? 'Completed' : 'Incomplete',
+          priority: item.priority || 'medium',
           dueDate: null,
-          updatedAt: item.updatedAt,
+          tags: item.tags || [],
+          linkedItems: item.linkedItems?.map(item => ({
+            id: item.id,
+            title: item.title,
+            type: item.type,
+            createdAt: item.createdAt
+          })) || [],
           createdAt: item.createdAt,
-          isDeleted: false,
-          linkedItems: item.linkedItems || []
+          updatedAt: item.updatedAt,
+          isDeleted: false
         });
         break;
     }
