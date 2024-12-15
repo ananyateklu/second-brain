@@ -11,7 +11,7 @@ app = FastAPI(title="SecondBrain AI Service")
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5000"],  # Your C# backend URL
+    allow_origins=["http://localhost:5127"],  # Your C# backend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -26,6 +26,7 @@ async def health_check():
 async def execute_agent(request: AgentRequest):
     """Execute an AI agent with the given parameters"""
     try:
+        # Create research agent (it will internally select the appropriate model)
         agent = ResearchAgent(
             model_id=request.model_id,
             temperature=request.temperature or 0.7

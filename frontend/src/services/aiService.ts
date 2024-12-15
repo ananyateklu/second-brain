@@ -37,27 +37,23 @@ export class AIService {
       throw new Error('Invalid model selected');
     }
 
-    switch (model.category) {
-      case 'agent':
-        return this.agentService.sendMessage(message, modelId, options);
-      case 'function':
-        if (model.provider === 'grok') {
-          return this.grokService.executeFunctionCall(message, modelId, []);
-        }
-        break;
-      case 'rag':
-        // Handle RAG models if needed
-        break;
+    // Handle special categories first
+    if (model.category === 'agent') {
+      return this.agentService.sendMessage(message, modelId, options);
+    }
+    if (model.category === 'function' && model.provider === 'grok') {
+      return this.grokService.executeFunctionCall(message, modelId, []);
+    }
+    if (model.category === 'rag') {
+      throw new Error('RAG models not implemented yet');
     }
 
+    // Handle regular provider-specific routing
     switch (model.provider) {
       case 'openai':
         return this.openai.sendMessage(message, modelId, options);
       case 'anthropic':
-        if (!model.category.includes('agent')) {
-          return this.anthropic.sendMessage(message, modelId, options);
-        }
-        return this.agentService.sendMessage(message, modelId, options);
+        return this.anthropic.sendMessage(message, modelId, options);
       case 'gemini':
         return this.gemini.sendMessage(message, modelId, options);
       case 'llama':
@@ -84,10 +80,10 @@ export class AIService {
 
     // Then get all other models, excluding those that are already in agent models
     const otherModels = [
-      ...this.openai.getModels(),
-      ...this.anthropic.getModels().filter(m => !agentModelIds.has(m.id)),
+      ...this.openai.getModels().filter(m => !agentModelIds.has(m.id) && m.category !== 'agent'),
+      ...this.anthropic.getModels().filter(m => !agentModelIds.has(m.id) && m.category !== 'agent'),
       ...this.gemini.getModels(),
-      ...this.llama.getModels(),
+      ...this.llama.getModels().filter(m => !agentModelIds.has(m.id) && m.category !== 'agent'),
       ...this.grokService.getModels(),
     ];
 
@@ -119,8 +115,8 @@ export class AIService {
   }
 
   async executeFunctionCall(
-    message: string, 
-    modelId: string, 
+    message: string,
+    modelId: string,
     functions: GrokFunction[]
   ): Promise<AIResponse> {
     if (modelId.startsWith('grok-')) {
