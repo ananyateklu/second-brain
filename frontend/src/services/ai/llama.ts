@@ -150,9 +150,24 @@ export class LlamaService {
 
   getModels(): AIModel[] {
     // Filter models from AI_MODELS that are from the 'llama' provider
-    return AI_MODELS.filter(model => model.provider === 'llama').map(model => ({
-      ...model,
-      isConfigured: this.isConfigured()  // Ensure we use the local isConfigured state
-    }));
+    const seenIds = new Set<string>();
+    return AI_MODELS
+      .filter(model => {
+        // Only include models that:
+        // 1. Are from llama provider
+        // 2. Are chat/function/embedding models (not agent)
+        // 3. Haven't been seen before (avoid duplicates)
+        if (model.provider === 'llama' && 
+            (model.category === 'chat' || model.category === 'function' || model.category === 'embedding') &&
+            !seenIds.has(model.id)) {
+          seenIds.add(model.id);
+          return true;
+        }
+        return false;
+      })
+      .map(model => ({
+        ...model,
+        isConfigured: this.isConfigured()
+      }));
   }
 } 

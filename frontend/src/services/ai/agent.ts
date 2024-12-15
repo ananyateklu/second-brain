@@ -104,7 +104,11 @@ export class AgentService {
   }
 
   getModels(): AIModel[] {
-    return AI_MODELS.filter(model => model.category === 'agent');
+    return AI_MODELS.filter(model => 
+      model.category === 'agent' && 
+      // Ensure we're getting the agent versions of models
+      model.endpoint === 'agent'
+    );
   }
 
   // Helper method to create common tools

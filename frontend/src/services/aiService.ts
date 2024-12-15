@@ -82,9 +82,9 @@ export class AIService {
     const otherModels = [
       ...this.openai.getModels().filter(m => !agentModelIds.has(m.id) && m.category !== 'agent'),
       ...this.anthropic.getModels().filter(m => !agentModelIds.has(m.id) && m.category !== 'agent'),
-      ...this.gemini.getModels(),
+      ...this.gemini.getModels().filter(m => !agentModelIds.has(m.id) && m.category !== 'agent'),
       ...this.llama.getModels().filter(m => !agentModelIds.has(m.id) && m.category !== 'agent'),
-      ...this.grokService.getModels(),
+      ...this.grokService.getModels().filter(m => !agentModelIds.has(m.id) && m.category !== 'agent')
     ];
 
     return [...agentModels, ...otherModels];
