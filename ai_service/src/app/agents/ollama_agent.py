@@ -82,10 +82,13 @@ class OllamaAgent(BaseAgent):
             "Connection": "keep-alive"
         }
         
-        # Payload
+        # Payload with token counting enabled
         payload = {
             "model": self.model_id,
-            "prompt": prompt
+            "prompt": prompt,
+            "options": {
+                "num_predict": -1  # Enable token counting
+            }
         }
         
         try:
@@ -104,28 +107,46 @@ class OllamaAgent(BaseAgent):
             
             # Process streaming response
             full_response = ""
+            prompt_tokens = 0
+            completion_tokens = 0
+            total_tokens = 0
+            
             for line in response.iter_lines():
                 if line:
                     try:
                         json_response = json.loads(line)
                         full_response += json_response.get("response", "")
+                        
+                        # Extract token information
+                        if "prompt_eval_count" in json_response:
+                            prompt_tokens = json_response["prompt_eval_count"]
+                        if "eval_count" in json_response:
+                            completion_tokens = json_response["eval_count"]
+                        
                         if json_response.get("done", False):
+                            total_tokens = prompt_tokens + completion_tokens
                             break
                     except json.JSONDecodeError as e:
                         logger.error(f"Failed to parse JSON response: {str(e)}")
                         continue
             
             logger.info("Successfully received response from Ollama")
+            logger.info(f"Token usage - Prompt: {prompt_tokens}, Completion: {completion_tokens}, Total: {total_tokens}")
             
             # Calculate execution time
             execution_time = time.time() - start_time
             
-            # Format the response
+            # Format the response with token usage
             return {
                 "result": full_response,
                 "metadata": {
                     "model": self.model_id,
                     "execution_time": execution_time,
+                    "token_usage": {
+                        "prompt_tokens": prompt_tokens,
+                        "completion_tokens": completion_tokens,
+                        "total_tokens": total_tokens
+                    },
                     "prompt": prompt,
                     "temperature": self.temperature,
                     "provider": "ollama",
