@@ -37,6 +37,18 @@ export interface ExecutionStep {
   metadata?: Record<string, unknown>;
 }
 
+export interface ToolExecution {
+  name: string;
+  type: string;
+  description: string;
+  parameters?: Record<string, unknown>;
+  required_permissions?: string[];
+  status: 'pending' | 'success' | 'error';
+  result?: string;
+  error?: string;
+  execution_time?: number;
+}
+
 export interface AIResponse {
   content: string;
   type: 'text' | 'image' | 'audio' | 'embedding';
@@ -48,13 +60,15 @@ export interface AIResponse {
     prompt?: string;
     revised_prompt?: string;
     context?: AccumulatedContext;
-    toolResults?: AnthropicToolResult[];
+    tools_used?: ToolExecution[];
     parameters?: Record<string, unknown>;
     toolCalls?: Record<string, unknown>[];
     usage?: {
       input_tokens: number;
       output_tokens: number;
     };
+    execution_time?: number;
+    request_id?: string;
   };
 }
 

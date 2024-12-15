@@ -1,6 +1,7 @@
 from pydantic_settings import BaseSettings
 import os
 from pathlib import Path
+from typing import Optional
 
 # Get the project root directory (ai_service)
 root_dir = Path(__file__).parent.parent.parent.parent
@@ -9,6 +10,7 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str
     OPENAI_API_KEY: str
     OLLAMA_BASE_URL: str  # Default to localhost
+    NEWS_API_KEY: Optional[str] = None  # Make NewsAPI key optional
     
     class Config:
         # Look for .env file in multiple locations
@@ -39,6 +41,12 @@ class Settings(BaseSettings):
 
             # Show Ollama configuration
             print(f"✅ Ollama URL configured: {self.OLLAMA_BASE_URL}")
+            
+            # Show NewsAPI key status
+            if self.NEWS_API_KEY:
+                print(f"✅ NewsAPI Key loaded: {self.NEWS_API_KEY[:10]}...")
+            else:
+                print("⚠️ NewsAPI Key not configured - news search will be disabled")
             
             print("============================\n")
         else:

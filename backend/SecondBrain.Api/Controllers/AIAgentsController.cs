@@ -5,6 +5,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using SecondBrain.Api.Models.Agent;
 using Microsoft.AspNetCore.Cors;
+using System.Text;
 
 namespace SecondBrain.Api.Controllers
 {
@@ -27,11 +28,11 @@ namespace SecondBrain.Api.Controllers
             _logger = logger;
             _aiServiceUrl = configuration["AIService:BaseUrl"] ?? "http://localhost:8000";
             
-            // Options for receiving responses (camelCase)
             _jsonOptions = new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                WriteIndented = true
             };
         }
 
@@ -75,26 +76,33 @@ namespace SecondBrain.Api.Controllers
             {
                 _logger.LogInformation("Executing agent with model {ModelId}", request.ModelId);
                 
-                // Convert the request to a dictionary to ensure proper snake_case serialization
-                var requestDict = new Dictionary<string, object>
-                {
-                    { "model_id", request.ModelId },
-                    { "prompt", request.Prompt },
-                    { "max_tokens", request.MaxTokens ?? 1000 },
-                    { "temperature", request.Temperature ?? 0.7 },
-                    { "tools", request.Tools ?? new List<Dictionary<string, object>>() }
-                };
-                
-                var jsonContent = JsonSerializer.Serialize(requestDict);
-                var content = new StringContent(jsonContent, System.Text.Encoding.UTF8, "application/json");
+                // Convert request to snake_case format for Python API
+                var requestDict = request.ToSnakeCase();
+                var jsonContent = JsonSerializer.Serialize(requestDict, _jsonOptions);
+                var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
                 
                 var response = await _httpClient.PostAsync($"{_aiServiceUrl}/agent/execute", content);
                 var responseContent = await response.Content.ReadAsStringAsync();
                 
                 if (response.IsSuccessStatusCode)
                 {
-                    var result = JsonSerializer.Deserialize<AgentResponse>(responseContent, _jsonOptions);
-                    return Ok(result);
+                    try
+                    {
+                        var result = JsonSerializer.Deserialize<AgentResponse>(responseContent, _jsonOptions);
+                        if (result == null)
+                        {
+                            throw new JsonException("Deserialized response is null");
+                        }
+                        return Ok(result);
+                    }
+                    catch (JsonException ex)
+                    {
+                        _logger.LogError(ex, "Failed to deserialize AI service response: {Content}", responseContent);
+                        return StatusCode(500, new { 
+                            error = "Failed to process AI service response",
+                            details = ex.Message
+                        });
+                    }
                 }
 
                 _logger.LogError("AI Service error: {StatusCode} {Content}", 
@@ -114,25 +122,57 @@ namespace SecondBrain.Api.Controllers
                 });
             }
         }
-    }
 
-    public class SnakeCaseNamingPolicy : JsonNamingPolicy
-    {
-        public override string ConvertName(string name)
+        [HttpPost("batch")]
+        [ProducesResponseType(typeof(List<AgentResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> ExecuteBatchAgents([FromBody] List<AgentRequest> requests)
         {
-            if (string.IsNullOrEmpty(name))
-                return name;
-
-            var result = new System.Text.StringBuilder();
-            for (int i = 0; i < name.Length; i++)
+            if (!ModelState.IsValid)
             {
-                if (i > 0 && char.IsUpper(name[i]))
-                {
-                    result.Append('_');
-                }
-                result.Append(char.ToLower(name[i]));
+                return BadRequest(ModelState);
             }
-            return result.ToString();
+
+            var responses = new List<AgentResponse>();
+            var errors = new List<object>();
+
+            foreach (var request in requests)
+            {
+                try
+                {
+                    var result = await ExecuteAgent(request) as ObjectResult;
+                    if (result?.Value is AgentResponse response)
+                    {
+                        responses.Add(response);
+                    }
+                    else
+                    {
+                        errors.Add(new { 
+                            request = request,
+                            error = "Failed to process request",
+                            details = result?.Value
+                        });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    errors.Add(new { 
+                        request = request,
+                        error = "Request failed",
+                        details = ex.Message
+                    });
+                }
+            }
+
+            return Ok(new { 
+                responses = responses,
+                errors = errors,
+                summary = new {
+                    total = requests.Count,
+                    successful = responses.Count,
+                    failed = errors.Count
+                }
+            });
         }
     }
 }

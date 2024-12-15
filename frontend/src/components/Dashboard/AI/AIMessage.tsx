@@ -6,13 +6,46 @@ import { ThoughtProcess } from './ThoughtProcess';
 import { useAI } from '../../../contexts/AIContext';
 import { Message } from '../../../types/message';
 import { AudioContent } from './Messages/AudioContent';
+import { ToolExecution } from './ToolExecution';
+import { AgentTool } from '../../../services/ai/agent';
+import { Wrench } from 'lucide-react';
+import React from 'react';
+
+interface ToolMetadata {
+  tools_used: Array<{
+    name: string;
+    type: string;
+    description: string;
+    parameters: Record<string, unknown>;
+    required_permissions?: string[];
+    status?: string;
+    result?: string;
+    error?: string;
+    execution_time?: number;
+  }>;
+  execution_time?: number;
+  agent_type?: string;
+  base_agent?: string;
+  research_parameters?: {
+    topic: string;
+    tools_used: string[];
+  };
+}
 
 interface AIMessageProps {
-  message: Message;
+  message: Message & { metadata?: ToolMetadata };
   themeColor: string;
   isStreaming?: boolean;
   isFirstInGroup?: boolean;
   isLastInGroup?: boolean;
+}
+
+interface ToolExecutionState {
+  tool: AgentTool;
+  status: 'pending' | 'success' | 'error';
+  result?: string;
+  error?: string;
+  execution_time?: number;
 }
 
 export function AIMessage({
@@ -26,13 +59,100 @@ export function AIMessage({
   const { executionSteps } = useAI();
   const messageSteps = message.executionSteps || executionSteps[message.id] || [];
   
+  // Extract tool executions from metadata
+  const toolExecutions: ToolExecutionState[] = React.useMemo(() => {
+    if (!message.metadata?.tools_used) return [];
+    
+    return message.metadata.tools_used.map((tool: ToolMetadata['tools_used'][0]) => ({
+      tool: {
+        name: tool.name,
+        type: tool.type,
+        description: tool.description,
+        parameters: tool.parameters,
+        required_permissions: tool.required_permissions
+      },
+      status: (tool.status || 'success') as 'pending' | 'success' | 'error',
+      result: tool.result,
+      error: tool.error,
+      execution_time: tool.execution_time
+    }));
+  }, [message.metadata?.tools_used]);
+
   const shouldShowThoughtProcess = !isUser &&
     message.model?.category === 'function' &&
     messageSteps.length > 0;
 
+  const shouldShowToolExecutions = !isUser && 
+    message.model?.category === 'agent' && 
+    toolExecutions.length > 0;
+
   const shouldShowCopyButton = message.content && 
     typeof message.content === 'string' &&
     message.type !== 'function';
+
+  const content = message.content as string;
+  const hasThoughtProcess = message.model?.isReasoner && 
+    content?.includes('<Thought>') && 
+    content?.includes('</Thought>');
+
+  const renderToolExecutions = () => {
+    if (!shouldShowToolExecutions) return null;
+
+    return (
+      <div className="mt-4 space-y-3 max-w-[600px]">
+        <div className="flex items-center gap-2 mb-2">
+          <Wrench className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Tool Executions
+          </span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            ({toolExecutions.length})
+          </span>
+        </div>
+        {toolExecutions.map((execution, index) => (
+          <ToolExecution
+            key={`${execution.tool.name}-${index}`}
+            tool={execution.tool}
+            status={execution.status}
+            result={execution.result}
+            error={execution.error}
+            themeColor={themeColor}
+          />
+        ))}
+        {message.metadata?.execution_time && (
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+            Total execution time: {message.metadata.execution_time.toFixed(2)}s
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderExecutionStatus = () => {
+    if (!message.metadata || isUser) return null;
+
+    const toolsUsed = message.metadata.research_parameters?.tools_used || [];
+
+    return (
+      <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+        {message.metadata.agent_type && (
+          <span className="mr-2">
+            Agent: {message.metadata.agent_type} ({message.metadata.base_agent})
+          </span>
+        )}
+        {message.metadata.execution_time && (
+          <span className="mr-2">
+            Time: {message.metadata.execution_time.toFixed(2)}s
+          </span>
+        )}
+        {toolsUsed.length > 0 && (
+          <span>
+            Tools: {toolsUsed.join(', ')}
+          </span>
+        )}
+      </div>
+    );
+  };
 
   const renderContent = () => {
     if (message.type === 'audio' && message.role === 'assistant') {
@@ -52,7 +172,6 @@ export function AIMessage({
             <AudioContent message={message} />
           )}
 
-          {/* Show input text if available */}
           {message.inputText && (
             <div className="text-sm text-gray-600 dark:text-gray-300 mt-2">
               <span className="font-medium text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
@@ -64,11 +183,6 @@ export function AIMessage({
         </div>
       );
     }
-
-    const content = message.content as string;
-    const hasThoughtProcess = message.model?.isReasoner && 
-      content.includes('<Thought>') && 
-      content.includes('</Thought>');
 
     // Extract and format thought steps if we have a thought process
     const thoughtSteps = hasThoughtProcess ? formatThoughtSteps(extractThought(content)) : [];
@@ -132,7 +246,6 @@ export function AIMessage({
               </div>
             </div>
           ) : (
-            // Regular message bubble (existing code)
             <div className="relative">
               <div className={`px-4 py-2.5 rounded-2xl
                 backdrop-blur-md shadow-lg
@@ -170,6 +283,9 @@ export function AIMessage({
             </div>
           )}
 
+          {renderToolExecutions()}
+          {renderExecutionStatus()}
+
           {isLastInGroup && (
             <span className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               {new Date(message.timestamp).toLocaleTimeString()}
@@ -194,12 +310,12 @@ export function AIMessage({
 }
 
 function extractThought(content: string): string {
-  const thoughtMatch = content.match(/<Thought>(.*?)<\/Thought>/s);
+  const thoughtMatch = content?.match(/<Thought>(.*?)<\/Thought>/s);
   return thoughtMatch ? thoughtMatch[1].trim() : '';
 }
 
 function extractOutput(content: string): string {
-  const outputMatch = content.match(/<Output>(.*?)<\/Output>/s);
+  const outputMatch = content?.match(/<Output>(.*?)<\/Output>/s);
   return outputMatch ? outputMatch[1].trim() : '';
 }
 
