@@ -1413,14 +1413,14 @@ export const AI_MODELS: AIModel[] = [
   // Grok Models (Colored Blue)
   {
     id: 'grok-beta-agent',
-    name: 'Grok Beta',
+    name: 'Grok Beta (Agent)',
     provider: 'grok',
-    category: 'chat',
+    category: 'agent',
     description: 'Comparable performance to Grok 2 but with improved efficiency, speed and capabilities',
     isConfigured: true,
     isReasoner: false,
     color: '#1DA1F2', // X/Twitter blue color
-    endpoint: 'chat',
+    endpoint: 'agent',
     rateLimits: {
       tpm: 100000,
       rpm: 500,

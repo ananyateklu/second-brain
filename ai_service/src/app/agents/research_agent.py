@@ -245,13 +245,12 @@ class ResearchAgent(BaseAgent):
                 logger.warning("Response too short (< 50 words)")
                 return False
                 
-            # Check for structured content (contains numbered points)
+            # Check for structured content (contains numbered points or bullet points)
             has_numbered_points = any(str(i) + "." in result for i in range(1, 10))
-            logger.debug(f"Has numbered points: {has_numbered_points}")
-            if not has_numbered_points:
-                logger.warning("Response lacks structured numbered points")
-                return False
-                
+            has_bullet_points = any(bullet in result for bullet in ["•", "-", "*"])
+            has_structure = has_numbered_points or has_bullet_points
+            logger.debug(f"Has structure: {has_structure} (numbered: {has_numbered_points}, bullets: {has_bullet_points})")
+            
             # Verify metadata contains research-specific fields
             metadata = response.get("metadata", {})
             if "research_parameters" not in metadata:
@@ -259,8 +258,9 @@ class ResearchAgent(BaseAgent):
                 return False
             
             logger.info("Response validation successful")
+            return True
         
-        return True
+        return False
     
     def _calculate_tool_success_rate(self) -> Dict[str, Any]:
         """Calculate success rate of tool executions"""

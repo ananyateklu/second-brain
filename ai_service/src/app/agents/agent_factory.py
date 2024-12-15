@@ -4,6 +4,7 @@ from .openai_agent import OpenAIAgent
 from .anthropic_agent import AnthropicAgent
 from .ollama_agent import OllamaAgent
 from .gemini_agent import GeminiAgent
+from .grok_agent import GrokAgent
 
 class AgentFactory:
     """Factory class for creating AI agents"""
@@ -12,7 +13,8 @@ class AgentFactory:
         'openai': OpenAIAgent,
         'anthropic': AnthropicAgent,
         'ollama': OllamaAgent,
-        'gemini': GeminiAgent
+        'gemini': GeminiAgent,
+        'grok': GrokAgent
     }
     
     @classmethod
@@ -29,6 +31,8 @@ class AgentFactory:
             return cls._agent_registry['anthropic'](model_id, temperature)
         elif model_id.startswith('gemini-'):
             return cls._agent_registry['gemini'](model_id, temperature)
+        elif model_id.startswith('grok-'):
+            return cls._agent_registry['grok'](model_id, temperature)
         else:
             return cls._agent_registry['ollama'](model_id, temperature)
     

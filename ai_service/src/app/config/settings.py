@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str
     OLLAMA_BASE_URL: str  # Default to localhost
     GEMINI_API_KEY: str  # Add Gemini API key
+    GROK_API_KEY: str  # Add Grok API key
+    GROK_API_BASE: str = "https://api.x.ai/v1"  # Updated Grok API base URL
     NEWS_API_KEY: Optional[str] = None  # Make NewsAPI key optional
     
     class Config:
@@ -48,6 +50,12 @@ class Settings(BaseSettings):
                 print(f"✅ Gemini API Key loaded: {self.GEMINI_API_KEY[:10]}...")
             else:
                 print("❌ Gemini API Key not found!")
+                
+            # Show Grok API key status
+            if self.GROK_API_KEY:
+                print(f"✅ Grok API Key loaded: {self.GROK_API_KEY[:10]}...")
+            else:
+                print("❌ Grok API Key not found!")
             
             # Show NewsAPI key status
             if self.NEWS_API_KEY:

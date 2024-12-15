@@ -49,6 +49,20 @@ class AgentRequest(BaseModel):
     temperature: Optional[float] = Field(default=0.7, description="Temperature for response generation")
     tools: Optional[List[Tool]] = Field(default=None, description="List of tools to use during execution")
     
+class TokenUsageDetails(BaseModel):
+    """Model for detailed token usage information"""
+    text_tokens: Optional[int] = None
+    audio_tokens: Optional[int] = None
+    image_tokens: Optional[int] = None
+    cached_tokens: Optional[int] = None
+
+class TokenUsage(BaseModel):
+    """Model for token usage statistics"""
+    prompt_tokens: int
+    completion_tokens: int
+    total_tokens: int
+    prompt_tokens_details: Optional[TokenUsageDetails] = None
+
 class ExecutionMetadata(BaseModel):
     """Model for execution metadata"""
     model: str = Field(..., description="Model used for execution")
@@ -57,8 +71,12 @@ class ExecutionMetadata(BaseModel):
     temperature: float = Field(..., description="Temperature used")
     provider: str = Field(..., description="Provider of the model")
     tools_used: Optional[List[Tool]] = Field(default=None, description="Tools used during execution")
-    token_usage: Optional[Dict[str, int]] = Field(default=None, description="Token usage statistics")
+    token_usage: Optional[TokenUsage] = Field(default=None, description="Token usage statistics")
     request_id: Optional[str] = Field(default=None, description="Unique request identifier")
+    research_parameters: Optional[Dict[str, Any]] = Field(default=None, description="Research-specific parameters")
+    agent_type: Optional[str] = Field(default=None, description="Type of agent used")
+    base_agent: Optional[str] = Field(default=None, description="Base agent type")
+    tool_success_rate: Optional[Dict[str, Any]] = Field(default=None, description="Tool execution success statistics")
     
 class AgentResponse(BaseModel):
     """Model for agent execution responses"""
