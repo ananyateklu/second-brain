@@ -37,12 +37,21 @@ class OpenAIAgent(BaseAgent):
         
         execution_time = time.time() - start_time
         
+        # Extract token usage
+        token_usage = response.llm_output.get("token_usage", {})
+        usage = {
+            "prompt_tokens": token_usage.get("prompt_tokens", 0),
+            "completion_tokens": token_usage.get("completion_tokens", 0),
+            "total_tokens": token_usage.get("total_tokens", 0)
+        }
+        
         return {
             "result": response.generations[0][0].text,
             "metadata": {
                 "model": self.model_id,
                 "execution_time": execution_time,
-                "tokens_used": response.llm_output.get("token_usage", {}).get("total_tokens", 0)
+                "token_usage": usage,
+                "provider": "openai"
             }
         }
     

@@ -18,7 +18,10 @@ class ResearchAgent(BaseAgent):
             "description": "Search the web for recent information and developments",
             "parameters": {
                 "query": "string",
-                "max_results": 5
+                "max_results": 5,
+                "time_range": "string",  # e.g., "day", "week", "month", "year"
+                "region": "string",      # e.g., "us", "uk", "global"
+                "safe_search": "boolean" # Enable/disable safe search
             }
         },
         {
@@ -28,7 +31,33 @@ class ResearchAgent(BaseAgent):
             "parameters": {
                 "query": "string",
                 "year_range": "string",
-                "max_results": 3
+                "max_results": 3,
+                "sort_by": "string",     # e.g., "relevance", "date", "citations"
+                "publication_type": "string", # e.g., "journal", "conference", "thesis"
+                "fields": "array"        # Specific fields to search in
+            }
+        },
+        {
+            "name": "expert_search",
+            "type": "api_call",
+            "description": "Find domain experts and their publications",
+            "parameters": {
+                "query": "string",
+                "expertise_area": "string",
+                "max_results": 3,
+                "include_metrics": "boolean"  # Include h-index, citations, etc.
+            }
+        },
+        {
+            "name": "patent_search",
+            "type": "api_call",
+            "description": "Search patent databases for relevant innovations",
+            "parameters": {
+                "query": "string",
+                "max_results": 3,
+                "patent_type": "string",  # e.g., "utility", "design", "plant"
+                "jurisdiction": "string", # e.g., "US", "EP", "WO"
+                "status": "string"       # e.g., "granted", "pending", "all"
             }
         }
     ]
@@ -41,7 +70,11 @@ class ResearchAgent(BaseAgent):
         "parameters": {
             "query": "string",
             "date_range": "string",
-            "max_results": 3
+            "max_results": 3,
+            "categories": "array",    # e.g., ["technology", "business", "science"]
+            "sources": "array",       # Specific news sources to include
+            "language": "string",     # e.g., "en", "es", "fr"
+            "sort_by": "string"       # e.g., "relevancy", "popularity", "publishedAt"
         }
     }
     
@@ -73,7 +106,10 @@ class ResearchAgent(BaseAgent):
         research_keywords = [
             "research", "latest", "recent", "developments", "advances",
             "study", "investigate", "analyze", "explore", "discover",
-            "findings", "publications", "papers", "news", "current"
+            "findings", "publications", "papers", "news", "current",
+            "expert", "innovation", "patent", "technology", "breakthrough",
+            "state-of-the-art", "cutting-edge", "emerging", "trend",
+            "development", "progress", "advancement", "discovery"
         ]
         prompt_lower = prompt.lower()
         return any(keyword in prompt_lower for keyword in research_keywords)
@@ -109,16 +145,29 @@ class ResearchAgent(BaseAgent):
         elif tools:
             logger.info(f"Using {len(tools)} provided tools: {[t['name'] for t in tools]}")
         
-        # Create a research-focused prompt
-        research_prompt = f"""You are a research assistant with access to various tools for gathering information. Your task is to:
+        # Create a research-focused prompt with enhanced instructions
+        research_prompt = f"""You are an advanced research assistant with access to various specialized tools for gathering information. Your task is to:
+
         1. Analyze the given topic thoroughly using available tools
-        2. Provide comprehensive key insights based on gathered information
-        3. Support with relevant information and examples from recent sources
-        4. Draw meaningful conclusions
+        2. Synthesize information from multiple sources:
+           - Compare and contrast different viewpoints
+           - Identify patterns and trends
+           - Highlight consensus and controversies
+        3. Evaluate the quality and reliability of sources
+        4. Provide comprehensive insights supported by:
+           - Recent research findings
+           - Expert opinions
+           - Statistical data when available
+           - Real-world examples and case studies
+        5. Draw meaningful conclusions and implications
+        6. Identify gaps in current knowledge or areas needing further research
+        7. Suggest practical applications or recommendations based on findings
+        
+        Note: Some tools might fail or return limited results. Please work with whatever information is available and acknowledge any limitations in the data.
         
         Topic: {prompt}
         
-        Please provide a well-structured, detailed response that demonstrates deep analysis and understanding."""
+        Please provide a well-structured, detailed response that demonstrates deep analysis and critical thinking. Include citations or references where appropriate."""
         
         logger.debug(f"Generated research prompt: {research_prompt[:100]}...")
         
@@ -134,7 +183,15 @@ class ResearchAgent(BaseAgent):
             logger.info("Successfully generated response")
         except Exception as e:
             logger.error(f"Error during execution: {str(e)}", exc_info=True)
-            raise
+            # Return a graceful error response
+            return {
+                "result": f"I encountered some issues while researching your query. Here's what I know based on the available information:\n\n{str(e)}",
+                "metadata": {
+                    "error": str(e),
+                    "execution_time": time.time() - start_time,
+                    "tools_attempted": [t["name"] for t in (tools or [])]
+                }
+            }
         
         # Add research-specific metadata
         execution_time = time.time() - start_time
@@ -152,7 +209,8 @@ class ResearchAgent(BaseAgent):
                     "tools_used": [t["name"] for t in (tools or [])]
                 },
                 "tools_used": tools,
-                "token_usage": result.get("metadata", {}).get("token_usage")
+                "token_usage": result.get("metadata", {}).get("token_usage"),
+                "tool_success_rate": self._calculate_tool_success_rate()
             }
             
             logger.info(f"Execution completed in {execution_time:.2f}s")
@@ -197,3 +255,28 @@ class ResearchAgent(BaseAgent):
             logger.info("Response validation successful")
         
         return True
+    
+    def _calculate_tool_success_rate(self) -> Dict[str, Any]:
+        """Calculate success rate of tool executions"""
+        success_count = 0
+        total_count = 0
+        tool_stats = {}
+        
+        for record in self.execution_history:
+            if "tools_used" in record:
+                for tool in record["tools_used"]:
+                    tool_name = tool
+                    if tool_name not in tool_stats:
+                        tool_stats[tool_name] = {"success": 0, "total": 0}
+                    
+                    tool_stats[tool_name]["total"] += 1
+                    if record.get("status") == "success":
+                        tool_stats[tool_name]["success"] += 1
+                        success_count += 1
+                    total_count += 1
+        
+        return {
+            "overall_success_rate": success_count / total_count if total_count > 0 else 0,
+            "total_executions": total_count,
+            "tool_specific_stats": tool_stats
+        }
