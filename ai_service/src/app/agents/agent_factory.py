@@ -3,6 +3,7 @@ from .base_agent import BaseAgent
 from .openai_agent import OpenAIAgent
 from .anthropic_agent import AnthropicAgent
 from .ollama_agent import OllamaAgent
+from .gemini_agent import GeminiAgent
 
 class AgentFactory:
     """Factory class for creating AI agents"""
@@ -10,7 +11,8 @@ class AgentFactory:
     _agent_registry: Dict[str, Type[BaseAgent]] = {
         'openai': OpenAIAgent,
         'anthropic': AnthropicAgent,
-        'ollama': OllamaAgent
+        'ollama': OllamaAgent,
+        'gemini': GeminiAgent
     }
     
     @classmethod
@@ -25,6 +27,8 @@ class AgentFactory:
             return cls._agent_registry['openai'](model_id, temperature)
         elif model_id.startswith('claude'):
             return cls._agent_registry['anthropic'](model_id, temperature)
+        elif model_id.startswith('gemini-'):
+            return cls._agent_registry['gemini'](model_id, temperature)
         else:
             return cls._agent_registry['ollama'](model_id, temperature)
     

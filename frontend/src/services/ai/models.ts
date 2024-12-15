@@ -1492,21 +1492,10 @@ export const AI_MODELS: AIModel[] = [
       rpm: 45,
     },
   },
-  {
-    id: 'rag-assistant-agent',
-    name: 'Document Assistant',
-    provider: 'openai',
-    category: 'rag',
-    description: 'Upload and query documents using GPT-4',
-    isConfigured: true,
-    isReasoner: false,
-    color: '#10B981',
-    endpoint: 'rag'
-  },
   // Assistant Models
   {
     id: 'gpt-4-1106-preview-agent',
-    name: 'GPT-4 (preview)',
+    name: 'GPT-4 (preview agent)',
     provider: 'openai',
     category: 'chat',
     description: 'Create and interact with AI assistants powered by GPT-4',

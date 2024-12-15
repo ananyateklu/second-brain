@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str
     OPENAI_API_KEY: str
     OLLAMA_BASE_URL: str  # Default to localhost
+    GEMINI_API_KEY: str  # Add Gemini API key
     NEWS_API_KEY: Optional[str] = None  # Make NewsAPI key optional
     
     class Config:
@@ -41,6 +42,12 @@ class Settings(BaseSettings):
 
             # Show Ollama configuration
             print(f"✅ Ollama URL configured: {self.OLLAMA_BASE_URL}")
+            
+            # Show Gemini API key status
+            if self.GEMINI_API_KEY:
+                print(f"✅ Gemini API Key loaded: {self.GEMINI_API_KEY[:10]}...")
+            else:
+                print("❌ Gemini API Key not found!")
             
             # Show NewsAPI key status
             if self.NEWS_API_KEY:

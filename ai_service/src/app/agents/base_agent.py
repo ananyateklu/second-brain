@@ -1,7 +1,7 @@
 from typing import Dict, Any, Optional, List
 from abc import ABC, abstractmethod
 import time
-from datetime import datetime
+from datetime import datetime, UTC
 import aiohttp
 import json
 import logging
@@ -81,7 +81,7 @@ class BaseAgent(ABC):
             # Add execution metadata
             execution_time = time.time() - start_time
             execution_record = {
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "model_id": self.model_id,
                 "execution_time": execution_time,
                 "tools_used": [t["name"] for t in tools] if tools else [],
@@ -101,7 +101,7 @@ class BaseAgent(ABC):
         except Exception as e:
             logger.error(f"Error in execute_with_tools: {str(e)}", exc_info=True)
             execution_record = {
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "model_id": self.model_id,
                 "execution_time": time.time() - start_time,
                 "tools_used": [t["name"] for t in tools] if tools else [],
