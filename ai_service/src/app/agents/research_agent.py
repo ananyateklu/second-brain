@@ -162,7 +162,13 @@ class ResearchAgent(BaseAgent):
         5. Draw meaningful conclusions and implications
         6. Identify gaps in current knowledge or areas needing further research
         7. Suggest practical applications or recommendations based on findings
-        
+
+        Important formatting instructions:
+        - Use markdown syntax to make section titles bold (e.g., "**Key Findings:**")
+        - Format important terms or concepts in bold where appropriate
+        - Use bullet points for lists and findings
+        - Include clear section headers to organize the information
+
         Note: Some tools might fail or return limited results. Please work with whatever information is available and acknowledge any limitations in the data.
         
         Topic: {prompt}
