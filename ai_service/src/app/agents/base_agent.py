@@ -12,6 +12,7 @@ import requests
 from urllib.parse import quote
 import re
 from bs4 import BeautifulSoup
+from app.config.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -379,21 +380,25 @@ class BaseAgent(ABC):
             
             # Validate and set language
             language = parameters.get("language", "en")
-            if language not in self.VALID_LANGUAGES:
+            if isinstance(language, str) and language in self.VALID_LANGUAGES:
+                params_language = language
+            else:
                 logger.warning(f"Invalid language {language}, defaulting to 'en'")
-                language = "en"
+                params_language = "en"
             
             # Validate and set sort
             sort_by = parameters.get("sort_by", "relevancy")
-            if sort_by not in self.VALID_SORT_OPTIONS:
+            if isinstance(sort_by, str) and sort_by in self.VALID_SORT_OPTIONS:
+                params_sort = sort_by
+            else:
                 logger.warning(f"Invalid sort option {sort_by}, defaulting to 'relevancy'")
-                sort_by = "relevancy"
+                params_sort = "relevancy"
             
             # Build base parameters
             params = {
                 "q": query,
-                "language": language,
-                "sort_by": sort_by,
+                "language": params_language,
+                "sort_by": params_sort,
                 "page_size": parameters.get("max_results", 3)
             }
             
@@ -414,7 +419,7 @@ class BaseAgent(ABC):
                     response = newsapi.get_top_headlines(
                         q=query,
                         category=category,
-                        language=language,
+                        language=params_language,
                         page_size=params["page_size"]
                     )
                 else:
@@ -442,7 +447,7 @@ class BaseAgent(ABC):
                 
         except Exception as e:
             logger.error(f"News search failed: {str(e)}")
-            raise ToolExecutionError(f"News search failed: {str(e)}")
+            return json.dumps([])
     
     async def _execute_patent_search(self, parameters: Dict[str, Any]) -> str:
         """Execute patent search using Google Patents API via HTTP requests"""
@@ -605,46 +610,123 @@ class BaseAgent(ABC):
         return self.execution_history
     
     async def _execute_academic_search(self, query: str, max_results: int = 3, year_range: str = "") -> str:
-        """Execute academic search using Google Scholar"""
+        """Execute academic search using Google Scholar with Semantic Scholar fallback"""
         try:
-            search_query = scholarly.search_pubs(query)
-            results = []
-            seen_titles = set()
-            
-            while len(results) < max_results:
-                try:
-                    pub = next(search_query)
-                    title = pub.get("bib", {}).get("title")
-                    
-                    # Skip duplicates
-                    if title in seen_titles:
-                        continue
-                    seen_titles.add(title)
-                    
-                    # Filter by year if specified
-                    if year_range:
-                        year = pub.get("bib", {}).get("pub_year")
-                        if year and not self._is_in_year_range(year, year_range):
+            # Try Google Scholar first
+            try:
+                # Configure scholarly with proxy settings if available
+                if hasattr(settings, 'PROXY_URL') and settings.PROXY_URL:
+                    try:
+                        scholarly.use_proxy(settings.PROXY_URL)
+                        scholarly.scholarly._HEADERS = {
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                            'Accept-Language': 'en-US,en;q=0.5',
+                            'Accept-Encoding': 'gzip, deflate',
+                            'Connection': 'keep-alive',
+                            'Upgrade-Insecure-Requests': '1'
+                        }
+                    except Exception as e:
+                        logger.error(f"Failed to configure proxy: {str(e)}")
+                
+                await asyncio.sleep(2)
+                
+                search_query = scholarly.search_pubs(query)
+                results = []
+                seen_titles = set()
+                
+                while len(results) < max_results:
+                    try:
+                        pub = next(search_query)
+                        title = pub.get("bib", {}).get("title")
+                        
+                        if title in seen_titles:
                             continue
+                        seen_titles.add(title)
+                        
+                        if year_range:
+                            year = pub.get("bib", {}).get("pub_year")
+                            if year and not self._is_in_year_range(year, year_range):
+                                continue
+                        
+                        results.append({
+                            "title": title,
+                            "authors": pub.get("bib", {}).get("author", []),
+                            "year": pub.get("bib", {}).get("pub_year"),
+                            "url": pub.get("pub_url"),
+                            "citations": pub.get("num_citations", 0),
+                            "source": "Google Scholar"
+                        })
+                        
+                        await asyncio.sleep(1)
+                        
+                    except StopIteration:
+                        break
+                    except Exception as e:
+                        logger.warning(f"Error processing Google Scholar publication: {str(e)}")
+                        continue
+                
+                if results:
+                    return json.dumps(results)
+                
+                logger.warning("No results found from Google Scholar, falling back to Semantic Scholar")
+                raise Exception("No results from Google Scholar")
+                
+            except Exception as e:
+                logger.warning(f"Google Scholar search failed: {str(e)}, falling back to Semantic Scholar")
+                # Fall back to Semantic Scholar
+                from semanticscholar import SemanticScholar
+                
+                sch = SemanticScholar()
+                semantic_results = []
+                
+                # Single request with the desired number of results
+                try:
+                    response = sch.search_paper(
+                        query,
+                        limit=max_results,
+                        fields=['title', 'authors', 'year', 'citationCount', 'url', 'abstract']
+                    )
                     
-                    results.append({
-                        "title": title,
-                        "authors": pub.get("bib", {}).get("author", []),
-                        "year": pub.get("bib", {}).get("pub_year"),
-                        "abstract": pub.get("bib", {}).get("abstract"),
-                        "url": pub.get("pub_url"),
-                        "citations": pub.get("num_citations", 0)
-                    })
-                except StopIteration:
-                    break
+                    # Check if we got any results
+                    if not response or not isinstance(response, list):
+                        logger.warning("No results found from Semantic Scholar")
+                        return json.dumps([])
+                    
+                    # Process each paper
+                    for paper in response:
+                        # Skip if paper doesn't have required attributes
+                        if not hasattr(paper, 'title') or not paper.title:
+                            continue
+                            
+                        # Apply year filter if specified
+                        if year_range and hasattr(paper, 'year') and paper.year:
+                            if not self._is_in_year_range(str(paper.year), year_range):
+                                continue
+                        
+                        semantic_results.append({
+                            "title": paper.title if hasattr(paper, 'title') else None,
+                            "authors": [author.name for author in (paper.authors or []) if hasattr(author, 'name')],
+                            "year": paper.year if hasattr(paper, 'year') else None,
+                            "url": paper.url if hasattr(paper, 'url') else None,
+                            "citations": paper.citationCount if hasattr(paper, 'citationCount') else 0,
+                            "abstract": paper.abstract if hasattr(paper, 'abstract') else None,
+                            "source": "Semantic Scholar"
+                        })
+                        
+                        # Break if we have enough results
+                        if len(semantic_results) >= max_results:
+                            break
+                    
+                    return json.dumps(semantic_results[:max_results])
+                    
                 except Exception as e:
-                    logger.warning(f"Error processing publication: {str(e)}")
-                    continue
-            
-            return json.dumps(results)
+                    logger.error(f"Semantic Scholar search failed: {str(e)}")
+                    return json.dumps([])
+                
         except Exception as e:
-            logger.error(f"Academic search failed: {str(e)}")
-            raise ToolExecutionError(f"Academic search failed: {str(e)}")
+            logger.error(f"Both Google Scholar and Semantic Scholar searches failed: {str(e)}")
+            return json.dumps([])
     
     def _is_in_year_range(self, year: str, year_range: str) -> bool:
         """Helper method to check if a year falls within a specified range"""
@@ -686,6 +768,10 @@ class BaseAgent(ABC):
             if found_experts:
                 for expert_name in found_experts[:max_results]:
                     try:
+                        # Configure proxy if available
+                        if hasattr(settings, 'PROXY_URL') and settings.PROXY_URL:
+                            scholarly.use_proxy(settings.PROXY_URL)
+                        
                         author_search = scholarly.search_author(expert_name)
                         author = next(author_search)
                         
@@ -707,45 +793,50 @@ class BaseAgent(ABC):
                             }
                         
                         results.append(expert_info)
+                        await asyncio.sleep(1)  # Rate limiting
                     except Exception as e:
                         logger.warning(f"Error fetching expert {expert_name}: {str(e)}")
                         continue
             
             # If we still need more results, do a keyword search
             if len(results) < max_results:
-                search_query = " ".join(keywords[:3]) if keywords else query
-                if expertise_area:
-                    search_query = f"{expertise_area} {search_query}"
-                
-                author_search = scholarly.search_author(search_query)
-                while len(results) < max_results:
-                    try:
-                        author = next(author_search)
-                        if include_metrics:
-                            author = scholarly.fill(author, sections=['basics', 'indices'])
-                        
-                        expert_info = {
-                            "name": author.get("name", ""),
-                            "affiliation": author.get("affiliation", ""),
-                            "interests": author.get("interests", []),
-                            "metrics": {}
-                        }
-                        
-                        if include_metrics:
-                            expert_info["metrics"] = {
-                                "h_index": author.get("hindex", 0),
-                                "citations": author.get("citedby", 0),
-                                "i10_index": author.get("i10index", 0)
+                try:
+                    search_query = " ".join(keywords[:3]) if keywords else query
+                    if expertise_area:
+                        search_query = f"{expertise_area} {search_query}"
+                    
+                    author_search = scholarly.search_author(search_query)
+                    while len(results) < max_results:
+                        try:
+                            author = next(author_search)
+                            if include_metrics:
+                                author = scholarly.fill(author, sections=['basics', 'indices'])
+                            
+                            expert_info = {
+                                "name": author.get("name", ""),
+                                "affiliation": author.get("affiliation", ""),
+                                "interests": author.get("interests", []),
+                                "metrics": {}
                             }
-                        
-                        results.append(expert_info)
-                    except StopIteration:
-                        break
-                    except Exception as e:
-                        logger.warning(f"Error processing author: {str(e)}")
-                        continue
+                            
+                            if include_metrics:
+                                expert_info["metrics"] = {
+                                    "h_index": author.get("hindex", 0),
+                                    "citations": author.get("citedby", 0),
+                                    "i10_index": author.get("i10index", 0)
+                                }
+                            
+                            results.append(expert_info)
+                            await asyncio.sleep(1)  # Rate limiting
+                        except StopIteration:
+                            break
+                        except Exception as e:
+                            logger.warning(f"Error processing author: {str(e)}")
+                            continue
+                except Exception as e:
+                    logger.warning(f"Keyword search failed: {str(e)}")
             
             return json.dumps(results)
         except Exception as e:
             logger.error(f"Expert search failed: {str(e)}")
-            raise ToolExecutionError(f"Expert search failed: {str(e)}")
+            return json.dumps([])

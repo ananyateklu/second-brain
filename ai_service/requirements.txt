@@ -18,6 +18,5 @@ scholarly>=1.7.11
 beautifulsoup4>=4.12.2
 tenacity>=8.2.3  # For retrying failed API calls
 google-generativeai>=0.3.0  # Google Generative AI package
-
-# Optional dependencies - install separately if needed
-# patent-client>=2.2.1  # Note: Requires Python <=3.11 due to lxml compatibility
+PySocks>=1.7.1  # For SOCKS proxy support
+semanticscholar>=0.5.0  # Semantic Scholar API client

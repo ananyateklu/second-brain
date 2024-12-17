@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     GROK_API_KEY: str  # Add Grok API key
     GROK_API_BASE: str = "https://api.x.ai/v1"  # Updated Grok API base URL
     NEWS_API_KEY: Optional[str] = None  # Make NewsAPI key optional
+    PROXY_URL: Optional[str] = None  # Add proxy URL configuration
     
     class Config:
         # Look for .env file in multiple locations
@@ -62,6 +63,12 @@ class Settings(BaseSettings):
                 print(f"✅ NewsAPI Key loaded: {self.NEWS_API_KEY[:10]}...")
             else:
                 print("⚠️ NewsAPI Key not configured - news search will be disabled")
+                
+            # Show Proxy configuration status
+            if self.PROXY_URL:
+                print(f"✅ Proxy configured: {self.PROXY_URL}")
+            else:
+                print("⚠️ No proxy configured - some services may have rate limits")
             
             print("============================\n")
         else:
