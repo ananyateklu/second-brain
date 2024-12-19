@@ -28,6 +28,7 @@ import { EditNoteModal } from './Dashboard/Notes/EditNoteModal';
 import { EditIdeaModal } from './Dashboard/Ideas/EditIdeaModal';
 import { useModal } from '../contexts/modalContextUtils';
 import { useTheme } from '../contexts/themeContextUtils';
+import { useReminderNotifications } from '../hooks/useReminderNotifications';
 
 export function Dashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -37,6 +38,9 @@ export function Dashboard() {
   const { isLoading: remindersLoading } = useReminders();
   const { selectedNote, selectedIdea, setSelectedNote, setSelectedIdea } = useModal();
   const { colors } = useTheme();
+
+  // Initialize reminder notifications
+  useReminderNotifications();
 
   const isLoading = notesLoading || tasksLoading || remindersLoading;
 

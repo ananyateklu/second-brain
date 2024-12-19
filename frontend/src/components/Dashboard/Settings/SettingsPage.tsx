@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Moon, Sun, Bell, Shield, Database, Settings2, Palette, Sparkles } from 'lucide-react';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { motion } from 'framer-motion';
@@ -7,13 +7,43 @@ import { ImportNotesSection } from './ImportNotesSection';
 import { AISettings } from '../../../types/ai';
 import { ThemeName } from '../../../theme/theme.config';
 import { cardVariants } from '../../../utils/welcomeBarUtils';
+import { notificationService } from '../../../services/notification/notificationService';
 
 export function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const [pushNotifications, setPushNotifications] = useState(false);
 
+  useEffect(() => {
+    // Initialize push notification state
+    setPushNotifications(notificationService.isNotificationsEnabled());
+  }, []);
+
   const handleThemeChange = (newTheme: ThemeName) => {
     setTheme(newTheme);
+  };
+
+  const handlePushNotificationChange = async () => {
+    if (!pushNotifications) {
+      const enabled = await notificationService.enableNotifications();
+      setPushNotifications(enabled);
+      if (!enabled) {
+        // TODO: Show a toast or alert to inform the user that notifications couldn't be enabled
+        console.warn('Failed to enable notifications');
+      } else {
+        // Send a test notification
+        await notificationService.showNotification(
+          'Notifications Enabled',
+          {
+            body: 'You will now receive notifications for reminders and achievements.',
+            requireInteraction: false,
+            tag: 'notifications-enabled'
+          }
+        );
+      }
+    } else {
+      notificationService.disableNotifications();
+      setPushNotifications(false);
+    }
   };
 
   const handleSaveAISettings = async (settings: AISettings) => {
@@ -259,12 +289,34 @@ export function SettingsPage() {
                     <input
                       type="checkbox"
                       checked={pushNotifications}
-                      onChange={() => setPushNotifications(!pushNotifications)}
+                      onChange={handlePushNotificationChange}
                       className="sr-only peer"
                     />
                     <div className={toggleClasses}></div>
                   </div>
                 </label>
+
+                {pushNotifications && (
+                  <button
+                    onClick={() => {
+                      notificationService.showNotification('Test Notification', {
+                        body: 'This is a test notification.',
+                        tag: 'test-notification',
+                        requireInteraction: false
+                      });
+                    }}
+                    className={`
+                      w-full p-4 mt-2
+                      ${innerElementClasses}
+                      flex items-center justify-center
+                      text-[var(--color-text)]
+                      hover:bg-[var(--color-accent)]/10
+                      transition-all duration-200
+                    `}
+                  >
+                    Send Test Notification
+                  </button>
+                )}
               </div>
             </motion.div>
           </div>

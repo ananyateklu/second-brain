@@ -1,5 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Star, ArrowUp } from 'lucide-react';
+import { useEffect } from 'react';
+import { notificationService } from '../../services/notification/notificationService';
 
 interface XPNotificationProps {
   xp: number;
@@ -14,6 +16,11 @@ interface XPNotificationProps {
 }
 
 export function XPNotification({ xp, achievement, levelUp, onClose }: XPNotificationProps) {
+  useEffect(() => {
+    // Show browser notification in addition to the UI notification
+    notificationService.showXPNotification(xp, achievement, levelUp);
+  }, [xp, achievement, levelUp]);
+
   return (
     <AnimatePresence>
       <motion.div
