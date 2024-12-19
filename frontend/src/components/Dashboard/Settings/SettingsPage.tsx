@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Moon, Sun, Bell, Shield, Database, Settings2, Palette, Sparkles } from 'lucide-react';
+import { Moon, Sun, Bell, Shield, Database, Settings2, Palette, Sparkles, Cpu, Lock, BarChart2, KeyRound, History, Link2, BellRing, Timer, ChevronDown } from 'lucide-react';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { motion } from 'framer-motion';
 import { AISettingsSection } from './AISettingsSection';
@@ -158,19 +158,19 @@ export function SettingsPage() {
           </div>
         </motion.div>
 
-        {/* Settings Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Settings Grid - Top Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Column */}
-          <div className="space-y-8">
+          <div className="space-y-6">
             {/* Appearance Section */}
             <motion.div 
               variants={cardVariants}
               className={sectionClasses}
             >
-              <div className="p-6 border-b border-white/10">
+              <div className="p-4 border-b border-white/10">
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm border-[0.5px] border-white/10">
-                    <Palette className="w-5 h-5 text-[var(--color-accent)]" />
+                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm border-[0.5px] border-white/10">
+                    <Palette className="w-4 h-4 text-[var(--color-accent)]" />
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-[var(--color-text)]">Appearance</h3>
@@ -181,18 +181,18 @@ export function SettingsPage() {
                 </div>
               </div>
 
-              <div className="p-6 space-y-4">
+              <div className="p-4 space-y-3">
                 {/* Theme Options */}
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {/* Light Theme */}
-                  <label className={`flex items-center justify-between p-4 cursor-pointer ${innerElementClasses}`}>
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm">
-                        <Sun className="w-5 h-5 text-[var(--color-accent)]" />
+                  <label className={`flex items-center justify-between p-3 cursor-pointer ${innerElementClasses}`}>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm">
+                        <Sun className="w-4 h-4 text-[var(--color-accent)]" />
                       </div>
                       <div>
-                        <p className="font-medium text-[var(--color-text)]">Light</p>
-                        <p className="text-sm text-[var(--color-textSecondary)]">
+                        <p className="font-medium text-sm text-[var(--color-text)]">Light</p>
+                        <p className="text-xs text-[var(--color-textSecondary)]">
                           Clean and bright appearance
                         </p>
                       </div>
@@ -202,19 +202,19 @@ export function SettingsPage() {
                       name="theme"
                       checked={theme === 'light'}
                       onChange={() => handleThemeChange('light')}
-                      className="w-5 h-5 text-[var(--color-accent)] bg-[var(--color-surface)] border-[var(--color-border)] focus:ring-[var(--color-accent)] focus:ring-2"
+                      className="w-4 h-4 text-[var(--color-accent)] bg-[var(--color-surface)] border-[var(--color-border)] focus:ring-[var(--color-accent)] focus:ring-2"
                     />
                   </label>
 
                   {/* Dark Theme */}
-                  <label className={`flex items-center justify-between p-4 cursor-pointer ${innerElementClasses}`}>
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm">
-                        <Moon className="w-5 h-5 text-[var(--color-accent)]" />
+                  <label className={`flex items-center justify-between p-3 cursor-pointer ${innerElementClasses}`}>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm">
+                        <Moon className="w-4 h-4 text-[var(--color-accent)]" />
                       </div>
                       <div>
-                        <p className="font-medium text-[var(--color-text)]">Dark</p>
-                        <p className="text-sm text-[var(--color-textSecondary)]">
+                        <p className="font-medium text-sm text-[var(--color-text)]">Dark</p>
+                        <p className="text-xs text-[var(--color-textSecondary)]">
                           Easy on the eyes
                         </p>
                       </div>
@@ -224,19 +224,19 @@ export function SettingsPage() {
                       name="theme"
                       checked={theme === 'dark'}
                       onChange={() => handleThemeChange('dark')}
-                      className="w-5 h-5 text-[var(--color-accent)] bg-[var(--color-surface)] border-[var(--color-border)] focus:ring-[var(--color-accent)] focus:ring-2"
+                      className="w-4 h-4 text-[var(--color-accent)] bg-[var(--color-surface)] border-[var(--color-border)] focus:ring-[var(--color-accent)] focus:ring-2"
                     />
                   </label>
 
                   {/* Midnight Theme */}
-                  <label className={`flex items-center justify-between p-4 cursor-pointer ${innerElementClasses}`}>
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm">
-                        <Sparkles className="w-5 h-5 text-[var(--color-accent)]" />
+                  <label className={`flex items-center justify-between p-3 cursor-pointer ${innerElementClasses}`}>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm">
+                        <Sparkles className="w-4 h-4 text-[var(--color-accent)]" />
                       </div>
                       <div>
-                        <p className="font-medium text-[var(--color-text)]">Midnight</p>
-                        <p className="text-sm text-[var(--color-textSecondary)]">
+                        <p className="font-medium text-sm text-[var(--color-text)]">Midnight</p>
+                        <p className="text-xs text-[var(--color-textSecondary)]">
                           Deep dark experience
                         </p>
                       </div>
@@ -246,7 +246,7 @@ export function SettingsPage() {
                       name="theme"
                       checked={theme === 'midnight'}
                       onChange={() => handleThemeChange('midnight')}
-                      className="w-5 h-5 text-[var(--color-accent)] bg-[var(--color-surface)] border-[var(--color-border)] focus:ring-[var(--color-accent)] focus:ring-2"
+                      className="w-4 h-4 text-[var(--color-accent)] bg-[var(--color-surface)] border-[var(--color-border)] focus:ring-[var(--color-accent)] focus:ring-2"
                     />
                   </label>
                 </div>
@@ -258,10 +258,10 @@ export function SettingsPage() {
               variants={cardVariants}
               className={sectionClasses}
             >
-              <div className="p-6 border-b border-white/10">
+              <div className="p-4 border-b border-white/10">
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm border-[0.5px] border-white/10">
-                    <Bell className="w-5 h-5 text-[var(--color-accent)]" />
+                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm border-[0.5px] border-white/10">
+                    <Bell className="w-4 h-4 text-[var(--color-accent)]" />
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-[var(--color-text)]">Notifications</h3>
@@ -272,15 +272,15 @@ export function SettingsPage() {
                 </div>
               </div>
 
-              <div className="p-6 space-y-4">
-                <label className={`flex items-center justify-between p-4 cursor-pointer ${innerElementClasses}`}>
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm">
-                      <Bell className="w-5 h-5 text-[var(--color-accent)]" />
+              <div className="p-4 space-y-4">
+                <label className={`flex items-center justify-between p-3 cursor-pointer ${innerElementClasses}`}>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm">
+                      <Bell className="w-4 h-4 text-[var(--color-accent)]" />
                     </div>
                     <div>
-                      <p className="font-medium text-[var(--color-text)]">Push Notifications</p>
-                      <p className="text-sm text-[var(--color-textSecondary)]">
+                      <p className="font-medium text-sm text-[var(--color-text)]">Push Notifications</p>
+                      <p className="text-xs text-[var(--color-textSecondary)]">
                         Get notified about updates and reminders
                       </p>
                     </div>
@@ -297,41 +297,77 @@ export function SettingsPage() {
                 </label>
 
                 {pushNotifications && (
-                  <button
-                    onClick={() => {
-                      notificationService.showNotification('Test Notification', {
-                        body: 'This is a test notification.',
-                        tag: 'test-notification',
-                        requireInteraction: false
-                      });
-                    }}
-                    className={`
-                      w-full p-4 mt-2
-                      ${innerElementClasses}
-                      flex items-center justify-center
-                      text-[var(--color-text)]
-                      hover:bg-[var(--color-accent)]/10
-                      transition-all duration-200
-                    `}
-                  >
-                    Send Test Notification
-                  </button>
+                  <>
+                    <div className={`flex items-center justify-between p-3 ${innerElementClasses}`}>
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm">
+                          <BellRing className="w-4 h-4 text-[var(--color-accent)]" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm text-[var(--color-text)]">Notification Sound</p>
+                          <p className="text-xs text-[var(--color-textSecondary)]">
+                            Play a sound when notifications arrive
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-[var(--color-textSecondary)]">Default Sound</span>
+                        <div className="relative inline-flex">
+                          <button
+                            className={`
+                              px-3 py-1.5 rounded-lg text-xs
+                              ${getContainerBackground()}
+                              border-[0.5px] border-white/10
+                              text-[var(--color-text)]
+                              hover:bg-[var(--color-surfaceHover)]
+                              transition-all duration-200
+                              flex items-center gap-2
+                            `}
+                            onClick={() => {}}
+                          >
+                            <span>Default Sound</span>
+                            <ChevronDown className="w-3 h-3 text-[var(--color-textSecondary)]" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        notificationService.showNotification('Test Notification', {
+                          body: 'This is a test notification.',
+                          tag: 'test-notification',
+                          requireInteraction: false
+                        });
+                      }}
+                      className={`
+                        w-full p-3
+                        flex items-center justify-center gap-2
+                        text-sm text-[var(--color-textSecondary)]
+                        hover:text-[var(--color-text)]
+                        transition-all duration-200
+                      `}
+                    >
+                      <Bell className="w-4 h-4" />
+                      Send Test Notification
+                    </button>
+                  </>
                 )}
               </div>
             </motion.div>
           </div>
 
           {/* Right Column */}
-          <div className="space-y-8">
+          <div className="space-y-6">
             {/* Security Section */}
             <motion.div 
               variants={cardVariants}
               className={sectionClasses}
             >
-              <div className="p-6 border-b border-white/10">
+              <div className="p-4 border-b border-white/10">
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm border-[0.5px] border-white/10">
-                    <Shield className="w-5 h-5 text-[var(--color-accent)]" />
+                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm border-[0.5px] border-white/10">
+                    <Shield className="w-4 h-4 text-[var(--color-accent)]" />
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-[var(--color-text)]">Security</h3>
@@ -342,65 +378,231 @@ export function SettingsPage() {
                 </div>
               </div>
 
-              <div className="p-6">
-                <div className={`flex items-center justify-between p-4 ${innerElementClasses}`}>
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm">
-                      <Shield className="w-5 h-5 text-[var(--color-accent)]" />
+              <div className="p-4 space-y-3">
+                {/* Two-Factor Authentication */}
+                <div className={`flex items-center justify-between p-3 ${innerElementClasses}`}>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm">
+                      <Shield className="w-4 h-4 text-[var(--color-accent)]" />
                     </div>
                     <div>
-                      <p className="font-medium text-[var(--color-text)]">Two-Factor Authentication</p>
-                      <p className="text-sm text-[var(--color-textSecondary)]">
+                      <p className="font-medium text-sm text-[var(--color-text)]">Two-Factor Authentication</p>
+                      <p className="text-xs text-[var(--color-textSecondary)]">
                         Add an extra layer of security
                       </p>
                     </div>
                   </div>
                   <button className={`
-                    px-4 py-2 rounded-lg 
+                    px-4 py-2 rounded-lg text-xs font-medium
                     ${theme === 'midnight' ? 'bg-[var(--color-accent)]/80 hover:bg-[var(--color-accent)]/70' : 'bg-[var(--color-accent)] hover:bg-[var(--color-accent)]/90'}
-                    text-white text-sm font-medium 
-                    transition-all duration-200 
+                    text-white transition-all duration-200 
                     hover:scale-105 hover:-translate-y-0.5 
                     shadow-sm hover:shadow-md
                   `}>
                     Enable
                   </button>
                 </div>
+
+                {/* Session Timeout */}
+                <div className={`flex items-center justify-between p-3 ${innerElementClasses}`}>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm">
+                      <Timer className="w-4 h-4 text-[var(--color-accent)]" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm text-[var(--color-text)]">Session Timeout</p>
+                      <p className="text-xs text-[var(--color-textSecondary)]">
+                        Auto-logout after inactivity
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-[var(--color-textSecondary)]">30 minutes</span>
+                    <button
+                      className={`
+                        px-3 py-1.5 rounded-lg text-xs
+                        ${getContainerBackground()}
+                        border-[0.5px] border-white/10
+                        text-[var(--color-text)]
+                        hover:bg-[var(--color-surfaceHover)]
+                        transition-all duration-200
+                        flex items-center gap-2
+                      `}
+                      onClick={() => {}}
+                    >
+                      <span>30 minutes</span>
+                      <ChevronDown className="w-3 h-3 text-[var(--color-textSecondary)]" />
+                    </button>
+                  </div>
+                </div>
               </div>
             </motion.div>
 
-            {/* Data Management Section */}
+            {/* Privacy Settings */}
             <motion.div 
               variants={cardVariants}
               className={sectionClasses}
             >
-              <div className="p-6 border-b border-white/10">
+              <div className="p-4 border-b border-white/10">
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm border-[0.5px] border-white/10">
-                    <Database className="w-5 h-5 text-[var(--color-accent)]" />
+                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm border-[0.5px] border-white/10">
+                    <Lock className="w-4 h-4 text-[var(--color-accent)]" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-[var(--color-text)]">Data Management</h3>
+                    <h3 className="text-lg font-semibold text-[var(--color-text)]">Privacy</h3>
                     <p className="text-sm text-[var(--color-textSecondary)]">
-                      Manage your data and exports
+                      Control your privacy preferences
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="p-6">
-                <ImportNotesSection />
+              <div className="p-4 space-y-3">
+                {/* Data Collection */}
+                <label className={`flex items-center justify-between p-3 cursor-pointer ${innerElementClasses}`}>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm">
+                      <BarChart2 className="w-4 h-4 text-[var(--color-accent)]" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm text-[var(--color-text)]">Usage Analytics</p>
+                      <p className="text-xs text-[var(--color-textSecondary)]">
+                        Help improve Second Brain by sharing anonymous usage data
+                      </p>
+                    </div>
+                  </div>
+                  <div className="relative inline-flex">
+                    <input
+                      type="checkbox"
+                      checked={true}
+                      onChange={() => {}}
+                      className="sr-only peer"
+                    />
+                    <div className={toggleClasses}></div>
+                  </div>
+                </label>
+
+                {/* End-to-End Encryption */}
+                <label className={`flex items-center justify-between p-3 cursor-pointer ${innerElementClasses}`}>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm">
+                      <KeyRound className="w-4 h-4 text-[var(--color-accent)]" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm text-[var(--color-text)]">End-to-End Encryption</p>
+                      <p className="text-xs text-[var(--color-textSecondary)]">
+                        Encrypt your notes with a personal key
+                      </p>
+                    </div>
+                  </div>
+                  <div className="relative inline-flex">
+                    <input
+                      type="checkbox"
+                      checked={false}
+                      onChange={() => {}}
+                      className="sr-only peer"
+                    />
+                    <div className={toggleClasses}></div>
+                  </div>
+                </label>
+
+                {/* Activity History */}
+                <label className={`flex items-center justify-between p-3 cursor-pointer ${innerElementClasses}`}>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm">
+                      <History className="w-4 h-4 text-[var(--color-accent)]" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm text-[var(--color-text)]">Activity History</p>
+                      <p className="text-xs text-[var(--color-textSecondary)]">
+                        Save your note editing history
+                      </p>
+                    </div>
+                  </div>
+                  <div className="relative inline-flex">
+                    <input
+                      type="checkbox"
+                      checked={true}
+                      onChange={() => {}}
+                      className="sr-only peer"
+                    />
+                    <div className={toggleClasses}></div>
+                  </div>
+                </label>
+
+                {/* Link Previews */}
+                <label className={`flex items-center justify-between p-3 cursor-pointer ${innerElementClasses}`}>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm">
+                      <Link2 className="w-4 h-4 text-[var(--color-accent)]" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm text-[var(--color-text)]">Link Previews</p>
+                      <p className="text-xs text-[var(--color-textSecondary)]">
+                        Generate previews for external links
+                      </p>
+                    </div>
+                  </div>
+                  <div className="relative inline-flex">
+                    <input
+                      type="checkbox"
+                      checked={true}
+                      onChange={() => {}}
+                      className="sr-only peer"
+                    />
+                    <div className={toggleClasses}></div>
+                  </div>
+                </label>
               </div>
             </motion.div>
           </div>
         </div>
 
-        {/* AI Settings Section - Full Width */}
+        {/* AI Configuration Section - Full Width */}
         <motion.div 
           variants={cardVariants}
           className={sectionClasses}
         >
-          <AISettingsSection onSave={handleSaveAISettings} />
+          <div className="p-4 border-b border-white/10">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm border-[0.5px] border-white/10">
+                <Cpu className="w-4 h-4 text-[var(--color-accent)]" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-[var(--color-text)]">AI Configuration</h3>
+                <p className="text-sm text-[var(--color-textSecondary)]">
+                  Configure your AI providers and models
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="p-4">
+            <AISettingsSection onSave={handleSaveAISettings} />
+          </div>
+        </motion.div>
+
+        {/* Import & Export Section - Full Width */}
+        <motion.div 
+          variants={cardVariants}
+          className={sectionClasses}
+        >
+          <div className="p-4 border-b border-white/10">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm border-[0.5px] border-white/10">
+                <Database className="w-4 h-4 text-[var(--color-accent)]" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-[var(--color-text)]">Data Management</h3>
+                <p className="text-sm text-[var(--color-textSecondary)]">
+                  Manage your data and exports
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-4">
+            <ImportNotesSection />
+          </div>
         </motion.div>
       </div>
     </div>

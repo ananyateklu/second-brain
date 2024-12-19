@@ -6,6 +6,7 @@ import { cardVariants } from '../../../utils/welcomeBarUtils';
 import { useNotes } from '../../../contexts/notesContextUtils';
 import mammoth from 'mammoth';
 import * as XLSX from 'xlsx';
+import { CustomDropdown } from '../../shared/CustomDropdown';
 
 interface Note {
   title: string;
@@ -488,245 +489,231 @@ export function ImportNotesSection() {
     }
   };
 
+  const formatOptions = [
+    { id: 'markdown', label: 'Markdown (.md)' },
+    { id: 'txt', label: 'Plain Text (.txt)' },
+    { id: 'html', label: 'HTML (.html)' }
+  ];
+
+  const modeOptions = [
+    { id: 'single', label: 'Single File (All Notes)' },
+    { id: 'multiple', label: 'Multiple Files (One per Note)' }
+  ];
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="p-6 border-b border-white/10">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm border-[0.5px] border-white/10">
-            <Upload className="w-5 h-5 text-[var(--color-accent)]" />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-[var(--color-text)]">Import & Export Notes</h3>
-            <p className="text-sm text-[var(--color-textSecondary)]">
-              Import and export your notes in various formats
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="px-6 space-y-8">
-        {/* Import Section */}
-        <motion.div 
-          variants={cardVariants}
-          className={innerElementClasses}
-        >
-          <div 
-            className={`
-              p-8 
-              border-2 
-              border-dashed 
-              rounded-xl 
-              ${dragActive ? 'border-[var(--color-accent)]' : 'border-white/10'}
-              transition-all 
-              duration-200
-              text-center
-              space-y-4
-            `}
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
-            onDrop={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              handleFiles(e.dataTransfer.files);
-            }}
+      <div className="space-y-8">
+        {/* Import and Export Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Import Section */}
+          <motion.div 
+            variants={cardVariants}
+            className={innerElementClasses}
           >
-            <div className="flex flex-col items-center gap-4">
-              <div className={`
-                w-16 h-16 
-                rounded-2xl 
-                flex items-center justify-center
-                ${getContainerBackground()}
-                border-[0.5px] border-white/10
-              `}>
-                <FileText className="w-8 h-8 text-[var(--color-accent)]" />
-              </div>
-              <div className="space-y-2">
-                <p className="text-lg font-medium text-[var(--color-text)]">
-                  Drag and drop your files here
-                </p>
-                <p className="text-sm text-[var(--color-textSecondary)]">
-                  Supported formats: PDF, Word (.docx), Excel (.xlsx), RTF, Markdown (.md), Text (.txt), HTML (.html)
-                </p>
-              </div>
-              <label className={`
-                inline-flex items-center gap-2 px-4 py-2 rounded-lg 
-                ${theme === 'midnight' ? 'bg-[var(--color-accent)]/80 hover:bg-[var(--color-accent)]/70' : 'bg-[var(--color-accent)] hover:bg-[var(--color-accent)]/90'}
-                text-white text-sm font-medium 
-                transition-all duration-200 
-                hover:scale-105 hover:-translate-y-0.5 
-                shadow-sm hover:shadow-md
-                cursor-pointer
-              `}>
-                <Upload className="w-4 h-4" />
-                Browse Files
-                <input
-                  type="file"
-                  className="hidden"
-                  multiple
-                  accept=".pdf,.docx,.xlsx,.xls,.rtf,.md,.txt,.html"
-                  onChange={(e) => handleFiles(e.target.files)}
-                />
-              </label>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Import Status */}
-        {(isImporting || importResult) && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`
-              p-4 rounded-lg
-              ${importResult?.success ? 'bg-[var(--color-accent)]/10' : 'bg-red-500/10'}
-              border-[0.5px] border-white/10
-            `}
-          >
-            <div className="flex items-center gap-2">
-              {isImporting ? (
-                <>
-                  <Loader className="w-5 h-5 text-[var(--color-accent)] animate-spin" />
-                  <p className="text-sm text-[var(--color-accent)]">
-                    Importing notes...
-                  </p>
-                </>
-              ) : importResult?.success ? (
-                <>
-                  <CheckCircle className="w-5 h-5 text-[var(--color-accent)]" />
-                  <p className="text-sm text-[var(--color-accent)]">
-                    {importResult.message}
-                  </p>
-                </>
-              ) : (
-                <>
-                  <AlertCircle className="w-5 h-5 text-red-500" />
-                  <p className="text-sm text-red-500">
-                    {importResult?.message}
-                  </p>
-                </>
-              )}
-            </div>
-          </motion.div>
-        )}
-
-        {/* Export Section */}
-        <motion.div 
-          variants={cardVariants}
-          className={innerElementClasses}
-        >
-          <div className="p-8 space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+            <div 
+              className={`
+                p-8
+                border-2 
+                border-dashed 
+                rounded-xl 
+                ${dragActive ? 'border-[var(--color-accent)]' : 'border-white/10'}
+                transition-all 
+                duration-200
+                text-center
+                space-y-6
+                h-full
+                flex flex-col justify-center
+              `}
+              onDragEnter={handleDrag}
+              onDragLeave={handleDrag}
+              onDragOver={handleDrag}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleFiles(e.dataTransfer.files);
+              }}
+            >
+              <div className="flex flex-col items-center gap-6">
                 <div className={`
-                  w-12 h-12 
-                  rounded-xl 
+                  w-20 h-20 
+                  rounded-2xl 
                   flex items-center justify-center
                   ${getContainerBackground()}
                   border-[0.5px] border-white/10
                 `}>
-                  <Download className="w-6 h-6 text-[var(--color-accent)]" />
+                  <FileText className="w-10 h-10 text-[var(--color-accent)]" />
                 </div>
-                <div>
-                  <h3 className="text-lg font-medium text-[var(--color-text)]">Export Notes</h3>
+                <div className="space-y-3">
+                  <p className="text-xl font-medium text-[var(--color-text)]">
+                    Drag and drop your files here
+                  </p>
                   <p className="text-sm text-[var(--color-textSecondary)]">
-                    Export your notes in various formats
+                    Supported formats: PDF, Word (.docx), Excel (.xlsx), RTF, Markdown (.md), Text (.txt), HTML (.html)
                   </p>
                 </div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium text-[var(--color-text)]">
-                  Export Format
-                </label>
-                <select
-                  value={exportOptions.format}
-                  onChange={(e) => setExportOptions(prev => ({ ...prev, format: e.target.value as ExportOptions['format'] }))}
-                  className={`
-                    px-3 py-2 rounded-lg
-                    ${getContainerBackground()}
-                    border-[0.5px] border-white/10
-                    text-[var(--color-text)]
-                    focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]
-                  `}
-                >
-                  <option value="markdown">Markdown (.md)</option>
-                  <option value="txt">Plain Text (.txt)</option>
-                  <option value="html">HTML (.html)</option>
-                </select>
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium text-[var(--color-text)]">
-                  Export Mode
-                </label>
-                <select
-                  value={exportOptions.mode}
-                  onChange={(e) => setExportOptions(prev => ({ ...prev, mode: e.target.value as ExportOptions['mode'] }))}
-                  className={`
-                    px-3 py-2 rounded-lg
-                    ${getContainerBackground()}
-                    border-[0.5px] border-white/10
-                    text-[var(--color-text)]
-                    focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]
-                  `}
-                >
-                  <option value="single">Single File (All Notes)</option>
-                  <option value="multiple">Multiple Files (One per Note)</option>
-                </select>
-              </div>
-
-              <button
-                onClick={handleExport}
-                className={`
-                  w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg 
+                <label className={`
+                  inline-flex items-center gap-2 px-6 py-3 rounded-lg 
                   ${theme === 'midnight' ? 'bg-[var(--color-accent)]/80 hover:bg-[var(--color-accent)]/70' : 'bg-[var(--color-accent)] hover:bg-[var(--color-accent)]/90'}
                   text-white text-sm font-medium 
                   transition-all duration-200 
                   hover:scale-105 hover:-translate-y-0.5 
                   shadow-sm hover:shadow-md
-                `}
-              >
-                <Download className="w-4 h-4" />
-                Export Notes
-              </button>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Export Status */}
-        {exportResult && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`
-              p-4 rounded-lg
-              ${exportResult.success ? 'bg-[var(--color-accent)]/10' : 'bg-red-500/10'}
-              border-[0.5px] border-white/10
-            `}
-          >
-            <div className="flex items-center gap-2">
-              {exportResult.success ? (
-                <>
-                  <CheckCircle className="w-5 h-5 text-[var(--color-accent)]" />
-                  <p className="text-sm text-[var(--color-accent)]">
-                    {exportResult.message}
-                  </p>
-                </>
-              ) : (
-                <>
-                  <AlertCircle className="w-5 h-5 text-red-500" />
-                  <p className="text-sm text-red-500">
-                    {exportResult.message}
-                  </p>
-                </>
-              )}
+                  cursor-pointer
+                `}>
+                  <Upload className="w-4 h-4" />
+                  Browse Files
+                  <input
+                    type="file"
+                    className="hidden"
+                    multiple
+                    accept=".pdf,.docx,.xlsx,.xls,.rtf,.md,.txt,.html"
+                    onChange={(e) => handleFiles(e.target.files)}
+                  />
+                </label>
+              </div>
             </div>
           </motion.div>
-        )}
+
+          {/* Export Section */}
+          <motion.div 
+            variants={cardVariants}
+            className={innerElementClasses}
+          >
+            <div className="p-8 space-y-6 h-full flex flex-col">
+              <div className="flex items-center gap-4">
+                <div className={`
+                  w-16 h-16 
+                  rounded-xl 
+                  flex items-center justify-center
+                  ${getContainerBackground()}
+                  border-[0.5px] border-white/10
+                `}>
+                  <Download className="w-8 h-8 text-[var(--color-accent)]" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-medium text-[var(--color-text)]">Export Notes</h3>
+                  <p className="text-sm text-[var(--color-textSecondary)]">
+                    Export your notes in various formats
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-6 flex-grow">
+                <div className="flex flex-col gap-3">
+                  <label className="text-sm font-medium text-[var(--color-text)]">
+                    Export Format
+                  </label>
+                  <CustomDropdown
+                    options={formatOptions}
+                    selectedId={exportOptions.format}
+                    onSelect={(format) => setExportOptions(prev => ({ ...prev, format: format as ExportOptions['format'] }))}
+                    placeholder="Select format"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <label className="text-sm font-medium text-[var(--color-text)]">
+                    Export Mode
+                  </label>
+                  <CustomDropdown
+                    options={modeOptions}
+                    selectedId={exportOptions.mode}
+                    onSelect={(mode) => setExportOptions(prev => ({ ...prev, mode: mode as ExportOptions['mode'] }))}
+                    placeholder="Select mode"
+                  />
+                </div>
+
+                <button
+                  onClick={handleExport}
+                  className={`
+                    w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg 
+                    ${theme === 'midnight' ? 'bg-[var(--color-accent)]/80 hover:bg-[var(--color-accent)]/70' : 'bg-[var(--color-accent)] hover:bg-[var(--color-accent)]/90'}
+                    text-white text-sm font-medium 
+                    transition-all duration-200 
+                    hover:scale-105 hover:-translate-y-0.5 
+                    shadow-sm hover:shadow-md
+                    mt-6
+                  `}
+                >
+                  <Download className="w-4 h-4" />
+                  Export Notes
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Status Messages */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Import Status */}
+          {(isImporting || importResult) && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`
+                p-4 rounded-lg
+                ${importResult?.success ? 'bg-[var(--color-accent)]/10' : 'bg-red-500/10'}
+                border-[0.5px] border-white/10
+              `}
+            >
+              <div className="flex items-center gap-2">
+                {isImporting ? (
+                  <>
+                    <Loader className="w-5 h-5 text-[var(--color-accent)] animate-spin" />
+                    <p className="text-sm text-[var(--color-accent)]">
+                      Importing notes...
+                    </p>
+                  </>
+                ) : importResult?.success ? (
+                  <>
+                    <CheckCircle className="w-5 h-5 text-[var(--color-accent)]" />
+                    <p className="text-sm text-[var(--color-accent)]">
+                      {importResult.message}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <AlertCircle className="w-5 h-5 text-red-500" />
+                    <p className="text-sm text-red-500">
+                      {importResult?.message}
+                    </p>
+                  </>
+                )}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Export Status */}
+          {exportResult && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`
+                p-4 rounded-lg
+                ${exportResult.success ? 'bg-[var(--color-accent)]/10' : 'bg-red-500/10'}
+                border-[0.5px] border-white/10
+              `}
+            >
+              <div className="flex items-center gap-2">
+                {exportResult.success ? (
+                  <>
+                    <CheckCircle className="w-5 h-5 text-[var(--color-accent)]" />
+                    <p className="text-sm text-[var(--color-accent)]">
+                      {exportResult.message}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <AlertCircle className="w-5 h-5 text-red-500" />
+                    <p className="text-sm text-red-500">
+                      {exportResult.message}
+                    </p>
+                  </>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </div>
       </div>
     </div>
   );

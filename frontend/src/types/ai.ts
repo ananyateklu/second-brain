@@ -155,9 +155,15 @@ export interface AISettings {
   contentSuggestions?: {
     provider: 'openai' | 'anthropic' | 'gemini' | 'llama';
     modelId: string;
+    temperature?: number;
+    maxTokens?: number;
+    systemMessage?: string;
   };
   promptEnhancement?: {
     provider: 'openai' | 'anthropic' | 'gemini' | 'llama';
     modelId: string;
+    temperature?: number;
+    maxTokens?: number;
+    systemMessage?: string;
   };
 }
