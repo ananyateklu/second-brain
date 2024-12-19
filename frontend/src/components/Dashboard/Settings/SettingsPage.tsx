@@ -1,9 +1,10 @@
-import { useTheme } from '../../../contexts/themeContextUtils';
+import { useState } from 'react';
 import { Moon, Sun, Bell, Shield, Database, Settings2, Palette, Sparkles } from 'lucide-react';
+import { useTheme } from '../../../contexts/themeContextUtils';
 import { motion } from 'framer-motion';
 import { AISettingsSection } from './AISettingsSection';
+import { ImportNotesSection } from './ImportNotesSection';
 import { AISettings } from '../../../types/ai';
-import { useState } from 'react';
 import { ThemeName } from '../../../theme/theme.config';
 import { cardVariants } from '../../../utils/welcomeBarUtils';
 
@@ -336,31 +337,7 @@ export function SettingsPage() {
               </div>
 
               <div className="p-6">
-                <div className={`flex items-center justify-between p-4 ${innerElementClasses}`}>
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm">
-                      <Database className="w-5 h-5 text-[var(--color-accent)]" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-[var(--color-text)]">Export Data</p>
-                      <p className="text-sm text-[var(--color-textSecondary)]">
-                        Download all your notes and data
-                      </p>
-                    </div>
-                  </div>
-                  <button className={`
-                    px-4 py-2 rounded-lg 
-                    ${getContainerBackground()}
-                    border-[0.5px] border-white/10
-                    text-[var(--color-text)] text-sm font-medium 
-                    transition-all duration-200 
-                    hover:scale-105 hover:-translate-y-0.5 
-                    shadow-sm hover:shadow-md
-                    hover:bg-[var(--color-surfaceHover)]
-                  `}>
-                    Export
-                  </button>
-                </div>
+                <ImportNotesSection />
               </div>
             </motion.div>
           </div>
