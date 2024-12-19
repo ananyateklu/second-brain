@@ -202,7 +202,7 @@ export function SettingsPage() {
                       name="theme"
                       checked={theme === 'light'}
                       onChange={() => handleThemeChange('light')}
-                      className="w-4 h-4 text-[var(--color-accent)] bg-[var(--color-surface)] border-[var(--color-border)] focus:ring-[var(--color-accent)] focus:ring-2"
+                      className="w-4 h-4 accent-[var(--color-accent)] bg-[var(--color-surface)] border-[var(--color-border)]"
                     />
                   </label>
 
@@ -224,7 +224,7 @@ export function SettingsPage() {
                       name="theme"
                       checked={theme === 'dark'}
                       onChange={() => handleThemeChange('dark')}
-                      className="w-4 h-4 text-[var(--color-accent)] bg-[var(--color-surface)] border-[var(--color-border)] focus:ring-[var(--color-accent)] focus:ring-2"
+                      className="w-4 h-4 accent-[var(--color-accent)] bg-[var(--color-surface)] border-[var(--color-border)]"
                     />
                   </label>
 
@@ -246,7 +246,7 @@ export function SettingsPage() {
                       name="theme"
                       checked={theme === 'midnight'}
                       onChange={() => handleThemeChange('midnight')}
-                      className="w-4 h-4 text-[var(--color-accent)] bg-[var(--color-surface)] border-[var(--color-border)] focus:ring-[var(--color-accent)] focus:ring-2"
+                      className="w-4 h-4 accent-[var(--color-accent)] bg-[var(--color-surface)] border-[var(--color-border)]"
                     />
                   </label>
                 </div>
