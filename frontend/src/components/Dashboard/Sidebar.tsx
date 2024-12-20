@@ -85,6 +85,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     {
       section: 'Tools',
       items: [
+        { name: 'AI Agents', icon: Bot, to: '/dashboard/agents' },
         { name: 'AI Assistant', icon: Bot, to: '/dashboard/ai' },
       ]
     }

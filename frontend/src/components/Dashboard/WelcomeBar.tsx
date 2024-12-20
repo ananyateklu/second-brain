@@ -128,6 +128,7 @@ export function WelcomeBar({ isDashboardHome = false }: WelcomeBarProps) {
 
   const hideOnPaths = [
     '/dashboard/ai',
+    '/dashboard/agents',
     '/dashboard/linked',
     '/dashboard/settings',
     '/dashboard/trash',

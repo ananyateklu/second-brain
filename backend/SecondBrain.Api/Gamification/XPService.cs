@@ -66,18 +66,42 @@ namespace SecondBrain.Api.Gamification
                 int newLevel = CalculateLevel(newXP);
                 bool leveledUp = newLevel > oldLevel;
 
-                // Update using raw SQL to avoid OUTPUT clause
-                await _context.Database.ExecuteSqlInterpolatedAsync(
-                    $"UPDATE Users SET ExperiencePoints = {newXP} WHERE Id = {userId}");
+                _logger.LogInformation(
+                    "Level calculation results - Old Level: {OldLevel}, New Level: {NewLevel}, Old XP: {OldXP}, New XP: {NewXP}, XP Awarded: {XPAwarded}",
+                    oldLevel, newLevel, oldXP, newXP, xpToAward
+                );
+
+                // Step 1: Update using raw SQL without OUTPUT clause
+                await _context.Database.ExecuteSqlRawAsync(
+                    "UPDATE Users SET ExperiencePoints = @p0, Level = @p1 WHERE Id = @p2",
+                    newXP, newLevel, userId);
 
                 await transaction.CommitAsync();
 
+                // Step 2: Verify the update
+                var updatedUser = await _context.Users
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(u => u.Id == userId);
+
+                if (updatedUser == null)
+                {
+                    throw new InvalidOperationException("Failed to verify user update");
+                }
+
                 _logger.LogInformation(
-                    "XP Award - User {UserId}: Old XP: {OldXP}, New XP: {NewXP}, Old Level: {OldLevel}, New Level: {NewLevel}",
-                    userId, oldXP, newXP, oldLevel, newLevel
+                    "Verification - Updated user state: Level = {Level}, XP = {XP}",
+                    updatedUser.Level, updatedUser.ExperiencePoints
                 );
 
-                return (newXP, newLevel, leveledUp);
+                if (updatedUser.Level != newLevel || updatedUser.ExperiencePoints != newXP)
+                {
+                    _logger.LogWarning(
+                        "Mismatch detected - Expected: Level {ExpectedLevel}, XP {ExpectedXP}, Actual: Level {ActualLevel}, XP {ActualXP}",
+                        newLevel, newXP, updatedUser.Level, updatedUser.ExperiencePoints
+                    );
+                }
+
+                return (updatedUser.ExperiencePoints, updatedUser.Level, leveledUp);
             }
             catch (Exception ex)
             {
@@ -105,22 +129,31 @@ namespace SecondBrain.Api.Gamification
 
         public int CalculateLevel(int experiencePoints)
         {
-            // Add logging to debug level calculation
-            _logger.LogInformation("Calculating level for XP: {XP}", experiencePoints);
+            _logger.LogInformation("Starting level calculation for XP: {XP}", experiencePoints);
 
-            for (int i = LevelThresholds.Length - 1; i >= 0; i--)
+            // Simply iterate through thresholds to find appropriate level
+            for (int i = 0; i < LevelThresholds.Length; i++)
             {
-                if (experiencePoints >= LevelThresholds[i])
+                // If we're at the last threshold and XP is higher, return max level
+                if (i == LevelThresholds.Length - 1)
                 {
-                    _logger.LogInformation(
-                        "Found level {Level} for XP {XP} (Threshold: {Threshold})",
-                        i + 1, experiencePoints, LevelThresholds[i]
-                    );
+                    if (experiencePoints >= LevelThresholds[i])
+                    {
+                        _logger.LogInformation("Max level {Level} reached with XP {XP}", i + 1, experiencePoints);
+                        return i + 1;
+                    }
+                }
+                // Otherwise check if XP is between current and next threshold
+                else if (experiencePoints >= LevelThresholds[i] && experiencePoints < LevelThresholds[i + 1])
+                {
+                    _logger.LogInformation("Level {Level} calculated for XP {XP} between {Current} and {Next}", 
+                        i + 1, experiencePoints, LevelThresholds[i], LevelThresholds[i + 1]);
                     return i + 1;
                 }
             }
 
-            _logger.LogInformation("Defaulting to level 1 for XP: {XP}", experiencePoints);
+            // Fallback to level 1 if no other conditions met
+            _logger.LogInformation("Defaulting to level 1 for XP {XP}", experiencePoints);
             return 1;
         }
 
