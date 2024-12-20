@@ -598,6 +598,25 @@ export const AI_MODELS: AIModel[] = [
       maxOutputTokens: 4096,
     },
   },
+  {
+    id: 'vanilj/Phi-4',
+    name: 'Phi 4 14b',
+    provider: 'llama',
+    category: 'chat',
+    description: 'Phi-4 is a family of state-of-the-art open models by Microsoft.',
+    isConfigured: true,
+    isReasoner: false,
+    color: '#8B5CF6',
+    endpoint: 'chat',
+    size: '14B',
+    rateLimits: {
+      tpm: 60000,
+      rpm: 35,
+      maxInputTokens: 16384,
+      maxOutputTokens: 4096,
+    },
+  },
+
   // Gemini Models (Colored Purple)
   {
     id: 'gemini-1.5-pro',

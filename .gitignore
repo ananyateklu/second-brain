@@ -38,3 +38,4 @@ ai_service/venv/
 ai_service/.env
 ai_service/src/__pycache__/
 ai_service/src/**/__pycache__/
+.cursorrules

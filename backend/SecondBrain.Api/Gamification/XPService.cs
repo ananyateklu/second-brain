@@ -47,8 +47,9 @@ namespace SecondBrain.Api.Gamification
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // Use tracking query to get user
+                // First get the user's current state
                 var user = await _context.Users
+                    .AsNoTracking()
                     .FirstOrDefaultAsync(u => u.Id == userId);
 
                 if (user == null)
@@ -59,28 +60,24 @@ namespace SecondBrain.Api.Gamification
                 int xpToAward = customXP ?? GetXPForAction(action);
                 int oldLevel = user.Level;
                 int oldXP = user.ExperiencePoints;
-
-                // Award XP
-                user.ExperiencePoints += xpToAward;
+                int newXP = oldXP + xpToAward;
                 
                 // Calculate new level
-                int newLevel = CalculateLevel(user.ExperiencePoints);
+                int newLevel = CalculateLevel(newXP);
                 bool leveledUp = newLevel > oldLevel;
 
-                // Let the database trigger handle the level update
-                // Only update ExperiencePoints through EF Core
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
+                // Update using raw SQL to avoid OUTPUT clause
+                await _context.Database.ExecuteSqlInterpolatedAsync(
+                    $"UPDATE Users SET ExperiencePoints = {newXP} WHERE Id = {userId}");
 
-                // Reload the entity to get the updated level from the trigger
-                await _context.Entry(user).ReloadAsync();
+                await transaction.CommitAsync();
 
                 _logger.LogInformation(
                     "XP Award - User {UserId}: Old XP: {OldXP}, New XP: {NewXP}, Old Level: {OldLevel}, New Level: {NewLevel}",
-                    userId, oldXP, user.ExperiencePoints, oldLevel, user.Level
+                    userId, oldXP, newXP, oldLevel, newLevel
                 );
 
-                return (user.ExperiencePoints, user.Level, leveledUp);
+                return (newXP, newLevel, leveledUp);
             }
             catch (Exception ex)
             {
