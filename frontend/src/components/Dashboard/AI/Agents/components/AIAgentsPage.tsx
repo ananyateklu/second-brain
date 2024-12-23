@@ -8,6 +8,7 @@ import { useAgentState } from '../hooks/useAgentState';
 import { AgentSelection } from './AgentSelection';
 import { ChatInterface } from './ChatInterface';
 import { handleAgentSelect, handleNewConversation, getCurrentConversation, handleSendMessage, handleDeleteConversation } from '../utils/handlers';
+import { getBotIcon } from '../utils/iconUtils';
 
 export function AIAgentsPage() {
     const { theme } = useTheme();
@@ -63,29 +64,64 @@ export function AIAgentsPage() {
 
     const getContainerBackground = () => {
         if (theme === 'dark') return 'bg-gray-900/30';
-        if (theme === 'midnight') return 'bg-[#1e293b]/30';
+        if (theme === 'midnight') return 'bg-white/5';
         return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]';
+    };
+
+    const getBorderColor = () => {
+        if (theme === 'midnight') return 'border-[#334155]';
+        if (theme === 'dark') return 'border-[#1e293b]';
+        return 'border-[var(--color-border)]';
     };
 
     const cardClasses = `
         relative 
         overflow-hidden 
-        rounded-2xl 
+        rounded-xl
         ${getContainerBackground()}
         backdrop-blur-xl 
-        border-[0.5px] 
-        border-white/10
-        shadow-[4px_0_24px_-2px_rgba(0,0,0,0.12),8px_0_16px_-4px_rgba(0,0,0,0.08)]
-        dark:shadow-[4px_0_24px_-2px_rgba(0,0,0,0.3),8px_0_16px_-4px_rgba(0,0,0,0.2)]
-        ring-1
-        ring-white/5
+        border
+        ${getBorderColor()}
+        shadow-[0_8px_16px_rgba(0,0,0,0.08)]
+        dark:shadow-[0_8px_16px_rgba(0,0,0,0.3)]
         transition-all 
         duration-300
     `;
 
+    const getTitleIcon = () => {
+        if (!selectedProvider) return Bot;
+        return getBotIcon(selectedProvider);
+    };
+
+    const getProviderColor = (provider: string) => {
+        const providerLower = provider.toLowerCase();
+        if (providerLower.includes('gemini') || providerLower.includes('google')) {
+            return '#4285F4'; // Google Blue
+        } else if (providerLower.includes('openai') || providerLower.includes('gpt')) {
+            return '#3B7443'; // OpenAI Forest Green
+        } else if (providerLower.includes('anthropic') || providerLower.includes('claude')) {
+            return '#F97316'; // Anthropic Orange
+        } else if (providerLower.includes('llama') || providerLower.includes('meta')) {
+            return '#8B5CF6'; // Llama Purple
+        } else if (providerLower.includes('grok') || providerLower.includes('x.ai')) {
+            return '#1DA1F2'; // X/Twitter Blue
+        }
+        return 'var(--color-accent)';
+    };
+
+    const getTitleColor = () => {
+        if (selectedAgent) {
+            return selectedAgent.color;
+        }
+        if (selectedProvider) {
+            return getProviderColor(selectedProvider);
+        }
+        return 'var(--color-accent)';
+    };
+
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center h-[calc(100vh-12rem)]">
+            <div className="flex items-center justify-center h-[calc(100vh-13rem)]">
                 <div className="flex items-center gap-2">
                     <Loader className="w-6 h-6 animate-spin text-[var(--color-accent)]" />
                     <span className="text-[var(--color-textSecondary)]">Loading agents...</span>
@@ -96,7 +132,7 @@ export function AIAgentsPage() {
 
     if (!isOpenAIConfigured && !isGeminiConfigured && !isAnthropicConfigured && !isLlamaConfigured) {
         return (
-            <div className="flex flex-col items-center justify-center h-[calc(100vh-12rem)] gap-4">
+            <div className="flex flex-col items-center justify-center h-[calc(100vh-13rem)] gap-4">
                 <Bot className="w-16 h-16 text-[var(--color-textSecondary)]" />
                 <h2 className="text-xl font-semibold text-[var(--color-text)]">
                     AI Agents Not Configured
@@ -116,54 +152,91 @@ export function AIAgentsPage() {
     }
 
     return (
-        <div className="w-full px-4 py-8">
+        <div className="w-full h-[calc(100vh-9rem)] flex flex-col">
             <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mb-8"
+                variants={{
+                    hidden: { opacity: 0, y: -20 },
+                    visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 30 } }
+                }}
+                className={`
+                    relative 
+                    overflow-hidden 
+                    rounded-xl
+                    ${getContainerBackground()}
+                    backdrop-blur-xl 
+                    border
+                    ${getBorderColor()}
+                    shadow-[0_8px_16px_rgba(0,0,0,0.08)]
+                    dark:shadow-[0_8px_16px_rgba(0,0,0,0.3)]
+                    transition-all 
+                    duration-300 
+                    p-4
+                    mx-6
+                    mb-8
+                    z-[1]
+                `}
             >
-                <h1 className="text-3xl font-extrabold text-[var(--color-text)] mb-4">
-                    AI Agents
-                </h1>
-                <p className="text-lg text-[var(--color-textSecondary)] mb-6">
-                    Select an AI agent to help you with specific tasks
-                </p>
+                <div className="relative flex items-center gap-3">
+                    <div
+                        className="flex items-center justify-center w-10 h-10 rounded-lg backdrop-blur-sm border border-[var(--color-border)]"
+                        style={{
+                            backgroundColor: `${getTitleColor()}15`,
+                        }}
+                    >
+                        {React.createElement(getTitleIcon(), {
+                            className: "w-5 h-5",
+                            style: { color: getTitleColor() }
+                        })}
+                    </div>
+                    <div>
+                        <h1 className="text-xl font-bold text-[var(--color-text)]">AI Agents</h1>
+                        <p className="mt-0.5 text-sm text-[var(--color-textSecondary)]">
+                            Select an AI agent to help you with specific tasks
+                        </p>
+                    </div>
+                </div>
             </motion.div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                <AgentSelection
-                    selectedProvider={selectedProvider}
-                    setSelectedProvider={setSelectedProvider}
-                    searchQuery={searchQuery}
-                    setSearchQuery={setSearchQuery}
-                    groupedModels={groupedModels}
-                    filteredAgents={filteredAgents}
-                    selectedAgent={selectedAgent}
-                    onAgentSelect={handleAgentSelectWrapper}
-                    cardClasses={cardClasses}
-                />
-
-                <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="lg:col-span-4"
-                >
-                    <ChatInterface
+            <div className="flex-1 px-4 pb-4">
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 h-full relative">
+                    <AgentSelection
+                        selectedProvider={selectedProvider}
+                        setSelectedProvider={setSelectedProvider}
+                        searchQuery={searchQuery}
+                        setSearchQuery={setSearchQuery}
+                        groupedModels={groupedModels}
+                        filteredAgents={filteredAgents}
                         selectedAgent={selectedAgent}
+                        onAgentSelect={handleAgentSelectWrapper}
                         cardClasses={cardClasses}
-                        currentMessage={currentMessage}
-                        setCurrentMessage={setCurrentMessage}
-                        isSending={isSending}
-                        conversations={conversations}
-                        setConversations={setConversations}
-                        messagesEndRef={messagesEndRef}
-                        onNewChat={handleNewConversationWrapper}
-                        onClose={() => setSelectedAgent(null)}
-                        getCurrentConversation={getCurrentConversationWrapper}
-                        onSendMessage={handleSendMessageWrapper}
-                        onDeleteConversation={handleDeleteConversationWrapper}
+                        getBorderColor={getBorderColor}
                     />
-                </motion.div>
+
+                    <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="lg:col-span-4 h-full relative"
+                        style={{ zIndex: 2 }}
+                    >
+                        <ChatInterface
+                            selectedAgent={selectedAgent}
+                            cardClasses={cardClasses}
+                            currentMessage={currentMessage}
+                            setCurrentMessage={setCurrentMessage}
+                            isSending={isSending}
+                            conversations={conversations}
+                            setConversations={setConversations}
+                            messagesEndRef={messagesEndRef}
+                            onNewChat={handleNewConversationWrapper}
+                            onClose={() => setSelectedAgent(null)}
+                            getCurrentConversation={getCurrentConversationWrapper}
+                            onSendMessage={handleSendMessageWrapper}
+                            onDeleteConversation={handleDeleteConversationWrapper}
+                        />
+                    </motion.div>
+                </div>
             </div>
         </div>
     );

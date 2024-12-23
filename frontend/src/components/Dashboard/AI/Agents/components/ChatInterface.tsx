@@ -5,6 +5,7 @@ import { AgentConversation } from '../types';
 import { ChatMessages } from './ChatMessages';
 import { MessageInput } from './MessageInput';
 import { ConversationHistory } from './ConversationHistory';
+import { useTheme } from '../../../../../contexts/themeContextUtils';
 
 interface ChatInterfaceProps {
     selectedAgent: AIModel | null;
@@ -22,6 +23,12 @@ interface ChatInterfaceProps {
     onDeleteConversation: (id: string) => void;
 }
 
+const getContainerBackground = (theme: string) => {
+    if (theme === 'dark') return 'bg-gray-900/30';
+    if (theme === 'midnight') return 'bg-[#1e293b]/30';
+    return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]';
+};
+
 export const ChatInterface = ({
     selectedAgent,
     cardClasses,
@@ -37,15 +44,17 @@ export const ChatInterface = ({
     onSendMessage,
     onDeleteConversation
 }: ChatInterfaceProps) => {
+    const { theme } = useTheme();
+
     if (!selectedAgent) {
         return (
-            <div className={`h-[calc(100vh-20rem)] flex items-center justify-center ${cardClasses}`}>
+            <div className={`h-full flex items-center justify-center ${cardClasses} border border-[var(--color-border)] dark:border-white/10`}>
                 <div className="text-center">
-                    <MessageSquare className="w-12 h-12 text-[var(--color-textSecondary)] mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-[var(--color-text)] mb-2">
+                    <MessageSquare className="w-10 h-10 text-[var(--color-textSecondary)] mx-auto mb-3" />
+                    <h3 className="text-base font-semibold text-[var(--color-text)] mb-1">
                         Select an Agent
                     </h3>
-                    <p className="text-[var(--color-textSecondary)]">
+                    <p className="text-sm text-[var(--color-textSecondary)]">
                         Choose an AI agent from the left to start a conversation
                     </p>
                 </div>
@@ -54,53 +63,62 @@ export const ChatInterface = ({
     }
 
     return (
-        <div className={`h-[calc(100vh-20rem)] flex flex-col ${cardClasses}`}>
+        <div className={`h-full flex flex-col ${cardClasses} border border-[var(--color-border)] dark:border-white/10`}>
             {/* Chat Header */}
-            <div className="p-4 border-b border-[var(--color-border)] flex items-center justify-between">
+            <div className={`
+                shrink-0 p-3 border-b border-[var(--color-border)] dark:border-white/10 flex items-center justify-between
+                ${getContainerBackground(theme)}
+                backdrop-blur-xl
+                relative z-[10]
+            `}>
                 <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-lg" style={{ backgroundColor: `${selectedAgent.color}20` }}>
-                        <Bot className="w-5 h-5" style={{ color: selectedAgent.color }} />
+                    <div className="p-1.5 rounded-lg border border-[var(--color-border)] dark:border-white/10" style={{ backgroundColor: `${selectedAgent.color}20` }}>
+                        <Bot className="w-4 h-4" style={{ color: selectedAgent.color }} />
                     </div>
                     <div>
-                        <h3 className="font-medium text-[var(--color-text)]">{selectedAgent.name}</h3>
+                        <h3 className="text-sm font-medium text-[var(--color-text)]">{selectedAgent.name}</h3>
                         <p className="text-xs text-[var(--color-textSecondary)]">{selectedAgent.description}</p>
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                     <button
                         onClick={onNewChat}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-[var(--color-surfaceHover)] text-[var(--color-textSecondary)] border border-[var(--color-border)]"
+                        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md bg-[var(--color-surface)]/50 backdrop-blur-sm text-[var(--color-textSecondary)] border border-[var(--color-border)] dark:border-white/10 hover:bg-[var(--color-surfaceHover)] hover:border-[var(--color-textSecondary)] dark:hover:border-white/20 transition-colors"
                     >
-                        <MessageSquare className="w-4 h-4" />
+                        <MessageSquare className="w-3.5 h-3.5" />
                         <span>New Chat</span>
                     </button>
-                    <ConversationHistory
-                        conversations={conversations}
-                        selectedAgent={selectedAgent}
-                        onSelect={(conv) => {
-                            setConversations(prev => prev.map(c =>
-                                c.id === conv.id ? { ...c, isActive: true } : { ...c, isActive: false }
-                            ));
-                        }}
-                        onDelete={onDeleteConversation}
-                    />
+                    <div className="relative" style={{ zIndex: 50 }}>
+                        <ConversationHistory
+                            conversations={conversations}
+                            selectedAgent={selectedAgent}
+                            onSelect={(conv) => {
+                                setConversations(prev => prev.map(c =>
+                                    c.id === conv.id ? { ...c, isActive: true } : { ...c, isActive: false }
+                                ));
+                            }}
+                            onDelete={onDeleteConversation}
+                        />
+                    </div>
                     <button
                         onClick={onClose}
-                        className="p-2 rounded-lg hover:bg-[var(--color-surfaceHover)] text-[var(--color-textSecondary)]"
+                        className="p-1.5 rounded-md bg-[var(--color-surface)]/50 backdrop-blur-sm hover:bg-[var(--color-surfaceHover)] text-[var(--color-textSecondary)] border border-[var(--color-border)] dark:border-white/10 hover:border-[var(--color-textSecondary)] dark:hover:border-white/20 transition-colors"
                     >
-                        <X className="w-5 h-5" />
+                        <X className="w-4 h-4" />
                     </button>
                 </div>
             </div>
 
             {/* Messages */}
-            <ChatMessages
-                conversation={getCurrentConversation()}
-                isSending={isSending}
-                selectedAgent={selectedAgent}
-                setConversations={setConversations}
-                messagesEndRef={messagesEndRef}
-            />
+            <div className="flex-1 min-h-0 flex flex-col">
+                <ChatMessages
+                    conversation={getCurrentConversation()}
+                    isSending={isSending}
+                    selectedAgent={selectedAgent}
+                    setConversations={setConversations}
+                    messagesEndRef={messagesEndRef}
+                />
+            </div>
 
             {/* Input */}
             <MessageInput
@@ -111,4 +129,4 @@ export const ChatInterface = ({
             />
         </div>
     );
-}; 
+};

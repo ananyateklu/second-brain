@@ -52,7 +52,7 @@ Second Brain is an AI-enhanced knowledge management and note-taking system that 
 
 - API keys and credentials stored securely on the backend
 - JWT authentication with refresh tokens
-- Data encryption, planned role-based permissions for both users and AI agents
+- Data encryption
 
 ## Technical Stack
 
@@ -72,17 +72,6 @@ Second Brain is an AI-enhanced knowledge management and note-taking system that 
 - Integrations with OpenAI, Anthropic, Google Gemini, Grok, and Ollama
 - Pinecone for vector embeddings and semantic search
 - Logging, monitoring, and Swagger/OpenAPI documentation
-
-## Execution Steps & Function-Calling Models
-
-User operations—like creating or editing notes—are executed through a series of detailed steps (processing, thinking, function calls, database operations, result formatting). While these steps aren’t fully listed in the README, the system:
-
-- Parses and validates user input.
-- Uses AI models to determine the best operation or function.
-- Interacts with the database through well-defined calls.
-- Returns detailed results and metrics to the UI.
-
-This process ensures transparency, traceability, and context-driven decision-making when performing actions.
 
 ## Getting Started
 
@@ -290,37 +279,21 @@ The application provides RESTful API endpoints for various resources. Below is a
 
 ## Content Linking Features
 
-The system provides comprehensive content linking capabilities:
+The system implements bi-directional linking across all content types, enabling seamless navigation and relationship management:
 
-### Notes
+### Content Types & Connections
 
-- Link to other notes for reference
-- Connect to tasks for project documentation
-- Attach to reminders for follow-ups
-- Link to ideas for brainstorming
+- **Notes**: Reference other notes, tasks, reminders, and ideas
+- **Tasks**: Link to documentation, dependencies, and meeting notes
+- **Reminders**: Connect to related tasks and reference materials
+- **Ideas**: Associate with research, implementation tasks, and related concepts
 
-### Tasks
+All connections are bi-directional and support:
 
-- Link to reference notes
-- Connect related documentation
-- Attach meeting notes
-- Link dependencies
-
-### Reminders
-
-- Link to notes for context
-- Attach reference materials
-- Connect to related tasks
-- Link to documentation
-
-### Ideas
-
-- Link to supporting notes
-- Connect related concepts
-- Attach research materials
-- Link to implementation tasks
-
-All links are bi-directional, allowing you to navigate your knowledge base from any starting point.
+- Contextual relationships
+- Dependency tracking
+- Project organization
+- Knowledge discovery
 
 ## Roadmap Enhancements
 
@@ -334,7 +307,7 @@ All links are bi-directional, allowing you to navigate your knowledge base from 
 
 - Introduce dedicated tables and schema for storing user and agent roles
 - Assign specific capabilities to AI agents—some can create or edit content, others remain read-only
-- Scale permissions to support multiple users and maintain a secure environment for both human and AI entities
+- Scale permissions to support multiple users and maintain a secure environment
 
 ### Enhanced Linking & Visualization
 

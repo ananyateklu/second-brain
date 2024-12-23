@@ -277,52 +277,38 @@ class BaseAgent(ABC):
             self.execution_history.append(execution_record)
             raise
     
-    async def _execute_tool(self, tool: Dict[str, Any]) -> Any:
-        """Execute a single tool"""
-        tool_type = tool.get("type")
-        tool_name = tool.get("name", "unknown")
-        
-        if not tool_type:
-            raise ToolExecutionError("Tool type not specified")
-            
+    async def _execute_tool(self, tool: Dict[str, Any]) -> str:
+        """Execute a tool and return the result"""
         try:
+            tool_type = tool.get("type")
+            if not tool_type:
+                raise ToolExecutionError("Tool type not specified")
+                
             if tool_type == "api_call":
                 return await self._execute_api_call(tool)
-            elif tool_type == "database_query":
-                return await self._execute_database_query(tool)
             else:
                 raise ToolExecutionError(f"Unsupported tool type: {tool_type}")
         except Exception as e:
-            logger.error(f"Tool execution failed: {str(e)}", exc_info=True)
+            logger.error(f"Tool execution failed: {str(e)}")
             raise ToolExecutionError(f"Tool execution failed: {str(e)}")
     
-    async def _execute_api_call(self, tool: Dict[str, Any]) -> Any:
-        """Execute an API call tool"""
-        tool_name = tool.get("name", "unknown")
+    async def _execute_api_call(self, tool: Dict[str, Any]) -> str:
+        """Execute an API call based on the tool name"""
+        tool_name = tool.get("name", "").lower()
         parameters = tool.get("parameters", {})
         
-        # Configure the API endpoint based on tool name
         if tool_name == "web_search":
             return await self._execute_web_search(parameters)
         elif tool_name == "academic_search":
-            return await self._execute_academic_search(
-                parameters.get("query", ""),
-                parameters.get("max_results", 3),
-                parameters.get("year_range", "")
-            )
-        elif tool_name == "expert_search":
-            return await self._execute_expert_search(
-                parameters.get("query", ""),
-                parameters.get("expertise_area", ""),
-                parameters.get("max_results", 3),
-                parameters.get("include_metrics", True)
-            )
+            return await self._execute_academic_search(parameters)
         elif tool_name == "news_search":
             return await self._execute_news_search(parameters)
+        elif tool_name == "expert_search":
+            return await self._execute_expert_search(parameters)
         elif tool_name == "patent_search":
             return await self._execute_patent_search(parameters)
         else:
-            raise ToolExecutionError(f"Unsupported API call tool: {tool_name}")
+            raise ToolExecutionError(f"Unknown tool name: {tool_name}")
     
     async def _execute_web_search(self, parameters: Dict[str, Any]) -> str:
         """Execute web search using DuckDuckGo"""
@@ -330,40 +316,111 @@ class BaseAgent(ABC):
             from duckduckgo_search import DDGS
             query = parameters.get("query", "")
             max_results = parameters.get("max_results", 5)
-            time_range = parameters.get("time_range", "")
             region = parameters.get("region", "wt-wt")
-            safe_search = parameters.get("safe_search", True)
+            
+            # Clean and truncate query
+            query = re.sub(r'[^\w\s-]', ' ', query)  # Remove special characters
+            query = ' '.join(query.split())  # Normalize whitespace
+            if len(query) > 100:  # Limit length
+                query = query[:100].rsplit(' ', 1)[0]
             
             results = []
             with DDGS() as ddgs:
-                search_params = {
-                    "keywords": query,
-                    "max_results": max_results,
-                    "region": region,
-                    "safesearch": safe_search
-                }
-                if time_range:
-                    time_mapping = {
-                        "day": "d",
-                        "week": "w",
-                        "month": "m",
-                        "year": "y"
-                    }
-                    if time_range in time_mapping:
-                        search_params["timelimit"] = time_mapping[time_range]
+                try:
+                    # Try to get news results first
+                    try:
+                        news_results = list(ddgs.news(
+                            keywords=query,
+                            max_results=max_results,
+                            region=region
+                        ))
+                        
+                        if news_results:
+                            for r in news_results:
+                                if isinstance(r, dict):
+                                    results.append({
+                                        "title": r.get("title"),
+                                        "link": r.get("link"),
+                                        "snippet": r.get("body"),
+                                        "source": "news",
+                                        "published": r.get("date")
+                                    })
+                    except Exception as news_error:
+                        logger.warning(f"News search failed: {str(news_error)}")
+                    
+                    # Try to get web results
+                    try:
+                        web_results = list(ddgs.text(
+                            keywords=query,
+                            max_results=max_results,
+                            region=region
+                        ))
+                        
+                        for r in web_results:
+                            if isinstance(r, dict):
+                                results.append({
+                                    "title": r.get("title"),
+                                    "link": r.get("link"),
+                                    "snippet": r.get("body"),
+                                    "source": "web",
+                                    "published": None
+                                })
+                    except Exception as web_error:
+                        logger.warning(f"Web search failed: {str(web_error)}")
+                    
+                    # If both methods failed, try one last time with minimal parameters
+                    if not results:
+                        logger.warning("Trying fallback search method")
+                        simple_query = " ".join(query.split()[:5])
+                        fallback_results = list(ddgs.text(
+                            keywords=simple_query,
+                            max_results=3,
+                            region="wt-wt"
+                        ))
+                        
+                        for r in fallback_results:
+                            if isinstance(r, dict):
+                                results.append({
+                                    "title": r.get("title"),
+                                    "link": r.get("link"),
+                                    "snippet": r.get("body"),
+                                    "source": "fallback",
+                                    "published": None
+                                })
                 
-                for r in ddgs.text(**search_params):
-                    results.append({
-                        "title": r.get("title"),
-                        "link": r.get("link"),
-                        "snippet": r.get("body"),
-                        "source": r.get("source"),
-                        "published": r.get("published")
-                    })
-            return json.dumps(results)
+                except Exception as e:
+                    logger.error(f"All search methods failed: {str(e)}")
+            
+            if not results:
+                logger.warning("No results found from any search method")
+                return json.dumps([{"message": "No results found"}])
+            
+            # Deduplicate results based on URL
+            seen_urls = set()
+            unique_results = []
+            for r in results:
+                if r.get("link") and r.get("link") not in seen_urls:
+                    seen_urls.add(r.get("link"))
+                    unique_results.append(r)
+            
+            return json.dumps(unique_results[:max_results])
+            
         except Exception as e:
             logger.error(f"Web search failed: {str(e)}")
-            raise ToolExecutionError(f"Web search failed: {str(e)}")
+            return json.dumps([{"message": f"Search failed: {str(e)}"}])
+    
+    def _clean_search_query(self, query: str) -> str:
+        """Clean and prepare search query"""
+        # Remove special characters and extra whitespace
+        query = re.sub(r'[^\w\s-]', ' ', query)
+        query = ' '.join(query.split())
+        
+        # Limit query length
+        if len(query) > 100:
+            # Keep first 100 chars but break at last complete word
+            query = query[:100].rsplit(' ', 1)[0]
+        
+        return query
     
     async def _execute_news_search(self, parameters: Dict[str, Any]) -> str:
         """Execute news search using NewsAPI"""
@@ -609,124 +666,117 @@ class BaseAgent(ABC):
         """Get the agent's execution history"""
         return self.execution_history
     
-    async def _execute_academic_search(self, query: str, max_results: int = 3, year_range: str = "") -> str:
-        """Execute academic search using Google Scholar with Semantic Scholar fallback"""
+    async def _execute_academic_search(self, parameters: Dict[str, Any]) -> str:
+        """Execute academic search using Semantic Scholar"""
         try:
-            # Try Google Scholar first
-            try:
-                # Configure scholarly with proxy settings if available
-                if hasattr(settings, 'PROXY_URL') and settings.PROXY_URL:
-                    try:
-                        scholarly.use_proxy(settings.PROXY_URL)
-                        scholarly.scholarly._HEADERS = {
-                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                            'Accept-Language': 'en-US,en;q=0.5',
-                            'Accept-Encoding': 'gzip, deflate',
-                            'Connection': 'keep-alive',
-                            'Upgrade-Insecure-Requests': '1'
-                        }
-                    except Exception as e:
-                        logger.error(f"Failed to configure proxy: {str(e)}")
-                
-                await asyncio.sleep(2)
-                
-                search_query = scholarly.search_pubs(query)
-                results = []
-                seen_titles = set()
-                
-                while len(results) < max_results:
-                    try:
-                        pub = next(search_query)
-                        title = pub.get("bib", {}).get("title")
-                        
-                        if title in seen_titles:
-                            continue
-                        seen_titles.add(title)
-                        
-                        if year_range:
-                            year = pub.get("bib", {}).get("pub_year")
-                            if year and not self._is_in_year_range(year, year_range):
-                                continue
-                        
-                        results.append({
-                            "title": title,
-                            "authors": pub.get("bib", {}).get("author", []),
-                            "year": pub.get("bib", {}).get("pub_year"),
-                            "url": pub.get("pub_url"),
-                            "citations": pub.get("num_citations", 0),
-                            "source": "Google Scholar"
-                        })
-                        
-                        await asyncio.sleep(1)
-                        
-                    except StopIteration:
-                        break
-                    except Exception as e:
-                        logger.warning(f"Error processing Google Scholar publication: {str(e)}")
-                        continue
-                
-                if results:
-                    return json.dumps(results)
-                
-                logger.warning("No results found from Google Scholar, falling back to Semantic Scholar")
-                raise Exception("No results from Google Scholar")
-                
-            except Exception as e:
-                logger.warning(f"Google Scholar search failed: {str(e)}, falling back to Semantic Scholar")
-                # Fall back to Semantic Scholar
-                from semanticscholar import SemanticScholar
-                
-                sch = SemanticScholar()
-                semantic_results = []
-                
-                # Single request with the desired number of results
+            query = parameters.get("query", "")
+            max_results = parameters.get("max_results", 3)
+            year_range = parameters.get("year_range", "")
+            
+            # Clean and optimize query
+            query = self._clean_search_query(query)
+            
+            # Extract key terms for better search
+            key_terms = []
+            for term in query.split():
+                term_lower = term.lower()
+                if term_lower in ["cnn", "ai", "ml", "deep", "learning", "neural", "generative", "machine", "model", "models"]:
+                    key_terms.append(term)
+            
+            # Create optimized queries
+            queries = []
+            if key_terms:
+                # Technical terms only
+                queries.append(" ".join(key_terms))
+                # Technical terms + truncated query
+                if len(query) > 100:
+                    queries.append(f"{' '.join(key_terms)} {query[:100]}")
+            else:
+                # Just use truncated query
+                queries.append(query[:100])
+            
+            all_results = []
+            seen_titles = set()
+            
+            for search_query in queries:
                 try:
-                    response = sch.search_paper(
-                        query,
-                        limit=max_results,
-                        fields=['title', 'authors', 'year', 'citationCount', 'url', 'abstract']
-                    )
+                    import httpx
                     
-                    # Check if we got any results
-                    if not response or not isinstance(response, list):
-                        logger.warning("No results found from Semantic Scholar")
-                        return json.dumps([])
+                    url = "https://api.semanticscholar.org/graph/v1/paper/search"
+                    params = {
+                        "query": search_query,
+                        "fields": "title,authors,year,citationCount,url,abstract,venue,fieldsOfStudy",
+                        "offset": 0,
+                        "limit": max_results * 2
+                    }
                     
-                    # Process each paper
-                    for paper in response:
-                        # Skip if paper doesn't have required attributes
-                        if not hasattr(paper, 'title') or not paper.title:
-                            continue
-                            
-                        # Apply year filter if specified
-                        if year_range and hasattr(paper, 'year') and paper.year:
-                            if not self._is_in_year_range(str(paper.year), year_range):
-                                continue
+                    async with httpx.AsyncClient() as client:
+                        response = await client.get(url, params=params)
+                        response.raise_for_status()
+                        data = response.json()
                         
-                        semantic_results.append({
-                            "title": paper.title if hasattr(paper, 'title') else None,
-                            "authors": [author.name for author in (paper.authors or []) if hasattr(author, 'name')],
-                            "year": paper.year if hasattr(paper, 'year') else None,
-                            "url": paper.url if hasattr(paper, 'url') else None,
-                            "citations": paper.citationCount if hasattr(paper, 'citationCount') else 0,
-                            "abstract": paper.abstract if hasattr(paper, 'abstract') else None,
-                            "source": "Semantic Scholar"
-                        })
-                        
-                        # Break if we have enough results
-                        if len(semantic_results) >= max_results:
-                            break
-                    
-                    return json.dumps(semantic_results[:max_results])
-                    
-                except Exception as e:
-                    logger.error(f"Semantic Scholar search failed: {str(e)}")
-                    return json.dumps([])
+                        if data.get("data"):
+                            for paper in data["data"]:
+                                # Skip if we've seen this paper
+                                title = paper.get("title")
+                                if not title or title in seen_titles:
+                                    continue
+                                    
+                                # Filter by year range if specified
+                                if year_range and paper.get("year"):
+                                    if not self._is_in_year_range(str(paper["year"]), year_range):
+                                        continue
+                                
+                                # Calculate relevance score
+                                relevance_score = 0
+                                paper_text = " ".join([
+                                    title,
+                                    paper.get("abstract", ""),
+                                    " ".join(paper.get("fieldsOfStudy", [])),
+                                    paper.get("venue", "")
+                                ]).lower()
+                                
+                                for term in key_terms:
+                                    if term.lower() in paper_text:
+                                        relevance_score += 1
+                                
+                                result = {
+                                    "title": title,
+                                    "authors": [author.get("name") for author in paper.get("authors", [])],
+                                    "year": paper.get("year"),
+                                    "citations": paper.get("citationCount"),
+                                    "url": paper.get("url"),
+                                    "abstract": paper.get("abstract"),
+                                    "venue": paper.get("venue"),
+                                    "fields": paper.get("fieldsOfStudy", []),
+                                    "relevance_score": relevance_score,
+                                    "source": "semantic_scholar"
+                                }
+                                
+                                all_results.append(result)
+                                seen_titles.add(title)
                 
+                except Exception as e:
+                    logger.warning(f"Search failed for query '{search_query}': {str(e)}")
+                    continue
+            
+            if all_results:
+                # Sort by relevance and citations
+                sorted_results = sorted(
+                    all_results,
+                    key=lambda x: (x["relevance_score"], x.get("citations", 0)),
+                    reverse=True
+                )
+                
+                # Return top results
+                return json.dumps(sorted_results[:max_results])
+            
+            logger.warning("No results found from any query")
+            return json.dumps([{"message": "No academic results found"}])
+            
         except Exception as e:
-            logger.error(f"Both Google Scholar and Semantic Scholar searches failed: {str(e)}")
-            return json.dumps([])
+            logger.error(f"Academic search failed: {str(e)}")
+            return json.dumps([{"message": f"Search failed: {str(e)}"}])
     
     def _is_in_year_range(self, year: str, year_range: str) -> bool:
         """Helper method to check if a year falls within a specified range"""
@@ -741,102 +791,120 @@ class BaseAgent(ABC):
         except (ValueError, TypeError):
             return False
     
-    async def _execute_expert_search(self, query: str, expertise_area: str = "", 
-                                   max_results: int = 3, include_metrics: bool = True) -> str:
-        """Execute expert search using Google Scholar"""
+    async def _execute_expert_search(self, parameters: Dict[str, Any]) -> str:
+        """Execute expert search using Semantic Scholar"""
         try:
-            # Extract relevant keywords and experts
-            query_lower = query.lower()
-            found_experts = []
-            keywords = []
+            query = parameters.get("query", "")
+            expertise_area = parameters.get("expertise_area", "")
+            max_results = parameters.get("max_results", 3)
             
-            # Check each domain for relevant experts
-            for domain, config in self.KNOWN_EXPERTS.items():
-                domain_keywords = config["keywords"]
-                if any(kw.lower() in query_lower for kw in domain_keywords):
-                    found_experts.extend(config["experts"])
-                    keywords.extend(domain_keywords)
+            # Clean and prepare query
+            query = self._clean_search_query(query)
+            if expertise_area:
+                expertise_area = self._clean_search_query(expertise_area)
+                query = f"{query} {expertise_area}"
             
-            # If no experts found through domain matching, use expertise area
-            if not found_experts and expertise_area:
-                expertise_config = self.KNOWN_EXPERTS.get(expertise_area.lower(), {})
-                found_experts.extend(expertise_config.get("experts", []))
-                keywords.extend(expertise_config.get("keywords", []))
+            # Extract key terms for better search
+            key_terms = []
+            for term in query.split():
+                if term.lower() in ["cnn", "ai", "ml", "deep", "learning", "neural", "generative"]:
+                    key_terms.append(term)
             
-            results = []
-            # Search for specific experts if found
-            if found_experts:
-                for expert_name in found_experts[:max_results]:
-                    try:
-                        # Configure proxy if available
-                        if hasattr(settings, 'PROXY_URL') and settings.PROXY_URL:
-                            scholarly.use_proxy(settings.PROXY_URL)
-                        
-                        author_search = scholarly.search_author(expert_name)
-                        author = next(author_search)
-                        
-                        if include_metrics:
-                            author = scholarly.fill(author, sections=['basics', 'indices'])
-                        
-                        expert_info = {
-                            "name": author.get("name", ""),
-                            "affiliation": author.get("affiliation", ""),
-                            "interests": author.get("interests", []),
-                            "metrics": {}
-                        }
-                        
-                        if include_metrics:
-                            expert_info["metrics"] = {
-                                "h_index": author.get("hindex", 0),
-                                "citations": author.get("citedby", 0),
-                                "i10_index": author.get("i10index", 0)
-                            }
-                        
-                        results.append(expert_info)
-                        await asyncio.sleep(1)  # Rate limiting
-                    except Exception as e:
-                        logger.warning(f"Error fetching expert {expert_name}: {str(e)}")
-                        continue
+            # Optimize query
+            search_query = " ".join(key_terms) if key_terms else query[:100]
             
-            # If we still need more results, do a keyword search
-            if len(results) < max_results:
-                try:
-                    search_query = " ".join(keywords[:3]) if keywords else query
-                    if expertise_area:
-                        search_query = f"{expertise_area} {search_query}"
+            try:
+                import httpx
+                
+                # Use Semantic Scholar API to find relevant papers first
+                url = "https://api.semanticscholar.org/graph/v1/paper/search"
+                params = {
+                    "query": search_query,
+                    "fields": "title,authors,year,citationCount,url,abstract,venue",
+                    "offset": 0,
+                    "limit": max_results * 2  # Get more results to find experts
+                }
+                
+                async with httpx.AsyncClient() as client:
+                    response = await client.get(url, params=params)
+                    response.raise_for_status()
+                    data = response.json()
                     
-                    author_search = scholarly.search_author(search_query)
-                    while len(results) < max_results:
-                        try:
-                            author = next(author_search)
-                            if include_metrics:
-                                author = scholarly.fill(author, sections=['basics', 'indices'])
+                    if not data.get("data"):
+                        logger.warning("No papers found to identify experts")
+                        return json.dumps([{"message": "No experts found"}])
+                    
+                    # Extract authors and their papers
+                    author_papers = {}
+                    for paper in data["data"]:
+                        for author in paper.get("authors", []):
+                            if not author.get("name"):
+                                continue
                             
-                            expert_info = {
-                                "name": author.get("name", ""),
-                                "affiliation": author.get("affiliation", ""),
-                                "interests": author.get("interests", []),
-                                "metrics": {}
-                            }
-                            
-                            if include_metrics:
-                                expert_info["metrics"] = {
-                                    "h_index": author.get("hindex", 0),
-                                    "citations": author.get("citedby", 0),
-                                    "i10_index": author.get("i10index", 0)
+                            author_id = author.get("authorId")
+                            if not author_id:
+                                continue
+                                
+                            if author_id not in author_papers:
+                                author_papers[author_id] = {
+                                    "name": author.get("name"),
+                                    "papers": [],
+                                    "total_citations": 0,
+                                    "venues": []  # Changed from set to list
                                 }
                             
-                            results.append(expert_info)
-                            await asyncio.sleep(1)  # Rate limiting
-                        except StopIteration:
-                            break
-                        except Exception as e:
-                            logger.warning(f"Error processing author: {str(e)}")
-                            continue
-                except Exception as e:
-                    logger.warning(f"Keyword search failed: {str(e)}")
+                            author_papers[author_id]["papers"].append({
+                                "title": paper.get("title"),
+                                "year": paper.get("year"),
+                                "citations": paper.get("citationCount", 0),
+                                "venue": paper.get("venue")
+                            })
+                            
+                            if paper.get("venue") and paper["venue"] not in author_papers[author_id]["venues"]:
+                                author_papers[author_id]["venues"].append(paper["venue"])
+                            
+                            author_papers[author_id]["total_citations"] += paper.get("citationCount", 0)
+                    
+                    # Sort authors by citation count and prepare results
+                    sorted_authors = sorted(
+                        author_papers.values(),
+                        key=lambda x: x["total_citations"],
+                        reverse=True
+                    )
+                    
+                    results = []
+                    for author in sorted_authors[:max_results]:
+                        # Extract expertise areas from venues
+                        expertise_areas = set()
+                        for venue in author["venues"]:
+                            if venue:
+                                # Split venue name and add individual terms as expertise areas
+                                terms = [t.strip() for t in venue.split() if len(t.strip()) > 2]
+                                expertise_areas.update(terms)
+                        
+                        results.append({
+                            "name": author["name"],
+                            "total_citations": author["total_citations"],
+                            "paper_count": len(author["papers"]),
+                            "venues": author["venues"],
+                            "recent_papers": sorted(
+                                author["papers"],
+                                key=lambda x: (x.get("year", 0), x.get("citations", 0)),
+                                reverse=True
+                            )[:3],
+                            "expertise_areas": list(expertise_areas)[:5]
+                        })
+                    
+                    if results:
+                        return json.dumps(results)
+                    
+                    logger.warning("No experts found after processing")
+                    return json.dumps([{"message": "No experts found"}])
             
-            return json.dumps(results)
+            except Exception as e:
+                logger.warning(f"Expert search failed: {str(e)}")
+                return json.dumps([{"message": f"Expert search failed: {str(e)}"}])
+            
         except Exception as e:
             logger.error(f"Expert search failed: {str(e)}")
-            return json.dumps([])
+            return json.dumps([{"message": f"Search failed: {str(e)}"}])

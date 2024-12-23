@@ -36,11 +36,11 @@ export const useAgentState = (availableModels: AIModel[]) => {
         return loadSelectedProviderFromStorage(providers);
     });
 
-    const [selectedAgent, setSelectedAgent] = useState<AIModel | null>(() => 
+    const [selectedAgent, setSelectedAgent] = useState<AIModel | null>(() =>
         loadSelectedAgentFromStorage(availableModels)
     );
 
-    const [conversations, setConversations] = useState<AgentConversation[]>(() => 
+    const [conversations, setConversations] = useState<AgentConversation[]>(() =>
         loadConversationsFromStorage()
     );
 
@@ -79,6 +79,11 @@ export const useAgentState = (availableModels: AIModel[]) => {
         } else {
             localStorage.removeItem('ai_selected_provider');
         }
+    }, [selectedProvider]);
+
+    // Clear selected agent when provider changes
+    useEffect(() => {
+        setSelectedAgent(null);
     }, [selectedProvider]);
 
     // Filter agents based on search
