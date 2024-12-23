@@ -13,6 +13,8 @@ from urllib.parse import quote
 import re
 from bs4 import BeautifulSoup
 from app.config.settings import settings
+import httpx
+from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
@@ -310,104 +312,104 @@ class BaseAgent(ABC):
         else:
             raise ToolExecutionError(f"Unknown tool name: {tool_name}")
     
+    def _process_search_result(self, result: Dict[str, Any], method_name: str) -> Optional[Dict[str, Any]]:
+        """Process a single search result"""
+        if not isinstance(result, dict):
+            return None
+            
+        processed = {
+            "title": result.get("title", ""),
+            "link": result.get("link", ""),
+            "snippet": result.get("body", ""),
+            "source": method_name,
+            "published": result.get("date") if method_name == "news" else None
+        }
+        
+        if processed["title"] and processed["snippet"] and len(processed["snippet"]) > 20:
+            return processed
+        return None
+
+    async def _execute_search_method(self, ddgs: Any, method_name: str, search_method: Any, query: str, remaining_results: int, region: str) -> List[Dict[str, Any]]:
+        """Execute a single search method"""
+        results = []
+        try:
+            search_results = list(search_method(
+                keywords=query,
+                max_results=remaining_results,
+                region=region
+            ))
+            
+            for r in search_results:
+                if processed := self._process_search_result(r, method_name):
+                    results.append(processed)
+                    
+        except Exception as e:
+            logger.warning(f"{method_name} search failed: {str(e)}")
+        
+        return results
+
+    async def _try_simplified_search(self, ddgs: Any, query: str, region: str) -> List[Dict[str, Any]]:
+        """Try a simplified search with basic terms"""
+        simple_words = [w for w in query.split() if len(w) > 3][:3]
+        if not simple_words:
+            return []
+            
+        simple_query = " ".join(simple_words)
+        try:
+            results = list(ddgs.text(
+                keywords=simple_query,
+                max_results=3,
+                region=region
+            ))
+            
+            return [r for r in results if isinstance(r, dict) and 
+                   r.get("title") and r.get("body") and 
+                   len(r.get("body", "")) > 20]
+        except Exception as e:
+            logger.warning(f"Simplified search failed: {str(e)}")
+            return []
+
     async def _execute_web_search(self, parameters: Dict[str, Any]) -> str:
         """Execute web search using DuckDuckGo"""
         try:
             from duckduckgo_search import DDGS
-            query = parameters.get("query", "")
+            query = self._clean_search_query(parameters.get("query", ""))
             max_results = parameters.get("max_results", 5)
             region = parameters.get("region", "wt-wt")
             
-            # Clean and truncate query
-            query = re.sub(r'[^\w\s-]', ' ', query)  # Remove special characters
-            query = ' '.join(query.split())  # Normalize whitespace
-            if len(query) > 100:  # Limit length
-                query = query[:100].rsplit(' ', 1)[0]
-            
             results = []
             with DDGS() as ddgs:
-                try:
-                    # Try to get news results first
-                    try:
-                        news_results = list(ddgs.news(
-                            keywords=query,
-                            max_results=max_results,
-                            region=region
-                        ))
-                        
-                        if news_results:
-                            for r in news_results:
-                                if isinstance(r, dict):
-                                    results.append({
-                                        "title": r.get("title"),
-                                        "link": r.get("link"),
-                                        "snippet": r.get("body"),
-                                        "source": "news",
-                                        "published": r.get("date")
-                                    })
-                    except Exception as news_error:
-                        logger.warning(f"News search failed: {str(news_error)}")
-                    
-                    # Try to get web results
-                    try:
-                        web_results = list(ddgs.text(
-                            keywords=query,
-                            max_results=max_results,
-                            region=region
-                        ))
-                        
-                        for r in web_results:
-                            if isinstance(r, dict):
-                                results.append({
-                                    "title": r.get("title"),
-                                    "link": r.get("link"),
-                                    "snippet": r.get("body"),
-                                    "source": "web",
-                                    "published": None
-                                })
-                    except Exception as web_error:
-                        logger.warning(f"Web search failed: {str(web_error)}")
-                    
-                    # If both methods failed, try one last time with minimal parameters
-                    if not results:
-                        logger.warning("Trying fallback search method")
-                        simple_query = " ".join(query.split()[:5])
-                        fallback_results = list(ddgs.text(
-                            keywords=simple_query,
-                            max_results=3,
-                            region="wt-wt"
-                        ))
-                        
-                        for r in fallback_results:
-                            if isinstance(r, dict):
-                                results.append({
-                                    "title": r.get("title"),
-                                    "link": r.get("link"),
-                                    "snippet": r.get("body"),
-                                    "source": "fallback",
-                                    "published": None
-                                })
+                search_methods = [
+                    ('text', ddgs.text),
+                    ('news', ddgs.news)
+                ]
                 
-                except Exception as e:
-                    logger.error(f"All search methods failed: {str(e)}")
+                for method_name, search_method in search_methods:
+                    if len(results) >= max_results:
+                        break
+                        
+                    new_results = await self._execute_search_method(
+                        ddgs, method_name, search_method, query,
+                        max_results - len(results), region
+                    )
+                    results.extend(new_results)
+                
+                if not results:
+                    results = await self._try_simplified_search(ddgs, query, region)
             
-            if not results:
-                logger.warning("No results found from any search method")
-                return json.dumps([{"message": "No results found"}])
-            
-            # Deduplicate results based on URL
-            seen_urls = set()
-            unique_results = []
-            for r in results:
-                if r.get("link") and r.get("link") not in seen_urls:
-                    seen_urls.add(r.get("link"))
-                    unique_results.append(r)
-            
-            return json.dumps(unique_results[:max_results])
+            return json.dumps({
+                "success": bool(results),
+                "error": "No results found" if not results else None,
+                "results": results[:max_results]
+            })
             
         except Exception as e:
             logger.error(f"Web search failed: {str(e)}")
-            return json.dumps([{"message": f"Search failed: {str(e)}"}])
+            return json.dumps({
+                "success": False,
+                "error": str(e),
+                "results": []
+            })
     
     def _clean_search_query(self, query: str) -> str:
         """Clean and prepare search query"""
@@ -422,83 +424,52 @@ class BaseAgent(ABC):
         
         return query
     
+    def _process_news_article(self, article: Dict[str, Any], category: str) -> Dict[str, Any]:
+        """Process a single news article"""
+        return {
+            "title": article.get("title", ""),
+            "description": article.get("description", ""),
+            "url": article.get("url", ""),
+            "source": article.get("source", {}).get("name", ""),
+            "published_at": article.get("publishedAt", ""),
+            "category": category
+        }
+
+    async def _execute_news_search_request(self, newsapi: Any, query: str, category: str, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute the news search request"""
+        try:
+            if category in ["technology", "science", "business"]:
+                return newsapi.get_top_headlines(
+                    q=query,
+                    category=category,
+                    language=params["language"],
+                    page_size=params["page_size"]
+                )
+            return newsapi.get_everything(**params)
+        except Exception as e:
+            logger.warning(f"Category-based search failed, falling back to everything: {str(e)}")
+            return newsapi.get_everything(**params)
+
     async def _execute_news_search(self, parameters: Dict[str, Any]) -> str:
         """Execute news search using NewsAPI"""
         try:
             from newsapi import NewsApiClient
-            from app.config.settings import settings
-            
             if not settings.NEWS_API_KEY:
                 raise ToolExecutionError("NewsAPI key not configured")
             
             newsapi = NewsApiClient(api_key=settings.NEWS_API_KEY)
             query = parameters.get("query", "")
             category = self._determine_news_category(query)
-            
-            # Validate and set language
-            language = parameters.get("language", "en")
-            if isinstance(language, str) and language in self.VALID_LANGUAGES:
-                params_language = language
-            else:
-                logger.warning(f"Invalid language {language}, defaulting to 'en'")
-                params_language = "en"
-            
-            # Validate and set sort
-            sort_by = parameters.get("sort_by", "relevancy")
-            if isinstance(sort_by, str) and sort_by in self.VALID_SORT_OPTIONS:
-                params_sort = sort_by
-            else:
-                logger.warning(f"Invalid sort option {sort_by}, defaulting to 'relevancy'")
-                params_sort = "relevancy"
-            
-            # Build base parameters
             params = {
                 "q": query,
-                "language": params_language,
-                "sort_by": params_sort,
+                "language": parameters.get("language", "en"),
+                "sort_by": parameters.get("sort_by", "relevancy"),
                 "page_size": parameters.get("max_results", 3)
             }
             
-            # Add date range if specified
-            date_range = parameters.get("date_range", "")
-            if date_range:
-                from datetime import datetime, timedelta
-                if date_range == "day":
-                    params["from_param"] = (datetime.now() - timedelta(days=1)).isoformat()
-                elif date_range == "week":
-                    params["from_param"] = (datetime.now() - timedelta(weeks=1)).isoformat()
-                elif date_range == "month":
-                    params["from_param"] = (datetime.now() - timedelta(days=30)).isoformat()
-            
-            # Try category-based search first
-            try:
-                if category in ["technology", "science", "business"]:
-                    response = newsapi.get_top_headlines(
-                        q=query,
-                        category=category,
-                        language=params_language,
-                        page_size=params["page_size"]
-                    )
-                else:
-                    response = newsapi.get_everything(**params)
-            except Exception as e:
-                logger.warning(f"Category-based search failed, falling back to everything: {str(e)}")
-                response = newsapi.get_everything(**params)
-            
+            response = await self._execute_news_search_request(newsapi, query, category, params)
             articles = response.get("articles", [])
-            
-            # Process and clean up articles
-            processed_articles = []
-            for article in articles:
-                processed_article = {
-                    "title": article.get("title", ""),
-                    "description": article.get("description", ""),
-                    "url": article.get("url", ""),
-                    "source": article.get("source", {}).get("name", ""),
-                    "published_at": article.get("publishedAt", ""),
-                    "category": category
-                }
-                processed_articles.append(processed_article)
+            processed_articles = [self._process_news_article(article, category) for article in articles]
             
             return json.dumps(processed_articles)
                 
@@ -506,122 +477,153 @@ class BaseAgent(ABC):
             logger.error(f"News search failed: {str(e)}")
             return json.dumps([])
     
+    def _build_patent_search_urls(self, search_query: str) -> List[str]:
+        """Build list of patent search URLs"""
+        return [
+            f"https://patents.google.com/xhr/query?url=q%3D{search_query}%26oq%3D{search_query}",
+            f"https://patents.google.com/xhr/query?url=q%3D{search_query}%26patents%3Dtrue",
+            f"https://patents.google.com/xhr/query?before=publication:{datetime.now().strftime('%Y%m%d')}&q={search_query}"
+        ]
+
+    def _get_patent_headers(self) -> Dict[str, str]:
+        """Get headers for patent search requests"""
+        return {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+            "Accept": "application/json, text/plain, */*",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Referer": "https://patents.google.com/",
+            "DNT": "1",
+            "Connection": "keep-alive"
+        }
+
+    def _process_json_patent(self, item: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Process a single patent from JSON response"""
+        result = {
+            "title": item.get("title", "").strip(),
+            "patent_number": item.get("patent_number", ""),
+            "abstract": item.get("abstract", "").strip(),
+            "inventors": item.get("inventors", []),
+            "assignee": item.get("assignee", ""),
+            "filing_date": item.get("filing_date", ""),
+            "url": f"https://patents.google.com/patent/{item.get('patent_number', '')}"
+        }
+        return result if result["title"] and result["patent_number"] else None
+
+    def _extract_patent_info(self, element: Any) -> Optional[Dict[str, Any]]:
+        """Extract patent information from HTML element"""
+        title = None
+        if element.find('h3', class_='result-title'):
+            title = element.find('h3', class_='result-title').text.strip()
+        elif element.find('h3'):
+            title = element.find('h3').text.strip()
+        else:
+            title = ""
+
+        abstract = None
+        if element.find('search-result-abstract'):
+            abstract = element.find('search-result-abstract').text.strip()
+        elif element.find('div', class_='abstract'):
+            abstract = element.find('div', class_='abstract').text.strip()
+        else:
+            abstract = ""
+
+        patent_id = (
+            element.get('data-result')
+            or element.get('data-patent-number')
+            or element.find('a', href=True)['href'].split('/')[-1]
+            if element.find('a', href=True)
+            else ""
+        )
+
+        if title and patent_id:
+            return {
+                "title": title,
+                "patent_number": patent_id,
+                "abstract": abstract,
+                "url": f"https://patents.google.com/patent/{patent_id}"
+            }
+        return None
+
+    def _find_patent_elements(self, soup: BeautifulSoup) -> List[Any]:
+        """Find patent elements in HTML soup"""
+        return (
+            soup.find_all('search-result') or 
+            soup.find_all('article', class_='patent-result') or
+            soup.find_all('div', class_='patent-result')
+        )
+
+    async def _process_json_results(self, data: Dict[str, Any], max_results: int) -> List[Dict[str, Any]]:
+        """Process JSON patent results"""
+        results = []
+        if isinstance(data, dict) and "results" in data:
+            for item in data["results"]:
+                if len(results) >= max_results:
+                    break
+                if result := self._process_json_patent(item):
+                    results.append(result)
+        return results
+
+    async def _process_patent_response(self, response: aiohttp.ClientResponse, max_results: int) -> List[Dict[str, Any]]:
+        """Process patent search response"""
+        try:
+            data = await response.json()
+            return await self._process_json_results(data, max_results)
+        except json.JSONDecodeError:
+            text = await response.text()
+            soup = BeautifulSoup(text, 'html.parser')
+            results = []
+            
+            for element in self._find_patent_elements(soup):
+                if len(results) >= max_results:
+                    break
+                if result := self._extract_patent_info(element):
+                    results.append(result)
+            
+            return results
+
     async def _execute_patent_search(self, parameters: Dict[str, Any]) -> str:
         """Execute patent search using Google Patents API via HTTP requests"""
         try:
-            import aiohttp
-            from datetime import datetime, timedelta
-            import re
-            from bs4 import BeautifulSoup
-            
-            query = parameters.get("query", "")
+            query = self._clean_search_query(parameters.get("query", ""))
             max_results = parameters.get("max_results", self.PATENT_SEARCH_CONFIG["max_results"])
-            date_range = parameters.get("date_range", self.PATENT_SEARCH_CONFIG["date_range"])
             
-            # Clean and encode the query
-            query = re.sub(r'[^\w\s-]', '', query)  # Remove special characters
-            search_query = query.replace(" ", "+")
-            
-            # Add date filter
-            if date_range:
-                end_date = datetime.now()
-                if date_range == "1y":
-                    start_date = end_date - timedelta(days=365)
-                elif date_range == "5y":
-                    start_date = end_date - timedelta(days=365 * 5)
-                else:
-                    start_date = end_date - timedelta(days=365 * 10)
-                search_query += f"+after:{start_date.strftime('%Y-%m-%d')}"
-            
-            # Direct web search for patents
-            search_url = f"https://patents.google.com/xhr/query?url=q%3D{search_query}"
-            headers = {
-                "User-Agent": "Mozilla/5.0 (compatible; ResearchAgent/1.0)",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                "Accept-Language": "en-US,en;q=0.5",
-                "Referer": "https://patents.google.com/"
-            }
+            search_urls = self._build_patent_search_urls(query)
+            headers = self._get_patent_headers()
+            results = []
             
             async with aiohttp.ClientSession() as session:
-                try:
-                    async with session.get(search_url, headers=headers) as response:
-                        if response.status == 200:
-                            html_content = await response.text()
-                            soup = BeautifulSoup(html_content, 'html.parser')
-                            
-                            results = []
-                            patent_elements = soup.find_all('search-result', limit=max_results)
-                            
-                            for element in patent_elements:
-                                try:
-                                    title_elem = element.find('h3')
-                                    abstract_elem = element.find('search-result-abstract')
-                                    patent_id = element.get('data-result', '')
-                                    
-                                    result = {
-                                        "title": title_elem.text.strip() if title_elem else "",
-                                        "abstract": abstract_elem.text.strip() if abstract_elem else "",
-                                        "patent_number": patent_id,
-                                        "url": f"https://patents.google.com/patent/{patent_id}" if patent_id else ""
-                                    }
-                                    
-                                    # Only add if we have at least a title or patent number
-                                    if result["title"] or result["patent_number"]:
-                                        results.append(result)
-                                except Exception as e:
-                                    logger.warning(f"Error processing patent element: {str(e)}")
-                                    continue
-                            
-                            return json.dumps({
-                                "status": "success",
-                                "results": results[:max_results],
-                                "query": search_query
-                            })
-                        else:
-                            logger.warning(f"Patent search failed with status code: {response.status}")
-                except Exception as e:
-                    logger.warning(f"Patent search request failed: {str(e)}")
+                for url in search_urls:
+                    if len(results) >= max_results:
+                        break
+                        
+                    try:
+                        async with session.get(url, headers=headers, timeout=10) as response:
+                            if response.status == 200:
+                                new_results = await self._process_patent_response(response, max_results - len(results))
+                                results.extend(new_results)
+                    except Exception as e:
+                        logger.warning(f"Error fetching URL {url}: {str(e)}")
             
-            # If we get here, try a simpler search approach
-            try:
-                simple_search_url = f"https://patents.google.com/?q={search_query}&oq={search_query}"
-                async with session.get(simple_search_url, headers=headers) as response:
-                    if response.status == 200:
-                        text = await response.text()
-                        # Use regex to find patent numbers and titles
-                        results = []
-                        matches = re.finditer(r'<article[^>]*>.*?<h3[^>]*>([^<]+)</h3>.*?<a[^>]*href="/patent/([^"]+)"', 
-                                           text, re.DOTALL)
-                        
-                        for match in matches:
-                            title, patent_id = match.groups()
-                            results.append({
-                                "title": title.strip(),
-                                "patent_number": patent_id,
-                                "url": f"https://patents.google.com/patent/{patent_id}"
-                            })
-                            if len(results) >= max_results:
-                                break
-                        
-                        return json.dumps({
-                            "status": "success",
-                            "results": results,
-                            "query": search_query
-                        })
-            except Exception as e:
-                logger.warning(f"Simple patent search failed: {str(e)}")
+            if results:
+                seen = set()
+                unique_results = [r for r in results if r["patent_number"] not in seen and not seen.add(r["patent_number"])]
+                return json.dumps({
+                    "success": True,
+                    "results": unique_results[:max_results],
+                    "total_results": len(unique_results)
+                })
             
             return json.dumps({
-                "status": "error",
-                "message": "Failed to retrieve patent information",
+                "success": False,
+                "error": "No patent results found",
                 "results": []
             })
-                        
+            
         except Exception as e:
             logger.error(f"Patent search failed: {str(e)}")
             return json.dumps({
-                "status": "error",
-                "message": f"Patent search failed: {str(e)}",
+                "success": False,
+                "error": str(e),
                 "results": []
             })
     
@@ -666,245 +668,253 @@ class BaseAgent(ABC):
         """Get the agent's execution history"""
         return self.execution_history
     
-    async def _execute_academic_search(self, parameters: Dict[str, Any]) -> str:
-        """Execute academic search using Semantic Scholar"""
+    async def _process_semantic_scholar_paper(self, paper: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Process a single paper from Semantic Scholar"""
         try:
-            query = parameters.get("query", "")
-            max_results = parameters.get("max_results", 3)
-            year_range = parameters.get("year_range", "")
+            # Extract authors with proper error handling
+            authors = []
+            for author in paper.get("authors", []):
+                if isinstance(author, dict) and "name" in author:
+                    authors.append(author["name"])
             
-            # Clean and optimize query
-            query = self._clean_search_query(query)
+            # Create processed paper with all required fields
+            processed_paper = {
+                "title": paper.get("title", "").strip(),
+                "authors": authors,
+                "year": paper.get("year"),
+                "abstract": paper.get("abstract", "").strip(),
+                "url": paper.get("url", ""),
+                "venue": paper.get("venue", ""),
+                "citations": paper.get("citationCount", 0)
+            }
             
-            # Extract key terms for better search
-            key_terms = []
-            for term in query.split():
-                term_lower = term.lower()
-                if term_lower in ["cnn", "ai", "ml", "deep", "learning", "neural", "generative", "machine", "model", "models"]:
-                    key_terms.append(term)
-            
-            # Create optimized queries
-            queries = []
-            if key_terms:
-                # Technical terms only
-                queries.append(" ".join(key_terms))
-                # Technical terms + truncated query
-                if len(query) > 100:
-                    queries.append(f"{' '.join(key_terms)} {query[:100]}")
+            # Validate the paper has required fields
+            if processed_paper["title"] and (processed_paper["abstract"] or processed_paper["authors"]):
+                logger.debug(f"Successfully processed paper: {processed_paper['title'][:50]}...")
+                return processed_paper
             else:
-                # Just use truncated query
-                queries.append(query[:100])
-            
-            all_results = []
-            seen_titles = set()
-            
-            for search_query in queries:
-                try:
-                    import httpx
+                logger.debug("Skipping paper due to missing required fields")
+                return None
+                
+        except Exception as e:
+            logger.error(f"Error processing paper: {str(e)}")
+            return None
+
+    async def _process_papers_batch(self, papers: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Process a batch of papers"""
+        processed_papers = []
+        for paper in papers:
+            try:
+                if processed := await self._process_semantic_scholar_paper(paper):
+                    processed_papers.append(processed)
+                    logger.debug(f"Added paper to results: {processed['title'][:50]}...")
+            except Exception as e:
+                logger.error(f"Error processing paper in batch: {str(e)}")
+                continue
+        
+        # Sort papers by citations and year
+        processed_papers.sort(key=lambda x: (x.get("citations", 0), x.get("year", 0)), reverse=True)
+        return processed_papers
+
+    async def _fetch_semantic_scholar_papers(self, query: str) -> Optional[Dict[str, Any]]:
+        """Fetch papers from Semantic Scholar API"""
+        api_params = {
+            "query": query,
+            "fields": "title,authors,year,citationCount,url,abstract,venue,fieldsOfStudy",
+            "offset": 0,
+            "limit": 6  # Fetch a few extra for filtering
+        }
+        
+        logger.info(f"Semantic Scholar API params: {api_params}")
+        max_retries = 3
+        
+        for attempt in range(max_retries):
+            try:
+                logger.info(f"Making Semantic Scholar API request (attempt {attempt + 1}/{max_retries})")
+                async with httpx.AsyncClient() as client:
+                    response = await client.get(
+                        "https://api.semanticscholar.org/graph/v1/paper/search",
+                        params=api_params,
+                        timeout=30.0
+                    )
+                    logger.info(f"Semantic Scholar API response status: {response.status_code}")
                     
-                    url = "https://api.semanticscholar.org/graph/v1/paper/search"
-                    params = {
-                        "query": search_query,
-                        "fields": "title,authors,year,citationCount,url,abstract,venue,fieldsOfStudy",
-                        "offset": 0,
-                        "limit": max_results * 2
+                    if response.status_code == 200:
+                        return response.json()
+                    elif response.status_code == 429:  # Rate limit
+                        if attempt < max_retries - 1:
+                            await asyncio.sleep(2 ** attempt)
+                            continue
+                        logger.error("Rate limit exceeded for Semantic Scholar API")
+                        break
+                    else:
+                        logger.error(f"Semantic Scholar API error: {response.status_code}")
+                        break
+                        
+            except Exception as e:
+                logger.error(f"Error in Semantic Scholar request: {str(e)}")
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(2 ** attempt)
+                    continue
+                break
+        
+        return None
+
+    async def _try_fetch_papers(self, query: str) -> Optional[Dict[str, Any]]:
+        """Attempt to fetch and process papers with retry logic"""
+        logger.info(f"Starting Semantic Scholar search with query: {query}")
+        
+        for attempt in range(3):
+            try:
+                data = await self._fetch_semantic_scholar_papers(query)
+                if not data or "data" not in data:
+                    continue
+                
+                if processed_papers := await self._process_papers_batch(data["data"]):
+                    logger.info(f"Found {len(processed_papers)} processed papers")
+                    return {
+                        "papers": processed_papers,
+                        "total": data.get("total", len(processed_papers))
                     }
                     
-                    async with httpx.AsyncClient() as client:
-                        response = await client.get(url, params=params)
-                        response.raise_for_status()
-                        data = response.json()
-                        
-                        if data.get("data"):
-                            for paper in data["data"]:
-                                # Skip if we've seen this paper
-                                title = paper.get("title")
-                                if not title or title in seen_titles:
-                                    continue
-                                    
-                                # Filter by year range if specified
-                                if year_range and paper.get("year"):
-                                    if not self._is_in_year_range(str(paper["year"]), year_range):
-                                        continue
-                                
-                                # Calculate relevance score
-                                relevance_score = 0
-                                paper_text = " ".join([
-                                    title,
-                                    paper.get("abstract", ""),
-                                    " ".join(paper.get("fieldsOfStudy", [])),
-                                    paper.get("venue", "")
-                                ]).lower()
-                                
-                                for term in key_terms:
-                                    if term.lower() in paper_text:
-                                        relevance_score += 1
-                                
-                                result = {
-                                    "title": title,
-                                    "authors": [author.get("name") for author in paper.get("authors", [])],
-                                    "year": paper.get("year"),
-                                    "citations": paper.get("citationCount"),
-                                    "url": paper.get("url"),
-                                    "abstract": paper.get("abstract"),
-                                    "venue": paper.get("venue"),
-                                    "fields": paper.get("fieldsOfStudy", []),
-                                    "relevance_score": relevance_score,
-                                    "source": "semantic_scholar"
-                                }
-                                
-                                all_results.append(result)
-                                seen_titles.add(title)
-                
-                except Exception as e:
-                    logger.warning(f"Search failed for query '{search_query}': {str(e)}")
-                    continue
+            except Exception as e:
+                logger.error(f"Error processing papers: {str(e)}")
+                if attempt < 2:
+                    await asyncio.sleep(2 ** attempt)
+        return None
+
+    async def _execute_academic_search(self, params: Dict[str, Any]) -> str:
+        """Execute academic search using Semantic Scholar"""
+        try:
+            query = params.get("query", "")
+            logger.info(f"Starting academic search with query: {query}")
             
-            if all_results:
-                # Sort by relevance and citations
-                sorted_results = sorted(
-                    all_results,
-                    key=lambda x: (x["relevance_score"], x.get("citations", 0)),
-                    reverse=True
-                )
-                
-                # Return top results
-                return json.dumps(sorted_results[:max_results])
+            if result := await self._try_fetch_papers(query):
+                logger.info(f"Successfully found {len(result['papers'])} papers")
+                return json.dumps({
+                    "success": True,
+                    "results": result["papers"],
+                    "total_found": result["total"]
+                })
             
-            logger.warning("No results found from any query")
-            return json.dumps([{"message": "No academic results found"}])
+            logger.warning("No academic search results found")
+            return json.dumps({
+                "success": False,
+                "error": "Failed to retrieve academic search results",
+                "results": []
+            })
             
         except Exception as e:
-            logger.error(f"Academic search failed: {str(e)}")
-            return json.dumps([{"message": f"Search failed: {str(e)}"}])
-    
-    def _is_in_year_range(self, year: str, year_range: str) -> bool:
-        """Helper method to check if a year falls within a specified range"""
-        try:
-            year = int(year)
-            if "-" in year_range:
-                start, end = map(int, year_range.split("-"))
-                return start <= year <= end
-            else:
-                target = int(year_range)
-                return year == target
-        except (ValueError, TypeError):
-            return False
-    
-    async def _execute_expert_search(self, parameters: Dict[str, Any]) -> str:
+            logger.error(f"Error in academic search: {str(e)}")
+            return json.dumps({
+                "success": False,
+                "error": str(e),
+                "results": []
+            })
+
+    async def _fetch_expert_papers(self, search_query: str) -> Optional[Dict[str, Any]]:
+        """Fetch papers for expert analysis"""
+        api_params = {
+            "query": search_query,
+            "fields": "title,authors,year,citationCount,url,abstract,venue,fieldsOfStudy",
+            "offset": 0,
+            "limit": 12
+        }
+        
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                "https://api.semanticscholar.org/graph/v1/paper/search",
+                params=api_params,
+                timeout=30.0
+            )
+            return response.json() if response.status_code == 200 else None
+
+    def _process_expert_papers(self, papers: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Process papers and extract expert information"""
+        author_stats = defaultdict(lambda: {
+            "name": "",
+            "papers": [],
+            "total_citations": 0,
+            "expertise_areas": set()
+        })
+        
+        for paper in papers:
+            for author in paper.get("authors", []):
+                author_id = author.get("authorId")
+                if not author_id:
+                    continue
+                    
+                stats = author_stats[author_id]
+                stats["name"] = author.get("name", "")
+                stats["papers"].append({
+                    "title": paper.get("title", ""),
+                    "year": paper.get("year"),
+                    "citations": paper.get("citationCount", 0),
+                    "venue": paper.get("venue", ""),
+                    "url": paper.get("url", "")
+                })
+                stats["total_citations"] += paper.get("citationCount", 0)
+                if paper.get("fieldsOfStudy"):
+                    stats["expertise_areas"].update(paper["fieldsOfStudy"])
+        
+        return self._convert_stats_to_experts(author_stats)
+
+    def _convert_stats_to_experts(self, author_stats: Dict[str, Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Convert author statistics to sorted expert list"""
+        experts = []
+        for stats in author_stats.values():
+            if not stats["papers"]:
+                continue
+                
+            experts.append({
+                "name": stats["name"],
+                "total_citations": stats["total_citations"],
+                "paper_count": len(stats["papers"]),
+                "expertise_areas": list(stats["expertise_areas"]),
+                "recent_papers": sorted(
+                    stats["papers"],
+                    key=lambda x: (x.get("year", 0), x.get("citations", 0)),
+                    reverse=True
+                )[:3]
+            })
+        
+        return sorted(experts, key=lambda x: x["total_citations"], reverse=True)[:5]
+
+    async def _execute_expert_search(self, params: Dict[str, Any]) -> str:
         """Execute expert search using Semantic Scholar"""
         try:
-            query = parameters.get("query", "")
-            expertise_area = parameters.get("expertise_area", "")
-            max_results = parameters.get("max_results", 3)
+            search_query = f"{params.get('query', '')} {params.get('expertise_area', '')}".strip()
+            logger.info(f"Starting expert search with query: {search_query}")
             
-            # Clean and prepare query
-            query = self._clean_search_query(query)
-            if expertise_area:
-                expertise_area = self._clean_search_query(expertise_area)
-                query = f"{query} {expertise_area}"
-            
-            # Extract key terms for better search
-            key_terms = []
-            for term in query.split():
-                if term.lower() in ["cnn", "ai", "ml", "deep", "learning", "neural", "generative"]:
-                    key_terms.append(term)
-            
-            # Optimize query
-            search_query = " ".join(key_terms) if key_terms else query[:100]
-            
-            try:
-                import httpx
-                
-                # Use Semantic Scholar API to find relevant papers first
-                url = "https://api.semanticscholar.org/graph/v1/paper/search"
-                params = {
-                    "query": search_query,
-                    "fields": "title,authors,year,citationCount,url,abstract,venue",
-                    "offset": 0,
-                    "limit": max_results * 2  # Get more results to find experts
-                }
-                
-                async with httpx.AsyncClient() as client:
-                    response = await client.get(url, params=params)
-                    response.raise_for_status()
-                    data = response.json()
-                    
-                    if not data.get("data"):
-                        logger.warning("No papers found to identify experts")
-                        return json.dumps([{"message": "No experts found"}])
-                    
-                    # Extract authors and their papers
-                    author_papers = {}
-                    for paper in data["data"]:
-                        for author in paper.get("authors", []):
-                            if not author.get("name"):
-                                continue
+            for attempt in range(3):
+                try:
+                    if data := await self._fetch_expert_papers(search_query):
+                        if "data" not in data:
+                            continue
                             
-                            author_id = author.get("authorId")
-                            if not author_id:
-                                continue
-                                
-                            if author_id not in author_papers:
-                                author_papers[author_id] = {
-                                    "name": author.get("name"),
-                                    "papers": [],
-                                    "total_citations": 0,
-                                    "venues": []  # Changed from set to list
-                                }
-                            
-                            author_papers[author_id]["papers"].append({
-                                "title": paper.get("title"),
-                                "year": paper.get("year"),
-                                "citations": paper.get("citationCount", 0),
-                                "venue": paper.get("venue")
+                        experts = self._process_expert_papers(data["data"])
+                        if experts:
+                            return json.dumps({
+                                "success": True,
+                                "results": experts,
+                                "total_found": len(experts)
                             })
                             
-                            if paper.get("venue") and paper["venue"] not in author_papers[author_id]["venues"]:
-                                author_papers[author_id]["venues"].append(paper["venue"])
-                            
-                            author_papers[author_id]["total_citations"] += paper.get("citationCount", 0)
-                    
-                    # Sort authors by citation count and prepare results
-                    sorted_authors = sorted(
-                        author_papers.values(),
-                        key=lambda x: x["total_citations"],
-                        reverse=True
-                    )
-                    
-                    results = []
-                    for author in sorted_authors[:max_results]:
-                        # Extract expertise areas from venues
-                        expertise_areas = set()
-                        for venue in author["venues"]:
-                            if venue:
-                                # Split venue name and add individual terms as expertise areas
-                                terms = [t.strip() for t in venue.split() if len(t.strip()) > 2]
-                                expertise_areas.update(terms)
-                        
-                        results.append({
-                            "name": author["name"],
-                            "total_citations": author["total_citations"],
-                            "paper_count": len(author["papers"]),
-                            "venues": author["venues"],
-                            "recent_papers": sorted(
-                                author["papers"],
-                                key=lambda x: (x.get("year", 0), x.get("citations", 0)),
-                                reverse=True
-                            )[:3],
-                            "expertise_areas": list(expertise_areas)[:5]
-                        })
-                    
-                    if results:
-                        return json.dumps(results)
-                    
-                    logger.warning("No experts found after processing")
-                    return json.dumps([{"message": "No experts found"}])
+                except Exception as e:
+                    if attempt < 2:
+                        await asyncio.sleep(2 ** attempt)
+                    continue
             
-            except Exception as e:
-                logger.warning(f"Expert search failed: {str(e)}")
-                return json.dumps([{"message": f"Expert search failed: {str(e)}"}])
+            return json.dumps({
+                "success": False,
+                "error": "Failed to retrieve expert search results",
+                "results": []
+            })
             
         except Exception as e:
-            logger.error(f"Expert search failed: {str(e)}")
-            return json.dumps([{"message": f"Search failed: {str(e)}"}])
+            logger.error(f"Error in expert search: {str(e)}")
+            return json.dumps({
+                "success": False,
+                "error": str(e),
+                "results": []
+            })

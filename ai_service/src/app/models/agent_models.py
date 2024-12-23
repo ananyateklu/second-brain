@@ -55,18 +55,15 @@ class ExecutionMetadata(BaseModel):
     tool_success_rate: Optional[Dict[str, Any]] = Field(default=None)
 
 class AgentRequest(BaseModel):
-    """Model for agent execution requests"""
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-    
-    prompt: str = Field(..., description="The input prompt for the agent")
-    model_id: str = Field(..., description="ID of the model to use")
-    max_tokens: Optional[int] = Field(default=1000, description="Maximum number of tokens to generate")
-    temperature: Optional[float] = Field(default=0.7, description="Temperature for response generation")
-    tools: Optional[List[Tool]] = Field(default=None, description="List of tools to use during execution")
+    """Request model for agent execution"""
+    prompt: str
+    model_id: str
+    agent_type: str = 'research'  # Default to base research agent
+    temperature: Optional[float] = 0.7
+    max_tokens: Optional[int] = None
+    tools: Optional[List[Dict[str, Any]]] = None
 
 class AgentResponse(BaseModel):
-    """Model for agent execution responses"""
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-    
-    result: str = Field(..., description="The generated response")
-    metadata: Optional[ExecutionMetadata] = Field(default=None, description="Execution metadata")
+    """Response model for agent execution"""
+    result: str
+    metadata: Dict[str, Any]

@@ -1,9 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import Optional, List, Dict, Any
 from app.models.agent_models import AgentRequest, AgentResponse
-from app.agents.research_agent import ResearchAgent
+from app.agents.agent_factory import AgentFactory
 from app.config.settings import settings
 import logging
 import time
@@ -28,6 +26,14 @@ async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "service": "ai-service"}
 
+@app.get("/agent/types")
+async def get_agent_types():
+    """Get available agent types"""
+    return {
+        "specialized_agents": AgentFactory.get_registered_specialized_agents(),
+        "base_providers": AgentFactory.get_registered_providers()
+    }
+
 @app.post("/agent/execute", response_model=AgentResponse)
 async def execute_agent(request: AgentRequest):
     """Execute an AI agent with the given parameters"""
@@ -35,12 +41,13 @@ async def execute_agent(request: AgentRequest):
     request_id = f"req_{int(start_time)}"
     
     try:
-        logger.info(f"[{request_id}] Starting agent execution with model: {request.model_id}")
+        logger.info(f"[{request_id}] Starting {request.agent_type} agent execution with model: {request.model_id}")
         
-        # Create research agent
-        agent = ResearchAgent(
+        # Create agent with specified type
+        agent = AgentFactory.create_agent(
             model_id=request.model_id,
-            temperature=request.temperature or 0.7
+            temperature=request.temperature or 0.7,
+            agent_type=request.agent_type
         )
         
         # Execute with tools if provided
@@ -72,6 +79,7 @@ async def execute_agent(request: AgentRequest):
         if isinstance(result, dict) and "metadata" in result:
             result["metadata"]["request_id"] = request_id
             result["metadata"]["total_execution_time"] = execution_time
+            result["metadata"]["agent_type"] = request.agent_type
         
         return AgentResponse(
             result=result["result"],
@@ -89,5 +97,6 @@ async def root():
         "service": "SecondBrain AI Service",
         "version": "1.0.0",
         "docs_url": "/docs",
-        "health_check": "/health"
+        "health_check": "/health",
+        "agent_types": "/agent/types"
     }
