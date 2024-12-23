@@ -15,6 +15,7 @@ from bs4 import BeautifulSoup
 from app.config.settings import settings
 import httpx
 from collections import defaultdict
+from duckduckgo_search import DDGS
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,8 @@ class BaseAgent(ABC):
         "backoff_factor": 0.1,
         "status_forcelist": [500, 502, 503, 504]
     }
+    
+    NO_ABSTRACT_MSG = "No abstract available"
     
     # Expert search configurations
     KNOWN_EXPERTS = {
@@ -155,6 +158,7 @@ class BaseAgent(ABC):
     def __init__(self, model_id: str, temperature: float = 0.7):
         self.model_id = model_id
         self.temperature = temperature
+        self.logger = logger
         self.execution_history = []
         self._author_cache = {}  # Cache for author profiles
         
@@ -319,8 +323,8 @@ class BaseAgent(ABC):
             
         processed = {
             "title": result.get("title", ""),
-            "link": result.get("link", ""),
-            "snippet": result.get("body", ""),
+            "link": result.get("href", result.get("link", "")),  # Try both href and link fields
+            "snippet": result.get("body", result.get("snippet", "")),  # Try both body and snippet fields
             "source": method_name,
             "published": result.get("date") if method_name == "news" else None
         }
@@ -348,69 +352,95 @@ class BaseAgent(ABC):
         
         return results
 
-    async def _try_simplified_search(self, ddgs: Any, query: str, region: str) -> List[Dict[str, Any]]:
-        """Try a simplified search with basic terms"""
-        simple_words = [w for w in query.split() if len(w) > 3][:3]
-        if not simple_words:
-            return []
-            
-        simple_query = " ".join(simple_words)
+    async def _try_simplified_search(self, query: str, max_results: int) -> List[Dict[str, Any]]:
+        """Try a simplified search by removing special characters and shortening query"""
+        # Remove special characters and extra whitespace
+        simplified = re.sub(r'[^\w\s]', ' ', query).strip()
+        simplified = ' '.join(simplified.split()[:3])  # Take first 3 words
+        
+        logger.info(f"Trying simplified search with query: '{simplified}'")
+        
         try:
-            results = list(ddgs.text(
-                keywords=simple_query,
-                max_results=3,
-                region=region
-            ))
-            
-            return [r for r in results if isinstance(r, dict) and 
-                   r.get("title") and r.get("body") and 
-                   len(r.get("body", "")) > 20]
-        except Exception as e:
-            logger.warning(f"Simplified search failed: {str(e)}")
-            return []
-
-    async def _execute_web_search(self, parameters: Dict[str, Any]) -> str:
-        """Execute web search using DuckDuckGo"""
-        try:
-            from duckduckgo_search import DDGS
-            query = self._clean_search_query(parameters.get("query", ""))
-            max_results = parameters.get("max_results", 5)
-            region = parameters.get("region", "wt-wt")
-            
-            results = []
-            with DDGS() as ddgs:
-                search_methods = [
-                    ('text', ddgs.text),
-                    ('news', ddgs.news)
-                ]
+            with DDGS() as ddg:  # Use synchronous DDGS
+                # Get results as a list
+                results_list = list(ddg.text(simplified, region="us-en", max_results=max_results))
+                logger.debug(f"Got {len(results_list)} raw simplified results")
                 
-                for method_name, search_method in search_methods:
+                results = []
+                for r in results_list:
+                    logger.debug(f"Raw simplified search result: {r}")
+                    processed = self._process_search_result(r, "web")
+                    if processed:
+                        processed["note"] = "From simplified search"  # Add note to indicate simplified results
+                        logger.debug(f"Processed simplified search result: {processed}")
+                        results.append(processed)
                     if len(results) >= max_results:
                         break
-                        
-                    new_results = await self._execute_search_method(
-                        ddgs, method_name, search_method, query,
-                        max_results - len(results), region
-                    )
-                    results.extend(new_results)
                 
-                if not results:
-                    results = await self._try_simplified_search(ddgs, query, region)
+                logger.info(f"Simplified search completed. Found {len(results)} results")
+                return results
+        except Exception as e:
+            logger.error(f"Error in simplified search: {str(e)}", exc_info=True)
+            return []
+
+    def _create_search_response(self, success: bool, results: List[Dict[str, Any]], query: str, max_results: int, error: Optional[str] = None) -> str:
+        """Create a standardized search response"""
+        response = {
+            "success": success,
+            "results": results[:max_results] if success else [],
+            "total_found": len(results) if success else 0,
+            "sources": ["DuckDuckGo Text Search", "DuckDuckGo News Search"] if success else [],
+            "tools_used": ["web_search"],
+            "query": query,
+            "research_type": "web",
+            "error": error
+        }
+        return json.dumps(response)
+
+    async def _execute_web_search(self, parameters: Dict[str, Any]) -> str:
+        """Execute a web search using DuckDuckGo"""
+        try:
+            query = self._clean_search_query(parameters.get("query", ""))
+            max_results = parameters.get("max_results", 5)
+            region = parameters.get("region", "us-en")
             
-            return json.dumps({
-                "success": bool(results),
-                "error": "No results found" if not results else None,
-                "results": results[:max_results]
-            })
+            logger.info(f"Starting web search with query: '{query}', max_results: {max_results}, region: {region}")
+            results = []
+            
+            search_methods = [
+                ("text", lambda ddg: ddg.text(keywords=query, region=region, max_results=max_results)),
+                ("news", lambda ddg: ddg.news(keywords=query, region=region, max_results=max_results))
+            ]
+            
+            for method_name, search_func in search_methods:
+                if len(results) >= max_results:
+                    break
+                    
+                try:
+                    with DDGS() as ddg:
+                        results.extend(self._process_search_results(search_func(ddg), method_name))
+                except Exception as e:
+                    logger.warning(f"{method_name} search failed: {str(e)}, trying next method")
+            
+            if not results:
+                logger.info("No results found with main queries, attempting simplified search")
+                results.extend(await self._try_simplified_search(query, max_results))
+            
+            return self._create_search_response(bool(results), results, query, max_results)
             
         except Exception as e:
-            logger.error(f"Web search failed: {str(e)}")
-            return json.dumps({
-                "success": False,
-                "error": str(e),
-                "results": []
-            })
-    
+            error_msg = str(e)
+            logger.error(f"Error in web search: {error_msg}", exc_info=True)
+            return self._create_search_response(False, [], parameters.get("query", ""), parameters.get("max_results", 5), error_msg)
+
+    def _process_search_results(self, results: List[Dict[str, Any]], method_name: str) -> List[Dict[str, Any]]:
+        """Process search results from a single method"""
+        processed = []
+        for r in results:
+            if result := self._process_search_result(r, method_name):
+                processed.append(result)
+        return processed
+
     def _clean_search_query(self, query: str) -> str:
         """Clean and prepare search query"""
         # Remove special characters and extra whitespace
@@ -460,22 +490,53 @@ class BaseAgent(ABC):
             newsapi = NewsApiClient(api_key=settings.NEWS_API_KEY)
             query = parameters.get("query", "")
             category = self._determine_news_category(query)
+            
+            # Use proper parameter values instead of string literals
             params = {
                 "q": query,
-                "language": parameters.get("language", "en"),
-                "sort_by": parameters.get("sort_by", "relevancy"),
+                "language": "en",  # Fixed language code
+                "sort_by": "relevancy",  # Fixed sort parameter
                 "page_size": parameters.get("max_results", 3)
             }
             
-            response = await self._execute_news_search_request(newsapi, query, category, params)
-            articles = response.get("articles", [])
-            processed_articles = [self._process_news_article(article, category) for article in articles]
+            logger.info(f"Executing news search with params: {json.dumps(params, indent=2)}")
             
-            return json.dumps(processed_articles)
+            try:
+                if category in ["technology", "science", "business"]:
+                    response = newsapi.get_top_headlines(
+                        q=query,
+                        category=category,
+                        language="en",
+                        page_size=params["page_size"]
+                    )
+                else:
+                    response = newsapi.get_everything(**params)
+                    
+                articles = response.get("articles", [])
+                processed_articles = [self._process_news_article(article, category) for article in articles]
+                
+                logger.info(f"Processed {len(processed_articles)} news articles")
+                return json.dumps({
+                    "success": True,
+                    "results": processed_articles,
+                    "total_found": len(processed_articles)
+                })
+                
+            except ValueError as ve:
+                logger.error(f"NewsAPI parameter error: {str(ve)}")
+                return json.dumps({
+                    "success": False,
+                    "error": str(ve),
+                    "results": []
+                })
                 
         except Exception as e:
-            logger.error(f"News search failed: {str(e)}")
-            return json.dumps([])
+            logger.error(f"News search failed: {str(e)}", exc_info=True)
+            return json.dumps({
+                "success": False,
+                "error": str(e),
+                "results": []
+            })
     
     def _build_patent_search_urls(self, search_query: str) -> List[str]:
         """Build list of patent search URLs"""
@@ -668,36 +729,75 @@ class BaseAgent(ABC):
         """Get the agent's execution history"""
         return self.execution_history
     
+    def _validate_paper_basics(self, paper: Dict[str, Any]) -> bool:
+        """Validate basic paper requirements"""
+        if not paper or not isinstance(paper, dict):
+            logger.debug("Skipping invalid paper object")
+            return False
+            
+        title = paper.get("title")
+        if not title or not isinstance(title, str) or not title.strip():
+            logger.debug("Skipping paper with invalid title")
+            return False
+            
+        return True
+
+    def _extract_authors(self, authors_data: List[Dict[str, Any]]) -> List[str]:
+        """Extract valid author names from authors data"""
+        authors = []
+        for author in authors_data:
+            if isinstance(author, dict) and "name" in author:
+                name = author["name"]
+                if isinstance(name, str) and name.strip():
+                    authors.append(name.strip())
+        return authors
+
+    def _get_validated_field(self, data: Dict[str, Any], field: str, default: Any) -> Any:
+        """Get and validate a field from paper data"""
+        value = data.get(field)
+        
+        if field == "year":
+            if not isinstance(value, (int, str)) or not value:
+                return default
+        elif field == "citationCount":
+            if not isinstance(value, (int, float)) or value is None:
+                return default
+        elif field in ["abstract", "venue", "url"]:
+            if not value or not isinstance(value, str):
+                return default
+            return value.strip()
+            
+        return value if value is not None else default
+
     async def _process_semantic_scholar_paper(self, paper: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Process a single paper from Semantic Scholar"""
         try:
-            # Extract authors with proper error handling
-            authors = []
-            for author in paper.get("authors", []):
-                if isinstance(author, dict) and "name" in author:
-                    authors.append(author["name"])
-            
-            # Create processed paper with all required fields
+            if not self._validate_paper_basics(paper):
+                return None
+
             processed_paper = {
-                "title": paper.get("title", "").strip(),
-                "authors": authors,
-                "year": paper.get("year"),
-                "abstract": paper.get("abstract", "").strip(),
-                "url": paper.get("url", ""),
-                "venue": paper.get("venue", ""),
-                "citations": paper.get("citationCount", 0)
+                "title": paper["title"].strip(),
+                "authors": self._extract_authors(paper.get("authors", [])),
+                "year": self._get_validated_field(paper, "year", "Unknown year"),
+                "abstract": self._get_validated_field(paper, "abstract", self.NO_ABSTRACT_MSG),
+                "url": self._get_validated_field(paper, "url", ""),
+                "venue": self._get_validated_field(paper, "venue", "Unknown venue"),
+                "citations": self._get_validated_field(paper, "citationCount", 0)
             }
-            
-            # Validate the paper has required fields
-            if processed_paper["title"] and (processed_paper["abstract"] or processed_paper["authors"]):
+
+            # Validate minimum required fields
+            if processed_paper["title"] and (
+                processed_paper["abstract"] != self.NO_ABSTRACT_MSG 
+                or processed_paper["authors"]
+            ):
                 logger.debug(f"Successfully processed paper: {processed_paper['title'][:50]}...")
                 return processed_paper
-            else:
-                logger.debug("Skipping paper due to missing required fields")
-                return None
-                
+
+            logger.debug("Skipping paper due to insufficient data")
+            return None
+
         except Exception as e:
-            logger.error(f"Error processing paper: {str(e)}")
+            logger.error(f"Error processing paper: {str(e)}", exc_info=True)
             return None
 
     async def _process_papers_batch(self, papers: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -918,3 +1018,52 @@ class BaseAgent(ABC):
                 "error": str(e),
                 "results": []
             })
+
+    def _process_academic_result(self, paper: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Process a single academic search result"""
+        try:
+            # Skip papers without required fields
+            if not paper.get("title") or not paper.get("url"):
+                return None
+            
+            # Safely get and clean text fields
+            title = paper.get("title", "").strip()
+            abstract = paper.get("abstract", "")
+            if abstract:
+                abstract = abstract.strip()
+            else:
+                abstract = self.NO_ABSTRACT_MSG
+            
+            # Process authors safely
+            authors = paper.get("authors", [])
+            author_names = []
+            for author in authors:
+                if author and isinstance(author, dict):
+                    name = author.get("name")
+                    if name and isinstance(name, str):
+                        author_names.append(name.strip())
+            
+            # Get other metadata with defaults
+            year = paper.get("year", "Unknown year")
+            citation_count = paper.get("citationCount", 0)
+            venue = paper.get("venue", {})
+            venue_name = venue.get("name", "Unknown venue") if isinstance(venue, dict) else str(venue)
+            fields = paper.get("fieldsOfStudy", [])
+            
+            # Construct processed result
+            return {
+                "title": title,
+                "url": paper["url"],
+                "abstract": abstract,
+                "authors": author_names,
+                "year": year,
+                "citation_count": citation_count,
+                "venue": venue_name,
+                "fields": fields,
+                "source": "Semantic Scholar",
+                "type": "academic"
+            }
+            
+        except Exception as e:
+            logger.error(f"Error processing paper: {str(e)}", exc_info=True)
+            return None
