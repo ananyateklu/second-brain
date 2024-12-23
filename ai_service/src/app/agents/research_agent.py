@@ -669,8 +669,12 @@ class ResearchAgent(BaseAgent):
             result_data = await self._parse_tool_result(result, tool)
             
             # Handle different result structures based on tool type
-            if tool["name"] in ["web_search", "academic_search", "news_search", "expert_search"]:
+            if tool["name"] in ["web_search", "academic_search", "news_search", "expert_search", "patent_search"]:
                 results = result_data.get("results", [])
+                # Check both the success flag and actual results
+                if not result_data.get("success", False) or not results:
+                    self._handle_empty_results(tool, result_data, tool_usage_summary, failed_tools)
+                    return
             else:
                 # For other tools, check result content
                 result_content = result_data.get("result", "")
@@ -678,11 +682,11 @@ class ResearchAgent(BaseAgent):
                     no_result in str(result_content).lower() 
                     for no_result in self.EMPTY_RESULTS
                 ) else [result_content]
-            
-            if not results:
-                self._handle_empty_results(tool, result_data, tool_usage_summary, failed_tools)
-                return
                 
+                if not results:
+                    self._handle_empty_results(tool, result_data, tool_usage_summary, failed_tools)
+                    return
+            
             self._handle_successful_results(
                 tool, result_data, results,
                 tool_results, tool_usage_summary, successful_tools

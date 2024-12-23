@@ -570,40 +570,31 @@ class BaseAgent(ABC):
         }
         return result if result["title"] and result["patent_number"] else None
 
-    def _extract_patent_info(self, element: Any) -> Optional[Dict[str, Any]]:
-        """Extract patent information from HTML element"""
-        title = None
-        if element.find('h3', class_='result-title'):
-            title = element.find('h3', class_='result-title').text.strip()
-        elif element.find('h3'):
-            title = element.find('h3').text.strip()
-        else:
-            title = ""
+    def _extract_patent_title(self, element: Any) -> str:
+        """Extract patent title from element"""
+        title_elem = element.find('h3', class_='result-title') or element.find('h3')
+        return title_elem.text.strip() if title_elem else ""
 
-        abstract = None
-        if element.find('search-result-abstract'):
-            abstract = element.find('search-result-abstract').text.strip()
-        elif element.find('div', class_='abstract'):
-            abstract = element.find('div', class_='abstract').text.strip()
-        else:
-            abstract = ""
+    def _extract_patent_id(self, element: Any) -> str:
+        """Extract patent ID from element"""
+        patent_id = element.get('data-patent-number', '')
+        if not patent_id and (link := element.find('a', href=True)):
+            patent_id = link['href'].split('/')[-1]
+        return patent_id
 
-        patent_id = (
-            element.get('data-result')
-            or element.get('data-patent-number')
-            or element.find('a', href=True)['href'].split('/')[-1]
-            if element.find('a', href=True)
-            else ""
-        )
+    def _extract_patent_abstract(self, element: Any) -> str:
+        """Extract patent abstract from element"""
+        abstract_elem = element.find('div', class_='abstract')
+        return abstract_elem.text.strip() if abstract_elem else ""
 
-        if title and patent_id:
-            return {
-                "title": title,
-                "patent_number": patent_id,
-                "abstract": abstract,
-                "url": f"https://patents.google.com/patent/{patent_id}"
-            }
-        return None
+    def _create_patent_result(self, title: str, patent_id: str, abstract: str) -> Dict[str, Any]:
+        """Create a patent result dictionary"""
+        return {
+            "title": title,
+            "patent_number": patent_id,
+            "abstract": abstract,
+            "url": f"https://patents.google.com/patent/{patent_id}"
+        }
 
     def _find_patent_elements(self, soup: BeautifulSoup) -> List[Any]:
         """Find patent elements in HTML soup"""
@@ -624,55 +615,125 @@ class BaseAgent(ABC):
                     results.append(result)
         return results
 
+    def _extract_patent_info(self, element: Any) -> Optional[Dict[str, Any]]:
+        """Extract patent information from HTML element"""
+        title = self._extract_patent_title(element)
+        patent_id = (
+            element.get('data-result')
+            or element.get('data-patent-number')
+            or (element.find('a', href=True)['href'].split('/')[-1] if element.find('a', href=True) else "")
+        )
+        abstract = self._extract_patent_abstract(element)
+
+        if title and patent_id:
+            return self._create_patent_result(title, patent_id, abstract)
+        return None
+
     async def _process_patent_response(self, response: aiohttp.ClientResponse, max_results: int) -> List[Dict[str, Any]]:
         """Process patent search response"""
         try:
-            data = await response.json()
-            return await self._process_json_results(data, max_results)
-        except json.JSONDecodeError:
             text = await response.text()
             soup = BeautifulSoup(text, 'html.parser')
             results = []
             
-            for element in self._find_patent_elements(soup):
-                if len(results) >= max_results:
-                    break
-                if result := self._extract_patent_info(element):
-                    results.append(result)
+            for element in self._find_patent_elements(soup)[:max_results]:
+                try:
+                    title = self._extract_patent_title(element)
+                    patent_id = self._extract_patent_id(element)
+                    
+                    if title and patent_id:
+                        abstract = self._extract_patent_abstract(element)
+                        results.append(self._create_patent_result(title, patent_id, abstract))
+                except Exception as e:
+                    logger.error(f"Error processing patent element: {str(e)}")
+                    continue
             
             return results
+            
+        except Exception as e:
+            logger.error(f"Error processing patent response: {str(e)}")
+            return []
+
+    def _process_academic_result(self, paper: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Process a single academic search result"""
+        try:
+            # Skip papers without required fields
+            if not paper.get("title") or not paper.get("url"):
+                return None
+            
+            # Safely get and clean text fields
+            title = paper.get("title", "").strip()
+            abstract = paper.get("abstract", "")
+            if abstract:
+                abstract = abstract.strip()
+            else:
+                abstract = self.NO_ABSTRACT_MSG
+            
+            # Process authors safely
+            authors = paper.get("authors", [])
+            author_names = []
+            for author in authors:
+                if author and isinstance(author, dict):
+                    name = author.get("name")
+                    if name and isinstance(name, str):
+                        author_names.append(name.strip())
+            
+            # Get other metadata with defaults
+            year = paper.get("year", "Unknown year")
+            citation_count = paper.get("citationCount", 0)
+            venue = paper.get("venue", {})
+            venue_name = venue.get("name", "Unknown venue") if isinstance(venue, dict) else str(venue)
+            fields = paper.get("fieldsOfStudy", [])
+            
+            # Construct processed result
+            return {
+                "title": title,
+                "url": paper["url"],
+                "abstract": abstract,
+                "authors": author_names,
+                "year": year,
+                "citation_count": citation_count,
+                "venue": venue_name,
+                "fields": fields,
+                "source": "Semantic Scholar",
+                "type": "academic"
+            }
+            
+        except Exception as e:
+            logger.error(f"Error processing paper: {str(e)}", exc_info=True)
+            return None
 
     async def _execute_patent_search(self, parameters: Dict[str, Any]) -> str:
-        """Execute patent search using Google Patents API via HTTP requests"""
+        """Execute patent search using Google Patents"""
         try:
-            query = self._clean_search_query(parameters.get("query", ""))
+            query = quote(parameters.get("query", "").strip())
             max_results = parameters.get("max_results", self.PATENT_SEARCH_CONFIG["max_results"])
             
-            search_urls = self._build_patent_search_urls(query)
-            headers = self._get_patent_headers()
-            results = []
+            # Build search URL
+            base_url = "https://patents.google.com"
+            search_url = f"{base_url}/patents/search?q={query}&oq={query}"
+            
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.5",
+                "Connection": "keep-alive",
+                "Upgrade-Insecure-Requests": "1"
+            }
             
             async with aiohttp.ClientSession() as session:
-                for url in search_urls:
-                    if len(results) >= max_results:
-                        break
-                        
-                    try:
-                        async with session.get(url, headers=headers, timeout=10) as response:
-                            if response.status == 200:
-                                new_results = await self._process_patent_response(response, max_results - len(results))
-                                results.extend(new_results)
-                    except Exception as e:
-                        logger.warning(f"Error fetching URL {url}: {str(e)}")
-            
-            if results:
-                seen = set()
-                unique_results = [r for r in results if r["patent_number"] not in seen and not seen.add(r["patent_number"])]
-                return json.dumps({
-                    "success": True,
-                    "results": unique_results[:max_results],
-                    "total_results": len(unique_results)
-                })
+                try:
+                    async with session.get(search_url, headers=headers, timeout=30) as response:
+                        if response.status == 200:
+                            results = await self._process_patent_response(response, max_results)
+                            if results:
+                                return json.dumps({
+                                    "success": True,
+                                    "results": results,
+                                    "total_found": len(results)
+                                })
+                except Exception as e:
+                    logger.error(f"Error fetching patents: {str(e)}")
             
             return json.dumps({
                 "success": False,
@@ -687,7 +748,7 @@ class BaseAgent(ABC):
                 "error": str(e),
                 "results": []
             })
-    
+
     def _determine_news_category(self, query: str) -> str:
         """Determine the news category based on the query"""
         query_lower = query.lower()
@@ -701,11 +762,11 @@ class BaseAgent(ABC):
                     return "science"
         
         return "general"
-    
+
     async def _execute_database_query(self, tool: Dict[str, Any]) -> Any:
         """Execute a database query tool"""
         raise NotImplementedError("Database query not implemented yet")
-    
+
     async def validate_response(self, response: Any) -> bool:
         """Validate the agent's response"""
         if not response or not isinstance(response, dict):
@@ -724,11 +785,11 @@ class BaseAgent(ABC):
             return False
             
         return True
-    
+
     def get_execution_history(self) -> List[Dict[str, Any]]:
         """Get the agent's execution history"""
         return self.execution_history
-    
+
     def _validate_paper_basics(self, paper: Dict[str, Any]) -> bool:
         """Validate basic paper requirements"""
         if not paper or not isinstance(paper, dict):
@@ -1018,52 +1079,3 @@ class BaseAgent(ABC):
                 "error": str(e),
                 "results": []
             })
-
-    def _process_academic_result(self, paper: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Process a single academic search result"""
-        try:
-            # Skip papers without required fields
-            if not paper.get("title") or not paper.get("url"):
-                return None
-            
-            # Safely get and clean text fields
-            title = paper.get("title", "").strip()
-            abstract = paper.get("abstract", "")
-            if abstract:
-                abstract = abstract.strip()
-            else:
-                abstract = self.NO_ABSTRACT_MSG
-            
-            # Process authors safely
-            authors = paper.get("authors", [])
-            author_names = []
-            for author in authors:
-                if author and isinstance(author, dict):
-                    name = author.get("name")
-                    if name and isinstance(name, str):
-                        author_names.append(name.strip())
-            
-            # Get other metadata with defaults
-            year = paper.get("year", "Unknown year")
-            citation_count = paper.get("citationCount", 0)
-            venue = paper.get("venue", {})
-            venue_name = venue.get("name", "Unknown venue") if isinstance(venue, dict) else str(venue)
-            fields = paper.get("fieldsOfStudy", [])
-            
-            # Construct processed result
-            return {
-                "title": title,
-                "url": paper["url"],
-                "abstract": abstract,
-                "authors": author_names,
-                "year": year,
-                "citation_count": citation_count,
-                "venue": venue_name,
-                "fields": fields,
-                "source": "Semantic Scholar",
-                "type": "academic"
-            }
-            
-        except Exception as e:
-            logger.error(f"Error processing paper: {str(e)}", exc_info=True)
-            return None
