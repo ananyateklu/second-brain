@@ -9,6 +9,10 @@ import aiohttp
 
 logger = logging.getLogger(__name__)
 
+class GrokAPIError(Exception):
+    """Custom exception for Grok API related errors"""
+    pass
+
 class GrokAgent(BaseAgent):
     """Agent for conducting operations using Grok models"""
     
@@ -46,7 +50,7 @@ class GrokAgent(BaseAgent):
                     if response.status != 200:
                         error_text = await response.text()
                         logger.error(f"Grok API error: {response.status} - {error_text}")
-                        raise Exception(f"Grok API returned status {response.status}: {error_text}")
+                        raise GrokAPIError(f"Grok API returned status {response.status}: {error_text}")
                     
                     result = await response.json()
             
@@ -61,7 +65,7 @@ class GrokAgent(BaseAgent):
             except (KeyError, IndexError) as e:
                 logger.error(f"Error extracting content from Grok response: {str(e)}")
                 logger.debug(f"Response structure: {json.dumps(result, indent=2)}")
-                raise Exception("Invalid response format from Grok API")
+                raise GrokAPIError("Invalid response format from Grok API")
             
             return {
                 "result": content,

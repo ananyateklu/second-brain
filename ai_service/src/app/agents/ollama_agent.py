@@ -66,23 +66,59 @@ class OllamaAgent(BaseAgent):
             logger.warning(f"Failed to determine source IP: {str(e)}")
             return None
             
+    async def _process_response_line(self, line) -> tuple[str, int, int, bool]:
+        """Process a single line of streaming response"""
+        response_text = ""
+        prompt_tokens = completion_tokens = 0
+        is_done = False
+        
+        if not line:
+            return response_text, prompt_tokens, completion_tokens, is_done
+            
+        try:
+            json_response = json.loads(line)
+            response_text = json_response.get("response", "")
+            prompt_tokens = json_response.get("prompt_eval_count", 0)
+            completion_tokens = json_response.get("eval_count", 0)
+            is_done = json_response.get("done", False)
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse JSON response: {str(e)}")
+            
+        return response_text, prompt_tokens, completion_tokens, is_done
+
+    def _handle_connection_error(self, e: requests.exceptions.RequestException):
+        """Handle connection errors with detailed diagnostics"""
+        logger.error(f"Connection error: {str(e)}")
+        try:
+            import subprocess
+            result = subprocess.run(['netstat', '-rn'], capture_output=True, text=True)
+            logger.error(f"Network routes:\n{result.stdout}")
+        except Exception as ne:
+            logger.error(f"Failed to get network info: {str(ne)}")
+            
+        raise OllamaExecutionError(
+            f"Failed to connect to Ollama server at {self.base_url}. "
+            f"Please check:\n"
+            f"1. The Ollama server is running\n"
+            f"2. The URL {self.base_url} is correct\n"
+            f"3. Your firewall settings allow the connection\n"
+            f"4. The network can reach the server\n"
+            f"Error: {str(e)}"
+        )
+            
     async def execute(self, prompt: str, **kwargs) -> Dict[str, Any]:
         """Execute a prompt using an Ollama model"""
         start_time = time.time()
-        
-        # Get source IP
         source_ip = self._get_source_ip()
         if source_ip:
             os.environ["SOURCE_IP"] = source_ip
         
-        # Simple headers
         headers = {
             "Content-Type": "application/json",
             "Accept": "*/*",
             "Connection": "keep-alive"
         }
         
-        # Payload with token counting enabled
         payload = {
             "model": self.model_id,
             "prompt": prompt,
@@ -95,7 +131,6 @@ class OllamaAgent(BaseAgent):
             logger.info(f"Sending request to {self.base_url}/api/generate")
             logger.info(f"Payload: {json.dumps(payload, indent=2)}")
             
-            # Use session for better connection handling
             response = self.session.post(
                 f"{self.base_url}/api/generate",
                 headers=headers,
@@ -105,38 +140,24 @@ class OllamaAgent(BaseAgent):
             )
             response.raise_for_status()
             
-            # Process streaming response
             full_response = ""
-            prompt_tokens = 0
-            completion_tokens = 0
-            total_tokens = 0
+            prompt_tokens = completion_tokens = 0
             
             for line in response.iter_lines():
-                if line:
-                    try:
-                        json_response = json.loads(line)
-                        full_response += json_response.get("response", "")
-                        
-                        # Extract token information
-                        if "prompt_eval_count" in json_response:
-                            prompt_tokens = json_response["prompt_eval_count"]
-                        if "eval_count" in json_response:
-                            completion_tokens = json_response["eval_count"]
-                        
-                        if json_response.get("done", False):
-                            total_tokens = prompt_tokens + completion_tokens
-                            break
-                    except json.JSONDecodeError as e:
-                        logger.error(f"Failed to parse JSON response: {str(e)}")
-                        continue
+                text, p_tokens, c_tokens, is_done = await self._process_response_line(line)
+                full_response += text
+                prompt_tokens = p_tokens or prompt_tokens
+                completion_tokens = c_tokens or completion_tokens
+                
+                if is_done:
+                    break
+            
+            total_tokens = prompt_tokens + completion_tokens
+            execution_time = time.time() - start_time
             
             logger.info("Successfully received response from Ollama")
             logger.info(f"Token usage - Prompt: {prompt_tokens}, Completion: {completion_tokens}, Total: {total_tokens}")
             
-            # Calculate execution time
-            execution_time = time.time() - start_time
-            
-            # Format the response with token usage
             return {
                 "result": full_response,
                 "metadata": {
@@ -155,29 +176,11 @@ class OllamaAgent(BaseAgent):
             }
             
         except requests.exceptions.RequestException as e:
-            logger.error(f"Connection error: {str(e)}")
-            # Try to get more network diagnostic information
-            try:
-                import subprocess
-                result = subprocess.run(['netstat', '-rn'], capture_output=True, text=True)
-                logger.error(f"Network routes:\n{result.stdout}")
-            except Exception as ne:
-                logger.error(f"Failed to get network info: {str(ne)}")
-                
-            raise OllamaExecutionError(
-                f"Failed to connect to Ollama server at {self.base_url}. "
-                f"Please check:\n"
-                f"1. The Ollama server is running\n"
-                f"2. The URL {self.base_url} is correct\n"
-                f"3. Your firewall settings allow the connection\n"
-                f"4. The network can reach the server\n"
-                f"Error: {str(e)}"
-            )
+            self._handle_connection_error(e)
         except Exception as e:
             logger.error(f"Unexpected error: {str(e)}")
             raise OllamaExecutionError(f"Failed to execute Ollama model: {str(e)}")
         finally:
-            # Clean up environment variable
             if "SOURCE_IP" in os.environ:
                 del os.environ["SOURCE_IP"]
     
