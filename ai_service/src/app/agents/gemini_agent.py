@@ -44,79 +44,56 @@ class GeminiAgent(BaseAgent):
         """Execute the Gemini model with context awareness"""
         try:
             start_time = time.time()
-            context = kwargs.get("context", {})
-            messages = context.get("messages", [])
-            
-            logger.info(f"Executing Gemini model with {len(messages)} context messages")
-            
-            # Initialize chat session if needed
-            if not self.chat:
-                self.chat = self.model.start_chat(history=[])
-            
-            # Convert messages to Gemini format and add to history
-            if messages:
-                history = []
-                for msg in messages:
-                    # Convert role from assistant to model for Gemini
-                    role = "model" if msg["role"] == "assistant" else msg["role"]
-                    # Extract content from parts if present, otherwise use content directly
-                    content = msg.get("parts", [{"text": msg["content"]}])[0]["text"]
-                    
-                    logger.info(f"Adding message to history - Role: {role}, Content: {content[:100]}...")
-                    history.append({"role": role, "parts": [{"text": content}]})
-                
-                # Start new chat with history
-                self.chat = self.model.start_chat(history=history)
-                logger.info(f"Started new chat with {len(history)} historical messages")
-            
-            # Send the current prompt
-            prompt = kwargs.get("prompt", "")
-            logger.info(f"Sending prompt: {prompt[:100]}...")
-            
-            response = self.chat.send_message(
-                prompt,
-                generation_config={"temperature": self.temperature}
-            )
-            
-            execution_time = time.time() - start_time
-            
-            # Extract token usage from response
-            usage_metadata = getattr(response, "usage_metadata", None)
-            token_usage = {
-                "prompt_tokens": getattr(usage_metadata, "prompt_token_count", 0),
-                "completion_tokens": getattr(usage_metadata, "candidates_token_count", 0),
-                "total_tokens": getattr(usage_metadata, "total_token_count", 0)
-            }
-            
-            # Extract content from response
-            if hasattr(response, "text"):
-                generated_content = response.text
-            else:
-                candidates = getattr(response, "candidates", [])
-                if candidates and len(candidates) > 0:
-                    content = candidates[0].content
-                    if hasattr(content, "parts") and len(content.parts) > 0:
-                        generated_content = content.parts[0].text
-                    else:
-                        generated_content = str(content)
-                else:
-                    raise ValueError("No valid content found in response")
-            
-            return {
-                "result": generated_content,
-                "metadata": {
-                    "model": self.model_id,
-                    "execution_time": execution_time,
-                    "token_usage": token_usage,
-                    "provider": "gemini",
-                    "chat_history_length": len(self.chat.history) if self.chat else 0
-                }
-            }
-            
+            await self._setup_chat_session(kwargs)
+            response = await self._send_prompt(kwargs)
+            return self._format_response(response, start_time)
         except Exception as e:
             logger.error(f"Error in Gemini model execution: {str(e)}")
             raise
-            
+
+    async def _setup_chat_session(self, kwargs: Dict[str, Any]) -> None:
+        """Setup chat session with history"""
+        messages = kwargs.get("context", {}).get("messages", [])
+        if not messages:
+            return
+
+        history = [self._convert_message_format(msg) for msg in messages]
+        self.chat = self.model.start_chat(history=history)
+        logger.info(f"Started new chat with {len(history)} historical messages")
+
+    def _convert_message_format(self, msg: Dict[str, Any]) -> Dict[str, Any]:
+        """Convert message format for Gemini"""
+        role = "model" if msg["role"] == "assistant" else msg["role"]
+        content = msg.get("parts", [{"text": msg["content"]}])[0]["text"]
+        return {"role": role, "parts": [{"text": content}]}
+
+    async def _send_prompt(self, kwargs: Dict[str, Any]) -> Any:
+        """Send prompt to model"""
+        if not self.chat:
+            self.chat = self.model.start_chat(history=[])
+        prompt = kwargs.get("prompt", "")
+        return self.chat.send_message(
+            prompt,
+            generation_config={"temperature": self.temperature}
+        )
+
+    def _format_response(self, response: Any, start_time: float) -> Dict[str, Any]:
+        """Format model response"""
+        execution_time = time.time() - start_time
+        token_usage = self._get_token_usage(response)
+        generated_content = self._extract_content(response)
+
+        return {
+            "result": generated_content,
+            "metadata": {
+                "model": self.model_id,
+                "execution_time": execution_time,
+                "token_usage": token_usage,
+                "provider": "gemini",
+                "chat_history_length": len(self.chat.history) if self.chat else 0
+            }
+        }
+
     async def validate_response(self, response: Any) -> bool:
         """Validate the response from Gemini"""
         if not response or not isinstance(response, dict):
@@ -128,7 +105,30 @@ class GeminiAgent(BaseAgent):
             
         # Check for Gemini-specific fields
         metadata = response.get("metadata", {})
-        if not metadata.get("provider") == "gemini":
+        if metadata.get("provider") != "gemini":
             logger.warning("Response missing Gemini provider tag")
             
         return True
+
+    def _get_token_usage(self, response: Any) -> Dict[str, int]:
+        """Extract token usage from response"""
+        usage_metadata = getattr(response, "usage_metadata", None)
+        return {
+            "prompt_tokens": getattr(usage_metadata, "prompt_token_count", 0),
+            "completion_tokens": getattr(usage_metadata, "candidates_token_count", 0),
+            "total_tokens": getattr(usage_metadata, "total_token_count", 0)
+        }
+
+    def _extract_content(self, response: Any) -> str:
+        """Extract content from response"""
+        if hasattr(response, "text"):
+            return response.text
+            
+        candidates = getattr(response, "candidates", [])
+        if candidates and len(candidates) > 0:
+            content = candidates[0].content
+            if hasattr(content, "parts") and len(content.parts) > 0:
+                return content.parts[0].text
+            return str(content)
+            
+        raise ValueError("No valid content found in response")

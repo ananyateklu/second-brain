@@ -425,6 +425,10 @@ class QueryReformulator:
         else:
             return [original_query]
 
+class NoResultsError(Exception):
+    """Raised when no results are found from a tool execution"""
+    pass
+
 class ResearchAgent(BaseAgent):
     """Agent for conducting research and analysis using various AI models"""
     
@@ -504,6 +508,7 @@ class ResearchAgent(BaseAgent):
     # Result status constants
     NO_RESULTS_FOUND = "No results found"
     EMPTY_RESULTS = ["[]", NO_RESULTS_FOUND, "{}", "null", "None"]
+    NO_DESCRIPTION = "No description available"
     
     # Regex patterns
     BOLD_PATTERN = r'\*(.*?)\*+'
@@ -664,6 +669,91 @@ class ResearchAgent(BaseAgent):
         logger.info("Using default tools with base query")
         return tools
 
+    async def _execute_single_tool(self, tool: Dict[str, Any]) -> Tuple[Optional[Dict[str, Any]], Dict[str, Any]]:
+        """Execute a single tool and return its result and usage summary"""
+        try:
+            preview = str({k: v for k, v in tool.items() if k != "description"})
+            logger.info(f"Using tool: {preview}")
+            
+            # Execute tool with original query
+            result = await self._execute_tool(tool)
+            result_data = await self._parse_tool_result(result, tool)
+            results = self._extract_results(result_data)
+            
+            if not results:
+                logger.info(f"No results with original query, trying reformulations for {tool['name']}")
+                results = await self._try_reformulated_queries(tool)
+            
+            if results:
+                return {
+                    "tool": tool["name"],
+                    "results": results,
+                    "metadata": result_data.get("metadata", {})
+                }, {
+                    "tool": tool["name"],
+                    "status": "success",
+                    "results_count": len(results)
+                }
+            
+            raise NoResultsError(self.NO_RESULTS_FOUND)
+            
+        except Exception as e:
+            logger.warning(f"Error executing tool {tool['name']}: {str(e)}")
+            return None, {
+                "tool": tool["name"],
+                "status": "failed",
+                "error": str(e)
+            }
+
+    async def _try_reformulated_queries(self, tool: Dict[str, Any]) -> List[Any]:
+        """Try reformulated queries for a tool"""
+        reformulated_queries = QueryReformulator.reformulate_query(
+            tool["parameters"]["query"],
+            tool["name"].replace("_search", "")
+        )
+        
+        # Modify tool parameters directly as in original
+        original_query = tool["parameters"]["query"]
+        for query in reformulated_queries:
+            tool["parameters"]["query"] = query
+            result = await self._execute_tool(tool)
+            result_data = await self._parse_tool_result(result, tool)
+            results = self._extract_results(result_data)
+            if results:
+                return results
+        
+        # Restore original query
+        tool["parameters"]["query"] = original_query
+        return []
+
+    def _create_research_summary(self, tool_results: List[Dict[str, Any]]) -> str:
+        """Create a research summary from tool results"""
+        research_summary = "\n\n### Research Findings\n"
+        if not tool_results:
+            return research_summary
+            
+        for result in tool_results:
+            tool_name = result["tool"]
+            results = result["results"]
+            
+            if tool_name == "news_search":
+                research_summary += "\n**Latest News Articles:**\n"
+                for article in results:
+                    title = article.get("title", "Untitled")
+                    url = article.get("url", "#")
+                    desc = article.get("description", self.NO_DESCRIPTION)
+                    research_summary += f"• **[{title}]({url})**\n  {desc}\n\n"
+                    
+            elif tool_name == "web_search":
+                research_summary += "\n**Web Search Results:**\n"
+                for item in results:
+                    title = item.get("title", "Untitled")
+                    url = item.get("link", item.get("url", "#"))
+                    snippet = item.get("snippet", self.NO_DESCRIPTION)
+                    research_summary += f"• **[{title}]({url})**\n  {snippet}\n\n"
+        
+        return research_summary
+
     async def _execute_tools(self, tools: List[Dict[str, Any]]) -> Tuple[List[Any], List[Dict[str, Any]], List[str], List[str]]:
         """Execute tools and collect results"""
         tool_results = []
@@ -677,97 +767,16 @@ class ResearchAgent(BaseAgent):
 
         logger.info("Executing with tools...")
         for tool in tools:
-            try:
-                preview = str({k: v for k, v in tool.items() if k != "description"})
-                logger.info(f"Using tool: {preview}")
-                
-                # Execute tool with original query
-                result = await self._execute_tool(tool)
-                
-                # Check if we got results
-                if isinstance(result, str):
-                    try:
-                        result_data = json.loads(result)
-                    except json.JSONDecodeError:
-                        result_data = {"success": False, "error": "Invalid JSON response"}
-                else:
-                    result_data = result
-                    
-                results = self._extract_results(result_data)
-                
-                if not results:
-                    logger.info(f"No results with original query, trying reformulations for {tool['name']}")
-                    # Try reformulated queries
-                    reformulated_queries = QueryReformulator.reformulate_query(
-                        tool["parameters"]["query"],
-                        tool["name"].replace("_search", "")
-                    )
-                    
-                    # Try each reformulation
-                    for query in reformulated_queries:
-                        tool["parameters"]["query"] = query
-                        result = await self._execute_tool(tool)
-                        
-                        if isinstance(result, str):
-                            try:
-                                result_data = json.loads(result)
-                            except json.JSONDecodeError:
-                                continue
-                        else:
-                            result_data = result
-                            
-                        results = self._extract_results(result_data)
-                        if results:
-                            break
-                
-                if results:
-                    successful_tools.append(tool["name"])
-                    tool_usage_summary.append({
-                        "tool": tool["name"],
-                        "status": "success",
-                        "results_count": len(results)
-                    })
-                    tool_results.append({
-                        "tool": tool["name"],
-                        "results": results,
-                        "metadata": result_data.get("metadata", {})
-                    })
-                else:
-                    raise Exception("No results found")
-                
-            except Exception as e:
-                logger.warning(f"Error executing tool {tool['name']}: {str(e)}")
+            result, usage = await self._execute_single_tool(tool)
+            tool_usage_summary.append(usage)
+            
+            if result:
+                successful_tools.append(tool["name"])
+                tool_results.append(result)
+            else:
                 failed_tools.append(tool["name"])
-                tool_usage_summary.append({
-                    "tool": tool["name"],
-                    "status": "failed",
-                    "error": str(e)
-                })
-        
-        # Format results into a research summary
-        research_summary = "\n\n### Research Findings\n"
-        if tool_results:
-            for result in tool_results:
-                tool_name = result["tool"]
-                results = result["results"]
-                
-                if tool_name == "news_search":
-                    research_summary += "\n**Latest News Articles:**\n"
-                    for article in results:
-                        title = article.get("title", "Untitled")
-                        url = article.get("url", "#")
-                        desc = article.get("description", "No description available")
-                        research_summary += f"• **[{title}]({url})**\n  {desc}\n\n"
-                        
-                elif tool_name == "web_search":
-                    research_summary += "\n**Web Search Results:**\n"
-                    for item in results:
-                        title = item.get("title", "Untitled")
-                        url = item.get("link", item.get("url", "#"))
-                        snippet = item.get("snippet", "No description available")
-                        research_summary += f"• **[{title}]({url})**\n  {snippet}\n\n"
 
-        return tool_results, tool_usage_summary, successful_tools, failed_tools, research_summary
+        return tool_results, tool_usage_summary, successful_tools, failed_tools
 
     async def _process_tool_result(
         self, result: Dict[str, Any], tool: Dict[str, Any],
@@ -805,29 +814,13 @@ class ResearchAgent(BaseAgent):
         except Exception as e:
             self._handle_tool_error(e, tool, tool_usage_summary, failed_tools)
 
-    async def _parse_tool_result(self, result: Dict[str, Any], tool: Dict[str, Any]) -> Dict[str, Any]:
-        """Parse and extract result data from tool execution"""
-        logger.info(f"Processing raw result from {tool['name']}: {result}")
-        
-        # Parse string result to dict if needed
+    async def _parse_tool_result(self, result: Any, tool: Dict[str, Any]) -> Dict[str, Any]:
+        """Parse tool result into a consistent format"""
         if isinstance(result, str):
             try:
-                result = json.loads(result)
-                logger.info(f"Successfully parsed JSON result for {tool['name']}")
-            except json.JSONDecodeError as e:
-                logger.error(f"Failed to parse JSON for {tool['name']}: {e}")
-                return {"success": False, "error": str(e)}
-        
-        # Extract result data
-        if isinstance(result, dict) and "result" in result:
-            try:
-                result_data = json.loads(result["result"]) if isinstance(result["result"], str) else result["result"]
-                logger.info(f"Extracted result data for {tool['name']}: {result_data}")
-                return result_data
-            except (json.JSONDecodeError, TypeError) as e:
-                logger.error(f"Failed to parse result data for {tool['name']}: {e}")
-                return result
-        
+                return json.loads(result)
+            except json.JSONDecodeError:
+                return {"success": False, "error": "Invalid JSON response"}
         return result
 
     def _handle_empty_results(
@@ -900,7 +893,6 @@ class ResearchAgent(BaseAgent):
             start_time = time.time()
             
             # Get context from kwargs but don't remove it
-            context = kwargs.get('context', {})
             logger.info(f"Starting research execution with prompt: {prompt[:100]}...")
             
             # Analyze prompt
@@ -909,12 +901,12 @@ class ResearchAgent(BaseAgent):
             
             # Initialize and execute tools
             tools = await self._initialize_tools(analysis, kwargs.get("tools"))
-            tool_results, tool_usage_summary, successful_tools, failed_tools, research_summary = \
+            tool_results, tool_usage_summary, successful_tools, failed_tools = \
                 await self._execute_tools(tools)
             
             # Add research summary to prompt
             enhanced_prompt = self._create_enhanced_prompt(prompt, analysis)
-            enhanced_prompt += "\n\nBased on research tools, here are the findings:" + research_summary
+            enhanced_prompt += "\n\nBased on research tools, here are the findings:" + self._create_research_summary(tool_results)
             
             # Execute model with enhanced prompt and context
             result = await self._execute_with_context(
@@ -998,8 +990,7 @@ class ResearchAgent(BaseAgent):
         if tool_results:
             tool_summary = self._create_tool_summary(
                 tool_results, successful_tools,
-                failed_tools, tool_usage_summary,
-                start_time
+                failed_tools
             )
             result["tool_results"] = tool_results
             result["result"] = result["result"] + tool_summary + stats_section
@@ -1057,49 +1048,50 @@ class ResearchAgent(BaseAgent):
                     summary += f"- {paper_title} ({paper['year']}) - {paper['citations']} citations\n"
         return summary
 
+    def _format_web_result(self, result: Dict[str, Any]) -> str:
+        """Format a single web search result"""
+        title = result.get("title", "Untitled")
+        url = result.get("link", result.get("url", "#"))
+        snippet = result.get("snippet", self.NO_DESCRIPTION)
+        return f"• **[{title}]({url})**\n  {snippet}\n\n"
+
+    def _format_news_result(self, result: Dict[str, Any]) -> str:
+        """Format a single news result"""
+        title = result.get("title", "Untitled")
+        url = result.get("url", "#")
+        published = result.get("published_at", "")
+        published_str = f" ({published})" if published else ""
+        description = f"  {result['description']}\n\n" if result.get("description") else "\n"
+        return f"• **[{title}]({url})**{published_str}\n{description}"
+
+    def _format_generic_result(self, result: Any) -> str:
+        """Format a generic result"""
+        if isinstance(result, dict):
+            return "\n".join(f"• **{key}**: {value}" for key, value in result.items()) + "\n"
+        return f"• {result}\n"
+
     def _format_default_results(self, tool_result: Dict[str, Any], results: List[Dict[str, Any]]) -> str:
         """Format default search results including web search"""
         tool_name = tool_result.get("tool", "Unknown Tool")
         
+        if not results:
+            return f"\nNo results from {tool_name}\n"
+
+        # Handle non-list results
+        if not isinstance(results, list):
+            return f"\nResult from {tool_name}:\n{str(results)}\n"
+
+        # Format header based on result count
+        is_single = len(results) == 1
+        header = f"\nFound {len(results)} relevant {tool_name.replace('_', ' ')} "
+        header += "result:\n\n" if is_single else "results:\n\n"
+        
         if tool_name == "web_search":
-            summary = f"\nFound {len(results)} relevant web results:\n\n"
-            for result in results:
-                title = result.get("title", "Untitled")
-                url = result.get("link", result.get("url", "#"))
-                snippet = result.get("snippet", "No description available")
-                
-                # Format as markdown link with title and snippet
-                summary += f"• **[{title}]({url})**\n"
-                summary += f"  {snippet}\n\n"
-            return summary
-        
+            return header + "".join(self._format_web_result(result) for result in results)
         elif tool_name == "news_search":
-            summary = f"\nFound {len(results)} relevant news articles:\n\n"
-            for result in results:
-                title = result.get("title", "Untitled")
-                url = result.get("url", "#")
-                published = result.get("published_at", "")
-                if published:
-                    published = f" ({published})"
-                    
-                summary += f"• **[{title}]({url})**{published}\n"
-                if result.get("description"):
-                    summary += f"  {result['description']}\n\n"
-            return summary
-        
+            return header + "".join(self._format_news_result(result) for result in results)
         else:
-            # For other tools, use a more generic format
-            if isinstance(results, list):
-                summary = f"\nResults from {tool_name}:\n\n"
-                for result in results:
-                    if isinstance(result, dict):
-                        for key, value in result.items():
-                            summary += f"• **{key}**: {value}\n"
-                    else:
-                        summary += f"• {result}\n"
-                return summary
-            else:
-                return f"\nResult from {tool_name}:\n{str(results)}\n"
+            return f"\nResults from {tool_name}:\n\n" + "".join(self._format_generic_result(result) for result in results)
 
     @staticmethod
     def _format_date(date_str: str) -> str:
@@ -1181,9 +1173,7 @@ class ResearchAgent(BaseAgent):
     def _create_tool_summary(
         self, tool_results: List[Any],
         successful_tools: List[str],
-        failed_tools: List[str],
-        tool_usage_summary: List[Dict[str, Any]],
-        start_time: float
+        failed_tools: List[str]
     ) -> str:
         """Create a summary of tool execution results"""
         summary = "\n\n### Research Sources and Tools Used\n"
@@ -1206,7 +1196,7 @@ class ResearchAgent(BaseAgent):
             for tool in failed_tools:
                 summary += f"• {tool}: No results found\n"
         
-        return summary  # Remove the redundant execution statistics
+        return summary
 
     def _create_enhanced_prompt(self, original_prompt: str, analysis: PromptAnalysis) -> str:
         """Create an enhanced research prompt based on analysis"""
@@ -1429,46 +1419,47 @@ Note: If research tools return results, focus on analyzing and synthesizing thos
             
         return []
 
+    def _extract_context_summary(self, messages: List[Dict[str, str]]) -> str:
+        """Extract summary from previous context messages"""
+        context_summary = "\n\nPrevious Context:\n"
+        for msg in messages:
+            if msg["role"] == "model":
+                content = msg["content"]
+                if "Key Findings" in content:
+                    context_summary += "\nPrevious Key Findings:\n" + content.split("Key Findings")[1].split("\n\n")[0]
+                if "Analysis" in content:
+                    context_summary += "\nPrevious Analysis:\n" + content.split("Analysis")[1].split("\n\n")[0]
+        return context_summary
+
+    def _prepare_execution_kwargs(self, prompt: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Prepare kwargs for model execution"""
+        messages = context.get("messages", [])
+        if messages:
+            logger.info(f"Found context with {len(messages)} messages")
+            # Log individual messages for debugging
+            for msg in messages:
+                logger.info(f"Context message: {msg['role']} - {msg['content'][:100]}...")
+            context_summary = self._extract_context_summary(messages)
+            prompt = prompt + context_summary
+        else:
+            logger.info("No previous context available")
+            messages = []
+        
+        return {
+            "prompt": prompt,
+            "messages": messages
+        }
+
     async def _execute_with_context(self, prompt: str, **kwargs) -> Dict[str, Any]:
         """Execute with context handling"""
         try:
-            # Get context from kwargs
             context = kwargs.get("context", {})
             logger.info(f"Received context data: {context}")
-
-            messages = []
-            if context and "messages" in context:
-                messages = context["messages"]
-                logger.info(f"Found context with {len(messages)} messages")
-                
-                # Log context messages for debugging
-                for msg in messages:
-                    logger.info(f"Context message: {msg['role']} - {msg['content'][:100]}...")
-                    
-                # Add context to the prompt
-                context_summary = "\n\nPrevious Context:\n"
-                for msg in messages:
-                    if msg["role"] == "model":
-                        # Extract key findings and analysis from previous responses
-                        content = msg["content"]
-                        if "Key Findings" in content:
-                            context_summary += "\nPrevious Key Findings:\n" + content.split("Key Findings")[1].split("\n\n")[0]
-                        if "Analysis" in content:
-                            context_summary += "\nPrevious Analysis:\n" + content.split("Analysis")[1].split("\n\n")[0]
-                
-                prompt = prompt + context_summary
-                
-            else:
-                logger.info("No previous context available")
-
-            # Add prompt to kwargs for model execution
-            kwargs["prompt"] = prompt
-            kwargs["messages"] = messages
             
-            # Execute model with all data
-            result = await self._execute_model(kwargs)
+            execution_kwargs = self._prepare_execution_kwargs(prompt, context)
+            kwargs.update(execution_kwargs)
             
-            return result
+            return await self._execute_model(kwargs)
             
         except Exception as e:
             logger.error(f"Error in context execution: {str(e)}")

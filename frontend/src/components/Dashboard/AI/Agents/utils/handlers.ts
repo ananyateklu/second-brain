@@ -45,8 +45,10 @@ export const handleAgentSelect = async (
 
     if (modelConversations.length > 0) {
         // If there are existing conversations, set the most recent one as active
-        const mostRecentConversation = modelConversations
-            .sort((a, b) => b.lastUpdated.getTime() - a.lastUpdated.getTime())[0];
+        const mostRecentConversation = [...modelConversations]
+            .sort((a: AgentConversation, b: AgentConversation) =>
+                b.lastUpdated.getTime() - a.lastUpdated.getTime()
+            )[0];
 
         setConversations(prev => prev.map(conv =>
             conv.id === mostRecentConversation.id
