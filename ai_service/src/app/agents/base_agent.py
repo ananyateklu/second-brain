@@ -35,100 +35,6 @@ class BaseAgent(ABC):
     
     NO_ABSTRACT_MSG = "No abstract available"
     
-    # Expert search configurations
-    KNOWN_EXPERTS = {
-        "battery_technology": {
-            "experts": [
-                "Yet-Ming Chiang",
-                "Donald Sadoway",
-                "John Goodenough",
-                "Stanley Whittingham"
-            ],
-            "keywords": [
-                "battery technology",
-                "solid state batteries",
-                "liquid metal batteries",
-                "battery manufacturing",
-                "energy storage",
-                "electrolytes"
-            ]
-        },
-        "gene_editing": {
-            "experts": [
-                "Jennifer Doudna",
-                "Feng Zhang",
-                "Emmanuelle Charpentier",
-                "David Liu",
-                "Virginijus Siksnys",
-                "George Church"
-            ],
-            "keywords": [
-                "CRISPR",
-                "gene editing",
-                "genomics",
-                "base editing",
-                "synthetic biology"
-            ]
-        }
-    }
-    
-    # Domain-specific configurations
-    DOMAIN_KEYWORDS = {
-        "battery": [
-            "battery technology",
-            "energy storage",
-            "solid state batteries",
-            "electrolytes",
-            "battery manufacturing",
-            "energy density"
-        ],
-        "crispr": [
-            "CRISPR",
-            "gene editing",
-            "genomics",
-            "genetic engineering",
-            "molecular biology"
-        ],
-        "quantum": [
-            "quantum computing",
-            "quantum information",
-            "quantum mechanics",
-            "quantum algorithms",
-            "quantum error correction"
-        ],
-        "ai": [
-            "artificial intelligence",
-            "machine learning",
-            "deep learning",
-            "neural networks",
-            "natural language processing"
-        ]
-    }
-    
-    # News sources by category
-    NEWS_SOURCES = {
-        "technology": [
-            "techcrunch",
-            "wired",
-            "the-verge",
-            "ars-technica",
-            "engadget",
-            "recode"
-        ],
-        "science": [
-            "new-scientist",
-            "national-geographic",
-            "next-big-future"
-        ],
-        "business": [
-            "bloomberg",
-            "business-insider",
-            "financial-times",
-            "fortune",
-            "the-wall-street-journal"
-        ]
-    }
-    
     # Common stop words for text processing
     STOP_WORDS = {
         "what", "who", "where", "when", "how", "why",
@@ -167,40 +73,9 @@ class BaseAgent(ABC):
         """Execute the agent's task"""
         pass
     
-    def get_experts_for_domain(self, domain: str) -> Dict[str, List[str]]:
-        """Get experts and keywords for a specific domain"""
-        return self.KNOWN_EXPERTS.get(domain, {"experts": [], "keywords": []})
-    
-    def get_news_sources_for_category(self, category: str) -> List[str]:
-        """Get news sources for a specific category"""
-        return self.NEWS_SOURCES.get(category, [])
-    
-    def get_domain_keywords(self, domain: str) -> List[str]:
-        """Get keywords for a specific domain"""
-        return self.DOMAIN_KEYWORDS.get(domain, [])
-    
     def is_stop_word(self, word: str) -> bool:
         """Check if a word is a stop word"""
         return word.lower() in self.STOP_WORDS
-    
-    @classmethod
-    def add_domain_expert(cls, domain: str, expert_name: str, keywords: List[str]):
-        """Add a new expert to a domain"""
-        if domain not in cls.KNOWN_EXPERTS:
-            cls.KNOWN_EXPERTS[domain] = {"experts": [], "keywords": []}
-        if expert_name not in cls.KNOWN_EXPERTS[domain]["experts"]:
-            cls.KNOWN_EXPERTS[domain]["experts"].append(expert_name)
-        cls.KNOWN_EXPERTS[domain]["keywords"].extend(
-            [k for k in keywords if k not in cls.KNOWN_EXPERTS[domain]["keywords"]]
-        )
-    
-    @classmethod
-    def add_news_source(cls, category: str, source: str):
-        """Add a new news source to a category"""
-        if category not in cls.NEWS_SOURCES:
-            cls.NEWS_SOURCES[category] = []
-        if source not in cls.NEWS_SOURCES[category]:
-            cls.NEWS_SOURCES[category].append(source)
     
     async def execute_with_tools(self, prompt: str, tools: Optional[List[Dict[str, Any]]] = None, **kwargs) -> Dict[str, Any]:
         """Execute with optional tool support"""
@@ -532,52 +407,95 @@ class BaseAgent(ABC):
             return newsapi.get_everything(**params)
 
     async def _execute_news_search(self, parameters: Dict[str, Any]) -> str:
-        """Execute news search using NewsAPI"""
+        """Execute news search using NewsAPI with DuckDuckGo fallback"""
         try:
-            from newsapi import NewsApiClient
-            if not settings.NEWS_API_KEY:
-                raise ToolExecutionError("NewsAPI key not configured")
+            # Try NewsAPI first if configured
+            if settings.NEWS_API_KEY:
+                from newsapi import NewsApiClient
+                newsapi = NewsApiClient(api_key=settings.NEWS_API_KEY)
+                query = parameters.get("query", "")
+                category = self._determine_news_category(query)
+                
+                # Use proper parameter values instead of string literals
+                params = {
+                    "q": query,
+                    "language": "en",  # Fixed language code
+                    "sort_by": "relevancy",  # Fixed sort parameter
+                    "page_size": parameters.get("max_results", 3)
+                }
+                
+                logger.info(f"Executing NewsAPI search with params: {json.dumps(params, indent=2)}")
+                
+                try:
+                    if category in ["technology", "science", "business"]:
+                        response = newsapi.get_top_headlines(
+                            q=query,
+                            category=category,
+                            language="en",
+                            page_size=params["page_size"]
+                        )
+                    else:
+                        response = newsapi.get_everything(**params)
+                        
+                    articles = response.get("articles", [])
+                    processed_articles = [self._process_news_article(article, category) for article in articles]
+                    
+                    if processed_articles:
+                        logger.info(f"Processed {len(processed_articles)} news articles from NewsAPI")
+                        return json.dumps({
+                            "success": True,
+                            "results": processed_articles,
+                            "total_found": len(processed_articles)
+                        })
+                except Exception as e:
+                    logger.warning(f"NewsAPI search failed: {str(e)}, falling back to DuckDuckGo")
             
-            newsapi = NewsApiClient(api_key=settings.NEWS_API_KEY)
+            # Fallback to DuckDuckGo news search
+            logger.info("Using DuckDuckGo news search")
             query = parameters.get("query", "")
-            category = self._determine_news_category(query)
-            
-            # Use proper parameter values instead of string literals
-            params = {
-                "q": query,
-                "language": "en",  # Fixed language code
-                "sort_by": "relevancy",  # Fixed sort parameter
-                "page_size": parameters.get("max_results", 3)
-            }
-            
-            logger.info(f"Executing news search with params: {json.dumps(params, indent=2)}")
+            max_results = parameters.get("max_results", 3)
+            region = parameters.get("region", "us-en")
             
             try:
-                if category in ["technology", "science", "business"]:
-                    response = newsapi.get_top_headlines(
-                        q=query,
-                        category=category,
-                        language="en",
-                        page_size=params["page_size"]
-                    )
-                else:
-                    response = newsapi.get_everything(**params)
+                with DDGS() as ddg:
+                    results_list = list(ddg.news(
+                        keywords=query,
+                        region=region,
+                        max_results=max_results
+                    ))
                     
-                articles = response.get("articles", [])
-                processed_articles = [self._process_news_article(article, category) for article in articles]
-                
-                logger.info(f"Processed {len(processed_articles)} news articles")
-                return json.dumps({
-                    "success": True,
-                    "results": processed_articles,
-                    "total_found": len(processed_articles)
-                })
-                
-            except ValueError as ve:
-                logger.error(f"NewsAPI parameter error: {str(ve)}")
+                    if results_list:
+                        processed_results = []
+                        for result in results_list:
+                            processed_result = {
+                                "title": result.get("title", ""),
+                                "description": result.get("body", ""),
+                                "url": result.get("link", ""),
+                                "source": result.get("source", ""),
+                                "published_at": result.get("date", ""),
+                                "category": self._determine_news_category(query)
+                            }
+                            processed_results.append(processed_result)
+                        
+                        logger.info(f"Found {len(processed_results)} news results from DuckDuckGo")
+                        return json.dumps({
+                            "success": True,
+                            "results": processed_results,
+                            "total_found": len(processed_results)
+                        })
+                    
+                    logger.warning("No news results found from DuckDuckGo")
+                    return json.dumps({
+                        "success": False,
+                        "error": "No news results found",
+                        "results": []
+                    })
+                    
+            except Exception as e:
+                logger.error(f"DuckDuckGo news search failed: {str(e)}")
                 return json.dumps({
                     "success": False,
-                    "error": str(ve),
+                    "error": str(e),
                     "results": []
                 })
                 
@@ -804,14 +722,29 @@ class BaseAgent(ABC):
         """Determine the news category based on the query"""
         query_lower = query.lower()
         
-        # Check each domain's keywords
-        for domain, keywords in self.DOMAIN_KEYWORDS.items():
-            if any(keyword in query_lower for keyword in keywords):
-                if domain in ["battery", "quantum", "ai"]:
-                    return "technology"
-                elif domain == "crispr":
-                    return "science"
-        
+        # Technology keywords
+        if any(word in query_lower for word in [
+            "technology", "tech", "software", "hardware", "ai", "artificial intelligence",
+            "robotics", "computer", "digital", "internet", "cyber", "quantum", "battery"
+        ]):
+            return "technology"
+            
+        # Science keywords    
+        if any(word in query_lower for word in [
+            "science", "research", "scientific", "biology", "physics", "chemistry",
+            "astronomy", "space", "medical", "medicine", "climate", "environment",
+            "genetics", "crispr", "laboratory", "experiment"
+        ]):
+            return "science"
+            
+        # Business keywords
+        if any(word in query_lower for word in [
+            "business", "finance", "economy", "market", "stock", "trade",
+            "investment", "startup", "company", "industry", "corporate",
+            "economic", "commercial", "enterprise"
+        ]):
+            return "business"
+            
         return "general"
 
     async def _execute_database_query(self, tool: Dict[str, Any]) -> Any:
