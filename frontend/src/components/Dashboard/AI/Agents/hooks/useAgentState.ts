@@ -8,6 +8,7 @@ import {
     loadSelectedProviderFromStorage,
     saveConversationsToStorage
 } from '../utils/storage';
+import { agentService } from '../../../../../services/ai/agent';
 
 export const useAgentState = (availableModels: AIModel[]) => {
     const navigate = useNavigate();
@@ -93,6 +94,37 @@ export const useAgentState = (availableModels: AIModel[]) => {
             model.description.toLowerCase().includes(searchQuery.toLowerCase())
         )
         : [];
+
+    // Replace localStorage loading with API calls
+    useEffect(() => {
+        const loadChats = async () => {
+            try {
+                setIsLoading(true);
+                const chats = await agentService.loadChats();
+
+                // Map database chats to AgentConversation type
+                const conversations = chats.map(chat => ({
+                    id: chat.id,
+                    messages: chat.messages.map(msg => ({
+                        ...msg,
+                        timestamp: new Date(msg.timestamp)
+                    })),
+                    model: availableModels.find(m => m.id === chat.modelId)!,
+                    isActive: chat.isActive,
+                    lastUpdated: new Date(chat.lastUpdated),
+                    title: chat.title
+                }));
+
+                setConversations(conversations);
+            } catch (error) {
+                console.error('Error loading chats:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        loadChats();
+    }, [availableModels]);
 
     return {
         isLoading,

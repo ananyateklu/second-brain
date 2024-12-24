@@ -1,6 +1,9 @@
 import { AIModel, AIResponse } from '../../types/ai';
 import { AI_MODELS } from './models';
 import api from '../api/api';
+import { AgentChat, AgentMessage } from '../../types/agent';
+import { LlamaService } from './llama';
+import { GrokService } from './grok';
 
 interface AgentRequestParameters {
   max_tokens?: number;
@@ -18,6 +21,8 @@ export interface AgentTool {
 
 export class AgentService {
   private isEnabled = true;
+  public llama = new LlamaService();
+  public grokService = new GrokService();
 
   async testConnection(): Promise<boolean> {
     try {
@@ -30,15 +35,45 @@ export class AgentService {
     }
   }
 
+  getAvailableModels(): AIModel[] {
+    return AI_MODELS.filter(model =>
+      model.category === 'agent' &&
+      model.endpoint === 'agent'
+    );
+  }
+
+  async isOpenAIConfigured(): Promise<boolean> {
+    try {
+      const response = await api.get('/api/AIAgents/openai/health');
+      return response.data.status === 'healthy';
+    } catch (error) {
+      console.error('Error checking OpenAI configuration:', error);
+      return false;
+    }
+  }
+
+  async isAnthropicConfigured(): Promise<boolean> {
+    try {
+      const response = await api.get('/api/AIAgents/anthropic/health');
+      return response.data.status === 'healthy';
+    } catch (error) {
+      console.error('Error checking Anthropic configuration:', error);
+      return false;
+    }
+  }
+
+  isGeminiConfigured(): boolean {
+    // Add your Gemini configuration check logic here
+    return true;
+  }
+
   async sendMessage(
     message: string,
     modelId: string,
     parameters?: AgentRequestParameters
   ): Promise<AIResponse> {
     try {
-      console.log('Executing agent with model:', modelId);
       const baseModelId = modelId.replace('-agent', '');
-
       const response = await api.post('/api/AIAgents/execute', {
         prompt: message,
         modelId: baseModelId,
@@ -47,13 +82,11 @@ export class AgentService {
         tools: parameters?.tools ?? []
       });
 
-      console.log('Agent response:', response.data);
-
       return {
-        content: response.data.result,
-        type: 'text',
-        metadata: response.data.metadata,
-        executionSteps: response.data.metadata?.execution_steps ?? []
+        content: response.data.content,
+        type: response.data.type || 'text',
+        metadata: response.data.metadata || {},
+        executionSteps: response.data.metadata?.execution_steps || []
       };
     } catch (error) {
       console.error('Error executing agent:', error);
@@ -61,57 +94,66 @@ export class AgentService {
     }
   }
 
-  async executeBatch(requests: { 
-    prompt: string; 
-    modelId: string; 
-    parameters?: AgentRequestParameters;
-  }[]): Promise<AIResponse[]> {
+  async transcribeAudio(file: File): Promise<AIResponse> {
     try {
-      const response = await api.post('/api/AIAgents/batch', requests.map(req => ({
-        prompt: req.prompt,
-        modelId: req.modelId.replace('-agent', ''),
-        maxTokens: req.parameters?.max_tokens ?? 1000,
-        temperature: req.parameters?.temperature ?? 0.7,
-        tools: req.parameters?.tools ?? []
-      })));
-
-      return response.data.responses.map((res: any) => ({
-        content: res.result,
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await api.post('/api/AIAgents/transcribe', formData);
+      return {
+        content: response.data.text,
         type: 'text',
-        metadata: res.metadata,
-        executionSteps: res.metadata?.execution_steps ?? []
-      }));
+        metadata: response.data.metadata
+      };
     } catch (error) {
-      console.error('Error executing batch requests:', error);
-      throw new Error('Failed to execute batch requests. Please try again.');
+      console.error('Error transcribing audio:', error);
+      throw error;
     }
   }
 
-  async isConfigured(): Promise<boolean> {
+  // Chat history methods
+  async loadChats(): Promise<AgentChat[]> {
     try {
-      const isConnected = await this.testConnection();
-      this.isEnabled = isConnected;
-      return isConnected;
+      const response = await api.get('/api/AgentChats');
+      return response.data;
     } catch (error) {
-      console.error('[AgentService] Configuration error:', error);
-      this.isEnabled = false;
-      return false;
+      console.error('Error loading chats:', error);
+      throw error;
     }
   }
 
-  getIsEnabled(): boolean {
-    return this.isEnabled;
+  async createChat(modelId: string, title?: string): Promise<AgentChat> {
+    try {
+      const response = await api.post('/api/AgentChats', {
+        modelId,
+        title
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error creating chat:', error);
+      throw error;
+    }
   }
 
-  getModels(): AIModel[] {
-    return AI_MODELS.filter(model => 
-      model.category === 'agent' && 
-      // Ensure we're getting the agent versions of models
-      model.endpoint === 'agent'
-    );
+  async addMessage(chatId: string, message: Omit<AgentMessage, 'id' | 'timestamp'>): Promise<AgentMessage> {
+    try {
+      const response = await api.post(`/api/AgentChats/${chatId}/messages`, message);
+      return response.data;
+    } catch (error) {
+      console.error('Error adding message:', error);
+      throw error;
+    }
   }
 
-  // Helper method to create common tools
+  async deleteChat(chatId: string): Promise<void> {
+    try {
+      await api.delete(`/api/AgentChats/${chatId}`);
+    } catch (error) {
+      console.error('Error deleting chat:', error);
+      throw error;
+    }
+  }
+
+  // Tool creation methods
   createTool(
     name: string,
     type: string,
@@ -128,7 +170,6 @@ export class AgentService {
     };
   }
 
-  // Predefined tools
   readonly COMMON_TOOLS = {
     webSearch: () => this.createTool(
       'web_search',
@@ -136,14 +177,12 @@ export class AgentService {
       'Search the web for information',
       { max_results: 5 }
     ),
-    
     databaseQuery: (query: string) => this.createTool(
       'database_query',
       'database_query',
       'Query the database for information',
       { query }
     ),
-    
     fileOperation: (path: string, operation: 'read' | 'write') => this.createTool(
       'file_operation',
       'file_operation',
@@ -152,4 +191,6 @@ export class AgentService {
       ['file_access']
     )
   };
-} 
+}
+
+export const agentService = new AgentService(); 

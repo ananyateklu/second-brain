@@ -90,6 +90,30 @@ namespace SecondBrain.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "AgentChats",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    ModelId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Title = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    LastUpdated = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AgentChats", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_AgentChats_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Ideas",
                 columns: table => new
                 {
@@ -254,6 +278,30 @@ namespace SecondBrain.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "AgentMessages",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    ChatId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Role = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Content = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Timestamp = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Reactions = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Metadata = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AgentMessages", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_AgentMessages_AgentChats_ChatId",
+                        column: x => x.ChatId,
+                        principalTable: "AgentChats",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "IdeaLinks",
                 columns: table => new
                 {
@@ -406,6 +454,16 @@ namespace SecondBrain.Data.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_AgentChats_UserId",
+                table: "AgentChats",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AgentMessages_ChatId",
+                table: "AgentMessages",
+                column: "ChatId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Ideas_UserId",
                 table: "Ideas",
                 column: "UserId");
@@ -509,6 +567,9 @@ namespace SecondBrain.Data.Migrations
                 name: "Activities");
 
             migrationBuilder.DropTable(
+                name: "AgentMessages");
+
+            migrationBuilder.DropTable(
                 name: "IdeaLinks");
 
             migrationBuilder.DropTable(
@@ -531,6 +592,9 @@ namespace SecondBrain.Data.Migrations
 
             migrationBuilder.DropTable(
                 name: "UserAchievements");
+
+            migrationBuilder.DropTable(
+                name: "AgentChats");
 
             migrationBuilder.DropTable(
                 name: "Ideas");

@@ -26,6 +26,8 @@ namespace SecondBrain.Data
         public DbSet<UserAchievement> UserAchievements { get; set; } = null!;
         public DbSet<NexusStorage> NexusStorage { get; set; } = null!;
         public DbSet<ReminderLink> ReminderLinks { get; set; } = null!;
+        public DbSet<AgentChat> AgentChats { get; set; } = null!;
+        public DbSet<AgentMessage> AgentMessages { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -296,6 +298,34 @@ namespace SecondBrain.Data
                     .WithMany(u => u.Reminders)
                     .HasForeignKey(e => e.UserId)
                     .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // Configure AgentChat entity
+            modelBuilder.Entity<AgentChat>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.HasOne(e => e.User)
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasMany(e => e.Messages)
+                    .WithOne(e => e.Chat)
+                    .HasForeignKey(e => e.ChatId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Configure AgentMessage entity
+            modelBuilder.Entity<AgentMessage>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.Role)
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.Status)
+                    .HasMaxLength(50);
             });
         }
     }

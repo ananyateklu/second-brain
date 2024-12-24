@@ -100,6 +100,81 @@ namespace SecondBrain.Data.Migrations
                     b.ToTable("Activities");
                 });
 
+            modelBuilder.Entity("SecondBrain.Data.Entities.AgentChat", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("LastUpdated")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ModelId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("AgentChats");
+                });
+
+            modelBuilder.Entity("SecondBrain.Data.Entities.AgentMessage", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ChatId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Metadata")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Reactions")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChatId");
+
+                    b.ToTable("AgentMessages");
+                });
+
             modelBuilder.Entity("SecondBrain.Data.Entities.Idea", b =>
                 {
                     b.Property<string>("Id")
@@ -612,6 +687,28 @@ namespace SecondBrain.Data.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("SecondBrain.Data.Entities.AgentChat", b =>
+                {
+                    b.HasOne("SecondBrain.Data.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SecondBrain.Data.Entities.AgentMessage", b =>
+                {
+                    b.HasOne("SecondBrain.Data.Entities.AgentChat", "Chat")
+                        .WithMany("Messages")
+                        .HasForeignKey("ChatId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Chat");
+                });
+
             modelBuilder.Entity("SecondBrain.Data.Entities.Idea", b =>
                 {
                     b.HasOne("SecondBrain.Data.Entities.User", "User")
@@ -796,6 +893,11 @@ namespace SecondBrain.Data.Migrations
             modelBuilder.Entity("SecondBrain.Data.Entities.Achievement", b =>
                 {
                     b.Navigation("UserAchievements");
+                });
+
+            modelBuilder.Entity("SecondBrain.Data.Entities.AgentChat", b =>
+                {
+                    b.Navigation("Messages");
                 });
 
             modelBuilder.Entity("SecondBrain.Data.Entities.Idea", b =>

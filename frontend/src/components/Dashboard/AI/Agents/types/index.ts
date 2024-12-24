@@ -30,6 +30,17 @@ export interface SendMessageParams {
     setCurrentMessage: (message: string) => void;
     setIsSending: (isSending: boolean) => void;
     setConversations: React.Dispatch<React.SetStateAction<AgentConversation[]>>;
-    sendMessage: (message: string, modelId: string) => Promise<{ content: string }>;
+    sendMessage: (message: string, modelId: string) => Promise<{ content: string; metadata?: any }>;
     isSending: boolean;
+    conversations: AgentConversation[];
+}
+
+export interface AgentMessage {
+    id: string;
+    role: 'user' | 'assistant';
+    content: string;
+    timestamp: Date;
+    status: 'sending' | 'sent' | 'error';
+    reactions?: string[];
+    metadata?: Record<string, unknown>;
 } 

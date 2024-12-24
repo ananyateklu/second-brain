@@ -33,8 +33,12 @@ export function AIAgentsPage() {
         navigate
     } = useAgentState(availableModels);
 
-    const handleAgentSelectWrapper = (model: AIModel) => {
-        handleAgentSelect(model, conversations, setConversations, setSelectedAgent, navigate);
+    const handleAgentSelectWrapper = async (model: AIModel) => {
+        try {
+            await handleAgentSelect(model, conversations, setConversations, setSelectedAgent, navigate);
+        } catch (error) {
+            console.error('Error selecting agent:', error);
+        }
     };
 
     const handleNewConversationWrapper = () => {
@@ -42,11 +46,13 @@ export function AIAgentsPage() {
     };
 
     const getCurrentConversationWrapper = () => {
-        return getCurrentConversation(selectedAgent, conversations);
+        return selectedAgent
+            ? getCurrentConversation(selectedAgent.id, conversations)
+            : undefined;
     };
 
-    const handleSendMessageWrapper = async (e: React.FormEvent) => {
-        await handleSendMessage({
+    const handleSendMessageWrapper = (e: React.FormEvent) => {
+        handleSendMessage({
             e,
             selectedAgent,
             currentMessage,
@@ -54,7 +60,8 @@ export function AIAgentsPage() {
             setIsSending,
             setConversations,
             sendMessage,
-            isSending
+            isSending,
+            conversations
         });
     };
 

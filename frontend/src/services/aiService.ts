@@ -3,7 +3,7 @@ import { AnthropicService } from './ai/anthropic';
 import { GeminiService } from './ai/gemini';
 import { LlamaService } from './ai/llama';
 import { GrokService } from './ai/grok';
-import { AgentService } from './ai/agent';
+import { AgentService, agentService } from './ai/agent';
 import { AIModel, AIResponse, GrokFunction } from '../types/ai';
 
 interface ModelOptions {

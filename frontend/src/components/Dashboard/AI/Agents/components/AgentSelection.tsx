@@ -1,28 +1,9 @@
 import React from 'react';
-import { Bot, CheckCircle, AlertCircle, ChevronDown, X, Search, Sparkles, Brain, Zap, Atom, Glasses } from 'lucide-react';
+import { Bot, CheckCircle, AlertCircle, ChevronDown, X, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AIModel } from '../../../../../types/ai';
 import { useEffect, useRef, KeyboardEvent } from 'react';
-
-// Bot icon mapping based on provider personality
-const getBotIcon = (provider: string) => {
-    // Convert provider to lowercase for case-insensitive matching
-    const providerLower = provider.toLowerCase();
-
-    if (providerLower.includes('gpt') || providerLower.includes('openai')) {
-        return Sparkles; // OpenAI: Sparkly and magical
-    } else if (providerLower.includes('claude') || providerLower.includes('anthropic')) {
-        return Glasses; // Claude: Intellectual and thoughtful
-    } else if (providerLower.includes('gemini') || providerLower.includes('google')) {
-        return Brain; // Google: Analytical and knowledge-focused
-    } else if (providerLower.includes('llama') || providerLower.includes('meta')) {
-        return Atom; // Meta/Llama: Scientific and experimental
-    } else if (providerLower.includes('grok') || providerLower.includes('x.ai')) {
-        return Zap; // Grok: Quick-witted and playful
-    }
-
-    return Bot; // Default fallback
-};
+import { getBotIcon } from '../utils/iconUtils';
 
 interface AgentSelectionProps {
     selectedProvider: string | null;
@@ -114,7 +95,7 @@ export const AgentSelection = ({
                             placeholder="Search agents..."
                             className="w-full px-2.5 py-1.5 pl-8 pr-7 text-xs rounded-lg bg-[var(--color-surface)] text-[var(--color-text)] border border-[var(--color-border)] dark:border-[#1e293b] focus:outline-none hover:bg-[var(--color-surfaceHover)] transition-all duration-200"
                         />
-                        <AnimatePresence>
+                        <AnimatePresence mode="sync">
                             {searchQuery && (
                                 <motion.button
                                     initial={{ opacity: 0, scale: 0.8 }}
@@ -134,7 +115,7 @@ export const AgentSelection = ({
                 <div className="relative flex-1 overflow-hidden">
                     <div className="absolute inset-0 overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-[var(--color-border)] hover:scrollbar-thumb-[var(--color-textSecondary)] scrollbar-track-transparent">
                         <div className="flex flex-col gap-1" ref={listRef}>
-                            <AnimatePresence initial={false} mode="wait">
+                            <AnimatePresence mode="sync">
                                 {filteredAgents.map((model) => (
                                     <motion.button
                                         key={model.id}
@@ -150,18 +131,18 @@ export const AgentSelection = ({
                                         disabled={!model.isConfigured}
                                         tabIndex={0}
                                         className={`
-                                                w-full px-2 py-1.5 rounded-lg
-                                                ${selectedAgent?.id === model.id
+                                            w-full px-2 py-1.5 rounded-lg
+                                            ${selectedAgent?.id === model.id
                                                 ? `bg-[${model.color}]/5 border border-[${model.color}] text-[${model.color}]`
                                                 : 'bg-[var(--color-surface)] text-[var(--color-text)] hover:bg-[var(--color-surfaceHover)] border border-[var(--color-border)] dark:border-[#1e293b] hover:border-[var(--color-textSecondary)] dark:hover:border-[#334155]'
                                             }
-                                                ${!model.isConfigured ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-                                                flex items-center gap-2
-                                                group focus:outline-none
-                                                transition-all duration-200
-                                                shadow-[0_2px_8px_rgba(0,0,0,0.08)]
-                                                dark:shadow-[0_2px_8px_rgba(0,0,0,0.16)]
-                                            `}
+                                            ${!model.isConfigured ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                                            flex items-center gap-2
+                                            group focus:outline-none
+                                            transition-all duration-200
+                                            shadow-[0_2px_8px_rgba(0,0,0,0.08)]
+                                            dark:shadow-[0_2px_8px_rgba(0,0,0,0.16)]
+                                        `}
                                         style={selectedAgent?.id === model.id ? {
                                             backgroundColor: `${model.color}10`,
                                             borderColor: `${model.color}40`,
@@ -169,8 +150,8 @@ export const AgentSelection = ({
                                         } : undefined}
                                     >
                                         <div className={`
-                                                flex items-center justify-center w-5 h-5 rounded-md shrink-0 transition-colors duration-200
-                                            `}
+                                            flex items-center justify-center w-5 h-5 rounded-md shrink-0 transition-colors duration-200
+                                        `}
                                             style={{
                                                 backgroundColor: selectedAgent?.id === model.id
                                                     ? `${model.color}15`
