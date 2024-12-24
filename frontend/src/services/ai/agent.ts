@@ -70,13 +70,16 @@ export class AgentService {
   async sendMessage(
     message: string,
     modelId: string,
+    chatId?: string,
     parameters?: AgentRequestParameters
   ): Promise<AIResponse> {
     try {
+      console.log(`Sending message with chatId: ${chatId}`);
       const baseModelId = modelId.replace('-agent', '');
       const response = await api.post('/api/AIAgents/execute', {
         prompt: message,
         modelId: baseModelId,
+        chatId: chatId,
         maxTokens: parameters?.max_tokens ?? 1000,
         temperature: parameters?.temperature ?? 0.7,
         tools: parameters?.tools ?? []

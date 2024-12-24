@@ -15,6 +15,7 @@ namespace SecondBrain.Api.Models.Agent
     {
         public required string Prompt { get; set; }
         public required string ModelId { get; set; }
+        public string? ChatId { get; set; }
         public int? MaxTokens { get; set; } = 1000;
         public float? Temperature { get; set; } = 0.7f;
         public List<Tool>? Tools { get; set; }
@@ -26,6 +27,7 @@ namespace SecondBrain.Api.Models.Agent
             {
                 { "prompt", Prompt },
                 { "model_id", ModelId },
+                { "chat_id", ChatId ?? string.Empty },
                 { "max_tokens", MaxTokens ?? 1000 },
                 { "temperature", Temperature ?? 0.7f },
                 { "tools", Tools?.Select(t => new Dictionary<string, object>
@@ -39,4 +41,4 @@ namespace SecondBrain.Api.Models.Agent
             };
         }
     }
-} 
+}

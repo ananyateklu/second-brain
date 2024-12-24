@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using SecondBrain.Api.Models.Agent;
 using Microsoft.AspNetCore.Cors;
 using System.Text;
+using SecondBrain.Api.Services;
 
 namespace SecondBrain.Api.Controllers
 {
@@ -19,11 +20,13 @@ namespace SecondBrain.Api.Controllers
         private readonly ILogger<AIAgentsController> _logger;
         private readonly string _aiServiceUrl;
         private readonly JsonSerializerOptions _jsonOptions;
+        private readonly IChatContextService _chatContextService;
 
         public AIAgentsController(
             HttpClient httpClient,
             ILogger<AIAgentsController> logger,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IChatContextService chatContextService)
         {
             _httpClient = httpClient;
             _logger = logger;
@@ -36,6 +39,8 @@ namespace SecondBrain.Api.Controllers
                 WriteIndented = true,
                 DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
             };
+
+            _chatContextService = chatContextService;
         }
 
         [HttpGet("health")]
@@ -76,10 +81,31 @@ namespace SecondBrain.Api.Controllers
 
             try
             {
-                _logger.LogInformation("Executing agent with model {ModelId}", request.ModelId);
+                _logger.LogInformation($"Executing agent with model {request.ModelId} and chatId {request.ChatId}");
 
+                // Get chat context if chatId is provided
+                var contextData = new Dictionary<string, object>();
+                if (!string.IsNullOrEmpty(request.ChatId))
+                {
+                    _logger.LogInformation($"Getting context for chat {request.ChatId}");
+                    contextData = await _chatContextService.FormatContextForProviderAsync(
+                        request.ChatId,
+                        GetProviderFromModelId(request.ModelId)
+                    );
+                    _logger.LogInformation($"Got context with {contextData.Count} items");
+                }
+                else
+                {
+                    _logger.LogWarning("No chatId provided in request");
+                }
+
+                // Add context to request
                 var requestDict = request.ToSnakeCase();
+                requestDict["context"] = contextData;
+
                 var jsonContent = JsonSerializer.Serialize(requestDict, _jsonOptions);
+                _logger.LogInformation($"Sending request to AI service: {jsonContent}");
+
                 var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 
                 var response = await _httpClient.PostAsync($"{_aiServiceUrl}/agent/execute", content);
@@ -207,6 +233,15 @@ namespace SecondBrain.Api.Controllers
                     failed = errors.Count
                 }
             });
+        }
+
+        private string GetProviderFromModelId(string modelId)
+        {
+            if (modelId.StartsWith("gpt-")) return "openai";
+            if (modelId.StartsWith("claude-")) return "anthropic";
+            if (modelId.StartsWith("gemini-")) return "gemini";
+            if (modelId.StartsWith("grok-")) return "grok";
+            return "llama"; // Default to llama for other cases
         }
     }
 }

@@ -41,6 +41,8 @@ async def execute_agent(request: AgentRequest):
     request_id = f"req_{int(start_time)}"
     
     try:
+        # Get context from request
+        context = request.context or {}
         logger.info(f"[{request_id}] Starting {request.agent_type} agent execution with model: {request.model_id}")
         
         # Create agent with specified type
@@ -50,17 +52,19 @@ async def execute_agent(request: AgentRequest):
             agent_type=request.agent_type
         )
         
-        # Execute with tools if provided
+        # Execute with tools and context if provided
         if request.tools:
             logger.info(f"[{request_id}] Executing with {len(request.tools)} tools")
             result = await agent.execute(
                 prompt=request.prompt,
                 tools=request.tools,
+                context=context,  # Pass context here
                 max_tokens=request.max_tokens
             )
         else:
             result = await agent.execute(
                 prompt=request.prompt,
+                context=context,  # Pass context here
                 max_tokens=request.max_tokens
             )
         

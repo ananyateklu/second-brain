@@ -170,6 +170,9 @@ builder.Services.AddScoped<RagService>();
 // Add HttpClient
 builder.Services.AddHttpClient();
 
+// Add ChatContextService to the service collection
+builder.Services.AddScoped<IChatContextService, ChatContextService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

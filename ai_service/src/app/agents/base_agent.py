@@ -1079,3 +1079,60 @@ class BaseAgent(ABC):
                 "error": str(e),
                 "results": []
             })
+
+    def _prepare_context(self, context_data: Dict[str, Any]) -> str:
+        """Prepare context string from context data"""
+        if not context_data:
+            return ""
+            
+        if "conversation" in context_data:
+            # For text completion style models
+            return context_data["conversation"]
+            
+        if "messages" in context_data:
+            # For chat style models
+            messages = context_data["messages"]
+            return "\n".join([
+                f"{msg['role']}: {msg['content']}"
+                for msg in messages
+            ])
+            
+        return ""
+
+    async def _execute_with_context(self, prompt: str, **kwargs) -> Dict[str, Any]:
+        """Execute with context handling"""
+        try:
+            context = kwargs.get("context", {})
+            logger.info(f"Received context data: {context}")
+
+            if context and "messages" in context:
+                messages = context["messages"]
+                logger.info(f"Found context with {len(messages)} messages")
+                for msg in messages:
+                    logger.info(f"Context message: {msg['role']} - {msg['content'][:100]}...")
+            else:
+                logger.info("No previous context available")
+                messages = []
+
+            # Ensure context is passed to model execution
+            kwargs["context"] = {
+                "messages": messages,
+                "metadata": context.get("metadata", {})
+            }
+
+            # Add prompt to kwargs for model execution
+            kwargs["prompt"] = prompt
+            
+            # Execute model with all data
+            result = await self._execute_model(kwargs)
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error in context execution: {str(e)}")
+            raise
+
+    @abstractmethod
+    async def _execute_model(self, kwargs: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute the specific model implementation"""
+        pass

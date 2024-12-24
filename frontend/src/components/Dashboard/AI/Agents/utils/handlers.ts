@@ -106,7 +106,6 @@ export const handleSendMessage = async ({
     setCurrentMessage,
     setIsSending,
     setConversations,
-    sendMessage,
     isSending,
     conversations
 }: SendMessageParams) => {
@@ -129,26 +128,28 @@ export const handleSendMessage = async ({
             status: 'sent'
         });
 
-        // Convert string timestamp to Date
-        const userMessageWithDate = {
-            ...userMessage,
-            timestamp: new Date(userMessage.timestamp)
-        };
-
         // Update local state with user message
         setConversations(prev => prev.map(conv => {
             if (conv.id === activeConversation.id) {
                 return {
                     ...conv,
-                    messages: [...conv.messages, userMessageWithDate],
+                    messages: [...conv.messages, {
+                        ...userMessage,
+                        timestamp: new Date(userMessage.timestamp)
+                    }],
                     lastUpdated: new Date()
                 };
             }
             return conv;
         }));
 
-        // Send message to AI
-        const response = await sendMessage(currentMessage, selectedAgent.id);
+        // Send message to AI with chat context
+        console.log(`Sending message with chatId: ${activeConversation.id}`); // Debug log
+        const response = await agentService.sendMessage(
+            currentMessage,
+            selectedAgent.id,
+            activeConversation.id // Make sure to pass the chatId
+        );
 
         // Add AI response to database
         const assistantMessage = await agentService.addMessage(activeConversation.id, {
@@ -158,18 +159,15 @@ export const handleSendMessage = async ({
             metadata: response.metadata
         });
 
-        // Convert string timestamp to Date
-        const assistantMessageWithDate = {
-            ...assistantMessage,
-            timestamp: new Date(assistantMessage.timestamp)
-        };
-
         // Update local state with AI response
         setConversations(prev => prev.map(conv => {
             if (conv.id === activeConversation.id) {
                 return {
                     ...conv,
-                    messages: [...conv.messages, assistantMessageWithDate],
+                    messages: [...conv.messages, {
+                        ...assistantMessage,
+                        timestamp: new Date(assistantMessage.timestamp)
+                    }],
                     lastUpdated: new Date()
                 };
             }
@@ -179,7 +177,6 @@ export const handleSendMessage = async ({
         setCurrentMessage('');
     } catch (error) {
         console.error('Error sending message:', error);
-        // Handle error state
     } finally {
         setIsSending(false);
     }

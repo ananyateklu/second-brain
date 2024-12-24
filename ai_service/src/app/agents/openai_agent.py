@@ -58,3 +58,24 @@ class OpenAIAgent(BaseAgent):
     async def validate_response(self, response: Any) -> bool:
         # Add validation logic here
         return True 
+
+    async def _execute_model(self, kwargs: Dict[str, Any]) -> Dict[str, Any]:
+        messages = kwargs.get("messages", [])
+        if not messages:
+            # Convert single prompt to messages format
+            messages = [{"role": "user", "content": kwargs["prompt"]}]
+        
+        response = await self.client.chat.completions.create(
+            model=self.model_id,
+            messages=messages,
+            temperature=self.temperature
+        )
+        
+        return {
+            "result": response.choices[0].message.content,
+            "metadata": {
+                "model": self.model_id,
+                "provider": "openai",
+                "token_usage": response.usage.dict() if response.usage else None
+            }
+        } 

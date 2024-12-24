@@ -392,6 +392,39 @@ class PromptAnalyzer:
         
         return list(dict.fromkeys(tools))  # Remove duplicates while preserving order
 
+class QueryReformulator:
+    """Helper class to reformulate failed search queries"""
+    
+    @staticmethod
+    def reformulate_query(original_query: str, search_type: str) -> List[str]:
+        """Generate alternative query formulations"""
+        if search_type == "news":
+            return [
+                f"latest {original_query}",
+                f"recent {original_query}",
+                f"current {original_query}",
+                f"{original_query} news",
+                f"{original_query} latest developments"
+            ]
+        elif search_type == "academic":
+            return [
+                f"research {original_query}",
+                f"study {original_query}",
+                f"paper {original_query}",
+                f"{original_query} research",
+                f"{original_query} analysis"
+            ]
+        elif search_type == "patent":
+            return [
+                f"patent {original_query}",
+                f"invention {original_query}",
+                f"technology {original_query}",
+                f"{original_query} patent",
+                f"{original_query} technology"
+            ]
+        else:
+            return [original_query]
+
 class ResearchAgent(BaseAgent):
     """Agent for conducting research and analysis using various AI models"""
     
@@ -637,7 +670,7 @@ class ResearchAgent(BaseAgent):
         tool_usage_summary = []
         successful_tools = []
         failed_tools = []
-
+        
         if not tools:
             logger.warning("No tools available for execution")
             return tool_results, tool_usage_summary, successful_tools, failed_tools
@@ -648,15 +681,69 @@ class ResearchAgent(BaseAgent):
                 preview = str({k: v for k, v in tool.items() if k != "description"})
                 logger.info(f"Using tool: {preview}")
                 
-                result = await self._execute_tool_with_retry(tool, tool["parameters"]["query"])
-                await self._process_tool_result(
-                    result, tool, 
-                    tool_results, tool_usage_summary,
-                    successful_tools, failed_tools
-                )
+                # Execute tool with original query
+                result = await self._execute_tool(tool)
+                
+                # Check if we got results
+                if isinstance(result, str):
+                    try:
+                        result_data = json.loads(result)
+                    except json.JSONDecodeError:
+                        result_data = {"success": False, "error": "Invalid JSON response"}
+                else:
+                    result_data = result
+                    
+                results = self._extract_results(result_data)
+                
+                if not results:
+                    logger.info(f"No results with original query, trying reformulations for {tool['name']}")
+                    # Try reformulated queries
+                    reformulated_queries = QueryReformulator.reformulate_query(
+                        tool["parameters"]["query"],
+                        tool["name"].replace("_search", "")
+                    )
+                    
+                    # Try each reformulation
+                    for query in reformulated_queries:
+                        tool["parameters"]["query"] = query
+                        result = await self._execute_tool(tool)
+                        
+                        if isinstance(result, str):
+                            try:
+                                result_data = json.loads(result)
+                            except json.JSONDecodeError:
+                                continue
+                        else:
+                            result_data = result
+                            
+                        results = self._extract_results(result_data)
+                        if results:
+                            break
+                
+                if results:
+                    successful_tools.append(tool["name"])
+                    tool_usage_summary.append({
+                        "tool": tool["name"],
+                        "status": "success",
+                        "results_count": len(results)
+                    })
+                    tool_results.append({
+                        "tool": tool["name"],
+                        "results": results,
+                        "metadata": result_data.get("metadata", {})
+                    })
+                else:
+                    raise Exception("No results found")
+                
             except Exception as e:
-                self._handle_tool_error(e, tool, tool_usage_summary, failed_tools)
-
+                logger.warning(f"Error executing tool {tool['name']}: {str(e)}")
+                failed_tools.append(tool["name"])
+                tool_usage_summary.append({
+                    "tool": tool["name"],
+                    "status": "failed",
+                    "error": str(e)
+                })
+        
         return tool_results, tool_usage_summary, successful_tools, failed_tools
 
     async def _process_tool_result(
@@ -783,34 +870,42 @@ class ResearchAgent(BaseAgent):
             "error": str(error)
         })
 
-    async def execute(self, prompt: str, tools: Optional[List[Dict[str, Any]]] = None, **kwargs) -> Dict[str, Any]:
-        """Execute research task with tool support"""
-        start_time = time.time()
-        logger.info(f"Starting research execution with prompt: {prompt[:100]}...")
-        
+    async def execute(self, prompt: str, **kwargs) -> Dict[str, Any]:
+        """Execute research with tools and context"""
         try:
+            start_time = time.time()
+            
+            # Get context from kwargs
+            context = kwargs.pop('context', {})  # Remove context from kwargs to avoid duplicate
+            logger.info(f"Starting research execution with prompt: {prompt[:100]}...")
+            
+            # Analyze prompt and initialize tools
             analysis = PromptAnalyzer.analyze(prompt)
             logger.info(f"Prompt analysis: {analysis}")
             
-            tools = await self._initialize_tools(analysis, tools)
+            # Initialize and execute tools
+            tools = await self._initialize_tools(analysis, kwargs.get("tools"))
             tool_results, tool_usage_summary, successful_tools, failed_tools = await self._execute_tools(tools)
             
+            # Create enhanced prompt with tool results
             research_prompt = self._create_enhanced_prompt(prompt, analysis)
-            result = await self.agent.execute(research_prompt, **kwargs)
             
-            # Format and return results
+            # Execute with context
+            result = await self.agent.execute(
+                research_prompt,
+                context=context,  # Pass context here
+                **kwargs  # kwargs no longer contains context
+            )
+            
+            # Format and return final results
             return await self._format_final_result(
                 result, tool_results, tool_usage_summary,
                 successful_tools, failed_tools, start_time
             )
             
         except Exception as e:
-            logger.error(f"Error during execution: {str(e)}", exc_info=True)
-            return {
-                "result": f"An error occurred during research: {str(e)}",
-                "error": str(e),
-                "execution_time": time.time() - start_time
-            }
+            logger.error(f"Error during execution: {str(e)}")
+            raise
 
     async def _format_final_result(
         self, result: Any, tool_results: List[Any],
@@ -1101,303 +1196,109 @@ Note: If research tools return results, focus on analyzing and synthesizing thos
         
         return enhanced_prompt
 
-class QueryReformulator:
-    """Reformulates search queries to improve search results"""
-    
-    # Common templates for query reformulation
-    TEMPLATES = [
-        "{topic}",
-        "latest {topic}",
-        "recent {topic} news",
-        "new research on {topic}",
-        "{topic} latest developments",
-        "{topic} recent updates",
-        "{topic} trends",
-        "current {topic} research"
-    ]
-    
-    # Result status constants
-    NO_RESULTS_FOUND = "No results found"
-    EMPTY_RESULTS = ["[]", NO_RESULTS_FOUND, "{}", "null", "None"]
-    
-    # Word replacements for common terms
-    WORD_REPLACEMENTS = {
-        "best": ["top", "recommended", "effective", "optimal"],
-        "food": ["nutrition", "diet", "foods", "meals", "nutrients"],
-        "gaining": ["building", "developing", "increasing", "growing"],
-        "muscle": ["muscle mass", "muscular", "muscles", "strength"],
-        "research": ["study", "investigate", "analyze", "examine"],
-        "find": ["discover", "identify", "locate", "determine"]
-    }
-    
-    @classmethod
-    def generate_variants(cls, query: str) -> List[str]:
-        """Generate different variants of the search query"""
-        variants = set()  # Use set to avoid duplicates
-        
-        # Extract core topic
-        core_topic = cls._extract_core_topic(query)
-        logger.info(f"Extracted core topic: {core_topic}")
-        
-        # Add core topic variants
-        variants.add(core_topic)
-        
-        # Apply word replacements to core topic
-        words = core_topic.split()
-        for i, word in enumerate(words):
-            if word.lower() in cls.WORD_REPLACEMENTS:
-                for replacement in cls.WORD_REPLACEMENTS[word.lower()]:
-                    new_words = words.copy()
-                    new_words[i] = replacement
-                    variants.add(" ".join(new_words))
-        
-        # Apply templates to core topic
-        for template in cls.TEMPLATES:
-            variant = template.format(topic=core_topic)
-            variants.add(variant)
-        
-        # Remove empty or too short variants
-        variants = {v for v in variants if len(v.split()) >= 2}
-        
-        # Convert to list and sort by length (shorter queries first)
-        return sorted(list(variants), key=len)
-    
-    @staticmethod
-    def _clean_query(query: str) -> str:
-        """Clean and normalize the query"""
-        # Remove punctuation and extra spaces
-        query = re.sub(r'[^\w\s]', ' ', query)
-        query = ' '.join(query.split())
-        return query
-    
-    @staticmethod
-    def _extract_core_topic(query: str) -> str:
-        """Extract the core topic from the query"""
-        # Remove common prefixes and question words
-        prefixes = [
-            "what is", "what are", "how to", "how do", "can you",
-            "tell me about", "i need", "please", "find", "help",
-            "help me", "search", "web", "search for", "looking for",
-            "find me", "tell me", "show me", "give me", "let's use"
-        ]
-        
-        # Clean the query
-        query = QueryReformulator._clean_query(query.lower())
-        
-        # Remove prefixes
-        for prefix in prefixes:
-            if query.startswith(prefix):
-                query = query[len(prefix):].strip()
-        
-        # Remove common words that don't add meaning
-        stop_words = {
-            "the", "a", "an", "in", "on", "at", "to", "for", "of", "with",
-            "by", "about", "like", "through", "over", "before", "between",
-            "after", "since", "without", "under", "within", "along", "following",
-            "me", "i", "we", "us", "you", "search", "web", "help", "find",
-            "too", "also", "so", "and", "or", "but"
-        }
-        
-        words = [w for w in query.split() if w.lower() not in stop_words]
-        
-        # Join remaining words
-        core_topic = " ".join(words)
-        
-        return core_topic.strip()
-
-    @classmethod
-    def reformulate_for_tool(cls, query: str, tool_name: str, max_variants: int = 3) -> List[str]:
-        """Generate tool-specific query variants"""
-        core_topic = cls._extract_core_topic(query)
-        logger.info(f"Reformulating '{query}' for {tool_name}. Core topic: '{core_topic}'")
-        
-        variants = []
-        
-        # Tool-specific variants
-        if tool_name == "news_search":
-            variants = [
-                core_topic,  # Try the core topic first
-                f"latest {core_topic}",
-                f"{core_topic} news",
-                f"recent developments in {core_topic}",
-                f"{core_topic} research updates"
-            ]
-            
-        elif tool_name == "academic_search":
-            variants = [
-                core_topic,  # Try the core topic first
-                f"{core_topic} research",
-                f"{core_topic} studies",
-                f"recent {core_topic} papers"
-            ]
-            
-        elif tool_name == "web_search":
-            variants = [
-                core_topic,  # Try the core topic first
-                f"{core_topic} guide",
-                f"{core_topic} tips"
-            ]
-        
-        # Log the variants being tried
-        logger.info(f"Generated variants for {tool_name}: {variants[:max_variants]}")
-        
-        return variants[:max_variants]
-
-    async def _execute_tool(self, tool: Dict[str, Any]) -> str:
-        """Execute a single tool and return the result"""
+    async def _execute_model(self, kwargs: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute the model with research-specific handling"""
         try:
-            tool_name = tool.get("name", "unknown")
-            logger.info(f"Starting execution of tool: {tool_name}")
-            
-            # Get the tool function
-            tool_func = getattr(self.base_agent, f"_execute_{tool_name}")
-            if not tool_func:
-                raise ValueError(f"Tool {tool_name} not found")
-            
-            # Execute the tool
-            result = await tool_func(tool.get("parameters", {}))
-            
-            # Log the raw result for debugging
-            logger.info(f"Raw result from {tool_name}: {result}")
-            
-            # Parse and validate the result
+            messages = kwargs.get("messages", [])
+            prompt = kwargs.get("prompt", "")
+
+            # Add research-specific system message
+            if messages:
+                system_msg = {
+                    "role": "system",
+                    "content": """You are a research agent that:
+                    1. Analyzes information from multiple sources
+                    2. Synthesizes findings into clear insights
+                    3. Cites sources when available
+                    4. Maintains context from previous messages
+                    5. Uses available search results and context"""
+                }
+                messages.insert(0, system_msg)
+                kwargs["messages"] = messages
+            else:
+                # Prepend system message to prompt
+                system_prompt = """You are a research agent. Analyze the following topic using available context and search results."""
+                kwargs["prompt"] = f"{system_prompt}\n\n{prompt}"
+
+            # Execute using the appropriate provider's agent
+            provider = self._get_provider_from_model_id(self.model_id)
+            if provider == "openai":
+                from .openai_agent import OpenAIAgent
+                agent = OpenAIAgent(self.model_id, self.temperature)
+            elif provider == "anthropic":
+                from .anthropic_agent import AnthropicAgent
+                agent = AnthropicAgent(self.model_id, self.temperature)
+            elif provider == "gemini":
+                from .gemini_agent import GeminiAgent
+                agent = GeminiAgent(self.model_id, self.temperature)
+            elif provider == "grok":
+                from .grok_agent import GrokAgent
+                agent = GrokAgent(self.model_id, self.temperature)
+            else:
+                from .ollama_agent import OllamaAgent
+                agent = OllamaAgent(self.model_id, self.temperature)
+
+            result = await agent._execute_model(kwargs)
+
+            # Add research-specific metadata
+            if isinstance(result, dict) and "metadata" in result:
+                result["metadata"].update({
+                    "agent_type": "research",
+                    "tools_used": kwargs.get("tools", []),
+                    "context_used": bool(messages or kwargs.get("context"))
+                })
+
+            return result
+
+        except Exception as e:
+            logger.error(f"Error in research agent execution: {str(e)}")
+            raise
+
+    def _get_provider_from_model_id(self, model_id: str) -> str:
+        """Determine the provider from the model ID"""
+        if model_id.startswith("gpt-"):
+            return "openai"
+        elif model_id.startswith("claude-"):
+            return "anthropic"
+        elif model_id.startswith("gemini-"):
+            return "gemini"
+        elif model_id.startswith("grok-"):
+            return "grok"
+        return "llama"  # Default to llama for other cases
+
+    def _extract_results(self, result_data: Dict[str, Any]) -> List[Any]:
+        """Extract results from tool response data"""
+        if not result_data or not isinstance(result_data, dict):
+            return []
+        
+        # Check if there was an error
+        if result_data.get("error"):
+            return []
+        
+        # Extract results based on tool response structure
+        results = result_data.get("results", [])
+        
+        # Handle different result formats
+        if isinstance(results, list):
+            return results
+        elif isinstance(results, str):
+            return [results]
+        elif isinstance(results, dict):
+            # Some APIs return a dict with results
+            return [results]
+        
+        # Try to get result from raw response
+        if "result" in result_data:
+            raw_result = result_data["result"]
             try:
-                parsed_result = json.loads(result)
-                logger.info(f"Successfully parsed result from {tool_name}")
-                logger.debug(f"Parsed result structure: {json.dumps(parsed_result, indent=2)}")
-                
-                # For web search, we only care about having results
-                if tool_name == "web_search":
-                    results = parsed_result.get("results", [])
-                    if results:
-                        logger.info(f"Web search returned {len(results)} results")
-                        return result  # Return the original result as it's already properly formatted
-                    else:
-                        logger.warning("Web search returned no results")
-                        return json.dumps({
-                            "success": False,
-                            "error": cls.NO_RESULTS_FOUND,
-                            "results": [],
-                            "research_type": "web"
-                        })
-                
-                # For other tools, check success flag
-                elif parsed_result.get("success", False):
-                    results = parsed_result.get("results", [])
-                    logger.info(f"Tool {tool_name} returned {len(results)} results")
-                    return result
-                
-                # Return error response if no success/results
-                error_msg = parsed_result.get("error", cls.NO_RESULTS_FOUND)
-                logger.warning(f"Tool {tool_name} failed: {error_msg}")
-                return json.dumps({
-                    "success": False,
-                    "error": error_msg,
-                    "results": [],
-                    "research_type": tool_name
-                })
-                    
-            except json.JSONDecodeError as e:
-                logger.error(f"Failed to parse result from {tool_name}: {str(e)}")
-                return json.dumps({
-                    "success": False,
-                    "error": f"Invalid JSON response: {str(e)}",
-                    "results": [],
-                    "research_type": tool_name
-                })
-                
-        except Exception as e:
-            logger.error(f"Error executing tool {tool_name}: {str(e)}", exc_info=True)
-            return json.dumps({
-                "success": False,
-                "error": str(e),
-                "results": [],
-                "research_type": tool_name
-            })
-
-    async def execute_with_tools(self, tools: List[Dict[str, Any]]) -> str:
-        """Execute research using the provided tools"""
-        try:
-            logger.info("Starting tools execution...")
-            all_results = []
-            tool_outputs = []  # Store raw tool outputs
-            successful_tools = []
-            failed_tools = []
+                # Some tools return JSON string
+                if isinstance(raw_result, str):
+                    parsed = json.loads(raw_result)
+                    if isinstance(parsed, dict) and "results" in parsed:
+                        return parsed["results"]
+                    return [parsed]
+            except json.JSONDecodeError:
+                # If not JSON, return as single result
+                return [raw_result]
             
-            for tool in tools:
-                logger.info(f"Starting execution of tool: {tool['name']}")
-                try:
-                    result = await self._execute_tool(tool)
-                    logger.info(f"Got raw result from {tool['name']}")
-                    logger.debug(f"Raw result: {result}")
-                    
-                    # Parse result if it's a string
-                    if isinstance(result, str):
-                        result_data = json.loads(result)
-                    else:
-                        result_data = result
-                    
-                    logger.info(f"Successfully parsed result from {tool['name']}")
-                    logger.debug(f"Parsed data structure: {json.dumps(result_data, indent=2)}")
-                    
-                    # Check for results
-                    if result_data.get("results"):
-                        successful_tools.append(tool["name"])
-                        tool_outputs.append({
-                            "tool_name": tool["name"],
-                            "output": result_data
-                        })
-                        all_results.append({
-                            "research_type": result_data.get("research_type", tool["name"]),
-                            "results": result_data["results"],
-                            "sources": result_data.get("sources", []),
-                            "tools_used": [tool["name"]],
-                            "total_found": len(result_data["results"])
-                        })
-                        logger.info(f"Added {len(result_data['results'])} results from {tool['name']}")
-                    else:
-                        error_msg = result_data.get("error", self.NO_RESULTS_FOUND)
-                        failed_tools.append(tool["name"])
-                        tool_outputs.append({
-                            "tool_name": tool["name"],
-                            "status": "failed",
-                            "error": error_msg
-                        })
-                        logger.info(f"No results found for {tool['name']}")
-                        
-                except Exception as e:
-                    logger.error(f"Error executing tool {tool['name']}: {str(e)}", exc_info=True)
-                    failed_tools.append(tool["name"])
-                    tool_outputs.append({
-                        "tool_name": tool["name"],
-                        "status": "error",
-                        "error": str(e)
-                    })
-            
-            # Format the final response with all results
-            response = {
-                "success": len(all_results) > 0,  # Success if we have any results
-                "research_results": all_results,
-                "total_tools_used": len(tools),
-                "successful_tools": successful_tools,
-                "failed_tools": failed_tools,
-                "execution_time": time.time() - self.start_time,
-                "tool_outputs": tool_outputs  # Include raw tool outputs
-            }
-            
-            logger.info(f"Completed execution with {len(all_results)} successful results")
-            logger.debug(f"Final response structure: {json.dumps(response, indent=2)}")
-            return json.dumps(response)
-            
-        except Exception as e:
-            logger.error(f"Error in execute_with_tools: {str(e)}", exc_info=True)
-            return json.dumps({
-                "success": False,
-                "error": str(e),
-                "research_results": [],
-                "total_tools_used": 0,
-                "successful_tools": [],
-                "failed_tools": [],
-                "execution_time": time.time() - self.start_time,
-                "tool_outputs": []
-            })
+        return []
