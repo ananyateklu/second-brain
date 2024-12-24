@@ -1306,66 +1306,30 @@ Note: If research tools return results, focus on analyzing and synthesizing thos
         return enhanced_prompt
 
     async def _execute_model(self, kwargs: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute the specific model implementation"""
+        """Execute the model with given parameters"""
         try:
-            prompt = kwargs.get("prompt", "")
-            messages = kwargs.get("messages", [])
+            # Get the base agent instance
+            agent = self.agent
+            if not agent:
+                raise ValueError("Agent not initialized")
             
-            # Add system message to messages if not present
-            system_msg = {
-                "role": "system",
-                "content": """You are a research agent that:
-                    1. Analyzes information from multiple sources
-                    2. Synthesizes findings into clear insights
-                    3. Cites sources when available
-                    4. Maintains context from previous messages
-                    5. Uses available search results and context"""
-            }
-
-            # Handle different model providers
-            provider = self._get_provider_from_model_id(self.model_id)
-            
-            if provider == "gemini":
-                # For Gemini, prepend system message to prompt instead of using system role
-                enhanced_prompt = f"{system_msg['content']}\n\n{prompt}"
-                kwargs["prompt"] = enhanced_prompt
-                # Don't include system message in messages for Gemini
-                kwargs["messages"] = [msg for msg in messages if msg["role"] != "system"]
-            else:
-                # For other providers, use standard system message
-                if messages and messages[0]["role"] != "system":
-                    messages.insert(0, system_msg)
-                kwargs["messages"] = messages
-
-            # Execute using the appropriate provider's agent
-            if provider == "openai":
-                from .openai_agent import OpenAIAgent
-                agent = OpenAIAgent(self.model_id, self.temperature)
-            elif provider == "anthropic":
-                from .anthropic_agent import AnthropicAgent
-                agent = AnthropicAgent(self.model_id, self.temperature)
-            elif provider == "gemini":
-                from .gemini_agent import GeminiAgent
-                agent = GeminiAgent(self.model_id, self.temperature)
-            elif provider == "grok":
-                from .grok_agent import GrokAgent
-                agent = GrokAgent(self.model_id, self.temperature)
-            else:
-                from .ollama_agent import OllamaAgent
-                agent = OllamaAgent(self.model_id, self.temperature)
-
+            # Execute with context
             result = await agent._execute_model(kwargs)
-
-            # Add research-specific metadata
-            if isinstance(result, dict) and "metadata" in result:
+            
+            # Process and return result
+            if isinstance(result, dict) and "result" in result:
+                # Add research-specific metadata
                 result["metadata"].update({
-                    "agent_type": "research",
-                    "tools_used": kwargs.get("tools", []),
-                    "context_used": bool(messages or kwargs.get("context"))
+                    "research_agent": True,
+                    "model_id": self.model_id,
+                    "temperature": self.temperature,
+                    "execution_time": time.time() - kwargs.get("start_time", time.time())
                 })
-
-            return result
-
+                
+                return result
+                
+            raise ValueError("Invalid result format from base agent")
+            
         except Exception as e:
             logger.error(f"Error in research agent execution: {str(e)}")
             raise
@@ -1450,16 +1414,76 @@ Note: If research tools return results, focus on analyzing and synthesizing thos
             "messages": messages
         }
 
-    async def _execute_with_context(self, prompt: str, **kwargs) -> Dict[str, Any]:
+    async def _execute_with_context(
+        self,
+        prompt: str,
+        context: Optional[Dict[str, Any]] = None,
+        **kwargs
+    ) -> Dict[str, Any]:
         """Execute with context handling"""
         try:
-            context = kwargs.get("context", {})
+            # Log received context
             logger.info(f"Received context data: {context}")
             
-            execution_kwargs = self._prepare_execution_kwargs(prompt, context)
-            kwargs.update(execution_kwargs)
+            # Initialize agent if not already done
+            if not hasattr(self, 'agent'):
+                self.agent = BaseAgentFactory.create_base_agent(self.model_id, self.temperature)
             
-            return await self._execute_model(kwargs)
+            # Determine provider
+            provider = self._get_provider_from_model_id(self.model_id)
+            
+            # Format context based on provider
+            if provider == "grok":
+                # Grok uses conversation string format
+                conversation_context = None
+                if context and "conversation" in context:
+                    conversation = context["conversation"]
+                    logger.info(f"Using conversation history for Grok: {conversation}")
+                    conversation_context = {
+                        "conversation": conversation,
+                        "metadata": context.get("metadata", {})
+                    }
+                else:
+                    logger.info("No previous context available for Grok")
+                    
+                execution_kwargs = {
+                    "prompt": prompt,
+                    "context": conversation_context,
+                    "start_time": time.time(),
+                    **kwargs
+                }
+                
+            elif provider == "gemini":
+                # Gemini uses messages array format
+                if context:
+                    logger.info("Using message history for Gemini")
+                    execution_kwargs = {
+                        "prompt": prompt,
+                        "context": {
+                            "messages": context.get("messages", []),
+                            "metadata": context.get("metadata", {})
+                        },
+                        "start_time": time.time(),
+                        **kwargs
+                    }
+                else:
+                    logger.info("No previous context available for Gemini")
+                    execution_kwargs = {
+                        "prompt": prompt,
+                        "start_time": time.time(),
+                        **kwargs
+                    }
+            else:
+                # Default format for other providers
+                execution_kwargs = {
+                    "prompt": prompt,
+                    "context": context,
+                    "start_time": time.time(),
+                    **kwargs
+                }
+            
+            # Execute model with context
+            return await self._execute_model(execution_kwargs)
             
         except Exception as e:
             logger.error(f"Error in context execution: {str(e)}")

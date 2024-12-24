@@ -1,5 +1,5 @@
 from typing import Dict, Type
-from .base_agent import BaseAgent
+from .core.base_agent import BaseAgent
 from .research_agent import ResearchAgent
 from .specialized.academic_agent import AcademicResearchAgent
 from .specialized.technology_agent import TechnologyIntelligenceAgent

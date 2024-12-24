@@ -1,5 +1,5 @@
 from typing import Dict, Type
-from .base_agent import BaseAgent
+from .core.base_agent import BaseAgent
 from .openai_agent import OpenAIAgent
 from .anthropic_agent import AnthropicAgent
 from .ollama_agent import OllamaAgent

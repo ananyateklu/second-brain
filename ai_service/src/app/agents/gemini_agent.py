@@ -1,5 +1,5 @@
 from typing import Dict, Any, List
-from .base_agent import BaseAgent
+from .core.base_agent import BaseAgent
 import google.generativeai as genai
 from app.config.settings import settings
 import time
@@ -12,10 +12,22 @@ class GeminiAgent(BaseAgent):
     """Agent for conducting operations using Google's Gemini models"""
     
     def __init__(self, model_id: str, temperature: float = 0.7):
-        super().__init__(model_id, temperature)
+        """Initialize the Gemini agent"""
+        # Initialize base agent first
+        super().__init__(model_id)
+        
+        # Store temperature for Gemini-specific config
+        self._temperature = temperature
+        
+        # Initialize Gemini-specific components
         genai.configure(api_key=settings.GEMINI_API_KEY)
         self.model = genai.GenerativeModel(model_id)
         self.chat = None
+        
+    @property
+    def temperature(self) -> float:
+        """Get the temperature setting"""
+        return self._temperature
         
     async def execute(self, prompt: str, **kwargs) -> Dict[str, Any]:
         """Execute the Gemini model"""
@@ -38,6 +50,15 @@ class GeminiAgent(BaseAgent):
             
         except Exception as e:
             logger.error(f"Error in Gemini execution: {str(e)}")
+            raise
+
+    async def process_message(self, message: str, context: Dict[str, Any] = None) -> Dict[str, Any]:
+        """Process a message with context"""
+        try:
+            kwargs = {"prompt": message, "context": context or {}}
+            return await self._execute_model(kwargs)
+        except Exception as e:
+            logger.error(f"Error processing message: {str(e)}")
             raise
         
     async def _execute_model(self, kwargs: Dict[str, Any]) -> Dict[str, Any]:

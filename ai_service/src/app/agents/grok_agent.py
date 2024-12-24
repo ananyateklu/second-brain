@@ -1,5 +1,5 @@
-from typing import Dict, Any
-from .base_agent import BaseAgent
+from typing import Dict, Any, Optional, List
+from .core.base_agent import BaseAgent
 import requests
 from app.config.settings import settings
 import time
@@ -17,7 +17,8 @@ class GrokAgent(BaseAgent):
     """Agent for conducting operations using Grok models"""
     
     def __init__(self, model_id: str, temperature: float = 0.7):
-        super().__init__(model_id, temperature)
+        super().__init__(model_id)
+        self._temperature = temperature
         self.api_base = settings.GROK_API_BASE
         self.api_key = settings.GROK_API_KEY
         self.headers = {
@@ -26,16 +27,55 @@ class GrokAgent(BaseAgent):
             "X-API-Version": "2024-03"  # Add API version header
         }
         
-    async def execute(self, prompt: str, **kwargs) -> Dict[str, Any]:
-        start_time = time.time()
+    @property
+    def temperature(self) -> float:
+        """Get the temperature setting"""
+        return self._temperature
         
+    async def _execute_model(self, kwargs: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute the Grok model with given parameters"""
         try:
+            # Extract prompt and context from kwargs
+            prompt = kwargs.get("prompt", "")
+            context = kwargs.get("context", {})
+            max_tokens = kwargs.get("max_tokens", 1000)
+            
+            # Format conversation history into messages
+            messages = []
+            if "conversation" in context:
+                # Split conversation into turns
+                conversation = context["conversation"].split("\n")
+                for line in conversation:
+                    if line.startswith("User: "):
+                        messages.append({
+                            "role": "user",
+                            "content": line[6:]  # Remove "User: " prefix
+                        })
+                    elif line.startswith("Assistant: "):
+                        messages.append({
+                            "role": "assistant",
+                            "content": line[11:]  # Remove "Assistant: " prefix
+                        })
+            
+            # Add current prompt as the latest user message
+            messages.append({
+                "role": "user",
+                "content": prompt
+            })
+            
+            # Add system message if none exists
+            if not any(msg.get("role") == "system" for msg in messages):
+                messages.insert(0, {
+                    "role": "system",
+                    "content": "You are a helpful AI assistant that provides accurate and well-structured responses."
+                })
+            
             # Prepare the request payload
             payload = {
                 "model": self.model_id,
-                "messages": [{"role": "user", "content": prompt}],
+                "messages": messages,
                 "temperature": self.temperature,
-                "max_tokens": kwargs.get("max_tokens", 1000),
+                "max_tokens": max_tokens,
                 "stream": False
             }
             
@@ -54,11 +94,6 @@ class GrokAgent(BaseAgent):
                     
                     result = await response.json()
             
-            execution_time = time.time() - start_time
-            
-            # Extract token usage
-            token_usage = result.get("usage", {})
-            
             # Extract the response content
             try:
                 content = result["choices"][0]["message"]["content"]
@@ -67,11 +102,14 @@ class GrokAgent(BaseAgent):
                 logger.debug(f"Response structure: {json.dumps(result, indent=2)}")
                 raise GrokAPIError("Invalid response format from Grok API")
             
+            # Extract token usage
+            token_usage = result.get("usage", {})
+            
             return {
                 "result": content,
                 "metadata": {
                     "model": self.model_id,
-                    "execution_time": execution_time,
+                    "execution_time": time.time() - kwargs.get("start_time", time.time()),
                     "token_usage": token_usage,
                     "provider": "grok",
                     "prompt": prompt,
@@ -103,3 +141,56 @@ class GrokAgent(BaseAgent):
             logger.warning("Response missing Grok response ID")
             
         return True
+    
+    async def process_message(
+        self,
+        message: str,
+        metadata: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """Process a user message and generate a response"""
+        try:
+            # Add message to conversation memory
+            self.conversation_memory.add_message(message, "user", metadata)
+            
+            # Get conversation history
+            history = self.conversation_memory.get_history()
+            
+            # Format conversation history
+            conversation = "\n".join([
+                f"{msg['role'].capitalize()}: {msg['content']}"
+                for msg in history
+            ])
+            
+            # Execute model with context
+            result = await self.execute(
+                message, 
+                context={
+                    "conversation": conversation,
+                    "metadata": metadata or {}
+                }
+            )
+            
+            # Add response to conversation memory
+            if isinstance(result, dict) and "result" in result:
+                self.conversation_memory.add_message(
+                    result["result"],
+                    "assistant",
+                    result.get("metadata")
+                )
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error processing message: {str(e)}")
+            raise
+
+    def get_conversation_history(self) -> List[Dict[str, Any]]:
+        """Get formatted conversation history"""
+        history = self.conversation_memory.get_history()
+        return [
+            {
+                "role": msg["role"],
+                "content": msg["content"]
+            }
+            for msg in history
+        ]
