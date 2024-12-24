@@ -744,7 +744,30 @@ class ResearchAgent(BaseAgent):
                     "error": str(e)
                 })
         
-        return tool_results, tool_usage_summary, successful_tools, failed_tools
+        # Format results into a research summary
+        research_summary = "\n\n### Research Findings\n"
+        if tool_results:
+            for result in tool_results:
+                tool_name = result["tool"]
+                results = result["results"]
+                
+                if tool_name == "news_search":
+                    research_summary += "\n**Latest News Articles:**\n"
+                    for article in results:
+                        title = article.get("title", "Untitled")
+                        url = article.get("url", "#")
+                        desc = article.get("description", "No description available")
+                        research_summary += f"• **[{title}]({url})**\n  {desc}\n\n"
+                        
+                elif tool_name == "web_search":
+                    research_summary += "\n**Web Search Results:**\n"
+                    for item in results:
+                        title = item.get("title", "Untitled")
+                        url = item.get("link", item.get("url", "#"))
+                        snippet = item.get("snippet", "No description available")
+                        research_summary += f"• **[{title}]({url})**\n  {snippet}\n\n"
+
+        return tool_results, tool_usage_summary, successful_tools, failed_tools, research_summary
 
     async def _process_tool_result(
         self, result: Dict[str, Any], tool: Dict[str, Any],
@@ -871,40 +894,45 @@ class ResearchAgent(BaseAgent):
         })
 
     async def execute(self, prompt: str, **kwargs) -> Dict[str, Any]:
-        """Execute research with tools and context"""
+        """Execute research with the given prompt"""
         try:
+            # Store start time at beginning of execution
             start_time = time.time()
             
-            # Get context from kwargs
-            context = kwargs.pop('context', {})  # Remove context from kwargs to avoid duplicate
+            # Get context from kwargs but don't remove it
+            context = kwargs.get('context', {})
             logger.info(f"Starting research execution with prompt: {prompt[:100]}...")
             
-            # Analyze prompt and initialize tools
+            # Analyze prompt
             analysis = PromptAnalyzer.analyze(prompt)
             logger.info(f"Prompt analysis: {analysis}")
             
             # Initialize and execute tools
             tools = await self._initialize_tools(analysis, kwargs.get("tools"))
-            tool_results, tool_usage_summary, successful_tools, failed_tools = await self._execute_tools(tools)
+            tool_results, tool_usage_summary, successful_tools, failed_tools, research_summary = \
+                await self._execute_tools(tools)
             
-            # Create enhanced prompt with tool results
-            research_prompt = self._create_enhanced_prompt(prompt, analysis)
+            # Add research summary to prompt
+            enhanced_prompt = self._create_enhanced_prompt(prompt, analysis)
+            enhanced_prompt += "\n\nBased on research tools, here are the findings:" + research_summary
             
-            # Execute with context
-            result = await self.agent.execute(
-                research_prompt,
-                context=context,  # Pass context here
-                **kwargs  # kwargs no longer contains context
+            # Execute model with enhanced prompt and context
+            result = await self._execute_with_context(
+                enhanced_prompt,
+                **kwargs  # Pass all kwargs including context
             )
             
-            # Format and return final results
-            return await self._format_final_result(
+            # Format final result
+            final_result = await self._format_final_result(
                 result, tool_results, tool_usage_summary,
-                successful_tools, failed_tools, start_time
+                successful_tools, failed_tools,
+                start_time
             )
+            
+            return final_result
             
         except Exception as e:
-            logger.error(f"Error during execution: {str(e)}")
+            logger.error(f"Error in research execution: {str(e)}", exc_info=True)
             raise
 
     async def _format_final_result(
@@ -919,6 +947,54 @@ class ResearchAgent(BaseAgent):
         elif not isinstance(result, dict):
             result = {"result": str(result), "metadata": {}}
 
+        # Calculate token usage
+        token_usage = result.get("metadata", {}).get("token_usage", {})
+        total_tokens = token_usage.get("total_tokens", 0)
+        prompt_tokens = token_usage.get("prompt_tokens", 0)
+        completion_tokens = token_usage.get("completion_tokens", 0)
+
+        # Create execution statistics section
+        execution_time = time.time() - start_time
+        stats_section = "\n\n### Execution Statistics\n"
+        
+        # Core stats in a compact format
+        stats_section += (
+            f"***Core Metrics:** {execution_time:.2f}s execution time | "
+            f"{len(successful_tools) + len(failed_tools)} tools attempted | "
+            f"{len(successful_tools)} successful | {len(failed_tools)} failed\n\n"
+        )
+        
+        # Token usage in a compact format
+        if total_tokens > 0:
+            stats_section += (
+                f"***Token Usage:** {total_tokens:,} total | "
+                f"{prompt_tokens:,} prompt | {completion_tokens:,} completion\n\n"
+            )
+
+        # Tool performance in a compact format
+        if tool_usage_summary:
+            stats_section += "***Tool Results:** "
+            tool_results_parts = []
+            for tool in tool_usage_summary:
+                tool_name = tool.get("tool", "Unknown")
+                status = tool.get("status", "unknown")
+                results_count = tool.get("results_count", 0)
+                error = tool.get("error", "")
+                
+                if status == "success":
+                    tool_results_parts.append(f"{tool_name}: {results_count} results")
+                else:
+                    tool_results_parts.append(f"{tool_name}: Failed ({error})")
+            stats_section += " | ".join(tool_results_parts) + "\n\n"
+
+        # Model info in a compact format
+        stats_section += (
+            f"***Model Info:** {result.get('metadata', {}).get('model', 'Unknown')} | "
+            f"Provider: {result.get('metadata', {}).get('provider', 'Unknown')} | "
+            f"Temp: {result.get('metadata', {}).get('temperature', 0.7)}"
+        )
+
+        # Append statistics to result
         if tool_results:
             tool_summary = self._create_tool_summary(
                 tool_results, successful_tools,
@@ -926,22 +1002,24 @@ class ResearchAgent(BaseAgent):
                 start_time
             )
             result["tool_results"] = tool_results
-            result["result"] = result["result"] + tool_summary
+            result["result"] = result["result"] + tool_summary + stats_section
 
-            if len(result["result"].split()) < 30:
-                result["result"] = (
-                    "Based on the research query, here is what I found:\n\n" +
-                    result["result"]
-                )
-
-        execution_time = time.time() - start_time
-        logger.info(f"Execution completed in {execution_time:.2f}s")
-
+        # Update metadata
         result["execution_stats"] = {
             "execution_time": execution_time,
             "tool_usage": tool_usage_summary,
             "successful_tools": len(successful_tools),
-            "failed_tools": len(failed_tools)
+            "failed_tools": len(failed_tools),
+            "token_usage": {
+                "total_tokens": total_tokens,
+                "prompt_tokens": prompt_tokens,
+                "completion_tokens": completion_tokens
+            },
+            "model_info": {
+                "model": result.get("metadata", {}).get("model"),
+                "provider": result.get("metadata", {}).get("provider"),
+                "temperature": result.get("metadata", {}).get("temperature")
+            }
         }
 
         return result
@@ -979,12 +1057,49 @@ class ResearchAgent(BaseAgent):
                     summary += f"- {paper_title} ({paper['year']}) - {paper['citations']} citations\n"
         return summary
 
-    def _format_default_results(self, result_data: Dict[str, Any], tool_result: Any) -> str:
-        """Format default search results"""
-        if isinstance(result_data, dict) and "results" in result_data:
-            formatted_results = json.dumps(result_data["results"], indent=2)
-            return f"Results found:\n```json\n{formatted_results}\n```\n"
-        return f"Results found:\n{str(tool_result)}\n"
+    def _format_default_results(self, tool_result: Dict[str, Any], results: List[Dict[str, Any]]) -> str:
+        """Format default search results including web search"""
+        tool_name = tool_result.get("tool", "Unknown Tool")
+        
+        if tool_name == "web_search":
+            summary = f"\nFound {len(results)} relevant web results:\n\n"
+            for result in results:
+                title = result.get("title", "Untitled")
+                url = result.get("link", result.get("url", "#"))
+                snippet = result.get("snippet", "No description available")
+                
+                # Format as markdown link with title and snippet
+                summary += f"• **[{title}]({url})**\n"
+                summary += f"  {snippet}\n\n"
+            return summary
+        
+        elif tool_name == "news_search":
+            summary = f"\nFound {len(results)} relevant news articles:\n\n"
+            for result in results:
+                title = result.get("title", "Untitled")
+                url = result.get("url", "#")
+                published = result.get("published_at", "")
+                if published:
+                    published = f" ({published})"
+                    
+                summary += f"• **[{title}]({url})**{published}\n"
+                if result.get("description"):
+                    summary += f"  {result['description']}\n\n"
+            return summary
+        
+        else:
+            # For other tools, use a more generic format
+            if isinstance(results, list):
+                summary = f"\nResults from {tool_name}:\n\n"
+                for result in results:
+                    if isinstance(result, dict):
+                        for key, value in result.items():
+                            summary += f"• **{key}**: {value}\n"
+                    else:
+                        summary += f"• {result}\n"
+                return summary
+            else:
+                return f"\nResult from {tool_name}:\n{str(results)}\n"
 
     @staticmethod
     def _format_date(date_str: str) -> str:
@@ -1064,30 +1179,34 @@ class ResearchAgent(BaseAgent):
         return summary
 
     def _create_tool_summary(
-        self, tool_results: List[Any], successful_tools: List[str],
-        failed_tools: List[str], tool_usage_summary: List[Dict[str, Any]],
+        self, tool_results: List[Any],
+        successful_tools: List[str],
+        failed_tools: List[str],
+        tool_usage_summary: List[Dict[str, Any]],
         start_time: float
     ) -> str:
-        """Create a summary of tool results and usage"""
-        tool_summary = "\n\n## Research Sources and Tools Used\n"
+        """Create a summary of tool execution results"""
+        summary = "\n\n### Research Sources and Tools Used\n"
         
-        if not successful_tools and not failed_tools:
-            return tool_summary + "\nNo research tools were used for this query. The response is based on general knowledge.\n"
-
         if successful_tools:
-            tool_summary += self._format_successful_searches(successful_tools, tool_results)
+            summary += "**Successful Searches:**\n"
+            for tool_result in tool_results:
+                tool_name = tool_result["tool"]
+                results = tool_result["results"]
+                
+                if tool_name == "academic_search":
+                    summary += self._format_academic_search_results(results)
+                elif tool_name == "expert_search":
+                    summary += self._format_expert_search_results(results)
+                else:
+                    summary += self._format_default_results(tool_result, results)
         
         if failed_tools:
-            tool_summary += self._format_failed_searches(tool_usage_summary)
+            summary += "\n**Failed Searches**\n"
+            for tool in failed_tools:
+                summary += f"• {tool}: No results found\n"
         
-        # Add execution statistics
-        tool_summary += "\n### Execution Statistics\n"
-        tool_summary += f"Total tools attempted: {len(successful_tools) + len(failed_tools)}\n"
-        tool_summary += f"Successful searches: {len(successful_tools)}\n"
-        tool_summary += f"Failed searches: {len(failed_tools)}\n"
-        tool_summary += f"Total execution time: {time.time() - start_time:.2f}s\n"
-        
-        return tool_summary
+        return summary  # Remove the redundant execution statistics
 
     def _create_enhanced_prompt(self, original_prompt: str, analysis: PromptAnalysis) -> str:
         """Create an enhanced research prompt based on analysis"""
@@ -1197,31 +1316,38 @@ Note: If research tools return results, focus on analyzing and synthesizing thos
         return enhanced_prompt
 
     async def _execute_model(self, kwargs: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute the model with research-specific handling"""
+        """Execute the specific model implementation"""
         try:
-            messages = kwargs.get("messages", [])
             prompt = kwargs.get("prompt", "")
-
-            # Add research-specific system message
-            if messages:
-                system_msg = {
-                    "role": "system",
-                    "content": """You are a research agent that:
+            messages = kwargs.get("messages", [])
+            
+            # Add system message to messages if not present
+            system_msg = {
+                "role": "system",
+                "content": """You are a research agent that:
                     1. Analyzes information from multiple sources
                     2. Synthesizes findings into clear insights
                     3. Cites sources when available
                     4. Maintains context from previous messages
                     5. Uses available search results and context"""
-                }
-                messages.insert(0, system_msg)
-                kwargs["messages"] = messages
+            }
+
+            # Handle different model providers
+            provider = self._get_provider_from_model_id(self.model_id)
+            
+            if provider == "gemini":
+                # For Gemini, prepend system message to prompt instead of using system role
+                enhanced_prompt = f"{system_msg['content']}\n\n{prompt}"
+                kwargs["prompt"] = enhanced_prompt
+                # Don't include system message in messages for Gemini
+                kwargs["messages"] = [msg for msg in messages if msg["role"] != "system"]
             else:
-                # Prepend system message to prompt
-                system_prompt = """You are a research agent. Analyze the following topic using available context and search results."""
-                kwargs["prompt"] = f"{system_prompt}\n\n{prompt}"
+                # For other providers, use standard system message
+                if messages and messages[0]["role"] != "system":
+                    messages.insert(0, system_msg)
+                kwargs["messages"] = messages
 
             # Execute using the appropriate provider's agent
-            provider = self._get_provider_from_model_id(self.model_id)
             if provider == "openai":
                 from .openai_agent import OpenAIAgent
                 agent = OpenAIAgent(self.model_id, self.temperature)
@@ -1302,3 +1428,48 @@ Note: If research tools return results, focus on analyzing and synthesizing thos
                 return [raw_result]
             
         return []
+
+    async def _execute_with_context(self, prompt: str, **kwargs) -> Dict[str, Any]:
+        """Execute with context handling"""
+        try:
+            # Get context from kwargs
+            context = kwargs.get("context", {})
+            logger.info(f"Received context data: {context}")
+
+            messages = []
+            if context and "messages" in context:
+                messages = context["messages"]
+                logger.info(f"Found context with {len(messages)} messages")
+                
+                # Log context messages for debugging
+                for msg in messages:
+                    logger.info(f"Context message: {msg['role']} - {msg['content'][:100]}...")
+                    
+                # Add context to the prompt
+                context_summary = "\n\nPrevious Context:\n"
+                for msg in messages:
+                    if msg["role"] == "model":
+                        # Extract key findings and analysis from previous responses
+                        content = msg["content"]
+                        if "Key Findings" in content:
+                            context_summary += "\nPrevious Key Findings:\n" + content.split("Key Findings")[1].split("\n\n")[0]
+                        if "Analysis" in content:
+                            context_summary += "\nPrevious Analysis:\n" + content.split("Analysis")[1].split("\n\n")[0]
+                
+                prompt = prompt + context_summary
+                
+            else:
+                logger.info("No previous context available")
+
+            # Add prompt to kwargs for model execution
+            kwargs["prompt"] = prompt
+            kwargs["messages"] = messages
+            
+            # Execute model with all data
+            result = await self._execute_model(kwargs)
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error in context execution: {str(e)}")
+            raise

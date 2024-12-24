@@ -397,41 +397,92 @@ class BaseAgent(ABC):
         }
         return json.dumps(response)
 
-    async def _execute_web_search(self, parameters: Dict[str, Any]) -> str:
-        """Execute a web search using DuckDuckGo"""
+    async def _execute_web_search(self, parameters: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute web search with better error handling and fallbacks"""
         try:
-            query = self._clean_search_query(parameters.get("query", ""))
-            max_results = parameters.get("max_results", 5)
-            region = parameters.get("region", "us-en")
+            # Extract parameters
+            query = str(parameters.get("query", ""))
+            max_results = int(parameters.get("max_results", 5))
+            region = str(parameters.get("region", "us-en"))
             
             logger.info(f"Starting web search with query: '{query}', max_results: {max_results}, region: {region}")
-            results = []
             
-            search_methods = [
-                ("text", lambda ddg: ddg.text(keywords=query, region=region, max_results=max_results)),
-                ("news", lambda ddg: ddg.news(keywords=query, region=region, max_results=max_results))
-            ]
+            # Initialize DuckDuckGo search
+            ddg = DDGS()
+            results_list = []
             
-            for method_name, search_func in search_methods:
-                if len(results) >= max_results:
-                    break
-                    
+            try:
+                # Try text search first
+                results_list = list(ddg.text(
+                    keywords=query,  # Use keywords parameter
+                    region=region,
+                    max_results=max_results
+                ))
+            except Exception as text_error:
+                logger.warning(f"Text search failed: {str(text_error)}, trying news search")
+                
                 try:
-                    with DDGS() as ddg:
-                        results.extend(self._process_search_results(search_func(ddg), method_name))
-                except Exception as e:
-                    logger.warning(f"{method_name} search failed: {str(e)}, trying next method")
-            
-            if not results:
-                logger.info("No results found with main queries, attempting simplified search")
-                results.extend(await self._try_simplified_search(query, max_results))
-            
-            return self._create_search_response(bool(results), results, query, max_results)
-            
+                    # Fallback to news search
+                    results_list = list(ddg.news(
+                        keywords=query,  # Use keywords parameter
+                        region=region,
+                        max_results=max_results
+                    ))
+                except Exception as news_error:
+                    logger.warning(f"News search failed: {str(news_error)}, trying simplified search")
+                    
+                    # Try with simplified query
+                    simplified_query = ' '.join(query.split()[:3])  # Take first 3 words
+                    try:
+                        results_list = list(ddg.text(
+                            keywords=simplified_query,  # Use keywords parameter
+                            region=region,
+                            max_results=max_results
+                        ))
+                    except Exception as simple_error:
+                        logger.error(f"All search attempts failed. Last error: {str(simple_error)}")
+                        # Return empty results instead of raising
+                        return {
+                            "success": False,
+                            "error": "Search failed with all attempts",
+                            "results": []
+                        }
+
+            # Process successful results
+            if results_list:
+                processed_results = []
+                for result in results_list:
+                    processed_result = {
+                        "title": result.get("title", ""),
+                        "link": result.get("link", ""),
+                        "snippet": result.get("body", result.get("snippet", "")),
+                        "source": result.get("source", "web"),
+                        "published": result.get("date", None)
+                    }
+                    processed_results.append(processed_result)
+
+                return {
+                    "success": True,
+                    "results": processed_results,
+                    "metadata": {
+                        "query": query,
+                        "result_count": len(processed_results)
+                    }
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": "No results found",
+                    "results": []
+                }
+
         except Exception as e:
-            error_msg = str(e)
-            logger.error(f"Error in web search: {error_msg}", exc_info=True)
-            return self._create_search_response(False, [], parameters.get("query", ""), parameters.get("max_results", 5), error_msg)
+            logger.error(f"Error in web search execution: {str(e)}", exc_info=True)
+            return {
+                "success": False,
+                "error": str(e),
+                "results": []
+            }
 
     def _process_search_results(self, results: List[Dict[str, Any]], method_name: str) -> List[Dict[str, Any]]:
         """Process search results from a single method"""
