@@ -15,9 +15,9 @@ interface ChatMessagesProps {
 }
 
 const getContainerBackground = (theme: string) => {
-    if (theme === 'dark') return 'bg-gray-900/30';
-    if (theme === 'midnight') return 'bg-[#1e293b]/30';
-    return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]';
+    if (theme === 'dark') return 'bg-gray-900/20';
+    if (theme === 'midnight') return 'bg-[#1e293b]/20';
+    return 'bg-[color-mix(in_srgb,var(--color-background)_90%,var(--color-surface))]';
 };
 
 export const ChatMessages = ({
@@ -31,46 +31,65 @@ export const ChatMessages = ({
 
     return (
         <div className={`
-            flex-1 min-h-0 relative
+            relative flex-1 min-h-0
             ${getContainerBackground(theme)}
             backdrop-blur-xl 
             border-[0.5px] 
             border-white/10
-            shadow-[4px_0_24px_-2px_rgba(0,0,0,0.12),8px_0_16px_-4px_rgba(0,0,0,0.08)]
-            dark:shadow-[4px_0_24px_-2px_rgba(0,0,0,0.3),8px_0_16px_-4px_rgba(0,0,0,0.2)]
+            shadow-[0_4px_24px_-4px_rgba(0,0,0,0.12)]
+            dark:shadow-[0_4px_24px_-4px_rgba(0,0,0,0.3)]
             ring-1
             ring-white/5
             transition-all 
             duration-300
         `}>
-            <div className="absolute inset-0 overflow-y-auto px-4 py-3 space-y-4 scrollbar-thin scrollbar-thumb-[var(--color-border)] hover:scrollbar-thumb-[var(--color-textSecondary)] scrollbar-track-transparent">
-                {conversation?.messages.map((message, index) => (
-                    <div
-                        key={message.id}
-                        className={`
-                            animate-in fade-in slide-in-from-bottom-2 duration-300
-                            ${index === 0 ? 'pt-2' : ''}
-                            ${index === conversation.messages.length - 1 ? 'pb-2' : ''}
-                        `}
-                    >
-                        <MessageBubble
-                            message={message}
-                            onReact={() => handleMessageReaction(message, selectedAgent, setConversations)}
-                            onCopy={() => handleMessageCopy(message.content)}
-                            agentName={selectedAgent.name}
-                            agentColor={selectedAgent.color}
-                        />
-                    </div>
-                ))}
+            {/* Gradient Overlay at Top */}
+            <div className="absolute top-0 left-0 right-0 h-12 bg-gradient-to-b from-[var(--color-background)]/20 to-transparent pointer-events-none z-10" />
+
+            {/* Messages Container */}
+            <div className="absolute inset-0 overflow-y-auto px-4 py-6 space-y-6 scrollbar-thin scrollbar-thumb-[var(--color-border)] hover:scrollbar-thumb-[var(--color-textSecondary)] scrollbar-track-transparent">
+                {conversation?.messages.map((message, index) => {
+                    const isFirstInGroup = index === 0 ||
+                        conversation.messages[index - 1].role !== message.role;
+                    const isLastInGroup = index === conversation.messages.length - 1 ||
+                        conversation.messages[index + 1].role !== message.role;
+
+                    return (
+                        <div
+                            key={message.id}
+                            className={`
+                                animate-in fade-in slide-in-from-bottom-2 duration-300
+                                ${index === 0 ? 'pt-2' : ''}
+                                ${index === conversation.messages.length - 1 ? 'pb-2' : ''}
+                                ${!isLastInGroup ? 'mb-2' : ''}
+                            `}
+                        >
+                            <MessageBubble
+                                message={message}
+                                onReact={() => handleMessageReaction(message, selectedAgent, setConversations)}
+                                onCopy={() => handleMessageCopy(message.content)}
+                                agentName={selectedAgent.name}
+                                agentColor={selectedAgent.color}
+                            />
+                        </div>
+                    );
+                })}
+
+                {/* Typing Indicator */}
                 {isSending && (
                     <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
-                        <div className="bg-[var(--color-surface)]/50 backdrop-blur-sm rounded-lg shadow-sm">
+                        <div className="bg-[var(--color-surface)]/30 backdrop-blur-sm rounded-lg shadow-sm">
                             <TypingAnimation />
                         </div>
                     </div>
                 )}
+
+                {/* Scroll Anchor */}
                 <div ref={messagesEndRef} className="h-1" />
             </div>
+
+            {/* Gradient Overlay at Bottom */}
+            <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-[var(--color-background)]/20 to-transparent pointer-events-none z-10" />
         </div>
     );
 }; 
