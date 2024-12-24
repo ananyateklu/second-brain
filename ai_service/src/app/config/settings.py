@@ -24,55 +24,33 @@ class Settings(BaseSettings):
         env_file_encoding = 'utf-8'
         case_sensitive = True
 
+    def _print_api_status(self, key: str, value: Optional[str], optional: bool = False) -> None:
+        if value:
+            print(f"✅ {key} loaded: {value[:10]}...")
+        else:
+            status = "⚠️" if optional else "❌"
+            suffix = "not configured" if optional else "not found!"
+            print(f"{status} {key} {suffix}")
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         env_file_used = next((f for f in self.Config.env_file if f.exists()), None)
-        if env_file_used:
-            print("\n=== AI Service Configuration ===")
-            print(f"Using .env file: {env_file_used}")
-            
-            # Show Anthropic API key status
-            if self.ANTHROPIC_API_KEY:
-                print(f"✅ Anthropic API Key loaded: {self.ANTHROPIC_API_KEY[:10]}...")
-            else:
-                print("❌ Anthropic API Key not found!")
-                
-            # Show OpenAI API key status
-            if self.OPENAI_API_KEY:
-                print(f"✅ OpenAI API Key loaded: {self.OPENAI_API_KEY[:10]}...")
-            else:
-                print("❌ OpenAI API Key not found!")
-
-            # Show Ollama configuration
-            print(f"✅ Ollama URL configured: {self.OLLAMA_BASE_URL}")
-            
-            # Show Gemini API key status
-            if self.GEMINI_API_KEY:
-                print(f"✅ Gemini API Key loaded: {self.GEMINI_API_KEY[:10]}...")
-            else:
-                print("❌ Gemini API Key not found!")
-                
-            # Show Grok API key status
-            if self.GROK_API_KEY:
-                print(f"✅ Grok API Key loaded: {self.GROK_API_KEY[:10]}...")
-            else:
-                print("❌ Grok API Key not found!")
-            
-            # Show NewsAPI key status
-            if self.NEWS_API_KEY:
-                print(f"✅ NewsAPI Key loaded: {self.NEWS_API_KEY[:10]}...")
-            else:
-                print("⚠️ NewsAPI Key not configured - news search will be disabled")
-                
-            # Show Proxy configuration status
-            if self.PROXY_URL:
-                print(f"✅ Proxy configured: {self.PROXY_URL}")
-            else:
-                print("⚠️ No proxy configured - some services may have rate limits")
-            
-            print("============================\n")
-        else:
+        if not env_file_used:
             print("\n⚠️  Warning: No .env file found!")
             print("Please ensure you have a .env file with required configurations\n")
+            return
+
+        print("\n=== AI Service Configuration ===")
+        print(f"Using .env file: {env_file_used}")
+        
+        self._print_api_status("Anthropic API Key", self.ANTHROPIC_API_KEY)
+        self._print_api_status("OpenAI API Key", self.OPENAI_API_KEY)
+        print(f"✅ Ollama URL configured: {self.OLLAMA_BASE_URL}")
+        self._print_api_status("Gemini API Key", self.GEMINI_API_KEY)
+        self._print_api_status("Grok API Key", self.GROK_API_KEY)
+        self._print_api_status("NewsAPI Key", self.NEWS_API_KEY, optional=True)
+        self._print_api_status("Proxy", self.PROXY_URL, optional=True)
+        
+        print("============================\n")
 
 settings = Settings() 
