@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, memo, useRef } from 'react';
 import { Archive, Search, SlidersHorizontal } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNotes } from '../../../contexts/notesContextUtils';
@@ -8,12 +8,14 @@ import { Input } from '../../shared/Input';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { cardVariants } from '../../../utils/welcomeBarUtils';
 
-export function ArchivePage() {
+export const ArchivePage = memo(function ArchivePage() {
+  const [isLoading, setIsLoading] = useState(false);
   const { archivedNotes, restoreMultipleNotes, loadArchivedNotes } = useNotes();
   const { theme } = useTheme();
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const hasInitiallyLoaded = useRef(false);
   const [filters, setFilters] = useState({
     sortBy: 'archivedAt' as 'archivedAt' | 'updatedAt' | 'title',
     sortOrder: 'desc' as 'asc' | 'desc',
@@ -23,34 +25,46 @@ export function ArchivePage() {
 
   // Load archived notes when the page mounts
   useEffect(() => {
-    loadArchivedNotes();
+    const loadNotes = async () => {
+      if (hasInitiallyLoaded.current) return;
+      try {
+        setIsLoading(true);
+        await loadArchivedNotes();
+        hasInitiallyLoaded.current = true;
+      } catch (error) {
+        console.error('Failed to load archived notes:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadNotes();
   }, [loadArchivedNotes]);
 
-  const handleSelectItem = (id: string) => {
-    setSelectedItems(prev => 
+  const handleSelectItem = useCallback((id: string) => {
+    setSelectedItems(prev =>
       prev.includes(id)
         ? prev.filter(itemId => itemId !== id)
         : [...prev, id]
     );
-  };
+  }, []);
 
-  const handleRestoreSelected = async () => {
+  const handleRestoreSelected = useCallback(async () => {
     if (selectedItems.length === 0) return;
 
     try {
       await restoreMultipleNotes(selectedItems);
       setSelectedItems([]);
-      await loadArchivedNotes();
     } catch (error) {
       console.error('Failed to restore selected notes:', error);
     }
-  };
+  }, [selectedItems, restoreMultipleNotes]);
 
-  const getContainerBackground = () => {
+  const getContainerBackground = useCallback(() => {
     if (theme === 'dark') return 'bg-gray-900/30';
     if (theme === 'midnight') return 'bg-[#1e293b]/30';
     return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]';
-  };
+  }, [theme]);
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-fixed">
@@ -81,7 +95,7 @@ export function ArchivePage() {
           `}
         >
           <div className="flex flex-col sm:flex-row gap-6 justify-between">
-            <motion.div 
+            <motion.div
               variants={cardVariants}
               className="flex items-center gap-3"
             >
@@ -91,7 +105,13 @@ export function ArchivePage() {
               <div className="space-y-1">
                 <h1 className="text-2xl font-bold text-[var(--color-text)]">Archive</h1>
                 <p className="text-sm text-[var(--color-textSecondary)]">
-                  {archivedNotes.length} archived items
+                  {isLoading ? (
+                    <span className="inline-flex items-center">
+                      <span className="animate-pulse">Loading...</span>
+                    </span>
+                  ) : (
+                    `${archivedNotes.length} archived items`
+                  )}
                 </p>
               </div>
             </motion.div>
@@ -197,7 +217,7 @@ export function ArchivePage() {
             </div>
             <ArchiveFilters
               filters={filters}
-              onFilterChange={(key, value) => 
+              onFilterChange={(key, value) =>
                 setFilters(prev => ({ ...prev, [key]: value }))
               }
             />
@@ -236,4 +256,4 @@ export function ArchivePage() {
       </div>
     </div>
   );
-}
+});

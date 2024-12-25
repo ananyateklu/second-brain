@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { NotesContext, useNotes } from './notesContextUtils';
 import { useActivities } from './activityContextUtils';
 import { notesService, type UpdateNoteData } from '../services/api/notes.service';
@@ -16,12 +16,14 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
   const { moveToTrash } = useTrash();
   const { user } = useAuth();
 
+  const isLoadingArchived = useRef(false);
+
   const fetchNotes = useCallback(async () => {
     try {
       setIsLoading(true);
       const fetchedNotes = await notesService.getAllNotes();
       console.log('Fetched notes:', fetchedNotes); // Debug log
-      
+
       const processedNotes = fetchedNotes
         .filter(note => !note.isArchived && !note.isDeleted)
         .map(note => ({
@@ -34,7 +36,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
           linkedTasks: note.linkedTasks || [],
           linkedReminders: note.linkedReminders || []
         })) as Note[];
-      
+
       console.log('Processed notes:', processedNotes); // Debug log
       setNotes(sortNotes(processedNotes));
       setIsLoading(false);
@@ -66,7 +68,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
 
   const createNoteActivity = useCallback(async (note: Note) => {
     if (!createActivity) return;
-    
+
     try {
       await createActivity({
         actionType: 'create',
@@ -83,7 +85,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
 
   const updateNoteActivity = useCallback(async (note: Note, updates: Partial<Note>) => {
     if (!createActivity) return;
-    
+
     try {
       await createActivity({
         actionType: 'edit',
@@ -122,7 +124,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
       if (updates.isArchived !== undefined) {
         throw new Error('Cannot update archive status directly');
       }
-      
+
       const currentNote = notes.find(n => n.id === id);
       if (!currentNote) throw new Error('Note not found');
 
@@ -300,11 +302,11 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
 
   const unarchiveNote = useCallback(async (id: string): Promise<Note> => {
     try {
-      const updatedNote = await notesService.unarchiveNote(id);
-      if (!updatedNote) throw new Error('Failed to unarchive note');
-      
       const noteToUnarchive = archivedNotes.find(n => n.id === id);
       if (!noteToUnarchive) throw new Error('Note not found in archived notes');
+
+      const updatedNote = await notesService.unarchiveNote(id);
+      if (!updatedNote) throw new Error('Failed to unarchive note');
 
       const restoredNote: Note = {
         ...noteToUnarchive,
@@ -313,6 +315,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
         isIdea: noteToUnarchive.isIdea || false
       };
 
+      // Update both states atomically
       setNotes(prevNotes => sortNotes([...prevNotes, restoredNote]));
       setArchivedNotes(prevNotes => prevNotes.filter(note => note.id !== id));
 
@@ -369,7 +372,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     try {
       // Get updated notes from the backend after unlinking
       const { sourceNote, targetNote } = await notesService.removeLink(sourceId, targetId);
-      
+
       // Update notes state with the fresh data from backend
       setNotes(prev => {
         const updatedNotes = prev.map(note => {
@@ -393,7 +396,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
           }
           return note;
         });
-        
+
         // Return a new array to ensure React detects the change
         return [...updatedNotes];
       });
@@ -422,7 +425,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log('Linking reminder:', { noteId, reminderId });
       await notesService.linkReminder(noteId, reminderId);
-      
+
       // Refresh all notes to get the latest state
       await fetchNotes();
 
@@ -459,7 +462,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
   const unlinkReminder = useCallback(async (noteId: string, reminderId: string) => {
     try {
       await notesService.unlinkReminder(noteId, reminderId);
-      
+
       // Refresh all notes to get the latest state
       await fetchNotes();
 
@@ -477,6 +480,21 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
 
   const loadArchivedNotes = useCallback(async () => {
     try {
+      console.log('loadArchivedNotes called'); // Debug log
+      // Add loading state to prevent duplicate calls
+      if (isLoadingArchived.current) {
+        console.log('Already loading archived notes, skipping');
+        return;
+      }
+
+      // If we already have archived notes, don't fetch again
+      if (archivedNotes.length > 0) {
+        console.log('Archived notes already loaded, skipping fetch');
+        return;
+      }
+
+      isLoadingArchived.current = true;
+
       const fetchedArchivedNotes = await notesService.getArchivedNotes();
       const processedNotes = fetchedArchivedNotes.map(note => ({
         ...note,
@@ -488,12 +506,14 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
         linkedTasks: [],
         linkedReminders: []
       })) as Note[];
-      
+
       setArchivedNotes(processedNotes);
+      isLoadingArchived.current = false;
     } catch (error) {
       console.error('Failed to load archived notes:', error);
+      isLoadingArchived.current = false;
     }
-  }, []);
+  }, [archivedNotes.length]);
 
   const createBulkRestoreActivity = useCallback((restoredNotes: Note[], totalResults: number) => {
     const getRestoreDescription = (noteCount: number, ideaCount: number) => {
@@ -591,15 +611,15 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
   const addReminderToNote = useCallback(async (noteId: string, reminderId: string) => {
     try {
       const updatedNote = await notesService.linkReminder(noteId, reminderId);
-      
+
       // Update the notes state with the new reminder link
       setNotes(prevNotes =>
         prevNotes.map(note =>
           note.id === noteId
             ? {
-                ...note,
-                linkedReminders: updatedNote.linkedReminders || []
-              }
+              ...note,
+              linkedReminders: updatedNote.linkedReminders || []
+            }
             : note
         )
       );
@@ -623,15 +643,15 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
   const removeReminderFromNote = useCallback(async (noteId: string, reminderId: string) => {
     try {
       const updatedNote = await notesService.unlinkReminder(noteId, reminderId);
-      
+
       // Update the notes state by removing the reminder link
       setNotes(prevNotes =>
         prevNotes.map(note =>
           note.id === noteId
             ? {
-                ...note,
-                linkedReminders: updatedNote.linkedReminders || []
-              }
+              ...note,
+              linkedReminders: updatedNote.linkedReminders || []
+            }
             : note
         )
       );

@@ -98,7 +98,7 @@ const processNoteResponse = (note: NoteResponse): Note => ({
       priority: processTaskPriority(task.priority)
     }))
     : [],
-  linkedReminders: Array.isArray(note.linkedReminders) 
+  linkedReminders: Array.isArray(note.linkedReminders)
     ? note.linkedReminders.map(reminder => ({
       ...reminder,
       description: reminder.description || ''
@@ -151,7 +151,7 @@ export const notesService = {
 
     try {
       await api.delete(`/api/Notes/${sourceId}/links/${targetId}`);
-      
+
       // Fetch fresh data for both notes after unlinking
       const [sourceResponse, targetResponse] = await Promise.all([
         api.get<NoteResponse>(`/api/Notes/${sourceId}`),
@@ -171,14 +171,14 @@ export const notesService = {
   async linkReminder(noteId: string, reminderId: string): Promise<Note> {
     try {
       console.log('Making API call to link reminder:', { noteId, reminderId }); // Add debug logging
-      const response = await api.post<NoteResponse>(`/api/Notes/${noteId}/reminders`, { 
-        reminderId: reminderId 
+      const response = await api.post<NoteResponse>(`/api/Notes/${noteId}/reminders`, {
+        reminderId: reminderId
       });
-      
+
       if (!response.data) {
         throw new Error('No data received from server');
       }
-      
+
       return processNoteResponse(response.data);
     } catch (error) {
       console.error('API error in linkReminder:', error);
@@ -193,7 +193,9 @@ export const notesService = {
 
   async getArchivedNotes(): Promise<Note[]> {
     try {
+      console.log('Fetching archived notes from API'); // Debug log
       const response = await api.get<NoteResponse[]>('/api/Notes/archived');
+      console.log('Archived notes API response received'); // Debug log
       return response.data.map(processNoteResponse);
     } catch (error) {
       console.error('Error fetching archived notes:', error);
