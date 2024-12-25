@@ -49,8 +49,6 @@ export const ChatMessages = ({
             {/* Messages Container */}
             <div className="absolute inset-0 overflow-y-auto px-4 py-6 space-y-6 scrollbar-thin scrollbar-thumb-[var(--color-border)] hover:scrollbar-thumb-[var(--color-textSecondary)] scrollbar-track-transparent">
                 {conversation?.messages.map((message, index) => {
-                    const isFirstInGroup = index === 0 ||
-                        conversation.messages[index - 1].role !== message.role;
                     const isLastInGroup = index === conversation.messages.length - 1 ||
                         conversation.messages[index + 1].role !== message.role;
 
@@ -77,10 +75,8 @@ export const ChatMessages = ({
 
                 {/* Typing Indicator */}
                 {isSending && (
-                    <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
-                        <div className="bg-[var(--color-surface)]/30 backdrop-blur-sm rounded-lg shadow-sm">
-                            <TypingAnimation />
-                        </div>
+                    <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2 duration-300 px-4 py-2">
+                        <TypingAnimation agentColor={selectedAgent.color} />
                     </div>
                 )}
 

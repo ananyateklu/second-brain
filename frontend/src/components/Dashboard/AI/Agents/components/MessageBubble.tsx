@@ -312,7 +312,7 @@ export function MessageBubble({ message, onReact, onCopy, agentName, agentColor 
                                         <Clock className="w-3 h-3 animate-pulse" />
                                     )}
                                     {message.status === 'sent' && (
-                                        <CheckCircle className="w-3 h-3" />
+                                        <CheckCircle  className="w-3 h-3" />
                                     )}
                                     {message.status === 'error' && (
                                         <AlertCircle className="w-3 h-3 text-[var(--color-error)]" />
@@ -325,15 +325,16 @@ export function MessageBubble({ message, onReact, onCopy, agentName, agentColor 
                                         <span className="opacity-60">•</span>
                                         <div className="flex items-center gap-2">
                                             {/* Token count */}
-                                            <span>{executionStats.tokenUsage?.total.toLocaleString()}</span>
-                                            <span className="opacity-60">tokens</span>
+                                            <span>tokens used:</span>
+                                            <span className="opacity-80">{executionStats.tokenUsage?.total.toLocaleString()}</span>
+                          
 
                                             {/* Core metrics */}
                                             {executionStats.coreMetrics && (
                                                 <>
                                                     <span className="opacity-60">•</span>
-                                                    <span>time taken:</span>
-                                                    <span>{executionStats.coreMetrics.executionTime}s</span>
+                                                    <span>execution time:</span>
+                                                    <span className="opacity-80">{executionStats.coreMetrics.executionTime}s</span>
                                                 </>
                                             )}
 
