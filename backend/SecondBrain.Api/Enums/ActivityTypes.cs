@@ -12,13 +12,20 @@ namespace SecondBrain.Api.Enums
         PIN,
         UNPIN,
         FAVORITE,
-        UNFAVORITE
+        UNFAVORITE,
+        AI_CHAT_CREATE,
+        AI_MESSAGE_SEND,
+        AI_MESSAGE_RECEIVE,
+        AI_CHAT_DELETE,
+        AI_MESSAGE_REACT
     }
 
     public enum ActivityItemType
     {
         NOTE,
         IDEA,
-        NOTELINK
+        NOTELINK,
+        AI_CHAT,
+        AI_MESSAGE
     }
-} 
+}

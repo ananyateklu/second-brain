@@ -1,6 +1,7 @@
 import { AIModel, AIResponse, AnthropicToolResult, AnthropicResponse, AnthropicGeneratedFields, AccumulatedContext } from '../../types/ai';
 import { AI_MODELS } from './models';
 import api from '../api/api';
+import { agentService } from './agent';
 
 interface RequestParameters {
   max_tokens?: number;
@@ -158,11 +159,11 @@ export class AnthropicService {
 
     if (contentBlock.type === 'tool_use' && isContentSuggestion) {
       console.log('Tool use requested:', contentBlock);
-      
+
       if (contentBlock.input) {
         this.updateAccumulatedContext(accumulatedContext, contentBlock.name!, contentBlock.input);
       }
-      
+
       const { toolResult, toolResponse } = await this.handleToolUse(
         contentBlock,
         accumulatedContext,
@@ -184,7 +185,7 @@ export class AnthropicService {
   }
 
   async sendMessage(
-    message: string, 
+    message: string,
     modelId: string,
     parameters?: RequestParameters
   ): Promise<AIResponse> {
@@ -209,7 +210,7 @@ export class AnthropicService {
             accumulatedContext,
             request
           );
-          
+
           finalContent += content;
           if (toolResult) {
             toolResults.push(toolResult);
@@ -240,30 +241,30 @@ export class AnthropicService {
   }
 
   private async executeTool(
-    name: string, 
-    input: Record<string, unknown>, 
+    name: string,
+    input: Record<string, unknown>,
     toolUseId: string
   ): Promise<AnthropicToolResult> {
     try {
       let content: unknown;
-      
+
       // Execute the appropriate tool based on name
       switch (name) {
         case 'generate_content':
           content = await this.generateContent(
-            input.title as string, 
+            input.title as string,
             input.tags as string[]
           );
           break;
         case 'generate_title':
           content = await this.generateTitle(
-            input.content as string, 
+            input.content as string,
             input.tags as string[]
           );
           break;
         case 'generate_tags':
           content = await this.generateTags(
-            input.title as string, 
+            input.title as string,
             input.content as string
           );
           break;
@@ -291,7 +292,7 @@ export class AnthropicService {
   private createContentPrompt(title?: string, tags?: string[]): string {
     const titleLine = title ? `Title: ${title}` : '';
     const tagsLine = tags?.length ? `Tags: ${tags.join(', ')}` : '';
-    
+
     return `Generate detailed, well-structured content directly:
       ${titleLine}
       ${tagsLine}
@@ -329,7 +330,7 @@ export class AnthropicService {
   private createTitlePrompt(contextContent?: string, contextTags?: string[]): string {
     const contentLine = contextContent ? `Content: ${contextContent}` : '';
     const tagsLine = contextTags?.length ? `Tags: ${contextTags.join(', ')}` : '';
-    
+
     return `Generate only a title (no explanation or context):
       ${contentLine}
       ${tagsLine}
@@ -345,7 +346,7 @@ export class AnthropicService {
   private createTagsPrompt(title?: string, content?: string): string {
     const titleLine = title ? `Title: ${title}` : '';
     const contentLine = content ? `Content: ${content}` : '';
-    
+
     return `Generate only tags as a comma-separated list (no explanations):
       ${titleLine}
       ${contentLine}
@@ -380,14 +381,14 @@ export class AnthropicService {
   }
 
   private async generateTitle(
-    content?: string, 
-    tags?: string[], 
+    content?: string,
+    tags?: string[],
     accumulatedContext?: AccumulatedContext
   ): Promise<string> {
     try {
       const contextContent = accumulatedContext?.content ?? content;
       const contextTags = accumulatedContext?.tags || tags;
-      
+
       const prompt = this.createTitlePrompt(contextContent, contextTags);
       const response = await this.sendMessage(prompt, 'claude-3-5-haiku-20241022', {
         max_tokens: 100,
@@ -481,12 +482,11 @@ export class AnthropicService {
 
   async isConfigured(): Promise<boolean> {
     try {
-      const isConnected = await this.testConnection();
-      this.isEnabled = isConnected;
-      return isConnected;
+      const isConfigured = await agentService.isAnthropicConfigured();
+      this.isEnabled = isConfigured;
+      return isConfigured;
     } catch (error) {
-      console.error('[AnthropicService] Configuration error:', error);
-      this.isEnabled = false;
+      console.error('Error checking Anthropic configuration:', error);
       return false;
     }
   }

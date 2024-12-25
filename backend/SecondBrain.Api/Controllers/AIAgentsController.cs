@@ -21,6 +21,7 @@ namespace SecondBrain.Api.Controllers
         private readonly string _aiServiceUrl;
         private readonly JsonSerializerOptions _jsonOptions;
         private readonly IChatContextService _chatContextService;
+        private readonly IConfiguration _configuration;
 
         public AIAgentsController(
             HttpClient httpClient,
@@ -41,6 +42,7 @@ namespace SecondBrain.Api.Controllers
             };
 
             _chatContextService = chatContextService;
+            _configuration = configuration;
         }
 
         [HttpGet("health")]
@@ -53,8 +55,31 @@ namespace SecondBrain.Api.Controllers
 
                 if (response.IsSuccessStatusCode)
                 {
-                    var result = await response.Content.ReadFromJsonAsync<object>(_jsonOptions);
-                    return Ok(result);
+                    var serviceHealth = await response.Content.ReadFromJsonAsync<object>(_jsonOptions);
+
+                    // Get configuration status for each provider from app settings
+                    var openAiConfigured = !string.IsNullOrEmpty(_configuration["OpenAI:ApiKey"]);
+                    var anthropicConfigured = !string.IsNullOrEmpty(_configuration["Anthropic:ApiKey"]);
+                    var geminiConfigured = !string.IsNullOrEmpty(_configuration["Gemini:ApiKey"]);
+                    var grokConfigured = !string.IsNullOrEmpty(_configuration["Grok:ApiKey"]);
+                    var llamaConfigured = !string.IsNullOrEmpty(_configuration["Llama:OllamaUri"]);
+
+                    _logger.LogInformation("Provider configuration status - OpenAI: {OpenAI}, Anthropic: {Anthropic}, Gemini: {Gemini}, Grok: {Grok}, Llama: {Llama}",
+                        openAiConfigured, anthropicConfigured, geminiConfigured, grokConfigured, llamaConfigured);
+
+                    return Ok(new
+                    {
+                        status = "healthy",
+                        serviceHealth,
+                        providers = new
+                        {
+                            openai = new { isConfigured = openAiConfigured },
+                            anthropic = new { isConfigured = anthropicConfigured },
+                            gemini = new { isConfigured = geminiConfigured },
+                            grok = new { isConfigured = grokConfigured },
+                            llama = new { isConfigured = llamaConfigured }
+                        }
+                    });
                 }
 
                 var errorContent = await response.Content.ReadAsStringAsync();
@@ -81,18 +106,18 @@ namespace SecondBrain.Api.Controllers
 
             try
             {
-                _logger.LogInformation($"Executing agent with model {request.ModelId} and chatId {request.ChatId}");
+                _logger.LogInformation("Executing agent with model {ModelId} and chatId {ChatId}", request.ModelId, request.ChatId);
 
                 // Get chat context if chatId is provided
                 var contextData = new Dictionary<string, object>();
                 if (!string.IsNullOrEmpty(request.ChatId))
                 {
-                    _logger.LogInformation($"Getting context for chat {request.ChatId}");
+                    _logger.LogInformation("Getting context for chat {ChatId}", request.ChatId);
                     contextData = await _chatContextService.FormatContextForProviderAsync(
                         request.ChatId,
                         GetProviderFromModelId(request.ModelId)
                     );
-                    _logger.LogInformation($"Got context with {contextData.Count} items");
+                    _logger.LogInformation("Got context with {Count} items", contextData.Count);
                 }
                 else
                 {
@@ -104,7 +129,7 @@ namespace SecondBrain.Api.Controllers
                 requestDict["context"] = contextData;
 
                 var jsonContent = JsonSerializer.Serialize(requestDict, _jsonOptions);
-                _logger.LogInformation($"Sending request to AI service: {jsonContent}");
+                _logger.LogInformation("Sending request to AI service: {Content}", jsonContent);
 
                 var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 
@@ -141,8 +166,7 @@ namespace SecondBrain.Api.Controllers
                     }
                     catch (JsonException ex)
                     {
-                        _logger.LogError("Failed to deserialize AI service response: {Response}\n{Error}",
-                            responseContent, ex.ToString());
+                        _logger.LogError(ex, "Failed to deserialize AI service response: {Response}", responseContent);
 
                         // Return basic response if parsing fails
                         return Ok(new AIResponse
@@ -235,7 +259,7 @@ namespace SecondBrain.Api.Controllers
             });
         }
 
-        private string GetProviderFromModelId(string modelId)
+        private static string GetProviderFromModelId(string modelId)
         {
             if (modelId.StartsWith("gpt-")) return "openai";
             if (modelId.StartsWith("claude-")) return "anthropic";

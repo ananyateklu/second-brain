@@ -13,6 +13,35 @@ interface ActivityMetadata {
   additionalInfo?: Record<string, string | number | boolean>;
 }
 
+interface AIMetadata {
+  agentId: string;
+  agentName: string;
+  agentProvider: string;
+  agentColor?: string;
+  messageContent?: string;
+  chatId?: string;
+  reaction?: string;
+  executionStats?: {
+    tokenUsage?: {
+      total: number;
+      prompt: number;
+      completion: number;
+    };
+    coreMetrics?: {
+      executionTime: number;
+      toolsAttempted: number;
+      successful: number;
+      failed: number;
+    };
+  };
+}
+
+const isAIMetadata = (metadata: unknown): metadata is AIMetadata => {
+  if (typeof metadata !== 'object' || !metadata) return false;
+  const m = metadata as Record<string, unknown>;
+  return 'agentId' in m && 'agentName' in m && 'agentProvider' in m;
+};
+
 export function ActivityItem({ activity, onClick }: ActivityItemProps) {
   const { theme } = useTheme();
   const Icon = getActivityIcon(activity.itemType);
@@ -23,7 +52,7 @@ export function ActivityItem({ activity, onClick }: ActivityItemProps) {
   const getContainerBackground = () => {
     if (theme === 'dark') return 'bg-gray-900/30';
     if (theme === 'midnight') {
-      return isSafari 
+      return isSafari
         ? 'bg-[var(--note-bg-color)] bg-opacity-[var(--note-bg-opacity,0.3)]'
         : 'bg-[#1e293b]/30';
     }
@@ -50,43 +79,100 @@ export function ActivityItem({ activity, onClick }: ActivityItemProps) {
     return base.trim();
   };
 
-  const getItemTypeColor = (type: string) => {
-    switch (type.toLowerCase()) {
-      case 'note':
-        return isDark
-          ? 'bg-blue-500/20 text-blue-400'
-          : 'bg-blue-100 text-blue-600';
-      case 'task':
-        return isDark
-          ? 'bg-emerald-500/20 text-emerald-400'
-          : 'bg-emerald-100 text-emerald-600';
-      case 'reminder':
-        return isDark
-          ? 'bg-purple-500/20 text-purple-400'
-          : 'bg-purple-100 text-purple-600';
-      case 'idea':
-        return isDark
-          ? 'bg-amber-500/20 text-amber-400'
-          : 'bg-amber-100 text-amber-600';
-      default:
-        return isDark
-          ? 'bg-zinc-500/20 text-zinc-400'
-          : 'bg-zinc-100 text-zinc-600';
+  const itemTypeColors = {
+    note: {
+      dark: 'bg-blue-500/20 text-blue-400',
+      light: 'bg-blue-100 text-blue-600'
+    },
+    task: {
+      dark: 'bg-emerald-500/20 text-emerald-400',
+      light: 'bg-emerald-100 text-emerald-600'
+    },
+    reminder: {
+      dark: 'bg-purple-500/20 text-purple-400',
+      light: 'bg-purple-100 text-purple-600'
+    },
+    idea: {
+      dark: 'bg-amber-500/20 text-amber-400',
+      light: 'bg-amber-100 text-amber-600'
+    },
+    ai_chat: {
+      dark: 'bg-[#4c9959]/20 text-[#4c9959]',
+      light: 'bg-[#4c9959]/10 text-[#4c9959]'
+    },
+    ai_message: {
+      dark: 'bg-[#4c9959]/20 text-[#4c9959]',
+      light: 'bg-[#4c9959]/10 text-[#4c9959]'
+    },
+    default: {
+      dark: 'bg-zinc-500/20 text-zinc-400',
+      light: 'bg-zinc-100 text-zinc-600'
     }
   };
 
+  const actionTypeColors = {
+    create: { dark: 'text-emerald-400', light: 'text-emerald-600' },
+    complete: { dark: 'text-emerald-400', light: 'text-emerald-600' },
+    ai_chat_create: { dark: 'text-violet-400', light: 'text-violet-600' },
+    ai_message_receive: { dark: 'text-indigo-400', light: 'text-indigo-600' },
+    update: { dark: 'text-blue-400', light: 'text-blue-600' },
+    edit: { dark: 'text-blue-400', light: 'text-blue-600' },
+    ai_message_send: { dark: 'text-blue-400', light: 'text-blue-600' },
+    delete: { dark: 'text-red-400', light: 'text-red-600' },
+    ai_chat_delete: { dark: 'text-red-400', light: 'text-red-600' },
+    ai_message_react: { dark: 'text-amber-400', light: 'text-amber-600' },
+    default: { dark: 'text-zinc-400', light: 'text-zinc-600' }
+  };
+
+  const getItemTypeColor = (type: string) => {
+    const key = type.toLowerCase();
+    if (['ai_chat', 'ai_message'].includes(key) && activity.metadata?.agentColor) {
+      return isDark
+        ? `bg-[color:var(--agent-color-bg,rgba(99,102,241,0.2))] text-[color:var(--agent-color,rgb(99,102,241))]`
+        : `bg-[color:var(--agent-color-bg-light,rgba(99,102,241,0.1))] text-[color:var(--agent-color,rgb(99,102,241))]`;
+    }
+    const colors = itemTypeColors[key as keyof typeof itemTypeColors] || itemTypeColors.default;
+    return isDark ? colors.dark : colors.light;
+  };
+
   const getActionTypeColor = (type: string) => {
-    const lowercaseType = type.toLowerCase();
-    if (['create', 'complete'].includes(lowercaseType)) {
-      return isDark ? 'text-emerald-400' : 'text-emerald-600';
-    }
-    if (['update', 'edit'].includes(lowercaseType)) {
-      return isDark ? 'text-blue-400' : 'text-blue-600';
-    }
-    if (lowercaseType === 'delete') {
-      return isDark ? 'text-red-400' : 'text-red-600';
-    }
-    return isDark ? 'text-zinc-400' : 'text-zinc-600';
+    const key = type.toLowerCase();
+    const colors = actionTypeColors[key as keyof typeof actionTypeColors] || actionTypeColors.default;
+    return isDark ? colors.dark : colors.light;
+  };
+
+  const renderAIMetadata = (metadata: AIMetadata) => {
+    if (!metadata) return null;
+
+    return (
+      <div className="mt-2 space-y-1">
+        {metadata.executionStats && (
+          <div className="flex items-center gap-2 text-xs text-[var(--color-textSecondary)]">
+            {metadata.executionStats.tokenUsage && (
+              <span>
+                {metadata.executionStats.tokenUsage.total.toLocaleString()} tokens
+              </span>
+            )}
+            {metadata.executionStats.coreMetrics && (
+              <>
+                <span className="opacity-60">•</span>
+                <span>{metadata.executionStats.coreMetrics.executionTime}s</span>
+              </>
+            )}
+          </div>
+        )}
+        {metadata.messageContent && (
+          <div className="text-xs text-[var(--color-textSecondary)] italic">
+            "{metadata.messageContent}"
+          </div>
+        )}
+        {metadata.reaction && (
+          <div className="text-sm">
+            {metadata.reaction}
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -113,7 +199,10 @@ export function ActivityItem({ activity, onClick }: ActivityItemProps) {
             {activity.description}
           </p>
 
-          {metadata && (
+          {(activity.itemType === 'AI_CHAT' || activity.itemType === 'AI_MESSAGE') &&
+            activity.metadata && isAIMetadata(activity.metadata) && renderAIMetadata(activity.metadata)}
+
+          {metadata && activity.itemType !== 'AI_CHAT' && activity.itemType !== 'AI_MESSAGE' && (
             <div className="mt-3 text-sm text-[var(--color-textSecondary)]">
               {metadata.dueDate && (
                 <div>

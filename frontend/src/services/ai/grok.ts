@@ -1,14 +1,15 @@
 import { AIModel, AIResponse, GrokFunction } from '../../types/ai';
 import api from '../api/api';
+import { agentService } from './agent';
 
 export class GrokService {
   private isEnabled = false;
 
   async checkConfiguration(): Promise<boolean> {
     try {
-      const response = await api.get('/api/Grok/test-connection');
-      this.isEnabled = response.data.isConnected;
-      return response.data.isConnected;
+      const isConfigured = await agentService.isGrokConfigured();
+      this.isEnabled = isConfigured;
+      return isConfigured;
     } catch (error) {
       console.error('Error checking Grok configuration:', error);
       return false;
@@ -16,7 +17,7 @@ export class GrokService {
   }
 
   async sendMessage(
-    message: string, 
+    message: string,
     modelId: string,
     parameters?: {
       max_tokens?: number;
@@ -60,8 +61,8 @@ export class GrokService {
   }
 
   async executeFunctionCall(
-    message: string, 
-    modelId: string, 
+    message: string,
+    modelId: string,
     functions: GrokFunction[]
   ): Promise<AIResponse> {
     try {

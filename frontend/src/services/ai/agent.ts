@@ -19,15 +19,65 @@ export interface AgentTool {
   required_permissions?: string[];
 }
 
+interface HealthCheckResponse {
+  status: string;
+  providers: {
+    openai?: { isConfigured: boolean };
+    anthropic?: { isConfigured: boolean };
+    gemini?: { isConfigured: boolean };
+    llama?: { isConfigured: boolean };
+    grok?: { isConfigured: boolean };
+  };
+}
+
 export class AgentService {
   private isEnabled = true;
   public llama = new LlamaService();
   public grokService = new GrokService();
+  private healthCheckCache: { data: HealthCheckResponse; timestamp: number } | null = null;
+  private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 
-  async testConnection(): Promise<boolean> {
+  private async getHealthCheck(forceRefresh = false): Promise<HealthCheckResponse> {
+    // Return cached result if available and not expired
+    if (!forceRefresh && this.healthCheckCache &&
+      (Date.now() - this.healthCheckCache.timestamp) < this.CACHE_DURATION) {
+      return this.healthCheckCache.data;
+    }
+
     try {
       const response = await api.get('/api/AIAgents/health');
-      this.isEnabled = response.data.status === 'healthy';
+      this.healthCheckCache = {
+        data: response.data,
+        timestamp: Date.now()
+      };
+      return response.data;
+    } catch (error) {
+      console.error('Error getting health check:', error);
+      throw error;
+    }
+  }
+
+  async getProviderConfigurations(forceRefresh = false): Promise<{
+    openai: boolean;
+    anthropic: boolean;
+    gemini: boolean;
+    llama: boolean;
+    grok: boolean;
+  }> {
+    const healthData = await this.getHealthCheck(forceRefresh);
+    return {
+      openai: healthData.providers?.openai?.isConfigured ?? false,
+      anthropic: healthData.providers?.anthropic?.isConfigured ?? false,
+      gemini: healthData.providers?.gemini?.isConfigured ?? false,
+      llama: healthData.providers?.llama?.isConfigured ?? true,
+      grok: healthData.providers?.grok?.isConfigured ?? false
+    };
+  }
+
+  async testConnection(forceRefresh = false): Promise<boolean> {
+    try {
+      const healthData = await this.getHealthCheck(forceRefresh);
+      this.isEnabled = healthData.status === 'healthy';
       return this.isEnabled;
     } catch (error) {
       console.error('Error testing agent connection:', error);
@@ -42,29 +92,29 @@ export class AgentService {
     );
   }
 
-  async isOpenAIConfigured(): Promise<boolean> {
-    try {
-      const response = await api.get('/api/AIAgents/openai/health');
-      return response.data.status === 'healthy';
-    } catch (error) {
-      console.error('Error checking OpenAI configuration:', error);
-      return false;
-    }
+  async isOpenAIConfigured(forceRefresh = false): Promise<boolean> {
+    const configs = await this.getProviderConfigurations(forceRefresh);
+    return configs.openai;
   }
 
-  async isAnthropicConfigured(): Promise<boolean> {
-    try {
-      const response = await api.get('/api/AIAgents/anthropic/health');
-      return response.data.status === 'healthy';
-    } catch (error) {
-      console.error('Error checking Anthropic configuration:', error);
-      return false;
-    }
+  async isAnthropicConfigured(forceRefresh = false): Promise<boolean> {
+    const configs = await this.getProviderConfigurations(forceRefresh);
+    return configs.anthropic;
   }
 
-  isGeminiConfigured(): boolean {
-    // Add your Gemini configuration check logic here
-    return true;
+  async isGeminiConfigured(forceRefresh = false): Promise<boolean> {
+    const configs = await this.getProviderConfigurations(forceRefresh);
+    return configs.gemini;
+  }
+
+  async isLlamaConfigured(forceRefresh = false): Promise<boolean> {
+    const configs = await this.getProviderConfigurations(forceRefresh);
+    return configs.llama;
+  }
+
+  async isGrokConfigured(forceRefresh = false): Promise<boolean> {
+    const configs = await this.getProviderConfigurations(forceRefresh);
+    return configs.grok;
   }
 
   async sendMessage(

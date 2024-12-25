@@ -5,7 +5,9 @@ export class SignalRService {
   private connection: signalR.HubConnection;
   private executionStepCallbacks: ((step: ExecutionStep) => void)[] = [];
   private isStarting: boolean = false;
-  private readonly autoReconnect: boolean = true;
+  private autoReconnect: boolean = true;
+  private reconnectAttempts: number = 0;
+  private readonly maxReconnectAttempts: number = 5;
 
   constructor() {
     this.connection = this.buildConnection();
@@ -14,23 +16,30 @@ export class SignalRService {
 
   private buildConnection(token?: string): signalR.HubConnection {
     const accessToken = token ?? localStorage.getItem('token') ?? '';
-    
+
     return new signalR.HubConnectionBuilder()
       .withUrl('http://localhost:5127/toolHub', {
-        skipNegotiation: true,
+        skipNegotiation: false,
         transport: signalR.HttpTransportType.WebSockets,
-        logger: signalR.LogLevel.Debug,
+        logger: signalR.LogLevel.Information,
         withCredentials: true,
         accessTokenFactory: () => accessToken
       })
+      .withHubProtocol(new signalR.JsonHubProtocol())
       .withAutomaticReconnect({
-        nextRetryDelayInMilliseconds: retryContext => {
-          if (retryContext.previousRetryCount === 0) {
-            return 0;
+        nextRetryDelayInMilliseconds: (retryContext) => {
+          if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+            return null;
           }
-          return 1000;
+
+          const delayMap = [0, 2000, 10000, 30000];
+          const delay = delayMap[retryContext.previousRetryCount] ?? 30000;
+
+          this.reconnectAttempts++;
+          return delay;
         }
       })
+      .configureLogging(signalR.LogLevel.Information)
       .build();
   }
 
@@ -40,31 +49,40 @@ export class SignalRService {
       this.executionStepCallbacks.forEach(callback => callback(step));
     });
 
-    this.connection.onreconnecting(() => {
-      console.log('[SignalR] Reconnecting...');
+    this.connection.onreconnecting((error) => {
+      console.log('[SignalR] Reconnecting...', error);
     });
 
-    this.connection.onreconnected(() => {
-      console.log('[SignalR] Reconnected');
+    this.connection.onreconnected((connectionId) => {
+      console.log('[SignalR] Reconnected with connectionId:', connectionId);
+      this.reconnectAttempts = 0;
     });
 
     this.connection.onclose((error) => {
       console.log('[SignalR] Connection Closed', error);
-      if (this.autoReconnect) {
-        this.start();
+      if (this.autoReconnect && this.reconnectAttempts < this.maxReconnectAttempts) {
+        setTimeout(() => this.start(), 2000);
+      } else {
+        console.log('[SignalR] Max reconnection attempts reached or auto-reconnect disabled');
       }
     });
   }
 
   async updateToken(newToken: string) {
-    await this.stop();
-    this.connection = this.buildConnection(newToken);
-    this.setupConnectionHandlers();
-    await this.start();
+    try {
+      await this.stop();
+      this.connection = this.buildConnection(newToken);
+      this.setupConnectionHandlers();
+      await this.start();
+    } catch (error) {
+      console.error('[SignalR] Error updating token:', error);
+      throw error;
+    }
   }
 
   async start() {
     if (this.isStarting) {
+      console.log('[SignalR] Connection start already in progress');
       return;
     }
 
@@ -75,19 +93,38 @@ export class SignalRService {
 
     try {
       this.isStarting = true;
-      if (this.connection.state === signalR.HubConnectionState.Disconnected) {
-        await this.connection.start();
-        console.log('[SignalR] Connected successfully');
-      } else {
-        console.log(`[SignalR] Connection in ${this.connection.state} state, cannot start`);
+
+      if (this.connection.state !== signalR.HubConnectionState.Disconnected) {
+        await this.connection.stop();
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
+
+      await this.connection.start();
+      console.log('[SignalR] Connected successfully');
+      this.reconnectAttempts = 0;
     } catch (err) {
       console.error('[SignalR] Connection Error:', err);
-      // Reset connection state before retrying
-      await this.connection.stop();
-      setTimeout(() => this.start(), 1000);
+
+      if (this.reconnectAttempts < this.maxReconnectAttempts) {
+        const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
+        setTimeout(() => this.start(), delay);
+      }
     } finally {
       this.isStarting = false;
+    }
+  }
+
+  async stop() {
+    try {
+      this.autoReconnect = false;
+      if (this.connection.state !== signalR.HubConnectionState.Disconnected) {
+        await this.connection.stop();
+        console.log('[SignalR] Disconnected');
+      }
+    } catch (err) {
+      console.error('[SignalR] Error stopping connection:', err);
+    } finally {
+      this.autoReconnect = true;
     }
   }
 
@@ -98,19 +135,12 @@ export class SignalRService {
     };
   }
 
-  async stop() {
-    try {
-      if (this.connection.state === signalR.HubConnectionState.Connected) {
-        await this.connection.stop();
-        console.log('SignalR Disconnected');
-      }
-    } catch (err) {
-      console.error('Error stopping SignalR:', err);
-    }
-  }
-
   getConnectionState() {
     return this.connection.state;
+  }
+
+  isConnected() {
+    return this.connection.state === signalR.HubConnectionState.Connected;
   }
 }
 

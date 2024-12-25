@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef, useLayoutEffect } from 'react';
 import { AIModel, AIResponse, ExecutionStep } from '../types/ai';
 import { Message } from '../types/message';
 import { LlamaService } from '../services/ai/llama';
@@ -19,7 +19,7 @@ interface AIContextType {
   executionSteps: Record<string, ExecutionStep[]>;
   handleExecutionStep: (step: ExecutionStep) => void;
   transcribeAudio: (audioFile: File) => Promise<AIResponse>;
-  checkConfigurations: () => Promise<void>;
+  checkConfigurations: (forceRefresh?: boolean) => Promise<void>;
 }
 
 const AIContext = createContext<AIContextType | null>(null);
@@ -28,13 +28,58 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [isOpenAIConfigured, setIsOpenAIConfigured] = useState<boolean>(false);
   const [isAnthropicConfigured, setIsAnthropicConfigured] = useState<boolean>(false);
-  const [isGeminiConfigured, setIsGeminiConfigured] = useState<boolean>(agentService.isGeminiConfigured());
-  const [isLlamaConfigured, setIsLlamaConfigured] = useState<boolean>(agentService.llama.isConfigured());
+  const [isGeminiConfigured, setIsGeminiConfigured] = useState<boolean>(false);
+  const [isLlamaConfigured, setIsLlamaConfigured] = useState<boolean>(false);
   const [isGrokConfigured, setIsGrokConfigured] = useState<boolean>(false);
   const [availableModels] = useState<AIModel[]>(agentService.getAvailableModels());
   const [messages, setMessages] = useState<Message[]>([]);
   const [executionSteps, setExecutionSteps] = useState<Record<string, ExecutionStep[]>>({});
   const latestMessageIdRef = useRef<string | null>(null);
+  const initialCheckDoneRef = useRef<boolean>(false);
+  const isCheckingRef = useRef<boolean>(false);
+
+  // Add new function to check configurations
+  const checkConfigurations = useCallback(async (forceRefresh = false) => {
+    if (isCheckingRef.current) return; // Prevent concurrent checks
+
+    try {
+      isCheckingRef.current = true;
+      console.group('🤖 AI Model Configurations Check');
+
+      const configs = await agentService.getProviderConfigurations(forceRefresh);
+
+      // Log each configuration status
+      console.log('📊 Configuration Status:');
+      console.log('OpenAI:', configs.openai ? '✅ Configured' : '❌ Not Configured');
+      console.log('Anthropic:', configs.anthropic ? '✅ Configured' : '❌ Not Configured');
+      console.log('Grok:', configs.grok ? '✅ Configured' : '❌ Not Configured');
+      console.log('Gemini:', configs.gemini ? '✅ Configured' : '❌ Not Configured');
+      console.log('Llama:', configs.llama ? '✅ Configured' : '❌ Not Configured');
+
+      setIsOpenAIConfigured(configs.openai);
+      setIsAnthropicConfigured(configs.anthropic);
+      setIsGrokConfigured(configs.grok);
+      setIsGeminiConfigured(configs.gemini);
+      setIsLlamaConfigured(configs.llama);
+
+      console.log('🔄 State Updated:', configs);
+
+    } catch (error) {
+      console.error('❌ Error checking configurations:', error);
+      console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace available');
+    } finally {
+      isCheckingRef.current = false;
+      console.groupEnd();
+    }
+  }, []); // Empty dependency array since we're using refs
+
+  // Use layout effect for initialization
+  useLayoutEffect(() => {
+    if (!initialCheckDoneRef.current) {
+      initialCheckDoneRef.current = true;
+      checkConfigurations();
+    }
+  }, [checkConfigurations]);
 
   useEffect(() => {
     // Initialize SignalR connection
@@ -79,55 +124,10 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Add new function to check configurations
-  const checkConfigurations = useCallback(async () => {
-    console.group('🤖 AI Model Configurations Check');
-
-    try {
-      const [openai, anthropic, grok] = await Promise.all([
-        agentService.isOpenAIConfigured(),
-        agentService.isAnthropicConfigured(),
-        agentService.grokService.checkConfiguration()
-      ]);
-
-      // Log each configuration status
-      console.log('📊 Configuration Status:');
-      console.log('OpenAI:', openai ? '✅ Configured' : '❌ Not Configured');
-      console.log('Anthropic:', anthropic ? '✅ Configured' : '❌ Not Configured');
-      console.log('Grok:', grok ? '✅ Configured' : '❌ Not Configured');
-
-      // These don't need async calls
-      const gemini = agentService.isGeminiConfigured();
-      const llama = agentService.llama.isConfigured();
-      console.log('Gemini:', gemini ? '✅ Configured' : '❌ Not Configured');
-      console.log('Llama:', llama ? '✅ Configured' : '❌ Not Configured');
-
-      setIsOpenAIConfigured(openai);
-      setIsAnthropicConfigured(anthropic);
-      setIsGrokConfigured(grok);
-      setIsGeminiConfigured(gemini);
-      setIsLlamaConfigured(llama);
-
-      console.log('🔄 State Updated:', {
-        isOpenAIConfigured: openai,
-        isAnthropicConfigured: anthropic,
-        isGrokConfigured: grok,
-        isGeminiConfigured: gemini,
-        isLlamaConfigured: llama
-      });
-
-    } catch (error) {
-      console.error('❌ Error checking configurations:', error);
-      console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace available');
-    }
-
-    console.groupEnd();
-  }, []);
-
   const configureGemini = useCallback(async () => {
     try {
       setError(null);
-      const success = await agentService.isGeminiConfigured();
+      const success = await agentService.isGeminiConfigured(true);
       if (success) {
         setIsGeminiConfigured(true);
       } else {

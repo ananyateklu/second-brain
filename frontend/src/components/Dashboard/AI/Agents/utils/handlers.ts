@@ -2,8 +2,9 @@ import { NavigateFunction } from 'react-router-dom';
 import { AIModel } from '../../../../../types/ai';
 import { AIMessage, AgentConversation, SendMessageParams } from '../types';
 import { agentService } from '../../../../../services/ai/agent';
+import { activityService } from '../../../../../api/services/activityService';
 
-export const handleMessageReaction = (
+export const handleMessageReaction = async (
     message: AIMessage,
     selectedAgent: AIModel,
     setConversations: React.Dispatch<React.SetStateAction<AgentConversation[]>>
@@ -20,6 +21,26 @@ export const handleMessageReaction = (
             }
             : conv
     ));
+
+    // Log activity for message reaction
+    try {
+        await activityService.createActivity({
+            actionType: 'AI_MESSAGE_REACT',
+            itemType: 'AI_MESSAGE',
+            itemId: message.id,
+            itemTitle: `Reaction to ${selectedAgent.name}'s message`,
+            description: `Reacted to message from ${selectedAgent.name}`,
+            metadata: {
+                messageContent: message.content.substring(0, 100) + (message.content.length > 100 ? '...' : ''),
+                agentId: selectedAgent.id,
+                agentName: selectedAgent.name,
+                agentProvider: selectedAgent.provider,
+                reaction: '👍'
+            }
+        });
+    } catch (error) {
+        console.error('Error logging message reaction:', error);
+    }
 };
 
 export const handleMessageCopy = (content: string) => {
@@ -74,7 +95,22 @@ export const handleNewConversation = async (
     try {
         // Create chat in database
         const newChat = await agentService.createChat(selectedAgent.id, "New Chat");
-        console.log('Created new chat:', newChat); // Debug log
+        console.log('Created new chat:', newChat);
+
+        // Log activity for new chat creation
+        await activityService.createActivity({
+            actionType: 'AI_CHAT_CREATE',
+            itemType: 'AI_CHAT',
+            itemId: newChat.id,
+            itemTitle: `Chat with ${selectedAgent.name}`,
+            description: `Started new conversation with ${selectedAgent.name}`,
+            metadata: {
+                agentId: selectedAgent.id,
+                agentName: selectedAgent.name,
+                agentProvider: selectedAgent.provider,
+                agentColor: selectedAgent.color
+            }
+        });
 
         // Add to local state
         const conversation: AgentConversation = {
@@ -87,7 +123,7 @@ export const handleNewConversation = async (
         };
 
         setConversations(prev => prev.map(c => ({ ...c, isActive: false })).concat(conversation));
-        return conversation; // Return the created conversation
+        return conversation;
     } catch (error) {
         console.error('Error creating new conversation:', error);
         throw error;
@@ -130,6 +166,22 @@ export const handleSendMessage = async ({
             status: 'sent'
         });
 
+        // Log activity for user message
+        await activityService.createActivity({
+            actionType: 'AI_MESSAGE_SEND',
+            itemType: 'AI_MESSAGE',
+            itemId: userMessage.id,
+            itemTitle: `Message to ${selectedAgent.name}`,
+            description: `Sent message to ${selectedAgent.name}`,
+            metadata: {
+                messageContent: currentMessage.substring(0, 100) + (currentMessage.length > 100 ? '...' : ''),
+                agentId: selectedAgent.id,
+                agentName: selectedAgent.name,
+                agentProvider: selectedAgent.provider,
+                chatId: activeConversation.id
+            }
+        });
+
         // Update local state with user message
         setConversations(prev => prev.map(conv => {
             if (conv.id === activeConversation.id) {
@@ -145,12 +197,11 @@ export const handleSendMessage = async ({
             return conv;
         }));
 
-        // Send message to AI with chat context
-        console.log(`Sending message with chatId: ${activeConversation.id}`); // Debug log
+        // Send message to AI
         const response = await agentService.sendMessage(
             currentMessage,
             selectedAgent.id,
-            activeConversation.id // Make sure to pass the chatId
+            activeConversation.id
         );
 
         // Add AI response to database
@@ -159,6 +210,23 @@ export const handleSendMessage = async ({
             content: response.content,
             status: 'sent',
             metadata: response.metadata
+        });
+
+        // Log activity for AI response
+        await activityService.createActivity({
+            actionType: 'AI_MESSAGE_RECEIVE',
+            itemType: 'AI_MESSAGE',
+            itemId: assistantMessage.id,
+            itemTitle: `Response from ${selectedAgent.name}`,
+            description: `Received response from ${selectedAgent.name}`,
+            metadata: {
+                messageContent: response.content.substring(0, 100) + (response.content.length > 100 ? '...' : ''),
+                agentId: selectedAgent.id,
+                agentName: selectedAgent.name,
+                agentProvider: selectedAgent.provider,
+                chatId: activeConversation.id,
+                executionStats: response.metadata
+            }
         });
 
         // Update local state with AI response
@@ -192,6 +260,22 @@ export const handleDeleteConversation = async (
     try {
         // Delete from database
         await agentService.deleteChat(conversationId);
+
+        if (selectedAgent) {
+            // Log activity for chat deletion
+            await activityService.createActivity({
+                actionType: 'AI_CHAT_DELETE',
+                itemType: 'AI_CHAT',
+                itemId: conversationId,
+                itemTitle: `Chat with ${selectedAgent.name}`,
+                description: `Deleted conversation with ${selectedAgent.name}`,
+                metadata: {
+                    agentId: selectedAgent.id,
+                    agentName: selectedAgent.name,
+                    agentProvider: selectedAgent.provider
+                }
+            });
+        }
 
         // Update local state
         setConversations(prev => {

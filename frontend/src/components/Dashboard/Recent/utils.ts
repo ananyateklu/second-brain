@@ -1,5 +1,5 @@
-import { Activity } from '../../../contexts/ActivityContext';
-import { FileText, Lightbulb, CheckSquare, Bell, File } from 'lucide-react';
+import { Activity } from '../../../api/services/activityService';
+import { FileText, Lightbulb, CheckSquare, Bell, Tag, Bot, MessageSquare } from 'lucide-react';
 import { ElementType } from 'react';
 
 export function formatTimeAgo(timestamp: string): string {
@@ -65,13 +65,19 @@ export const getActivityIcon = (itemType: string): ElementType => {
   switch (itemType.toLowerCase()) {
     case 'note':
       return FileText;
-    case 'idea':
-      return Lightbulb;
     case 'task':
       return CheckSquare;
+    case 'idea':
+      return Lightbulb;
     case 'reminder':
       return Bell;
+    case 'tag':
+      return Tag;
+    case 'ai_chat':
+      return Bot;
+    case 'ai_message':
+      return MessageSquare;
     default:
-      return File;
+      return FileText;
   }
 };
