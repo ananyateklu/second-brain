@@ -1,7 +1,6 @@
-import { useState, useMemo, useCallback, memo } from 'react';
+import { useMemo, useCallback, memo } from 'react';
 import { Calendar, Tag as TagIcon, AlertCircle, CheckSquare, Square, Bell, Type, Lightbulb } from 'lucide-react';
 import { Reminder, useReminders } from '../../../contexts/remindersContextUtils';
-import { EditReminderModal } from './EditReminderModal/index';
 import { useTheme } from '../../../contexts/themeContextUtils';
 
 interface ReminderCardProps {
@@ -48,8 +47,6 @@ export function ReminderCard({
 }: ReminderCardProps) {
   const { theme } = useTheme();
   const { snoozeReminder, toggleReminderCompletion } = useReminders();
-  const [showEditModal, setShowEditModal] = useState(false);
-
   const isDark = useMemo(() => theme === 'dark' || theme === 'midnight', [theme]);
   const isOverdue = useMemo(() =>
     new Date(reminder.dueDateTime) < new Date() && !reminder.isSnoozed && !reminder.isCompleted,
@@ -90,10 +87,8 @@ export function ReminderCard({
       onSelect();
     } else if (onClick) {
       onClick(reminder);
-    } else if (context === 'default') {
-      setShowEditModal(true);
     }
-  }, [onSelect, onClick, reminder, context]);
+  }, [onSelect, onClick, reminder]);
 
   const handleSnooze = useCallback((duration: number) => {
     const until = new Date(Date.now() + duration);
@@ -112,10 +107,17 @@ export function ReminderCard({
 
   const itemColorClasses = useCallback((type: string) => {
     if (type === 'tag') return isDark
-      ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)] border-[0.5px] border-[var(--color-accent)]'
+      ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)] border-[0.5px] border-gray-700'
       : 'bg-[var(--color-accent)]/10 text-[var(--color-accent)] border border-[var(--color-accent)]/30';
-    if (type === 'idea') return isDark ? 'bg-amber-900/30 text-amber-400' : 'bg-amber-100 text-amber-600';
-    return isDark ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-600';
+    if (type === 'idea') return isDark
+      ? 'bg-[var(--color-idea)]/10 text-[var(--color-idea)] border-[0.5px] border-gray-700'
+      : 'bg-[var(--color-idea)]/10 text-[var(--color-idea)] border border-[var(--color-idea)]/30';
+    if (type === 'note') return isDark
+      ? 'bg-[var(--color-note)]/10 text-[var(--color-note)] border-[0.5px] border-gray-700'
+      : 'bg-[var(--color-note)]/10 text-[var(--color-note)] border border-[var(--color-note)]/30';
+    return isDark
+      ? 'bg-[var(--color-note)]/10 text-[var(--color-note)] border-[0.5px] border-gray-700'
+      : 'bg-[var(--color-note)]/10 text-[var(--color-note)] border border-[var(--color-note)]/30';
   }, [isDark]);
 
   const itemIcon = useCallback((type: string) => {
@@ -166,90 +168,80 @@ export function ReminderCard({
   );
 
   return (
-    <>
-      <div onClick={handleClick} className={containerClasses}>
-        {viewMode === 'list' ? (
-          <div className="px-3 py-2.5 h-full flex items-center gap-3">
+    <div onClick={handleClick} className={containerClasses}>
+      {viewMode === 'list' ? (
+        <div className="px-3 py-2.5 h-full flex items-center gap-3">
+          {checkboxMemo}
+          <div className="flex-1 min-w-0 flex items-center gap-4">
+            <div className="min-w-[200px] max-w-[300px] flex-shrink overflow-hidden">
+              <h3 className={titleClasses}>{reminder.title}</h3>
+              {reminder.description && (
+                <p className={descriptionClasses}>{reminder.description}</p>
+              )}
+            </div>
+            <div className="min-w-[180px]">{metadataMemo}</div>
+            <div className="flex-1 min-w-0">{tagsMemo}</div>
+            {statusBadgesMemo}
+          </div>
+        </div>
+      ) : (
+        <div className="p-3 h-[180px] flex flex-col">
+          <div className="flex items-start gap-2 mb-2">
             {checkboxMemo}
-            <div className="flex-1 min-w-0 flex items-center gap-4">
-              <div className="min-w-[200px] max-w-[300px] flex-shrink overflow-hidden">
-                <h3 className={titleClasses}>{reminder.title}</h3>
-                {reminder.description && (
-                  <p className={descriptionClasses}>{reminder.description}</p>
-                )}
-              </div>
-              <div className="min-w-[180px]">{metadataMemo}</div>
-              <div className="flex-1 min-w-0">{tagsMemo}</div>
-              {statusBadgesMemo}
+            <div className="flex-1 min-w-0 overflow-hidden">
+              <h3 className={titleClasses}>{reminder.title}</h3>
+              {reminder.description && (
+                <p className={`mt-0.5 ${descriptionClasses}`}>{reminder.description}</p>
+              )}
             </div>
+            {statusBadgesMemo}
           </div>
-        ) : (
-          <div className="p-3 h-[180px] flex flex-col">
-            <div className="flex items-start gap-2 mb-2">
-              {checkboxMemo}
-              <div className="flex-1 min-w-0 overflow-hidden">
-                <h3 className={titleClasses}>{reminder.title}</h3>
-                {reminder.description && (
-                  <p className={`mt-0.5 ${descriptionClasses}`}>{reminder.description}</p>
-                )}
+
+          <div className="flex-1 flex flex-col justify-between min-h-0">
+            <div className="overflow-hidden">
+              <div className="h-[56px] overflow-hidden">
+                {tagsMemo}
               </div>
-              {statusBadgesMemo}
             </div>
 
-            <div className="flex-1 flex flex-col justify-between min-h-0">
-              <div className="overflow-hidden">
-                <div className="h-[56px] overflow-hidden">
-                  {tagsMemo}
+            <div className="flex items-center justify-between mt-2 pt-2 border-t border-[var(--color-border)]">
+              {metadataMemo}
+              {!reminder.isSnoozed && !reminder.isCompleted && context === 'default' && (
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSnooze(5 * 60 * 1000);
+                    }}
+                    className="px-1.5 py-0.5 text-[11px] font-medium text-[var(--color-textSecondary)] hover:bg-[var(--color-secondary)] rounded transition-colors"
+                  >
+                    5m
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSnooze(60 * 60 * 1000);
+                    }}
+                    className="px-1.5 py-0.5 text-[11px] font-medium text-[var(--color-textSecondary)] hover:bg-[var(--color-secondary)] rounded transition-colors"
+                  >
+                    1h
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSnooze(24 * 60 * 60 * 1000);
+                    }}
+                    className="px-1.5 py-0.5 text-[11px] font-medium text-[var(--color-textSecondary)] hover:bg-[var(--color-secondary)] rounded transition-colors"
+                  >
+                    1d
+                  </button>
                 </div>
-              </div>
-
-              <div className="flex items-center justify-between mt-2 pt-2 border-t border-[var(--color-border)]">
-                {metadataMemo}
-                {!reminder.isSnoozed && !reminder.isCompleted && context === 'default' && (
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSnooze(5 * 60 * 1000);
-                      }}
-                      className="px-1.5 py-0.5 text-[11px] font-medium text-[var(--color-textSecondary)] hover:bg-[var(--color-secondary)] rounded transition-colors"
-                    >
-                      5m
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSnooze(60 * 60 * 1000);
-                      }}
-                      className="px-1.5 py-0.5 text-[11px] font-medium text-[var(--color-textSecondary)] hover:bg-[var(--color-secondary)] rounded transition-colors"
-                    >
-                      1h
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSnooze(24 * 60 * 60 * 1000);
-                      }}
-                      className="px-1.5 py-0.5 text-[11px] font-medium text-[var(--color-textSecondary)] hover:bg-[var(--color-secondary)] rounded transition-colors"
-                    >
-                      1d
-                    </button>
-                  </div>
-                )}
-              </div>
+              )}
             </div>
           </div>
-        )}
-      </div>
-
-      {showEditModal && (
-        <EditReminderModal
-          isOpen={showEditModal}
-          onClose={() => setShowEditModal(false)}
-          reminder={reminder}
-        />
+        </div>
       )}
-    </>
+    </div>
   );
 }
 
@@ -326,24 +318,21 @@ const TagList = memo(function TagList({ visibleItems, remainingCount, itemColorC
   if (visibleItems.length === 0) return null;
   return (
     <div className={`
-      flex flex-wrap gap-1.5
+      flex flex-wrap gap-1
       ${viewMode === 'list' ? 'items-center' : 'items-start'}
       min-h-[20px] overflow-hidden
     `}>
       {visibleItems.map(item => (
         <span
           key={item.id}
-          className={`
-            inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap h-[22px]
-            ${itemColorClasses(item.type)}
-          `}
+          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${itemColorClasses(item.type)}`}
         >
           {itemIcon(item.type)}
-          <span className="truncate max-w-[120px] leading-none">{item.title}</span>
+          <span className="truncate max-w-[120px]">{item.title}</span>
         </span>
       ))}
       {remainingCount > 0 && (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap h-[22px] bg-[var(--color-surface)] text-[var(--color-textSecondary)] border border-[var(--color-border)]">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-[var(--color-surface)] text-[var(--color-textSecondary)] border border-[var(--color-border)] whitespace-nowrap">
           +{remainingCount} more
         </span>
       )}

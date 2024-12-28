@@ -163,13 +163,13 @@ export function TaskCard({
 
   const itemColorClasses = useCallback((type: string) => {
     if (type === 'tag') return isDark
-      ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)] border-[0.5px] border-[var(--color-accent)]'
+      ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)] border-[0.5px] border-gray-700'
       : 'bg-[var(--color-accent)]/10 text-[var(--color-accent)] border border-[var(--color-accent)]/30';
     if (type === 'idea') return isDark
-      ? 'bg-[var(--color-idea)]/10 text-[var(--color-idea)] border-[0.5px] border-[var(--color-idea)]'
+      ? 'bg-[var(--color-idea)]/10 text-[var(--color-idea)] border-[0.5px] border-gray-700'
       : 'bg-[var(--color-idea)]/10 text-[var(--color-idea)] border border-[var(--color-idea)]/30';
     if (type === 'note') return isDark
-      ? 'bg-[var(--color-note)]/10 text-[var(--color-note)] border-[0.5px] border-[var(--color-note)]'
+      ? 'bg-[var(--color-note)]/10 text-[var(--color-note)] border-[0.5px] border-gray-700'
       : 'bg-[var(--color-note)]/10 text-[var(--color-note)] border border-[var(--color-note)]/30';
     return ''; // Default case
   }, [isDark]);
@@ -385,7 +385,7 @@ const TagList = memo(function TagList({ visibleItems, remainingCount, itemColorC
   if (visibleItems.length === 0) return null;
   return (
     <div className={`
-      flex flex-wrap gap-1.5
+      flex flex-wrap gap-1
       ${viewMode === 'list' ? 'items-center' : 'items-start'}
       ${viewMode === 'grid' ? 'h-[56px]' : ''}
       min-h-[20px] overflow-hidden
@@ -393,22 +393,20 @@ const TagList = memo(function TagList({ visibleItems, remainingCount, itemColorC
       {visibleItems.map(item => (
         <span
           key={item.id}
-          className={`
-            inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap h-[22px]
-            ${itemColorClasses(item.type)}
-          `}
+          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${itemColorClasses(item.type)}`}
         >
           {itemIcon(item.type)}
-          <span className="truncate max-w-[120px] leading-none">{item.title}</span>
+          <span className="truncate max-w-[120px]">{item.title}</span>
         </span>
       ))}
       {remainingCount > 0 && (
         <span className={`
-          inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap h-[22px]
-          ${isDark 
-            ? 'bg-[var(--color-surface)]/80 text-[var(--color-textSecondary)] border-[0.5px] border-[var(--color-border)]'
-            : 'bg-[var(--color-surface)] text-[var(--color-textSecondary)] border border-[var(--color-border)]/30'
+          inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium
+          ${isDark
+            ? 'bg-gray-800 text-gray-400'
+            : 'bg-[var(--color-surface)] text-[var(--color-textSecondary)] border border-[var(--color-border)]'
           }
+          whitespace-nowrap
         `}>
           +{remainingCount} more
         </span>

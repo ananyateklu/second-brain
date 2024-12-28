@@ -103,9 +103,9 @@ export function IdeaCard({
   const remainingCount = useMemo(() => Math.max(0, tags.length - MAX_VISIBLE_ITEMS), [tags.length, MAX_VISIBLE_ITEMS]);
 
   const tagClasses = useMemo(() => (
-    isDark 
-      ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)] border-[0.5px] border-[var(--color-accent)]' 
-      : 'bg-[var(--color-accent)]/10 text-[var(--color-accent)] border border-[var(--color-accent)]/30'
+    isDark
+      ? 'bg-[var(--color-idea)]/20 text-[var(--color-idea)] ring-1 ring-white/10 opacity-60'
+      : 'bg-[var(--color-idea)]/10 text-[var(--color-idea)] ring-1 ring-black/5 opacity-50'
   ), [isDark]);
 
   const getDaysUntilExpiration = useCallback(() => {
@@ -406,14 +406,14 @@ interface ActionsProps {
   idea: Note;
 }
 
-const Actions = memo(function Actions({ 
-  context, 
-  handlePin, 
-  handleFavorite, 
-  handleArchiveClick, 
+const Actions = memo(function Actions({
+  context,
+  handlePin,
+  handleFavorite,
+  handleArchiveClick,
   pinButtonClasses,
   favoriteButtonClasses,
-  idea 
+  idea
 }: ActionsProps) {
   if (context !== 'default') return null;
   return (

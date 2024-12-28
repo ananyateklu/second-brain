@@ -10,6 +10,7 @@ import { cardVariants } from '../../../utils/welcomeBarUtils';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { ReminderCard } from './ReminderCard';
 import { Reminder } from '../../../contexts/remindersContextUtils';
+import { EditReminderModal } from './EditReminderModal';
 
 export function RemindersPage() {
   const { reminders, getDueReminders, getUpcomingReminders } = useReminders();
@@ -19,10 +20,17 @@ export function RemindersPage() {
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'due' | 'upcoming'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [selectedReminderId, setSelectedReminderId] = useState<string | null>(null);
+
+  const selectedReminder = selectedReminderId ? reminders.find(r => r.id === selectedReminderId) : null;
+
+  const handleReminderClick = (reminder: Reminder) => {
+    setSelectedReminderId(reminder.id);
+  };
 
   const filteredReminders = React.useMemo(() => {
     let filtered = reminders;
-    
+
     if (selectedFilter === 'due') {
       filtered = getDueReminders();
     } else if (selectedFilter === 'upcoming') {
@@ -42,10 +50,6 @@ export function RemindersPage() {
 
   const dueCount = getDueReminders().length;
   const upcomingCount = getUpcomingReminders().length;
-
-  const handleEditReminder = (reminder: Reminder) => {
-    console.log('Edit reminder:', reminder);
-  };
 
   const getContainerBackground = () => {
     if (theme === 'dark') return 'bg-gray-900/30';
@@ -92,11 +96,11 @@ export function RemindersPage() {
       return (
         <div className={cardGridStyles}>
           {filteredReminders.map(reminder => (
-            <ReminderCard 
+            <ReminderCard
               key={reminder.id}
-              reminder={reminder} 
+              reminder={reminder}
               viewMode="grid"
-              onClick={handleEditReminder}
+              onClick={handleReminderClick}
             />
           ))}
         </div>
@@ -106,11 +110,11 @@ export function RemindersPage() {
     return (
       <div className="space-y-4 px-0.5">
         {filteredReminders.map(reminder => (
-          <ReminderCard 
+          <ReminderCard
             key={reminder.id}
-            reminder={reminder} 
+            reminder={reminder}
             viewMode="list"
-            onClick={handleEditReminder}
+            onClick={handleReminderClick}
           />
         ))}
       </div>
@@ -146,7 +150,7 @@ export function RemindersPage() {
           `}
         >
           <div className="flex flex-col sm:flex-row gap-6 justify-between">
-            <motion.div 
+            <motion.div
               variants={cardVariants}
               className="flex items-center gap-3"
             >
@@ -196,7 +200,7 @@ export function RemindersPage() {
             />
           </div>
 
-          <motion.div 
+          <motion.div
             variants={cardVariants}
             className="flex gap-2"
           >
@@ -304,10 +308,19 @@ export function RemindersPage() {
           {renderReminderContent()}
         </motion.div>
 
+        {/* Modals */}
         <NewReminderModal
           isOpen={showNewReminderModal}
           onClose={() => setShowNewReminderModal(false)}
         />
+
+        {selectedReminder && (
+          <EditReminderModal
+            isOpen={!!selectedReminderId}
+            onClose={() => setSelectedReminderId(null)}
+            reminder={selectedReminder}
+          />
+        )}
       </div>
     </div>
   );
