@@ -1,5 +1,5 @@
 -- Insert test ideas into Notes table
-DECLARE @UserId NVARCHAR(450) = 'b22ad545-8d10-4bbf-a899-746eed186ee6' -- Replace with an actual user ID from your Users table
+DECLARE @UserId NVARCHAR(450) = '548ce8a6-8a16-4eba-90ac-5c2b68e57bb2' -- Replace with an actual user ID from your Users table
 
 INSERT INTO [dbo].[Notes]
     ([Id], [Title], [Content], [IsPinned], [IsFavorite], [IsArchived], [CreatedAt], [UpdatedAt], [UserId], [Tags], [IsIdea], [IsDeleted])

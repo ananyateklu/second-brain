@@ -1,5 +1,5 @@
 -- Insert test tasks into Tasks table
-DECLARE @UserId NVARCHAR(450) = 'b22ad545-8d10-4bbf-a899-746eed186ee6'
+DECLARE @UserId NVARCHAR(450) = '548ce8a6-8a16-4eba-90ac-5c2b68e57bb2'
 
 INSERT INTO [dbo].[Tasks]
     ([Id], [Title], [Description], [Status], [Priority], [DueDate], [CreatedAt], [UpdatedAt], [UserId], [Tags], [IsDeleted])
