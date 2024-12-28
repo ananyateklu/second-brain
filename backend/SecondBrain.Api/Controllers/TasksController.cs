@@ -288,7 +288,7 @@ namespace SecondBrain.Api.Controllers
             link.DeletedAt = null;
             link.Description = description;
             link.CreatedAt = DateTime.UtcNow;
-            link.LinkType = linkedItem.Tags != null && linkedItem.Tags.Contains("idea") ? "idea" : "note";
+            link.LinkType = linkedItem.IsIdea ? "idea" : "note";
             await _context.SaveChangesAsync();
         }
 
@@ -298,7 +298,7 @@ namespace SecondBrain.Api.Controllers
             {
                 TaskId = task.Id,
                 LinkedItemId = linkedItem.Id,
-                LinkType = linkedItem.Tags != null && linkedItem.Tags.Contains("idea") ? "idea" : "note",
+                LinkType = linkedItem.IsIdea ? "idea" : "note",
                 Description = description,
                 CreatedAt = DateTime.UtcNow,
                 CreatedBy = userId,
