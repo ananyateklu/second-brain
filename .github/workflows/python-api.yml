@@ -34,14 +34,22 @@ jobs:
       - name: Run tests with pytest
         run: |
           cd backend/SecondBrain.PythonApi
-          pytest --cov=src tests/ --cov-report=xml --cov-report=term-missing
+          pytest tests/ --verbose
 
+      # Optional: Generate coverage report (won't fail the build)
+      - name: Generate coverage report
+        run: |
+          cd backend/SecondBrain.PythonApi
+          pytest --cov=src tests/ --cov-report=xml --cov-report=term-missing
+        continue-on-error: true
+
+      # Optional: Upload to Codecov (won't fail the build)
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        continue-on-error: true
+        if: github.repository == 'ananyateklu/second-brain' && github.token != ''
         with:
           file: backend/SecondBrain.PythonApi/coverage.xml
           flags: python-api
           name: python-api-coverage
-          fail_ci_if_error: true
+          fail_ci_if_error: false # Don't fail if upload fails
