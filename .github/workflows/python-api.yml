@@ -1,0 +1,47 @@
+name: Python API CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: ["3.11"] # Using Python 3.11 for modern features and stability
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+          cache-dependency-path: backend/SecondBrain.PythonApi/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          cd backend/SecondBrain.PythonApi
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov
+          pip install -r requirements.txt
+
+      - name: Run tests with pytest
+        run: |
+          cd backend/SecondBrain.PythonApi
+          pytest --cov=src tests/ --cov-report=xml --cov-report=term-missing
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        with:
+          file: backend/SecondBrain.PythonApi/coverage.xml
+          flags: python-api
+          name: python-api-coverage
+          fail_ci_if_error: true
