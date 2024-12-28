@@ -57,13 +57,21 @@ jobs:
           dotnet-version: 8.0.x
 
       - name: Restore dependencies
-        run: dotnet restore backend/SecondBrain.sln
+        run: |
+          cd backend
+          dotnet restore
 
       - name: Build
-        run: dotnet build backend/SecondBrain.sln --no-restore
+        run: |
+          cd backend
+          dotnet build --configuration Release --no-restore
 
       - name: Test
-        run: dotnet test backend/SecondBrain.Tests/SecondBrain.Tests.csproj --no-build --verbosity normal
+        run: |
+          cd backend
+          dotnet test --configuration Release
 
       - name: Publish
-        run: dotnet publish backend/SecondBrain.Api/SecondBrain.Api.csproj -c Release -o publish
+        run: |
+          cd backend
+          dotnet publish SecondBrain.Api/SecondBrain.Api.csproj -c Release -o ../publish
