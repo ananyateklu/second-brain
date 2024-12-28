@@ -113,6 +113,9 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
       const safeNewNote = createSafeNote(newNote);
       setNotes(prev => sortNotes([safeNewNote, ...prev]));
       await createNoteActivity(safeNewNote);
+
+      // Trigger user stats update through the backend
+      await notesService.triggerUserStatsUpdate();
     } catch (error) {
       console.error('Failed to create note:', error);
       throw error;

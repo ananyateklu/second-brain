@@ -16,16 +16,31 @@ namespace SecondBrain.Api.Hubs
             });
         }
 
+        public async Task NotifyUserStatsUpdated(string userId)
+        {
+            await Clients.Group($"User_{userId}").SendAsync("userstatsupdated");
+        }
+
         public override async Task OnConnectedAsync()
         {
-            Console.WriteLine($"Client Connected: {Context.ConnectionId}");
+            var userId = Context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!string.IsNullOrEmpty(userId))
+            {
+                await Groups.AddToGroupAsync(Context.ConnectionId, $"User_{userId}");
+                Console.WriteLine($"Client Connected: {Context.ConnectionId}, UserId: {userId}, Added to group: User_{userId}");
+            }
             await base.OnConnectedAsync();
         }
 
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
-            Console.WriteLine($"Client Disconnected: {Context.ConnectionId}");
+            var userId = Context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!string.IsNullOrEmpty(userId))
+            {
+                await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"User_{userId}");
+                Console.WriteLine($"Client Disconnected: {Context.ConnectionId}, UserId: {userId}, Removed from group: User_{userId}");
+            }
             await base.OnDisconnectedAsync(exception);
         }
     }
-} 
+}

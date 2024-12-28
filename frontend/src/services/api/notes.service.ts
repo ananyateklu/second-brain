@@ -235,5 +235,16 @@ export const notesService = {
   async removeReminderFromNote(noteId: string, reminderId: string): Promise<Note> {
     const response = await api.delete<Note>(`/api/Notes/${noteId}/reminders/${reminderId}`);
     return response.data;
+  },
+
+  async triggerUserStatsUpdate(): Promise<void> {
+    try {
+      console.log('[Notes] Triggering user stats update');
+      await api.post('/api/Users/trigger-stats-update');
+      console.log('[Notes] User stats update triggered');
+    } catch (error) {
+      console.error('[Notes] Error triggering user stats update:', error);
+      throw error;
+    }
   }
 };

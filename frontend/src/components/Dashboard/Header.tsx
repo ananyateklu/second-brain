@@ -149,7 +149,7 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
                     <UserIcon className="w-5 h-5 text-[var(--color-accent)] transition-colors duration-200" />
                   )}
                 </div>
-                <svg className="absolute -inset-0.5 w-9 h-9 rotate-90">
+                <svg className="absolute -inset-0.5 w-9 h-9">
                   <circle
                     cx="18"
                     cy="18"
@@ -166,9 +166,11 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
                     stroke="currentColor"
                     strokeWidth="2"
                     fill="none"
-                    strokeDasharray={`${user?.levelProgress ?? 0 * 100} 100`}
+                    strokeDasharray={`${2 * Math.PI * 16}`}
+                    strokeDashoffset={`${2 * Math.PI * 16 * (1 - (xpProgress.progress / 100))}`}
                     className="text-[var(--color-accent)] transition-colors duration-200"
                     transform="rotate(-90 18 18)"
+                    style={{ transition: 'stroke-dashoffset 0.3s ease' }}
                   />
                 </svg>
                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-[var(--color-accent)] rounded-full flex items-center justify-center text-[10px] text-white font-medium transition-colors duration-200">
