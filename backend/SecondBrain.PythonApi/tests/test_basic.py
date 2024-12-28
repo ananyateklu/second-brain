@@ -1,6 +1,6 @@
 def test_basic():
     """Basic test to ensure pytest is working"""
-    assert True
+    assert 2 + 2 == 4
 
 def test_python_version():
     """Test that we're using Python 3"""

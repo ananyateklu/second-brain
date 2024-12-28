@@ -9,13 +9,12 @@ import { useTheme } from '../../../contexts/themeContextUtils';
 import { cardVariants } from '../../../utils/welcomeBarUtils';
 
 export const ArchivePage = memo(function ArchivePage() {
-  const [isLoading, setIsLoading] = useState(false);
-  const { archivedNotes, restoreMultipleNotes, loadArchivedNotes } = useNotes();
+  const { archivedNotes, restoreMultipleNotes, clearArchivedNotes, isLoading, loadArchivedNotes } = useNotes();
   const { theme } = useTheme();
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
-  const hasInitiallyLoaded = useRef(false);
+  const isMounted = useRef(false);
   const [filters, setFilters] = useState({
     sortBy: 'archivedAt' as 'archivedAt' | 'updatedAt' | 'title',
     sortOrder: 'desc' as 'asc' | 'desc',
@@ -23,23 +22,24 @@ export const ArchivePage = memo(function ArchivePage() {
     hasLinks: false
   });
 
-  // Load archived notes when the page mounts
   useEffect(() => {
-    const loadNotes = async () => {
-      if (hasInitiallyLoaded.current) return;
-      try {
-        setIsLoading(true);
-        await loadArchivedNotes();
-        hasInitiallyLoaded.current = true;
-      } catch (error) {
-        console.error('Failed to load archived notes:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    // Skip the first render (strict mode's double-mount)
+    if (!isMounted.current) {
+      isMounted.current = true;
+      return;
+    }
 
-    loadNotes();
-  }, [loadArchivedNotes]);
+    // Load archived notes only once after the initial mount
+    console.log('[Archive] Loading archived notes');
+    loadArchivedNotes();
+
+    // Cleanup when unmounting
+    return () => {
+      console.log('[Archive] Cleaning up archive page');
+      clearArchivedNotes();
+      isMounted.current = false;
+    };
+  }, [loadArchivedNotes, clearArchivedNotes]);
 
   const handleSelectItem = useCallback((id: string) => {
     setSelectedItems(prev =>

@@ -18,6 +18,40 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
 
   const isLoadingArchived = useRef(false);
 
+  const clearArchivedNotes = useCallback(() => {
+    console.log('[Notes] Clearing archived notes state');
+    setArchivedNotes([]);
+    isLoadingArchived.current = false;
+  }, []);
+
+  const loadArchivedNotes = useCallback(async () => {
+    // If we already have archived notes, don't load again
+    if (archivedNotes.length > 0) {
+      console.log('[NotesContext] Skipping load - archived notes already loaded');
+      return;
+    }
+
+    if (isLoadingArchived.current) {
+      console.log('[NotesContext] Skipping load - already loading archived notes');
+      return;
+    }
+
+    try {
+      isLoadingArchived.current = true;
+      setIsLoading(true);
+      console.log('[NotesContext] Loading archived notes');
+      const notes = await notesService.getArchivedNotes();
+      setArchivedNotes(notes);
+      console.log(`[NotesContext] Successfully loaded ${notes.length} archived notes`);
+    } catch (error) {
+      console.error('[NotesContext] Failed to load archived notes:', error);
+      throw error;
+    } finally {
+      isLoadingArchived.current = false;
+      setIsLoading(false);
+    }
+  }, [archivedNotes.length]);
+
   const fetchNotes = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -46,6 +80,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Load regular notes when user is available
   useEffect(() => {
     if (user) {
       fetchNotes();
@@ -481,43 +516,6 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     }
   }, [fetchNotes, notes]);
 
-  const loadArchivedNotes = useCallback(async () => {
-    try {
-      console.log('loadArchivedNotes called'); // Debug log
-      // Add loading state to prevent duplicate calls
-      if (isLoadingArchived.current) {
-        console.log('Already loading archived notes, skipping');
-        return;
-      }
-
-      // If we already have archived notes, don't fetch again
-      if (archivedNotes.length > 0) {
-        console.log('Archived notes already loaded, skipping fetch');
-        return;
-      }
-
-      isLoadingArchived.current = true;
-
-      const fetchedArchivedNotes = await notesService.getArchivedNotes();
-      const processedNotes = fetchedArchivedNotes.map(note => ({
-        ...note,
-        isArchived: true,
-        isDeleted: false,
-        isIdea: note.isIdea || false,
-        linkedNoteIds: note.linkedNoteIds || [],
-        linkedNotes: [],
-        linkedTasks: [],
-        linkedReminders: []
-      })) as Note[];
-
-      setArchivedNotes(processedNotes);
-      isLoadingArchived.current = false;
-    } catch (error) {
-      console.error('Failed to load archived notes:', error);
-      isLoadingArchived.current = false;
-    }
-  }, [archivedNotes.length]);
-
   const createBulkRestoreActivity = useCallback((restoredNotes: Note[], totalResults: number) => {
     const getRestoreDescription = (noteCount: number, ideaCount: number) => {
       if (noteCount > 0 && ideaCount > 0) {
@@ -694,6 +692,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     linkReminder,
     unlinkReminder,
     loadArchivedNotes,
+    clearArchivedNotes,
     restoreMultipleNotes,
     restoreNote,
     fetchNotes,
@@ -715,6 +714,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     linkReminder,
     unlinkReminder,
     loadArchivedNotes,
+    clearArchivedNotes,
     restoreMultipleNotes,
     restoreNote,
     fetchNotes,

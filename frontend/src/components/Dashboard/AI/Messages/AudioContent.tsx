@@ -19,28 +19,28 @@ export function AudioContent({ message }: AudioContentProps) {
   // Create audio URL from message content
   const audioUrl = useMemo(() => {
     if (!message.content) return '';
-    
+
     // Handle user-uploaded files
     if (message.content instanceof File) {
       return URL.createObjectURL(message.content);
     }
-    
+
     // Handle AI-generated audio (Blob or string URL)
     if (message.content instanceof Blob) {
       return URL.createObjectURL(message.content);
     }
-    
+
     if (typeof message.content === 'string') {
       return message.content;
     }
-    
+
     return '';
   }, [message.content]);
 
   // Cleanup URL on unmount
   useEffect(() => {
     return () => {
-      if (audioUrl && audioUrl.startsWith('blob:')) {
+      if (audioUrl?.startsWith('blob:')) {
         URL.revokeObjectURL(audioUrl);
       }
     };
@@ -163,8 +163,10 @@ export function AudioContent({ message }: AudioContentProps) {
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         onEnded={() => setIsPlaying(false)}
-      />
-      
+      >
+        <track kind="captions" />
+      </audio>
+
       <div className="backdrop-blur-md bg-white/30 dark:bg-gray-800/30 rounded-2xl 
         shadow-lg border border-white/20 dark:border-gray-700/30
         transition-all duration-300 hover:shadow-xl
@@ -175,7 +177,7 @@ export function AudioContent({ message }: AudioContentProps) {
           <div className="h-12 flex items-center justify-center gap-0.5">
             {[...Array(40)].map((_, i) => (
               <div
-                key={i}
+                key={`${message.id || 'temp'}-wave-${i}`}
                 className="w-1 bg-primary-500/30 dark:bg-primary-400/30 rounded-full"
                 style={{
                   height: `${Math.random() * 100}%`,
@@ -229,7 +231,7 @@ export function AudioContent({ message }: AudioContentProps) {
                 }}
               />
             </div>
-            
+
             {/* Time display */}
             <div className="flex justify-between text-xs font-medium
               text-gray-600 dark:text-gray-300">
@@ -242,7 +244,7 @@ export function AudioContent({ message }: AudioContentProps) {
         {/* Additional controls */}
         <div className="px-6 py-3 flex items-center gap-4
           border-t border-gray-200/30 dark:border-gray-700/30">
-          <div 
+          <div
             className="relative flex items-center gap-2"
             onMouseEnter={() => setIsVolumeHovered(true)}
             onMouseLeave={() => setIsVolumeHovered(false)}
@@ -260,7 +262,7 @@ export function AudioContent({ message }: AudioContentProps) {
                 <Volume2 className="w-4 h-4" />
               )}
             </button>
-            
+
             <div className={`
               flex items-center
               transition-all duration-200

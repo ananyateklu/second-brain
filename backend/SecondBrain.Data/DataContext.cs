@@ -3,6 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using SecondBrain.Data.Entities;
 using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration.Json;
+using System.IO;
 
 namespace SecondBrain.Data
 {
@@ -334,8 +337,14 @@ namespace SecondBrain.Data
     {
         public DataContext CreateDbContext(string[] args)
         {
+            var configuration = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json", optional: false)
+                .AddJsonFile("appsettings.Development.json", optional: true)
+                .Build();
+
             var optionsBuilder = new DbContextOptionsBuilder<DataContext>();
-            optionsBuilder.UseSqlServer("Server=localhost,7800;Database=SecondBrainDb;User Id=sa;Password=Anu685904;TrustServerCertificate=True;");
+            optionsBuilder.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
             return new DataContext(optionsBuilder.Options);
         }
     }

@@ -30,18 +30,18 @@ interface StepMetadata {
   messageId?: string;
   timestamp?: string;
   duration?: number;
-  
+
   // Processing metadata
   modelId?: string;
   userId?: string;
   inputTokens?: number;
   maxContext?: number;
-  
+
   // Thinking metadata
   thoughtProcess?: string;
   confidence?: number;
   alternatives?: string[];
-  
+
   // Thinking sub-steps metadata
   promptAnalysis?: {
     prompt?: string;
@@ -62,12 +62,12 @@ interface StepMetadata {
     checks: string[];
     issues?: string[];
   };
-  
+
   // Function Call metadata
   functionName?: string;
   functionParameters?: Record<string, unknown>;
   expectedReturn?: string;
-  
+
   // Database Operation metadata
   databaseOperation?: {
     type: string;
@@ -75,13 +75,13 @@ interface StepMetadata {
     query?: string;
     parameters?: Record<string, unknown>;
   };
-  
+
   // Result metadata
   success?: boolean;
   result?: string | number | boolean | object | null;
   error?: string;
   executionTime?: number;
-  
+
   // Generic metadata
   rawResponse?: string;
   [key: string]: unknown;
@@ -101,13 +101,13 @@ const renderStepIndicator = (
   Icon: LucideIcon | undefined
 ) => {
   // Ensure we have a valid color, fallback to gray if undefined
-  const color = stepColor || '#6B7280';
-  
+  const color = stepColor ?? '#6B7280';
+
   // Show loading spinner only if this is the last step and we're not complete
   if (isLast && !isComplete) {
     return <Settings2 className="w-4 h-4 animate-spin" style={{ color }} />;
   }
-  
+
   // For sub-steps, show checkmark if complete, dot if not
   if (isSubStep) {
     // Show checkmark for completed sub-steps
@@ -117,7 +117,7 @@ const renderStepIndicator = (
     // Show dot for incomplete sub-steps
     return <div className="w-1.5 h-1.5 rounded-full mt-1.5" style={{ backgroundColor: color }} />;
   }
-  
+
   // For main steps, show the icon
   return Icon ? <Icon className="w-4 h-4" style={{ color }} /> : null;
 };
@@ -233,21 +233,21 @@ export function ThoughtProcess({ steps, isComplete, themeColor }: ThoughtProcess
       const stepId = `${mainStep.type}-${mainStep.timestamp}`;
       const subSteps = subStepsMap.get(mainStep.type) || [];
       const isLastStep = steps[steps.length - 1] === mainStep;
-      
+
       if (!manuallyToggledSteps.current.has(stepId)) {
         // Check if the step and its sub-steps are loaded
         const isStepLoaded = Boolean(mainStep.metadata?.success || mainStep.metadata?.completed);
-        const hasUnfinishedSubSteps = subSteps.length > 0 && 
+        const hasUnfinishedSubSteps = subSteps.length > 0 &&
           subSteps.some(subStep => {
             const isSubStepLast = steps[steps.length - 1] === subStep;
             return isSubStepLast && !subStep.metadata?.success && !subStep.metadata?.completed;
           });
-        
+
         // A step is running if:
         // 1. The main step is not loaded and it's the current step, OR
         // 2. It has an unfinished sub-step that is currently being processed
         const isCurrentlyRunning = (!isStepLoaded && isLastStep) || hasUnfinishedSubSteps;
-        
+
         // Keep expanded if:
         // 1. It's the last step and not complete, OR
         // 2. It's currently running (including sub-steps)
@@ -273,7 +273,7 @@ export function ThoughtProcess({ steps, isComplete, themeColor }: ThoughtProcess
   React.useEffect(() => {
     if (!isComplete && steps.length > 0) {
       setTimeout(() => {
-        lastStepRef.current?.scrollIntoView({ 
+        lastStepRef.current?.scrollIntoView({
           behavior: 'smooth',
           block: 'end',
         });
@@ -285,10 +285,10 @@ export function ThoughtProcess({ steps, isComplete, themeColor }: ThoughtProcess
   const toggleCollapse = React.useCallback((stepId: string, event: React.MouseEvent) => {
     // Prevent event from bubbling up to prevent scroll handlers
     event.stopPropagation();
-    
+
     // Mark this step as manually toggled
     manuallyToggledSteps.current.add(stepId);
-    
+
     setCollapsedSteps(prev => {
       const newState = {
         ...prev,
@@ -338,463 +338,520 @@ export function ThoughtProcess({ steps, isComplete, themeColor }: ThoughtProcess
     return { mainSteps, subStepMap };
   }, [steps]);
 
+  const renderProcessingMetadata = (metadata: StepMetadata) => (
+    <div className="space-y-1">
+      {metadata.timestamp && (
+        <div className="flex items-center gap-2">
+          <span className="text-gray-500">Time:</span>
+          <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+            {new Date(metadata.timestamp).toLocaleTimeString()}
+          </span>
+        </div>
+      )}
+      {metadata.modelId && (
+        <div className="flex items-center gap-2">
+          <span className="text-gray-500">Model:</span>
+          <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+            {metadata.modelId}
+          </span>
+        </div>
+      )}
+      {metadata.duration && (
+        <div className="flex items-center gap-2">
+          <span className="text-gray-500">Duration:</span>
+          <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+            {metadata.duration}ms
+          </span>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderThinkingMetadata = (metadata: StepMetadata) => (
+    <div className="space-y-1">
+      {metadata.modelId && (
+        <div className="flex items-center gap-2">
+          <span className="text-gray-500">Model:</span>
+          <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+            {metadata.modelId}
+          </span>
+        </div>
+      )}
+      {metadata.duration && (
+        <div className="flex items-center gap-2">
+          <span className="text-gray-500">Duration:</span>
+          <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+            {metadata.duration}ms
+          </span>
+        </div>
+      )}
+      {metadata.thoughtProcess && (
+        <div className="flex flex-col gap-1">
+          <span className="text-gray-500">Process:</span>
+          <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded text-gray-700 dark:text-gray-300">
+            {metadata.thoughtProcess}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderFunctionCallMetadata = (metadata: StepMetadata) => (
+    <div className="space-y-1">
+      {metadata.functionName && (
+        <div className="flex items-center gap-2">
+          <span className="text-gray-500">Function:</span>
+          <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+            {metadata.functionName}
+          </span>
+        </div>
+      )}
+      {metadata.functionParameters && Object.keys(metadata.functionParameters).length > 0 && (
+        <div className="flex flex-col gap-1">
+          <span className="text-gray-500">Parameters:</span>
+          <pre className="font-mono text-[10px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded overflow-x-auto">
+            {JSON.stringify(metadata.functionParameters, null, 2)}
+          </pre>
+        </div>
+      )}
+      {metadata.duration && (
+        <div className="flex items-center gap-2">
+          <span className="text-gray-500">Duration:</span>
+          <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+            {metadata.duration}ms
+          </span>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderDatabaseMetadata = (metadata: StepMetadata) => (
+    <div className="space-y-1">
+      {metadata.databaseOperation?.type && (
+        <div className="flex items-center gap-2">
+          <span className="text-gray-500">Operation:</span>
+          <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+            {metadata.databaseOperation.type.toUpperCase()}
+          </span>
+        </div>
+      )}
+      {metadata.databaseOperation?.table && (
+        <div className="flex items-center gap-2">
+          <span className="text-gray-500">Table:</span>
+          <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+            {metadata.databaseOperation.table}
+          </span>
+        </div>
+      )}
+      {metadata.databaseOperation?.query && (
+        <div className="flex flex-col gap-1">
+          <span className="text-gray-500">Query:</span>
+          <pre className="font-mono text-[10px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded overflow-x-auto">
+            {metadata.databaseOperation.query}
+          </pre>
+        </div>
+      )}
+      {metadata.duration && (
+        <div className="flex items-center gap-2">
+          <span className="text-gray-500">Duration:</span>
+          <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+            {metadata.duration}ms
+          </span>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderResultMetadata = (metadata: StepMetadata) => {
+    const result = metadata.result ? parseOperationResult(metadata.result as string) : null;
+    if (!result) return null;
+
+    return (
+      <div className="space-y-1">
+        <div className="flex items-center gap-2">
+          <span className="text-gray-500">Status:</span>
+          {result.success ? (
+            <span className="text-green-600 dark:text-green-400">Success</span>
+          ) : (
+            <span className="text-red-600 dark:text-red-400">Failed</span>
+          )}
+        </div>
+        {result.message && (
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500">Message:</span>
+            <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+              {result.message}
+            </span>
+          </div>
+        )}
+        {metadata.timestamp && (
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500">Time:</span>
+            <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+              {new Date(metadata.timestamp).toLocaleTimeString()}
+            </span>
+          </div>
+        )}
+        {result.data && (
+          <div className="flex flex-col gap-1">
+            <span className="text-gray-500">Details:</span>
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-2">
+                <span className="text-gray-500">Title:</span>
+                <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+                  {String(result.data?.Title || '')}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-gray-500">Tags:</span>
+                <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+                  {String(result.data?.Tags || '')}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-gray-500">Created:</span>
+                <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+                  {new Date(result.data.CreatedAt).toLocaleString()}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderPromptAnalysisMetadata = (metadata: StepMetadata) => (
+    metadata.promptAnalysis || metadata.messageId ? (
+      <div className="space-y-1">
+        {metadata.promptAnalysis?.prompt && (
+          <div className="flex flex-col gap-1">
+            <span className="text-gray-500">Analyzed Prompt:</span>
+            <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+              {metadata.promptAnalysis.prompt}
+            </span>
+          </div>
+        )}
+        {metadata.modelId && (
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500">Model:</span>
+            <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+              {metadata.modelId}
+            </span>
+          </div>
+        )}
+        {metadata.messageId && (
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500">Message ID:</span>
+            <span className="font-mono text-[10px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+              {metadata.messageId}
+            </span>
+          </div>
+        )}
+      </div>
+    ) : null
+  );
+
+  const renderParameterExtractionMetadata = (metadata: StepMetadata) => (
+    metadata.parameterExtraction || metadata.messageId ? (
+      <div className="space-y-1">
+        {metadata.parameterExtraction?.extracted && Object.keys(metadata.parameterExtraction.extracted).length > 0 && (
+          <div className="flex flex-col gap-1">
+            <span className="text-gray-500">Extracted Parameters:</span>
+            <pre className="font-mono text-[10px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded overflow-x-auto">
+              {JSON.stringify(metadata.parameterExtraction.extracted, null, 2)}
+            </pre>
+          </div>
+        )}
+        {metadata.parameterExtraction?.confidence && (
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500">Confidence:</span>
+            <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+              {(metadata.parameterExtraction.confidence * 100).toFixed(1)}%
+            </span>
+          </div>
+        )}
+        {metadata.messageId && (
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500">Message ID:</span>
+            <span className="font-mono text-[10px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+              {metadata.messageId}
+            </span>
+          </div>
+        )}
+      </div>
+    ) : null
+  );
+
+  const renderValidationCheckMetadata = (metadata: StepMetadata) => (
+    metadata.validationResults || metadata.messageId ? (
+      <div className="space-y-1">
+        {metadata.validationResults?.passed !== undefined && (
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500">Status:</span>
+            {metadata.validationResults.passed ? (
+              <span className="text-green-600 dark:text-green-400">Passed</span>
+            ) : (
+              <span className="text-red-600 dark:text-red-400">Failed</span>
+            )}
+          </div>
+        )}
+        {metadata.validationResults?.checks && metadata.validationResults.checks.length > 0 && (
+          <div className="flex flex-col gap-1">
+            <span className="text-gray-500">Checks:</span>
+            <div className="space-y-0.5">
+              {metadata.validationResults.checks.map((check, index) => (
+                <div key={`${check}-${index}`} className="font-mono text-[10px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+                  {check}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {metadata.messageId && (
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500">Message ID:</span>
+            <span className="font-mono text-[10px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+              {metadata.messageId}
+            </span>
+          </div>
+        )}
+      </div>
+    ) : null
+  );
+
+  const renderOperationSelectionMetadata = (metadata: StepMetadata) => (
+    metadata.operationDetails || metadata.messageId ? (
+      <div className="space-y-1">
+        {metadata.operationDetails?.type && (
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500">Operation:</span>
+            <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+              {metadata.operationDetails.type}
+            </span>
+          </div>
+        )}
+        {metadata.operationDetails?.description && (
+          <div className="flex flex-col gap-1">
+            <span className="text-gray-500">Description:</span>
+            <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+              {metadata.operationDetails.description}
+            </span>
+          </div>
+        )}
+        {metadata.operationDetails?.confidence && (
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500">Confidence:</span>
+            <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+              {(metadata.operationDetails.confidence * 100).toFixed(1)}%
+            </span>
+          </div>
+        )}
+        {metadata.messageId && (
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500">Message ID:</span>
+            <span className="font-mono text-[10px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+              {metadata.messageId}
+            </span>
+          </div>
+        )}
+      </div>
+    ) : null
+  );
+
+  const renderFunctionPreparationMetadata = (metadata: StepMetadata) => (
+    metadata.messageId ? (
+      <div className="space-y-1">
+        {metadata.functionName && (
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500">Function:</span>
+            <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+              {metadata.functionName}
+            </span>
+          </div>
+        )}
+        {metadata.functionParameters && Object.keys(metadata.functionParameters).length > 0 && (
+          <div className="flex flex-col gap-1">
+            <span className="text-gray-500">Parameters:</span>
+            <pre className="font-mono text-[10px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+              {JSON.stringify(metadata.functionParameters, null, 2)}
+            </pre>
+          </div>
+        )}
+        {metadata.messageId && (
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500">Message ID:</span>
+            <span className="font-mono text-[10px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+              {metadata.messageId}
+            </span>
+          </div>
+        )}
+      </div>
+    ) : null
+  );
+
+  const renderResultProcessingMetadata = (metadata: StepMetadata) => {
+    const result = metadata.result ? parseOperationResult(metadata.result as string) : null;
+    if (!result) return null;
+
+    return (
+      <div className="space-y-1">
+        <div className="flex items-center gap-2">
+          <span className="text-gray-500">Status:</span>
+          {result.success ? (
+            <span className="text-green-600 dark:text-green-400">Success</span>
+          ) : (
+            <span className="text-red-600 dark:text-red-400">Failed</span>
+          )}
+        </div>
+        {result.message && (
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500">Message:</span>
+            <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+              {result.message}
+            </span>
+          </div>
+        )}
+        {result.data && (
+          <div className="flex flex-col gap-1">
+            <span className="text-gray-500">Details:</span>
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-2">
+                <span className="text-gray-500">Title:</span>
+                <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+                  {String(result.data?.Title || '')}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-gray-500">Tags:</span>
+                <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+                  {String(result.data?.Tags || '')}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-gray-500">Created:</span>
+                <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+                  {new Date(result.data.CreatedAt).toLocaleString()}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+        {metadata.messageId && (
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500">Message ID:</span>
+            <span className="font-mono text-[10px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+              {metadata.messageId}
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderResponseFormattingMetadata = (metadata: StepMetadata) => (
+    metadata.messageId ? (
+      <div className="space-y-1">
+        {metadata.result && (
+          <div className="flex flex-col gap-1">
+            <span className="text-gray-500">Formatted Response:</span>
+            <pre className="font-mono text-[10px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded overflow-x-auto">
+              {formatResult(metadata.result)}
+            </pre>
+          </div>
+        )}
+        <div className="flex items-center gap-2">
+          <span className="text-gray-500">Message ID:</span>
+          <span className="font-mono text-[10px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+            {metadata.messageId}
+          </span>
+        </div>
+      </div>
+    ) : null
+  );
+
+  const renderPerformanceMetricsMetadata = (metadata: StepMetadata) => (
+    metadata.messageId ? (
+      <div className="space-y-1">
+        {metadata.duration && (
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500">Duration:</span>
+            <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+              {metadata.duration}ms
+            </span>
+          </div>
+        )}
+        <div className="flex items-center gap-2">
+          <span className="text-gray-500">Message ID:</span>
+          <span className="font-mono text-[10px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+            {metadata.messageId}
+          </span>
+        </div>
+      </div>
+    ) : null
+  );
+
+  const renderCompletionStatusMetadata = (metadata: StepMetadata) => (
+    metadata.messageId ? (
+      <div className="space-y-1">
+        {metadata.success !== undefined && (
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500">Status:</span>
+            {metadata.success ? (
+              <span className="text-green-600 dark:text-green-400">Success</span>
+            ) : (
+              <span className="text-red-600 dark:text-red-400">Failed</span>
+            )}
+          </div>
+        )}
+        <div className="flex items-center gap-2">
+          <span className="text-gray-500">Message ID:</span>
+          <span className="font-mono text-[10px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+            {metadata.messageId}
+          </span>
+        </div>
+      </div>
+    ) : null
+  );
+
   const renderMetadata = (step: ExecutionStep) => {
     if (!step.metadata) return null;
-    
+
     const metadata = step.metadata as StepMetadata;
     const isSubStep = step.isSubStep || false;
-    const operationResult = metadata.result ? parseOperationResult(metadata.result as string) : null;
 
-    switch (step.type) {
-      case 0: // Processing (Main Step)
-        if (!isSubStep) {
-          return (
-            <div className="space-y-1">
-              {metadata.timestamp && (
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-500">Time:</span>
-                  <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                    {new Date(metadata.timestamp).toLocaleTimeString()}
-                  </span>
-                </div>
-              )}
-              {metadata.modelId && (
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-500">Model:</span>
-                  <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                    {metadata.modelId}
-                  </span>
-                </div>
-              )}
-              {metadata.duration && (
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-500">Duration:</span>
-                  <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                    {metadata.duration}ms
-                  </span>
-                </div>
-              )}
-            </div>
-          );
-        }
-        return null;
+    if (isSubStep && step.type === 0) return null;
 
-      case 1: // Thinking (Main Step)
-        if (!isSubStep) {
-          return (
-            <div className="space-y-1">
-              {metadata.modelId && (
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-500">Model:</span>
-                  <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                    {metadata.modelId}
-                  </span>
-                </div>
-              )}
-              {metadata.duration && (
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-500">Duration:</span>
-                  <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                    {metadata.duration}ms
-                  </span>
-                </div>
-              )}
-              {metadata.thoughtProcess && (
-                <div className="flex flex-col gap-1">
-                  <span className="text-gray-500">Process:</span>
-                  <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded text-gray-700 dark:text-gray-300">
-                    {metadata.thoughtProcess}
-                  </span>
-                </div>
-              )}
-            </div>
-          );
-        }
-        return null;
+    const metadataRenderers: Record<number, (metadata: StepMetadata) => React.ReactNode> = {
+      0: renderProcessingMetadata,
+      1: renderThinkingMetadata,
+      2: renderFunctionCallMetadata,
+      3: renderDatabaseMetadata,
+      4: renderResultMetadata,
+      14: renderPromptAnalysisMetadata,
+      15: renderParameterExtractionMetadata,
+      16: renderOperationSelectionMetadata,
+      17: renderValidationCheckMetadata,
+      18: renderFunctionPreparationMetadata,
+      19: renderFunctionPreparationMetadata,
+      20: renderFunctionPreparationMetadata,
+      21: renderResultProcessingMetadata,
+      22: renderResponseFormattingMetadata,
+      23: renderPerformanceMetricsMetadata,
+      24: renderCompletionStatusMetadata,
+    };
 
-      case 2: // Function Call (Main Step)
-        if (!isSubStep) {
-          return (
-            <div className="space-y-1">
-              {metadata.functionName && (
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-500">Function:</span>
-                  <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                    {metadata.functionName}
-                  </span>
-                </div>
-              )}
-              {metadata.functionParameters && Object.keys(metadata.functionParameters).length > 0 && (
-                <div className="flex flex-col gap-1">
-                  <span className="text-gray-500">Parameters:</span>
-                  <pre className="font-mono text-[10px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded overflow-x-auto">
-                    {JSON.stringify(metadata.functionParameters, null, 2)}
-                  </pre>
-                </div>
-              )}
-              {metadata.duration && (
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-500">Duration:</span>
-                  <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                    {metadata.duration}ms
-                  </span>
-                </div>
-              )}
-            </div>
-          );
-        }
-        return null;
-
-      case 3: // Database Operation (Main Step)
-        if (!isSubStep) {
-          return (
-            <div className="space-y-1">
-              {metadata.databaseOperation?.type && (
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-500">Operation:</span>
-                  <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                    {metadata.databaseOperation.type.toUpperCase()}
-                  </span>
-                </div>
-              )}
-              {metadata.databaseOperation?.table && (
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-500">Table:</span>
-                  <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                    {metadata.databaseOperation.table}
-                  </span>
-                </div>
-              )}
-              {metadata.databaseOperation?.query && (
-                <div className="flex flex-col gap-1">
-                  <span className="text-gray-500">Query:</span>
-                  <pre className="font-mono text-[10px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded overflow-x-auto">
-                    {metadata.databaseOperation.query}
-                  </pre>
-                </div>
-              )}
-              {metadata.duration && (
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-500">Duration:</span>
-                  <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                    {metadata.duration}ms
-                  </span>
-                </div>
-              )}
-            </div>
-          );
-        }
-        return null;
-
-      case 14: // PromptAnalysis
-        return metadata.promptAnalysis || metadata.messageId ? (
-          <div className="space-y-1">
-            {metadata.promptAnalysis?.prompt && (
-              <div className="flex flex-col gap-1">
-                <span className="text-gray-500">Analyzed Prompt:</span>
-                <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                  {metadata.promptAnalysis.prompt}
-                </span>
-              </div>
-            )}
-            {metadata.modelId && (
-              <div className="flex items-center gap-2">
-                <span className="text-gray-500">Model:</span>
-                <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                  {metadata.modelId}
-                </span>
-              </div>
-            )}
-            {metadata.messageId && (
-              <div className="flex items-center gap-2">
-                <span className="text-gray-500">Message ID:</span>
-                <span className="font-mono text-[10px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                  {metadata.messageId}
-                </span>
-              </div>
-            )}
-          </div>
-        ) : null;
-
-      case 15: // ParameterExtraction
-        return metadata.parameterExtraction || metadata.messageId ? (
-          <div className="space-y-1">
-            {metadata.parameterExtraction?.extracted && Object.keys(metadata.parameterExtraction.extracted).length > 0 && (
-              <div className="flex flex-col gap-1">
-                <span className="text-gray-500">Extracted Parameters:</span>
-                <pre className="font-mono text-[10px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded overflow-x-auto">
-                  {JSON.stringify(metadata.parameterExtraction.extracted, null, 2)}
-                </pre>
-              </div>
-            )}
-            {metadata.parameterExtraction?.confidence && (
-              <div className="flex items-center gap-2">
-                <span className="text-gray-500">Confidence:</span>
-                <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                  {(metadata.parameterExtraction.confidence * 100).toFixed(1)}%
-                </span>
-              </div>
-            )}
-            {metadata.messageId && (
-              <div className="flex items-center gap-2">
-                <span className="text-gray-500">Message ID:</span>
-                <span className="font-mono text-[10px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                  {metadata.messageId}
-                </span>
-              </div>
-            )}
-          </div>
-        ) : null;
-
-      case 16: // OperationSelection
-        return metadata.operationDetails || metadata.messageId ? (
-          <div className="space-y-1">
-            {metadata.operationDetails?.type && (
-              <div className="flex items-center gap-2">
-                <span className="text-gray-500">Operation:</span>
-                <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                  {metadata.operationDetails.type}
-                </span>
-              </div>
-            )}
-            {metadata.operationDetails?.description && (
-              <div className="flex flex-col gap-1">
-                <span className="text-gray-500">Description:</span>
-                <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                  {metadata.operationDetails.description}
-                </span>
-              </div>
-            )}
-            {metadata.messageId && (
-              <div className="flex items-center gap-2">
-                <span className="text-gray-500">Message ID:</span>
-                <span className="font-mono text-[10px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                  {metadata.messageId}
-                </span>
-              </div>
-            )}
-          </div>
-        ) : null;
-
-      case 17: // ValidationCheck
-        return metadata.validationResults || metadata.messageId ? (
-          <div className="space-y-1">
-            {metadata.validationResults?.passed !== undefined && (
-              <div className="flex items-center gap-2">
-                <span className="text-gray-500">Status:</span>
-                {metadata.validationResults.passed ? (
-                  <span className="text-green-600 dark:text-green-400">Passed</span>
-                ) : (
-                  <span className="text-red-600 dark:text-red-400">Failed</span>
-                )}
-              </div>
-            )}
-            {metadata.validationResults?.checks && metadata.validationResults.checks.length > 0 && (
-              <div className="flex flex-col gap-1">
-                <span className="text-gray-500">Checks:</span>
-                <div className="space-y-0.5">
-                  {metadata.validationResults.checks.map((check, index) => (
-                    <div key={index} className="font-mono text-[10px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                      {check}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            {metadata.messageId && (
-              <div className="flex items-center gap-2">
-                <span className="text-gray-500">Message ID:</span>
-                <span className="font-mono text-[10px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                  {metadata.messageId}
-                </span>
-              </div>
-            )}
-          </div>
-        ) : null;
-
-      case 18: // ArgumentParsing
-      case 19: // ParameterValidation
-      case 20: // FunctionPreparation
-        return metadata.messageId ? (
-          <div className="space-y-1">
-            {metadata.functionName && (
-              <div className="flex items-center gap-2">
-                <span className="text-gray-500">Function:</span>
-                <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                  {metadata.functionName}
-                </span>
-              </div>
-            )}
-            {metadata.functionParameters && Object.keys(metadata.functionParameters).length > 0 && (
-              <div className="flex flex-col gap-1">
-                <span className="text-gray-500">Parameters:</span>
-                <pre className="font-mono text-[10px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                  {JSON.stringify(metadata.functionParameters, null, 2)}
-                </pre>
-              </div>
-            )}
-          </div>
-        ) : null;
-
-      case 4: // Result (Main Step)
-        if (!isSubStep) {
-          const operationResult = parseOperationResult(metadata.result as string);
-          return (
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="text-gray-500">Status:</span>
-                {operationResult.success ? (
-                  <span className="text-green-600 dark:text-green-400">Success</span>
-                ) : (
-                  <span className="text-red-600 dark:text-red-400">Failed</span>
-                )}
-              </div>
-              {operationResult.message && (
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-500">Message:</span>
-                  <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                    {operationResult.message}
-                  </span>
-                </div>
-              )}
-              {metadata.timestamp && (
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-500">Time:</span>
-                  <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                    {new Date(metadata.timestamp).toLocaleTimeString()}
-                  </span>
-                </div>
-              )}
-              {operationResult.data && (
-                <div className="flex flex-col gap-1">
-                  <span className="text-gray-500">Details:</span>
-                  <div className="space-y-0.5">
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-500">Title:</span>
-                      <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                        {String(operationResult.data?.Title || '')}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-500">Tags:</span>
-                      <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                        {String(operationResult.data?.Tags || '')}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-500">Created:</span>
-                      <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                        {new Date(operationResult.data.CreatedAt as string).toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        }
-        return null;
-
-      case 21: // ResultProcessing
-        if (!operationResult) return null;
-        return (
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="text-gray-500">Status:</span>
-              {operationResult.success ? (
-                <span className="text-green-600 dark:text-green-400">Success</span>
-              ) : (
-                <span className="text-red-600 dark:text-red-400">Failed</span>
-              )}
-            </div>
-            {operationResult.message && (
-              <div className="flex items-center gap-2">
-                <span className="text-gray-500">Message:</span>
-                <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                  {operationResult.message}
-                </span>
-              </div>
-            )}
-            {metadata.messageId && (
-              <div className="flex items-center gap-2">
-                <span className="text-gray-500">Message ID:</span>
-                <span className="font-mono text-[10px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                  {metadata.messageId}
-                </span>
-              </div>
-            )}
-          </div>
-        );
-
-      case 22: // ResponseFormatting
-        return metadata.messageId ? (
-          <div className="space-y-1">
-            {metadata.result && (
-              <div className="flex flex-col gap-1">
-                <span className="text-gray-500">Formatted Response:</span>
-                <pre className="font-mono text-[10px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded overflow-x-auto">
-                  {formatResult(metadata.result)}
-                </pre>
-              </div>
-            )}
-            <div className="flex items-center gap-2">
-              <span className="text-gray-500">Message ID:</span>
-              <span className="font-mono text-[10px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                {metadata.messageId}
-              </span>
-            </div>
-          </div>
-        ) : null;
-
-      case 23: // PerformanceMetrics
-        return metadata.messageId ? (
-          <div className="space-y-1">
-            {metadata.duration && (
-              <div className="flex items-center gap-2">
-                <span className="text-gray-500">Duration:</span>
-                <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                  {metadata.duration}ms
-                </span>
-              </div>
-            )}
-            <div className="flex items-center gap-2">
-              <span className="text-gray-500">Message ID:</span>
-              <span className="font-mono text-[10px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                {metadata.messageId}
-              </span>
-            </div>
-          </div>
-        ) : null;
-
-      case 24: // CompletionStatus
-        return metadata.messageId ? (
-          <div className="space-y-1">
-            {metadata.success !== undefined && (
-              <div className="flex items-center gap-2">
-                <span className="text-gray-500">Status:</span>
-                {metadata.success ? (
-                  <span className="text-green-600 dark:text-green-400">Success</span>
-                ) : (
-                  <span className="text-red-600 dark:text-red-400">Failed</span>
-                )}
-              </div>
-            )}
-            <div className="flex items-center gap-2">
-              <span className="text-gray-500">Message ID:</span>
-              <span className="font-mono text-[10px] bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
-                {metadata.messageId}
-              </span>
-            </div>
-          </div>
-        ) : null;
-
-      default:
-        return (
-          <pre className="bg-gray-50 dark:bg-gray-800 p-1.5 rounded-md overflow-x-auto">
-            {JSON.stringify(metadata, null, 2)}
-          </pre>
-        );
+    const renderer = metadataRenderers[step.type];
+    if (renderer) {
+      return renderer(metadata);
     }
+
+    // Default fallback for unknown step types
+    return (
+      <pre className="bg-gray-50 dark:bg-gray-800 p-1.5 rounded-md overflow-x-auto">
+        {JSON.stringify(metadata, null, 2)}
+      </pre>
+    );
   };
 
   const renderStep = (step: ExecutionStep, isSubStep: boolean = false, parentColor?: string) => {
@@ -808,12 +865,12 @@ export function ThoughtProcess({ steps, isComplete, themeColor }: ThoughtProcess
     const isLoading = isLast && !isComplete && !isSubStep;
 
     return (
-      <div 
-        key={stepId} 
+      <div
+        key={stepId}
         className="space-y-2 animate-fade-in"
         ref={isLast ? lastStepRef : undefined}
       >
-        <div 
+        <div
           className={cn(
             "flex items-start gap-2 p-2 rounded-lg transition-all duration-300",
             !isSubStep && "bg-white/50 dark:bg-gray-800/50 shadow-sm hover:shadow-md border border-gray-100 dark:border-gray-700",
@@ -876,7 +933,7 @@ export function ThoughtProcess({ steps, isComplete, themeColor }: ThoughtProcess
         </div>
 
         {/* Render Sub-steps with stable height transition */}
-        <div 
+        <div
           className={cn(
             "overflow-hidden transition-all duration-300",
             isCollapsed ? "max-h-0 opacity-0" : "max-h-[2000px] opacity-100"
@@ -887,9 +944,9 @@ export function ThoughtProcess({ steps, isComplete, themeColor }: ThoughtProcess
           }}
         >
           {hasSubSteps && !isCollapsed && (
-            <div 
+            <div
               className="relative ml-6 space-y-1"
-              style={{ 
+              style={{
                 borderLeft: `2px dashed ${stepColor}40`,
                 marginTop: '-0.5rem',
                 paddingTop: '0.5rem',
@@ -897,11 +954,11 @@ export function ThoughtProcess({ steps, isComplete, themeColor }: ThoughtProcess
               }}
             >
               {subSteps.map(subStep => (
-                <div 
+                <div
                   key={`${subStep.type}-${subStep.timestamp}`}
                   className="relative animate-slide-in"
                 >
-                  <div 
+                  <div
                     className="absolute -left-[17px] top-1/2 w-3 h-[2px] transition-all duration-300"
                     style={{ backgroundColor: `${stepColor}40` }}
                   />

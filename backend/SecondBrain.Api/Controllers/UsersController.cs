@@ -12,16 +12,13 @@ namespace SecondBrain.Api.Controllers
     [Authorize]
     public class UsersController : ControllerBase
     {
-        private readonly DataContext _context;
         private readonly IHubContext<ToolHub> _hubContext;
         private readonly ILogger<UsersController> _logger;
 
         public UsersController(
-            DataContext context,
             IHubContext<ToolHub> hubContext,
             ILogger<UsersController> logger)
         {
-            _context = context;
             _hubContext = hubContext;
             _logger = logger;
         }
@@ -39,7 +36,7 @@ namespace SecondBrain.Api.Controllers
 
                 // Trigger the SignalR event for this user's group
                 await _hubContext.Clients.Group($"User_{userId}").SendAsync("userstatsupdated");
-                _logger.LogInformation($"Triggered stats update for user {userId} in group User_{userId}");
+                _logger.LogInformation("Triggered stats update for user {UserId} in group User_{GroupUserId}", userId, userId);
 
                 return Ok(new { message = "Stats update triggered successfully" });
             }

@@ -17,6 +17,7 @@ export interface NotesContextType {
   linkReminder: (noteId: string, reminderId: string) => Promise<Note>;
   unlinkReminder: (noteId: string, reminderId: string) => Promise<Note>;
   loadArchivedNotes: () => Promise<void>;
+  clearArchivedNotes: () => void;
   restoreMultipleNotes: (ids: string[]) => Promise<PromiseSettledResult<Note>[]>;
   restoreNote: (restoredNote: Note) => Promise<void>;
   fetchNotes: () => Promise<void>;
