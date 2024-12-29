@@ -27,6 +27,31 @@ namespace SecondBrain.Api.Services
             string description,
             object? metadata = null)
         {
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new ArgumentNullException(nameof(userId), "User ID cannot be null or empty.");
+            }
+
+            if (string.IsNullOrEmpty(actionType))
+            {
+                throw new ArgumentException("Action type cannot be null or empty.", nameof(actionType));
+            }
+
+            if (string.IsNullOrEmpty(itemType))
+            {
+                throw new ArgumentException("Item type cannot be null or empty.", nameof(itemType));
+            }
+
+            if (string.IsNullOrEmpty(itemId))
+            {
+                throw new ArgumentException("Item ID cannot be null or empty.", nameof(itemId));
+            }
+
+            if (string.IsNullOrEmpty(itemTitle))
+            {
+                throw new ArgumentException("Item title cannot be null or empty.", nameof(itemTitle));
+            }
+
             try
             {
                 var activity = new Activity
@@ -52,4 +77,4 @@ namespace SecondBrain.Api.Services
             }
         }
     }
-} 
+}

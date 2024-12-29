@@ -23,8 +23,8 @@ namespace SecondBrain.Api.Services
         private readonly IXPService _xpService;
 
         public TokenService(
-            IOptions<JwtSettings> jwtSettings, 
-            DataContext context, 
+            IOptions<JwtSettings> jwtSettings,
+            DataContext context,
             ILogger<TokenService> logger,
             IXPService xpService)
         {
@@ -36,6 +36,11 @@ namespace SecondBrain.Api.Services
 
         public async Task<TokenResponse> GenerateTokensAsync(User user)
         {
+            if (user == null)
+            {
+                throw new ArgumentNullException(nameof(user), "User cannot be null.");
+            }
+
             _logger.LogInformation("Generating tokens for user {UserId}", user.Id);
 
             if (string.IsNullOrEmpty(_jwtSettings.Secret))
