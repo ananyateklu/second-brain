@@ -103,4 +103,113 @@ public class ActivityLoggerTests
                 itemTitle,
                 description));
     }
+
+    [Fact]
+    public async Task LogActivity_WithMetadata_LogsSuccessfully()
+    {
+        // Arrange
+        var userId = "test-user-id";
+        var actionType = "CREATE";
+        var itemType = "NOTE";
+        var itemId = "test-note-id";
+        var itemTitle = "Test Note";
+        var description = "Created a new note";
+        var metadata = new { tags = new[] { "test", "important" }, priority = 1 };
+
+        // Act
+        await _activityLogger.LogActivityAsync(
+            userId,
+            actionType,
+            itemType,
+            itemId,
+            itemTitle,
+            description,
+            metadata);
+
+        // Assert
+        var activity = await _context.Activities.FirstOrDefaultAsync();
+        activity.Should().NotBeNull();
+        activity!.MetadataJson.Should().NotBeNull();
+        activity.MetadataJson.Should().Contain("tags");
+        activity.MetadataJson.Should().Contain("priority");
+    }
+
+    [Fact]
+    public async Task LogActivity_EmptyDescription_ThrowsArgumentException()
+    {
+        // Arrange
+        var userId = "test-user-id";
+        var actionType = "CREATE";
+        var itemType = "NOTE";
+        var itemId = "test-note-id";
+        var itemTitle = "Test Note";
+        var description = "";
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            _activityLogger.LogActivityAsync(
+                userId,
+                actionType,
+                itemType,
+                itemId,
+                itemTitle,
+                description));
+    }
+
+    [Fact]
+    public async Task LogActivity_EmptyItemType_ThrowsArgumentException()
+    {
+        // Arrange
+        var userId = "test-user-id";
+        var actionType = "CREATE";
+        var itemType = "";
+        var itemId = "test-note-id";
+        var itemTitle = "Test Note";
+        var description = "Created a new note";
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            _activityLogger.LogActivityAsync(
+                userId,
+                actionType,
+                itemType,
+                itemId,
+                itemTitle,
+                description));
+    }
+
+    [Fact]
+    public async Task LogActivity_DatabaseError_LogsErrorAndDoesNotThrow()
+    {
+        // Arrange
+        var userId = "test-user-id";
+        var actionType = "CREATE";
+        var itemType = "NOTE";
+        var itemId = "test-note-id";
+        var itemTitle = "Test Note";
+        var description = "Created a new note";
+
+        // Force a database error by disposing the context
+        await _context.DisposeAsync();
+
+        // Act & Assert
+        // Should not throw despite database error
+        await _activityLogger.LogActivityAsync(
+            userId,
+            actionType,
+            itemType,
+            itemId,
+            itemTitle,
+            description);
+
+        // Verify that error was logged
+        _loggerMock.Verify(
+            x => x.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => true),
+                It.IsAny<Exception>(),
+                It.Is<Func<It.IsAnyType, Exception?, string>>((v, t) => true)),
+            Times.Once);
+    }
 }

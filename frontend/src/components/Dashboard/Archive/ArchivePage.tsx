@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, memo, useRef } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { Archive, Search, SlidersHorizontal } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNotes } from '../../../contexts/notesContextUtils';
@@ -9,12 +9,11 @@ import { useTheme } from '../../../contexts/themeContextUtils';
 import { cardVariants } from '../../../utils/welcomeBarUtils';
 
 export const ArchivePage = memo(function ArchivePage() {
-  const { archivedNotes, restoreMultipleNotes, clearArchivedNotes, isLoading, loadArchivedNotes } = useNotes();
+  const { archivedNotes, restoreMultipleNotes, isLoading, loadArchivedNotes } = useNotes();
   const { theme } = useTheme();
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
-  const isMounted = useRef(false);
   const [filters, setFilters] = useState({
     sortBy: 'archivedAt' as 'archivedAt' | 'updatedAt' | 'title',
     sortOrder: 'desc' as 'asc' | 'desc',
@@ -22,24 +21,13 @@ export const ArchivePage = memo(function ArchivePage() {
     hasLinks: false
   });
 
+  // Load archived notes once on mount
   useEffect(() => {
-    // Skip the first render (strict mode's double-mount)
-    if (!isMounted.current) {
-      isMounted.current = true;
-      return;
-    }
-
-    // Load archived notes only once after the initial mount
-    console.log('[Archive] Loading archived notes');
-    loadArchivedNotes();
-
-    // Cleanup when unmounting
-    return () => {
-      console.log('[Archive] Cleaning up archive page');
-      clearArchivedNotes();
-      isMounted.current = false;
-    };
-  }, [loadArchivedNotes, clearArchivedNotes]);
+    console.log('[Archive] Loading archived notes if needed');
+    loadArchivedNotes().catch(error => {
+      console.error('[Archive] Failed to load archived notes:', error);
+    });
+  }, []); // Empty dependency array since loadArchivedNotes is now stable
 
   const handleSelectItem = useCallback((id: string) => {
     setSelectedItems(prev =>

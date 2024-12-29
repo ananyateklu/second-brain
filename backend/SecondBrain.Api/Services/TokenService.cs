@@ -43,24 +43,32 @@ namespace SecondBrain.Api.Services
 
             _logger.LogInformation("Generating tokens for user {UserId}", user.Id);
 
-            if (string.IsNullOrEmpty(_jwtSettings.Secret))
+            if (string.IsNullOrWhiteSpace(_jwtSettings.Secret))
             {
-                _logger.LogError("JWT Secret is missing.");
-                throw new InvalidOperationException("Invalid or missing Secret in configuration.");
+                _logger.LogError("JWT Secret is missing or invalid");
+                throw new InvalidOperationException("JWT Secret is missing or invalid");
             }
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
+            _logger.LogInformation("JWT Email claim type: {EmailClaimType}", JwtRegisteredClaimNames.Email);
+
             // Add level and XP claims
-            var claims = new[]
+            var claims = new List<Claim>
             {
-                new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-                new Claim(JwtRegisteredClaimNames.Email, user.Email),
+                new Claim(ClaimTypes.NameIdentifier, user.Id),
+                new Claim("email", user.Email),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new Claim("level", user.Level.ToString()),
                 new Claim("xp", user.ExperiencePoints.ToString())
             };
+
+            // Debug: Log all claims
+            foreach (var claim in claims)
+            {
+                _logger.LogInformation("Adding claim: Type = {ClaimType}, Value = {ClaimValue}", claim.Type, claim.Value);
+            }
 
             var accessToken = new JwtSecurityToken(
                 issuer: _jwtSettings.Issuer,

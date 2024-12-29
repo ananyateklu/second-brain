@@ -9,6 +9,12 @@ using SecondBrain.Api.Gamification;
 using SecondBrain.Data;
 using SecondBrain.Data.Entities;
 using FluentAssertions;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Security.Principal;
+using System.Threading;
+using Microsoft.IdentityModel.Tokens;
 
 namespace SecondBrain.Tests.Services;
 
@@ -115,5 +121,110 @@ public class TokenServiceTests
         result.RefreshToken.Should().NotBeNullOrEmpty();
         result.AccessToken.Should().NotBe(initialTokens.AccessToken);
         result.RefreshToken.Should().NotBe(initialTokens.RefreshToken);
+    }
+
+    [Fact]
+    public async Task RefreshTokensAsync_ExpiredToken_ThrowsSecurityTokenException()
+    {
+        // Arrange
+        var user = new User
+        {
+            Id = "test-user-id",
+            Email = "test@example.com",
+            Name = "Test User",
+            ExperiencePoints = 100,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Users.Add(user);
+        await _context.SaveChangesAsync();
+
+        // Add an expired refresh token
+        var expiredToken = new RefreshToken
+        {
+            Id = "rt_expired",
+            Token = "expired-token",
+            UserId = user.Id,
+            ExpiresAt = DateTime.UtcNow.AddDays(-1), // Expired
+            IsRevoked = false,
+            CreatedAt = DateTime.UtcNow.AddDays(-2)
+        };
+
+        _context.RefreshTokens.Add(expiredToken);
+        await _context.SaveChangesAsync();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<SecurityTokenException>(() =>
+            _tokenService.RefreshTokensAsync(expiredToken.Token));
+    }
+
+    [Fact]
+    public async Task RefreshTokensAsync_RevokedToken_ThrowsSecurityTokenException()
+    {
+        // Arrange
+        var user = new User
+        {
+            Id = "test-user-id",
+            Email = "test@example.com",
+            Name = "Test User",
+            ExperiencePoints = 100,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.Users.Add(user);
+        await _context.SaveChangesAsync();
+
+        // Add a revoked refresh token
+        var revokedToken = new RefreshToken
+        {
+            Id = "rt_revoked",
+            Token = "revoked-token",
+            UserId = user.Id,
+            ExpiresAt = DateTime.UtcNow.AddDays(1), // Not expired
+            IsRevoked = true, // Revoked
+            CreatedAt = DateTime.UtcNow.AddDays(-1)
+        };
+
+        _context.RefreshTokens.Add(revokedToken);
+        await _context.SaveChangesAsync();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<SecurityTokenException>(() =>
+            _tokenService.RefreshTokensAsync(revokedToken.Token));
+    }
+
+    [Fact]
+    public async Task GenerateTokensAsync_InvalidJwtSecret_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var user = new User
+        {
+            Id = "test-user-id",
+            Email = "test@example.com",
+            Name = "Test User",
+            ExperiencePoints = 100,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        // Create a new instance of TokenService with empty secret
+        var invalidJwtSettings = new Mock<IOptions<JwtSettings>>();
+        invalidJwtSettings.Setup(x => x.Value).Returns(new JwtSettings
+        {
+            Secret = "   ",  // Whitespace to test IsNullOrWhiteSpace
+            Issuer = "SecondBrain",
+            Audience = "SecondBrain",
+            AccessTokenExpirationMinutes = 60,
+            RefreshTokenExpirationDays = 7
+        });
+
+        var invalidTokenService = new TokenService(
+            invalidJwtSettings.Object,
+            _context,
+            _loggerMock.Object,
+            _xpServiceMock.Object);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            invalidTokenService.GenerateTokensAsync(user));
     }
 }

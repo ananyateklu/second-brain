@@ -17,22 +17,12 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
 
   const isLoadingArchived = useRef(false);
-
-  const clearArchivedNotes = useCallback(() => {
-    console.log('[Notes] Clearing archived notes state');
-    setArchivedNotes([]);
-    isLoadingArchived.current = false;
-  }, []);
+  const hasLoadedArchived = useRef(false);
 
   const loadArchivedNotes = useCallback(async () => {
-    // If we already have archived notes, don't load again
-    if (archivedNotes.length > 0) {
-      console.log('[NotesContext] Skipping load - archived notes already loaded');
-      return;
-    }
-
-    if (isLoadingArchived.current) {
-      console.log('[NotesContext] Skipping load - already loading archived notes');
+    // Skip if already loaded or loading
+    if (hasLoadedArchived.current || isLoadingArchived.current) {
+      console.log('[NotesContext] Skipping load - notes already loaded or loading');
       return;
     }
 
@@ -40,8 +30,10 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
       isLoadingArchived.current = true;
       setIsLoading(true);
       console.log('[NotesContext] Loading archived notes');
+
       const notes = await notesService.getArchivedNotes();
       setArchivedNotes(notes);
+      hasLoadedArchived.current = true;
       console.log(`[NotesContext] Successfully loaded ${notes.length} archived notes`);
     } catch (error) {
       console.error('[NotesContext] Failed to load archived notes:', error);
@@ -50,7 +42,13 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
       isLoadingArchived.current = false;
       setIsLoading(false);
     }
-  }, [archivedNotes.length]);
+  }, []); // No dependencies needed
+
+  // Reset flags when user changes
+  useEffect(() => {
+    hasLoadedArchived.current = false;
+    isLoadingArchived.current = false;
+  }, [user]);
 
   const fetchNotes = useCallback(async () => {
     try {
@@ -692,7 +690,10 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     linkReminder,
     unlinkReminder,
     loadArchivedNotes,
-    clearArchivedNotes,
+    clearArchivedNotes: () => {
+      // No-op function to satisfy the interface
+      console.log('[Notes] clearArchivedNotes is deprecated');
+    },
     restoreMultipleNotes,
     restoreNote,
     fetchNotes,
@@ -714,7 +715,6 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     linkReminder,
     unlinkReminder,
     loadArchivedNotes,
-    clearArchivedNotes,
     restoreMultipleNotes,
     restoreNote,
     fetchNotes,

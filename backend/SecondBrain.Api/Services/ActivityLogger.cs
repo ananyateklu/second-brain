@@ -52,6 +52,11 @@ namespace SecondBrain.Api.Services
                 throw new ArgumentException("Item title cannot be null or empty.", nameof(itemTitle));
             }
 
+            if (string.IsNullOrEmpty(description))
+            {
+                throw new ArgumentException("Description cannot be null or empty.", nameof(description));
+            }
+
             try
             {
                 var activity = new Activity
