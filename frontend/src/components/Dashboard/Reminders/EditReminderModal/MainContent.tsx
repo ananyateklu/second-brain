@@ -7,30 +7,22 @@ interface MainContentProps {
     onUpdate: (updates: Partial<Reminder>) => void;
 }
 
+type RepeatIntervalType = 'Daily' | 'Weekly' | 'Monthly' | 'Yearly' | 'Custom';
+
 export function MainContent({ reminder, onUpdate }: MainContentProps) {
     const [title, setTitle] = useState(reminder.title);
-    const [description, setDescription] = useState(reminder.description || '');
+    const [description, setDescription] = useState(reminder.description ?? '');
     const [dueDateTime, setDueDateTime] = useState(reminder.dueDateTime);
-    const [repeatInterval, setRepeatInterval] = useState(reminder.repeatInterval);
-    const [customRepeatPattern, setCustomRepeatPattern] = useState(reminder.customRepeatPattern || '');
+    const [repeatInterval, setRepeatInterval] = useState<RepeatIntervalType | undefined>(reminder.repeatInterval);
+    const [customRepeatPattern, setCustomRepeatPattern] = useState(reminder.customRepeatPattern ?? '');
 
     useEffect(() => {
         setTitle(reminder.title);
-        setDescription(reminder.description || '');
+        setDescription(reminder.description ?? '');
         setDueDateTime(reminder.dueDateTime);
         setRepeatInterval(reminder.repeatInterval);
-        setCustomRepeatPattern(reminder.customRepeatPattern || '');
+        setCustomRepeatPattern(reminder.customRepeatPattern ?? '');
     }, [reminder]);
-
-    const handleUpdate = () => {
-        onUpdate({
-            title,
-            description: description || undefined,
-            dueDateTime,
-            repeatInterval,
-            customRepeatPattern: customRepeatPattern || undefined
-        });
-    };
 
     return (
         <div className="flex-1 overflow-y-auto">
@@ -45,8 +37,15 @@ export function MainContent({ reminder, onUpdate }: MainContentProps) {
                         type="text"
                         value={title}
                         onChange={(e) => {
-                            setTitle(e.target.value);
-                            handleUpdate();
+                            const newTitle = e.target.value;
+                            setTitle(newTitle);
+                            onUpdate({
+                                title: newTitle,
+                                description: description || undefined,
+                                dueDateTime,
+                                repeatInterval,
+                                customRepeatPattern: customRepeatPattern || undefined
+                            });
                         }}
                         className="w-full h-[46px] px-4 bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent text-[var(--color-text)] placeholder-[var(--color-textSecondary)]"
                         placeholder="Enter reminder title"
@@ -62,8 +61,15 @@ export function MainContent({ reminder, onUpdate }: MainContentProps) {
                     <textarea
                         value={description}
                         onChange={(e) => {
-                            setDescription(e.target.value);
-                            handleUpdate();
+                            const newDescription = e.target.value;
+                            setDescription(newDescription);
+                            onUpdate({
+                                title,
+                                description: newDescription || undefined,
+                                dueDateTime,
+                                repeatInterval,
+                                customRepeatPattern: customRepeatPattern || undefined
+                            });
                         }}
                         rows={3}
                         className="w-full min-h-[46px] px-4 py-3 bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent text-[var(--color-text)] placeholder-[var(--color-textSecondary)] resize-none"
@@ -84,8 +90,15 @@ export function MainContent({ reminder, onUpdate }: MainContentProps) {
                                 type="datetime-local"
                                 value={dueDateTime}
                                 onChange={(e) => {
-                                    setDueDateTime(e.target.value);
-                                    handleUpdate();
+                                    const newDueDateTime = e.target.value;
+                                    setDueDateTime(newDueDateTime);
+                                    onUpdate({
+                                        title,
+                                        description: description || undefined,
+                                        dueDateTime: newDueDateTime,
+                                        repeatInterval,
+                                        customRepeatPattern: customRepeatPattern || undefined
+                                    });
                                 }}
                                 className="w-full h-[46px] px-4 bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent text-[var(--color-text)]"
                             />
@@ -99,12 +112,19 @@ export function MainContent({ reminder, onUpdate }: MainContentProps) {
                             Repeat Interval
                         </label>
                         <select
-                            value={repeatInterval || ''}
+                            value={repeatInterval ?? ''}
                             onChange={(e) => {
-                                setRepeatInterval(e.target.value as Reminder['repeatInterval']);
-                                handleUpdate();
+                                const newRepeatInterval = e.target.value as RepeatIntervalType | '';
+                                setRepeatInterval(newRepeatInterval || undefined);
+                                onUpdate({
+                                    title,
+                                    description: description || undefined,
+                                    dueDateTime,
+                                    repeatInterval: newRepeatInterval || undefined,
+                                    customRepeatPattern: customRepeatPattern || undefined
+                                });
                             }}
-                            className="w-full h-[46px] px-4 bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent text-[var(--color-text)] appearance-none"
+                            className="w-full h-[46px] px-4 bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent text-[var(--color-text)]"
                         >
                             <option value="">No Repeat</option>
                             <option value="Daily">Daily</option>
@@ -127,8 +147,15 @@ export function MainContent({ reminder, onUpdate }: MainContentProps) {
                             type="text"
                             value={customRepeatPattern}
                             onChange={(e) => {
-                                setCustomRepeatPattern(e.target.value);
-                                handleUpdate();
+                                const newCustomPattern = e.target.value;
+                                setCustomRepeatPattern(newCustomPattern);
+                                onUpdate({
+                                    title,
+                                    description: description || undefined,
+                                    dueDateTime,
+                                    repeatInterval,
+                                    customRepeatPattern: newCustomPattern || undefined
+                                });
                             }}
                             placeholder="e.g., Every 2 weeks"
                             className="w-full h-[46px] px-4 bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent text-[var(--color-text)] placeholder-[var(--color-textSecondary)]"
