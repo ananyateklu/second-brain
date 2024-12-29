@@ -113,54 +113,75 @@ Here's a template for `appsettings.json`:
       "Microsoft.AspNetCore": "Warning"
     }
   },
+
+  "AllowedHosts": "*",
+
   "ConnectionStrings": {
-    "DefaultConnection": "Server=YOUR_SERVER;Database=SecondBrainDb;User Id=YOUR_USER_ID;Password=YOUR_PASSWORD;TrustServerCertificate=True;"
+    "DefaultConnection": "your-connection-string"
   },
+
   "Authentication": {
     "Jwt": {
-      "Secret": "YOUR_SECRET_KEY",
+      "Secret": "your-jwt-secret",
       "Issuer": "SecondBrain",
       "Audience": "SecondBrain",
-      "AccessTokenExpirationMinutes": "60",
+      "AccessTokenExpirationMinutes": "600",
       "RefreshTokenExpirationDays": "30"
     }
   },
+
   "Anthropic": {
-    "ApiKey": "YOUR_ANTHROPIC_API_KEY",
-    "ApiEndpoint": "https://api.anthropic.com/v1"
+    "ApiKey": "your-api-key-here",
+    "ApiEndpoint": "https://api.anthropic.com/v1/messages"
   },
+
   "Grok": {
-    "ApiKey": "YOUR_GROK_API_KEY"
+    "ApiKey": "your-grok-api-key",
+    "BaseUrl": "https://api.x.ai/v1"
   },
-  "Llama": {
-    "OllamaUri": "http://localhost:11434/",
-    "NetworkSettings": {
-      "ConnectionTimeoutSeconds": 5,
-      "RetryAttempts": 3,
-      "RequireFirewallPermission": true
-    }
-  },
+
   "OpenAI": {
-    "ApiKey": "YOUR_OPENAI_API_KEY",
-    "ApiEndpoint": "https://api.openai.com/v1",
-    "ModelId": "gpt-4"
+    "ApiKey": "your-openai-api-key",
+    "ApiEndpoint": "https://api.openai.com/v1"
   },
+
   "Gemini": {
-    "ApiKey": "YOUR_GOOGLE_GEMINI_API_KEY"
+    "ApiKey": "your-api-key",
+    "BaseUrl": "https://generativelanguage.googleapis.com/v1beta/"
   },
+
+  "Llama": {
+    "OllamaUri": "http://localhost:11434/"
+  },
+
   "Pinecone": {
-    "ApiKey": "YOUR_PINECONE_API_KEY",
-    "Environment": "YOUR_PINECONE_ENVIRONMENT",
-    "IndexName": "secondbrainindex"
+    "ApiKey": "your-pinecone-api-key",
+    "Endpoint": "your-pinecone-endpoint"
   },
+
   "Storage": {
     "DocumentsPath": "Storage/Documents"
   },
+
   "DocumentProcessing": {
     "MaxTokensPerChunk": 500,
     "OverlapTokens": 50
   },
-  "AllowedHosts": "*"
+
+  "Kestrel": {
+    "Endpoints": {
+      "Http": {
+        "Url": "http://localhost:5127"
+      },
+      "Https": {
+        "Url": "https://localhost:7056"
+      }
+    }
+  },
+
+  "AIService": {
+    "BaseUrl": "http://localhost:8000"
+  }
 }
 ```
 
