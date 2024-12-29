@@ -69,7 +69,21 @@ jobs:
       - name: Test
         run: |
           cd backend
-          dotnet test --configuration Release
+          dotnet test --configuration Release --verbosity normal --logger "trx;LogFileName=test-results.trx" --collect:"XPlat Code Coverage"
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-results
+          path: backend/**/TestResults/*.trx
+
+      - name: Upload coverage results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: code-coverage
+          path: backend/**/TestResults/**/coverage.cobertura.xml
 
       - name: Publish
         run: |
