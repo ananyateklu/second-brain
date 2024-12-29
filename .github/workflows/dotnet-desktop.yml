@@ -66,10 +66,16 @@ jobs:
           cd backend
           dotnet build --configuration Release --no-restore
 
+      - name: Install code coverage tool
+        run: |
+          cd backend
+          dotnet tool install --global dotnet-coverage
+
       - name: Test
         run: |
           cd backend
-          dotnet test --configuration Release --verbosity normal --logger "trx;LogFileName=test-results.trx" --collect:"XPlat Code Coverage"
+          dotnet add SecondBrain.Tests/SecondBrain.Tests.csproj package coverlet.collector
+          dotnet test SecondBrain.Tests/SecondBrain.Tests.csproj --configuration Release --verbosity normal --logger "trx;LogFileName=test-results.trx" --collect:"XPlat Code Coverage"
 
       - name: Upload test results
         uses: actions/upload-artifact@v3
