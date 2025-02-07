@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bot, Settings } from 'lucide-react';
 import { useAI } from '../../../contexts/AIContext';
@@ -23,6 +23,12 @@ export function AIAssistantPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [showModelDetails, setShowModelDetails] = useState(false);
   const [showModelSelector, setShowModelSelector] = useState(true);
+
+  // Filter out agent models
+  const nonAgentModels = useMemo(() =>
+    availableModels.filter(model => model.category !== 'agent'),
+    [availableModels]
+  );
 
   const themeColor = selectedModel?.color || '#3b82f6'; // Default to blue
 
@@ -118,10 +124,10 @@ export function AIAssistantPage() {
     setShowModelDetails(isOpen);
   };
 
-  const handleAudioMessage = (messageData: { 
+  const handleAudioMessage = (messageData: {
     id?: string;
-    role: "user" | "assistant"; 
-    content: string | File; 
+    role: "user" | "assistant";
+    content: string | File;
     type: "audio" | "image" | "text";
     timestamp?: string;
     model?: AIModel;
@@ -191,13 +197,13 @@ export function AIAssistantPage() {
           }`}
           style={{
             borderColor: selectedModel ? `${selectedModel.color}30` : 'rgb(229 231 235 / 0.3)',
-            boxShadow: selectedModel 
-              ? `0 4px 6px -1px ${selectedModel.color}10, 0 2px 4px -2px ${selectedModel.color}10` 
+            boxShadow: selectedModel
+              ? `0 4px 6px -1px ${selectedModel.color}10, 0 2px 4px -2px ${selectedModel.color}10`
               : '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)'
           }}
         >
           <ModelSelector
-            models={availableModels}
+            models={nonAgentModels}
             selectedModel={selectedModel}
             selectedCategory={selectedCategory}
             onModelSelect={handleModelSelect}
@@ -209,13 +215,13 @@ export function AIAssistantPage() {
         </div>
 
         {/* Messages Container */}
-        <div 
+        <div
           className="min-h-0 backdrop-blur-sm bg-white/30 
             dark:bg-gray-800/30 border shadow-lg rounded-xl mb-4"
           style={{
             borderColor: selectedModel ? `${selectedModel.color}30` : 'rgb(229 231 235 / 0.3)',
-            boxShadow: selectedModel 
-              ? `0 4px 6px -1px ${selectedModel.color}10, 0 2px 4px -2px ${selectedModel.color}10` 
+            boxShadow: selectedModel
+              ? `0 4px 6px -1px ${selectedModel.color}10, 0 2px 4px -2px ${selectedModel.color}10`
               : undefined
           }}
         >
@@ -243,8 +249,8 @@ export function AIAssistantPage() {
             border shadow-lg p-4 rounded-xl"
             style={{
               borderColor: selectedModel ? `${selectedModel.color}30` : 'rgb(229 231 235 / 0.3)',
-              boxShadow: selectedModel 
-                ? `0 4px 6px -1px ${selectedModel.color}10, 0 2px 4px -2px ${selectedModel.color}10` 
+              boxShadow: selectedModel
+                ? `0 4px 6px -1px ${selectedModel.color}10, 0 2px 4px -2px ${selectedModel.color}10`
                 : undefined
             }}
           >

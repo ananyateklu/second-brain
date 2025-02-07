@@ -10,9 +10,14 @@ interface TextContentProps {
 }
 
 export function TextContent({ message, themeColor }: TextContentProps) {
-  const content = message.content as string;
+  // Ensure content is a string and handle potential nested structures
+  const messageContent = message.content as { content?: string } | string;
+  const content = typeof messageContent === 'string'
+    ? messageContent
+    : messageContent?.content || '';
 
   if (message.model?.isReasoner &&
+    content &&
     content.includes('<Thought>') &&
     content.includes('</Thought>')) {
     const thought = extractThought(content);
@@ -56,35 +61,23 @@ export function TextContent({ message, themeColor }: TextContentProps) {
         remarkPlugins={[remarkGfm]}
         components={{
           code(props: ComponentPropsWithoutRef<'code'>) {
-            const { className, children } = props;
+            const { children, className, ...rest } = props;
             const match = /language-(\w+)/.exec(className || '');
-            const inline = !match;
+            const language = match ? match[1] : '';
 
-            if (!inline && match) {
-              return (
-                <CodeBlock
-                  code={String(children).replace(/\n$/, '')}
-                  language={match[1]}
-                  themeColor={themeColor}
-                />
-              );
-            }
-            
-            return (
-              <code
-                className="px-1.5 py-0.5 rounded-md 
-                  bg-black/10 dark:bg-white/10 
-                  text-gray-800 dark:text-gray-200
-                  text-xs font-mono"
-                {...props}
-              >
+            return match ? (
+              <CodeBlock
+                code={String(children)}
+                language={language}
+                themeColor={themeColor}
+                {...rest}
+              />
+            ) : (
+              <code className={className} {...rest}>
                 {children}
               </code>
             );
-          },
-          p: ({ children }) => (
-            <p className="mb-2 last:mb-0 text-gray-900 dark:text-gray-100">{children}</p>
-          ),
+          }
         }}
       >
         {content}

@@ -4,6 +4,8 @@ import { Message } from '../types/message';
 import { LlamaService } from '../services/ai/llama';
 import { signalRService } from '../services/signalR';
 import { agentService } from '../services/ai/agent';
+import { modelService } from '../services/ai/modelService';
+import { messageService } from '../services/ai/messageService';
 
 interface AIContextType {
   isOpenAIConfigured: boolean;
@@ -31,7 +33,7 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
   const [isGeminiConfigured, setIsGeminiConfigured] = useState<boolean>(false);
   const [isLlamaConfigured, setIsLlamaConfigured] = useState<boolean>(false);
   const [isGrokConfigured, setIsGrokConfigured] = useState<boolean>(false);
-  const [availableModels] = useState<AIModel[]>(agentService.getAvailableModels());
+  const [availableModels] = useState<AIModel[]>(modelService.getAllModels());
   const [messages, setMessages] = useState<Message[]>([]);
   const [executionSteps, setExecutionSteps] = useState<Record<string, ExecutionStep[]>>({});
   const latestMessageIdRef = useRef<string | null>(null);
@@ -153,12 +155,21 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
 
   const sendMessage = useCallback(async (input: string, modelId: string): Promise<AIResponse> => {
     try {
-      return await agentService.sendMessage(input, modelId);
+      const model = availableModels.find(m => m.id === modelId);
+      if (!model) {
+        throw new Error(`Model not found: ${modelId}`);
+      }
+
+      if (model.category === 'agent') {
+        return await agentService.sendMessage(input, modelId);
+      }
+
+      return await messageService.sendMessage(input, model);
     } catch (error) {
       console.error('Error in sendMessage:', error);
       throw error;
     }
-  }, []);
+  }, [availableModels]);
 
   // Track the latest assistant message ID
   useEffect(() => {

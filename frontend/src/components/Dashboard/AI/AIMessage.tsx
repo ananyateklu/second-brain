@@ -90,10 +90,11 @@ export function AIMessage({
     typeof message.content === 'string' &&
     message.type !== 'function';
 
-  const content = message.content as string;
+  const content = typeof message.content === 'string' ? message.content : '';
   const hasThoughtProcess = message.model?.isReasoner &&
-    content?.includes('<Thought>') &&
-    content?.includes('</Thought>');
+    content &&
+    content.includes('<Thought>') &&
+    content.includes('</Thought>');
 
   const renderToolExecutions = () => {
     if (!shouldShowToolExecutions) return null;

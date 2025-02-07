@@ -4,6 +4,7 @@ import api from '../api/api';
 import { AgentChat, AgentMessage } from '../../types/agent';
 import { LlamaService } from './llama';
 import { GrokService } from './grok';
+import { modelService } from './modelService';
 
 interface AgentRequestParameters {
   max_tokens?: number;
@@ -86,10 +87,7 @@ export class AgentService {
   }
 
   getAvailableModels(): AIModel[] {
-    return AI_MODELS.filter(model =>
-      model.category === 'agent' &&
-      model.endpoint === 'agent'
-    );
+    return modelService.getAgentModels();
   }
 
   async isOpenAIConfigured(forceRefresh = false): Promise<boolean> {
