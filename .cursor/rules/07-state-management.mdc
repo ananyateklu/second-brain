@@ -1,0 +1,560 @@
+---
+description: Guidelines and patterns for the React Context-based state management
+globs: **/*Context*.ts, **/*Context*.tsx, **/*context*.ts, **/*context*.tsx, **/*Provider*.tsx, **/*provider*.tsx, **/*hooks*.ts, **/*hooks*.tsx
+alwaysApply: false
+---
+
+# State Management Architecture
+
+Second Brain uses React Context API for state management across the application. The application employs a multi-context approach, where different aspects of the application state are managed by dedicated context providers.
+
+## Context Provider Structure
+
+The application uses a deeply nested context provider structure in `App.tsx`:
+
+```tsx
+export const App = () => {
+  return (
+    <ThemeProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <AIProvider>
+            <RecordingProvider>
+              <ActivityProvider>
+                <ModalProvider>
+                  <TrashProvider>
+                    <RemindersProvider>
+                      <NotesWithRemindersProvider>
+                        <TasksProvider>
+                          <DashboardProvider>
+                            {/* Application Routes */}
+                          </DashboardProvider>
+                        </TasksProvider>
+                      </NotesWithRemindersProvider>
+                    </RemindersProvider>
+                  </TrashProvider>
+                </ModalProvider>
+              </ActivityProvider>
+            </RecordingProvider>
+          </AIProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </ThemeProvider>
+  );
+}
+```
+
+## Core Context Providers
+
+### Authentication (AuthContext)
+
+**File**: `AuthContext.tsx`
+
+Manages user authentication state and operations:
+
+```typescript
+interface AuthContextType {
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  error: string | null;
+  login: (email: string, password: string) => Promise<void>;
+  register: (userData: RegisterData) => Promise<void>;
+  logout: () => void;
+  updateProfile: (data: Partial<User>) => Promise<void>;
+}
+```
+
+Typical implementation pattern:
+
+```typescript
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [authState, setAuthState] = useState<AuthState>({
+    user: null,
+    isAuthenticated: false,
+    isLoading: true,
+    error: null
+  });
+
+  useEffect(() => {
+    // Check for existing token and load user on mount
+    const loadUser = async () => {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        setAuthState(prev => ({ ...prev, isLoading: false }));
+        return;
+      }
+      
+      try {
+        const response = await authService.getCurrentUser();
+        setAuthState({
+          user: response.user,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null
+        });
+      } catch (error) {
+        localStorage.removeItem('access_token');
+        setAuthState({
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+          error: 'Session expired'
+        });
+      }
+    };
+    
+    loadUser();
+  }, []);
+
+  const login = async (email: string, password: string) => {
+    try {
+      setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
+      const response = await authService.login(email, password);
+      localStorage.setItem('access_token', response.accessToken);
+      setAuthState({
+        user: response.user,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null
+      });
+    } catch (error) {
+      setAuthState(prev => ({
+        ...prev,
+        isLoading: false,
+        error: 'Invalid credentials'
+      }));
+    }
+  };
+
+  // Additional auth methods...
+
+  const value = useMemo(() => ({
+    user: authState.user,
+    isAuthenticated: authState.isAuthenticated,
+    isLoading: authState.isLoading,
+    error: authState.error,
+    login,
+    logout,
+    register,
+    updateProfile
+  }), [authState]);
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+```
+
+### Notes Management (NotesContext)
+
+**File**: `NotesContext.tsx`
+
+Manages notes and related operations:
+
+```typescript
+interface NotesContextType {
+  notes: Note[];
+  archivedNotes: Note[];
+  isLoading: boolean;
+  error: string | null;
+  createNote: (note: CreateNoteDto) => Promise<Note>;
+  updateNote: (id: string, note: UpdateNoteDto) => Promise<Note>;
+  deleteNote: (id: string) => Promise<void>;
+  permanentlyDeleteNote: (id: string) => Promise<void>;
+  restoreNote: (id: string) => Promise<void>;
+  archiveNote: (id: string) => Promise<void>;
+  unarchiveNote: (id: string) => Promise<void>;
+  // Additional methods...
+}
+```
+
+Typical implementation pattern:
+
+```typescript
+export const NotesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [archivedNotes, setArchivedNotes] = useState<Note[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  const { user } = useAuth(); // Dependency on AuthContext
+  
+  useEffect(() => {
+    // Load notes when auth state changes
+    const fetchNotes = async () => {
+      if (!user) return;
+      
+      try {
+        setIsLoading(true);
+        const notesData = await noteService.getNotes();
+        const archivedData = await noteService.getArchivedNotes();
+        setNotes(notesData);
+        setArchivedNotes(archivedData);
+      } catch (err) {
+        setError('Failed to load notes');
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchNotes();
+  }, [user]);
+
+  const createNote = async (noteData: CreateNoteDto) => {
+    try {
+      setError(null);
+      const newNote = await noteService.createNote(noteData);
+      setNotes(prev => [...prev, newNote]);
+      return newNote;
+    } catch (err) {
+      setError('Failed to create note');
+      console.error(err);
+      throw err;
+    }
+  };
+
+  // Other CRUD operations with optimistic updates...
+
+  const value = useMemo(() => ({
+    notes,
+    archivedNotes,
+    isLoading,
+    error,
+    createNote,
+    updateNote,
+    deleteNote,
+    permanentlyDeleteNote,
+    restoreNote,
+    archiveNote,
+    unarchiveNote,
+    // Additional methods...
+  }), [notes, archivedNotes, isLoading, error]);
+
+  return (
+    <NotesContext.Provider value={value}>
+      {children}
+    </NotesContext.Provider>
+  );
+};
+```
+
+### Tasks (TasksContext)
+
+**File**: `TasksContext.tsx`
+
+Manages task-related state:
+
+```typescript
+interface TasksContextType {
+  tasks: TaskItem[];
+  isLoading: boolean;
+  error: string | null;
+  createTask: (task: CreateTaskDto) => Promise<TaskItem>;
+  updateTask: (id: string, task: UpdateTaskDto) => Promise<TaskItem>;
+  deleteTask: (id: string) => Promise<void>;
+  completeTask: (id: string) => Promise<TaskItem>;
+  uncompleteTask: (id: string) => Promise<TaskItem>;
+}
+```
+
+### AI (AIContext)
+
+**File**: `AIContext.tsx`
+
+Manages AI provider integrations:
+
+```typescript
+interface AIContextType {
+  isOpenAIConfigured: boolean;
+  isAnthropicConfigured: boolean;
+  isGeminiConfigured: boolean;
+  isLlamaConfigured: boolean;
+  isGrokConfigured: boolean;
+  error: string | null;
+  sendMessage: (input: string, modelId: string) => Promise<AIResponse>;
+  configureGemini: (apiKey: string) => Promise<void>;
+  availableModels: AIModel[];
+  llamaService: LlamaService;
+  executionSteps: Record<string, ExecutionStep[]>;
+  handleExecutionStep: (step: ExecutionStep) => void;
+  transcribeAudio: (audioFile: File) => Promise<AIResponse>;
+  checkConfigurations: (forceRefresh?: boolean) => Promise<void>;
+}
+```
+
+## Context Utilities
+
+The application uses utility files to provide custom hooks for each context:
+
+```typescript
+// Example from authContextUtils.ts
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === null) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+```
+
+Components use these hooks to access context:
+
+```tsx
+function SomeComponent() {
+  const { user, logout } = useAuth();
+  const { notes, createNote } = useNotes();
+  
+  // Component implementation
+}
+```
+
+## Data Flow Patterns
+
+### API Integration
+
+Most context providers follow a consistent pattern for API integration:
+
+```typescript
+// State declaration
+const [data, setData] = useState<DataType[]>([]);
+const [isLoading, setIsLoading] = useState(true);
+const [error, setError] = useState<string | null>(null);
+
+// API integration
+const fetchData = async () => {
+  try {
+    setIsLoading(true);
+    const response = await apiService.getData();
+    setData(response);
+    setError(null);
+  } catch (err) {
+    setError('Failed to fetch data');
+    console.error(err);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+// Effect hook
+useEffect(() => {
+  fetchData();
+}, []);
+
+// CRUD operation
+const createItem = async (item: CreateItemDto) => {
+  try {
+    setIsLoading(true);
+    const newItem = await apiService.createItem(item);
+    setData(prev => [...prev, newItem]);
+    return newItem;
+  } catch (err) {
+    setError('Failed to create item');
+    console.error(err);
+    throw err;
+  } finally {
+    setIsLoading(false);
+  }
+};
+```
+
+### Optimistic Updates
+
+Many context providers implement optimistic updates for better user experience:
+
+```typescript
+const updateNote = async (id: string, update: UpdateNoteDto) => {
+  // Store original note for rollback
+  const originalNote = notes.find(note => note.id === id);
+  if (!originalNote) return Promise.reject('Note not found');
+  
+  // Optimistically update local state
+  setNotes(prev => prev.map(note => 
+    note.id === id ? { ...note, ...update } : note
+  ));
+  
+  try {
+    // Perform API update
+    const updatedNote = await noteService.updateNote(id, update);
+    return updatedNote;
+  } catch (error) {
+    // Revert to original on failure
+    setNotes(prev => prev.map(note => 
+      note.id === id ? originalNote : note
+    ));
+    setError('Failed to update note');
+    throw error;
+  }
+};
+```
+
+## Context Interdependencies
+
+Some contexts depend on or interact with others:
+
+1. **NotesContext** depends on **AuthContext** for user-specific notes
+2. **TasksContext** depends on **AuthContext** for user-specific tasks
+3. **AIContext** uses **AuthContext** for authenticated API calls
+4. **TrashContext** aggregates deleted items from multiple contexts
+5. **ActivityContext** captures actions from various contexts
+
+These interdependencies create a complex web of relationships that are not explicitly documented or enforced.
+
+## Performance Optimization
+
+The application uses several techniques to optimize context performance:
+
+1. **Memoization**: `useMemo` for complex derivations
+   ```typescript
+   const sortedNotes = useMemo(() => 
+     [...notes].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()),
+     [notes]
+   );
+   ```
+
+2. **Callback stabilization**: `useCallback` for functions
+   ```typescript
+   const deleteNote = useCallback(async (id: string) => {
+     // Implementation
+   }, [/* dependencies */]);
+   ```
+
+3. **Selective re-rendering**: Context splitting to reduce renders
+4. **Ref usage**: `useRef` for persisting values without causing re-renders
+   ```typescript
+   const pendingRequestsRef = useRef<Record<string, boolean>>({});
+   ```
+
+## Important State Management Quirks
+
+1. **Excessive Recomputation**:
+   ```typescript
+   // Example from AIContext - this large object is recreated on many state changes
+   const value = useMemo(() => ({
+     isOpenAIConfigured,
+     isAnthropicConfigured,
+     isGeminiConfigured,
+     isLlamaConfigured,
+     isGrokConfigured,
+     error,
+     sendMessage,
+     configureGemini,
+     availableModels,
+     llamaService: agentService.llama,
+     executionSteps,
+     handleExecutionStep,
+     transcribeAudio,
+     checkConfigurations
+   }), [/* many dependencies */]);
+   ```
+
+2. **Missing Dependency Arrays**:
+   ```typescript
+   // Missing dependencies in useCallback
+   const someFunction = useCallback(() => {
+     // Uses stateVar but it's not in the dependency array
+     console.log(stateVar);
+   }, []);
+   ```
+
+3. **Cascading Renders**:
+   The deeply nested provider structure ensures that changes in higher-level contexts like `AuthContext` trigger re-renders through the entire component tree.
+
+4. **State Duplication Issues**:
+   ```typescript
+   // In NotesContext
+   const [error, setError] = useState<string | null>(null);
+   
+   // In TasksContext
+   const [error, setError] = useState<string | null>(null);
+   
+   // In AIContext
+   const [error, setError] = useState<string | null>(null);
+   ```
+
+5. **Context Sequence Sensitivity**: The order of context providers matters due to inter-context dependencies, but this isn't explicitly documented.
+
+## Usage Guidelines
+
+### Accessing Context in Components
+
+Always use the custom hooks provided:
+
+```typescript
+// Good: Use custom hooks
+const { user } = useAuth();
+const { notes, createNote } = useNotes();
+
+// Bad: Direct context usage
+const authContext = useContext(AuthContext);
+```
+
+### Data Fetching and Updates
+
+Follow consistent patterns for data operations:
+
+```typescript
+// Data fetching
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      const data = await someService.getData();
+      setData(data);
+    } catch (error) {
+      setError('Failed to fetch data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  fetchData();
+}, [dependencies]);
+
+// Data modification with optimistic updates
+const updateItem = async (id, updates) => {
+  // Store original for rollback
+  const original = items.find(item => item.id === id);
+  
+  // Optimistic update
+  setItems(prev => prev.map(item => 
+    item.id === id ? { ...item, ...updates } : item
+  ));
+  
+  try {
+    // API call
+    await service.updateItem(id, updates);
+  } catch (error) {
+    // Rollback on error
+    setItems(prev => prev.map(item => 
+      item.id === id ? original : item
+    ));
+    setError('Update failed');
+  }
+};
+```
+
+### Managing Loading and Error States
+
+Be consistent with loading and error state management:
+
+```tsx
+function SomeComponent() {
+  const { data, isLoading, error } = useSomeContext();
+  
+  if (isLoading) return <LoadingSpinner />;
+  if (error) return <ErrorMessage message={error} />;
+  if (!data.length) return <EmptyState />;
+  
+  return (
+    <div>
+      {data.map(item => (
+        <Item key={item.id} {...item} />
+      ))}
+    </div>
+  );
+}
+``` 

@@ -1,0 +1,334 @@
+---
+description: Guidelines and patterns for the multi-layered theme system implementation
+globs: **/*theme*.ts, **/*theme*.tsx, **/*Theme*.ts, **/*Theme*.tsx, **/*.css, **/*.scss, tailwind.config.js
+---
+
+# Theme System Architecture
+
+Second Brain implements a multi-layered theme system with three distinct themes (light, dark, and midnight) using a combination of CSS variables, Tailwind classes, and runtime DOM manipulation. The architecture is designed to support dynamic theme switching, system preference detection, and browser-specific optimizations.
+
+## Core Components
+
+1. **Theme Configuration**
+   - `theme.config.ts`: Defines theme colors and properties
+   - `themeConfig.types.ts`: TypeScript types for theme system
+   - `themeContextUtils.ts`: Context utilities and hook
+   - `ThemeContext.tsx`: Provider implementation and theme application logic
+
+2. **Theme Initialization**
+   - `themeScript.ts`: Early initialization script to prevent Flash of Unstyled Content (FOUC)
+   - `ThemeProvider`: React provider that manages theme state
+
+3. **Theme UI Components**
+   - `ThemeSelector.tsx`: Main theme selection UI
+   - `ThemeDropdown.tsx`: Alternative compact dropdown UI
+
+## Theme Definitions
+
+The application defines three themes in `theme.config.ts`:
+
+```typescript
+export const themes: Record<ThemeName, ThemeConfig> = {
+  light: {
+    name: 'Light',
+    colors: {
+      primary: '#2563eb',
+      secondary: '#64748b',
+      background: '#ffffff',
+      surface: '#f8fafc',
+      text: '#1e293b',
+      textSecondary: '#64748b',
+      border: '#e2e8f0',
+      accent: '#4c9959',
+      // Semantic colors
+      note: '#2563eb',
+      idea: '#f59e0b',
+      task: '#059669',
+      reminder: '#8b5cf6',
+      tag: '#2563eb',
+      // Additional UI colors
+      surfaceHover: '#f1f5f9',
+      surfaceActive: '#e2e8f0',
+      divider: '#e2e8f0',
+      focus: 'rgba(37, 99, 235, 0.5)',
+      gradientBackground: 'bg-gradient-to-br from-white to-gray-100',
+      // RGB values for opacity support
+      'surface-rgb': '248, 250, 252',
+      'text-rgb': '30, 41, 59',
+      'border-rgb': '226, 232, 240'
+    }
+  },
+  dark: {
+    name: 'Dark',
+    colors: { /* Dark theme colors */ }
+  },
+  midnight: {
+    name: 'Midnight',
+    colors: { /* Midnight theme colors */ }
+  }
+};
+```
+
+## Theme Initialization Process
+
+The theme system uses a two-phase initialization process to prevent flash of unstyled content:
+
+### Phase 1: Early Initialization
+
+```typescript
+// themeScript.ts - Inlined in HTML head
+export const themeScript = `
+  (function() {
+    try {
+      const savedTheme = localStorage.getItem('theme');
+      const systemDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      
+      // Determine the initial theme
+      let theme = savedTheme;
+      if (!theme) {
+        theme = systemDarkMode ? 'dark' : 'light';
+      }
+      
+      // Set data-theme attribute for CSS selectors
+      const root = document.documentElement;
+      root.setAttribute('data-theme', theme);
+      
+      // Add dark class for dark themes
+      root.classList.toggle('dark', theme === 'dark' || theme === 'midnight');
+
+      // Safari-specific fixes...
+      
+      // Store the theme if it wasn't already stored
+      if (!savedTheme) {
+        localStorage.setItem('theme', theme);
+      }
+    } catch (e) {
+      console.error('Error applying initial theme:', e);
+    }
+  })();
+`;
+```
+
+### Phase 2: React Context Initialization
+
+```typescript
+// ThemeProvider.tsx
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const [themeName, setThemeName] = useState<ThemeName>(getInitialTheme());
+
+  useEffect(() => {
+    localStorage.setItem('theme', themeName);
+    applyTheme(themeName);
+  }, [themeName]);
+
+  const toggleTheme = useCallback(() => {
+    setThemeName(prev => {
+      switch (prev) {
+        case 'light': return 'dark';
+        case 'dark': return 'midnight';
+        case 'midnight': return 'light';
+        default: return 'light';
+      }
+    });
+  }, []);
+
+  const setTheme = useCallback((name: ThemeName) => {
+    if (themes[name]) {
+      setThemeName(name);
+    }
+  }, []);
+
+  // Context value and provider...
+}
+```
+
+## Theme Application Layers
+
+### CSS Variables Application
+
+```typescript
+// Apply theme colors as CSS variables
+const applyTheme = (themeName: ThemeName) => {
+  const theme = themes[themeName];
+  const root = document.documentElement;
+  
+  // Apply CSS variables with both formats for compatibility
+  Object.entries(theme.colors).forEach(([key, value]) => {
+    root.style.setProperty(`--${key}`, value);
+    root.style.setProperty(`--color-${key}`, value);
+  });
+  
+  // Set data-theme attribute for CSS selectors
+  root.setAttribute('data-theme', themeName);
+  
+  // Set class for Tailwind's dark mode
+  root.classList.remove('light', 'dark', 'midnight');
+  root.classList.add(themeName);
+  
+  // Set color-scheme property for browser UI
+  root.style.colorScheme = themeName === 'light' ? 'light' : 'dark';
+  
+  // Handle Safari-specific issues
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  if (isSafari) {
+    // Safari-specific workarounds...
+  }
+}
+```
+
+### CSS Variable Usage
+
+```css
+/* In index.css */
+html {
+  color: var(--text);
+  background-color: var(--background);
+}
+
+.glass-effect {
+  background-color: rgba(var(--surface-rgb), var(--glass-opacity));
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(var(--border-rgb), var(--glass-border-opacity));
+}
+```
+
+### Tailwind Integration
+
+```javascript
+// tailwind.config.js
+export default {
+  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: {
+        primary: 'var(--color-primary)',
+        secondary: 'var(--color-secondary)',
+        background: 'var(--color-background)',
+        surface: 'var(--color-surface)',
+        text: 'var(--color-text)',
+        border: 'var(--color-border)',
+        // More color mappings...
+      }
+    }
+  },
+  // ...
+};
+```
+
+### Component Usage
+
+```tsx
+// Mixing direct CSS variables and Tailwind classes
+<div className="bg-[var(--color-surface)] dark:text-white p-4 rounded-lg">
+  <h3 className="text-primary font-medium">Card Title</h3>
+  <p className="text-[var(--color-text-secondary)]">Card content</p>
+</div>
+```
+
+### Browser-Specific Handling
+
+```typescript
+// Safari detection
+const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+// Safari-specific fixes
+if (isSafari) {
+  // Safari-specific styles...
+  
+  // Force repaint hack
+  body.style.display = 'none';
+  void body.offsetHeight;
+  body.style.display = '';
+}
+```
+
+## Theme Selection UI
+
+```typescript
+export function ThemeSelector() {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  const [isSafari, setIsSafari] = useState(false);
+
+  useEffect(() => {
+    // Check if browser is Safari
+    setIsSafari(/^((?!chrome|android).)*safari/i.test(navigator.userAgent));
+    setMounted(true);
+  }, []);
+
+  // Only render after mounting to prevent hydration mismatch
+  if (!mounted) return null;
+
+  return (
+    <div className="flex space-x-2">
+      {/* Theme buttons... */}
+    </div>
+  );
+}
+```
+
+## Important Theme System Quirks
+
+1. **CSS Variable and Tailwind Duality**: The system uses both CSS variables and Tailwind classes simultaneously, creating potential inconsistencies.
+
+2. **Safari-Specific Hacks**: Extensive Safari-specific code appears throughout the codebase:
+   ```typescript
+   // Force repaint hack
+   body.style.display = 'none';
+   void body.offsetHeight;
+   body.style.display = '';
+   ```
+
+3. **Theme Application Complexity**: The theme application involves multiple steps that must stay synchronized:
+   - Setting CSS variables
+   - Adding Tailwind classes
+   - Setting color-scheme property
+   - Applying Safari-specific fixes
+   - Forcing repaints
+
+4. **Initialization Script Gap**: The `themeScript.ts` exports a script string for early initialization, but the injection mechanism isn't explicitly defined.
+
+5. **Limited Transitions**: Theme transitions are basic:
+   ```css
+   /* Theme transition */
+   .theme-transition * {
+     transition-property: color, background-color, border-color;
+     transition-duration: 200ms;
+   }
+   ```
+   But this class isn't consistently applied, potentially resulting in abrupt theme changes.
+
+6. **System Preference Detection**: System preference is only detected at initialization, not dynamically as the user changes their system theme.
+
+## Usage Guidelines
+
+1. **Accessing Theme in Components**:
+   ```typescript
+   const { theme, colors, toggleTheme } = useTheme();
+   
+   // Access specific colors
+   const primaryColor = colors.primary;
+   ```
+
+2. **Conditional Theme Styles**:
+   ```tsx
+   <div className={`
+     ${theme === 'light' ? 'bg-white' : 'bg-gray-900'}
+     ${theme === 'midnight' ? 'text-blue-200' : 'text-blue-600'}
+   `}>
+     Content
+   </div>
+   ```
+
+3. **CSS Variable Usage**:
+   ```tsx
+   <div style={{ 
+     backgroundColor: 'var(--color-surface)',
+     color: 'var(--color-text)',
+     borderColor: 'var(--color-border)'
+   }}>
+     Content
+   </div>
+   ``` 

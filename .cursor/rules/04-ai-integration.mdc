@@ -1,0 +1,288 @@
+---
+description: Guidelines and patterns for the multi-provider AI integration system
+globs: **/*AI*.ts, **/*AI*.tsx, **/*AI*.cs, **/*.py, **/*Agent*.ts, **/*Agent*.cs, **/*Claude*.cs, **/*OpenAI*.cs, **/*Gemini*.cs, **/*Llama*.cs, **/*Grok*.cs
+---
+
+# AI Integration Architecture
+
+Second Brain implements a sophisticated multi-provider AI integration system that supports various language models across different providers. The architecture allows for seamless switching between providers, streaming responses, and specialized AI-powered features.
+
+## Supported AI Providers
+
+The application integrates with multiple AI providers:
+
+1. **OpenAI**
+   - Models: GPT-4, GPT-3.5
+   - Features: Chat completions, assistants, function calling, DALL-E image generation
+
+2. **Anthropic Claude**
+   - Models: Claude 3 Opus, Sonnet, Haiku
+   - Features: Message API, tool use
+
+3. **Google Gemini**
+   - Models: Gemini Pro, Gemini Pro Vision
+   - Features: Text generation, multimodal capabilities
+
+4. **Grok**
+   - Models: Grok-1
+   - Features: Chat completions
+
+5. **Local Models (via Ollama)**
+   - Models: Various open-source models (Llama, Mistral, etc.)
+   - Features: Local deployment, custom system prompts
+
+## Multi-Layer AI Architecture
+
+The application implements a multi-layered approach to AI provider integration:
+
+### 1. Frontend Service Layer
+
+```typescript
+// Agent service that coordinates between providers
+export class AgentService {
+  private openai = new OpenAIService();
+  private anthropic = new AnthropicService();
+  private gemini = new GeminiService();
+  private grok = new GrokService();
+  public llama = new LlamaService();
+
+  // Provider-specific APIs are exposed through this service
+  async sendMessage(message: string, modelId: string, options?: ModelOptions): Promise<AIResponse> {
+    const model = this.getModel(modelId);
+    
+    // Route to appropriate provider based on model ID
+    switch (model.provider) {
+      case 'openai': return this.openai.sendMessage(message, modelId, options);
+      case 'anthropic': return this.anthropic.sendMessage(message, modelId, options);
+      case 'gemini': return this.gemini.sendMessage(message, modelId, options);
+      case 'llama': return this.llama.sendMessage(message, modelId, options);
+      case 'grok': return this.grok.sendMessage(message, modelId, options);
+      default: throw new Error(`Unsupported provider: ${model.provider}`);
+    }
+  }
+}
+```
+
+### 2. .NET Backend Controller Layer
+
+```csharp
+// Separate controllers for each provider
+[ApiController]
+[Route("api/[controller]")]
+public class OpenAIController : ControllerBase
+{
+    private readonly IOpenAIService _openAIService;
+    private readonly IHubContext<ToolHub> _hubContext;
+
+    // Constructor with dependency injection
+    
+    [HttpPost("chat")]
+    public async Task<IActionResult> Chat([FromBody] ChatRequest request)
+    {
+        var response = await _openAIService.GenerateCompletion(request);
+        return Ok(response);
+    }
+}
+```
+
+### 3. .NET Backend Service Layer
+
+```csharp
+// Provider-specific service implementation
+public class OpenAIService : IOpenAIService
+{
+    private readonly HttpClient _httpClient;
+    private readonly ILogger<OpenAIService> _logger;
+    private readonly string _apiKey;
+    private readonly string _apiEndpoint;
+
+    // Constructor with dependency injection
+    
+    public async Task<AICompletionResponse> GenerateCompletion(ChatRequest request)
+    {
+        // Provider-specific API calls
+    }
+}
+```
+
+### 4. Python API Layer (Optional)
+
+```python
+# Python agent factory pattern
+class AgentFactory:
+    @staticmethod
+    def create_agent(provider: str, model_id: str, **kwargs) -> BaseAgent:
+        """Create appropriate agent based on provider"""
+        if provider == "openai":
+            return OpenAIAgent(model_id=model_id, **kwargs)
+        elif provider == "anthropic":
+            return AnthropicAgent(model_id=model_id, **kwargs)
+        elif provider == "gemini":
+            return GeminiAgent(model_id=model_id, **kwargs)
+        elif provider == "grok":
+            return GrokAgent(model_id=model_id, **kwargs)
+        elif provider == "ollama":
+            return OllamaAgent(model_id=model_id, **kwargs)
+        else:
+            raise ValueError(f"Unsupported provider: {provider}")
+```
+
+## Streaming Implementation
+
+Each provider implements streaming differently:
+
+### OpenAI Streaming
+
+```csharp
+// OpenAI streaming with chunked responses
+var options = new RestClientOptions("https://api.openai.com/v1");
+var client = new RestClient(options);
+var request = new RestRequest("chat/completions", Method.Post);
+request.AddHeader("Authorization", $"Bearer {_apiKey}");
+request.AddJsonBody(new
+{
+    model = modelId,
+    messages = messages,
+    stream = true
+});
+
+using (var response = await client.DownloadStreamAsync(request))
+using (var reader = new StreamReader(response))
+{
+    string line;
+    while ((line = await reader.ReadLineAsync()) != null)
+    {
+        // Process SSE data format
+        if (line.StartsWith("data: ") && !line.Contains("data: [DONE]"))
+        {
+            var data = line.Substring(6);
+            // Parse and send via SignalR
+            await _hubContext.Clients.User(userId).SendAsync("ReceiveMessage", parseResult);
+        }
+    }
+}
+```
+
+### Claude Streaming
+
+```csharp
+// Claude streaming with custom implementation
+using (var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead))
+{
+    using (var stream = await response.Content.ReadAsStreamAsync())
+    using (var reader = new StreamReader(stream))
+    {
+        while (!reader.EndOfStream)
+        {
+            var line = await reader.ReadLineAsync();
+            if (string.IsNullOrEmpty(line) || !line.StartsWith("{")) continue;
+            
+            try
+            {
+                // Parse and send via SignalR
+                await _hubContext.Clients.User(userId).SendAsync("ReceiveMessage", message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing Claude stream");
+            }
+        }
+    }
+}
+```
+
+### Llama/Ollama Streaming
+
+```typescript
+// Llama streaming with EventSource
+const eventSource = new EventSource(`${BASE_URL}/api/llama/stream?prompt=${encodeURIComponent(message)}&modelId=${encodeURIComponent(modelId)}`);
+
+eventSource.onmessage = (event) => {
+  try {
+    const data = JSON.parse(event.data);
+    // Process streaming response
+    messageCallback(data.content);
+  } catch (error) {
+    console.error('Error parsing SSE message:', error);
+  }
+};
+```
+
+## Tool Execution Framework
+
+The AI providers can execute tools and report progress:
+
+```typescript
+interface ExecutionStep {
+  messageId: string;
+  stepId: string;
+  tool: string;
+  status: 'running' | 'complete' | 'error';
+  input?: any;
+  output?: any;
+  error?: string;
+  startTime: string;
+  endTime?: string;
+}
+```
+
+## Configuration Management
+
+API keys are stored securely in the backend:
+
+```json
+// appsettings.json
+{
+  "Anthropic": {
+    "ApiKey": "your-api-key-here",
+    "ApiEndpoint": "https://api.anthropic.com/v1/messages"
+  },
+  "Grok": {
+    "ApiKey": "your-grok-api-key",
+    "BaseUrl": "https://api.x.ai/v1"
+  },
+  "OpenAI": {
+    "ApiKey": "your-openai-api-key",
+    "ApiEndpoint": "https://api.openai.com/v1"
+  },
+  "Gemini": {
+    "ApiKey": "your-api-key",
+    "BaseUrl": "https://generativelanguage.googleapis.com/v1beta/"
+  },
+  "Llama": {
+    "OllamaUri": "http://localhost:11434/"
+  }
+}
+```
+
+## RAG Implementation
+
+The application implements Retrieval-Augmented Generation exclusively through OpenAI's Assistants API:
+
+```typescript
+async uploadFile(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await api.post('/api/ai/rag/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data.fileId;
+}
+
+async createAssistant(fileId: string, instructions: string): Promise<string> {
+  const response = await api.post('/api/ai/rag/create-assistant', {
+    fileId,
+    instructions
+  });
+  return response.data.assistantId;
+}
+```
+
+## Important AI Implementation Quirks
+
+1. **Inconsistent Streaming**: Each provider has a different streaming implementation
+2. **Tool Execution Reporting**: Not all providers fully support the execution step interface
+3. **RAG Limitations**: RAG is implemented only through OpenAI, not integrated with app content
+4. **Error Handling Variations**: Different providers have different error handling approaches
+5. **Connection Issues**: SignalR reconnection logic may fail to properly restore streaming
+6. **Manual Resource Cleanup**: RAG resources (assistants, files) require manual cleanup 

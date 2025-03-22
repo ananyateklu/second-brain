@@ -1,0 +1,589 @@
+---
+description: Guidelines and patterns for the authentication system with JWT tokens and refresh token rotation
+globs: **/*auth*.ts, **/*auth*.tsx, **/*Auth*.cs, **/*Auth*.ts, **/*Login*.tsx, **/*Register*.tsx, **/*Token*.cs
+alwaysApply: false
+---
+
+# Authentication System Architecture
+
+Second Brain implements a comprehensive authentication system with JWT tokens, refresh tokens, and secure token management. The authentication architecture spans the frontend and backend to provide secure and seamless user authentication.
+
+## Authentication Flow
+
+### Login Process
+
+1. **User Login Request**:
+   ```typescript
+   // Frontend login function in authService.ts
+   export const login = async (email: string, password: string): Promise<AuthResponse> => {
+     const response = await api.post('/api/auth/login', { email, password });
+     return response.data;
+   }
+   ```
+
+2. **Backend Authentication**:
+   ```csharp
+   // AuthController.cs
+   [HttpPost("login")]
+   public async Task<ActionResult<AuthResponse>> Login(LoginRequest request)
+   {
+       // Validate credentials
+       var user = await _userManager.FindByEmailAsync(request.Email);
+       if (user == null || !await _userManager.CheckPasswordAsync(user, request.Password))
+       {
+           return Unauthorized(new { message = "Invalid email or password" });
+       }
+
+       // Generate tokens
+       var accessToken = _tokenService.GenerateAccessToken(user);
+       var refreshToken = _tokenService.GenerateRefreshToken();
+
+       // Store refresh token
+       user.RefreshTokens.Add(new RefreshToken
+       {
+           Token = refreshToken,
+           ExpiryDate = DateTime.UtcNow.AddDays(7),
+           IsRevoked = false
+       });
+       await _userManager.UpdateAsync(user);
+
+       // Set refresh token as HttpOnly cookie
+       SetRefreshTokenCookie(refreshToken);
+
+       return Ok(new AuthResponse
+       {
+           AccessToken = accessToken,
+           User = _mapper.Map<UserDto>(user)
+       });
+   }
+   ```
+
+3. **Token Storage**:
+   ```typescript
+   // AuthContext.tsx
+   const login = async (email: string, password: string) => {
+     try {
+       const response = await authService.login(email, password);
+       localStorage.setItem('access_token', response.accessToken);
+       setAuthState({
+         user: response.user,
+         isAuthenticated: true,
+         isLoading: false,
+         error: null
+       });
+     } catch (error) {
+       setAuthState({
+         user: null,
+         isAuthenticated: false,
+         isLoading: false,
+         error: 'Invalid email or password'
+       });
+     }
+   };
+   ```
+
+### Token Refresh Process
+
+1. **Refresh Token Request**:
+   ```typescript
+   // Refresh token function in authService.ts
+   export const refreshToken = async (): Promise<AuthResponse> => {
+     // Refresh token is sent automatically as an HttpOnly cookie
+     const response = await api.post('/api/auth/refresh-token');
+     return response.data;
+   }
+   ```
+
+2. **Backend Refresh Logic**:
+   ```csharp
+   [HttpPost("refresh-token")]
+   public async Task<ActionResult<AuthResponse>> RefreshToken()
+   {
+       // Get refresh token from cookie
+       var refreshToken = Request.Cookies["refreshToken"];
+       if (string.IsNullOrEmpty(refreshToken))
+       {
+           return Unauthorized(new { message = "Invalid token" });
+       }
+
+       var user = await _userManager.Users
+           .Include(u => u.RefreshTokens)
+           .SingleOrDefaultAsync(u => u.RefreshTokens.Any(t => t.Token == refreshToken && !t.IsRevoked));
+
+       if (user == null)
+       {
+           return Unauthorized(new { message = "Invalid token" });
+       }
+
+       var existingToken = user.RefreshTokens.Single(t => t.Token == refreshToken);
+       if (existingToken.ExpiryDate < DateTime.UtcNow)
+       {
+           return Unauthorized(new { message = "Token expired" });
+       }
+
+       // Generate new tokens
+       var newAccessToken = _tokenService.GenerateAccessToken(user);
+       var newRefreshToken = _tokenService.GenerateRefreshToken();
+
+       // Update tokens
+       existingToken.IsRevoked = true;
+       user.RefreshTokens.Add(new RefreshToken
+       {
+           Token = newRefreshToken,
+           ExpiryDate = DateTime.UtcNow.AddDays(7),
+           IsRevoked = false
+       });
+       await _userManager.UpdateAsync(user);
+
+       // Set new refresh token cookie
+       SetRefreshTokenCookie(newRefreshToken);
+
+       return Ok(new AuthResponse
+       {
+           AccessToken = newAccessToken,
+           User = _mapper.Map<UserDto>(user)
+       });
+   }
+   ```
+
+3. **Token Rotation**:
+   - Each refresh invalidates the previous refresh token (rotation)
+   - New tokens are issued with each successful refresh
+   - Revoked tokens are marked in the database
+
+### Logout Process
+
+1. **Frontend Logout**:
+   ```typescript
+   const logout = () => {
+     localStorage.removeItem('access_token');
+     authService.logout(); // API call to revoke refresh token
+     setAuthState({
+       user: null,
+       isAuthenticated: false,
+       isLoading: false,
+       error: null
+     });
+   };
+   ```
+
+2. **Backend Logout**:
+   ```csharp
+   [HttpPost("logout")]
+   public async Task<IActionResult> Logout()
+   {
+       // Clear refresh token cookie
+       Response.Cookies.Delete("refreshToken");
+
+       // Get user from claims
+       var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+       if (!string.IsNullOrEmpty(userId))
+       {
+           var user = await _userManager.FindByIdAsync(userId);
+           if (user != null)
+           {
+               // Revoke all refresh tokens
+               var refreshToken = Request.Cookies["refreshToken"];
+               if (!string.IsNullOrEmpty(refreshToken))
+               {
+                   var token = user.RefreshTokens.SingleOrDefault(t => t.Token == refreshToken);
+                   if (token != null)
+                   {
+                       token.IsRevoked = true;
+                       await _userManager.UpdateAsync(user);
+                   }
+               }
+           }
+       }
+
+       return Ok(new { message = "Logged out successfully" });
+   }
+   ```
+
+## JWT Token Implementation
+
+### Token Generation
+
+```csharp
+public string GenerateAccessToken(User user)
+{
+    var claims = new List<Claim>
+    {
+        new Claim(ClaimTypes.NameIdentifier, user.Id),
+        new Claim(ClaimTypes.Name, user.UserName),
+        new Claim(ClaimTypes.Email, user.Email)
+    };
+
+    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT:Secret"]));
+    var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+    var token = new JwtSecurityToken(
+        issuer: _configuration["JWT:ValidIssuer"],
+        audience: _configuration["JWT:ValidAudience"],
+        claims: claims,
+        expires: DateTime.UtcNow.AddMinutes(30), // Short-lived access token
+        signingCredentials: creds
+    );
+
+    return new JwtSecurityTokenHandler().WriteToken(token);
+}
+```
+
+### Token Validation
+
+```csharp
+// In Startup.cs or Program.cs
+services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = Configuration["JWT:ValidIssuer"],
+        ValidAudience = Configuration["JWT:ValidAudience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["JWT:Secret"])),
+        ClockSkew = TimeSpan.Zero // Reduce clock skew to minimize token expiration deviation
+    };
+
+    // Allow tokens in URL for SignalR (potential security concern)
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/toolHub"))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        }
+    };
+});
+```
+
+## API Request Authorization
+
+### Frontend API Authorization
+
+```typescript
+// Interceptor in api.ts
+api.interceptors.request.use(
+  config => {
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  error => Promise.reject(error)
+);
+
+// Handle 401 errors
+api.interceptors.response.use(
+  response => response,
+  async error => {
+    const originalRequest = error.config;
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      try {
+        const response = await authService.refreshToken();
+        localStorage.setItem('access_token', response.accessToken);
+        api.defaults.headers.common['Authorization'] = `Bearer ${response.accessToken}`;
+        return api(originalRequest);
+      } catch (refreshError) {
+        // Force logout on refresh failure
+        localStorage.removeItem('access_token');
+        window.location.href = '/login';
+        return Promise.reject(refreshError);
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+```
+
+### Backend Route Protection
+
+```csharp
+// Controller with authentication requirement
+[ApiController]
+[Route("api/[controller]")]
+[Authorize] // Requires valid JWT
+public class NotesController : ControllerBase
+{
+    // Get current user ID from claims
+    private string GetUserId() => User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<NoteDto>>> GetNotes()
+    {
+        var userId = GetUserId();
+        var notes = await _context.Notes
+            .Where(n => n.UserId == userId && !n.IsDeleted && !n.IsArchived)
+            .OrderByDescending(n => n.UpdatedAt ?? n.CreatedAt)
+            .ToListAsync();
+
+        return _mapper.Map<List<NoteDto>>(notes);
+    }
+}
+```
+
+## SignalR Authentication Integration
+
+### SignalR Connection with JWT
+
+```typescript
+// signalRService.ts
+private buildConnection(token?: string): signalR.HubConnection {
+  if (!token) {
+    token = localStorage.getItem('access_token');
+    if (!token) {
+      console.warn('[SignalR] No access token available');
+    }
+  }
+
+  return new signalR.HubConnectionBuilder()
+    .withUrl(`${this.baseUrl}/toolHub`, {
+      accessTokenFactory: () => token || '',
+      transport: signalR.HttpTransportType.WebSockets,
+      logger: signalR.LogLevel.Information,
+      skipNegotiation: true
+    })
+    .withAutomaticReconnect({
+      nextRetryDelayInMilliseconds: (retryContext) => {
+        // Exponential backoff strategy
+      }
+    })
+    .configureLogging(signalR.LogLevel.Warning)
+    .build();
+}
+```
+
+### Authentication-Dependent Connection Management
+
+```typescript
+// In AuthContext.tsx
+useEffect(() => {
+  let isActive = true;
+  console.log('[SignalR] Auth state changed, user:', authState.user?.email);
+
+  const initializeSignalR = async () => {
+    try {
+      const accessToken = localStorage.getItem('access_token');
+      if (!accessToken || !isActive) {
+        console.warn('[SignalR] No access token available or component unmounted');
+        return;
+      }
+
+      // First, clean up any existing connection and wait
+      await signalRService.stop();
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Update the token and ensure connection is started
+      await signalRService.updateToken(accessToken);
+      await signalRService.start();
+    } catch (error) {
+      console.error('[SignalR] Error initializing SignalR:', error);
+    }
+  };
+
+  initializeSignalR();
+
+  return () => {
+    isActive = false;
+  };
+}, [authState.user]);
+```
+
+## Frontend Route Protection
+
+```tsx
+// ProtectedRoute component
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return <>{children}</>;
+}
+
+// Usage in router
+<Routes>
+  <Route path="/login" element={<LoginPage />} />
+  <Route path="/register" element={<RegisterPage />} />
+  <Route path="/dashboard" element={
+    <ProtectedRoute>
+      <Dashboard />
+    </ProtectedRoute>
+  } />
+  {/* More protected routes... */}
+</Routes>
+```
+
+## Login/Registration Forms
+
+```tsx
+// Login form component
+function LoginForm() {
+  const { login, error, isLoading } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await login(email, password);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      {error && <div className="error-message">{error}</div>}
+      <div className="form-group">
+        <label htmlFor="email">Email</label>
+        <input
+          type="email"
+          id="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+      </div>
+      <div className="form-group">
+        <label htmlFor="password">Password</label>
+        <input
+          type="password"
+          id="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+      </div>
+      <button type="submit" disabled={isLoading}>
+        {isLoading ? 'Logging in...' : 'Login'}
+      </button>
+    </form>
+  );
+}
+```
+
+## Important Authentication Quirks
+
+1. **LocalStorage Token Storage**: Access tokens in localStorage are vulnerable to XSS attacks
+   ```typescript
+   // XSS vulnerability
+   localStorage.setItem('access_token', response.accessToken);
+   ```
+
+2. **SignalR URL Tokens**: Allowing tokens in URL parameters creates potential security risks
+   ```csharp
+   // Potential security risk
+   var accessToken = context.Request.Query["access_token"];
+   if (!string.IsNullOrEmpty(accessToken)) {
+     context.Token = accessToken;
+   }
+   ```
+
+3. **Token Refresh Race Conditions**: Multiple concurrent requests hitting 401 can trigger multiple refresh attempts
+   ```typescript
+   // No locking mechanism for concurrent refreshes
+   if (error.response?.status === 401 && !originalRequest._retry) {
+     originalRequest._retry = true;
+     // Possible race condition if multiple requests fail simultaneously
+   }
+   ```
+
+4. **SignalR Authentication Coupling**: SignalR connection depends on auth state, creating complex dependency
+   ```typescript
+   // Complex coupling
+   useEffect(() => {
+     // SignalR reconnection logic when auth changes
+   }, [authState.user]);
+   ```
+
+5. **Connection Recreation**: The `updateToken` method creates a new connection which could drop in-flight messages
+   ```typescript
+   async updateToken(token: string) {
+     this.connection = this.buildConnection(token);
+     this.setupConnectionHandlers();
+   }
+   ```
+
+## Usage Guidelines
+
+### Accessing User Data
+
+Always use the auth context to access user information:
+
+```tsx
+function UserProfile() {
+  const { user, updateProfile } = useAuth();
+  
+  if (!user) return null;
+  
+  return (
+    <div>
+      <h2>{user.username}</h2>
+      <p>{user.email}</p>
+      {/* User profile content */}
+    </div>
+  );
+}
+```
+
+### Protecting Routes
+
+Use the ProtectedRoute component for any route that requires authentication:
+
+```tsx
+<Route path="/notes" element={
+  <ProtectedRoute>
+    <NotesPage />
+  </ProtectedRoute>
+} />
+```
+
+### API Calls with Authentication
+
+Ensure all API calls that require authentication use the API instance with the configured interceptors:
+
+```typescript
+// Good: Uses configured API instance with auth interceptors
+const response = await api.get('/api/notes');
+
+// Bad: Bypasses auth interceptors
+const response = await axios.get('https://api.example.com/notes');
+```
+
+### Handling Expired Sessions
+
+Handle session expiration gracefully:
+
+```typescript
+// In component that handles auth errors
+useEffect(() => {
+  const handleAuthError = (event: CustomEvent) => {
+    // Show session expired message
+    showNotification('Your session has expired. Please log in again.');
+    // Redirect to login
+    navigate('/login');
+  };
+  
+  window.addEventListener('auth:error', handleAuthError);
+  return () => {
+    window.removeEventListener('auth:error', handleAuthError);
+  };
+}, []);
+``` 

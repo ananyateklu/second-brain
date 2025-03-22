@@ -15,63 +15,86 @@ Second Brain is an AI-enhanced knowledge management and note-taking system that 
 
 ### Knowledge Management
 
-- Markdown-based rich text editing
-- Bi-directional linking across notes, ideas, tasks, and reminders
-- Graph visualization with React Flow to highlight relationships:
-  - Customizable node types and styles
-  - Smooth animations and transitions
-  - Real-time graph updates
-  - Drag and drop interface
-  - Mini-map navigation
-  - Node grouping
-  - Custom edge connections
-- AI-assisted tagging, content organization, and context-aware suggestions
-- Version history, archiving, and focus mode for concentrated workflows
-
-### Code & Documentation
-
-- Syntax highlighting for multiple programming languages
-- Code snippet management and AI-driven code explanations
-- Documentation integration and quick export/sharing features
+- Rich text editing with Markdown support
+- Bi-directional linking across notes, ideas, tasks, and reminders with redundant storage for quick traversal
+- Interactive graph visualization:
+  - Node types for different content entities (notes, tasks, ideas, reminders)
+  - Real-time updates reflecting content relationships
+  - Intuitive navigation interface
+- Tagging and categorization system
+- Version tracking, archiving, and focus mode
+- Soft delete implementation with restore capabilities
 
 ### Tasks & Reminders
 
-- Priority-based organization and AI-driven scheduling
-- Context-aware reminders linked to notes, ideas, and other content
-- Progress tracking, archiving, and linking tasks directly with related notes or ideas
+- Priority-based task management with status tracking
+- Time-based reminders with recurrence options
+- Task dependency visualization and tracking
+- Linking tasks to notes, ideas, and reference materials
+- Progress tracking and completion status management
 
 ### AI Integration
 
-- Multiple AI backends: OpenAI (GPT-4, DALL-E 3), Anthropic Claude, Google Gemini, Grok, and local models via Ollama
-- Unified interface to select AI models and embeddings
-- Natural language queries, voice transcription, text-to-speech, image generation, and vector embeddings
-- Retrieval augmented generation (RAG) for context-rich responses
-- Database operations through natural language queries
+- Multi-provider architecture supporting:
+  - OpenAI (GPT-4, GPT-3.5, DALL-E)
+  - Anthropic Claude (Opus, Sonnet, Haiku)
+  - Google Gemini (Pro, Pro Vision)
+  - Grok
+  - Local models via Ollama
+- Real-time streaming responses with SignalR
+- Tool execution framework for executing AI-driven actions
+- Voice transcription and audio processing
+- Retrieval-augmented generation (RAG) via OpenAI Assistants API
+- Natural language database operations
+
+### Multi-Layered Theme System
+
+- Three distinct themes: Light, Dark, and Midnight
+- Combined CSS variables and Tailwind implementation
+- System preference detection
+- Browser-specific optimizations (especially for Safari)
+- Dynamic theme switching with persistence
 
 ### Privacy & Security
 
-- API keys and credentials stored securely on the backend
-- JWT authentication with refresh tokens
-- Data encryption
+- JWT authentication with refresh token rotation
+- API keys stored securely on backend
+- User-specific data isolation
+- HTTP-only cookies for refresh tokens
+- SignalR secure connections with authentication
 
-## Technical Stack
+## Technical Architecture
 
 ### Frontend
 
 - React 18 with TypeScript and Vite
-- Tailwind CSS, Headless UI, Framer Motion
-- State management with React Context and custom hooks
-- React Flow for interactive graph visualization (zoom, pan, custom nodes, and edges)
-- Date handling with date-fns
-- Vitest and Testing Library for comprehensive tests
+- State management with React Context API and custom hooks
+  - Nested provider architecture for different concerns
+  - Optimistic updates with rollback capabilities
+- Tailwind CSS with custom theming
+- SignalR for real-time updates and streaming
+- Component organization by feature
+- Axios with interceptors for API authentication
 
 ### Backend
 
-- .NET 8.0 with ASP.NET Core Web API and Clean Architecture using CQRS
-- Entity Framework Core and SQL Server
-- Integrations with OpenAI, Anthropic, Google Gemini, Grok, and Ollama
-- Pinecone for vector embeddings and semantic search
-- Logging, monitoring, and Swagger/OpenAPI documentation
+- ASP.NET Core 8.0 Web API
+- Entity Framework Core with SQL Server
+- Controller-service-repository pattern
+- JWT authentication system
+- SignalR hubs for real-time communication
+- Soft delete pattern with query filters
+- Multi-layer response processing
+- Provider-specific AI integrations
+
+### Database Structure
+
+- Entity Framework Core code-first approach
+- Comprehensive entity relationships
+- Bidirectional linking implementation
+- Soft delete pattern with automatic query filters
+- Activity and achievement tracking
+- Flexible tag system across entities
 
 ## Getting Started
 
@@ -80,8 +103,12 @@ Second Brain is an AI-enhanced knowledge management and note-taking system that 
 - Node.js 18+ and npm
 - .NET SDK 8.0
 - SQL Server 2019+
-- API keys for OpenAI, Anthropic, Google Cloud, Grok, Pinecone
-- Optional: Ollama for local AI models
+- API keys for:
+  - OpenAI
+  - Anthropic Claude
+  - Google Gemini
+  - Grok
+- Optional: Ollama for local AI models (<http://localhost:11434>)
 
 ### Frontend Setup
 
@@ -92,7 +119,7 @@ npm install
 npm run dev
 ```
 
-Configure the `.env` file with the appropriate API URLs and keys before running `npm run dev`.
+Configure the `.env` file with the appropriate API URLs before running `npm run dev`.
 
 ### Backend Setup
 
@@ -125,8 +152,8 @@ Here's a template for `appsettings.json`:
       "Secret": "your-jwt-secret",
       "Issuer": "SecondBrain",
       "Audience": "SecondBrain",
-      "AccessTokenExpirationMinutes": "600",
-      "RefreshTokenExpirationDays": "30"
+      "AccessTokenExpirationMinutes": "30",
+      "RefreshTokenExpirationDays": "7"
     }
   },
 
@@ -154,20 +181,6 @@ Here's a template for `appsettings.json`:
     "OllamaUri": "http://localhost:11434/"
   },
 
-  "Pinecone": {
-    "ApiKey": "your-pinecone-api-key",
-    "Endpoint": "your-pinecone-endpoint"
-  },
-
-  "Storage": {
-    "DocumentsPath": "Storage/Documents"
-  },
-
-  "DocumentProcessing": {
-    "MaxTokensPerChunk": 500,
-    "OverlapTokens": 50
-  },
-
   "Kestrel": {
     "Endpoints": {
       "Http": {
@@ -191,14 +204,15 @@ Before running these commands, ensure that appsettings.json is configured with t
 
 The application provides RESTful API endpoints for various resources. Below is a list of available controllers and their primary routes:
 
-### Authentication (/auth)
+### Authentication (/api/auth)
 
 - **Endpoints:**
-  - `POST /auth/register` - Register a new user
-  - `POST /auth/login` - Authenticate a user and obtain tokens
-  - `POST /auth/refresh-token` - Refresh access tokens using a refresh token
-  - `GET /auth/me` - Retrieve the authenticated user's profile
-  - `PUT /auth/me/avatar` - Update user avatar
+  - `POST /api/auth/register` - Register a new user
+  - `POST /api/auth/login` - Authenticate a user and obtain tokens
+  - `POST /api/auth/refresh-token` - Refresh access tokens using a refresh token
+  - `POST /api/auth/logout` - Logout and invalidate tokens
+  - `GET /api/auth/me` - Retrieve the authenticated user's profile
+  - `PUT /api/auth/me/avatar` - Update user avatar
 
 ### Notes (/api/notes)
 
@@ -213,16 +227,6 @@ The application provides RESTful API endpoints for various resources. Below is a
   - `GET /api/notes/deleted` - Get all soft-deleted notes
   - `GET /api/notes/archived` - Get all archived notes
   - `POST /api/notes/{id}/unarchive` - Unarchive a note
-
-### Ideas (/api/ideas)
-
-- **Endpoints:**
-  - `POST /api/ideas` - Create a new idea
-  - `PUT /api/ideas/{id}` - Update an idea
-  - `DELETE /api/ideas/{id}` - Delete an idea
-  - `PUT /api/ideas/{id}/favorite` - Toggle favorite status
-  - `PUT /api/ideas/{id}/pin` - Toggle pin status
-  - `PUT /api/ideas/{id}/archive` - Toggle archive status
 
 ### Tasks (/api/tasks)
 
@@ -245,40 +249,29 @@ The application provides RESTful API endpoints for various resources. Below is a
   - `DELETE /api/reminders/{id}` - Delete a reminder
   - `GET /api/reminders/deleted` - Get all deleted reminders
 
-### Activities (/api/activities)
-
-- **Endpoints:**
-  - *(To be defined based on implementation)*
-
-### Achievements (/api/achievements)
-
-- **Endpoints:**
-  - `GET /api/achievements` - Get all achievements
-  - `GET /api/achievements/user` - Get user's unlocked achievements
-  - `GET /api/achievements/progress` - Get user's progress towards achievements
-
 ### AI Integrations
 
-#### OpenAI (/api/ai/openai)
+#### AI Agents (/api/ai/agents)
 
 - **Endpoints:**
-  - `GET /api/ai/openai/status` - Check OpenAI API status
-  - `POST /api/ai/openai/chat` - Send a message to OpenAI Chat API
-  - `POST /api/ai/openai/embeddings` - Create embeddings
-  - `POST /api/ai/openai/images/generate` - Generate images
-  - `POST /api/ai/openai/audio/transcribe` - Transcribe audio
-  - `POST /api/ai/openai/audio/speech` - Convert text to speech
+  - `GET /api/ai/agents/models` - Get available AI models
+  - `GET /api/ai/agents/configs` - Get provider configurations
+  - `POST /api/ai/agents/execute` - Execute tool with AI
+
+#### OpenAI (/api/openai)
+
+- **Endpoints:**
+  - `GET /api/openai/status` - Check OpenAI API status
+  - `POST /api/openai/chat` - Send a message to OpenAI Chat API
+  - `POST /api/openai/images/generate` - Generate images
+  - `POST /api/openai/audio/transcribe` - Transcribe audio
+  - `POST /api/openai/audio/speech` - Convert text to speech
 
 #### Anthropic Claude (/api/claude)
 
 - **Endpoints:**
   - `POST /api/claude/send-message` - Send a message to Claude
   - `GET /api/claude/status` - Check Claude API status
-
-#### Grok (/api/grok)
-
-- **Endpoints:**
-  - `POST /api/grok/send` - Send a message to Grok API
 
 #### Google Gemini (/api/gemini)
 
@@ -292,11 +285,14 @@ The application provides RESTful API endpoints for various resources. Below is a
   - `GET /api/llama/stream` - Stream responses from local Llama models
   - `POST /api/llama/execute-db` - Execute database operations via natural language
 
-### Nexus Storage (/api/nexusstorage)
+#### RAG (/api/ai/rag)
 
 - **Endpoints:**
-  - `POST /api/nexusstorage/execute` - Execute database operations via Llama service
-  - `POST /api/nexusstorage/test` - Test Llama service operations
+  - `POST /api/ai/rag/upload` - Upload file for RAG processing
+  - `POST /api/ai/rag/create-assistant` - Create RAG assistant with file
+  - `POST /api/ai/rag/query` - Query RAG assistant
+  - `DELETE /api/ai/rag/file` - Delete RAG file
+  - `DELETE /api/ai/rag/assistant` - Delete RAG assistant
 
 ## Content Linking Features
 
@@ -304,84 +300,44 @@ The system implements bi-directional linking across all content types, enabling 
 
 ### Content Types & Connections
 
-- **Notes**: Reference other notes, tasks, reminders, and ideas
+- **Notes**: Reference other notes, tasks, reminders, and ideas with bidirectional links
 - **Tasks**: Link to documentation, dependencies, and meeting notes
 - **Reminders**: Connect to related tasks and reference materials
 - **Ideas**: Associate with research, implementation tasks, and related concepts
 
 All connections are bi-directional and support:
 
-- Contextual relationships
-- Dependency tracking
-- Project organization
-- Knowledge discovery
+- Contextual relationships with link types and metadata
+- Dependency tracking with status propagation
+- Project organization and categorization
+- Knowledge discovery through relationship exploration
 
-## Roadmap Enhancements
+## Implementation Considerations
 
-### Vector Database & RAG Integration
+- **Optimistic Updates**: Most data modifications use optimistic updates with rollback
+- **SignalR Streaming**: AI responses stream in real-time with fallback mechanisms
+- **Provider-Specific Streaming**: Each AI provider implements streaming differently
+- **Safari Compatibility**: Theme system includes special handling for Safari browser
+- **Soft Delete**: Entities use soft delete with query filters
+- **Context Dependencies**: The nested context structure creates complex dependencies
+- **Token Refresh**: JWT tokens refresh automatically with rotation for security
 
-- Incorporate a vector database to enable fast retrieval and semantic queries
-- Enhance AI-assisted suggestions with full knowledge-base context
-- Move towards a system where RAG informs all aspects of note-taking, content creation, and linking
+## Future Improvements
 
-### Role-Based Permissions
-
-- Introduce dedicated tables and schema for storing user and agent roles
-- Assign specific capabilities to AI agents—some can create or edit content, others remain read-only
-- Scale permissions to support multiple users and maintain a secure environment
-
-### Enhanced Linking & Visualization
-
-- Differentiate link types (note-to-note, idea-to-idea, note-to-idea) using visual cues, colors, and line styles
-- Add overlays for relevance, confidence, or thematic grouping
-- Introduce temporal views to track changes and identify content evolution over time
-- Explore hierarchical and dependency links to represent structured project relationships
-
-### Performance & Scalability
-
-- Optimize graph rendering for large-scale datasets
-- Implement caching, indexing, and on-demand rendering strategies
-- Introduce strategies for handling large volumes of notes, tasks, ideas, and reminders efficiently
-
-### Data Integrity & Recovery
-
-- Implement backup and restore processes for critical data
-- Consider versioning, rollback capabilities, and automated integrity checks
-
-### AI Context & Confidence
-
-- Display confidence scores or relevance metrics for AI-generated suggestions
-- Utilize system-wide context, allowing titles, tags, and related content to inform suggestions
-- Improve user understanding of AI logic and rationale
-
-### Customizability & Metrics
-
-- Allow users to adjust AI link suggestion aggressiveness
-- Offer user-selectable default AI models and parameter configurations
-- Provide detailed productivity and knowledge density metrics to evaluate the AI's effectiveness
-
-### Calendar & Email Integration
-
-- Calendar sync with Google Calendar/Outlook
-- Email-based task creation and reminders
-- Automated meeting notes and summaries
-- Smart email digests of your knowledge base
-- Calendar-based task scheduling
-
-### Mobile & Platform Expansion
-
-- Native mobile applications for iOS and Android
-- Progressive Web App (PWA) support
-- Cross-platform synchronization
-- Offline capabilities
-- Mobile-optimized UI/UX
+- Complete RAG implementation with notes integration
+- Enhance bidirectional linking with improved error handling
+- Optimize context provider architecture to reduce nesting
+- Improve error handling consistency across components
+- Standardize streaming implementations across AI providers
+- Implement a more unified theme system approach
+- Add mobile and offline support
 
 ## Acknowledgments
 
 Thanks to the following projects and organizations that make Second Brain possible:
 
 - OpenAI for GPT-4 and DALL-E 3
-- Anthropic for Claude
+- Anthropic for Claude models
 - Google for Gemini
 - Grok team for their API
 - Ollama for local AI model support

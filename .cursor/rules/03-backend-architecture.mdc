@@ -1,0 +1,192 @@
+---
+description: Guidelines and patterns for the .NET Core backend architecture
+globs: backend/**/*.cs, **/*.csproj, SecondBrain.*/**/*.cs
+---
+
+# Backend Architecture
+
+The Second Brain backend is built using ASP.NET Core 8.0 with Entity Framework Core for data access. It follows a controller-service-repository pattern with specialized services for different concerns.
+
+## Directory Structure
+
+```
+backend/
+├── SecondBrain.Api/
+│   ├── Controllers/          # API controllers
+│   ├── DTOs/                 # Data transfer objects
+│   ├── Enums/                # Enumeration types
+│   ├── Extensions/           # Extension methods
+│   ├── Gamification/         # Gamification system
+│   ├── Hubs/                 # SignalR hubs
+│   ├── Infrastructure/       # Infrastructure concerns
+│   ├── Models/               # API models
+│   └── Services/             # Business logic services
+├── SecondBrain.Data/
+│   ├── Entities/             # Database entity models
+│   ├── Extensions/           # Data-related extensions
+│   └── Migrations/           # EF Core migrations
+```
+
+## Key Controllers
+
+The backend provides various controllers for different resources:
+
+- **AuthController**: User authentication and registration
+- **NotesController**: Note management
+- **IdeasController**: Idea management
+- **TasksController**: Task management
+- **RemindersController**: Reminder management
+- **ActivitiesController**: User activity tracking
+- **AchievementsController**: Gamification achievements
+- **NexusStorageController**: File storage
+- **AI Controllers**:
+  - **AIAgentsController**: AI agent coordination
+  - **ClaudeController**: Anthropic Claude integration
+  - **GeminiController**: Google Gemini integration
+  - **GrokController**: Grok AI integration
+  - **LlamaController**: Local LLM (Ollama) integration
+  - **OpenAIController**: OpenAI integration
+  - **RAGController**: Retrieval-augmented generation
+
+## Entity Framework Core Configuration
+
+Database context and entity configurations are defined in `DataContext.cs`:
+
+```csharp
+public class DataContext : DbContext
+{
+    public DataContext(DbContextOptions<DataContext> options) : base(options) { }
+    
+    public DbSet<User> Users { get; set; }
+    public DbSet<Note> Notes { get; set; }
+    public DbSet<Idea> Ideas { get; set; }
+    public DbSet<TaskItem> Tasks { get; set; }
+    public DbSet<Reminder> Reminders { get; set; }
+    // Additional DbSets...
+    
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+        
+        // Entity configurations...
+        // Relationship definitions...
+        // Query filters for soft delete...
+    }
+}
+```
+
+## Authentication Implementation
+
+JWT authentication with refresh token rotation:
+
+```csharp
+// Token generation
+public string GenerateAccessToken(User user)
+{
+    var claims = new List<Claim>
+    {
+        new Claim(ClaimTypes.NameIdentifier, user.Id),
+        new Claim(ClaimTypes.Name, user.UserName),
+        new Claim(ClaimTypes.Email, user.Email)
+    };
+
+    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT:Secret"]));
+    var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+    var token = new JwtSecurityToken(
+        issuer: _configuration["JWT:ValidIssuer"],
+        audience: _configuration["JWT:ValidAudience"],
+        claims: claims,
+        expires: DateTime.UtcNow.AddMinutes(30),
+        signingCredentials: creds
+    );
+
+    return new JwtSecurityTokenHandler().WriteToken(token);
+}
+```
+
+## SignalR Implementation
+
+SignalR is used for real-time communication, especially for AI streaming responses:
+
+```csharp
+[Authorize]
+public class ToolHub : Hub
+{
+    public override async Task OnConnectedAsync()
+    {
+        var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!string.IsNullOrEmpty(userId))
+        {
+            await Groups.AddToGroupAsync(Context.ConnectionId, $"User_{userId}");
+        }
+        await base.OnConnectedAsync();
+    }
+    
+    // Methods for sending execution steps, streaming responses, etc.
+}
+```
+
+## Soft Delete Pattern
+
+Many entities implement soft delete with query filters:
+
+```csharp
+// Entity with soft delete
+public bool IsDeleted { get; set; }
+public DateTime? DeletedAt { get; set; }
+
+// Query filter in DataContext
+modelBuilder.Entity<Note>().HasQueryFilter(e => !e.IsDeleted);
+```
+
+## AI Provider Integration
+
+Each AI provider has a dedicated controller and service implementation:
+
+```csharp
+// Provider-specific service implementation
+public class OpenAIService : IOpenAIService
+{
+    private readonly HttpClient _httpClient;
+    private readonly ILogger<OpenAIService> _logger;
+    private readonly string _apiKey;
+    private readonly string _apiEndpoint;
+
+    // Constructor with dependency injection
+    // API interaction methods
+}
+```
+
+## Multi-layer Response Processing
+
+Controllers format responses consistently while handling specific provider quirks:
+
+```csharp
+[ApiController]
+[Route("api/[controller]")]
+public class OpenAIController : ControllerBase
+{
+    private readonly IOpenAIService _openAIService;
+    private readonly IHubContext<ToolHub> _hubContext;
+
+    // Constructor with dependency injection
+    
+    [HttpPost("chat")]
+    public async Task<IActionResult> Chat([FromBody] ChatRequest request)
+    {
+        // Process the request
+        // Stream responses via SignalR
+        // Return final result
+    }
+}
+```
+
+## Important Backend Quirks
+
+1. **Inconsistent Soft Delete**: Not all entities implement soft delete
+2. **Query Filter Bypassing**: Some queries bypass the soft delete filter
+3. **Controller-Level Logic**: Much business logic exists in controllers rather than services
+4. **Transaction Inconsistencies**: Not all multi-entity operations use explicit transactions
+5. **Bidirectional Link Complexity**: Note linking requires manual synchronization in both directions
+6. **Provider-Specific Streaming**: Each AI provider implements streaming differently 

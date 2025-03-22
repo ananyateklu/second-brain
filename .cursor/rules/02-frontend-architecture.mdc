@@ -1,0 +1,144 @@
+---
+description: Guidelines and patterns for the React frontend architecture
+globs: frontend/**/*.ts, frontend/**/*.tsx, src/**/*.ts, src/**/*.tsx
+alwaysApply: false
+---
+
+# Frontend Architecture
+
+The Second Brain frontend is built with React 18, TypeScript, Vite, and TailwindCSS. It follows a context-based state management approach with multiple providers for different concerns.
+
+## Directory Structure
+
+```
+frontend/
+├── src/
+│   ├── api/                  # API client services
+│   ├── assets/               # Static assets (images, icons)
+│   ├── components/           # React components
+│   │   ├── Dashboard/        # Dashboard-related components
+│   │   └── shared/           # Shared/reusable components
+│   ├── config/               # Configuration files
+│   ├── contexts/             # React Context providers
+│   ├── hooks/                # Custom React hooks
+│   ├── services/             # Service layer for external interactions
+│   ├── styles/               # Global styles
+│   ├── theme/                # Theme configuration
+│   ├── types/                # TypeScript type definitions
+│   ├── utils/                # Utility functions
+│   ├── App.tsx               # Main App component
+│   ├── index.css             # Global CSS
+│   └── main.tsx              # Application entry point
+```
+
+## Context Providers
+
+The application uses a deeply nested context provider structure in `App.tsx`:
+
+```tsx
+<ThemeProvider>
+  <BrowserRouter>
+    <AuthProvider>
+      <AIProvider>
+        <RecordingProvider>
+          <ActivityProvider>
+            <ModalProvider>
+              <TrashProvider>
+                <RemindersProvider>
+                  <NotesWithRemindersProvider>
+                    <TasksProvider>
+                      <DashboardProvider>
+                        {/* Application Routes */}
+                      </DashboardProvider>
+                    </TasksProvider>
+                  </NotesWithRemindersProvider>
+                </RemindersProvider>
+              </TrashProvider>
+            </ModalProvider>
+          </ActivityProvider>
+        </RecordingProvider>
+      </AIProvider>
+    </AuthProvider>
+  </BrowserRouter>
+</ThemeProvider>
+```
+
+## Key Context Providers
+
+- **AuthContext**: Authentication state and operations
+- **ThemeContext**: Theme settings and operations
+- **NotesContext**: Notes data and operations
+- **TasksContext**: Tasks data and operations
+- **RemindersContext**: Reminders data and operations
+- **AIContext**: AI provider configurations and operations
+- **DashboardContext**: Dashboard UI state and settings
+- **TrashContext**: Deleted items management
+- **ModalContext**: Modal dialog management
+- **ActivityContext**: User activity tracking
+- **RecordingContext**: Audio recording for transcription
+
+## Component Patterns
+
+1. **Feature-based organization**: Components are organized by feature (Notes, Tasks, etc.)
+2. **Compound components**: Complex UI elements use compound component pattern
+3. **Custom hooks**: Business logic is extracted into custom hooks
+4. **Context consumers**: Components use context via custom hooks (`useNotes`, `useTasks`, etc.)
+5. **Controlled forms**: Form state managed with React state or custom hooks
+
+## API Integration
+
+Services in the `api/` directory handle API calls:
+
+```typescript
+// Example API service pattern
+export const someApiService = {
+  getItems: async (): Promise<Item[]> => {
+    const response = await api.get('/api/items');
+    return response.data;
+  },
+  
+  createItem: async (item: CreateItemDto): Promise<Item> => {
+    const response = await api.post('/api/items', item);
+    return response.data;
+  }
+};
+```
+
+## Authentication Flow
+
+JWT tokens are stored in localStorage and managed by `AuthContext`:
+
+```typescript
+// Token storage
+localStorage.setItem('access_token', response.accessToken);
+
+// Token usage in API calls
+api.interceptors.request.use(config => {
+  const token = localStorage.getItem('access_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+```
+
+## SignalR Integration
+
+The application uses SignalR for real-time communication:
+
+```typescript
+// SignalR connection with auth token
+const connection = new signalR.HubConnectionBuilder()
+  .withUrl(`${baseUrl}/toolHub`, {
+    accessTokenFactory: () => localStorage.getItem('access_token') || '',
+  })
+  .build();
+```
+
+## Important Frontend Quirks
+
+1. **Context Dependencies**: Some contexts depend on others being initialized first
+2. **Optimistic Updates**: Many operations update local state before API calls complete
+3. **Safari-specific Code**: Theme system has special handling for Safari browser
+4. **Error State Duplication**: Each context has its own error state
+5. **Tailwind + CSS Variables**: Theme system uses both approaches simultaneously 
