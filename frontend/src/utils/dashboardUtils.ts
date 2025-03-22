@@ -42,7 +42,7 @@ export const getIconColor = (type: string) => {
     case 'categories':
       return `${baseClass} text-yellow-600 dark:text-yellow-400 midnight:text-yellow-400`;
     case 'word-count':
-      return `${baseClass} text-purple-600 dark:text-purple-400 midnight:text-purple-400`;
+      return `${baseClass} text-red-600 dark:text-red-400 midnight:text-red-400`;
     case 'tags':
       return `${baseClass} text-primary-600 dark:text-primary-400 midnight:text-primary-400`;
     case 'time':
@@ -52,13 +52,13 @@ export const getIconColor = (type: string) => {
     case 'tasks':
       return `${baseClass} text-green-600 dark:text-green-400 midnight:text-green-400`;
     case 'activity':
-      return `${baseClass} text-rose-600 dark:text-rose-400 midnight:text-rose-400`;
+      return `${baseClass} text-purple-600 dark:text-purple-400 midnight:text-purple-400`;
     case 'connections':
       return `${baseClass} text-blue-600 dark:text-blue-400 midnight:text-blue-400`;
     case 'collaboration':
       return `${baseClass} text-teal-600 dark:text-teal-400 midnight:text-teal-400`;
     case 'reminders':
-      return `${baseClass} text-indigo-600 dark:text-indigo-400 midnight:text-indigo-400`;
+      return `${baseClass} text-pink-600 dark:text-pink-400 midnight:text-pink-400`;
     default:
       return `${baseClass} text-gray-600 dark:text-gray-400 midnight:text-gray-400`;
   }

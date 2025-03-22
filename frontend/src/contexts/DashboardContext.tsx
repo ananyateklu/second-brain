@@ -38,13 +38,51 @@ const calculateConnectionStats = (notes: Note[]) => {
   }, 0);
 
   const mostConnected = notes.reduce((max, note) => {
-    const connections = (note.linkedNoteIds?.length || 0) + 
-                      (note.linkedTasks?.length ?? 0) + 
-                      (note.linkedReminders?.length || 0);
+    const connections = (note.linkedNoteIds?.length || 0) +
+      (note.linkedTasks?.length ?? 0) +
+      (note.linkedReminders?.length || 0);
     return connections > max.connections ? { note, connections } : max;
   }, { note: null as Note | null, connections: 0 });
 
   return { totalConnections, notesWithConnections, recentConnections, mostConnected };
+};
+
+// Calculate activity data for the past year by week
+const generateWeeklyActivityData = (activities: Activity[]) => {
+  // Initialize an array for 52 weeks (1 year)
+  const weeklyData = Array(52).fill(0);
+
+  if (!activities || activities.length === 0) {
+    return weeklyData;
+  }
+
+  // Get current date and date from 1 year ago
+  const now = new Date();
+  const oneYearAgo = new Date();
+  oneYearAgo.setFullYear(now.getFullYear() - 1);
+
+  // Calculate milliseconds per week
+  const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+
+  // Group activities by week
+  activities.forEach(activity => {
+    const activityDate = new Date(activity.timestamp);
+
+    // Only include activities from the past year
+    if (activityDate >= oneYearAgo) {
+      // Calculate which week bucket this activity belongs to
+      const weeksAgo = Math.floor((now.getTime() - activityDate.getTime()) / msPerWeek);
+
+      // Make sure it fits in our 52 week range (0-51)
+      if (weeksAgo >= 0 && weeksAgo < 52) {
+        // Index 0 is the most recent week
+        weeklyData[weeksAgo]++;
+      }
+    }
+  });
+
+  // Reverse the array so index 0 is the oldest week
+  return weeklyData.reverse();
 };
 
 const calculateActivityStats = (activities: Activity[]) => {
@@ -135,7 +173,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     let notesCreatedThisWeek: number;
     let notesWithLinks: number;
     let recentlyEditedNotes: number;
-    
+
     // New declarations for new-notes case
     let notesToday: number;
     let notesYesterday: number;
@@ -198,8 +236,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         }).length;
 
         return {
-          value: `${activeTasks.length} of ${tasks.length}`,
-          timeframe: 'Current',
+          value: activeTasks.length,
+          timeframe: `of ${tasks.length} total`,
           description: 'Tasks currently in progress',
           additionalInfo: [
             {
@@ -274,15 +312,15 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         today = new Date();
         weekAgo = new Date(today);
         weekAgo.setDate(weekAgo.getDate() - 7);
-        
+
         // Calculate notes created today
         yesterday = new Date(today);
         yesterday.setDate(yesterday.getDate() - 1);
         yesterday.setHours(0, 0, 0, 0);
-        
+
         twoWeeksAgo = new Date(weekAgo);
         twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 7);
-        
+
         notesToday = regularNotes.filter(note => {
           const noteDate = new Date(note.createdAt);
           noteDate.setHours(0, 0, 0, 0);
@@ -290,18 +328,18 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           todayDate.setHours(0, 0, 0, 0);
           return noteDate.getTime() === todayDate.getTime();
         }).length;
-        
+
         notesYesterday = regularNotes.filter(note => {
           const noteDate = new Date(note.createdAt);
           noteDate.setHours(0, 0, 0, 0);
           return noteDate.getTime() === yesterday.getTime();
         }).length;
-        
+
         previousWeekNotes = regularNotes.filter(note => {
           const noteDate = new Date(note.createdAt);
           return noteDate >= twoWeeksAgo && noteDate < weekAgo;
         }).length;
-        
+
         dailyBreakdown = Array.from({ length: 7 }, (_, i) => {
           const date = new Date(today);
           date.setDate(date.getDate() - i);
@@ -312,7 +350,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
             return noteDate.getTime() === date.getTime();
           }).length;
         });
-        
+
         weeklyTotal = dailyBreakdown.reduce((sum, count) => sum + count, 0);
         weeklyChange = weeklyTotal - previousWeekNotes;
 
@@ -386,7 +424,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         today.setHours(0, 0, 0, 0);
         weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
-        
+
         const ideasCreatedToday = ideas.filter(idea => {
           const createdDate = new Date(idea.createdAt);
           createdDate.setHours(0, 0, 0, 0);
@@ -399,8 +437,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         }).length;
 
         // Get ideas with linked tasks or reminders
-        const ideasWithLinks = ideas.filter(idea => 
-          (idea.linkedTasks && idea.linkedTasks.length > 0) || 
+        const ideasWithLinks = ideas.filter(idea =>
+          (idea.linkedTasks && idea.linkedTasks.length > 0) ||
           (idea.linkedReminders && idea.linkedReminders.length > 0)
         ).length;
 
@@ -492,10 +530,13 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
             description: 'Start creating notes and tasks to see activity'
           };
         }
-        
+
         const activityStats = calculateActivityStats(activities);
         const totalActivities = Object.values(activityStats.breakdown).reduce((sum, count) => sum + count, 0);
         const [mostActiveType, mostActiveCount] = activityStats.mostActiveCategory;
+
+        // Generate weekly activity data for the past year
+        const weeklyActivityData = generateWeeklyActivityData(activities);
 
         return {
           value: totalActivities.toString(),
@@ -507,7 +548,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
               created: activityStats.breakdown['created'] || 0,
               edited: activityStats.breakdown['edited'] || 0,
               deleted: activityStats.breakdown['deleted'] || 0
-            }
+            },
+            activityData: weeklyActivityData
           }
         };
       }
@@ -600,7 +642,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         today.setHours(0, 0, 0, 0);
         weekAgo = new Date(today);
         weekAgo.setDate(weekAgo.getDate() - 7);
-        
+
         notesCreatedToday = regularNotes.filter(note => {
           const createdDate = new Date(note.createdAt);
           createdDate.setHours(0, 0, 0, 0);
@@ -613,9 +655,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         }).length;
 
         notesWithTags = regularNotes.filter(note => note.tags.length > 0).length;
-        notesWithLinks = regularNotes.filter(note => 
-          (note.linkedNoteIds?.length || 0) > 0 || 
-          (note.linkedTasks?.length ?? 0) > 0 || 
+        notesWithLinks = regularNotes.filter(note =>
+          (note.linkedNoteIds?.length || 0) > 0 ||
+          (note.linkedTasks?.length ?? 0) > 0 ||
           (note.linkedReminders?.length || 0) > 0
         ).length;
 

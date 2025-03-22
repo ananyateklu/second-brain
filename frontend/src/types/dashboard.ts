@@ -1,4 +1,4 @@
-export type DashboardStatType = 
+export type DashboardStatType =
   | 'notes'
   | 'tasks'
   | 'reminders'
@@ -13,14 +13,20 @@ export type DashboardStatType =
   | 'collaboration'
   | 'notes-stats';
 
+export type StatType = 'notes' | 'tasks' | 'reminders' | 'activity' | 'ideas' | 'tags' | 'connections' | 'archive' | 'trash';
+export type ChartType = 'line' | 'bar' | 'progress' | 'none';
+
 export interface DashboardStat {
   id: string;
-  type: DashboardStatType;
   title: string;
+  description?: string;
   icon: string;
-  enabled: boolean;
+  type: StatType;
   order: number;
-  size: 'small' | 'medium' | 'large';
+  enabled: boolean;
+  size?: 'small' | 'medium' | 'large';
+  chartType?: ChartType;
+  colSpan?: number;
   gridPosition?: {
     row: number;
     col: number;

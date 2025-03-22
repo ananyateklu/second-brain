@@ -18,7 +18,8 @@ export interface StatValue {
       created: number;
       edited: number;
       deleted: number;
-    }
+    };
+    activityData?: number[];
   };
   topBreakdown?: {
     active: number;
@@ -101,14 +102,14 @@ export const isDashboardStat = (obj: unknown): obj is DashboardStat => {
     'collaboration',
     'notes-stats'
   ] as const;
-  
+
   type ValidType = typeof validTypes[number];
-  
+
   if (typeof obj !== 'object' || obj === null) return false;
-  
+
   const stat = obj as Record<string, unknown>;
   const type = stat.type;
-  
+
   return (
     typeof stat.id === 'string' &&
     typeof type === 'string' &&
