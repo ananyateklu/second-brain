@@ -46,32 +46,32 @@ export function LinkedNotesPanel({
 
   return (
     <>
-      <div className="w-72 border-l border-[var(--color-border)] flex flex-col h-full bg-[var(--color-background)]">
+      <div className="border-l border-[var(--color-border)] flex flex-col h-full bg-[var(--color-surface)]">
         {/* Header */}
-        <div className="shrink-0 px-3 py-2 border-b border-[var(--color-border)] bg-[var(--color-background)]">
+        <div className="shrink-0 px-4 py-3 border-b border-[var(--color-border)] bg-[var(--color-surface)]">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <Link2 className="w-4 h-4 text-[var(--color-textSecondary)]" />
+              <Link2 className="w-4 h-4 text-[var(--color-idea)]" />
               <span className="text-sm font-medium text-[var(--color-text)]">
                 Linked Items
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={onShowAddTask}
-              className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-1 text-xs font-medium text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 rounded-md transition-colors"
+              className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[var(--color-idea)] bg-[var(--color-idea)]/10 hover:bg-[var(--color-idea)]/15 rounded-md transition-colors"
             >
-              <Plus className="w-3 h-3" />
+              <Plus className="w-3.5 h-3.5" />
               Task
             </button>
             <button
               type="button"
               onClick={onShowAddLink}
-              className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-1 text-xs font-medium text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 rounded-md transition-colors"
+              className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[var(--color-idea)] bg-[var(--color-idea)]/10 hover:bg-[var(--color-idea)]/15 rounded-md transition-colors"
             >
-              <Plus className="w-3 h-3" />
+              <Plus className="w-3.5 h-3.5" />
               Note
             </button>
           </div>
@@ -80,32 +80,31 @@ export function LinkedNotesPanel({
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
           {hasLinkedItems ? (
-            <div className="p-2 space-y-4">
+            <div className="p-3 space-y-4">
               {/* Notes Section */}
               {linkedNotes.length > 0 && (
                 <div>
-                  <h6 className="text-xs font-medium text-[var(--color-textSecondary)] uppercase tracking-wider px-2 mb-1">
+                  <h6 className="text-xs font-medium text-[var(--color-idea)] uppercase tracking-wider px-1 mb-2">
                     Notes & Ideas
                   </h6>
-                  <div className="space-y-1">
+                  <div className="space-y-2">
                     {linkedNotes.map(linkedNote => (
                       <div
                         key={linkedNote.id}
                         onClick={() => setSelectedNote(linkedNote)}
-                        className="group flex items-start gap-2 p-2 rounded-lg hover:bg-[var(--color-surfaceHover)] transition-colors cursor-pointer"
+                        className="group flex items-start gap-2.5 p-2 rounded-lg bg-[#1e293b] hover:bg-[#273344] border border-[var(--color-border)] transition-colors cursor-pointer relative"
                       >
-                        <div className={`shrink-0 p-1.5 rounded-lg ${
-                          linkedNote.isIdea 
-                            ? 'bg-[var(--color-idea)]/10' 
-                            : 'bg-[var(--color-note)]/10'
-                        }`}>
+                        <div className={`shrink-0 p-1.5 rounded-lg ${linkedNote.isIdea
+                          ? 'bg-[var(--color-idea)]/15'
+                          : 'bg-[var(--color-note)]/15'
+                          }`}>
                           {linkedNote.isIdea ? (
                             <Lightbulb className="w-3.5 h-3.5 text-[var(--color-idea)]" />
                           ) : (
                             <Type className="w-3.5 h-3.5 text-[var(--color-note)]" />
                           )}
                         </div>
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 pr-8">
                           <h6 className="text-sm font-medium text-[var(--color-text)] truncate">
                             {linkedNote.title}
                           </h6>
@@ -119,9 +118,9 @@ export function LinkedNotesPanel({
                             e.stopPropagation();
                             onUnlinkNote(linkedNote.id);
                           }}
-                          className="opacity-0 group-hover:opacity-100 p-1 text-[var(--color-textSecondary)] hover:text-red-400 hover:bg-red-900/20 rounded transition-all z-10"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-1 text-[var(--color-textSecondary)] hover:text-red-400 hover:bg-red-900/20 rounded transition-all z-10"
                         >
-                          <X className="w-3.5 h-3.5" />
+                          <X className="w-3 h-3" />
                         </button>
                       </div>
                     ))}
@@ -132,29 +131,28 @@ export function LinkedNotesPanel({
               {/* Tasks Section */}
               {linkedTasks.length > 0 && (
                 <div>
-                  <h6 className="text-xs font-medium text-[var(--color-textSecondary)] uppercase tracking-wider px-2 mb-1">
+                  <h6 className="text-xs font-medium text-[var(--color-task)] uppercase tracking-wider px-1 mb-2">
                     Tasks
                   </h6>
-                  <div className="space-y-1">
+                  <div className="space-y-2">
                     {linkedTasks.map(task => (
                       <div
                         key={task.id}
                         onClick={() => handleTaskClick(task.id)}
-                        className="group flex items-start gap-2 p-2 rounded-lg hover:bg-[var(--color-surfaceHover)] transition-colors cursor-pointer"
+                        className="group flex items-start gap-2.5 p-2 rounded-lg bg-[#1e293b] hover:bg-[#273344] border border-[var(--color-border)] transition-colors cursor-pointer relative"
                       >
-                        <div className="shrink-0 p-1.5 bg-[var(--color-task)]/10 rounded-lg">
+                        <div className="shrink-0 p-1.5 bg-[var(--color-task)]/15 rounded-lg">
                           <CheckSquare className="w-3.5 h-3.5 text-[var(--color-task)]" />
                         </div>
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 pr-8">
                           <h6 className="text-sm font-medium text-[var(--color-text)] truncate">
                             {task.title}
                           </h6>
-                          <div className="flex items-center gap-2">
-                            <span className={`text-xs px-1.5 py-0.5 rounded ${
-                              task.status === 'completed'
-                                ? 'bg-green-900/20 text-green-400'
-                                : 'bg-orange-900/20 text-orange-400'
-                            }`}>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className={`text-xs px-1.5 py-0.5 rounded ${task.status === 'completed'
+                              ? 'bg-green-900/30 text-green-400'
+                              : 'bg-orange-900/30 text-orange-400'
+                              }`}>
                               {task.status}
                             </span>
                             {task.dueDate && (
@@ -171,9 +169,9 @@ export function LinkedNotesPanel({
                             e.stopPropagation();
                             onUnlinkTask(task.id);
                           }}
-                          className="opacity-0 group-hover:opacity-100 p-1 text-[var(--color-textSecondary)] hover:text-red-400 hover:bg-red-900/20 rounded transition-all z-10"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-1 text-[var(--color-textSecondary)] hover:text-red-400 hover:bg-red-900/20 rounded transition-all z-10"
                         >
-                          <X className="w-3.5 h-3.5" />
+                          <X className="w-3 h-3" />
                         </button>
                       </div>
                     ))}
@@ -182,15 +180,15 @@ export function LinkedNotesPanel({
               )}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-full py-6 text-center">
-              <div className="p-3 bg-[var(--color-surface)]/50 rounded-full mb-3">
-                <Link2 className="w-5 h-5 text-[var(--color-textSecondary)]" />
+            <div className="flex flex-col items-center justify-center h-full py-8 text-center px-6">
+              <div className="p-3 bg-[#1e293b] rounded-full mb-3 border border-[var(--color-border)]">
+                <Link2 className="w-5 h-5 text-[var(--color-idea)]" />
               </div>
-              <p className="text-sm font-medium text-[var(--color-text)]">
+              <p className="text-sm font-medium text-[var(--color-text)] mb-1">
                 No linked items yet
               </p>
-              <p className="text-xs text-[var(--color-textSecondary)] mt-1 max-w-[200px]">
-                Click the buttons above to link notes or tasks
+              <p className="text-xs text-[var(--color-textSecondary)] max-w-[220px]">
+                Connect this idea with related tasks and other notes to build your knowledge network
               </p>
             </div>
           )}

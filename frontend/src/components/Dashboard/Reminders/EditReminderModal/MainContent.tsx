@@ -15,6 +15,7 @@ export function MainContent({ reminder, onUpdate }: MainContentProps) {
     const [dueDateTime, setDueDateTime] = useState(reminder.dueDateTime);
     const [repeatInterval, setRepeatInterval] = useState<RepeatIntervalType | undefined>(reminder.repeatInterval);
     const [customRepeatPattern, setCustomRepeatPattern] = useState(reminder.customRepeatPattern ?? '');
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         setTitle(reminder.title);
@@ -24,107 +25,130 @@ export function MainContent({ reminder, onUpdate }: MainContentProps) {
         setCustomRepeatPattern(reminder.customRepeatPattern ?? '');
     }, [reminder]);
 
+    const handleTitleChange = (value: string) => {
+        setTitle(value);
+        if (!value.trim()) {
+            setError('Title is required');
+        } else {
+            setError(null);
+        }
+        onUpdate({
+            title: value,
+            description: description || undefined,
+            dueDateTime,
+            repeatInterval,
+            customRepeatPattern: customRepeatPattern || undefined
+        });
+    };
+
+    const handleDescriptionChange = (value: string) => {
+        setDescription(value);
+        onUpdate({
+            title,
+            description: value || undefined,
+            dueDateTime,
+            repeatInterval,
+            customRepeatPattern: customRepeatPattern || undefined
+        });
+    };
+
+    const handleDueDateTimeChange = (value: string) => {
+        setDueDateTime(value);
+        onUpdate({
+            title,
+            description: description || undefined,
+            dueDateTime: value,
+            repeatInterval,
+            customRepeatPattern: customRepeatPattern || undefined
+        });
+    };
+
+    const handleRepeatIntervalChange = (value: RepeatIntervalType | undefined) => {
+        setRepeatInterval(value);
+        onUpdate({
+            title,
+            description: description || undefined,
+            dueDateTime,
+            repeatInterval: value,
+            customRepeatPattern: customRepeatPattern || undefined
+        });
+    };
+
+    const handleCustomPatternChange = (value: string) => {
+        setCustomRepeatPattern(value);
+        onUpdate({
+            title,
+            description: description || undefined,
+            dueDateTime,
+            repeatInterval,
+            customRepeatPattern: value || undefined
+        });
+    };
+
     return (
-        <div className="flex-1 overflow-y-auto">
-            <div className="p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto bg-[var(--color-surface)]">
+            <div className="p-4 space-y-4">
+                {error && (
+                    <div className="p-3 bg-red-900/20 text-red-400 rounded-lg">
+                        {error}
+                    </div>
+                )}
+
                 {/* Title */}
-                <div className="space-y-2">
-                    <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-text)]">
+                <div className="space-y-1.5">
+                    <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-textSecondary)]">
                         <Type className="w-4 h-4" />
                         Title
                     </label>
                     <input
                         type="text"
                         value={title}
-                        onChange={(e) => {
-                            const newTitle = e.target.value;
-                            setTitle(newTitle);
-                            onUpdate({
-                                title: newTitle,
-                                description: description || undefined,
-                                dueDateTime,
-                                repeatInterval,
-                                customRepeatPattern: customRepeatPattern || undefined
-                            });
-                        }}
-                        className="w-full h-[46px] px-4 bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent text-[var(--color-text)] placeholder-[var(--color-textSecondary)]"
+                        onChange={(e) => handleTitleChange(e.target.value)}
+                        className="w-full h-[38px] px-3 bg-[#1e293b] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-reminder)] focus:border-transparent text-[var(--color-text)] placeholder-[var(--color-textSecondary)] disabled:opacity-50 transition-colors"
                         placeholder="Enter reminder title"
                     />
                 </div>
 
                 {/* Description */}
-                <div className="space-y-2">
-                    <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-text)]">
+                <div className="space-y-1.5">
+                    <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-textSecondary)]">
                         <Type className="w-4 h-4" />
                         Description
                     </label>
                     <textarea
                         value={description}
-                        onChange={(e) => {
-                            const newDescription = e.target.value;
-                            setDescription(newDescription);
-                            onUpdate({
-                                title,
-                                description: newDescription || undefined,
-                                dueDateTime,
-                                repeatInterval,
-                                customRepeatPattern: customRepeatPattern || undefined
-                            });
-                        }}
+                        onChange={(e) => handleDescriptionChange(e.target.value)}
                         rows={3}
-                        className="w-full min-h-[46px] px-4 py-3 bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent text-[var(--color-text)] placeholder-[var(--color-textSecondary)] resize-none"
+                        className="w-full min-h-[120px] px-3 py-2 bg-[#1e293b] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-reminder)] focus:border-transparent text-[var(--color-text)] placeholder-[var(--color-textSecondary)] resize-none disabled:opacity-50 transition-colors"
                         placeholder="Add a description"
                     />
                 </div>
 
-                {/* Due Date and Time & Repeat Interval */}
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-2 gap-4">
                     {/* Due Date and Time */}
-                    <div className="space-y-2">
-                        <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-text)]">
+                    <div className="space-y-1.5">
+                        <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-textSecondary)]">
                             <Calendar className="w-4 h-4" />
                             Due Date and Time
                         </label>
-                        <div className="relative">
-                            <input
-                                type="datetime-local"
-                                value={dueDateTime}
-                                onChange={(e) => {
-                                    const newDueDateTime = e.target.value;
-                                    setDueDateTime(newDueDateTime);
-                                    onUpdate({
-                                        title,
-                                        description: description || undefined,
-                                        dueDateTime: newDueDateTime,
-                                        repeatInterval,
-                                        customRepeatPattern: customRepeatPattern || undefined
-                                    });
-                                }}
-                                className="w-full h-[46px] px-4 bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent text-[var(--color-text)]"
-                            />
-                        </div>
+                        <input
+                            type="datetime-local"
+                            value={dueDateTime}
+                            onChange={(e) => handleDueDateTimeChange(e.target.value)}
+                            className="w-full h-[38px] px-3 bg-[#1e293b] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-reminder)] focus:border-transparent text-[var(--color-text)] disabled:opacity-50 transition-colors"
+                        />
                     </div>
 
                     {/* Repeat Interval */}
-                    <div className="space-y-2">
-                        <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-text)]">
+                    <div className="space-y-1.5">
+                        <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-textSecondary)]">
                             <RepeatIcon className="w-4 h-4" />
                             Repeat Interval
                         </label>
                         <select
                             value={repeatInterval ?? ''}
-                            onChange={(e) => {
-                                const newRepeatInterval = e.target.value as RepeatIntervalType | '';
-                                setRepeatInterval(newRepeatInterval || undefined);
-                                onUpdate({
-                                    title,
-                                    description: description || undefined,
-                                    dueDateTime,
-                                    repeatInterval: newRepeatInterval || undefined,
-                                    customRepeatPattern: customRepeatPattern || undefined
-                                });
-                            }}
-                            className="w-full h-[46px] px-4 bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent text-[var(--color-text)]"
+                            onChange={(e) => handleRepeatIntervalChange(e.target.value ? e.target.value as RepeatIntervalType : undefined)}
+                            className="w-full h-[38px] px-3 bg-[#1e293b] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-reminder)] focus:border-transparent text-[var(--color-text)] disabled:opacity-50 transition-colors"
                         >
                             <option value="">No Repeat</option>
                             <option value="Daily">Daily</option>
@@ -138,27 +162,17 @@ export function MainContent({ reminder, onUpdate }: MainContentProps) {
 
                 {/* Custom Repeat Pattern */}
                 {repeatInterval === 'Custom' && (
-                    <div className="space-y-2">
-                        <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-text)]">
+                    <div className="space-y-1.5">
+                        <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-textSecondary)]">
                             <RepeatIcon className="w-4 h-4" />
                             Custom Repeat Pattern
                         </label>
                         <input
                             type="text"
                             value={customRepeatPattern}
-                            onChange={(e) => {
-                                const newCustomPattern = e.target.value;
-                                setCustomRepeatPattern(newCustomPattern);
-                                onUpdate({
-                                    title,
-                                    description: description || undefined,
-                                    dueDateTime,
-                                    repeatInterval,
-                                    customRepeatPattern: newCustomPattern || undefined
-                                });
-                            }}
+                            onChange={(e) => handleCustomPatternChange(e.target.value)}
                             placeholder="e.g., Every 2 weeks"
-                            className="w-full h-[46px] px-4 bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent text-[var(--color-text)] placeholder-[var(--color-textSecondary)]"
+                            className="w-full h-[38px] px-3 bg-[#1e293b] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-reminder)] focus:border-transparent text-[var(--color-text)] placeholder-[var(--color-textSecondary)] disabled:opacity-50 transition-colors"
                         />
                     </div>
                 )}

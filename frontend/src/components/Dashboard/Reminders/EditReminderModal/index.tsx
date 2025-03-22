@@ -88,54 +88,50 @@ export function EditReminderModal({ reminder: initialReminder, isOpen, onClose }
   };
 
   return (
-    <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={handleCancel} />
-        
-        <div className="relative w-full max-w-4xl h-[calc(75vh-8rem)] bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl flex flex-col overflow-hidden">
-          <Header
-            reminder={{ ...reminder, ...pendingChanges }}
-            onShowDeleteConfirm={() => setIsDeleteConfirmOpen(true)}
-            onClose={onClose}
-            isSaving={isSaving}
-          />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={handleCancel} />
 
-          <div className="flex flex-1 min-h-0">
-            <div className="flex-1 flex flex-col min-w-0">
-              <MainContent
-                reminder={{ ...reminder, ...pendingChanges }}
-                onUpdate={handleUpdate}
-              />
-            </div>
+      <div className="relative w-full max-w-5xl max-h-[85vh] bg-[var(--color-background)] rounded-2xl shadow-xl overflow-hidden border border-[var(--color-border)]">
+        <Header
+          reminder={{ ...reminder, ...pendingChanges }}
+          onShowDeleteConfirm={() => setIsDeleteConfirmOpen(true)}
+          onClose={onClose}
+          isSaving={isSaving}
+        />
 
-            <LinkedItemsPanel
-              linkedItems={reminder.linkedItems}
-              onShowAddLink={() => setIsAddLinkOpen(true)}
-              onUnlink={handleUnlink}
+        <div className="flex-1 grid grid-cols-[1fr,360px] min-h-0 overflow-hidden">
+          <div className="flex-1 flex flex-col min-w-0">
+            <MainContent
+              reminder={{ ...reminder, ...pendingChanges }}
+              onUpdate={handleUpdate}
             />
           </div>
 
-          <div className="shrink-0 px-6 py-4 border-t border-[var(--color-border)] bg-[var(--color-background)]">
-            <div className="flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={handleCancel}
-                disabled={isSaving}
-                className="px-4 py-2 text-[var(--color-textSecondary)] hover:text-[var(--color-text)] rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={isSaving}
-                className="px-4 py-2 flex items-center gap-2 bg-[var(--color-accent)] text-white rounded-lg hover:bg-[var(--color-accent)]/90 transition-colors disabled:opacity-50"
-              >
-                <Save className="w-4 h-4" />
-                {isSaving ? 'Saving...' : 'Save'}
-              </button>
-            </div>
-          </div>
+          <LinkedItemsPanel
+            linkedItems={reminder.linkedItems}
+            onShowAddLink={() => setIsAddLinkOpen(true)}
+            onUnlink={handleUnlink}
+          />
+        </div>
+
+        <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-[var(--color-border)] bg-[var(--color-surface)]">
+          <button
+            type="button"
+            onClick={handleCancel}
+            disabled={isSaving}
+            className="px-4 py-2 text-[var(--color-textSecondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-surfaceHover)] rounded-lg transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={isSaving}
+            className="flex items-center gap-2 px-4 py-2 bg-[var(--color-reminder)] hover:bg-[var(--color-reminder)]/90 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <Save className="w-4 h-4" />
+            {isSaving ? 'Saving...' : 'Save Changes'}
+          </button>
         </div>
       </div>
 
@@ -152,6 +148,6 @@ export function EditReminderModal({ reminder: initialReminder, isOpen, onClose }
         onAddLink={handleAddLink}
         existingLinkedItemIds={reminder.linkedItems.map(item => item.id)}
       />
-    </>
+    </div>
   );
 } 

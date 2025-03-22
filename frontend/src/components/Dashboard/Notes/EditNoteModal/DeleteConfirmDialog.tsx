@@ -17,9 +17,9 @@ export function DeleteConfirmDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative w-full max-w-md bg-[var(--color-background)] rounded-xl p-6 border border-[var(--color-border)]">
+      <div className="relative w-full max-w-md bg-[var(--color-surface)] rounded-xl p-6 border border-[var(--color-border)]">
         <div className="flex flex-col items-center gap-4">
           <div className="p-3 bg-red-900/20 rounded-full">
             <Trash2 className="w-6 h-6 text-red-400" />
@@ -37,7 +37,7 @@ export function DeleteConfirmDialog({
           <div className="flex gap-3 mt-2">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-[var(--color-text)] hover:bg-[var(--color-surface)] rounded-lg transition-colors"
+              className="px-4 py-2 text-[var(--color-text)] hover:bg-[var(--color-surfaceHover)] rounded-lg transition-colors"
             >
               Cancel
             </button>

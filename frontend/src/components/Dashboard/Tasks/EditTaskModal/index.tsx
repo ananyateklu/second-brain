@@ -49,6 +49,14 @@ export function EditTaskModal({ isOpen, onClose, task }: EditTaskModalProps) {
         }
     }, [currentTask]);
 
+    // Reset states when modal opens/closes
+    useEffect(() => {
+        if (!isOpen) {
+            setShowDeleteConfirm(false);
+            setError(null);
+        }
+    }, [isOpen]);
+
     if (!currentTask) return null;
     if (!isOpen) return null;
 
@@ -112,68 +120,64 @@ export function EditTaskModal({ isOpen, onClose, task }: EditTaskModalProps) {
     };
 
     return (
-        <>
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-                
-                <div className="relative w-full max-w-4xl h-[calc(75vh-8rem)] bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl flex flex-col overflow-hidden">
-                    <form onSubmit={handleSubmit} className="flex flex-col h-full">
-                        <Header
-                            task={currentTask}
-                            onClose={onClose}
-                            onShowDeleteConfirm={() => setShowDeleteConfirm(true)}
-                            isSaving={isLoading}
-                        />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-                        <div className="flex flex-1 min-h-0">
-                            <div className="flex-1 flex flex-col min-w-0">
-                                <MainContent
-                                    title={title}
-                                    description={description}
-                                    priority={priority}
-                                    dueDate={dueDate}
-                                    status={status}
-                                    tags={tags}
-                                    error={error}
-                                    isLoading={isLoading}
-                                    onTitleChange={setTitle}
-                                    onDescriptionChange={setDescription}
-                                    onPriorityChange={setPriority}
-                                    onDueDateChange={setDueDate}
-                                    onStatusChange={setStatus}
-                                    onTagsChange={setTags}
-                                />
-                            </div>
+            <div className="relative w-full max-w-5xl max-h-[85vh] bg-[var(--color-background)] rounded-2xl shadow-xl overflow-hidden border border-[var(--color-border)]">
+                <form onSubmit={handleSubmit} className="flex flex-col h-full">
+                    <Header
+                        task={currentTask}
+                        onClose={onClose}
+                        onShowDeleteConfirm={() => setShowDeleteConfirm(true)}
+                        isSaving={isLoading}
+                    />
 
-                            <LinkedItemsPanel
-                                linkedItems={currentTask.linkedItems}
-                                onShowAddLink={() => setShowAddLinkModal(true)}
-                                onUnlink={handleUnlinkItem}
+                    <div className="flex-1 grid grid-cols-[1fr,360px] min-h-0 overflow-hidden">
+                        <div className="flex-1 flex flex-col min-w-0">
+                            <MainContent
+                                title={title}
+                                description={description}
+                                priority={priority}
+                                dueDate={dueDate}
+                                status={status}
+                                tags={tags}
+                                error={error}
+                                isLoading={isLoading}
+                                onTitleChange={setTitle}
+                                onDescriptionChange={setDescription}
+                                onPriorityChange={setPriority}
+                                onDueDateChange={setDueDate}
+                                onStatusChange={setStatus}
+                                onTagsChange={setTags}
                             />
                         </div>
 
-                        <div className="shrink-0 px-6 py-4 border-t border-[var(--color-border)] bg-[var(--color-background)]">
-                            <div className="flex items-center justify-end gap-3">
-                                <button
-                                    type="button"
-                                    onClick={onClose}
-                                    disabled={isLoading}
-                                    className="px-4 py-2 text-[var(--color-textSecondary)] hover:text-[var(--color-text)] rounded-lg transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={isLoading}
-                                    className="px-4 py-2 flex items-center gap-2 bg-[var(--color-accent)] text-white rounded-lg hover:bg-[var(--color-accent)]/90 transition-colors disabled:opacity-50"
-                                >
-                                    <Save className="w-4 h-4" />
-                                    {isLoading ? 'Saving...' : 'Save'}
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
+                        <LinkedItemsPanel
+                            linkedItems={currentTask.linkedItems}
+                            onShowAddLink={() => setShowAddLinkModal(true)}
+                            onUnlink={handleUnlinkItem}
+                        />
+                    </div>
+
+                    <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-[var(--color-border)] bg-[var(--color-surface)]">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            disabled={isLoading}
+                            className="px-4 py-2 text-[var(--color-textSecondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-surfaceHover)] rounded-lg transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={isLoading}
+                            className="flex items-center gap-2 px-4 py-2 bg-[var(--color-task)] hover:bg-[var(--color-task)]/90 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                            <Save className="w-4 h-4" />
+                            {isLoading ? 'Saving...' : 'Save Changes'}
+                        </button>
+                    </div>
+                </form>
             </div>
 
             <AddLinkModal
@@ -188,6 +192,6 @@ export function EditTaskModal({ isOpen, onClose, task }: EditTaskModalProps) {
                 onClose={() => setShowDeleteConfirm(false)}
                 onConfirm={handleDelete}
             />
-        </>
+        </div>
     );
 } 

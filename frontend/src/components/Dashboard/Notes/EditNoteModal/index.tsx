@@ -106,13 +106,13 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
     try {
       setIsLoading(true);
       await unlinkReminder(currentNote.id, reminderId);
-      
+
       // Optimistically update the UI
       setLinkedReminders(prev => prev.filter(r => r.id !== reminderId));
     } catch (err) {
       console.error('Failed to unlink reminder:', err);
       setError('Failed to unlink reminder. Please try again.');
-      
+
       // Revert the optimistic update on error
       if (currentNote?.linkedReminders) {
         setLinkedReminders(currentNote.linkedReminders);
@@ -127,12 +127,12 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
       setIsLoading(true);
       setError('');
       const updatedNote = await linkReminder(currentNote.id, reminderId);
-      
+
       // Update the linked reminders state with the new data
       if (updatedNote?.linkedReminders) {
         setLinkedReminders(updatedNote.linkedReminders);
       }
-      
+
       return true;
     } catch (error) {
       console.error('Failed to link reminder:', error);
@@ -185,9 +185,9 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative w-full max-w-6xl max-h-[90vh] bg-[var(--color-background)] rounded-2xl shadow-2xl overflow-hidden border border-[var(--color-border)]">
+      <div className="relative w-full max-w-5xl max-h-[85vh] bg-[var(--color-background)] rounded-2xl shadow-xl overflow-hidden border border-[var(--color-border)]">
         <form onSubmit={handleSubmit} className="flex flex-col h-full">
           <Header
             note={currentNote}
@@ -195,7 +195,7 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
             onShowDeleteConfirm={() => setShowDeleteConfirm(true)}
           />
 
-          <div className="flex-1 grid grid-cols-[1fr,auto] min-h-0 overflow-hidden">
+          <div className="flex-1 grid grid-cols-[1fr,360px] min-h-0 overflow-hidden">
             <MainContent
               title={title}
               content={content}
@@ -230,19 +230,19 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
             />
           </div>
 
-          <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-[var(--color-border)] bg-[var(--color-background)]">
+          <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-[var(--color-border)] bg-[var(--color-surface)]">
             <button
               type="button"
               onClick={onClose}
               disabled={isLoading}
-              className="px-4 py-2 text-[var(--color-textSecondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface)] rounded-lg transition-colors"
+              className="px-4 py-2 text-[var(--color-textSecondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-surfaceHover)] rounded-lg transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent)] hover:bg-[var(--color-accent)]/90 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-[var(--color-note)] hover:bg-[var(--color-note)]/90 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isLoading ? 'Saving...' : 'Save Changes'}
             </button>

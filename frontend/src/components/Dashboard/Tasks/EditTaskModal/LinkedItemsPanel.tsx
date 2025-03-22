@@ -19,15 +19,15 @@ export function LinkedItemsPanel({
   function getItemIcon(type: string) {
     if (type === 'idea') {
       return (
-        <div className="shrink-0 p-2 bg-[var(--color-idea)]/10 rounded-lg">
-          <Lightbulb className="w-4 h-4 text-[var(--color-idea)]" />
+        <div className="shrink-0 p-1.5 bg-[var(--color-idea)]/15 rounded-lg">
+          <Lightbulb className="w-3.5 h-3.5 text-[var(--color-idea)]" />
         </div>
       );
     }
     if (type === 'note') {
       return (
-        <div className="shrink-0 p-2 bg-[var(--color-note)]/10 rounded-lg">
-          <Type className="w-4 h-4 text-[var(--color-note)]" />
+        <div className="shrink-0 p-1.5 bg-[var(--color-note)]/15 rounded-lg">
+          <Type className="w-3.5 h-3.5 text-[var(--color-note)]" />
         </div>
       );
     }
@@ -40,69 +40,82 @@ export function LinkedItemsPanel({
     return type;
   }
 
+  const hasLinkedItems = linkedItems.length > 0;
+
   return (
-    <div className="w-80 border-l border-[var(--color-border)] flex flex-col min-h-0 bg-[var(--color-background)]">
-      <div className="shrink-0 px-4 py-3 border-b border-[var(--color-border)] bg-[var(--color-background)]">
-        <div className="flex items-center justify-between">
+    <div className="border-l border-[var(--color-border)] flex flex-col h-full bg-[var(--color-surface)]">
+      {/* Header */}
+      <div className="shrink-0 px-4 py-3 border-b border-[var(--color-border)] bg-[var(--color-surface)]">
+        <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <Link2 className="w-4 h-4 text-[var(--color-textSecondary)]" />
+            <Link2 className="w-4 h-4 text-[var(--color-task)]" />
             <span className="text-sm font-medium text-[var(--color-text)]">
               Linked Items
             </span>
           </div>
+        </div>
+        <div className="flex items-center">
           <button
             type="button"
             onClick={onShowAddLink}
-            className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 rounded-md transition-colors"
+            className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[var(--color-task)] bg-[var(--color-task)]/10 hover:bg-[var(--color-task)]/15 rounded-md transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
             Link Item
           </button>
         </div>
       </div>
-      
+
+      {/* Content */}
       <div className="flex-1 overflow-y-auto">
-        {linkedItems.length > 0 ? (
-          <div className="divide-y divide-[var(--color-border)]">
-            {linkedItems.map(item => (
-              <div
-                key={item.id}
-                className="group relative hover:bg-[var(--color-surface)] transition-colors"
-              >
-                <div className="flex items-start gap-3 p-4">
-                  {getItemIcon(item.type)}
-                  <div className="flex-1 min-w-0">
-                    <h6 className="font-medium text-[var(--color-text)] truncate">
-                      {item.title}
-                    </h6>
-                    <p className="text-xs text-[var(--color-textSecondary)] mt-0.5">
-                      {getItemTypeText(item.type)}
-                    </p>
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onUnlink(item.id);
-                    }}
-                    className="opacity-0 group-hover:opacity-100 p-1 text-[var(--color-textSecondary)] hover:text-red-500 hover:bg-red-500/10 rounded transition-all"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+        {hasLinkedItems ? (
+          <div className="p-3 space-y-4">
+            {linkedItems.length > 0 && (
+              <div>
+                <h6 className="text-xs font-medium text-[var(--color-task)] uppercase tracking-wider px-1 mb-2">
+                  Linked Items
+                </h6>
+                <div className="space-y-2">
+                  {linkedItems.map(item => (
+                    <div
+                      key={item.id}
+                      className="group flex items-start gap-2.5 p-2 rounded-lg bg-[#1e293b] hover:bg-[#273344] border border-[var(--color-border)] transition-colors relative"
+                    >
+                      {getItemIcon(item.type)}
+                      <div className="flex-1 min-w-0 pr-8">
+                        <h6 className="text-sm font-medium text-[var(--color-text)] truncate">
+                          {item.title}
+                        </h6>
+                        <p className="text-xs text-[var(--color-textSecondary)]">
+                          {getItemTypeText(item.type)}
+                        </p>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onUnlink(item.id);
+                        }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-1 text-[var(--color-textSecondary)] hover:text-red-400 hover:bg-red-900/20 rounded transition-all z-10"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </div>
-            ))}
+            )}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center h-full py-6 text-center">
-            <div className="p-3 bg-[var(--color-surface)]/50 rounded-full mb-3">
-              <Link2 className="w-5 h-5 text-[var(--color-textSecondary)]" />
+          <div className="flex flex-col items-center justify-center h-full py-8 text-center px-6">
+            <div className="p-3 bg-[#1e293b] rounded-full mb-3 border border-[var(--color-border)]">
+              <Link2 className="w-5 h-5 text-[var(--color-task)]" />
             </div>
-            <p className="text-sm font-medium text-[var(--color-text)]">
+            <p className="text-sm font-medium text-[var(--color-text)] mb-1">
               No linked items yet
             </p>
-            <p className="text-xs text-[var(--color-textSecondary)] mt-1 max-w-[200px]">
-              Click "Link Item" to connect with notes or ideas
+            <p className="text-xs text-[var(--color-textSecondary)] max-w-[220px]">
+              Connect this task with notes or ideas to build your knowledge network
             </p>
           </div>
         )}

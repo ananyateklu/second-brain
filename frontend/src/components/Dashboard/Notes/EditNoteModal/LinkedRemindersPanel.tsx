@@ -16,24 +16,24 @@ function MiniReminderCard({ reminder, onUnlink, onClick }: MiniReminderCardProps
   return (
     <div
       onClick={onClick}
-      className="relative flex items-center gap-2 p-2 bg-[var(--color-background)] rounded-lg border border-[var(--color-border)] group hover:bg-[var(--color-surfaceHover)] transition-colors cursor-pointer"
+      className="relative flex items-center gap-1.5 p-1.5 bg-[#1e293b] rounded-lg border border-[var(--color-border)] group hover:bg-[var(--color-note)]/5 transition-colors cursor-pointer"
     >
-      <div className="shrink-0 p-1.5 bg-[var(--color-reminder)]/10 rounded-lg">
-        <Bell className="w-3.5 h-3.5 text-[var(--color-reminder)]" />
+      <div className="shrink-0 p-1 bg-[var(--color-note)]/10 rounded-lg">
+        <Bell className="w-3 h-3 text-[var(--color-note)]" />
       </div>
-      
-      <div className="min-w-0 max-w-[200px]">
-        <h6 className="text-sm font-medium text-[var(--color-text)] truncate">
+
+      <div className="min-w-0 max-w-[180px]">
+        <h6 className="text-xs font-medium text-[var(--color-text)] truncate">
           {reminder.title}
         </h6>
-        <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1 text-xs text-[var(--color-textSecondary)]">
-            <Clock className="w-3 h-3" />
+        <div className="flex items-center gap-1.5">
+          <span className="flex items-center gap-0.5 text-xs text-[var(--color-textSecondary)]">
+            <Clock className="w-2.5 h-2.5" />
             {formatDistanceToNow(new Date(reminder.dueDateTime), { addSuffix: true })}
           </span>
           {reminder.isCompleted && (
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-medium bg-green-900/20 text-green-400 rounded">
-              <Check className="w-3 h-3" />
+            <span className="inline-flex items-center gap-0.5 px-1 py-0.5 text-xs font-medium bg-green-900/20 text-green-400 rounded">
+              <Check className="w-2.5 h-2.5" />
             </span>
           )}
         </div>
@@ -46,9 +46,9 @@ function MiniReminderCard({ reminder, onUnlink, onClick }: MiniReminderCardProps
             e.stopPropagation();
             onUnlink(reminder.id);
           }}
-          className="absolute -top-1.5 -right-1.5 opacity-0 group-hover:opacity-100 p-1 bg-[var(--color-background)] text-[var(--color-textSecondary)] hover:text-red-400 hover:bg-red-900/20 rounded-full border border-[var(--color-border)] transition-all z-10"
+          className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 p-0.5 bg-[#1e293b] text-[var(--color-textSecondary)] hover:text-[var(--color-note)] hover:bg-[var(--color-note)]/10 rounded-full border border-[var(--color-border)] transition-all z-10"
         >
-          <X className="w-3 h-3" />
+          <X className="w-2.5 h-2.5" />
         </button>
       )}
     </div>
@@ -66,16 +66,16 @@ export function LinkedRemindersPanel({ reminders, onUnlink }: LinkedRemindersPan
 
   if (reminders.length === 0) {
     return (
-      <div className="p-4 flex items-center justify-center bg-[var(--color-surface)]">
-        <p className="text-sm text-[var(--color-textSecondary)]">No linked reminders</p>
+      <div className="p-3 flex items-center justify-center bg-[#1e293b]">
+        <p className="text-xs text-[var(--color-textSecondary)]">No linked reminders</p>
       </div>
     );
   }
 
   return (
     <>
-      <div className="p-2 bg-[var(--color-surface)]">
-        <div className="flex flex-wrap gap-2">
+      <div className="p-1.5 bg-[#1e293b]">
+        <div className="flex flex-wrap gap-1.5">
           {reminders.map(linkedReminder => {
             // Find the full reminder object from the reminders context
             const fullReminder = allReminders.find(r => r.id === linkedReminder.id);
