@@ -6,7 +6,7 @@ import { useTheme } from '../../contexts/themeContextUtils';
 
 // Mini line chart component
 export const MiniLineChart = ({
-    data = [30, 35, 25, 45, 40, 50, 35, 55, 40, 45, 60],
+    data,
     height = 30,
     color = 'var(--color-accent)',
     animated = true
@@ -19,12 +19,27 @@ export const MiniLineChart = ({
     // Generate a unique ID for this chart's gradient
     const gradientId = useMemo(() => `chart-gradient-${Math.random().toString(36).substring(2, 9)}`, []);
 
+    // Use default data if none provided
+    const chartData = data || [];
+
+    // Check if we have actual data to show
+    const hasData = chartData.some(value => value > 0);
+
+    // If no data, show minimal representation
+    if (!hasData) {
+        return (
+            <div className="w-full flex items-center justify-center h-full opacity-30">
+                <div className="h-[1px] w-3/4 bg-gray-300 dark:bg-gray-700"></div>
+            </div>
+        );
+    }
+
     // Normalize data for display
-    const maxValue = Math.max(...data);
-    const minValue = Math.min(...data);
+    const maxValue = Math.max(...chartData, 1); // Ensure maxValue is at least 1
+    const minValue = Math.min(...chartData);
     const dataRange = maxValue - minValue;
 
-    const normalizedData = data.map(value =>
+    const normalizedData = chartData.map(value =>
         dataRange === 0 ? 0.5 : (value - minValue) / dataRange
     );
 
@@ -92,7 +107,7 @@ export const MiniLineChart = ({
 
 // Bar chart component
 export const MiniBarChart = ({
-    data = [30, 45, 20, 15, 35, 40, 25, 30],
+    data,
     height = 30,
     color = 'var(--color-accent)',
     animated = true
@@ -102,12 +117,28 @@ export const MiniBarChart = ({
     color?: string,
     animated?: boolean
 }) => {
-    const maxValue = Math.max(...data);
     const { theme } = useTheme();
+
+    // Use default data if none provided
+    const chartData = data || [];
+
+    // Check if we have actual data to show
+    const hasData = chartData.some(value => value > 0);
+
+    // If no data, show minimal representation
+    if (!hasData) {
+        return (
+            <div className="w-full flex items-center justify-center h-full opacity-30">
+                <div className="h-[1px] w-3/4 bg-gray-300 dark:bg-gray-700"></div>
+            </div>
+        );
+    }
+
+    const maxValue = Math.max(...chartData, 1);
 
     return (
         <div className="w-full flex items-end justify-between gap-[2px] h-full">
-            {data.map((value, index) => {
+            {chartData.map((value, index) => {
                 const normalizedHeight = (value / maxValue) * height;
 
                 return (
@@ -116,7 +147,7 @@ export const MiniBarChart = ({
                         className="rounded-t-sm"
                         style={{
                             backgroundColor: color,
-                            width: `${100 / data.length - 3}%`,
+                            width: `${100 / chartData.length - 3}%`,
                             height: `${normalizedHeight}px`,
                             opacity: theme === 'dark' || theme === 'midnight' ? 0.8 : 0.7
                         }}
@@ -267,8 +298,8 @@ export const AnimatedCounter = ({
 
 // Activity heatmap chart for showing yearly activity
 export const ActivityHeatmap = ({
-    data = Array(52).fill(0).map(() => Math.floor(Math.random() * 8)),
-    maxHeight = 32,
+    data,
+    maxHeight = 40,
     baseColor = 'var(--color-accent)',
     animated = true
 }: {
@@ -280,6 +311,7 @@ export const ActivityHeatmap = ({
     const { theme } = useTheme();
     const [isVisible, setIsVisible] = useState(false);
 
+    // Setup effect regardless of data presence
     useEffect(() => {
         if (animated) {
             const timer = setTimeout(() => {
@@ -291,6 +323,58 @@ export const ActivityHeatmap = ({
         }
     }, [animated]);
 
+    // Process the data for visualization, including handling empty/sparse data
+    const processedData = useMemo(() => {
+        // Use default data if none provided
+        const chartData = data || [];
+
+        // If no data or all zeros, return empty array to trigger "No data" state
+        if (!chartData.length || !chartData.some(val => val > 0)) {
+            return [];
+        }
+
+        // Find non-zero values and enhance them for better visualization
+        const enhancedData = [...chartData];
+        // Ensure even small values are visible
+        const maxVal = Math.max(...enhancedData);
+
+        if (maxVal > 0) {
+            // For each non-zero value, ensure it's at least ~10% of the max for visibility
+            const minVisibleValue = Math.max(1, Math.ceil(maxVal * 0.1));
+
+            return enhancedData.map(val =>
+                val > 0 ? Math.max(val, minVisibleValue) : val
+            );
+        }
+
+        return enhancedData;
+    }, [data]); // Only depend on the data prop
+
+    // Check if we have actual data to show
+    const hasData = processedData.length > 0;
+
+    // If no data, show minimal representation with month labels
+    if (!hasData) {
+        return (
+            <div className="w-full relative" style={{ height: `${maxHeight}px` }}>
+                <div className="h-[1px] w-full bg-gray-300 dark:bg-gray-700 opacity-30 absolute top-[50%]"></div>
+
+                {/* Month markers - positioned at the bottom with absolute positioning */}
+                <div
+                    className="flex justify-between w-full text-[8px] text-[var(--color-textSecondary)] opacity-60 absolute bottom-0 left-0"
+                >
+                    {['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'].map((month, i) => (
+                        <div key={i} className="flex-1 text-center" style={{
+                            transform: i === 0 ? 'translateX(50%)' : i === 11 ? 'translateX(-50%)' : 'none'
+                        }}>
+                            {i % 2 === 0 && month}
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
     // Calculate color intensity based on value
     const getColorIntensity = (value: number, max: number) => {
         const isDark = theme === 'dark' || theme === 'midnight';
@@ -299,10 +383,15 @@ export const ActivityHeatmap = ({
 
         if (max === 0) return baseOpacity;
         const normalizedValue = value / max;
-        return baseOpacity + normalizedValue * (maxOpacity - baseOpacity);
+
+        // Enhance low values to make them more visible
+        const enhancedValue = normalizedValue < 0.1 ?
+            0.1 + (normalizedValue * 0.9) : normalizedValue;
+
+        return baseOpacity + enhancedValue * (maxOpacity - baseOpacity);
     };
 
-    const maxValue = Math.max(...data, 1);
+    const maxValue = Math.max(...processedData, 1);
 
     // Reserve space for month markers
     const reservedSpaceForLabels = 10;
@@ -316,9 +405,14 @@ export const ActivityHeatmap = ({
                 className="flex items-end justify-between h-full w-full gap-[1px]"
                 style={{ height: `${effectiveHeight}px` }}
             >
-                {data.map((value, index) => {
+                {processedData.map((value, index) => {
                     // Limit max height to ensure there's space for labels
-                    const height = value === 0 ? 3 : Math.max(4, Math.min((value / maxValue) * effectiveHeight, effectiveHeight - 2));
+                    // Ensure even small values have visible height
+                    const minHeight = value > 0 ? 4 : 3;
+                    const height = value === 0 ?
+                        3 :
+                        Math.max(minHeight, Math.min((value / maxValue) * effectiveHeight, effectiveHeight - 2));
+
                     const opacity = getColorIntensity(value, maxValue);
 
                     return (
@@ -329,7 +423,7 @@ export const ActivityHeatmap = ({
                                 backgroundColor: baseColor,
                                 opacity: isVisible ? opacity : 0,
                                 height: isVisible ? `${height}px` : '3px',
-                                width: `${100 / data.length - 0.5}%`,
+                                width: `${100 / processedData.length - 0.5}%`,
                             }}
                             initial={{ height: '3px', opacity: 0 }}
                             animate={{

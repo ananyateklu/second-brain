@@ -11,7 +11,7 @@ import {
 import { useTheme } from '../../contexts/themeContextUtils';
 
 export function StatsEditor({ isOpen }: { isOpen: boolean }) {
-  const { availableStats, toggleStat, getStatValue } = useDashboard();
+  const { availableStats, toggleStat, getStatValue, updateStatOrder } = useDashboard();
   const { theme } = useTheme();
 
   const unusedStats = availableStats.filter((stat: DashboardStat) => !stat.enabled);
@@ -73,6 +73,7 @@ export function StatsEditor({ isOpen }: { isOpen: boolean }) {
                       showStatsEditor={true}
                       onToggleStat={toggleStat}
                       onSizeChange={() => { }}
+                      onOrderChange={updateStatOrder}
                     />
                   </StyledStatContainer>
                 </motion.div>

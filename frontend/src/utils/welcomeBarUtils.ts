@@ -110,7 +110,7 @@ export const sizeClasses = {
     iconSize: 'w-3.5 h-3.5',
     titleSize: 'text-xs',
     valueSize: 'text-sm font-semibold',
-    chartHeight: 'h-14'
+    chartHeight: 'h-12'
   },
   large: {
     padding: 'p-3',
@@ -118,6 +118,6 @@ export const sizeClasses = {
     iconSize: 'w-3.5 h-3.5',
     titleSize: 'text-xs',
     valueSize: 'text-sm font-semibold',
-    chartHeight: 'h-18'
+    chartHeight: 'h-16'
   }
 }; 

@@ -13,9 +13,7 @@ import {
   StyledAvatar,
   StyledTitle,
   StyledSettingsButton,
-  StyledStatsGrid,
   StyledStatsEditorContainer,
-  StyledReorderItem,
   StyledStatContainer,
   StyledFlexContainer,
   StyledFlexRow,
@@ -60,7 +58,15 @@ interface WelcomeBarProps {
 export function WelcomeBar({ isDashboardHome = false }: WelcomeBarProps) {
   const location = useLocation();
   const { user } = useAuth();
-  const { enabledStats, toggleStat, reorderStats, getStatValue } = useDashboard();
+  const {
+    enabledStats,
+    toggleStat,
+    getStatValue,
+    updateStatSize,
+    graphsVisible,
+    toggleGraphVisibility,
+    updateStatOrder
+  } = useDashboard();
   const [showStatsEditor, setShowStatsEditor] = useState(false);
 
   // Get greeting based on time of day
@@ -100,24 +106,6 @@ export function WelcomeBar({ isDashboardHome = false }: WelcomeBarProps) {
     const stats = enabledStats.filter(stat => stat.enabled);
     return layoutGrid(stats);
   }, [enabledStats]);
-
-  // Handle reordering of stats
-  const handleReorder = (newOrder: DashboardStat[]) => {
-    reorderStats(0, newOrder.length - 1, newOrder);
-  };
-
-  // Handle changing the size of a stat
-  const handleSizeChange = (statId: string, size: 'small' | 'medium' | 'large') => {
-    const updatedStats = enabledStats.map(stat => {
-      if (stat.id === statId) {
-        return { ...stat, size };
-      }
-      return stat;
-    });
-
-    const laidOut = layoutGrid(updatedStats);
-    reorderStats(laidOut[0].order, laidOut[laidOut.length - 1].order, laidOut);
-  };
 
   // Paths to hide the component on
   const hideOnPaths = [
@@ -167,19 +155,19 @@ export function WelcomeBar({ isDashboardHome = false }: WelcomeBarProps) {
           exit="exit"
           className="w-full"
         >
-          <StyledStatsGrid values={displayedStats} onReorder={handleReorder}>
+          <div className="grid grid-cols-8 auto-rows-[100px] gap-4 w-full">
             <AnimatePresence mode="sync">
               {displayedStats.map((stat: DashboardStat) => {
                 const StatIcon = IconMap[stat.icon as keyof typeof IconMap];
                 const statValue = getStatValue(stat.id);
                 const colSpan = getWidthFromSize(stat.size);
+                const isGraphVisible = graphsVisible[stat.id] !== undefined ? graphsVisible[stat.id] : true;
 
                 return (
-                  <StyledReorderItem
+                  <div
                     key={stat.id}
-                    value={stat}
-                    colSpan={colSpan}
-                    showStatsEditor={showStatsEditor}
+                    className={`col-span-${colSpan}`}
+                    style={{ gridColumn: `span ${colSpan}` }}
                   >
                     <StyledStatContainer showStatsEditor={showStatsEditor}>
                       <StyledStatCard
@@ -187,15 +175,18 @@ export function WelcomeBar({ isDashboardHome = false }: WelcomeBarProps) {
                         statValue={statValue}
                         StatIcon={StatIcon}
                         showStatsEditor={showStatsEditor}
-                        onSizeChange={handleSizeChange}
+                        showGraphs={isGraphVisible}
+                        onSizeChange={updateStatSize}
                         onToggleStat={toggleStat}
+                        onToggleGraphs={toggleGraphVisibility}
+                        onOrderChange={updateStatOrder}
                       />
                     </StyledStatContainer>
-                  </StyledReorderItem>
+                  </div>
                 );
               })}
             </AnimatePresence>
-          </StyledStatsGrid>
+          </div>
         </motion.div>
 
         <AnimatePresence>

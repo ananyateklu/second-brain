@@ -31,10 +31,12 @@ export interface DashboardContextType {
   availableStats: DashboardStat[];
   enabledStats: DashboardStat[];
   toggleStat: (statId: string) => void;
-  reorderStats: (startIndex: number, endIndex: number, newOrder?: DashboardStat[]) => void;
   getStatValue: (statId: string) => StatValue;
   updateStatSize: (statId: string, size: 'small' | 'medium' | 'large') => void;
+  updateStatOrder: (statId: string, newOrder: number) => void;
   isLoading: boolean;
+  graphsVisible: Record<string, boolean>;
+  toggleGraphVisibility: (statId: string) => void;
 }
 
 export const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
@@ -131,7 +133,8 @@ export const DEFAULT_STATS: DashboardStat[] = [
     icon: 'Files',
     enabled: true,
     order: 0,
-    size: 'medium'
+    size: 'medium',
+    graphVisible: true
   },
   {
     id: 'notes-stats',
@@ -140,7 +143,8 @@ export const DEFAULT_STATS: DashboardStat[] = [
     icon: 'FileText',
     enabled: true,
     order: 1,
-    size: 'medium'
+    size: 'medium',
+    graphVisible: true
   },
   {
     id: 'new-notes',
@@ -149,7 +153,8 @@ export const DEFAULT_STATS: DashboardStat[] = [
     icon: 'FolderPlus',
     enabled: true,
     order: 2,
-    size: 'medium'
+    size: 'medium',
+    graphVisible: true
   },
   {
     id: 'categories',
@@ -158,7 +163,8 @@ export const DEFAULT_STATS: DashboardStat[] = [
     icon: 'Tags',
     enabled: true,
     order: 3,
-    size: 'small'
+    size: 'small',
+    graphVisible: true
   },
   {
     id: 'word-count',
@@ -167,7 +173,8 @@ export const DEFAULT_STATS: DashboardStat[] = [
     icon: 'AlignLeft',
     enabled: true,
     order: 4,
-    size: 'small'
+    size: 'small',
+    graphVisible: true
   },
   {
     id: 'ideas-count',
@@ -176,7 +183,8 @@ export const DEFAULT_STATS: DashboardStat[] = [
     icon: 'Lightbulb',
     enabled: true,
     order: 5,
-    size: 'small'
+    size: 'small',
+    graphVisible: true
   },
   {
     id: 'active-tasks',
@@ -185,7 +193,8 @@ export const DEFAULT_STATS: DashboardStat[] = [
     icon: 'CheckSquare',
     enabled: true,
     order: 6,
-    size: 'small'
+    size: 'small',
+    graphVisible: true
   },
   {
     id: 'completed-tasks',
@@ -194,7 +203,8 @@ export const DEFAULT_STATS: DashboardStat[] = [
     icon: 'CheckSquare',
     enabled: false,
     order: 7,
-    size: 'small'
+    size: 'small',
+    graphVisible: true
   },
   {
     id: 'daily-activity',
@@ -203,7 +213,8 @@ export const DEFAULT_STATS: DashboardStat[] = [
     icon: 'Activity',
     enabled: true,
     order: 8,
-    size: 'large'
+    size: 'large',
+    graphVisible: true
   },
   {
     id: 'connections',
@@ -212,7 +223,8 @@ export const DEFAULT_STATS: DashboardStat[] = [
     icon: 'Network',
     enabled: true,
     order: 9,
-    size: 'medium'
+    size: 'medium',
+    graphVisible: true
   },
   {
     id: 'reminders',
@@ -221,6 +233,7 @@ export const DEFAULT_STATS: DashboardStat[] = [
     icon: 'Bell',
     enabled: false,
     order: 10,
-    size: 'small'
+    size: 'small',
+    graphVisible: true
   }
 ]; 

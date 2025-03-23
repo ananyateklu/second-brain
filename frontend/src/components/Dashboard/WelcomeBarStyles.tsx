@@ -1,10 +1,10 @@
-import { motion, Reorder } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { ReactNode } from 'react';
 import { DashboardStat } from '../../types/dashboard';
 import { getIconBg, getIconColor } from '../../utils/dashboardUtils';
 import { sizeClasses, cardVariants } from '../../utils/welcomeBarUtils';
 import { StatValue } from '../../utils/dashboardContextUtils';
-import { LayoutGrid, Columns, Layout, X, LucideIcon, Settings } from 'lucide-react';
+import { LayoutGrid, Columns, Layout, X, LucideIcon, Settings, BarChart2, ArrowUp, ArrowDown } from 'lucide-react';
 import { useTheme } from '../../contexts/themeContextUtils';
 import {
   AnimatedCounter,
@@ -92,33 +92,6 @@ export const StyledSettingsButton = ({ onClick, title }: { onClick: () => void; 
   </button>
 );
 
-export const StyledStatsGrid = <T extends { id: string }>({
-  children,
-  onReorder,
-  values
-}: {
-  children: ReactNode;
-  onReorder: (newOrder: T[]) => void;
-  values: T[]
-}) => (
-  <Reorder.Group
-    values={values}
-    onReorder={onReorder}
-    className="grid grid-cols-8 auto-rows-[100px] gap-4"
-    layoutScroll
-    as="div"
-    style={{
-      listStyle: 'none',
-      display: 'grid',
-      width: '100%',
-      position: 'relative',
-      gridAutoFlow: 'dense'
-    }}
-  >
-    {children}
-  </Reorder.Group>
-);
-
 export const StyledStatsEditorContainer = ({ children }: { children: ReactNode }) => (
   <motion.div
     initial={{ opacity: 0, height: 0, marginTop: 0 }}
@@ -135,8 +108,11 @@ interface StyledStatCardProps {
   statValue: StatValue;
   StatIcon: LucideIcon;
   showStatsEditor?: boolean;
+  showGraphs?: boolean;
   onSizeChange?: (statId: string, size: 'small' | 'medium' | 'large') => void;
   onToggleStat?: (statId: string) => void;
+  onToggleGraphs?: (statId: string) => void;
+  onOrderChange?: (statId: string, newOrder: number) => void;
 }
 
 export const StyledStatCard = ({
@@ -144,8 +120,11 @@ export const StyledStatCard = ({
   statValue,
   StatIcon,
   showStatsEditor,
+  showGraphs = true,
   onSizeChange,
-  onToggleStat
+  onToggleStat,
+  onToggleGraphs,
+  onOrderChange
 }: StyledStatCardProps) => {
   const size = sizeClasses[stat.size || 'medium'];
   const { theme } = useTheme();
@@ -156,8 +135,13 @@ export const StyledStatCard = ({
       case 'notes':
       case 'ideas':
       case 'tasks':
+      case 'new-notes':
+      case 'word-count':
+      case 'notes-stats':
+      case 'connections':
         return 'line';
       case 'activity':
+      case 'categories':
         return 'bar';
       case 'reminders':
         return 'progress';
@@ -270,37 +254,60 @@ export const StyledStatCard = ({
           </div>
 
           {/* Visualization section */}
-          {stat.size !== 'small' && chartType !== 'none' && (
-            <div className={`${size.chartHeight} w-full ${stat.type === 'activity' || stat.id === 'daily-activity' ? 'mt-3 mb-2' : 'mt-2 mb-0'} relative z-0`}>
-              {chartType === 'line' && (
-                <MiniLineChart
-                  height={Number(size.chartHeight.replace('h-', ''))}
-                  color={getChartColor(stat.type, theme)}
-                  animated={true}
-                />
-              )}
-              {chartType === 'bar' && stat.type !== 'activity' && (
-                <MiniBarChart
-                  height={Number(size.chartHeight.replace('h-', ''))}
-                  color={getChartColor(stat.type, theme)}
-                  animated={true}
-                />
-              )}
-              {stat.type === 'activity' || stat.id === 'daily-activity' ? (
-                <ActivityHeatmap
-                  maxHeight={Number(size.chartHeight.replace('h-', ''))}
-                  baseColor={getChartColor(stat.type, theme)}
-                  animated={true}
-                  data={statValue.metadata?.activityData || []}
-                />
-              ) : null}
-              {chartType === 'progress' && (
+          {stat.size !== 'small' && chartType !== 'none' && showGraphs && (
+            <div className={`${size.chartHeight} w-full ${stat.type === 'activity' || stat.id === 'daily-activity' ? 'mt-3 mb-2' : 'mt-2 mb-0'} relative z-0 min-h-[10px]`}>
+              {/* For activity charts, show as long as there's metadata */}
+              {(stat.type === 'activity' || stat.id === 'daily-activity') ? (
+                statValue.metadata?.activityData ? (
+                  <ActivityHeatmap
+                    maxHeight={Number(size.chartHeight.replace('h-', ''))}
+                    baseColor={getChartColor(stat.type, theme)}
+                    animated={true}
+                    data={statValue.metadata.activityData}
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col justify-start items-center">
+                    <span className="text-[10px] text-[var(--color-textSecondary)] italic opacity-70">
+                      No history yet
+                    </span>
+                  </div>
+                )
+              ) : chartType === 'progress' ? (
+                // For progress charts like reminders, always show the indicator
                 <ProgressIndicator
                   value={Number(statValue.value)}
-                  total={100}
+                  total={statValue.metadata?.breakdown?.total || 100}
                   color={getChartColor(stat.type, theme)}
                   animated={true}
                 />
+              ) : (
+                /* For other chart types, check if there's data */
+                statValue.metadata?.activityData && statValue.metadata.activityData.some(value => value > 0) ? (
+                  <>
+                    {chartType === 'line' && (
+                      <MiniLineChart
+                        height={Number(size.chartHeight.replace('h-', ''))}
+                        color={getChartColor(stat.type, theme)}
+                        animated={true}
+                        data={statValue.metadata?.activityData}
+                      />
+                    )}
+                    {chartType === 'bar' && (
+                      <MiniBarChart
+                        height={Number(size.chartHeight.replace('h-', ''))}
+                        color={getChartColor(stat.type, theme)}
+                        animated={true}
+                        data={statValue.metadata?.activityData}
+                      />
+                    )}
+                  </>
+                ) : (
+                  <div className="w-full h-full flex flex-col justify-start items-center">
+                    <span className="text-[10px] text-[var(--color-textSecondary)] italic opacity-70">
+                      No history yet
+                    </span>
+                  </div>
+                )
               )}
             </div>
           )}
@@ -348,63 +355,111 @@ export const StyledStatCard = ({
 
         {/* Size editor controls */}
         {showStatsEditor && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute bottom-1.5 right-1.5 flex items-center gap-1 bg-[var(--color-surface)]/90 backdrop-blur-xl rounded-lg p-1 border border-[var(--color-border)]"
-            style={{ transition: 'var(--theme-transition)' }}
-          >
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onSizeChange?.(stat.id, 'small');
-              }}
-              className={`p-0.5 rounded-md transition-all duration-200 ${stat.size === 'small'
-                ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
-                : 'hover:bg-[var(--color-surfaceHover)] text-[var(--color-textSecondary)] hover:text-[var(--color-text)]'
-                }`}
-              title="Small"
+          <>
+            {/* Reorder controls - separate panel above the other controls */}
+            {onOrderChange && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute bottom-8 right-1.5 flex items-center gap-1 bg-[var(--color-surface)]/95 backdrop-blur-xl rounded-lg p-1 border border-[var(--color-border)]"
+                style={{ transition: 'var(--theme-transition)' }}
+              >
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOrderChange(stat.id, Math.max(0, stat.order - 1));
+                  }}
+                  className="p-0.5 rounded-md hover:bg-[var(--color-surfaceHover)] text-[var(--color-textSecondary)] hover:text-[var(--color-text)] transition-all duration-200"
+                  title="Move Up"
+                >
+                  <ArrowUp className="w-3 h-3" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOrderChange(stat.id, stat.order + 1);
+                  }}
+                  className="p-0.5 rounded-md hover:bg-[var(--color-surfaceHover)] text-[var(--color-textSecondary)] hover:text-[var(--color-text)] transition-all duration-200"
+                  title="Move Down"
+                >
+                  <ArrowDown className="w-3 h-3" />
+                </button>
+              </motion.div>
+            )}
+
+            {/* Size and visibility controls */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute bottom-1.5 right-1.5 flex items-center gap-1 bg-[var(--color-surface)]/95 backdrop-blur-xl rounded-lg p-1 border border-[var(--color-border)]"
+              style={{ transition: 'var(--theme-transition)' }}
             >
-              <LayoutGrid className="w-3 h-3" />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onSizeChange?.(stat.id, 'medium');
-              }}
-              className={`p-0.5 rounded-md transition-all duration-200 ${stat.size === 'medium'
-                ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
-                : 'hover:bg-[var(--color-surfaceHover)] text-[var(--color-textSecondary)] hover:text-[var(--color-text)]'
-                }`}
-              title="Medium"
-            >
-              <Columns className="w-3 h-3" />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onSizeChange?.(stat.id, 'large');
-              }}
-              className={`p-0.5 rounded-md transition-all duration-200 ${stat.size === 'large'
-                ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
-                : 'hover:bg-[var(--color-surfaceHover)] text-[var(--color-textSecondary)] hover:text-[var(--color-text)]'
-                }`}
-              title="Large"
-            >
-              <Layout className="w-3 h-3" />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleStat?.(stat.id);
-              }}
-              className="p-0.5 rounded-md hover:bg-rose-500/20 text-rose-500 transition-all duration-200"
-              title="Remove"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          </motion.div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSizeChange?.(stat.id, 'small');
+                }}
+                className={`p-0.5 rounded-md transition-all duration-200 ${stat.size === 'small'
+                  ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
+                  : 'hover:bg-[var(--color-surfaceHover)] text-[var(--color-textSecondary)] hover:text-[var(--color-text)]'
+                  }`}
+                title="Small"
+              >
+                <LayoutGrid className="w-3 h-3" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSizeChange?.(stat.id, 'medium');
+                }}
+                className={`p-0.5 rounded-md transition-all duration-200 ${stat.size === 'medium'
+                  ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
+                  : 'hover:bg-[var(--color-surfaceHover)] text-[var(--color-textSecondary)] hover:text-[var(--color-text)]'
+                  }`}
+                title="Medium"
+              >
+                <Columns className="w-3 h-3" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSizeChange?.(stat.id, 'large');
+                }}
+                className={`p-0.5 rounded-md transition-all duration-200 ${stat.size === 'large'
+                  ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
+                  : 'hover:bg-[var(--color-surfaceHover)] text-[var(--color-textSecondary)] hover:text-[var(--color-text)]'
+                  }`}
+                title="Large"
+              >
+                <Layout className="w-3 h-3" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleGraphs?.(stat.id);
+                }}
+                className={`p-0.5 rounded-md transition-all duration-200 ${showGraphs
+                  ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)]'
+                  : 'hover:bg-[var(--color-surfaceHover)] text-[var(--color-textSecondary)] hover:text-[var(--color-text)]'
+                  }`}
+                title={showGraphs ? "Hide Graph" : "Show Graph"}
+              >
+                <BarChart2 className="w-3 h-3" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleStat?.(stat.id);
+                }}
+                className="p-0.5 rounded-md hover:bg-rose-500/20 text-rose-500 transition-all duration-200"
+                title="Remove"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </motion.div>
+          </>
         )}
       </div>
     </motion.div>
@@ -431,49 +486,6 @@ const getChartColor = (type: string, theme: string) => {
   }
 };
 
-export const StyledReorderItem = <T extends { id: string }>({
-  children,
-  value,
-  colSpan,
-  showStatsEditor
-}: {
-  children: ReactNode;
-  value: T;
-  colSpan: number;
-  showStatsEditor: boolean;
-}) => (
-  <Reorder.Item
-    key={value.id}
-    value={value}
-    className={`group relative w-full col-span-${colSpan}`}
-    initial={false}
-    whileDrag={{
-      scale: 1.02,
-      boxShadow: "0 10px 30px -10px rgba(0,0,0,0.3)",
-      cursor: "grabbing",
-      zIndex: 50
-    }}
-    style={{
-      position: showStatsEditor ? 'relative' : 'static',
-      transformOrigin: 'center',
-      gridColumn: `span ${colSpan}`,
-      gridRow: 'auto',
-      transition: showStatsEditor ? 'none' : 'var(--theme-transition)'
-    }}
-    layout="position"
-    dragConstraints={false}
-    dragElastic={0.2}
-    dragMomentum={false}
-    dragTransition={{
-      bounceStiffness: 600,
-      bounceDamping: 30
-    }}
-    drag={showStatsEditor}
-  >
-    {children}
-  </Reorder.Item>
-);
-
 export const StyledStatContainer = ({
   children,
   showStatsEditor
@@ -488,7 +500,7 @@ export const StyledStatContainer = ({
     animate="visible"
     exit="exit"
     whileHover={showStatsEditor ? 'hover' : undefined}
-    className="transform origin-center relative w-full h-[100px]"
+    className="transform origin-center relative w-full h-full"
   >
     {children}
   </motion.div>
@@ -510,4 +522,4 @@ export const StyledFlexRow = ({ children }: { children: ReactNode }) => (
 
 export const StyledAccentText = ({ children }: { children: ReactNode }) => (
   <span className="text-[var(--color-accent)]">{children}</span>
-); 
+);
