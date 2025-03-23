@@ -46,7 +46,11 @@ export function LoadingContent({ type, themeColor }: LoadingContentProps) {
               {[...Array(2)].map((_, i) => (
                 <motion.div
                   key={i}
-                  className={`h-1 rounded ${theme === 'midnight' ? 'bg-gray-700' : 'bg-[var(--color-surface)]/30'}`}
+                  className="h-1 rounded"
+                  style={{
+                    backgroundColor: theme === 'midnight' ? '#4B5563' : themeColor,
+                    opacity: theme === 'midnight' ? 0.8 : 0.4
+                  }}
                   initial={{ width: "0%" }}
                   animate={{ width: ["0%", "100%", "100%", "0%"] }}
                   transition={{
@@ -79,6 +83,10 @@ export function LoadingContent({ type, themeColor }: LoadingContentProps) {
                 <motion.div
                   key={i}
                   className="flex-1"
+                  style={{
+                    backgroundColor: themeColor,
+                    opacity: 0.5
+                  }}
                   initial={{ height: "0%" }}
                   animate={{
                     height: ["0%", "100%", "50%", "80%", "20%"],
@@ -88,7 +96,6 @@ export function LoadingContent({ type, themeColor }: LoadingContentProps) {
                     repeat: Infinity,
                     delay: i * 0.02
                   }}
-                  style={{ backgroundColor: `${themeColor}33` }}
                 />
               ))}
             </motion.div>
@@ -110,6 +117,7 @@ export function LoadingContent({ type, themeColor }: LoadingContentProps) {
                   key={i}
                   className="w-1 rounded-full"
                   style={{ backgroundColor: themeColor }}
+                  initial={{ height: "20%" }}
                   animate={{
                     height: ["20%", "90%", "20%"]
                   }}
