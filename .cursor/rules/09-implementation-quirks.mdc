@@ -1,6 +1,7 @@
 ---
 description: Implementation quirks, edge cases, and potential issues to be aware of when working with the codebase
 globs: **/*.ts, **/*.tsx, **/*.cs, **/*.py, **/*.js, **/*.jsx
+alwaysApply: false
 ---
 
 # Implementation Quirks and Edge Cases
