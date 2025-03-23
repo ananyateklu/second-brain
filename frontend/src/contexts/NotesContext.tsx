@@ -133,7 +133,12 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     }
   }, [createActivity]);
 
-  const addNote = useCallback(async (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'linkedNoteIds' | 'linkedNotes' | 'linkedTasks' | 'linkedReminders'>) => {
+  const clearArchivedNotes = useCallback(() => {
+    setArchivedNotes([]);
+    hasLoadedArchived.current = false;
+  }, []);
+
+  const addNote = useCallback(async (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'linkedNoteIds' | 'linkedNotes' | 'linkedTasks' | 'linkedReminders' | 'links'>) => {
     try {
       const noteWithSafeTags = {
         ...note,
@@ -375,34 +380,61 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     }
   }, [archivedNotes, createActivity]);
 
-  const updateNoteWithLinks = (note: Note, linkedNoteIds: string[], allNotes: Note[]): Note => {
-    return {
-      ...note,
-      linkedNoteIds,
-      linkedNotes: allNotes.filter(n => linkedNoteIds.includes(n.id))
-    };
-  };
-
-  const addLink = useCallback(async (sourceId: string, targetId: string) => {
+  const addLink = useCallback(async (sourceId: string, targetId: string, linkType = 'default') => {
     try {
-      const { sourceNote, targetNote } = await notesService.addLink(sourceId, targetId);
+      // Get updated notes from the backend after linking
+      const { sourceNote, targetNote } = await notesService.addLink(sourceId, targetId, linkType);
+
+      // Update notes state with the fresh data from backend
       setNotes(prev => {
         const updatedNotes = prev.map(note => {
           if (note.id === sourceId) {
-            return updateNoteWithLinks(note, sourceNote.linkedNoteIds, prev);
+            // Use the fresh source note data
+            return {
+              ...note,
+              ...sourceNote,
+              linkedNoteIds: sourceNote.linkedNoteIds,
+              links: sourceNote.links || [],
+              linkedNotes: sourceNote.linkedNotes || []
+            };
           }
           if (note.id === targetId) {
-            return updateNoteWithLinks(note, targetNote.linkedNoteIds, prev);
+            // Use the fresh target note data
+            return {
+              ...note,
+              ...targetNote,
+              linkedNoteIds: targetNote.linkedNoteIds,
+              links: targetNote.links || [],
+              linkedNotes: targetNote.linkedNotes || []
+            };
           }
           return note;
         });
-        return updatedNotes;
+
+        // Return a new array to ensure React detects the change
+        return [...updatedNotes];
       });
+
+      // Create activity if available
+      if (createActivity) {
+        createActivity({
+          actionType: 'link',
+          itemType: 'note',
+          itemId: targetId,
+          itemTitle: targetNote.title,
+          description: `Linked note "${targetNote.title}" to "${sourceNote.title}"`,
+          metadata: {
+            sourceNoteId: sourceId,
+            targetNoteId: targetId,
+            linkType
+          }
+        });
+      }
     } catch (error) {
       console.error('Failed to add link:', error);
       throw error;
     }
-  }, []);
+  }, [createActivity]);
 
   const removeLink = useCallback(async (sourceId: string, targetId: string) => {
     try {
@@ -418,6 +450,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
               ...note,
               ...sourceNote,
               linkedNoteIds: sourceNote.linkedNoteIds,
+              links: sourceNote.links || [],
               linkedNotes: sourceNote.linkedNotes || []
             };
           }
@@ -427,6 +460,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
               ...note,
               ...targetNote,
               linkedNoteIds: targetNote.linkedNoteIds,
+              links: targetNote.links || [],
               linkedNotes: targetNote.linkedNotes || []
             };
           }
@@ -690,10 +724,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     linkReminder,
     unlinkReminder,
     loadArchivedNotes,
-    clearArchivedNotes: () => {
-      // No-op function to satisfy the interface
-      console.log('[Notes] clearArchivedNotes is deprecated');
-    },
+    clearArchivedNotes,
     restoreMultipleNotes,
     restoreNote,
     fetchNotes,
@@ -715,6 +746,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     linkReminder,
     unlinkReminder,
     loadArchivedNotes,
+    clearArchivedNotes,
     restoreMultipleNotes,
     restoreNote,
     fetchNotes,

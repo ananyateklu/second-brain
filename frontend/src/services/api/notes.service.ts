@@ -1,8 +1,8 @@
 import api from './api';
-import { Note, LinkedTask } from '../../types/note';
+import { Note, LinkedTask, NoteLink } from '../../types/note';
 
 // API response types
-interface NoteResponse {
+export interface NoteResponse {
   id: string;
   title: string;
   content: string;
@@ -38,6 +38,7 @@ interface NoteResponse {
     createdAt: string;
     updatedAt: string;
   }>;
+  links?: NoteLink[];
 }
 
 export interface CreateNoteData {
@@ -87,23 +88,32 @@ const processTaskPriority = (priority: string): LinkedTask['priority'] => {
 };
 
 const processNoteResponse = (note: NoteResponse): Note => ({
-  ...note,
-  tags: Array.isArray(note.tags) ? note.tags : note.tags?.split(',').filter(Boolean) || [],
-  linkedNoteIds: Array.isArray(note.linkedNoteIds) ? note.linkedNoteIds : [],
-  linkedNotes: Array.isArray(note.linkedNotes) ? note.linkedNotes : [],
-  linkedTasks: Array.isArray(note.linkedTasks)
-    ? note.linkedTasks.map((task): LinkedTask => ({
-      ...task,
-      status: processTaskStatus(task.status),
-      priority: processTaskPriority(task.priority)
-    }))
-    : [],
-  linkedReminders: Array.isArray(note.linkedReminders)
-    ? note.linkedReminders.map(reminder => ({
-      ...reminder,
-      description: reminder.description || ''
-    }))
-    : []
+  id: note.id,
+  title: note.title,
+  content: note.content,
+  tags: Array.isArray(note.tags) ? note.tags : [],
+  isFavorite: note.isFavorite,
+  isPinned: note.isPinned,
+  isArchived: note.isArchived,
+  isDeleted: note.isDeleted,
+  deletedAt: note.deletedAt,
+  createdAt: note.createdAt,
+  updatedAt: note.updatedAt,
+  archivedAt: note.archivedAt,
+  isIdea: note.isIdea || false,
+  linkedNoteIds: note.linkedNoteIds || [],
+  links: note.links || [],
+  linkedTasks: note.linkedTasks?.map(task => ({
+    id: task.id,
+    title: task.title,
+    description: task.description,
+    status: processTaskStatus(task.status),
+    priority: processTaskPriority(task.priority),
+    dueDate: task.dueDate,
+    createdAt: task.createdAt,
+    updatedAt: task.updatedAt || task.createdAt
+  })) || [],
+  linkedReminders: note.linkedReminders || []
 });
 
 export const notesService = {
@@ -139,8 +149,11 @@ export const notesService = {
     });
   },
 
-  async addLink(sourceId: string, targetId: string): Promise<LinkResponse> {
-    const response = await api.post<LinkResponse>(`/api/Notes/${sourceId}/links`, { targetNoteId: targetId });
+  async addLink(sourceId: string, targetId: string, linkType: string = 'default'): Promise<LinkResponse> {
+    const response = await api.post<LinkResponse>(`/api/Notes/${sourceId}/links`, {
+      targetNoteId: targetId,
+      linkType: linkType
+    });
     return response.data;
   },
 

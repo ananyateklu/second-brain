@@ -1,6 +1,33 @@
 import * as signalR from '@microsoft/signalr';
 import { ExecutionStep } from '../types/ai';
 
+// Interface for token management
+export interface ITokenManager {
+  getAccessToken(): string | null;
+}
+
+// Default implementation using localStorage (will be replaced)
+let tokenManager: ITokenManager = {
+  getAccessToken: () => localStorage.getItem('access_token')
+};
+
+// Function to set the token manager implementation
+export function setTokenManager(manager: ITokenManager) {
+  tokenManager = manager;
+}
+
+// Custom error class for SignalR errors
+export class SignalRError extends Error {
+  constructor(message: string, public readonly originalError?: Error) {
+    super(message);
+    this.name = 'SignalRError';
+  }
+}
+
+// Connection state events for external listeners
+export type ConnectionState = 'connected' | 'disconnected' | 'reconnecting' | 'error';
+export type ConnectionStateHandler = (state: ConnectionState, error?: Error) => void;
+
 interface EventCallback {
   eventName: string;
   callback: (...args: unknown[]) => void;
@@ -14,6 +41,7 @@ export class SignalRService {
   private reconnectAttempts: number = 0;
   private readonly maxReconnectAttempts: number = 5;
   private pendingEvents: EventCallback[] = [];
+  private connectionStateHandlers: ConnectionStateHandler[] = [];
 
   constructor() {
     this.connection = this.buildConnection();
@@ -21,10 +49,11 @@ export class SignalRService {
   }
 
   private buildConnection(token?: string): signalR.HubConnection {
-    const accessToken = token ?? localStorage.getItem('access_token') ?? '';
+    // Use provided token or get from TokenManager
+    const accessToken = token ?? tokenManager.getAccessToken() ?? '';
 
     if (!accessToken) {
-      console.warn('[SignalR] No access token available');
+      this.notifyStateChange('error', new SignalRError('No access token available'));
     }
 
     return new signalR.HubConnectionBuilder()
@@ -39,6 +68,7 @@ export class SignalRService {
       .withAutomaticReconnect({
         nextRetryDelayInMilliseconds: (retryContext) => {
           if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+            this.notifyStateChange('error', new SignalRError('Max reconnection attempts reached'));
             return null;
           }
 
@@ -66,54 +96,81 @@ export class SignalRService {
 
     this.connection.onreconnecting((error) => {
       console.log('[SignalR] Reconnecting...', error);
+      this.notifyStateChange('reconnecting', error ? new SignalRError('Reconnecting', error) : undefined);
     });
 
     this.connection.onreconnected((connectionId) => {
       console.log('[SignalR] Reconnected with connectionId:', connectionId);
       this.reconnectAttempts = 0;
       this.reregisterEvents();
+      this.notifyStateChange('connected');
     });
 
     this.connection.onclose((error) => {
       console.log('[SignalR] Connection Closed', error);
+      this.notifyStateChange('disconnected', error ? new SignalRError('Connection closed', error) : undefined);
+
       if (this.autoReconnect && this.reconnectAttempts < this.maxReconnectAttempts) {
         setTimeout(() => this.start(), 2000);
-      } else {
-        console.log('[SignalR] Max reconnection attempts reached or auto-reconnect disabled');
+      } else if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+        this.notifyStateChange('error', new SignalRError('Max reconnection attempts reached'));
       }
     });
   }
 
+  private notifyStateChange(state: ConnectionState, error?: Error) {
+    this.connectionStateHandlers.forEach(handler => handler(state, error));
+  }
+
   private async reregisterEvents() {
     console.log('[SignalR] Reregistering events:', this.pendingEvents);
-    // Re-register all pending events after reconnection
-    for (const event of this.pendingEvents) {
-      console.log('[SignalR] Reregistering event:', event.eventName);
-      this.connection.on(event.eventName, event.callback);
+
+    try {
+      // Re-register all pending events after reconnection
+      for (const event of this.pendingEvents) {
+        console.log('[SignalR] Reregistering event:', event.eventName);
+        this.connection.on(event.eventName, event.callback);
+      }
+    } catch (error) {
+      console.error('[SignalR] Error reregistering events:', error);
+      this.notifyStateChange('error', new SignalRError('Failed to reregister events', error instanceof Error ? error : undefined));
     }
+  }
+
+  // Subscribe to connection state changes
+  onConnectionStateChange(handler: ConnectionStateHandler) {
+    this.connectionStateHandlers.push(handler);
+    return () => {
+      this.connectionStateHandlers = this.connectionStateHandlers.filter(h => h !== handler);
+    };
   }
 
   async updateToken(newToken: string) {
     try {
+      if (!newToken) {
+        throw new SignalRError('Cannot update connection with empty token');
+      }
+
       await this.stop();
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 500)); // Reduced delay
 
       this.connection = this.buildConnection(newToken);
       this.setupConnectionHandlers();
-      if (newToken) {
-        await this.start();
-      }
+      await this.start();
+      return true;
     } catch (error) {
       console.error('[SignalR] Error updating token:', error);
+      this.notifyStateChange('error', new SignalRError('Failed to update token', error instanceof Error ? error : undefined));
       throw error;
     }
   }
 
   async start() {
-    const accessToken = localStorage.getItem('access_token');
+    const accessToken = tokenManager.getAccessToken();
     if (!accessToken) {
-      console.warn('[SignalR] Cannot start connection without access token');
-      return;
+      const error = new SignalRError('Cannot start connection without access token');
+      this.notifyStateChange('error', error);
+      return Promise.reject(error);
     }
 
     if (this.isStarting) {
@@ -124,6 +181,7 @@ export class SignalRService {
     if (this.connection.state === signalR.HubConnectionState.Connected) {
       console.log('[SignalR] Already connected');
       await this.reregisterEvents();
+      this.notifyStateChange('connected');
       return;
     }
 
@@ -132,7 +190,7 @@ export class SignalRService {
 
       if (this.connection.state !== signalR.HubConnectionState.Disconnected) {
         await this.connection.stop();
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 500)); // Reduced delay
       }
 
       // Always create a fresh connection
@@ -150,6 +208,7 @@ export class SignalRService {
           console.log('[SignalR] Connected successfully');
           this.reconnectAttempts = 0;
           await this.reregisterEvents();
+          this.notifyStateChange('connected');
           return; // Success, exit the function
         } catch (err) {
           lastError = err;
@@ -165,16 +224,22 @@ export class SignalRService {
       }
 
       // If we get here, all retries failed
-      throw lastError;
+      const error = new SignalRError('Failed to connect after multiple attempts', lastError instanceof Error ? lastError : undefined);
+      this.notifyStateChange('error', error);
+      throw error;
     } catch (err) {
       console.error('[SignalR] Connection Error:', err);
+      const error = new SignalRError('Connection error', err instanceof Error ? err : undefined);
+      this.notifyStateChange('error', error);
+
       if (this.reconnectAttempts < this.maxReconnectAttempts) {
         const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
         console.log(`[SignalR] Scheduling retry in ${delay}ms`);
         setTimeout(() => this.start(), delay);
       } else {
-        console.error('[SignalR] Max reconnection attempts reached');
+        this.notifyStateChange('error', new SignalRError('Max reconnection attempts reached'));
       }
+      throw error;
     } finally {
       this.isStarting = false;
     }
@@ -185,11 +250,13 @@ export class SignalRService {
       this.autoReconnect = false;
       if (this.connection.state !== signalR.HubConnectionState.Disconnected) {
         await this.connection.stop();
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 500)); // Reduced delay
         console.log('[SignalR] Disconnected');
+        this.notifyStateChange('disconnected');
       }
     } catch (err) {
       console.error('[SignalR] Error stopping connection:', err);
+      this.notifyStateChange('error', new SignalRError('Error stopping connection', err instanceof Error ? err : undefined));
     } finally {
       this.autoReconnect = true;
     }

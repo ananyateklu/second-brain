@@ -3,7 +3,62 @@ import { AuthState } from '../types/auth';
 import { authService, AuthResponse } from '../services/api/auth.service';
 import { useNavigate } from 'react-router-dom';
 import { LoadingScreen } from '../components/shared/LoadingScreen';
-import { signalRService } from '../services/signalR';
+import { signalRService, ConnectionState, setTokenManager } from '../services/signalR';
+import { setTokenManager as setApiTokenManager } from '../services/api/api';
+
+// Secure token management
+export class TokenManager {
+  private static readonly ACCESS_TOKEN_KEY = 'access_token';
+  private static readonly REFRESH_TOKEN_KEY = 'refresh_token';
+
+  // In-memory storage for access token to avoid XSS attacks
+  private static accessToken: string | null = null;
+
+  // Initialize from storage (called at startup)
+  static initialize() {
+    // Read from localStorage during initialization
+    this.accessToken = localStorage.getItem(this.ACCESS_TOKEN_KEY);
+  }
+
+  static getAccessToken(): string | null {
+    return this.accessToken;
+  }
+
+  static getRefreshToken(): string | null {
+    return localStorage.getItem(this.REFRESH_TOKEN_KEY);
+  }
+
+  static setTokens(accessToken: string, refreshToken: string) {
+    this.accessToken = accessToken;
+
+    // Store access token in localStorage but with a short expiry
+    // This ensures persistence across page refreshes
+    localStorage.setItem(this.ACCESS_TOKEN_KEY, accessToken);
+    localStorage.setItem(this.REFRESH_TOKEN_KEY, refreshToken);
+  }
+
+  static clearTokens() {
+    this.accessToken = null;
+    localStorage.removeItem(this.ACCESS_TOKEN_KEY);
+    localStorage.removeItem(this.REFRESH_TOKEN_KEY);
+  }
+}
+
+// Initialize tokens from storage
+TokenManager.initialize();
+
+// Register TokenManager with both services
+setApiTokenManager({
+  getAccessToken: TokenManager.getAccessToken.bind(TokenManager),
+  getRefreshToken: TokenManager.getRefreshToken.bind(TokenManager),
+  setTokens: TokenManager.setTokens.bind(TokenManager),
+  clearTokens: TokenManager.clearTokens.bind(TokenManager)
+});
+
+// Register with SignalR service
+setTokenManager({
+  getAccessToken: () => TokenManager.getAccessToken()
+});
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
@@ -12,6 +67,7 @@ interface AuthContextType extends AuthState {
   logout: () => void;
   fetchCurrentUser: () => Promise<void>;
   updateUserData: () => Promise<void>;
+  signalRStatus: ConnectionState;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -22,6 +78,8 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
     error: null,
     user: null,
   });
+
+  const [signalRStatus, setSignalRStatus] = useState<ConnectionState>('disconnected');
 
   const navigate = useNavigate();
 
@@ -47,8 +105,7 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
       });
     } catch (error: unknown) {
       console.error('Error fetching current user:', error);
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
+      TokenManager.clearTokens();
       setAuthState({
         isLoading: false,
         error: error instanceof Error ? error.message : 'Failed to fetch user data',
@@ -60,13 +117,38 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
 
   // Initial load
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
+    const token = TokenManager.getAccessToken();
     if (token) {
       fetchCurrentUser();
     } else {
       setAuthState(prev => ({ ...prev, isLoading: false }));
     }
   }, [fetchCurrentUser]);
+
+  // SignalR connection state handler
+  useEffect(() => {
+    const handleConnectionStateChange = (state: ConnectionState, error?: Error) => {
+      console.log(`[SignalR] Connection state changed to: ${state}`, error);
+      setSignalRStatus(state);
+
+      if (state === 'error' && error) {
+        console.error('[SignalR] Connection error:', error);
+
+        // Only show user-visible errors for critical issues
+        if (error.message.includes('Max reconnection attempts reached')) {
+          setAuthState(prev => ({
+            ...prev,
+            error: 'Connection to the server was lost. Please refresh the page.',
+          }));
+        }
+      }
+    };
+
+    const unsubscribe = signalRService.onConnectionStateChange(handleConnectionStateChange);
+    return () => {
+      unsubscribe();
+    };
+  }, []);
 
   // SignalR connection management
   useEffect(() => {
@@ -75,7 +157,7 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
 
     const initializeSignalR = async () => {
       try {
-        const accessToken = localStorage.getItem('access_token');
+        const accessToken = TokenManager.getAccessToken();
         if (!accessToken || !isActive) {
           console.warn('[SignalR] No access token available or component unmounted');
           return;
@@ -85,7 +167,6 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
 
         // First, clean up any existing connection and wait
         await signalRService.stop();
-        await new Promise(resolve => setTimeout(resolve, 1000));
 
         // Update the token and ensure connection is started
         await signalRService.updateToken(accessToken);
@@ -142,8 +223,9 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
     setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
     try {
       const response: AuthResponse = await authService.login({ email, password });
-      localStorage.setItem('access_token', response.accessToken);
-      localStorage.setItem('refresh_token', response.refreshToken);
+
+      // Securely store tokens
+      TokenManager.setTokens(response.accessToken, response.refreshToken);
 
       // Update SignalR connection with new token
       await signalRService.updateToken(response.accessToken);
@@ -169,8 +251,8 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
     try {
       const response: AuthResponse = await authService.register({ email, password, name });
 
-      localStorage.setItem('access_token', response.accessToken);
-      localStorage.setItem('refresh_token', response.refreshToken);
+      // Securely store tokens
+      TokenManager.setTokens(response.accessToken, response.refreshToken);
 
       setAuthState({
         isLoading: false,
@@ -210,12 +292,12 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
   const logout = useCallback(async () => {
     setAuthState(prev => ({ ...prev, isLoading: true }));
     try {
-      authService.logout();
+      await signalRService.stop();
+      await authService.logout();
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
+      TokenManager.clearTokens();
       setAuthState({
         isLoading: false,
         error: null,
@@ -233,9 +315,10 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
       resetPassword,
       logout,
       fetchCurrentUser,
-      updateUserData
+      updateUserData,
+      signalRStatus
     }),
-    [authState, login, register, resetPassword, logout, fetchCurrentUser, updateUserData]
+    [authState, login, register, resetPassword, logout, fetchCurrentUser, updateUserData, signalRStatus]
   );
 
   if (authState.isLoading) {

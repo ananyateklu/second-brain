@@ -203,9 +203,13 @@ namespace SecondBrain.Api.Controllers
         [HttpDelete("{id}/links/{targetNoteId}")]
         public async Task<IActionResult> RemoveLink(string id, string targetNoteId)
         {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            // Soft delete approach for links
             var links = await _context.NoteLinks
-                .Where(nl => (nl.NoteId == id && nl.LinkedNoteId == targetNoteId) ||
-                             (nl.NoteId == targetNoteId && nl.LinkedNoteId == id))
+                .Where(nl => ((nl.NoteId == id && nl.LinkedNoteId == targetNoteId) ||
+                              (nl.NoteId == targetNoteId && nl.LinkedNoteId == id)) &&
+                              !nl.IsDeleted)
                 .ToListAsync();
 
             if (!links.Any())
@@ -213,10 +217,56 @@ namespace SecondBrain.Api.Controllers
                 return NotFound(new { error = "Link not found." });
             }
 
-            _context.NoteLinks.RemoveRange(links);
+            // Soft delete the links instead of removing them
+            foreach (var link in links)
+            {
+                link.IsDeleted = true;
+                link.DeletedAt = DateTime.UtcNow;
+            }
+            
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Notes unlinked successfully." });
+            // Return both updated notes with their active links
+            var updatedNotes = await _context.Notes
+                .Include(n => n.NoteLinks.Where(nl => !nl.IsDeleted))
+                .ThenInclude(nl => nl.LinkedNote)
+                .Where(n => n.Id == id || n.Id == targetNoteId)
+                .ToListAsync();
+
+            // Transform to API response format
+            var responses = updatedNotes.Select(n => new NoteResponse
+            {
+                Id = n.Id,
+                Title = n.Title,
+                Content = n.Content,
+                Tags = (n.Tags ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries).ToList(),
+                IsPinned = n.IsPinned,
+                IsFavorite = n.IsFavorite,
+                IsArchived = n.IsArchived,
+                ArchivedAt = n.ArchivedAt,
+                CreatedAt = n.CreatedAt,
+                UpdatedAt = n.UpdatedAt,
+                LinkedNoteIds = n.NoteLinks
+                    .Where(nl => !nl.IsDeleted)
+                    .Select(nl => nl.LinkedNoteId)
+                    .ToList(),
+                Links = n.NoteLinks
+                    .Where(nl => !nl.IsDeleted)
+                    .Select(nl => new NoteLinkDto
+                    {
+                        Source = n.Id,
+                        Target = nl.LinkedNoteId,
+                        Type = nl.LinkType,
+                        CreatedAt = nl.CreatedAt
+                    })
+                    .ToList()
+            }).ToList();
+
+            return Ok(new
+            {
+                sourceNote = responses.First(n => n.Id == id),
+                targetNote = responses.First(n => n.Id == targetNoteId)
+            });
         }
 
         [HttpPost("{id}/links")]
@@ -233,59 +283,113 @@ namespace SecondBrain.Api.Controllers
             }
 
             // Check if either note is deleted
-            if (_context.Entry(sourceNote).State == EntityState.Deleted || _context.Entry(targetNote).State == EntityState.Deleted)
+            if (sourceNote.IsDeleted || targetNote.IsDeleted)
             {
                 return BadRequest(new { error = "Cannot link to a deleted note." });
             }
 
-            // Check if link already exists
-            var existingLink = await _context.NoteLinks
+            // Check if link already exists (active links only)
+            var existingActiveLink = await _context.NoteLinks
                 .AnyAsync(nl =>
-                    (nl.NoteId == id && nl.LinkedNoteId == request.TargetNoteId) ||
-                    (nl.NoteId == request.TargetNoteId && nl.LinkedNoteId == id));
+                    ((nl.NoteId == id && nl.LinkedNoteId == request.TargetNoteId) ||
+                    (nl.NoteId == request.TargetNoteId && nl.LinkedNoteId == id)) && 
+                    !nl.IsDeleted);
 
-            if (existingLink)
+            if (existingActiveLink)
             {
                 return BadRequest(new { error = "Notes are already linked." });
             }
 
-            // Create link in both directions
-            var noteLink = new NoteLink { NoteId = id, LinkedNoteId = request.TargetNoteId };
-            var reverseLink = new NoteLink { NoteId = request.TargetNoteId, LinkedNoteId = id };
+            // Check for soft-deleted links that can be reactivated
+            var existingDeletedLinks = await _context.NoteLinks
+                .Where(nl => 
+                    ((nl.NoteId == id && nl.LinkedNoteId == request.TargetNoteId) ||
+                    (nl.NoteId == request.TargetNoteId && nl.LinkedNoteId == id)) && 
+                    nl.IsDeleted)
+                .ToListAsync();
 
-            _context.NoteLinks.AddRange(noteLink, reverseLink);
+            var linkType = request.LinkType ?? "default";
+            var timestamp = DateTime.UtcNow;
+
+            if (existingDeletedLinks.Any())
+            {
+                // Reactivate existing soft-deleted links
+                foreach (var link in existingDeletedLinks)
+                {
+                    link.IsDeleted = false;
+                    link.DeletedAt = null;
+                    link.LinkType = linkType;
+                    link.CreatedAt = timestamp;
+                    link.CreatedBy = userId;
+                }
+            }
+            else
+            {
+                // Create new links if no soft-deleted links exist
+                var noteLink = new NoteLink { 
+                    NoteId = id, 
+                    LinkedNoteId = request.TargetNoteId,
+                    LinkType = linkType,
+                    CreatedAt = timestamp,
+                    CreatedBy = userId
+                };
+                
+                var reverseLink = new NoteLink { 
+                    NoteId = request.TargetNoteId, 
+                    LinkedNoteId = id,
+                    LinkType = linkType,
+                    CreatedAt = timestamp,
+                    CreatedBy = userId
+                };
+
+                _context.NoteLinks.AddRange(noteLink, reverseLink);
+            }
+
             await _context.SaveChangesAsync();
 
             // Award XP for creating a link
             await _xpService.AwardXPAsync(userId, "createlink");
 
-            // Return both updated notes
+            // Return both updated notes with their links
             var updatedNotes = await _context.Notes
-                .Include(n => n.NoteLinks)
+                .Include(n => n.NoteLinks.Where(nl => !nl.IsDeleted))
+                .ThenInclude(nl => nl.LinkedNote)
                 .Where(n => n.Id == id || n.Id == request.TargetNoteId)
-                .Select(n => new NoteResponse
-                {
-                    Id = n.Id,
-                    Title = n.Title,
-                    Content = n.Content,
-                    Tags = (n.Tags ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries).ToList(),
-                    IsPinned = n.IsPinned,
-                    IsFavorite = n.IsFavorite,
-                    IsArchived = n.IsArchived,
-                    ArchivedAt = n.ArchivedAt,
-                    CreatedAt = n.CreatedAt,
-                    UpdatedAt = n.UpdatedAt,
-                    LinkedNoteIds = n.NoteLinks
-                        .Where(nl => !nl.IsDeleted)
-                        .Select(nl => nl.LinkedNoteId)
-                        .ToList()
-                })
                 .ToListAsync();
+
+            // Transform to API response format
+            var responses = updatedNotes.Select(n => new NoteResponse
+            {
+                Id = n.Id,
+                Title = n.Title,
+                Content = n.Content,
+                Tags = (n.Tags ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries).ToList(),
+                IsPinned = n.IsPinned,
+                IsFavorite = n.IsFavorite,
+                IsArchived = n.IsArchived,
+                ArchivedAt = n.ArchivedAt,
+                CreatedAt = n.CreatedAt,
+                UpdatedAt = n.UpdatedAt,
+                LinkedNoteIds = n.NoteLinks
+                    .Where(nl => !nl.IsDeleted)
+                    .Select(nl => nl.LinkedNoteId)
+                    .ToList(),
+                Links = n.NoteLinks
+                    .Where(nl => !nl.IsDeleted)
+                    .Select(nl => new NoteLinkDto
+                    {
+                        Source = n.Id,
+                        Target = nl.LinkedNoteId,
+                        Type = nl.LinkType,
+                        CreatedAt = nl.CreatedAt
+                    })
+                    .ToList()
+            }).ToList();
 
             return Ok(new
             {
-                sourceNote = updatedNotes.First(n => n.Id == id),
-                targetNote = updatedNotes.First(n => n.Id == request.TargetNoteId)
+                sourceNote = responses.First(n => n.Id == id),
+                targetNote = responses.First(n => n.Id == request.TargetNoteId)
             });
         }
 

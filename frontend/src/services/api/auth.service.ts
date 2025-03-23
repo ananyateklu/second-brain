@@ -1,4 +1,5 @@
 import api from './api';
+import { TokenManager } from '../../contexts/AuthContext';
 
 export interface RegisterData {
   email: string;
@@ -58,7 +59,6 @@ export const authService = {
   },
 
   logout() {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
+    TokenManager.clearTokens();
   }
 };

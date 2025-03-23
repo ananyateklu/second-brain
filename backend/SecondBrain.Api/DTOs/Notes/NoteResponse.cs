@@ -19,6 +19,14 @@ namespace SecondBrain.Api.DTOs.Notes
         public DateTime UpdatedAt { get; set; }
     }
 
+    public class NoteLinkDto
+    {
+        public string Source { get; set; } = string.Empty;
+        public string Target { get; set; } = string.Empty;
+        public string Type { get; set; } = "default";
+        public DateTime CreatedAt { get; set; }
+    }
+
     public class NoteResponse
     {
         public string Id { get; set; } = string.Empty;
@@ -35,6 +43,7 @@ namespace SecondBrain.Api.DTOs.Notes
         public DateTime? ArchivedAt { get; set; }
         public bool IsIdea { get; set; }
         public List<string> LinkedNoteIds { get; set; } = new List<string>();
+        public List<NoteLinkDto> Links { get; set; } = new List<NoteLinkDto>();
         public List<LinkedTaskDto> LinkedTasks { get; set; } = new List<LinkedTaskDto>();
         public List<LinkedReminderDto> LinkedReminders { get; set; } = new List<LinkedReminderDto>();
         
@@ -67,6 +76,16 @@ namespace SecondBrain.Api.DTOs.Notes
                 LinkedNoteIds = note.NoteLinks
                     .Where(nl => !nl.IsDeleted)
                     .Select(nl => nl.LinkedNoteId)
+                    .ToList(),
+                Links = note.NoteLinks
+                    .Where(nl => !nl.IsDeleted)
+                    .Select(nl => new NoteLinkDto
+                    {
+                        Source = note.Id,
+                        Target = nl.LinkedNoteId,
+                        Type = nl.LinkType,
+                        CreatedAt = nl.CreatedAt
+                    })
                     .ToList(),
                 LinkedTasks = note.TaskLinks
                     .Where(tl => !tl.IsDeleted && tl.Task != null)

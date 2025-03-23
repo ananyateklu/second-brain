@@ -12,6 +12,7 @@ export interface Note {
   createdAt: string;
   updatedAt: string;
   linkedNoteIds: string[];
+  links: NoteLink[];
   linkedNotes?: Note[];
   archivedAt?: string;
   linkedTasks?: LinkedTask[];
@@ -31,6 +32,7 @@ export interface NoteLink {
   source: string;
   target: string;
   type: string;
+  createdAt: string;
 }
 
 export interface LinkedTask {

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Search, Type, Lightbulb, AlertCircle } from 'lucide-react';
+import { X, Search, Type, Lightbulb, AlertCircle, Tag } from 'lucide-react';
 import { useNotes } from '../../../contexts/notesContextUtils';
 
 interface AddLinkModalProps {
@@ -14,6 +14,7 @@ export function AddLinkModal({ isOpen, onClose, sourceNoteId, onLinkAdded }: Add
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const [linkType, setLinkType] = useState('default');
 
     if (!isOpen) return null;
 
@@ -29,7 +30,7 @@ export function AddLinkModal({ isOpen, onClose, sourceNoteId, onLinkAdded }: Add
         setError('');
 
         try {
-            await addLink(sourceNoteId, targetNoteId);
+            await addLink(sourceNoteId, targetNoteId, linkType);
             onLinkAdded();
             onClose();
         } catch (err) {
@@ -39,6 +40,14 @@ export function AddLinkModal({ isOpen, onClose, sourceNoteId, onLinkAdded }: Add
             setIsLoading(false);
         }
     };
+
+    const linkTypeOptions = [
+        { id: 'default', label: 'Default' },
+        { id: 'related', label: 'Related' },
+        { id: 'reference', label: 'Reference' },
+        { id: 'child', label: 'Child' },
+        { id: 'parent', label: 'Parent' }
+    ];
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -73,6 +82,26 @@ export function AddLinkModal({ isOpen, onClose, sourceNoteId, onLinkAdded }: Add
                             />
                         </div>
 
+                        {/* Link Type Selector */}
+                        <div className="space-y-2">
+                            <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-text)]">
+                                <Tag className="w-4 h-4" />
+                                Link Type
+                            </label>
+                            <select
+                                value={linkType}
+                                onChange={(e) => setLinkType(e.target.value)}
+                                className="w-full px-3 py-2 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-accent)]/50 focus:border-transparent transition-colors text-[var(--color-text)]"
+                                disabled={isLoading}
+                            >
+                                {linkTypeOptions.map(option => (
+                                    <option key={option.id} value={option.id}>
+                                        {option.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
                         {/* Error Message */}
                         {error && (
                             <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
@@ -93,8 +122,8 @@ export function AddLinkModal({ isOpen, onClose, sourceNoteId, onLinkAdded }: Add
                                         onClick={() => handleLinkNote(note.id)}
                                     >
                                         <div className="flex items-start gap-3">
-                                            <div className={`p-1.5 rounded-lg ${note.isIdea 
-                                                ? 'bg-[var(--color-idea)]/10' 
+                                            <div className={`p-1.5 rounded-lg ${note.isIdea
+                                                ? 'bg-[var(--color-idea)]/10'
                                                 : 'bg-[var(--color-note)]/10'}`}
                                             >
                                                 {note.isIdea ? (
