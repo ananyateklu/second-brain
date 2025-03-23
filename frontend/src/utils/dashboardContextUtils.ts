@@ -102,7 +102,8 @@ export const isDashboardStat = (obj: unknown): obj is DashboardStat => {
     'ideas',
     'activity',
     'collaboration',
-    'notes-stats'
+    'notes-stats',
+    'connection-types'
   ] as const;
 
   type ValidType = typeof validTypes[number];
@@ -227,12 +228,22 @@ export const DEFAULT_STATS: DashboardStat[] = [
     graphVisible: true
   },
   {
+    id: 'connection-types',
+    type: 'connection-types',
+    title: 'Connection Breakdown',
+    icon: 'Network',
+    enabled: true,
+    order: 10,
+    size: 'large',
+    graphVisible: true
+  },
+  {
     id: 'reminders',
     type: 'reminders',
     title: 'Reminders',
     icon: 'Bell',
     enabled: false,
-    order: 10,
+    order: 11,
     size: 'small',
     graphVisible: true
   }

@@ -1,6 +1,6 @@
 export interface DashboardStat {
   id: string;
-  type: 'notes' | 'new-notes' | 'categories' | 'word-count' | 'tasks' | 'tags' | 'time' | 'ideas' | 'activity' | 'connections' | 'collaboration' | 'reminders';
+  type: 'notes' | 'new-notes' | 'categories' | 'word-count' | 'tasks' | 'tags' | 'time' | 'ideas' | 'activity' | 'connections' | 'collaboration' | 'reminders' | 'connection-types' | 'notes-stats';
   title: string;
   icon: string;
   enabled: boolean;

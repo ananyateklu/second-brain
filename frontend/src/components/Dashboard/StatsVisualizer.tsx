@@ -110,12 +110,14 @@ export const MiniBarChart = ({
     data,
     height = 30,
     color = 'var(--color-accent)',
-    animated = true
+    animated = true,
+    labels = []
 }: {
     data?: number[],
     height?: number,
     color?: string,
-    animated?: boolean
+    animated?: boolean,
+    labels?: string[]
 }) => {
     const { theme } = useTheme();
 
@@ -136,31 +138,50 @@ export const MiniBarChart = ({
 
     const maxValue = Math.max(...chartData, 1);
 
-    return (
-        <div className="w-full flex items-end justify-between gap-[2px] h-full">
-            {chartData.map((value, index) => {
-                const normalizedHeight = (value / maxValue) * height;
+    // Default labels if none provided
+    const displayLabels = labels.length === chartData.length
+        ? labels
+        : chartData.map((_, i) => `Item ${i + 1}`);
 
-                return (
-                    <motion.div
-                        key={index}
-                        className="rounded-t-sm"
-                        style={{
-                            backgroundColor: color,
-                            width: `${100 / chartData.length - 3}%`,
-                            height: `${normalizedHeight}px`,
-                            opacity: theme === 'dark' || theme === 'midnight' ? 0.8 : 0.7
-                        }}
-                        initial={{ height: 0 }}
-                        animate={{ height: `${normalizedHeight}px` }}
-                        transition={{
-                            delay: animated ? index * 0.05 : 0,
-                            duration: 0.5,
-                            ease: "easeOut"
-                        }}
-                    />
-                );
-            })}
+    return (
+        <div className="w-full flex flex-col h-full">
+            <div className="flex items-end justify-between gap-[2px] flex-grow">
+                {chartData.map((value, index) => {
+                    const normalizedHeight = (value / maxValue) * (height - 12); // Leave space for labels
+
+                    return (
+                        <div key={index} className="flex flex-col items-center">
+                            <motion.div
+                                className="rounded-t-sm"
+                                style={{
+                                    backgroundColor: color,
+                                    width: `${100 / chartData.length - 3}%`,
+                                    height: `${normalizedHeight}px`,
+                                    opacity: theme === 'dark' || theme === 'midnight' ? 0.8 : 0.7
+                                }}
+                                initial={{ height: 0 }}
+                                animate={{ height: `${normalizedHeight}px` }}
+                                transition={{
+                                    delay: animated ? index * 0.05 : 0,
+                                    duration: 0.5,
+                                    ease: "easeOut"
+                                }}
+                            />
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* Labels row */}
+            {labels.length > 0 && (
+                <div className="flex justify-between items-center mt-1 pt-1 border-t border-gray-200 dark:border-gray-700 text-[8px] text-[var(--color-textSecondary)]">
+                    {displayLabels.map((label, i) => (
+                        <div key={i} className="text-center px-1 truncate" style={{ width: `${100 / chartData.length}%` }}>
+                            {label}
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 };
@@ -451,6 +472,102 @@ export const ActivityHeatmap = ({
                         {i % 2 === 0 && month}
                     </div>
                 ))}
+            </div>
+        </div>
+    );
+};
+
+// Connection diagram for visualizing relationships between different item types
+export const ConnectionDiagram = ({
+    data = [0, 0, 0, 0],
+    color = 'var(--color-accent)'
+}: {
+    data?: number[],
+    color?: string
+}) => {
+    const { theme } = useTheme();
+    const isDark = theme === 'dark' || theme === 'midnight';
+
+    // Check if we have actual data to show
+    const hasData = data && data.some(value => value > 0);
+
+    // If no data, show minimal representation
+    if (!hasData) {
+        return (
+            <div className="w-full flex items-center justify-center h-full opacity-30">
+                <div className="h-[1px] w-3/4 bg-gray-300 dark:bg-gray-700"></div>
+            </div>
+        );
+    }
+
+    // Calculate the total connections and percentages
+    const total = data.reduce((sum, val) => sum + val, 0);
+    const percentages = data.map(val => Math.round((val / total) * 100));
+
+    // Get colors for each connection type
+    const getTypeColor = (index: number) => {
+        if (isDark) {
+            // Colors for dark mode with transparency
+            switch (index) {
+                case 0: return 'rgba(59, 130, 246, 0.75)'; // Notes - blue
+                case 1: return 'rgba(34, 197, 94, 0.75)';  // Tasks - green
+                case 2: return 'rgba(236, 72, 153, 0.75)'; // Reminders - pink
+                case 3: return 'rgba(245, 158, 11, 0.75)'; // Ideas - amber
+                default: return color;
+            }
+        } else {
+            // Colors for light mode with transparency
+            switch (index) {
+                case 0: return 'rgba(37, 99, 235, 0.75)'; // Notes - blue
+                case 1: return 'rgba(22, 163, 74, 0.75)'; // Tasks - green
+                case 2: return 'rgba(219, 39, 119, 0.75)'; // Reminders - pink
+                case 3: return 'rgba(217, 119, 6, 0.75)';  // Ideas - amber
+                default: return color;
+            }
+        }
+    };
+
+    return (
+        <div className="h-full w-full flex flex-col justify-center">
+            {/* Main visualization - horizontal bar chart with percentages */}
+            <div className="relative flex flex-col h-full w-full">
+                {/* Create a pill-shaped progress bar */}
+                <div className="flex h-3 w-full rounded-full overflow-hidden shadow-sm">
+                    {/* Add subtle shadow overlay for depth */}
+                    <div className="absolute inset-0 shadow-inner pointer-events-none"></div>
+
+                    {data.map((value, index) => {
+                        if (value === 0) return null;
+                        const typeColor = getTypeColor(index);
+                        const percent = percentages[index];
+
+                        return (
+                            <motion.div
+                                key={index}
+                                className="h-full flex items-center justify-center relative"
+                                style={{
+                                    width: `${percent}%`,
+                                    background: `linear-gradient(180deg, ${typeColor} 0%, ${typeColor.replace(/[\d.]+\)$/, '0.7)')} 100%)`,
+                                    boxShadow: 'inset 0 -1px 0 rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.25)'
+                                }}
+                                initial={{ width: 0, opacity: 0 }}
+                                animate={{ width: `${percent}%`, opacity: 1 }}
+                                transition={{ duration: 0.7, delay: index * 0.1 }}
+                            >
+                                {percent >= 10 && (
+                                    <span
+                                        className="text-[9px] font-bold text-white"
+                                        style={{
+                                            textShadow: '0px 0px 3px rgba(0,0,0,0.4)'
+                                        }}
+                                    >
+                                        {percent}%
+                                    </span>
+                                )}
+                            </motion.div>
+                        );
+                    })}
+                </div>
             </div>
         </div>
     );

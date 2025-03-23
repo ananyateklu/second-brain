@@ -12,7 +12,8 @@ import {
   MiniLineChart,
   MiniBarChart,
   ProgressIndicator,
-  ActivityHeatmap
+  ActivityHeatmap,
+  ConnectionDiagram
 } from './StatsVisualizer';
 
 interface StyledWelcomeBarProps {
@@ -142,6 +143,7 @@ export const StyledStatCard = ({
         return 'line';
       case 'activity':
       case 'categories':
+      case 'connection-types':
         return 'bar';
       case 'reminders':
         return 'progress';
@@ -284,7 +286,12 @@ export const StyledStatCard = ({
                 /* For other chart types, check if there's data */
                 statValue.metadata?.activityData && statValue.metadata.activityData.some(value => value > 0) ? (
                   <>
-                    {chartType === 'line' && (
+                    {stat.type === 'connection-types' ? (
+                      <ConnectionDiagram
+                        data={statValue.metadata.activityData}
+                        color={getChartColor(stat.type, theme)}
+                      />
+                    ) : chartType === 'line' && (
                       <MiniLineChart
                         height={Number(size.chartHeight.replace('h-', ''))}
                         color={getChartColor(stat.type, theme)}
@@ -292,12 +299,13 @@ export const StyledStatCard = ({
                         data={statValue.metadata?.activityData}
                       />
                     )}
-                    {chartType === 'bar' && (
+                    {chartType === 'bar' && stat.type !== 'connection-types' && (
                       <MiniBarChart
                         height={Number(size.chartHeight.replace('h-', ''))}
                         color={getChartColor(stat.type, theme)}
                         animated={true}
                         data={statValue.metadata?.activityData}
+                        labels={[]}
                       />
                     )}
                   </>
@@ -481,6 +489,8 @@ const getChartColor = (type: string, theme: string) => {
       return theme === 'dark' || theme === 'midnight' ? '#a78bfa' : '#8b5cf6';
     case 'word-count':
       return theme === 'dark' || theme === 'midnight' ? '#f87171' : '#dc2626';
+    case 'connection-types':
+      return theme === 'dark' || theme === 'midnight' ? '#06b6d4' : '#0891b2'; // Cyan color for connection types
     default:
       return 'var(--color-accent)';
   }

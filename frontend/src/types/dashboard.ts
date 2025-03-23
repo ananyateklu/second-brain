@@ -11,7 +11,8 @@ export type DashboardStatType =
   | 'ideas'
   | 'activity'
   | 'collaboration'
-  | 'notes-stats';
+  | 'notes-stats'
+  | 'connection-types';
 
 export type StatType =
   | 'notes'
@@ -26,7 +27,8 @@ export type StatType =
   | 'categories'
   | 'new-notes'
   | 'word-count'
-  | 'notes-stats';
+  | 'notes-stats'
+  | 'connection-types';
 export type ChartType = 'line' | 'bar' | 'progress' | 'none';
 
 export interface DashboardStat {
