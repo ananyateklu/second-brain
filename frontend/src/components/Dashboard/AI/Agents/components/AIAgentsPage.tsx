@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bot, Settings, Loader } from 'lucide-react';
+import { Bot, Settings } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAI } from '../../../../../contexts/AIContext';
 import { useTheme } from '../../../../../contexts/themeContextUtils';
@@ -9,6 +9,7 @@ import { AgentSelection } from './AgentSelection';
 import { ChatInterface } from './ChatInterface';
 import { handleAgentSelect, handleNewConversation, getCurrentConversation, handleSendMessage, handleDeleteConversation } from '../utils/handlers';
 import { getBotIcon } from '../utils/iconUtils';
+import { LoadingContent } from '../../Messages/LoadingContent';
 
 export function AIAgentsPage() {
     const { theme } = useTheme();
@@ -129,9 +130,8 @@ export function AIAgentsPage() {
     if (isLoading) {
         return (
             <div className="flex items-center justify-center h-[calc(100vh-13rem)]">
-                <div className="flex items-center gap-2">
-                    <Loader className="w-6 h-6 animate-spin text-[var(--color-accent)]" />
-                    <span className="text-[var(--color-textSecondary)]">Loading agents...</span>
+                <div className="w-80">
+                    <LoadingContent type="text" themeColor="var(--color-accent)" />
                 </div>
             </div>
         );

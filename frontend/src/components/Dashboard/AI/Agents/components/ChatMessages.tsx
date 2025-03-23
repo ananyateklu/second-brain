@@ -2,9 +2,9 @@ import React from 'react';
 import { AIModel } from '../../../../../types/ai';
 import { AgentConversation } from '../types';
 import { MessageBubble } from './MessageBubble';
-import { TypingAnimation } from './TypingAnimation';
 import { handleMessageReaction, handleMessageCopy } from '../utils/handlers';
 import { useTheme } from '../../../../../contexts/themeContextUtils';
+import { LoadingContent } from '../../Messages/LoadingContent';
 
 interface ChatMessagesProps {
     conversation: AgentConversation | null | undefined;
@@ -76,7 +76,7 @@ export const ChatMessages = ({
                 {/* Typing Indicator */}
                 {isSending && (
                     <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2 duration-300 px-4 py-2">
-                        <TypingAnimation agentColor={selectedAgent.color} />
+                        <LoadingContent type="text" themeColor={selectedAgent.color} />
                     </div>
                 )}
 
