@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Reminder } from '../../../../api/types/reminder';
-import { Type, Calendar, RepeatIcon, AlignLeft } from 'lucide-react';
+import { Type, Calendar, RepeatIcon, AlignLeft, Tag as TagIcon, X } from 'lucide-react';
 import { Input } from '../../../../components/shared/Input';
 import { TextArea } from '../../../../components/shared/TextArea';
 
@@ -17,6 +17,8 @@ export function MainContent({ reminder, onUpdate }: MainContentProps) {
     const [dueDateTime, setDueDateTime] = useState(reminder.dueDateTime);
     const [repeatInterval, setRepeatInterval] = useState<RepeatIntervalType | undefined>(reminder.repeatInterval);
     const [customRepeatPattern, setCustomRepeatPattern] = useState(reminder.customRepeatPattern ?? '');
+    const [tags, setTags] = useState<string[]>(reminder.tags || []);
+    const [tagInput, setTagInput] = useState('');
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -25,6 +27,7 @@ export function MainContent({ reminder, onUpdate }: MainContentProps) {
         setDueDateTime(reminder.dueDateTime);
         setRepeatInterval(reminder.repeatInterval);
         setCustomRepeatPattern(reminder.customRepeatPattern ?? '');
+        setTags(reminder.tags || []);
     }, [reminder]);
 
     const handleTitleChange = (value: string) => {
@@ -34,56 +37,54 @@ export function MainContent({ reminder, onUpdate }: MainContentProps) {
         } else {
             setError(null);
         }
-        onUpdate({
-            title: value,
-            description: description || undefined,
-            dueDateTime,
-            repeatInterval,
-            customRepeatPattern: customRepeatPattern || undefined
-        });
+        updateReminder({ title: value });
     };
 
     const handleDescriptionChange = (value: string) => {
         setDescription(value);
-        onUpdate({
-            title,
-            description: value || undefined,
-            dueDateTime,
-            repeatInterval,
-            customRepeatPattern: customRepeatPattern || undefined
-        });
+        updateReminder({ description: value || undefined });
     };
 
     const handleDueDateTimeChange = (value: string) => {
         setDueDateTime(value);
-        onUpdate({
-            title,
-            description: description || undefined,
-            dueDateTime: value,
-            repeatInterval,
-            customRepeatPattern: customRepeatPattern || undefined
-        });
+        updateReminder({ dueDateTime: value });
     };
 
     const handleRepeatIntervalChange = (value: RepeatIntervalType | undefined) => {
         setRepeatInterval(value);
-        onUpdate({
-            title,
-            description: description || undefined,
-            dueDateTime,
-            repeatInterval: value,
-            customRepeatPattern: customRepeatPattern || undefined
-        });
+        updateReminder({ repeatInterval: value });
     };
 
     const handleCustomPatternChange = (value: string) => {
         setCustomRepeatPattern(value);
+        updateReminder({ customRepeatPattern: value || undefined });
+    };
+
+    const handleAddTag = () => {
+        const trimmedTag = tagInput.trim();
+        if (trimmedTag && !tags.includes(trimmedTag)) {
+            const newTags = [...tags, trimmedTag];
+            setTags(newTags);
+            setTagInput('');
+            updateReminder({ tags: newTags });
+        }
+    };
+
+    const handleRemoveTag = (tagToRemove: string) => {
+        const newTags = tags.filter(tag => tag !== tagToRemove);
+        setTags(newTags);
+        updateReminder({ tags: newTags });
+    };
+
+    const updateReminder = (updates: Partial<Reminder>) => {
         onUpdate({
-            title,
-            description: description || undefined,
-            dueDateTime,
-            repeatInterval,
-            customRepeatPattern: value || undefined
+            ...updates,
+            title: updates.title ?? title,
+            description: updates.description ?? (description || undefined),
+            dueDateTime: updates.dueDateTime ?? dueDateTime,
+            repeatInterval: updates.repeatInterval ?? repeatInterval,
+            customRepeatPattern: updates.customRepeatPattern ?? (customRepeatPattern || undefined),
+            tags: updates.tags ?? tags
         });
     };
 
@@ -165,6 +166,56 @@ export function MainContent({ reminder, onUpdate }: MainContentProps) {
                         className="focus:ring-[var(--color-reminder)]"
                     />
                 )}
+
+                {/* Tags */}
+                <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-[var(--color-textSecondary)]">
+                        Tags
+                    </label>
+                    <div className="flex gap-2 items-center">
+                        <Input
+                            label=""
+                            icon={TagIcon}
+                            value={tagInput}
+                            onChange={(e) => setTagInput(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    handleAddTag();
+                                }
+                            }}
+                            placeholder="Add a tag"
+                            className="w-64 focus:ring-[var(--color-reminder)]"
+                        />
+                        <button
+                            type="button"
+                            onClick={handleAddTag}
+                            disabled={!tagInput.trim()}
+                            className="h-[38px] px-3 bg-[var(--color-reminder)] hover:bg-[var(--color-reminder)]/90 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs font-medium"
+                        >
+                            Add
+                        </button>
+                    </div>
+                    {tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                            {tags.map((tag) => (
+                                <span
+                                    key={tag}
+                                    className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-[var(--color-reminder)]/10 text-[var(--color-reminder)] rounded-full text-xs"
+                                >
+                                    {tag}
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveTag(tag)}
+                                        className="p-0.5 hover:bg-[var(--color-reminder)]/20 rounded-full transition-colors"
+                                    >
+                                        <X className="w-2.5 h-2.5" />
+                                    </button>
+                                </span>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );
