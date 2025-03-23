@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useReminders } from '../../../../contexts/remindersContextUtils';
+import { useNotes } from '../../../../contexts/notesContextUtils';
 import { Reminder } from '../../../../api/types/reminder';
 import { Save } from 'lucide-react';
 import { Header } from './Header';
@@ -16,6 +17,7 @@ interface EditReminderModalProps {
 
 export function EditReminderModal({ reminder: initialReminder, isOpen, onClose }: EditReminderModalProps) {
   const { updateReminder, deleteReminder, addReminderLink, removeReminderLink } = useReminders();
+  const { notes } = useNotes();
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isAddLinkOpen, setIsAddLinkOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -62,11 +64,15 @@ export function EditReminderModal({ reminder: initialReminder, isOpen, onClose }
   const handleAddLink = async (itemId: string, itemType: 'note' | 'idea') => {
     try {
       await addReminderLink(reminder.id, itemId, itemType);
+
+      // Find the note or idea to get its title
+      const linkedItem = notes.find(note => note.id === itemId);
+
       const updatedReminder = { ...reminder };
       updatedReminder.linkedItems = [...reminder.linkedItems, {
         id: itemId,
         type: itemType,
-        title: '', // This will be updated when the state refreshes
+        title: linkedItem?.title || 'Untitled', // Use the actual title from the notes context
         createdAt: new Date().toISOString()
       }];
       setReminder(updatedReminder);
@@ -78,7 +84,10 @@ export function EditReminderModal({ reminder: initialReminder, isOpen, onClose }
 
   const handleUnlink = async (itemId: string) => {
     try {
+      // Call the API to remove the link
       await removeReminderLink(reminder.id, itemId);
+
+      // Update local state immediately to reflect the change without requiring a page reload
       const updatedReminder = { ...reminder };
       updatedReminder.linkedItems = reminder.linkedItems.filter(item => item.id !== itemId);
       setReminder(updatedReminder);

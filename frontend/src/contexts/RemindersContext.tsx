@@ -225,8 +225,9 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
         itemType: linkType as "note" | "idea",
       });
 
+
       // Update the reminders state with the new link
-      setReminders(prev => prev.map(reminder => 
+      setReminders(prev => prev.map(reminder =>
         reminder.id === reminderId ? updatedReminder : reminder
       ));
 
@@ -252,7 +253,7 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
       const updatedReminder = await reminderService.removeReminderLink(reminderId, linkedItemId);
 
       // Update the reminders state by removing the link
-      setReminders(prev => prev.map(reminder => 
+      setReminders(prev => prev.map(reminder =>
         reminder.id === reminderId ? updatedReminder : reminder
       ));
 
