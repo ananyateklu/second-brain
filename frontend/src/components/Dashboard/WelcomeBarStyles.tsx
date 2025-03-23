@@ -484,9 +484,9 @@ const getChartColor = (type: string, theme: string) => {
     case 'tasks':
       return theme === 'dark' || theme === 'midnight' ? '#22c55e' : '#16a34a';
     case 'reminders':
-      return theme === 'dark' || theme === 'midnight' ? '#ec4899' : '#db2777';
-    case 'activity':
       return theme === 'dark' || theme === 'midnight' ? '#a78bfa' : '#8b5cf6';
+    case 'activity':
+      return theme === 'dark' || theme === 'midnight' ? '#6366f1' : '#4f46e5';
     case 'word-count':
       return theme === 'dark' || theme === 'midnight' ? '#f87171' : '#dc2626';
     case 'connection-types':

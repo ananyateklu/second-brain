@@ -509,19 +509,19 @@ export const ConnectionDiagram = ({
         if (isDark) {
             // Colors for dark mode with transparency
             switch (index) {
-                case 0: return 'rgba(59, 130, 246, 0.75)'; // Notes - blue
-                case 1: return 'rgba(34, 197, 94, 0.75)';  // Tasks - green
-                case 2: return 'rgba(236, 72, 153, 0.75)'; // Reminders - pink
-                case 3: return 'rgba(245, 158, 11, 0.75)'; // Ideas - amber
+                case 0: return 'rgba(59, 130, 246, 0.95)'; // Notes - blue
+                case 1: return 'rgba(34, 197, 94, 0.95)';  // Tasks - green
+                case 2: return 'rgba(167, 139, 250, 0.95)'; // Reminders - purple
+                case 3: return 'rgba(245, 158, 11, 0.95)'; // Ideas - amber
                 default: return color;
             }
         } else {
             // Colors for light mode with transparency
             switch (index) {
-                case 0: return 'rgba(37, 99, 235, 0.75)'; // Notes - blue
-                case 1: return 'rgba(22, 163, 74, 0.75)'; // Tasks - green
-                case 2: return 'rgba(219, 39, 119, 0.75)'; // Reminders - pink
-                case 3: return 'rgba(217, 119, 6, 0.75)';  // Ideas - amber
+                case 0: return 'rgba(37, 99, 235, 0.95)'; // Notes - blue
+                case 1: return 'rgba(22, 163, 74, 0.95)'; // Tasks - green
+                case 2: return 'rgba(139, 92, 246, 0.95)'; // Reminders - purple
+                case 3: return 'rgba(217, 119, 6, 0.95)';  // Ideas - amber
                 default: return color;
             }
         }
@@ -532,7 +532,7 @@ export const ConnectionDiagram = ({
             {/* Main visualization - horizontal bar chart with percentages */}
             <div className="relative flex flex-col h-full w-full">
                 {/* Create a pill-shaped progress bar */}
-                <div className="flex h-3 w-full rounded-full overflow-hidden shadow-sm">
+                <div className="flex h-2.5 w-full rounded-full overflow-hidden shadow-sm">
                     {/* Add subtle shadow overlay for depth */}
                     <div className="absolute inset-0 shadow-inner pointer-events-none"></div>
 
