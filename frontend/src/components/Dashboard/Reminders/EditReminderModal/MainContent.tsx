@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Reminder } from '../../../../api/types/reminder';
-import { Type, Calendar, RepeatIcon } from 'lucide-react';
+import { Type, Calendar, RepeatIcon, AlignLeft } from 'lucide-react';
+import { Input } from '../../../../components/shared/Input';
+import { TextArea } from '../../../../components/shared/TextArea';
 
 interface MainContentProps {
     reminder: Reminder;
@@ -95,34 +97,26 @@ export function MainContent({ reminder, onUpdate }: MainContentProps) {
                 )}
 
                 {/* Title */}
-                <div className="space-y-1.5">
-                    <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-textSecondary)]">
-                        <Type className="w-4 h-4" />
-                        Title
-                    </label>
-                    <input
-                        type="text"
-                        value={title}
-                        onChange={(e) => handleTitleChange(e.target.value)}
-                        className="w-full h-[38px] px-3 bg-[#1e293b] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-reminder)] focus:border-transparent text-[var(--color-text)] placeholder-[var(--color-textSecondary)] disabled:opacity-50 transition-colors"
-                        placeholder="Enter reminder title"
-                    />
-                </div>
+                <Input
+                    label="Title"
+                    icon={Type}
+                    value={title}
+                    onChange={(e) => handleTitleChange(e.target.value)}
+                    className="focus:ring-[var(--color-reminder)]"
+                    placeholder="Enter reminder title"
+                    error={error ?? undefined}
+                />
 
                 {/* Description */}
-                <div className="space-y-1.5">
-                    <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-textSecondary)]">
-                        <Type className="w-4 h-4" />
-                        Description
-                    </label>
-                    <textarea
-                        value={description}
-                        onChange={(e) => handleDescriptionChange(e.target.value)}
-                        rows={3}
-                        className="w-full min-h-[120px] px-3 py-2 bg-[#1e293b] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-reminder)] focus:border-transparent text-[var(--color-text)] placeholder-[var(--color-textSecondary)] resize-none disabled:opacity-50 transition-colors"
-                        placeholder="Add a description"
-                    />
-                </div>
+                <TextArea
+                    label="Description"
+                    icon={AlignLeft}
+                    value={description}
+                    onChange={(e) => handleDescriptionChange(e.target.value)}
+                    rows={3}
+                    className="focus:ring-[var(--color-reminder)]"
+                    placeholder="Add a description"
+                />
 
                 <div className="grid grid-cols-2 gap-4">
                     {/* Due Date and Time */}
@@ -162,19 +156,14 @@ export function MainContent({ reminder, onUpdate }: MainContentProps) {
 
                 {/* Custom Repeat Pattern */}
                 {repeatInterval === 'Custom' && (
-                    <div className="space-y-1.5">
-                        <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-textSecondary)]">
-                            <RepeatIcon className="w-4 h-4" />
-                            Custom Repeat Pattern
-                        </label>
-                        <input
-                            type="text"
-                            value={customRepeatPattern}
-                            onChange={(e) => handleCustomPatternChange(e.target.value)}
-                            placeholder="e.g., Every 2 weeks"
-                            className="w-full h-[38px] px-3 bg-[#1e293b] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-reminder)] focus:border-transparent text-[var(--color-text)] placeholder-[var(--color-textSecondary)] disabled:opacity-50 transition-colors"
-                        />
-                    </div>
+                    <Input
+                        label="Custom Repeat Pattern"
+                        icon={RepeatIcon}
+                        value={customRepeatPattern}
+                        onChange={(e) => handleCustomPatternChange(e.target.value)}
+                        placeholder="e.g., Every 2 weeks"
+                        className="focus:ring-[var(--color-reminder)]"
+                    />
                 )}
             </div>
         </div>

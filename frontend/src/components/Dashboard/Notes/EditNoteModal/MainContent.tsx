@@ -1,7 +1,8 @@
-import { Type, Tag as TagIcon, X, Bell, Plus } from 'lucide-react';
+import { Type, Tag as TagIcon, X, Bell, Plus, AlignLeft } from 'lucide-react';
 import { LinkedReminder } from '../../../../types/note';
-import { Editor } from '../../../../components/shared/Editor';
 import { LinkedRemindersPanel } from './LinkedRemindersPanel';
+import { Input } from '../../../../components/shared/Input';
+import { TextArea } from '../../../../components/shared/TextArea';
 
 interface MainContentProps {
   title: string;
@@ -47,35 +48,27 @@ export function MainContent({
         )}
 
         {/* Title */}
-        <div className="space-y-1.5">
-          <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-textSecondary)]">
-            <Type className="w-4 h-4" />
-            Title
-          </label>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => onTitleChange(e.target.value)}
-            disabled={isLoading}
-            className="w-full h-[38px] px-3 bg-[#1e293b] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-note)] focus:border-transparent text-[var(--color-text)] placeholder-[var(--color-textSecondary)] disabled:opacity-50 transition-colors"
-            placeholder="Enter note title"
-          />
-        </div>
+        <Input
+          label="Title"
+          icon={Type}
+          value={title}
+          onChange={(e) => onTitleChange(e.target.value)}
+          disabled={isLoading}
+          placeholder="Enter note title"
+          className="focus:ring-[var(--color-note)]"
+        />
 
         {/* Content */}
-        <div className="space-y-1.5">
-          <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-textSecondary)]">
-            <Type className="w-4 h-4" />
-            Content
-          </label>
-          <div className="min-h-[220px] max-h-[350px] bg-[#1e293b] border border-[var(--color-border)] rounded-lg overflow-hidden">
-            <Editor
-              value={content}
-              onChange={onContentChange}
-              placeholder="Write your note here..."
-            />
-          </div>
-        </div>
+        <TextArea
+          label="Content"
+          icon={AlignLeft}
+          value={content}
+          onChange={(e) => onContentChange(e.target.value)}
+          rows={6}
+          className="focus:ring-[var(--color-note)] min-h-[220px]"
+          placeholder="Write your note here..."
+          disabled={isLoading}
+        />
 
         {/* Linked Reminders */}
         <div className="space-y-1.5">
@@ -106,13 +99,13 @@ export function MainContent({
 
         {/* Tags */}
         <div className="space-y-1.5">
-          <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-textSecondary)]">
-            <TagIcon className="w-4 h-4" />
+          <label className="text-sm font-medium text-[var(--color-textSecondary)]">
             Tags
           </label>
           <div className="flex gap-2 items-center">
-            <input
-              type="text"
+            <Input
+              label=""
+              icon={TagIcon}
               value={tagInput}
               onChange={(e) => onTagInputChange(e.target.value)}
               onKeyDown={(e) => {
@@ -123,7 +116,7 @@ export function MainContent({
               }}
               disabled={isLoading}
               placeholder="Add a tag"
-              className="w-64 h-[38px] px-3 bg-[#1e293b] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-note)] focus:border-transparent text-[var(--color-text)] placeholder-[var(--color-textSecondary)] disabled:opacity-50 transition-colors"
+              className="w-64 focus:ring-[var(--color-note)]"
             />
             <button
               type="button"

@@ -1,5 +1,7 @@
-import { Type, Calendar, Tag as TagIcon, X } from 'lucide-react';
+import { Type, Calendar, Tag as TagIcon, X, AlignLeft } from 'lucide-react';
 import { useState } from 'react';
+import { Input } from '../../../../components/shared/Input';
+import { TextArea } from '../../../../components/shared/TextArea';
 
 interface MainContentProps {
     title: string;
@@ -54,36 +56,27 @@ export function MainContent({
                 )}
 
                 {/* Title */}
-                <div className="space-y-1.5">
-                    <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-textSecondary)]">
-                        <Type className="w-4 h-4" />
-                        Title
-                    </label>
-                    <input
-                        type="text"
-                        value={title}
-                        onChange={(e) => onTitleChange(e.target.value)}
-                        className="w-full h-[38px] px-3 bg-[#1e293b] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-task)] focus:border-transparent text-[var(--color-text)] placeholder-[var(--color-textSecondary)] disabled:opacity-50 transition-colors"
-                        placeholder="Enter task title"
-                        disabled={isLoading}
-                    />
-                </div>
+                <Input
+                    label="Title"
+                    icon={Type}
+                    value={title}
+                    onChange={(e) => onTitleChange(e.target.value)}
+                    className="focus:ring-[var(--color-task)]"
+                    placeholder="Enter task title"
+                    disabled={isLoading}
+                />
 
                 {/* Description */}
-                <div className="space-y-1.5">
-                    <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-textSecondary)]">
-                        <Type className="w-4 h-4" />
-                        Description
-                    </label>
-                    <textarea
-                        value={description}
-                        onChange={(e) => onDescriptionChange(e.target.value)}
-                        rows={3}
-                        className="w-full min-h-[120px] px-3 py-2 bg-[#1e293b] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-task)] focus:border-transparent text-[var(--color-text)] placeholder-[var(--color-textSecondary)] resize-none disabled:opacity-50 transition-colors"
-                        placeholder="Add a description"
-                        disabled={isLoading}
-                    />
-                </div>
+                <TextArea
+                    label="Description"
+                    icon={AlignLeft}
+                    value={description}
+                    onChange={(e) => onDescriptionChange(e.target.value)}
+                    rows={3}
+                    className="focus:ring-[var(--color-task)]"
+                    placeholder="Add a description"
+                    disabled={isLoading}
+                />
 
                 <div className="grid grid-cols-2 gap-4">
                     {/* Left Column */}
@@ -181,13 +174,13 @@ export function MainContent({
 
                         {/* Tags */}
                         <div className="space-y-1.5">
-                            <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-textSecondary)]">
-                                <TagIcon className="w-4 h-4" />
+                            <label className="text-sm font-medium text-[var(--color-textSecondary)]">
                                 Tags
                             </label>
                             <div className="flex gap-2 items-center">
-                                <input
-                                    type="text"
+                                <Input
+                                    label=""
+                                    icon={TagIcon}
                                     value={tagInput}
                                     onChange={(e) => setTagInput(e.target.value)}
                                     onKeyDown={(e) => {
@@ -198,7 +191,7 @@ export function MainContent({
                                     }}
                                     placeholder="Add a tag"
                                     disabled={isLoading}
-                                    className="w-64 h-[38px] px-3 bg-[#1e293b] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-task)] focus:border-transparent text-[var(--color-text)] placeholder-[var(--color-textSecondary)] disabled:opacity-50 transition-colors"
+                                    className="w-64 focus:ring-[var(--color-task)]"
                                 />
                                 <button
                                     type="button"
