@@ -22,16 +22,20 @@ export function Input({
   ...props
 }: InputProps) {
   const [isFocused, setIsFocused] = useState(false);
-  const { colors } = useTheme();
+  const { colors, theme } = useTheme();
 
   // Get validation border color
   const validationColor = error ? (requiredIndicatorColor ?? 'rgb(239, 68, 68)') : undefined;
 
   const getBackgroundColor = () => {
-    return '#1e293b'; // Match EditNoteModal style
+    if (theme === 'dark') return '#111827';
+    if (theme === 'midnight') return '#1e293b';
+    return colors.surface; // Use surface color for light theme
   };
 
   const getBorderColor = () => {
+    if (theme === 'midnight') return 'rgba(255, 255, 255, 0.05)';
+    if (theme === 'dark') return 'rgba(75, 85, 99, 0.3)'; // Less visible gray for dark mode
     return 'var(--color-border)';
   };
 

@@ -3,6 +3,7 @@ import { Reminder } from '../../../../api/types/reminder';
 import { Type, Calendar, RepeatIcon, AlignLeft, Tag as TagIcon, X } from 'lucide-react';
 import { Input } from '../../../../components/shared/Input';
 import { TextArea } from '../../../../components/shared/TextArea';
+import { useTheme } from '../../../../contexts/themeContextUtils';
 
 interface MainContentProps {
     reminder: Reminder;
@@ -20,6 +21,19 @@ export function MainContent({ reminder, onUpdate }: MainContentProps) {
     const [tags, setTags] = useState<string[]>(reminder.tags || []);
     const [tagInput, setTagInput] = useState('');
     const [error, setError] = useState<string | null>(null);
+    const { theme } = useTheme();
+
+    const getBorderStyle = () => {
+        if (theme === 'midnight') return 'border-white/5';
+        if (theme === 'dark') return 'border-gray-700/30';
+        return 'border-[var(--color-border)]';
+    };
+
+    const getBackgroundColor = () => {
+        if (theme === 'dark') return 'bg-[#111827]';
+        if (theme === 'midnight') return 'bg-[#1e293b]';
+        return 'bg-[var(--color-surface)]';
+    };
 
     useEffect(() => {
         setTitle(reminder.title);
@@ -130,7 +144,7 @@ export function MainContent({ reminder, onUpdate }: MainContentProps) {
                             type="datetime-local"
                             value={dueDateTime}
                             onChange={(e) => handleDueDateTimeChange(e.target.value)}
-                            className="w-full h-[38px] px-3 bg-[#1e293b] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-reminder)] focus:border-transparent text-[var(--color-text)] disabled:opacity-50 transition-colors"
+                            className={`w-full h-[38px] px-3 ${getBackgroundColor()} border ${getBorderStyle()} rounded-lg focus:ring-2 focus:ring-[var(--color-reminder)] focus:border-transparent text-[var(--color-text)] disabled:opacity-50 transition-colors`}
                         />
                     </div>
 
@@ -143,7 +157,7 @@ export function MainContent({ reminder, onUpdate }: MainContentProps) {
                         <select
                             value={repeatInterval ?? ''}
                             onChange={(e) => handleRepeatIntervalChange(e.target.value ? e.target.value as RepeatIntervalType : undefined)}
-                            className="w-full h-[38px] px-3 bg-[#1e293b] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-reminder)] focus:border-transparent text-[var(--color-text)] disabled:opacity-50 transition-colors"
+                            className={`w-full h-[38px] px-3 ${getBackgroundColor()} border ${getBorderStyle()} rounded-lg focus:ring-2 focus:ring-[var(--color-reminder)] focus:border-transparent text-[var(--color-text)] disabled:opacity-50 transition-colors`}
                         >
                             <option value="">No Repeat</option>
                             <option value="Daily">Daily</option>

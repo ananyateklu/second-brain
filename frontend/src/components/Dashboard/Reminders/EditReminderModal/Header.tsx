@@ -1,5 +1,6 @@
 import { Trash2, Bell, X } from 'lucide-react';
 import { Reminder } from '../../../../api/types/reminder';
+import { useTheme } from '../../../../contexts/themeContextUtils';
 
 interface HeaderProps {
   reminder: Reminder;
@@ -14,6 +15,14 @@ export function Header({
   onClose,
   isSaving = false
 }: HeaderProps) {
+  const { theme } = useTheme();
+
+  const getBorderStyle = () => {
+    if (theme === 'midnight') return 'border-white/5';
+    if (theme === 'dark') return 'border-gray-700/30';
+    return 'border-[var(--color-border)]';
+  };
+
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -21,7 +30,7 @@ export function Header({
   };
 
   return (
-    <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)] bg-[var(--color-surface)]">
+    <div className={`shrink-0 flex items-center justify-between px-4 py-3 border-b ${getBorderStyle()} bg-[var(--color-surface)]`}>
       <div className="flex items-center gap-2.5">
         <div className="p-1.5 bg-[var(--color-reminder)]/10 rounded-lg">
           <Bell className="w-5 h-5 text-[var(--color-reminder)]" />

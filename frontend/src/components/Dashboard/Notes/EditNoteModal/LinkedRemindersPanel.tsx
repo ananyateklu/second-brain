@@ -5,6 +5,7 @@ import { useReminders } from '../../../../contexts/remindersContextUtils';
 import { EditReminderModal } from '../../Reminders/EditReminderModal';
 import { useState } from 'react';
 import type { Reminder } from '../../../../contexts/remindersContextUtils';
+import { useTheme } from '../../../../contexts/themeContextUtils';
 
 interface MiniReminderCardProps {
   reminder: Reminder;
@@ -13,10 +14,23 @@ interface MiniReminderCardProps {
 }
 
 function MiniReminderCard({ reminder, onUnlink, onClick }: MiniReminderCardProps) {
+  const { theme } = useTheme();
+
+  const getItemBackground = () => {
+    if (theme === 'dark') return 'bg-[#111827]';
+    if (theme === 'midnight') return 'bg-[#1e293b]';
+    return 'bg-[var(--color-surface)]';
+  };
+
+  const getBorderStyle = () => {
+    if (theme === 'midnight') return 'border-white/5';
+    return 'border-[var(--color-border)]';
+  };
+
   return (
     <div
       onClick={onClick}
-      className="relative flex items-center gap-1.5 p-1.5 bg-[#1e293b] rounded-lg border border-[var(--color-border)] group hover:bg-[var(--color-note)]/5 transition-colors cursor-pointer"
+      className={`relative flex items-center gap-1.5 p-1.5 ${getItemBackground()} rounded-lg border ${getBorderStyle()} group hover:bg-[var(--color-note)]/5 transition-colors cursor-pointer`}
     >
       <div className="shrink-0 p-1 bg-[var(--color-note)]/10 rounded-lg">
         <Bell className="w-3 h-3 text-[var(--color-note)]" />
@@ -46,7 +60,7 @@ function MiniReminderCard({ reminder, onUnlink, onClick }: MiniReminderCardProps
             e.stopPropagation();
             onUnlink(reminder.id);
           }}
-          className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 p-0.5 bg-[#1e293b] text-[var(--color-textSecondary)] hover:text-[var(--color-note)] hover:bg-[var(--color-note)]/10 rounded-full border border-[var(--color-border)] transition-all z-10"
+          className={`absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 p-0.5 ${getItemBackground()} text-[var(--color-textSecondary)] hover:text-[var(--color-note)] hover:bg-[var(--color-note)]/10 rounded-full border ${getBorderStyle()} transition-all z-10`}
         >
           <X className="w-2.5 h-2.5" />
         </button>
@@ -62,11 +76,18 @@ interface LinkedRemindersPanelProps {
 
 export function LinkedRemindersPanel({ reminders, onUnlink }: LinkedRemindersPanelProps) {
   const { reminders: allReminders } = useReminders();
+  const { theme } = useTheme();
   const [selectedReminder, setSelectedReminder] = useState<Reminder | null>(null);
+
+  const getContainerBackground = () => {
+    if (theme === 'dark') return 'bg-[#111827]';
+    if (theme === 'midnight') return 'bg-[#1e293b]';
+    return 'bg-[var(--color-surface)]';
+  };
 
   if (reminders.length === 0) {
     return (
-      <div className="p-3 flex items-center justify-center bg-[#1e293b]">
+      <div className={`p-3 flex items-center justify-center ${getContainerBackground()}`}>
         <p className="text-xs text-[var(--color-textSecondary)]">No linked reminders</p>
       </div>
     );
@@ -74,7 +95,7 @@ export function LinkedRemindersPanel({ reminders, onUnlink }: LinkedRemindersPan
 
   return (
     <>
-      <div className="p-1.5 bg-[#1e293b]">
+      <div className={`p-1.5 ${getContainerBackground()}`}>
         <div className="flex flex-wrap gap-1.5">
           {reminders.map(linkedReminder => {
             // Find the full reminder object from the reminders context
@@ -95,7 +116,7 @@ export function LinkedRemindersPanel({ reminders, onUnlink }: LinkedRemindersPan
 
       {selectedReminder && (
         <EditReminderModal
-          isOpen={!!selectedReminder}
+          isOpen={true}
           onClose={() => setSelectedReminder(null)}
           reminder={selectedReminder}
         />

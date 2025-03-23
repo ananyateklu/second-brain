@@ -11,6 +11,7 @@ import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import { AddLinkModal } from '../../LinkedNotes/AddLinkModal';
 import { AddTaskLinkModal } from './AddTaskLinkModal';
 import { AddReminderLinkModal } from './AddReminderLinkModal';
+import { useTheme } from '../../../../contexts/themeContextUtils';
 
 interface EditNoteModalProps {
   isOpen: boolean;
@@ -22,6 +23,7 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
   const navigate = useNavigate();
   const { notes, updateNote, deleteNote, linkReminder, unlinkReminder } = useNotes();
   const { tasks, removeTaskLink } = useTasks();
+  const { theme } = useTheme();
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -183,6 +185,12 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
     dueDate: task.dueDate === undefined ? null : task.dueDate
   }));
 
+  const getBorderStyle = () => {
+    if (theme === 'midnight') return 'border-white/5';
+    if (theme === 'dark') return 'border-gray-700/30';
+    return 'border-[var(--color-border)]';
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
@@ -230,7 +238,7 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
             />
           </div>
 
-          <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-[var(--color-border)] bg-[var(--color-surface)]">
+          <div className={`shrink-0 flex justify-end gap-3 px-6 py-4 border-t ${getBorderStyle()} bg-[var(--color-surface)]`}>
             <button
               type="button"
               onClick={onClose}

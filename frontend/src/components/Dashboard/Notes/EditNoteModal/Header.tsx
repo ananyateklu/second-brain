@@ -3,6 +3,8 @@ import { X, Type, Star, Archive, Trash2 } from 'lucide-react';
 import type { Note } from '../../../../types/note';
 import { useNotes } from '../../../../contexts/notesContextUtils';
 import { WarningModal } from '../../../shared/WarningModal';
+import { useTheme } from '../../../../contexts/themeContextUtils';
+import { useNavigate } from 'react-router-dom';
 
 export interface HeaderProps {
   note: Note;
@@ -12,7 +14,15 @@ export interface HeaderProps {
 
 export function Header({ note, onClose, onShowDeleteConfirm }: HeaderProps) {
   const { toggleFavoriteNote, archiveNote } = useNotes();
+  const { theme } = useTheme();
   const [showArchiveWarning, setShowArchiveWarning] = useState(false);
+  const navigate = useNavigate();
+
+  const getBorderStyle = () => {
+    if (theme === 'midnight') return 'border-white/5';
+    if (theme === 'dark') return 'border-gray-700/30';
+    return 'border-[var(--color-border)]';
+  };
 
   const handleFavorite = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -45,7 +55,7 @@ export function Header({ note, onClose, onShowDeleteConfirm }: HeaderProps) {
 
   return (
     <>
-      <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)] bg-[var(--color-surface)]">
+      <div className={`shrink-0 flex items-center justify-between px-4 py-3 border-b ${getBorderStyle()} bg-[var(--color-surface)]`}>
         <div className="flex items-center gap-2.5">
           <div className="p-1.5 bg-[var(--color-note)]/10 rounded-lg">
             <Type className="w-5 h-5 text-[var(--color-note)]" />

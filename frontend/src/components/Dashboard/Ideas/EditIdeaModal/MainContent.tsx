@@ -3,6 +3,7 @@ import { LinkedRemindersPanel } from '../../Notes/EditNoteModal/LinkedRemindersP
 import type { LinkedReminder } from '../../../../types/note';
 import { Input } from '../../../../components/shared/Input';
 import { TextArea } from '../../../../components/shared/TextArea';
+import { useTheme } from '../../../../contexts/themeContextUtils';
 
 interface MainContentProps {
   title: string;
@@ -37,6 +38,20 @@ export function MainContent({
   onShowAddReminder,
   onUnlinkReminder,
 }: MainContentProps) {
+  const { theme } = useTheme();
+
+  const getBorderStyle = () => {
+    if (theme === 'midnight') return 'border-white/5';
+    if (theme === 'dark') return 'border-gray-700/30';
+    return 'border-[var(--color-border)]';
+  };
+
+  const getBackgroundColor = () => {
+    if (theme === 'dark') return 'bg-[#111827]';
+    if (theme === 'midnight') return 'bg-[#1e293b]';
+    return 'bg-[var(--color-surface)]';
+  };
+
   return (
     <div className="flex-1 overflow-y-auto bg-[var(--color-surface)]">
       <div className="p-4 space-y-4">
@@ -88,7 +103,7 @@ export function MainContent({
               Add Reminder
             </button>
           </div>
-          <div className="bg-[#1e293b] border border-[var(--color-border)] rounded-lg overflow-hidden max-h-[120px] overflow-y-auto">
+          <div className={`${getBackgroundColor()} border ${getBorderStyle()} rounded-lg overflow-hidden max-h-[120px] overflow-y-auto`}>
             <LinkedRemindersPanel
               reminders={linkedReminders}
               onUnlink={onUnlinkReminder}

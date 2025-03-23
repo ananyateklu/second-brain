@@ -2,6 +2,7 @@ import { Type, Calendar, Tag as TagIcon, X, AlignLeft } from 'lucide-react';
 import { useState } from 'react';
 import { Input } from '../../../../components/shared/Input';
 import { TextArea } from '../../../../components/shared/TextArea';
+import { useTheme } from '../../../../contexts/themeContextUtils';
 
 interface MainContentProps {
     title: string;
@@ -37,6 +38,19 @@ export function MainContent({
     onTagsChange,
 }: MainContentProps) {
     const [tagInput, setTagInput] = useState('');
+    const { theme } = useTheme();
+
+    const getBorderStyle = () => {
+        if (theme === 'midnight') return 'border-white/5';
+        if (theme === 'dark') return 'border-gray-700/30';
+        return 'border-[var(--color-border)]';
+    };
+
+    const getBackgroundColor = () => {
+        if (theme === 'dark') return 'bg-[#111827]';
+        if (theme === 'midnight') return 'bg-[#1e293b]';
+        return 'bg-[var(--color-surface)]';
+    };
 
     const handleAddTag = () => {
         const trimmedTag = tagInput.trim();
@@ -91,7 +105,7 @@ export function MainContent({
                                 type="datetime-local"
                                 value={dueDate ?? ''}
                                 onChange={(e) => onDueDateChange(e.target.value || null)}
-                                className="w-full h-[38px] px-3 bg-[#1e293b] border border-[var(--color-border)] rounded-lg focus:ring-2 focus:ring-[var(--color-task)] focus:border-transparent text-[var(--color-text)] disabled:opacity-50 transition-colors"
+                                className={`w-full h-[38px] px-3 ${getBackgroundColor()} border ${getBorderStyle()} rounded-lg focus:ring-2 focus:ring-[var(--color-task)] focus:border-transparent text-[var(--color-text)] disabled:opacity-50 transition-colors`}
                                 disabled={isLoading}
                             />
                         </div>
@@ -108,7 +122,7 @@ export function MainContent({
                                     disabled={isLoading}
                                     className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${status === 'Incomplete'
                                         ? 'bg-[var(--color-task)]/15 text-[var(--color-task)]'
-                                        : 'bg-[#1e293b] text-[var(--color-textSecondary)] hover:bg-[#273344] border border-[var(--color-border)]'
+                                        : `${getBackgroundColor()} text-[var(--color-textSecondary)] hover:bg-[var(--color-surfaceHover)] border ${getBorderStyle()}`
                                         }`}
                                 >
                                     Incomplete
@@ -119,7 +133,7 @@ export function MainContent({
                                     disabled={isLoading}
                                     className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${status === 'Completed'
                                         ? 'bg-green-900/20 text-green-400'
-                                        : 'bg-[#1e293b] text-[var(--color-textSecondary)] hover:bg-[#273344] border border-[var(--color-border)]'
+                                        : `${getBackgroundColor()} text-[var(--color-textSecondary)] hover:bg-[var(--color-surfaceHover)] border ${getBorderStyle()}`
                                         }`}
                                 >
                                     Completed
@@ -142,7 +156,7 @@ export function MainContent({
                                     disabled={isLoading}
                                     className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${priority === 'low'
                                         ? 'bg-green-900/20 text-green-400'
-                                        : 'bg-[#1e293b] text-[var(--color-textSecondary)] hover:bg-[#273344] border border-[var(--color-border)]'
+                                        : `${getBackgroundColor()} text-[var(--color-textSecondary)] hover:bg-[var(--color-surfaceHover)] border ${getBorderStyle()}`
                                         }`}
                                 >
                                     Low
@@ -153,7 +167,7 @@ export function MainContent({
                                     disabled={isLoading}
                                     className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${priority === 'medium'
                                         ? 'bg-yellow-900/20 text-yellow-400'
-                                        : 'bg-[#1e293b] text-[var(--color-textSecondary)] hover:bg-[#273344] border border-[var(--color-border)]'
+                                        : `${getBackgroundColor()} text-[var(--color-textSecondary)] hover:bg-[var(--color-surfaceHover)] border ${getBorderStyle()}`
                                         }`}
                                 >
                                     Medium
@@ -164,7 +178,7 @@ export function MainContent({
                                     disabled={isLoading}
                                     className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${priority === 'high'
                                         ? 'bg-red-900/20 text-red-400'
-                                        : 'bg-[#1e293b] text-[var(--color-textSecondary)] hover:bg-[#273344] border border-[var(--color-border)]'
+                                        : `${getBackgroundColor()} text-[var(--color-textSecondary)] hover:bg-[var(--color-surfaceHover)] border ${getBorderStyle()}`
                                         }`}
                                 >
                                     High

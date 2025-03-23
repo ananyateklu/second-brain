@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Bell, Plus, Search, SlidersHorizontal, LayoutGrid, List } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useReminders } from '../../../contexts/remindersContextUtils';
@@ -108,7 +108,7 @@ export function RemindersPage() {
     }
 
     return (
-      <div className="space-y-4 px-0.5">
+      <div className="space-y-2 px-0.5">
         {filteredReminders.map(reminder => (
           <ReminderCard
             key={reminder.id}

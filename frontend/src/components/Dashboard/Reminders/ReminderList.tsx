@@ -18,13 +18,12 @@ export function ReminderList({ reminders, viewMode }: ReminderListProps) {
   }
 
   return (
-    <div className={`grid gap-4 ${
-      viewMode === 'grid' 
-        ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' 
+    <div className={`grid gap-3 ${viewMode === 'grid'
+        ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6'
         : 'grid-cols-1'
-    }`}>
+      }`}>
       {reminders.map(reminder => (
-        <ReminderCard key={reminder.id} reminder={reminder} />
+        <ReminderCard key={reminder.id} reminder={reminder} viewMode={viewMode} />
       ))}
     </div>
   );

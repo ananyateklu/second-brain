@@ -23,10 +23,24 @@ export function TextArea({
   ...props
 }: TextAreaProps) {
   const [isFocused, setIsFocused] = useState(false);
-  const { colors } = useTheme();
+  const { colors, theme } = useTheme();
 
   // Get validation border color
   const validationColor = error ? (requiredIndicatorColor ?? 'rgb(239, 68, 68)') : undefined;
+
+  // Get background color based on theme
+  const getBackgroundColor = () => {
+    if (theme === 'dark') return '#111827';
+    if (theme === 'midnight') return '#1e293b';
+    return colors.surface; // Use surface color for light theme
+  };
+
+  // Get border color based on theme
+  const getBorderColor = () => {
+    if (theme === 'midnight') return 'rgba(255, 255, 255, 0.05)';
+    if (theme === 'dark') return 'rgba(75, 85, 99, 0.3)'; // Less visible gray for dark mode
+    return 'var(--color-border)';
+  };
 
   return (
     <div className="space-y-2">
@@ -82,15 +96,18 @@ export function TextArea({
               setIsFocused(false);
               props.onBlur?.(e);
             }}
+            style={{
+              backgroundColor: getBackgroundColor(),
+              borderColor: error ? validationColor : getBorderColor(),
+              ...props.style
+            }}
             className={`
               w-full
               min-h-[120px]
               px-3
               py-2
               ${typeof Icon !== 'undefined' ? 'pl-10' : ''}
-              bg-[#1e293b]
               border
-              border-[var(--color-border)]
               rounded-lg
               text-[var(--color-text)]
               placeholder:text-[var(--color-textSecondary)]

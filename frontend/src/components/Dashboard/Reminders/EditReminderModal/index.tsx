@@ -9,6 +9,7 @@ import { MainContent } from './MainContent';
 import { LinkedItemsPanel } from './LinkedItemsPanel';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import { AddLinkModal } from './AddLinkModal';
+import { useTheme } from '../../../../contexts/themeContextUtils';
 
 interface EditReminderModalProps {
   reminder: Reminder;
@@ -19,6 +20,7 @@ interface EditReminderModalProps {
 export function EditReminderModal({ reminder: initialReminder, isOpen, onClose }: EditReminderModalProps) {
   const { updateReminder, deleteReminder, addReminderLink, removeReminderLink } = useReminders();
   const { notes } = useNotes();
+  const { theme } = useTheme();
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isAddLinkOpen, setIsAddLinkOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -158,6 +160,12 @@ export function EditReminderModal({ reminder: initialReminder, isOpen, onClose }
     }
   };
 
+  const getBorderStyle = () => {
+    if (theme === 'midnight') return 'border-white/5';
+    if (theme === 'dark') return 'border-gray-700/30';
+    return 'border-[var(--color-border)]';
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={handleCancel} />
@@ -185,7 +193,7 @@ export function EditReminderModal({ reminder: initialReminder, isOpen, onClose }
           />
         </div>
 
-        <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-[var(--color-border)] bg-[var(--color-surface)]">
+        <div className={`shrink-0 flex justify-end gap-3 px-6 py-4 border-t ${getBorderStyle()} bg-[var(--color-surface)]`}>
           <button
             type="button"
             onClick={handleCancel}

@@ -11,6 +11,7 @@ import { AddTaskLinkModal } from '../../Notes/EditNoteModal/AddTaskLinkModal';
 import { AddReminderLinkModal } from '../../Notes/EditNoteModal/AddReminderLinkModal';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from '../../../../contexts/themeContextUtils';
 
 interface EditIdeaModalProps {
   idea: Note;
@@ -22,6 +23,7 @@ export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaMo
   const navigate = useNavigate();
   const { notes, updateNote, deleteNote, linkReminder, unlinkReminder, removeLink } = useNotes();
   const { tasks, removeTaskLink } = useTasks();
+  const { theme } = useTheme();
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -184,6 +186,12 @@ export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaMo
     }
   };
 
+  const getBorderStyle = () => {
+    if (theme === 'midnight') return 'border-white/5';
+    if (theme === 'dark') return 'border-gray-700/30';
+    return 'border-[var(--color-border)]';
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
@@ -231,7 +239,7 @@ export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaMo
             />
           </div>
 
-          <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-[var(--color-border)] bg-[var(--color-surface)]">
+          <div className={`shrink-0 flex justify-end gap-3 px-6 py-4 border-t ${getBorderStyle()} bg-[var(--color-surface)]`}>
             <button
               type="button"
               onClick={onClose}

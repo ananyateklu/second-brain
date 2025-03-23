@@ -7,6 +7,7 @@ import { MainContent } from './MainContent';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import { Save, X, Search, Lightbulb, Type, CheckCircle } from 'lucide-react';
 import { Task } from '../../../../api/types/task';
+import { useTheme } from '../../../../contexts/themeContextUtils';
 
 interface EditTaskModalProps {
     isOpen: boolean;
@@ -17,6 +18,7 @@ interface EditTaskModalProps {
 export function EditTaskModal({ isOpen, onClose, task: initialTask }: EditTaskModalProps) {
     const { tasks, updateTask, removeTaskLink, deleteTask, addTaskLink } = useTasks();
     const { notes } = useNotes();
+    const { theme } = useTheme();
     const [showAddLinkModal, setShowAddLinkModal] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -221,6 +223,12 @@ export function EditTaskModal({ isOpen, onClose, task: initialTask }: EditTaskMo
         }
     };
 
+    const getBorderStyle = () => {
+        if (theme === 'midnight') return 'border-white/5';
+        if (theme === 'dark') return 'border-gray-700/30';
+        return 'border-[var(--color-border)]';
+    };
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={(e) => {
@@ -268,7 +276,7 @@ export function EditTaskModal({ isOpen, onClose, task: initialTask }: EditTaskMo
                         />
                     </div>
 
-                    <div className="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-[var(--color-border)] bg-[var(--color-surface)]">
+                    <div className={`shrink-0 flex justify-end gap-3 px-6 py-4 border-t ${getBorderStyle()} bg-[var(--color-surface)]`}>
                         <button
                             type="button"
                             onClick={onClose}

@@ -1,4 +1,5 @@
 import { Link2, Plus, Type, Lightbulb, X } from 'lucide-react';
+import { useTheme } from '../../../../contexts/themeContextUtils';
 
 interface LinkedItemsPanelProps {
   readonly linkedItems: Array<{
@@ -16,6 +17,8 @@ export function LinkedItemsPanel({
   onShowAddLink,
   onUnlink
 }: LinkedItemsPanelProps) {
+  const { theme } = useTheme();
+
   function getItemIcon(type: string) {
     if (type === 'idea') {
       return (
@@ -40,12 +43,36 @@ export function LinkedItemsPanel({
     return type;
   }
 
+  const getItemBackground = () => {
+    if (theme === 'dark') return 'bg-[#111827]';
+    if (theme === 'midnight') return 'bg-[#1e293b]';
+    return 'bg-[var(--color-surface)]';
+  };
+
+  const getItemHoverBackground = () => {
+    if (theme === 'dark') return 'hover:bg-[#1f2937]';
+    if (theme === 'midnight') return 'hover:bg-[#273344]';
+    return 'hover:bg-[var(--color-surfaceHover)]';
+  };
+
+  const getEmptyStateBackground = () => {
+    if (theme === 'dark') return 'bg-[#111827]';
+    if (theme === 'midnight') return 'bg-[#1e293b]';
+    return 'bg-[var(--color-surface)]';
+  };
+
+  const getBorderStyle = () => {
+    if (theme === 'midnight') return 'border border-white/5';
+    if (theme === 'dark') return 'border border-gray-700/30';
+    return 'border border-[var(--color-border)]';
+  };
+
   const hasLinkedItems = linkedItems.length > 0;
 
   return (
-    <div className="border-l border-[var(--color-border)] flex flex-col h-full bg-[var(--color-surface)]">
+    <div className={`border-l ${theme === 'midnight' ? 'border-white/5' : theme === 'dark' ? 'border-gray-700/30' : 'border-[var(--color-border)]'} flex flex-col h-full bg-[var(--color-surface)]`}>
       {/* Header */}
-      <div className="shrink-0 px-4 py-3 border-b border-[var(--color-border)] bg-[var(--color-surface)]">
+      <div className={`shrink-0 px-4 py-3 border-b ${theme === 'midnight' ? 'border-white/5' : theme === 'dark' ? 'border-gray-700/30' : 'border-[var(--color-border)]'} bg-[var(--color-surface)]`}>
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <Link2 className="w-4 h-4 text-[var(--color-task)]" />
@@ -79,7 +106,7 @@ export function LinkedItemsPanel({
                   {linkedItems.map(item => (
                     <div
                       key={item.id}
-                      className="group flex items-start gap-2.5 p-2 rounded-lg bg-[#1e293b] hover:bg-[#273344] border border-[var(--color-border)] transition-colors relative"
+                      className={`group flex items-start gap-2.5 p-2 rounded-lg ${getItemBackground()} ${getItemHoverBackground()} ${getBorderStyle()} transition-colors relative`}
                     >
                       {getItemIcon(item.type)}
                       <div className="flex-1 min-w-0 pr-8">
@@ -108,7 +135,7 @@ export function LinkedItemsPanel({
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-full py-8 text-center px-6">
-            <div className="p-3 bg-[#1e293b] rounded-full mb-3 border border-[var(--color-border)]">
+            <div className={`p-3 ${getEmptyStateBackground()} rounded-full mb-3 ${getBorderStyle()}`}>
               <Link2 className="w-5 h-5 text-[var(--color-task)]" />
             </div>
             <p className="text-sm font-medium text-[var(--color-text)] mb-1">
