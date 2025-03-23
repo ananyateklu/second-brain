@@ -143,9 +143,6 @@ builder.Services.AddScoped<ILlamaService, LlamaService>();
 builder.Services.AddScoped<IXPService, XPService>();
 builder.Services.AddScoped<IAchievementService, AchievementService>();
 
-// Register NexusStorageService
-builder.Services.AddScoped<INexusStorageService, NexusStorageService>();
-
 // Add these before building the app
 builder.Services.AddScoped<INoteToolService, NoteToolService>();
 builder.Services.AddScoped<IActivityLogger, ActivityLogger>();

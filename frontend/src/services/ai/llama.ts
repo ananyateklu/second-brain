@@ -1,13 +1,12 @@
-import { AIModel, AIResponse, ExecutionStep } from '../../types/ai';
+import { AIModel, AIResponse } from '../../types/ai';
 import api from '../api/api';
-import { signalRService } from '../../services/signalR';
 import { AI_MODELS } from './models';
 
 export class LlamaService {
   private readonly isEnabled = true;
 
   async sendMessage(
-    message: string, 
+    message: string,
     modelId: string,
     parameters?: {
       max_tokens?: number;
@@ -18,15 +17,9 @@ export class LlamaService {
     }
   ): Promise<AIResponse> {
     try {
-      const messageId = Date.now().toString();
       let finalContent = '';
 
       console.log(`[LlamaService] Sending message - Model: ${modelId}, Message: ${message}`);
-
-      if (modelId.includes('function')) {
-        // For function-calling models, use executeDatabaseOperation
-        return this.executeDatabaseOperation(message, messageId, modelId);
-      }
 
       // Build query parameters including the model parameters
       const queryParams = new URLSearchParams({
@@ -98,49 +91,8 @@ export class LlamaService {
       });
 
     } catch (error) {
-      console.error('Error in sendMessage:', error);
-      throw error;
-    }
-  }
-
-  async executeDatabaseOperation(prompt: string, messageId: string, modelId: string): Promise<AIResponse> {
-    try {
-      const steps: ExecutionStep[] = [];
-      console.log(`[LlamaService] Executing operation with model: ${modelId}`);
-
-      // Subscribe to execution steps
-      const unsubscribe = signalRService.onExecutionStep((step: ExecutionStep) => {
-        if (step.metadata?.messageId === messageId) {
-          console.log(`[LlamaService] Received step for ${modelId}:`, step);
-          steps.push(step);
-        }
-      });
-
-      // Add model identifier to prompt
-      const augmentedPrompt = `[MODEL:${modelId}] ${prompt}`;
-
-      // Send request
-      const response = await api.post('/api/nexusstorage/execute', {
-        prompt: augmentedPrompt,
-        messageId,
-        modelId
-      });
-
-      unsubscribe();
-
-      return {
-        content: response.data.content,
-        type: 'text',
-        executionSteps: steps,
-        metadata: {
-          model: modelId,
-        },
-      };
-    } catch (error: unknown) {
-      const err = error as { response?: { data?: { error?: string; rawResponse?: string } } };
-      console.error(`[LlamaService] Error executing ${modelId} operation:`, err);
-      const errorMessage = err.response?.data?.error ?? 'Failed to execute operation.';
-      throw new Error(`${errorMessage} Raw response: ${err.response?.data?.rawResponse ?? 'N/A'}`);
+      console.error('[LlamaService] Error:', error);
+      throw new Error('Failed to get response from Llama model');
     }
   }
 
@@ -157,9 +109,9 @@ export class LlamaService {
         // 1. Are from llama provider
         // 2. Are chat/function/embedding models (not agent)
         // 3. Haven't been seen before (avoid duplicates)
-        if (model.provider === 'llama' && 
-            (model.category === 'chat' || model.category === 'function' || model.category === 'embedding') &&
-            !seenIds.has(model.id)) {
+        if (model.provider === 'llama' &&
+          (model.category === 'chat' || model.category === 'function' || model.category === 'embedding') &&
+          !seenIds.has(model.id)) {
           seenIds.add(model.id);
           return true;
         }

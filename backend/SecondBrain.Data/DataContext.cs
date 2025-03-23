@@ -27,7 +27,6 @@ namespace SecondBrain.Data
         public DbSet<IdeaLink> IdeaLinks { get; set; } = null!;
         public DbSet<Achievement> Achievements { get; set; } = null!;
         public DbSet<UserAchievement> UserAchievements { get; set; } = null!;
-        public DbSet<NexusStorage> NexusStorage { get; set; } = null!;
         public DbSet<ReminderLink> ReminderLinks { get; set; } = null!;
         public DbSet<AgentChat> AgentChats { get; set; } = null!;
         public DbSet<AgentMessage> AgentMessages { get; set; } = null!;

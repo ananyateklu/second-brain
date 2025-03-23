@@ -34,7 +34,7 @@ export class ModelService {
     }
 
     getFunctionModels(): AIModel[] {
-        return AI_MODELS.filter(model => model.category === 'function');
+        return [];
     }
 }
 

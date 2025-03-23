@@ -16,7 +16,7 @@ import { useTheme } from '../../../contexts/themeContextUtils';
 export function AIAssistantPage() {
   const navigate = useNavigate();
   const { theme } = useTheme(); // Get current theme
-  const { isOpenAIConfigured, isGeminiConfigured, isAnthropicConfigured, isLlamaConfigured, availableModels, sendMessage, llamaService } = useAI();
+  const { isOpenAIConfigured, isGeminiConfigured, isAnthropicConfigured, isLlamaConfigured, availableModels, sendMessage } = useAI();
   const [selectedCategory, setSelectedCategory] = useState<string>('chat');
   const [selectedModel, setSelectedModel] = useState<AIModel | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -116,22 +116,19 @@ export function AIAssistantPage() {
     setMessages(prev => [...prev, userMessage, assistantMessage]);
 
     try {
-      if (selectedModel.category === 'function') {
-        await llamaService.executeDatabaseOperation(input, assistantMessageId, selectedModel.id);
-      } else {
-        const aiResponse = await sendMessage(input, selectedModel.id);
-        setMessages(prev => prev.map(msg =>
-          msg.id === assistantMessageId
-            ? {
-              ...msg,
-              content: aiResponse.content,
-              type: aiResponse.type,
-              isLoading: false,
-              executionSteps: aiResponse.executionSteps
-            }
-            : msg
-        ));
-      }
+      // Handle all models with sendMessage
+      const aiResponse = await sendMessage(input, selectedModel.id);
+      setMessages(prev => prev.map(msg =>
+        msg.id === assistantMessageId
+          ? {
+            ...msg,
+            content: aiResponse.content,
+            type: aiResponse.type,
+            isLoading: false,
+            executionSteps: aiResponse.executionSteps
+          }
+          : msg
+      ));
     } catch (error: unknown) {
       const err = error as Error;
       console.error('Error in handleUserInput:', err);

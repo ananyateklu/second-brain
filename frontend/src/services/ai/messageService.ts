@@ -24,9 +24,8 @@ export class MessageService {
         try {
             switch (model.category) {
                 case 'chat':
+                case 'function': // Redirect function category models to chat
                     return this.sendChatMessage(message, model, parameters);
-                case 'function':
-                    return this.sendFunctionMessage(message, model, parameters);
                 case 'image':
                     return this.sendImageMessage(message, model);
                 case 'audio':
@@ -167,28 +166,6 @@ export class MessageService {
             default:
                 throw new Error(`Unsupported provider: ${model.provider}`);
         }
-    }
-
-    private async sendFunctionMessage(
-        message: string,
-        model: AIModel,
-        parameters?: MessageParameters
-    ): Promise<AIResponse> {
-        const response = await api.post('/api/NexusStorage/execute', {
-            prompt: message,
-            messageId: Date.now().toString(),
-            modelId: model.id,
-            maxTokens: parameters?.maxTokens ?? 1000,
-            temperature: parameters?.temperature ?? 0.7,
-            tools: parameters?.tools ?? []
-        });
-
-        return {
-            content: response.data.content || '',
-            type: 'text',
-            metadata: response.data.metadata || {},
-            executionSteps: response.data.metadata?.execution_steps || []
-        };
     }
 
     private async sendImageMessage(

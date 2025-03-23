@@ -1,9 +1,8 @@
+using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.SignalR;
-using SecondBrain.Api.Hubs;
+using Microsoft.Extensions.Logging;
 using SecondBrain.Api.Services;
-using SecondBrain.Api.Models;
 using System.Text.Json;
 
 namespace SecondBrain.Api.Controllers
@@ -32,38 +31,18 @@ namespace SecondBrain.Api.Controllers
 
             try
             {
-                if (modelId.Contains("function"))  // or whatever identifier you use for function-calling models
+                // Direct model response for local models
+                var response = await _llamaService.GenerateTextAsync(prompt, modelId, 2048);
+                var update = new
                 {
-                    // Generate a message ID for this request
-                    var messageId = Guid.NewGuid().ToString();
-                    var response = await _llamaService.ExecuteDatabaseOperationAsync(prompt, messageId, 2048);
-                    
-                    var update = new
-                    {
-                        Type = "content",
-                        Content = response,
-                        Timestamp = DateTime.UtcNow
-                    };
-                    
-                    var json = JsonSerializer.Serialize(update);
-                    await Response.WriteAsync($"data: {json}\n\n");
-                    await Response.Body.FlushAsync();
-                }
-                else
-                {
-                    // Direct model response for local models
-                    var response = await _llamaService.GenerateTextAsync(prompt, modelId, 2048);
-                    var update = new
-                    {
-                        Type = "content",
-                        Content = response,
-                        Timestamp = DateTime.UtcNow
-                    };
-                    
-                    var json = JsonSerializer.Serialize(update);
-                    await Response.WriteAsync($"data: {json}\n\n");
-                    await Response.Body.FlushAsync();
-                }
+                    Type = "content",
+                    Content = response,
+                    Timestamp = DateTime.UtcNow
+                };
+                
+                var json = JsonSerializer.Serialize(update);
+                await Response.WriteAsync($"data: {json}\n\n");
+                await Response.Body.FlushAsync();
 
                 await Response.WriteAsync($"event: complete\ndata: {{}}\n\n");
                 await Response.Body.FlushAsync();
