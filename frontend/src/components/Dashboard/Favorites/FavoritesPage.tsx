@@ -39,7 +39,7 @@ export function FavoritesPage() {
       {/* Background */}
       <div className="fixed inset-0 bg-[var(--color-background)] -z-10" />
 
-      <div className="px-6 space-y-8 relative">
+      <div className="space-y-8 relative">
         {/* Header */}
         <motion.div
           initial="hidden"
@@ -62,7 +62,7 @@ export function FavoritesPage() {
             p-6
           `}
         >
-          <motion.div 
+          <motion.div
             variants={cardVariants}
             className="flex items-center gap-3"
           >
@@ -102,14 +102,14 @@ export function FavoritesPage() {
             <div className={cardGridStyles}>
               {favoriteNotes.map(note => (
                 note.isIdea ? (
-                  <IdeaCard 
+                  <IdeaCard
                     key={note.id}
-                    idea={note} 
+                    idea={note}
                     viewMode="grid"
                     onClick={() => handleEditNote(note)}
                   />
                 ) : (
-                  <NoteCard 
+                  <NoteCard
                     key={note.id}
                     note={note}
                     viewMode="grid"

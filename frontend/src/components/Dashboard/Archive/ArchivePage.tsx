@@ -27,7 +27,7 @@ export const ArchivePage = memo(function ArchivePage() {
     loadArchivedNotes().catch(error => {
       console.error('[Archive] Failed to load archived notes:', error);
     });
-  }, []); // Empty dependency array since loadArchivedNotes is now stable
+  }, [loadArchivedNotes]); // Empty dependency array since loadArchivedNotes is now stable
 
   const handleSelectItem = useCallback((id: string) => {
     setSelectedItems(prev =>
@@ -59,7 +59,7 @@ export const ArchivePage = memo(function ArchivePage() {
       {/* Background */}
       <div className="fixed inset-0 bg-[var(--color-background)] -z-10" />
 
-      <div className="px-6 space-y-8 relative">
+      <div className="space-y-8 relative">
         {/* Archive Header */}
         <motion.div
           initial="hidden"

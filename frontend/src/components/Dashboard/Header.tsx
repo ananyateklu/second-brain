@@ -1,4 +1,4 @@
-import { Search, Menu, X, User as UserIcon, Settings, LogOut } from 'lucide-react';
+import { Search, Menu, X, User as UserIcon, Settings, LogOut, Maximize, Minimize } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -7,6 +7,7 @@ import type { User } from '../../types/auth';
 import { ThemeSelector } from '../ThemeSelector';
 import { Input } from '../shared/Input';
 import { useTheme } from '../../contexts/themeContextUtils';
+import { cardVariants } from '../../utils/welcomeBarUtils';
 
 interface HeaderProps {
   isSidebarOpen: boolean;
@@ -78,26 +79,32 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
     }
   };
 
-  const getBackgroundColor = () => {
+  const getContainerBackground = () => {
     if (theme === 'dark') return 'bg-gray-900/30';
     if (theme === 'midnight') return 'bg-white/5';
     return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]';
   };
 
   return (
-    <header className={`fixed top-0 right-0 left-0 lg:left-60 z-40 
-      ${getBackgroundColor()} 
-      backdrop-blur-xl 
-      border-b-[0.5px] border-white/10
-      transition-all duration-200
-      shadow-[0_4px_24px_-2px_rgba(0,0,0,0.12),0_8px_16px_-4px_rgba(0,0,0,0.08)]
-      dark:shadow-[0_4px_24px_-2px_rgba(0,0,0,0.3),0_8px_16px_-4px_rgba(0,0,0,0.2)]
-      ring-1 ring-white/5`}>
-      <div className="max-w-7xl mx-auto h-20 px-4 sm:px-6 lg:px-8 flex items-center gap-4">
-        <div className="w-10 lg:hidden">
+    <motion.header
+      initial="hidden"
+      animate="visible"
+      variants={cardVariants}
+      className={`fixed top-0 right-0 left-0 z-40 
+        ${getContainerBackground()} 
+        backdrop-blur-xl 
+        border-b-[0.5px] border-white/10
+        transition-all duration-200
+        shadow-[0_4px_24px_-2px_rgba(0,0,0,0.12),0_8px_16px_-4px_rgba(0,0,0,0.08)]
+        dark:shadow-[0_4px_24px_-2px_rgba(0,0,0,0.3),0_8px_16px_-4px_rgba(0,0,0,0.2)]
+        ring-1 ring-white/5 w-full`}
+    >
+      <div className="w-full h-20 px-6 sm:px-8 md:px-10 lg:px-16 flex items-center gap-4">
+        <div className="w-10">
           <button
             onClick={toggleSidebar}
             className={`p-1.5 rounded-lg ${getHoverClass()} transition-colors duration-200`}
+            aria-label={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
           >
             {isSidebarOpen ? (
               <X className="w-6 h-6 text-[var(--color-textSecondary)] transition-colors duration-200" />
@@ -115,8 +122,6 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
               placeholder="Search notes..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              disableEnhancement
-              disableRecording
               className="!h-11"
             />
           </div>
@@ -128,6 +133,20 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
             onClick={() => navigate('/dashboard/search')}
           >
             <Search className="w-5 h-5 text-[var(--color-textSecondary)] transition-colors duration-200" />
+          </button>
+
+          {/* Fullscreen toggle button */}
+          <button
+            className={`hidden sm:flex p-2 rounded-lg ${getHoverClass()} transition-colors duration-200`}
+            onClick={toggleSidebar}
+            aria-label={isSidebarOpen ? "Enter fullscreen" : "Exit fullscreen"}
+            title={isSidebarOpen ? "Enter fullscreen" : "Exit fullscreen"}
+          >
+            {isSidebarOpen ? (
+              <Maximize className="w-5 h-5 text-[var(--color-textSecondary)] transition-colors duration-200" />
+            ) : (
+              <Minimize className="w-5 h-5 text-[var(--color-textSecondary)] transition-colors duration-200" />
+            )}
           </button>
 
           <ThemeSelector />
@@ -180,7 +199,12 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
             </button>
 
             {showProfileMenu && (
-              <div className="absolute right-0 mt-2 w-64 rounded-lg shadow-lg border border-[var(--color-border)] bg-[var(--color-background)] transition-colors duration-200">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                className="absolute right-0 mt-2 w-64 rounded-lg shadow-lg border border-[var(--color-border)] bg-[var(--color-background)] transition-colors duration-200"
+              >
                 <div className="px-4 py-3 border-b border-[var(--color-border)] transition-colors duration-200">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-[var(--color-secondary)]/50 flex items-center justify-center overflow-hidden transition-colors duration-200">
@@ -258,11 +282,11 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
                     Log out
                   </button>
                 </div>
-              </div>
+              </motion.div>
             )}
           </div>
         </div>
       </div>
-    </header>
+    </motion.header>
   );
 }

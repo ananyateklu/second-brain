@@ -13,9 +13,10 @@ import {
   Trash2,
   Bot,
   Settings,
-  HelpCircle,
   History,
-  LogOut
+  LogOut,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/themeContextUtils';
@@ -99,6 +100,20 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     }
   `;
 
+  // Toggle sidebar button that shows on the right edge
+  const ToggleSidebarButton = () => (
+    <button
+      onClick={() => setIsOpen(!isOpen)}
+      className="absolute top-1/2 right-0 translate-x-1/2 -translate-y-1/2 p-1.5 rounded-full
+      bg-[var(--color-accent)] text-white
+      shadow-[0_2px_8px_-2px_rgba(76,153,89,0.4)]
+      hover:bg-[var(--color-accent)]/90 transition-all duration-200"
+      aria-label={isOpen ? "Collapse sidebar" : "Expand sidebar"}
+    >
+      {isOpen ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+    </button>
+  );
+
   return (
     <>
       {isOpen && (
@@ -120,6 +135,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
           dark:shadow-[4px_0_24px_-2px_rgba(0,0,0,0.3),8px_0_16px_-4px_rgba(0,0,0,0.2)]
           ring-1 ring-white/5
           ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0
+          relative
         `}
       >
         <div className="flex flex-col h-full">
@@ -168,13 +184,6 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
               <Settings className="w-5 h-5" />
               <span>Settings</span>
             </NavLink>
-            <NavLink
-              to="/dashboard/help"
-              className={navLinkClasses}
-            >
-              <HelpCircle className="w-5 h-5" />
-              <span>Help</span>
-            </NavLink>
             <button
               onClick={logout}
               className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg text-red-400 hover:bg-red-500/10 transition-all duration-200"
@@ -184,6 +193,9 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             </button>
           </div>
         </div>
+
+        {/* Toggle sidebar button */}
+        <ToggleSidebarButton />
       </aside>
     </>
   );

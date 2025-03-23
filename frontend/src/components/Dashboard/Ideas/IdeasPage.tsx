@@ -125,9 +125,9 @@ export function IdeasPage() {
       return (
         <div className="space-y-4 px-0.5">
           {filteredIdeas.map(idea => (
-            <IdeaCard 
+            <IdeaCard
               key={idea.id}
-              idea={idea} 
+              idea={idea}
               viewMode="list"
               onClick={() => handleIdeaClick(idea.id)}
             />
@@ -135,14 +135,14 @@ export function IdeasPage() {
         </div>
       );
     }
-    
+
     if (viewMode === 'grid') {
       return (
         <div className={cardGridStyles}>
           {filteredIdeas.map(idea => (
-            <IdeaCard 
+            <IdeaCard
               key={idea.id}
-              idea={idea} 
+              idea={idea}
               viewMode="grid"
               onClick={() => handleIdeaClick(idea.id)}
             />
@@ -150,7 +150,7 @@ export function IdeasPage() {
         </div>
       );
     }
-    
+
     return <IdeasMindMap ideas={filteredIdeas} onIdeaClick={handleIdeaClick} />;
   };
 
@@ -159,7 +159,7 @@ export function IdeasPage() {
       {/* Background */}
       <div className="fixed inset-0 bg-[var(--color-background)] -z-10" />
 
-      <div className="px-6 space-y-8 relative">
+      <div className="space-y-8 relative">
         {/* Header */}
         <motion.div
           initial="hidden"
@@ -183,7 +183,7 @@ export function IdeasPage() {
           `}
         >
           <div className="flex flex-col sm:flex-row gap-6 justify-between">
-            <motion.div 
+            <motion.div
               variants={cardVariants}
               className="flex items-center gap-3"
             >
@@ -233,7 +233,7 @@ export function IdeasPage() {
             />
           </div>
 
-          <motion.div 
+          <motion.div
             variants={cardVariants}
             className="flex gap-2"
           >

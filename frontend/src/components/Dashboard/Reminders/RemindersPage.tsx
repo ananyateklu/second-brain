@@ -126,7 +126,7 @@ export function RemindersPage() {
       {/* Background */}
       <div className="fixed inset-0 bg-[var(--color-background)] -z-10" />
 
-      <div className="px-6 space-y-8 relative">
+      <div className="space-y-8 relative">
         {/* Header */}
         <motion.div
           initial="hidden"

@@ -62,12 +62,12 @@ export function DashboardHome() {
     >
       {/* Greeting Section */}
       <div
-        className="shadow-sm rounded-xl transition-all duration-300 overflow-visible mx-6"
+        className="shadow-sm rounded-xl transition-all duration-300 overflow-visible"
         data-type="welcome-section"
       >
         <WelcomeSection
           user={{ ...user!, experience: user!.experiencePoints }}
-          onNewNote={() => {}}
+          onNewNote={() => { }}
           onNavigate={navigate}
           stats={stats}
           tasks={tasks.map(task => ({
@@ -100,7 +100,7 @@ export function DashboardHome() {
           transition-all 
           duration-300 
           p-6
-          mx-6
+          mb-6
         `}>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -125,7 +125,7 @@ export function DashboardHome() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {stats.pinnedNotes.map(note => (
-              <div 
+              <div
                 key={note.id}
                 className="cursor-pointer w-full text-left transition-transform duration-200 hover:-translate-y-0.5"
                 onClick={() => handleEditNote(note)}

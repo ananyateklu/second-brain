@@ -26,7 +26,7 @@ const getContainerBackground = (theme: string) => {
 
 export const WelcomeSection = React.memo(({ user, onNewNote, onNavigate, stats, tasks }: WelcomeSectionProps) => {
   const { theme } = useTheme();
-  
+
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good morning';
@@ -98,7 +98,7 @@ export const WelcomeSection = React.memo(({ user, onNewNote, onNavigate, stats, 
     >
       <div className="relative flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
         <div className="space-y-6">
-          <motion.div 
+          <motion.div
             variants={cardVariants}
             className="space-y-2"
           >
@@ -115,8 +115,8 @@ export const WelcomeSection = React.memo(({ user, onNewNote, onNavigate, stats, 
               Ready to capture your thoughts and ideas?
             </p>
           </motion.div>
-          
-          <motion.div 
+
+          <motion.div
             variants={cardVariants}
             className="flex flex-wrap gap-2"
           >

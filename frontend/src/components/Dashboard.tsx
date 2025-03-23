@@ -19,7 +19,6 @@ import { DailyFocus } from './Dashboard/Focus/FocusPage';
 import { AIAgentsPage } from './Dashboard/AI/Agents/components/AIAgentsPage';
 import { AIAssistantPage } from './Dashboard/AI/AIAssistantPage';
 import { SearchPage } from './Dashboard/Search/SearchPage';
-import { HelpPage } from './Dashboard/Help/HelpPage';
 import { LoadingScreen } from './shared/LoadingScreen';
 import { useNotes } from '../contexts/notesContextUtils';
 import { useTasks } from '../contexts/tasksContextUtils';
@@ -32,7 +31,7 @@ import { useTheme } from '../contexts/themeContextUtils';
 import { useReminderNotifications } from '../hooks/useReminderNotifications';
 
 export function Dashboard() {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const { isLoading: notesLoading } = useNotes();
   const { isLoading: tasksLoading } = useTasks();
@@ -53,16 +52,16 @@ export function Dashboard() {
     <div className="h-screen flex overflow-hidden">
       {/* Fixed gradient background - Updated for better dark mode */}
       <div className={`fixed inset-0 ${colors.gradientBackground}`} />
-      
+
       {/* Sidebar */}
-      <div className="fixed inset-y-0 left-0 z-30">
+      <div className={`fixed inset-y-0 left-0 z-30 transition-all duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-60'}`}>
         <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col lg:pl-60 relative">
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarOpen ? 'lg:pl-60' : 'pl-0'} relative`}>
         {/* Fixed Header */}
-        <div className="fixed top-0 right-0 left-0 lg:left-60 z-20">
+        <div className={`fixed top-0 right-0 left-0 transition-all duration-300 ${isSidebarOpen ? 'lg:left-60' : 'left-0'} z-20`}>
           <Header
             isSidebarOpen={isSidebarOpen}
             toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -73,7 +72,7 @@ export function Dashboard() {
 
         {/* Scrollable Content */}
         <main className="flex-1 overflow-y-auto overflow-x-hidden pt-20 relative">
-          <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-12 py-8">
+          <div className={`max-w-[1920px] mx-auto transition-all duration-300 ${isSidebarOpen ? 'px-4 sm:px-6 lg:px-12' : 'px-6 sm:px-12 lg:px-16'} py-8`}>
             <WelcomeBar />
             <Routes>
               <Route index element={<DashboardHome />} />
@@ -93,7 +92,6 @@ export function Dashboard() {
               <Route path="profile" element={<PersonalPage />} />
               <Route path="search" element={<SearchPage />} />
               <Route path="settings" element={<SettingsPage />} />
-              <Route path="help" element={<HelpPage />} />
             </Routes>
           </div>
         </main>
