@@ -334,8 +334,17 @@ namespace SecondBrain.Api.Controllers
 
                     _context.Activities.Add(activity);
 
-                    // Remove the reminder and its links
-                    _context.ReminderLinks.RemoveRange(reminder.ReminderLinks);
+                    // Soft delete the reminder links instead of removing them
+                    if (reminder.ReminderLinks != null && reminder.ReminderLinks.Any())
+                    {
+                        foreach (var link in reminder.ReminderLinks)
+                        {
+                            link.IsDeleted = true;
+                            link.DeletedAt = DateTime.UtcNow;
+                        }
+                    }
+                    
+                    // Remove the reminder itself
                     _context.Reminders.Remove(reminder);
                     await _context.SaveChangesAsync();
 

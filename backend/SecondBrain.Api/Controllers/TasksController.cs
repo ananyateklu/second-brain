@@ -227,10 +227,14 @@ namespace SecondBrain.Api.Controllers
                 return NotFound(new { error = TASK_NOT_FOUND_ERROR });
             }
 
-            // First remove all task links
+            // First soft-delete all task links instead of removing them
             if (task.TaskLinks != null && task.TaskLinks.Any())
             {
-                _context.TaskLinks.RemoveRange(task.TaskLinks);
+                foreach (var link in task.TaskLinks)
+                {
+                    link.IsDeleted = true;
+                    link.DeletedAt = DateTime.UtcNow;
+                }
                 await _context.SaveChangesAsync();
             }
 
@@ -342,7 +346,7 @@ namespace SecondBrain.Api.Controllers
             await _context.SaveChangesAsync();
 
             var task = await _context.Tasks
-                .Include(t => t.TaskLinks)
+                .Include(t => t.TaskLinks.Where(tl => !tl.IsDeleted))
                 .ThenInclude(tl => tl.LinkedItem)
                 .FirstAsync(t => t.Id == taskId);
 

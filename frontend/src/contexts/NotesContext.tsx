@@ -393,6 +393,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
             return {
               ...note,
               ...sourceNote,
+              isIdea: sourceNote.isIdea,
               linkedNoteIds: sourceNote.linkedNoteIds,
               links: sourceNote.links || [],
               linkedNotes: sourceNote.linkedNotes || []
@@ -403,6 +404,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
             return {
               ...note,
               ...targetNote,
+              isIdea: targetNote.isIdea,
               linkedNoteIds: targetNote.linkedNoteIds,
               links: targetNote.links || [],
               linkedNotes: targetNote.linkedNotes || []
@@ -449,6 +451,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
             return {
               ...note,
               ...sourceNote,
+              isIdea: sourceNote.isIdea,
               linkedNoteIds: sourceNote.linkedNoteIds,
               links: sourceNote.links || [],
               linkedNotes: sourceNote.linkedNotes || []
@@ -459,6 +462,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
             return {
               ...note,
               ...targetNote,
+              isIdea: targetNote.isIdea,
               linkedNoteIds: targetNote.linkedNoteIds,
               links: targetNote.links || [],
               linkedNotes: targetNote.linkedNotes || []

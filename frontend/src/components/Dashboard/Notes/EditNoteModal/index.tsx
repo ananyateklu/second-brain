@@ -260,7 +260,18 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
           isOpen={showAddLinkModal}
           onClose={() => setShowAddLinkModal(false)}
           sourceNoteId={currentNote.id}
-          onLinkAdded={() => setShowAddLinkModal(false)}
+          onLinkAdded={() => {
+            // Force refresh linked notes by re-triggering the effect
+            setShowAddLinkModal(false);
+            // We need to refresh the list of linked notes immediately
+            const updatedCurrentNote = notes.find(n => n.id === currentNote.id);
+            if (updatedCurrentNote) {
+              const updatedLinkedNotes = notes.filter(n =>
+                updatedCurrentNote.linkedNoteIds?.includes(n.id)
+              );
+              setLinkedNotes(updatedLinkedNotes);
+            }
+          }}
         />
 
         <AddTaskLinkModal

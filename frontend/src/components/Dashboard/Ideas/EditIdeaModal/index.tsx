@@ -261,7 +261,18 @@ export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaMo
           isOpen={showAddLinkModal}
           onClose={() => setShowAddLinkModal(false)}
           sourceNoteId={currentIdea.id}
-          onLinkAdded={() => setShowAddLinkModal(false)}
+          onLinkAdded={() => {
+            // Force refresh linked notes by re-triggering the effect
+            setShowAddLinkModal(false);
+            // We need to refresh the list of linked notes immediately
+            const updatedCurrentIdea = notes.find(n => n.id === currentIdea.id);
+            if (updatedCurrentIdea) {
+              const updatedLinkedNotes = notes.filter(n =>
+                updatedCurrentIdea.linkedNoteIds?.includes(n.id)
+              );
+              setLinkedNotes(updatedLinkedNotes);
+            }
+          }}
         />
 
         <AddTaskLinkModal

@@ -246,6 +246,7 @@ namespace SecondBrain.Api.Controllers
                 ArchivedAt = n.ArchivedAt,
                 CreatedAt = n.CreatedAt,
                 UpdatedAt = n.UpdatedAt,
+                IsIdea = n.IsIdea,
                 LinkedNoteIds = n.NoteLinks
                     .Where(nl => !nl.IsDeleted)
                     .Select(nl => nl.LinkedNoteId)
@@ -370,6 +371,7 @@ namespace SecondBrain.Api.Controllers
                 ArchivedAt = n.ArchivedAt,
                 CreatedAt = n.CreatedAt,
                 UpdatedAt = n.UpdatedAt,
+                IsIdea = n.IsIdea,
                 LinkedNoteIds = n.NoteLinks
                     .Where(nl => !nl.IsDeleted)
                     .Select(nl => nl.LinkedNoteId)
@@ -510,17 +512,27 @@ namespace SecondBrain.Api.Controllers
                     });
                     _context.Activities.AddRange(unlinkActivities);
 
-                    // 2. Remove all task links
+                    // 2. Remove all task links (soft delete approach)
                     var taskLinks = await _context.TaskLinks
                         .Where(tl => tl.LinkedItemId == id)
                         .ToListAsync();
-                    _context.TaskLinks.RemoveRange(taskLinks);
+                    // Soft delete instead of remove
+                    foreach (var link in taskLinks)
+                    {
+                        link.IsDeleted = true;
+                        link.DeletedAt = DateTime.UtcNow;
+                    }
 
-                    // 3. Remove all reminder links
+                    // 3. Remove all reminder links (soft delete approach)
                     var reminderLinks = await _context.ReminderLinks
                         .Where(rl => rl.LinkedItemId == id)
                         .ToListAsync();
-                    _context.ReminderLinks.RemoveRange(reminderLinks);
+                    // Soft delete instead of remove
+                    foreach (var link in reminderLinks)
+                    {
+                        link.IsDeleted = true;
+                        link.DeletedAt = DateTime.UtcNow;
+                    }
 
                     // 4. Remove all note links
                     var noteLinks = await _context.NoteLinks
@@ -759,11 +771,12 @@ namespace SecondBrain.Api.Controllers
                 return NotFound(new { error = "Reminder link not found." });
             }
 
-            // Actually remove the link instead of soft delete
-            _context.ReminderLinks.Remove(reminderLink);
+            // Soft delete the link instead of removing it permanently
+            reminderLink.IsDeleted = true;
+            reminderLink.DeletedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
-            // Reload the note with remaining links
+            // Reload the note with remaining active links
             var note = await _context.Notes
                 .Include(n => n.NoteLinks)
                     .ThenInclude(nl => nl.LinkedNote)
