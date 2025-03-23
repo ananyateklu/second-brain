@@ -51,9 +51,65 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
 
   const updateReminder = useCallback(async (id: string, updates: Partial<Reminder>) => {
     try {
-      const updatedReminder = await reminderService.updateReminder(id, updates);
+      console.log('Updating reminder:', id, 'with updates:', updates);
+
+      // Check if we have linked items in the update
+      const linkedItemsFromUpdate = updates.linkedItems || [];
+      const hasLinkedItems = linkedItemsFromUpdate.length > 0;
+      if (hasLinkedItems) {
+        console.log('Update includes linkedItems:', linkedItemsFromUpdate);
+        console.log('LinkedItems types:', linkedItemsFromUpdate.map(item => item.type));
+
+        // Find the existing reminder to compare linked items
+        const existingReminder = reminders.find(r => r.id === id);
+        if (existingReminder) {
+          console.log('Existing linkedItems:', existingReminder.linkedItems);
+        }
+      }
+
+      // Clone the updates to avoid mutations
+      const updatesToSend = { ...updates };
+
+      // Make a backup of any linked items to ensure they're not lost if the API response doesn't include them
+      const linkedItemsBackup = [...linkedItemsFromUpdate];
+
+      const updatedReminder = await reminderService.updateReminder(id, updatesToSend);
+
+      // Enhanced logic to preserve linked items
+      if (hasLinkedItems) {
+        if (!updatedReminder.linkedItems || updatedReminder.linkedItems.length === 0) {
+          console.log('Server response missing linkedItems, using local data');
+          updatedReminder.linkedItems = linkedItemsBackup;
+        } else {
+          console.log('Server returned linkedItems:', updatedReminder.linkedItems);
+
+          // Check if all types of items are included
+          const types = new Set(updatedReminder.linkedItems.map(item => item.type));
+          if (linkedItemsBackup.some(item => !types.has(item.type))) {
+            console.log('Some link types are missing in response - merging with backup');
+
+            // Create a merged version that preserves type diversity
+            const existingIds = new Set(updatedReminder.linkedItems.map(item => item.id));
+            const missingItems = linkedItemsBackup.filter(item => !existingIds.has(item.id));
+
+            updatedReminder.linkedItems = [
+              ...updatedReminder.linkedItems,
+              ...missingItems
+            ];
+
+            console.log('Enhanced linkedItems after merge:', updatedReminder.linkedItems);
+          }
+        }
+      }
+
+      // Update the reminders state with complete data
       setReminders(prev =>
-        prev.map(reminder => (reminder.id === id ? { ...reminder, ...updatedReminder } : reminder))
+        prev.map(reminder => (reminder.id === id ? {
+          ...reminder,
+          ...updatedReminder,
+          // Preserve linkedItems with priority on those from update
+          linkedItems: updatedReminder.linkedItems || reminder.linkedItems
+        } : reminder))
       );
 
       await createActivity({
@@ -68,7 +124,7 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
       console.error('Failed to update reminder:', error);
       throw error;
     }
-  }, [createActivity]);
+  }, [createActivity, reminders]);
 
   const deleteReminder = useCallback(async (id: string) => {
     try {
@@ -219,17 +275,66 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
 
   const addReminderLink = useCallback(async (reminderId: string, linkedItemId: string, linkType: string) => {
     try {
+      console.log('Adding reminder link - before API call:', { reminderId, linkedItemId, linkType });
+
+      // Track if this is an idea link for special handling
+      const isIdeaLink = linkType === 'idea';
+      if (isIdeaLink) {
+        console.log('This is an IDEA link - will apply special handling');
+      }
+
       const updatedReminder = await reminderService.addReminderLink({
         reminderId,
         linkedItemId,
         itemType: linkType as "note" | "idea",
       });
 
+      console.log('Received updated reminder with links:', updatedReminder);
+      console.log('LinkedItems length:', updatedReminder.linkedItems?.length);
+      console.log('LinkedItems data:', JSON.stringify(updatedReminder.linkedItems));
 
-      // Update the reminders state with the new link
-      setReminders(prev => prev.map(reminder =>
-        reminder.id === reminderId ? updatedReminder : reminder
-      ));
+      // Special handling for idea links to force full refresh
+      if (isIdeaLink) {
+        console.log('Triggering forced data refresh for idea link');
+        // Get the complete, fresh list of reminders to ensure all related data is updated
+        const freshReminders = await reminderService.getReminders();
+
+        // Find our specific updated reminder in the fresh data
+        const freshReminder = freshReminders.find(r => r.id === reminderId);
+
+        if (freshReminder) {
+          console.log('Fresh reminder data found:', freshReminder);
+          console.log('Fresh linkedItems:', freshReminder.linkedItems);
+
+          // Update with complete fresh data
+          setReminders(prev =>
+            prev.map(r => r.id === reminderId ? {
+              ...freshReminder,
+              // Ensure the reminder has correct tags format
+              tags: freshReminder.tags || [],
+            } : r)
+          );
+        } else {
+          console.warn('Could not find fresh reminder data - using API response');
+          // Fall back to original update if fresh data not found
+          setReminders(prev => prev.map(reminder =>
+            reminder.id === reminderId ? {
+              ...updatedReminder,
+              linkedItems: updatedReminder.linkedItems || [],
+              tags: updatedReminder.tags || [],
+            } : reminder
+          ));
+        }
+      } else {
+        // Standard update for note links
+        setReminders(prev => prev.map(reminder =>
+          reminder.id === reminderId ? {
+            ...updatedReminder,
+            linkedItems: updatedReminder.linkedItems || [],
+            tags: updatedReminder.tags || [],
+          } : reminder
+        ));
+      }
 
       await createActivity({
         actionType: 'link',

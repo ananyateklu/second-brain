@@ -97,10 +97,36 @@ export function ReminderCard({
 
   // Calculate visible and remaining items
   const MAX_VISIBLE_ITEMS = viewMode === 'list' ? 8 : 7;
-  const allItems = useMemo(() => [
-    ...(reminder.tags || []).map(tag => ({ type: 'tag', id: tag, title: tag })),
-    ...(reminder.linkedItems || [])
-  ], [reminder.tags, reminder.linkedItems]);
+
+  // Ensure all linked items are properly included regardless of type
+  const allItems = useMemo(() => {
+    // Important debug to see what's being processed for this specific reminder card
+    console.log(`ReminderCard processing linkedItems for reminder "${reminder.title}" (${reminder.id}):`);
+    if (reminder.linkedItems) {
+      console.log('LinkedItems count:', reminder.linkedItems.length);
+      console.log('LinkedItems details:', JSON.stringify(reminder.linkedItems));
+    } else {
+      console.log('No linked items found');
+    }
+
+    const tagItems = (reminder.tags || []).map(tag => ({
+      type: 'tag',
+      id: tag,
+      title: tag
+    }));
+
+    // Explicitly force the inclusion of all linked items and verify they're processed
+    const linkedItems = reminder.linkedItems || [];
+    console.log('Types of linkedItems:', linkedItems.map(item => item.type));
+
+    const result = [
+      ...tagItems,
+      ...linkedItems
+    ];
+
+    console.log('Final allItems count:', result.length);
+    return result;
+  }, [reminder.tags, reminder.linkedItems, reminder.id, reminder.title]);
 
   const visibleItems = useMemo(() => allItems.slice(0, MAX_VISIBLE_ITEMS), [allItems, MAX_VISIBLE_ITEMS]);
   const remainingCount = useMemo(() => Math.max(0, allItems.length - MAX_VISIBLE_ITEMS), [allItems.length, MAX_VISIBLE_ITEMS]);
