@@ -1,13 +1,13 @@
-import { Search, Menu, X, User as UserIcon, Settings, LogOut, Maximize, Minimize } from 'lucide-react';
+import { Search, Menu, X, User as UserIcon, Maximize, Minimize } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import type { User } from '../../types/auth';
 import { ThemeSelector } from '../ThemeSelector';
 import { Input } from '../shared/Input';
 import { useTheme } from '../../contexts/themeContextUtils';
 import { cardVariants } from '../../utils/welcomeBarUtils';
+import { ProfileMenu } from './ProfileMenu';
 
 interface HeaderProps {
   isSidebarOpen: boolean;
@@ -15,20 +15,6 @@ interface HeaderProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
 }
-
-// Add level thresholds constant (or move to a shared constants file)
-const LevelThresholds = [
-  0,      // Level 1: 0-99
-  100,    // Level 2: 100-249
-  250,    // Level 3: 250-449
-  450,    // Level 4: 450-699
-  700,    // Level 5: 700-999
-  1000,   // Level 6: 1000-1349
-  1350,   // Level 7: 1350-1749
-  1750,   // Level 8: 1750-2199
-  2200,   // Level 9: 2200-2699
-  2700    // Level 10: 2700+
-];
 
 export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQuery }: HeaderProps) {
   const { user, logout } = useAuth();
@@ -47,26 +33,6 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  // Calculate XP values
-  const calculateXPProgress = (user: User | null) => {
-    if (!user) return { currentLevelXP: 0, nextLevelXP: 100, progress: 0 };
-
-    const currentLevelThreshold = LevelThresholds[user.level - 1] || 0;
-    const nextLevelThreshold = LevelThresholds[user.level] || LevelThresholds[user.level - 1] + 100;
-
-    const xpInCurrentLevel = user.experiencePoints - currentLevelThreshold;
-    const xpNeededForNextLevel = nextLevelThreshold - currentLevelThreshold;
-    const progress = (xpInCurrentLevel / xpNeededForNextLevel) * 100;
-
-    return {
-      currentLevelXP: xpInCurrentLevel,
-      nextLevelXP: xpNeededForNextLevel,
-      progress: Math.min(100, Math.max(0, progress))
-    };
-  };
-
-  const xpProgress = calculateXPProgress(user);
 
   const getHoverClass = () => {
     switch (theme) {
@@ -186,7 +152,7 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
                     strokeWidth="2"
                     fill="none"
                     strokeDasharray={`${2 * Math.PI * 16}`}
-                    strokeDashoffset={`${2 * Math.PI * 16 * (1 - (xpProgress.progress / 100))}`}
+                    strokeDashoffset={`${2 * Math.PI * 16 * (1 - ((user?.experiencePoints || 0) % 100) / 100)}`}
                     className="text-[var(--color-accent)] transition-colors duration-200"
                     transform="rotate(-90 18 18)"
                     style={{ transition: 'stroke-dashoffset 0.3s ease' }}
@@ -199,90 +165,11 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
             </button>
 
             {showProfileMenu && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                className="absolute right-0 mt-2 w-64 rounded-lg shadow-lg border border-[var(--color-border)] bg-[var(--color-background)] transition-colors duration-200"
-              >
-                <div className="px-4 py-3 border-b border-[var(--color-border)] transition-colors duration-200">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[var(--color-secondary)]/50 flex items-center justify-center overflow-hidden transition-colors duration-200">
-                      {user?.avatar ? (
-                        <img
-                          src={user.avatar}
-                          alt={user.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <UserIcon className="w-6 h-6 text-[var(--color-accent)] transition-colors duration-200" />
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-[var(--color-text)] transition-colors duration-200">
-                        {user?.name}
-                      </p>
-                      <p className="text-xs text-[var(--color-textSecondary)] transition-colors duration-200">
-                        {user?.email}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-3">
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-[var(--color-textSecondary)] transition-colors duration-200">
-                        Level {user?.level ?? 1}
-                      </span>
-                      <span className="text-[var(--color-textSecondary)] transition-colors duration-200">
-                        {xpProgress.currentLevelXP.toLocaleString()} / {xpProgress.nextLevelXP.toLocaleString()} XP
-                      </span>
-                    </div>
-                    <div className="h-1.5 bg-[var(--color-secondary)]/50 rounded-full overflow-hidden transition-colors duration-200">
-                      <motion.div
-                        className="h-full bg-[var(--color-accent)] rounded-full transition-all duration-300"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${xpProgress.progress}%` }}
-                        transition={{ duration: 0.5, ease: "easeOut" }}
-                      />
-                    </div>
-                    <div className="mt-1 text-xs text-[var(--color-textSecondary)] text-right transition-colors duration-200">
-                      {Math.round(xpProgress.progress)}% to Level {(user?.level ?? 1) + 1}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="py-1">
-                  <button
-                    onClick={() => {
-                      navigate('/dashboard/profile');
-                      setShowProfileMenu(false);
-                    }}
-                    className={`w-full px-4 py-2 text-left text-sm text-[var(--color-text)] ${getHoverClass()} transition-colors duration-200 flex items-center gap-2`}
-                  >
-                    <UserIcon className="w-4 h-4" />
-                    View Profile
-                  </button>
-                  <button
-                    onClick={() => {
-                      navigate('/dashboard/settings');
-                      setShowProfileMenu(false);
-                    }}
-                    className={`w-full px-4 py-2 text-left text-sm text-[var(--color-text)] ${getHoverClass()} transition-colors duration-200 flex items-center gap-2`}
-                  >
-                    <Settings className="w-4 h-4" />
-                    Settings
-                  </button>
-                  <button
-                    onClick={() => {
-                      logout();
-                      setShowProfileMenu(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 flex items-center gap-2 transition-colors duration-200"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    Log out
-                  </button>
-                </div>
-              </motion.div>
+              <ProfileMenu
+                user={user}
+                logout={logout}
+                onClose={() => setShowProfileMenu(false)}
+              />
             )}
           </div>
         </div>

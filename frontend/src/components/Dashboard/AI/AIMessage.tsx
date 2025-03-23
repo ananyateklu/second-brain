@@ -10,6 +10,7 @@ import { ToolExecution } from './ToolExecution';
 import { AgentTool } from '../../../services/ai/agent';
 import { Wrench } from 'lucide-react';
 import React from 'react';
+import { useTheme } from '../../../contexts/themeContextUtils';
 
 interface ToolMetadata {
   tools_used: Array<{
@@ -57,6 +58,7 @@ export function AIMessage({
 }: AIMessageProps) {
   const isUser = message.role === 'user';
   const { executionSteps } = useAI();
+  const { theme } = useTheme();
   const messageSteps = message.executionSteps || executionSteps[message.id] || [];
 
   // Extract tool executions from metadata
@@ -96,11 +98,18 @@ export function AIMessage({
     content.includes('<Thought>') &&
     content.includes('</Thought>');
 
+  const getAssistantBubbleStyle = () => {
+    if (theme === 'midnight') {
+      return 'bg-gradient-to-br from-gray-900/80 to-gray-900/60 text-gray-100 border-gray-800/30';
+    }
+    return 'bg-gradient-to-br from-white/70 to-white/40 dark:from-gray-800/70 dark:to-gray-800/40 text-gray-900 dark:text-gray-100';
+  };
+
   const renderToolExecutions = () => {
     if (!shouldShowToolExecutions) return null;
 
     return (
-      <div className="mt-4 space-y-3 max-w-[600px]">
+      <div className="mt-4 space-y-3 max-w-full md:max-w-3xl lg:max-w-4xl">
         <div className="flex items-center gap-2 mb-2">
           <Wrench className="w-4 h-4 text-gray-500 dark:text-gray-400" />
           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -185,16 +194,16 @@ export function AIMessage({
     <div className="relative">
       <div className={`px-4 py-2.5 rounded-2xl
         backdrop-blur-md shadow-lg
-        border border-gray-200/30 dark:border-gray-700/30
+        border ${theme === 'midnight' ? 'border-gray-800/30' : 'border-gray-200/30 dark:border-gray-700/30'}
         ${isUser
           ? 'bg-gradient-to-br from-primary-500/70 to-primary-600/70 text-white'
-          : 'bg-gradient-to-br from-white/70 to-white/40 dark:from-gray-800/70 dark:to-gray-800/40 text-gray-900 dark:text-gray-100'
+          : getAssistantBubbleStyle()
         }
         ${!isLastInGroup && isUser ? 'rounded-br-md rounded-bl-2xl' : ''}
         ${!isLastInGroup && !isUser ? 'rounded-bl-md rounded-br-2xl' : ''}
         hover:shadow-xl transition-shadow duration-200
         text-sm
-        max-w-[600px] overflow-hidden`}
+        max-w-full md:max-w-3xl lg:max-w-4xl overflow-hidden`}
         style={isUser ? {
           background: `linear-gradient(135deg, ${message.model?.color ?? themeColor}70, ${message.model?.color ?? themeColor}80)`
         } : undefined}
@@ -238,7 +247,7 @@ export function AIMessage({
         </div>
 
         {shouldShowThoughtProcess && (
-          <div className="ml-4 flex-1 max-w-lg">
+          <div className="ml-4 flex-1 max-w-full md:max-w-3xl lg:max-w-4xl">
             <ThoughtProcess
               steps={messageSteps}
               isComplete={!isStreaming}
@@ -309,57 +318,69 @@ function formatThoughtSteps(thought: string): string[] {
     .map(step => step.trim() + (step.endsWith('.') ? '' : '.'));
 }
 
-const ThoughtProcessBubble = React.memo(({ thoughtSteps, content }: { thoughtSteps: string[], content: string }) => (
-  <div className="space-y-3 w-full max-w-[800px]">
-    {/* Thought Process Bubble */}
-    <div className="relative">
-      <div className={`px-4 py-2.5 rounded-2xl
-        backdrop-blur-md shadow-lg
-        bg-gradient-to-br from-gray-100/70 to-gray-50/40 
-        dark:from-gray-700/70 dark:to-gray-800/40
-        border border-gray-200/30 dark:border-gray-700/30
-        text-gray-700 dark:text-gray-300
-        text-sm`}
-      >
-        <div className="flex items-center gap-2 mb-3 text-xs font-medium text-gray-500 dark:text-gray-400">
-          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-            />
-          </svg>
-          <span>Reasoning Steps</span>
-        </div>
-        <div className="space-y-3">
-          {thoughtSteps.map((step, index) => (
-            <div key={`thought-${index}-${step.slice(0, 20)}`} className="flex gap-3 items-start group">
-              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 
-                flex items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-300
-                group-hover:bg-gray-200 dark:group-hover:bg-gray-600 transition-colors">
-                {index + 1}
-              </div>
-              <div className="flex-1 leading-relaxed">
-                {step}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
+const ThoughtProcessBubble = React.memo(({ thoughtSteps, content }: { thoughtSteps: string[], content: string }) => {
+  const { theme } = useTheme();
 
-    {/* Response Bubble */}
-    <div className="relative">
-      <div className={`px-4 py-2.5 rounded-2xl
-        backdrop-blur-md shadow-lg
-        bg-gradient-to-br from-white/70 to-white/40 
-        dark:from-gray-800/70 dark:to-gray-800/40
-        border border-gray-200/30 dark:border-gray-700/30
-        text-gray-900 dark:text-gray-100
-        text-sm`}
-      >
-        <div className="prose prose-sm dark:prose-invert">
-          {extractOutput(content)}
+  const getThoughtBubbleStyle = () => {
+    if (theme === 'midnight') {
+      return 'bg-gradient-to-br from-gray-900/80 to-gray-900/60 text-gray-300';
+    }
+    return 'bg-gradient-to-br from-gray-100/70 to-gray-50/40 dark:from-gray-700/70 dark:to-gray-800/40 text-gray-700 dark:text-gray-300';
+  };
+
+  return (
+    <div className="space-y-3 w-full max-w-full md:max-w-3xl lg:max-w-4xl">
+      {/* Thought Process Bubble */}
+      <div className="relative">
+        <div className={`px-4 py-2.5 rounded-2xl
+          backdrop-blur-md shadow-lg
+          ${getThoughtBubbleStyle()}
+          ${theme === 'midnight' ? '' : 'border border-gray-200/30 dark:border-gray-700/30'}
+          text-sm`}
+        >
+          <div className="flex items-center gap-2 mb-3 text-xs font-medium text-[var(--color-textSecondary)]">
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+              />
+            </svg>
+            <span>Reasoning Steps</span>
+          </div>
+          <div className="space-y-3">
+            {thoughtSteps.map((step, index) => (
+              <div key={`thought-${index}-${step.slice(0, 20)}`} className="flex gap-3 items-start group">
+                <div className={`flex-shrink-0 w-6 h-6 rounded-full 
+                  ${theme === 'midnight' ? 'bg-gray-800' : 'bg-gray-100 dark:bg-gray-700'} 
+                  flex items-center justify-center text-xs font-medium 
+                  text-[var(--color-textSecondary)]
+                  ${theme === 'midnight' ? 'group-hover:bg-gray-700' : 'group-hover:bg-gray-200 dark:group-hover:bg-gray-600'} 
+                  transition-colors`}>
+                  {index + 1}
+                </div>
+                <div className="flex-1 leading-relaxed">
+                  {step}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Response Bubble */}
+      <div className="relative">
+        <div className={`px-4 py-2.5 rounded-2xl
+          backdrop-blur-md shadow-lg
+          bg-gradient-to-br from-white/70 to-white/40 
+          dark:from-gray-800/70 dark:to-gray-800/40
+          ${theme === 'midnight' ? '' : 'border border-gray-200/30 dark:border-gray-700/30'}
+          text-gray-900 dark:text-gray-100
+          text-sm`}
+        >
+          <div className="prose prose-sm dark:prose-invert">
+            {extractOutput(content)}
+          </div>
         </div>
       </div>
     </div>
-  </div>
-));
+  );
+});

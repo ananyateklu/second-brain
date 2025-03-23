@@ -25,7 +25,7 @@ const renderContent = (
   if (viewMode !== 'graph') {
     return <ListView onNoteSelect={handleNodeSelect} />;
   }
-  
+
   if (!notes.length) {
     return (
       <div className="h-full flex flex-col items-center justify-center gap-3">
@@ -36,7 +36,7 @@ const renderContent = (
       </div>
     );
   }
-  
+
   return (
     <GraphView
       onNodeSelect={handleNodeSelect}
@@ -47,20 +47,20 @@ const renderContent = (
 
 const calculateConnectionStats = (note: Note, notes: Note[]) => {
   const linkedNoteIds = note.linkedNoteIds || [];
-  const linkedIdeas = linkedNoteIds.filter(id => 
+  const linkedIdeas = linkedNoteIds.filter(id =>
     notes.find(n => n.id === id)?.tags?.includes('idea')
   );
-  const linkedNotes = linkedNoteIds.filter(id => 
+  const linkedNotes = linkedNoteIds.filter(id =>
     !notes.find(n => n.id === id)?.tags?.includes('idea')
   );
-  
+
   return { linkedNoteIds, linkedIdeas, linkedNotes };
 };
 
 const processNoteConnections = (note: NoteWithConnections, oneWeekAgo: Date, oneMonthAgo: Date) => {
   let recentWeek = 0;
   let recentMonth = 0;
-  
+
   note.linkedNoteIds?.forEach(id => {
     const connection = note.connections?.find(c => c.noteId === id);
     if (connection?.createdAt) {
@@ -69,7 +69,7 @@ const processNoteConnections = (note: NoteWithConnections, oneWeekAgo: Date, one
       if (connectionDate > oneMonthAgo) recentMonth++;
     }
   });
-  
+
   return { recentWeek, recentMonth };
 };
 
@@ -81,11 +81,11 @@ const findClusters = (notes: Note[]) => {
     if (!visited.has(note.id)) {
       clusters.add(note.id);
       const stack = [note.id];
-      
+
       while (stack.length > 0) {
         const currentId = stack.pop()!;
         visited.add(currentId);
-        
+
         const currentNote = notes.find(n => n.id === currentId);
         currentNote?.linkedNoteIds?.forEach(linkedId => {
           if (!visited.has(linkedId)) {
@@ -115,7 +115,7 @@ const getButtonBackground = (isActive: boolean, theme: string) => {
   if (isActive) {
     return 'bg-blue-500/20 text-blue-600 dark:text-blue-400';
   }
-  
+
   if (theme === 'dark') {
     return 'bg-gray-800/20 text-gray-400 hover:bg-gray-800/30';
   }
@@ -142,7 +142,7 @@ export function LinkedNotesPage() {
     const counts = notes.reduce((acc, note) => {
       const { linkedNoteIds, linkedIdeas, linkedNotes } = calculateConnectionStats(note, notes);
       const isIdea = note.tags?.includes('idea');
-      
+
       const { recentWeek, recentMonth } = processNoteConnections(
         note as NoteWithConnections,
         new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
@@ -202,17 +202,15 @@ export function LinkedNotesPage() {
   });
 
   return (
-    <div className="h-[calc(100vh-9rem)] overflow-hidden bg-fixed">
+    <div className="h-[calc(100vh-11rem)] overflow-visible bg-fixed">
       {/* Background gradient */}
       <div className="fixed inset-0 bg-fixed dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-slate-800 bg-gradient-to-br from-white to-gray-100 -z-10" />
 
-      {/* Main content container */}
-      <div className="flex flex-col h-full p-0.5">
+      <div className="flex flex-col h-full mx-3 mt-1 mb-1 space-y-1.5">
         {/* Header - more compact version */}
         <div className={`
-          flex-none 
           relative 
-          overflow-hidden 
+          overflow-visible 
           rounded-lg 
           ${getHeaderBackground(theme)} 
           border-[0.5px] 
@@ -221,19 +219,18 @@ export function LinkedNotesPage() {
           dark:shadow-[4px_0_24px_-2px_rgba(0,0,0,0.3),8px_0_16px_-4px_rgba(0,0,0,0.2)]
           ring-1
           ring-white/5
-          mb-2 
           backdrop-blur-xl
         `}>
           <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-transparent" />
-          <div className="relative px-4 py-3">
+          <div className="relative px-2 py-0.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 bg-blue-100/50 dark:bg-blue-900/30 rounded-lg">
-                  <Link2 className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                <div className="p-1 bg-blue-100/50 dark:bg-blue-900/30 rounded-lg">
+                  <Link2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-[var(--color-text)]">Linked Notes</h1>
-                  <p className="text-sm text-[var(--color-textSecondary)]">
+                  <h1 className="text-xl font-bold text-[var(--color-text)]">Linked Notes</h1>
+                  <p className="text-xs text-[var(--color-textSecondary)]">
                     {stats.totalConnections} connections • {stats.connectionDensity}% density
                   </p>
                 </div>
@@ -243,43 +240,43 @@ export function LinkedNotesPage() {
               <div className="flex gap-0.5">
                 <button
                   onClick={() => setViewMode('graph')}
-                  className={`p-1.5 rounded-lg border border-white/40 dark:border-white/30 transition-all ${getButtonBackground(viewMode === 'graph', theme)}`}
+                  className={`p-1 rounded-lg border border-white/40 dark:border-white/30 transition-all ${getButtonBackground(viewMode === 'graph', theme)}`}
                   title="Graph View"
                 >
-                  <Network className="w-3.5 h-3.5" />
+                  <Network className="w-3 h-3" />
                 </button>
                 <button
                   onClick={() => setViewMode('list')}
-                  className={`p-1.5 rounded-lg border border-white/40 dark:border-white/30 transition-all ${getButtonBackground(viewMode === 'list', theme)}`}
+                  className={`p-1 rounded-lg border border-white/40 dark:border-white/30 transition-all ${getButtonBackground(viewMode === 'list', theme)}`}
                   title="List View"
                 >
-                  <List className="w-3.5 h-3.5" />
+                  <List className="w-3 h-3" />
                 </button>
               </div>
             </div>
 
             {/* Stats Row - more compact */}
-            <div className="flex gap-3 text-sm mt-3">
+            <div className="flex gap-3 text-xs mt-1">
               <div className="flex items-center gap-1">
-                <Type className="w-3.5 h-3.5 text-[var(--color-note)]" />
+                <Type className="w-3 h-3 text-[var(--color-note)]" />
                 <span className="font-medium text-[var(--color-note)]">{stats.notes}</span>
                 <span className="text-[var(--color-textSecondary)]">Notes</span>
               </div>
 
               <div className="flex items-center gap-1">
-                <Lightbulb className="w-3.5 h-3.5 text-[var(--color-idea)]" />
+                <Lightbulb className="w-3 h-3 text-[var(--color-idea)]" />
                 <span className="font-medium text-[var(--color-idea)]">{stats.ideas}</span>
                 <span className="text-[var(--color-textSecondary)]">Ideas</span>
               </div>
 
               <div className="flex items-center gap-1">
-                <Network className="w-3.5 h-3.5 text-[var(--color-note)]" />
+                <Network className="w-3 h-3 text-[var(--color-note)]" />
                 <span className="font-medium text-[var(--color-note)]">{stats.connectionDensity}%</span>
                 <span className="text-[var(--color-textSecondary)]">Density</span>
               </div>
 
               <div className="flex items-center gap-1">
-                <GitBranch className="w-3.5 h-3.5 text-[var(--color-note)]" />
+                <GitBranch className="w-3 h-3 text-[var(--color-note)]" />
                 <span className="font-medium text-[var(--color-note)]">{stats.clusterCount}</span>
                 <span className="text-[var(--color-textSecondary)]">Topics</span>
               </div>
@@ -289,7 +286,8 @@ export function LinkedNotesPage() {
 
         {/* Content Area */}
         <div className={`
-          flex-1 
+          flex-1
+          min-h-0
           relative 
           rounded-lg 
           ${getContainerBackground(theme)} 
@@ -299,9 +297,9 @@ export function LinkedNotesPage() {
           dark:shadow-[4px_0_24px_-2px_rgba(0,0,0,0.3),8px_0_16px_-4px_rgba(0,0,0,0.2)]
           ring-1
           ring-white/5
-          overflow-hidden
+          overflow-visible
         `}>
-          <div className="flex h-full">
+          <div className="flex h-full overflow-auto">
             <div className={`flex-1 ${selectedNoteId ? 'border-r border-[var(--color-border)]' : ''}`}>
               {renderContent(viewMode, notes, handleNodeSelect, selectedNoteId)}
             </div>

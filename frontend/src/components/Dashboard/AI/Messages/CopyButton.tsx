@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Copy, Check, Loader } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useTheme } from '../../../../contexts/themeContextUtils';
 
 interface CopyButtonProps {
   content: string;
@@ -9,6 +10,7 @@ interface CopyButtonProps {
 
 export function CopyButton({ content, isUser }: CopyButtonProps) {
   const [copyState, setCopyState] = useState<'idle' | 'copying' | 'copied'>('idle');
+  const { theme } = useTheme();
 
   const handleCopy = async () => {
     if (copyState !== 'idle') return;
@@ -36,6 +38,20 @@ export function CopyButton({ content, isUser }: CopyButtonProps) {
     }
   };
 
+  const getButtonBackground = () => {
+    if (theme === 'midnight') {
+      return 'bg-gray-900/60 hover:bg-gray-900/80';
+    }
+    return 'bg-white/50 dark:bg-gray-800/50 hover:bg-white/70 dark:hover:bg-gray-800/70';
+  };
+
+  const getButtonBorder = () => {
+    if (theme === 'midnight') {
+      return 'border-gray-800/30';
+    }
+    return 'border-gray-200/30 dark:border-gray-700/30';
+  };
+
   return (
     <motion.button
       initial={{ opacity: 0, scale: 0.8 }}
@@ -47,12 +63,11 @@ export function CopyButton({ content, isUser }: CopyButtonProps) {
         ${isUser ? '-left-3 top-4 -translate-y-1/2' : '-right-3 -bottom-2'}
         opacity-0 group-hover:opacity-100
         rounded-full shadow-lg p-2
-        bg-white/50 dark:bg-gray-800/50
-        border border-gray-200/30 dark:border-gray-700/30
+        ${getButtonBackground()}
+        border ${getButtonBorder()}
         backdrop-blur-sm
         transition-all duration-200
         hover:scale-105 active:scale-95
-        hover:bg-white/70 dark:hover:bg-gray-800/70
         disabled:opacity-50 disabled:cursor-not-allowed
         z-10`}
     >

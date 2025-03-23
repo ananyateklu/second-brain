@@ -237,7 +237,7 @@ export function TagsPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-9rem)] overflow-hidden bg-fixed">
+    <div className="h-[calc(100vh-9rem)] overflow-visible bg-fixed">
       {/* Background gradient */}
       <div className="fixed inset-0 bg-fixed dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-slate-800 bg-gradient-to-br from-white to-gray-100 -z-10" />
 

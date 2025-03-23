@@ -11,9 +11,11 @@ import { AudioInterface } from './AudioInterface';
 import { ImageInterface } from './ImageInterface';
 import { FunctionInterface } from './FunctionInterface';
 import { RAGInterface } from './RAGInterface';
+import { useTheme } from '../../../contexts/themeContextUtils';
 
 export function AIAssistantPage() {
   const navigate = useNavigate();
+  const { theme } = useTheme(); // Get current theme
   const { isOpenAIConfigured, isGeminiConfigured, isAnthropicConfigured, isLlamaConfigured, availableModels, sendMessage, llamaService } = useAI();
   const [selectedCategory, setSelectedCategory] = useState<string>('chat');
   const [selectedModel, setSelectedModel] = useState<AIModel | null>(null);
@@ -31,6 +33,26 @@ export function AIAssistantPage() {
   );
 
   const themeColor = selectedModel?.color || '#3b82f6'; // Default to blue
+
+  // Theme helper functions
+  const getContainerBackground = () => {
+    if (theme === 'dark') return 'bg-gray-900/30';
+    if (theme === 'midnight') return 'bg-white/5';
+    return 'bg-white/30';
+  };
+
+  const getBorderColor = () => {
+    if (theme === 'midnight') return 'border-[#334155]';
+    if (theme === 'dark') return 'border-[#1e293b]';
+    return 'border-[rgb(229_231_235/0.3)]';
+  };
+
+  const getShadowClass = () => {
+    if (theme === 'dark' || theme === 'midnight') {
+      return 'shadow-[0_8px_16px_rgba(0,0,0,0.3)]';
+    }
+    return 'shadow-[0_8px_16px_rgba(0,0,0,0.08)]';
+  };
 
   const handleModelSelect = (model: AIModel | null) => {
     setSelectedModel(model);
@@ -163,16 +185,16 @@ export function AIAssistantPage() {
   if (!isOpenAIConfigured && !isGeminiConfigured && !isAnthropicConfigured && !isLlamaConfigured) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-12rem)] gap-4">
-        <Bot className="w-16 h-16 text-gray-400" />
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+        <Bot className="w-16 h-16 text-[var(--color-textSecondary)]" />
+        <h2 className="text-xl font-semibold text-[var(--color-text)]">
           AI Assistant Not Configured
         </h2>
-        <p className="text-gray-600 dark:text-gray-400 text-center max-w-md">
+        <p className="text-[var(--color-textSecondary)] text-center max-w-md">
           Please configure your API keys in settings to use the AI assistant.
         </p>
         <button
           onClick={() => navigate('/dashboard/settings')}
-          className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent)] hover:bg-[var(--color-accent)]/90 text-white rounded-lg transition-colors"
         >
           <Settings className="w-5 h-5" />
           <span>Configure Settings</span>
@@ -182,24 +204,29 @@ export function AIAssistantPage() {
   }
 
   return (
-    <div className="fixed top-20 left-0 lg:left-60 right-0 bottom-0 overflow-hidden px-4 pt-4 pb-4">
-      <div className="h-full grid grid-rows-[minmax(0,auto),1fr,auto] max-w-full overflow-hidden">
+    <div className="w-full h-[calc(100vh-9rem)] flex flex-col relative">
+      <div className="flex-1 flex flex-col gap-4 pb-[110px] overflow-hidden">
         {/* Model Selection */}
-        <div className={`backdrop-blur-sm bg-white/30 dark:bg-gray-800/30 
-          border shadow-lg rounded-xl mb-4
-          transition-all duration-200 ease-in-out
-          flex items-center justify-center
-          ${showModelDetails
+        <div className={`
+            ${getContainerBackground()}
+            backdrop-blur-xl 
+            ${getBorderColor()} 
+            border 
+            ${getShadowClass()}
+            rounded-xl
+            transition-all duration-200 ease-in-out
+            flex items-center justify-center
+            ${showModelDetails
             ? 'max-h-[45vh]'
             : selectedModel && !showModelSelector
               ? 'max-h-[80px]'
               : 'max-h-[25vh]'
           }`}
           style={{
-            borderColor: selectedModel ? `${selectedModel.color}30` : 'rgb(229 231 235 / 0.3)',
+            borderColor: selectedModel ? `${selectedModel.color}30` : undefined,
             boxShadow: selectedModel
               ? `0 4px 6px -1px ${selectedModel.color}10, 0 2px 4px -2px ${selectedModel.color}10`
-              : '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)'
+              : undefined
           }}
         >
           <ModelSelector
@@ -216,10 +243,16 @@ export function AIAssistantPage() {
 
         {/* Messages Container */}
         <div
-          className="min-h-0 backdrop-blur-sm bg-white/30 
-            dark:bg-gray-800/30 border shadow-lg rounded-xl mb-4"
+          className={`
+            flex-1 overflow-hidden
+            ${getContainerBackground()} 
+            backdrop-blur-xl 
+            border 
+            ${getBorderColor()} 
+            ${getShadowClass()}
+            rounded-xl`}
           style={{
-            borderColor: selectedModel ? `${selectedModel.color}30` : 'rgb(229 231 235 / 0.3)',
+            borderColor: selectedModel ? `${selectedModel.color}30` : undefined,
             boxShadow: selectedModel
               ? `0 4px 6px -1px ${selectedModel.color}10, 0 2px 4px -2px ${selectedModel.color}10`
               : undefined
@@ -233,81 +266,88 @@ export function AIAssistantPage() {
             selectedModel={selectedModel}
           />
         </div>
+      </div>
 
-        {/* Error and Input */}
-        <div>
-          {error && (
-            <div className="mb-4 p-4 backdrop-blur-sm bg-red-50/50 
-              dark:bg-red-900/30 border border-red-200/30 
-              dark:border-red-700/30 text-red-600 
-              dark:text-red-400 rounded-xl">
-              <p>{error}</p>
+      {/* Error and Input - Fixed at bottom */}
+      <div className="absolute bottom-0 left-0 right-0 mb-4 z-10">
+        {/* Gradient overlay for better transition */}
+        <div className="absolute bottom-full left-0 right-0 h-24 bg-gradient-to-t from-[var(--color-background)] to-transparent pointer-events-none"></div>
+
+        {error && (
+          <div className="mb-4 p-4 backdrop-blur-sm rounded-xl border
+            bg-red-50/50 dark:bg-red-900/20 text-red-600 dark:text-red-400
+            border-red-200/30 dark:border-red-700/30">
+            <p>{error}</p>
+          </div>
+        )}
+
+        <div className={`
+            ${getContainerBackground()} 
+            backdrop-blur-xl
+            border
+            ${getBorderColor()}
+            ${getShadowClass()}
+            p-4 rounded-xl`}
+          style={{
+            borderColor: selectedModel ? `${selectedModel.color}30` : undefined,
+            boxShadow: selectedModel
+              ? `0 4px 6px -1px ${selectedModel.color}10, 0 2px 4px -2px ${selectedModel.color}10`
+              : undefined
+          }}
+        >
+          {selectedModel ? (
+            <>
+              {selectedModel.category === 'function' ? (
+                <FunctionInterface
+                  model={selectedModel}
+                  onUserInput={handleUserInput}
+                  isLoading={isLoading}
+                  themeColor={themeColor}
+                />
+              ) : selectedModel.id === 'whisper-1' ? (
+                <AudioInterface
+                  model={selectedModel}
+                  onMessageSend={handleAudioMessage}
+                  isLoading={isLoading}
+                  setIsLoading={setIsLoading}
+                  setError={setError}
+                />
+              ) : selectedModel.category === 'rag' ? (
+                <RAGInterface
+                  addMessage={addMessage}
+                  updateMessage={updateMessage}
+                  themeColor={themeColor}
+                />
+              ) : selectedModel.category === 'audio' ? (
+                <ChatInterface
+                  model={selectedModel}
+                  onUserInput={handleUserInput}
+                  isLoading={isLoading}
+                  themeColor={themeColor}
+                />
+              ) : selectedModel.category === 'image' ? (
+                <ImageInterface
+                  model={selectedModel}
+                  addMessage={addMessage}
+                  updateMessage={updateMessage}
+                  isLoading={isLoading}
+                  setIsLoading={setIsLoading}
+                  setError={setError}
+                />
+              ) : (
+                <ChatInterface
+                  model={selectedModel}
+                  onUserInput={handleUserInput}
+                  isLoading={isLoading}
+                  themeColor={themeColor}
+                />
+              )}
+            </>
+          ) : (
+            <div className="text-center text-[var(--color-textSecondary)] py-4">
+              Select a model to start
             </div>
           )}
-
-          <div className="backdrop-blur-sm bg-white/30 dark:bg-gray-800/30 
-            border shadow-lg p-4 rounded-xl"
-            style={{
-              borderColor: selectedModel ? `${selectedModel.color}30` : 'rgb(229 231 235 / 0.3)',
-              boxShadow: selectedModel
-                ? `0 4px 6px -1px ${selectedModel.color}10, 0 2px 4px -2px ${selectedModel.color}10`
-                : undefined
-            }}
-          >
-            {selectedModel ? (
-              <>
-                {selectedModel.category === 'function' ? (
-                  <FunctionInterface
-                    model={selectedModel}
-                    onUserInput={handleUserInput}
-                    isLoading={isLoading}
-                    themeColor={themeColor}
-                  />
-                ) : selectedModel.id === 'whisper-1' ? (
-                  <AudioInterface
-                    model={selectedModel}
-                    onMessageSend={handleAudioMessage}
-                    isLoading={isLoading}
-                    setIsLoading={setIsLoading}
-                    setError={setError}
-                  />
-                ) : selectedModel.category === 'rag' ? (
-                  <RAGInterface
-                    addMessage={addMessage}
-                    updateMessage={updateMessage}
-                    themeColor={themeColor}
-                  />
-                ) : selectedModel.category === 'audio' ? (
-                  <ChatInterface
-                    model={selectedModel}
-                    onUserInput={handleUserInput}
-                    isLoading={isLoading}
-                    themeColor={themeColor}
-                  />
-                ) : selectedModel.category === 'image' ? (
-                  <ImageInterface
-                    model={selectedModel}
-                    addMessage={addMessage}
-                    updateMessage={updateMessage}
-                    isLoading={isLoading}
-                    setIsLoading={setIsLoading}
-                    setError={setError}
-                  />
-                ) : (
-                  <ChatInterface
-                    model={selectedModel}
-                    onUserInput={handleUserInput}
-                    isLoading={isLoading}
-                    themeColor={themeColor}
-                  />
-                )}
-              </>
-            ) : (
-              <div className="text-center text-gray-500 dark:text-gray-400 py-4">
-                Select a model to start
-              </div>
-            )}
-          </div>
         </div>
       </div>
     </div>

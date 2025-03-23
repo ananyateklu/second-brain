@@ -2,7 +2,33 @@ import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { AIMessage } from './AIMessage';
 import { EmptyState } from './EmptyState';
 import { AIModel } from '../../../types/ai';
-import { Message } from '../../../types/message'; // Import Message interface
+import { Message } from '../../../types/message';
+import { useTheme } from '../../../contexts/themeContextUtils';
+
+// Define ToolMetadata interface from AIMessage component
+interface ToolMetadata {
+  tools_used: Array<{
+    name: string;
+    type: string;
+    description: string;
+    parameters: Record<string, unknown>;
+    required_permissions?: string[];
+    status?: string;
+    result?: string;
+    error?: string;
+    execution_time?: number;
+  }>;
+  execution_time?: number;
+  agent_type?: string;
+  base_agent?: string;
+  research_parameters?: {
+    topic: string;
+    tools_used: string[];
+  };
+}
+
+// Enhanced message type to match what AIMessage component expects
+type EnhancedMessage = Message & { metadata?: ToolMetadata };
 
 interface MessageListProps {
   messages: Message[];
@@ -16,6 +42,7 @@ export function MessageList(props: MessageListProps) {
   // Add state to track if user has manually scrolled
   const [userHasScrolled, setUserHasScrolled] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const { theme } = useTheme();
 
   // Handle scroll events
   const handleScroll = () => {
@@ -95,7 +122,7 @@ export function MessageList(props: MessageListProps) {
         <div
           ref={scrollContainerRef}
           onScroll={handleScroll}
-          className="h-full overflow-y-auto overflow-x-hidden px-2 py-4 space-y-4"
+          className="h-full overflow-y-auto overflow-x-hidden px-1 sm:px-2 md:px-4 py-4 pb-16 space-y-4 custom-scrollbar"
         >
           {groupedMessages.map((group, groupIndex) => {
             const date = new Date(group[0].timestamp);
@@ -107,19 +134,19 @@ export function MessageList(props: MessageListProps) {
               <div key={groupKey} className="space-y-1 max-w-full">
                 {showDateDivider && (
                   <div className="flex items-center justify-center my-1">
-                    <div className="px-3 py-0.5 rounded-full text-xs font-medium 
-                      bg-gray-100/50 dark:bg-gray-800/50 
-                      text-gray-500 dark:text-gray-400
-                      backdrop-blur-sm border border-gray-200/30 dark:border-gray-700/30">
+                    <div className={`px-3 py-0.5 rounded-full text-xs font-medium 
+                      ${theme === 'midnight' ? 'bg-gray-900/50' : 'bg-gray-100/50 dark:bg-gray-800/50'} 
+                      text-[var(--color-textSecondary)]
+                      backdrop-blur-sm ${theme === 'midnight' ? '' : 'border border-gray-200/30 dark:border-gray-700/30'}`}>
                       {formatDate(date)}
                     </div>
                   </div>
                 )}
-                <div className="space-y-1 mx-5">
+                <div className="space-y-1 mx-2 sm:mx-3 md:mx-5 lg:mx-10">
                   {group.map((message, index) => (
                     <AIMessage
                       key={`${message.id}-${index}`}
-                      message={message}
+                      message={message as EnhancedMessage}
                       themeColor={props.themeColor}
                       isStreaming={props.isLoading && message.role === 'assistant'}
                       isFirstInGroup={index === 0}
@@ -130,7 +157,7 @@ export function MessageList(props: MessageListProps) {
               </div>
             );
           })}
-          <div ref={props.messagesEndRef} />
+          <div ref={props.messagesEndRef} className="h-12" />
         </div>
       )}
     </div>

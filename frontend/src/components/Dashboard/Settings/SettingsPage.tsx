@@ -128,11 +128,11 @@ export function SettingsPage() {
   `;
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-fixed">
+    <div className="min-h-screen overflow-visible bg-fixed">
       {/* Background */}
       <div className="fixed inset-0 bg-[var(--color-background)] -z-10" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <div className="space-y-8 relative w-full">
         {/* Page Header */}
         <motion.div
           initial="hidden"
@@ -141,7 +141,7 @@ export function SettingsPage() {
           className={sectionClasses}
         >
           <div className="p-8">
-            <motion.div 
+            <motion.div
               variants={cardVariants}
               className="flex items-center gap-4"
             >
@@ -163,7 +163,7 @@ export function SettingsPage() {
           {/* Left Column */}
           <div className="space-y-6">
             {/* Appearance Section */}
-            <motion.div 
+            <motion.div
               variants={cardVariants}
               className={sectionClasses}
             >
@@ -254,7 +254,7 @@ export function SettingsPage() {
             </motion.div>
 
             {/* Notifications Section */}
-            <motion.div 
+            <motion.div
               variants={cardVariants}
               className={sectionClasses}
             >
@@ -323,7 +323,7 @@ export function SettingsPage() {
                               transition-all duration-200
                               flex items-center gap-2
                             `}
-                            onClick={() => {}}
+                            onClick={() => { }}
                           >
                             <span>Default Sound</span>
                             <ChevronDown className="w-3 h-3 text-[var(--color-textSecondary)]" />
@@ -360,7 +360,7 @@ export function SettingsPage() {
           {/* Right Column */}
           <div className="space-y-6">
             {/* Security Section */}
-            <motion.div 
+            <motion.div
               variants={cardVariants}
               className={sectionClasses}
             >
@@ -428,7 +428,7 @@ export function SettingsPage() {
                         transition-all duration-200
                         flex items-center gap-2
                       `}
-                      onClick={() => {}}
+                      onClick={() => { }}
                     >
                       <span>30 minutes</span>
                       <ChevronDown className="w-3 h-3 text-[var(--color-textSecondary)]" />
@@ -439,7 +439,7 @@ export function SettingsPage() {
             </motion.div>
 
             {/* Privacy Settings */}
-            <motion.div 
+            <motion.div
               variants={cardVariants}
               className={sectionClasses}
             >
@@ -475,7 +475,7 @@ export function SettingsPage() {
                     <input
                       type="checkbox"
                       checked={true}
-                      onChange={() => {}}
+                      onChange={() => { }}
                       className="sr-only peer"
                     />
                     <div className={toggleClasses}></div>
@@ -499,7 +499,7 @@ export function SettingsPage() {
                     <input
                       type="checkbox"
                       checked={false}
-                      onChange={() => {}}
+                      onChange={() => { }}
                       className="sr-only peer"
                     />
                     <div className={toggleClasses}></div>
@@ -523,7 +523,7 @@ export function SettingsPage() {
                     <input
                       type="checkbox"
                       checked={true}
-                      onChange={() => {}}
+                      onChange={() => { }}
                       className="sr-only peer"
                     />
                     <div className={toggleClasses}></div>
@@ -547,7 +547,7 @@ export function SettingsPage() {
                     <input
                       type="checkbox"
                       checked={true}
-                      onChange={() => {}}
+                      onChange={() => { }}
                       className="sr-only peer"
                     />
                     <div className={toggleClasses}></div>
@@ -559,7 +559,7 @@ export function SettingsPage() {
         </div>
 
         {/* AI Configuration Section - Full Width */}
-        <motion.div 
+        <motion.div
           variants={cardVariants}
           className={sectionClasses}
         >
@@ -582,7 +582,7 @@ export function SettingsPage() {
         </motion.div>
 
         {/* Import & Export Section - Full Width */}
-        <motion.div 
+        <motion.div
           variants={cardVariants}
           className={sectionClasses}
         >

@@ -1,6 +1,7 @@
 import React from 'react';
 import { ExecutionStep } from '../../../types/ai';
 import { Settings2, Brain, Terminal, Database, CheckCircle, ChevronRight, LucideIcon } from 'lucide-react';
+import { useTheme } from '../../../contexts/themeContextUtils';
 
 // Simple utility function for class name concatenation
 const cn = (...classes: (string | boolean | undefined)[]) => {
@@ -90,7 +91,7 @@ interface StepMetadata {
 interface ThoughtProcessProps {
   steps: ExecutionStep[];
   isComplete: boolean;
-  themeColor: string;
+  themeColor?: string;
 }
 
 const renderStepIndicator = (
@@ -202,12 +203,13 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-export function ThoughtProcess({ steps, isComplete, themeColor }: ThoughtProcessProps) {
+export function ThoughtProcess({ steps, isComplete }: ThoughtProcessProps) {
   const [collapsedSteps, setCollapsedSteps] = React.useState<Record<string, boolean>>({});
   const collapsedStepsRef = React.useRef<Record<string, boolean>>({});
   const manuallyToggledSteps = React.useRef<Set<string>>(new Set());
   const lastStepRef = React.useRef<HTMLDivElement>(null);
   const previousStepsLengthRef = React.useRef(steps.length);
+  const { theme } = useTheme();
 
   // Initialize collapsed states and handle auto-collapse
   React.useEffect(() => {
@@ -280,24 +282,6 @@ export function ThoughtProcess({ steps, isComplete, themeColor }: ThoughtProcess
       }, 100);
     }
   }, [steps.length, isComplete]);
-
-  // Toggle collapse state for a step
-  const toggleCollapse = React.useCallback((stepId: string, event: React.MouseEvent) => {
-    // Prevent event from bubbling up to prevent scroll handlers
-    event.stopPropagation();
-
-    // Mark this step as manually toggled
-    manuallyToggledSteps.current.add(stepId);
-
-    setCollapsedSteps(prev => {
-      const newState = {
-        ...prev,
-        [stepId]: !prev[stepId]
-      };
-      collapsedStepsRef.current = newState;
-      return newState;
-    });
-  }, []);
 
   // Reset manual toggles when all steps complete
   React.useEffect(() => {
@@ -814,6 +798,12 @@ export function ThoughtProcess({ steps, isComplete, themeColor }: ThoughtProcess
     ) : null
   );
 
+  // Define an extended step type that includes the optional properties
+  type ExtendedExecutionStep = ExecutionStep & {
+    label?: string;
+    description?: string;
+  };
+
   const renderMetadata = (step: ExecutionStep) => {
     if (!step.metadata) return null;
 
@@ -854,120 +844,118 @@ export function ThoughtProcess({ steps, isComplete, themeColor }: ThoughtProcess
     );
   };
 
+  // Function to get appropriate background color based on theme
+  const getStepBackground = (isSubStep: boolean) => {
+    if (theme === 'midnight') {
+      return isSubStep
+        ? 'bg-gray-900'
+        : 'bg-gradient-to-r from-gray-900 to-gray-900/80';
+    }
+
+    return isSubStep
+      ? 'bg-white dark:bg-gray-800 border-gray-200/50 dark:border-gray-700/30'
+      : 'bg-white/50 dark:bg-gray-800/50 border-gray-200/50 dark:border-gray-700/30';
+  };
+
+  // Function to get appropriate text color based on theme
+  const getTextColor = (isHeader: boolean = false) => {
+    if (theme === 'midnight') {
+      return isHeader ? 'text-gray-300' : 'text-gray-400';
+    }
+
+    return isHeader
+      ? 'text-gray-700 dark:text-gray-300'
+      : 'text-gray-600 dark:text-gray-400';
+  };
+
   const renderStep = (step: ExecutionStep, isSubStep: boolean = false, parentColor?: string) => {
-    const isLast = steps[steps.length - 1] === step;
-    const subSteps = step.isSubStep ? [] : groupedSteps.subStepMap.get(step.type);
-    const stepColor = isSubStep ? parentColor : stepColors[step.type as keyof typeof stepColors] || themeColor;
-    const Icon = !isSubStep ? stepIcons[step.type as keyof typeof stepIcons] : undefined;
-    const stepId = `${step.type}-${step.timestamp}`;
-    const hasSubSteps = subSteps && subSteps.length > 0;
-    const isCollapsed = collapsedSteps[stepId];
-    const isLoading = isLast && !isComplete && !isSubStep;
+    const stepKey = `${step.type}-${step.timestamp}`;
+    const isLastStep = steps[steps.length - 1] === step;
+    const stepColor = step.isSubStep ? parentColor : stepColors[step.type as keyof typeof stepColors];
+    const Icon = step.isSubStep ? undefined : stepIcons[step.type as keyof typeof stepIcons];
+    const isCollapsed = !!collapsedSteps[stepKey];
+    const extendedStep = step as ExtendedExecutionStep;
+
+    const toggleCollapsed = () => {
+      const newValue = !collapsedSteps[stepKey];
+      setCollapsedSteps(prev => {
+        const updated = { ...prev, [stepKey]: newValue };
+        collapsedStepsRef.current = updated;
+        return updated;
+      });
+      manuallyToggledSteps.current.add(stepKey);
+    };
+
+    // Find related sub-steps
+    const subSteps = steps.filter(s =>
+      s.isSubStep && s.parentStep === step.type && !step.isSubStep
+    );
 
     return (
       <div
-        key={stepId}
-        className="space-y-2 animate-fade-in"
-        ref={isLast ? lastStepRef : undefined}
+        key={stepKey}
+        ref={isLastStep ? lastStepRef : undefined}
+        className={cn(
+          'mb-3 last:mb-0 animate-fade-in opacity-0',
+          isSubStep ? 'ml-6' : ''
+        )}
+        style={{ animationDelay: '0.1s' }}
       >
         <div
           className={cn(
-            "flex items-start gap-2 p-2 rounded-lg transition-all duration-300",
-            !isSubStep && "bg-white/50 dark:bg-gray-800/50 shadow-sm hover:shadow-md border border-gray-100 dark:border-gray-700",
-            isSubStep && "ml-4 text-sm hover:bg-gray-50 dark:hover:bg-gray-800/80",
-            isLoading && "animate-pulse-subtle"
+            'rounded-lg border p-3 shadow-sm backdrop-blur-sm transition-all',
+            getStepBackground(isSubStep),
+            isLastStep && !isComplete ? 'animate-pulse-subtle' : ''
           )}
-          style={!isSubStep ? {
-            borderLeft: `4px solid ${stepColor}`,
-            borderLeftColor: stepColor,
-            backgroundColor: `${stepColor}05`,
-            transition: 'all 0.3s ease-in-out'
-          } : undefined}
         >
-          {/* Collapse Toggle Button */}
-          {hasSubSteps && (
-            <button
-              onClick={(e) => toggleCollapse(stepId, e)}
-              className="mt-0.5 p-0.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors duration-200"
-            >
-              <div className="transition-transform duration-200" style={{ transform: isCollapsed ? 'rotate(0deg)' : 'rotate(90deg)' }}>
-                <ChevronRight className="w-3 h-3 text-gray-500" />
-              </div>
-            </button>
-          )}
+          {/* Step header */}
+          <div className="flex items-start gap-2">
+            <div className="shrink-0 mt-0.5">
+              {renderStepIndicator(isLastStep, isComplete, isSubStep, stepColor, Icon)}
+            </div>
 
-          {/* Step Icon */}
-          <div className="mt-0.5 flex-shrink-0 transition-opacity duration-200">
-            {renderStepIndicator(isLast, isComplete, isSubStep, stepColor, Icon)}
-          </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between">
+                <div className={`font-medium ${getTextColor(true)}`}>
+                  {extendedStep.label || (isSubStep ? 'Sub-step' : 'Processing step')}
+                </div>
 
-          {/* Step Content */}
-          <div className="flex-1 min-w-0 space-y-1">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 min-w-0">
-                <span className={cn(
-                  "font-medium text-xs transition-colors duration-200",
-                  isSubStep ? "truncate text-gray-600 dark:text-gray-300" : "break-words",
-                  isLoading && "animate-pulse"
-                )}>
-                  {step.content}
-                </span>
-                {step.duration && (
-                  <span className="text-[10px] text-gray-500 flex-shrink-0 transition-opacity duration-200">
-                    {step.duration}ms
-                  </span>
+                {(extendedStep.description || step.metadata) && (
+                  <button
+                    onClick={toggleCollapsed}
+                    className={`rounded p-0.5 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors
+                      ${theme === 'midnight' ? 'hover:bg-gray-800' : ''}`}
+                  >
+                    <ChevronRight
+                      className={`w-4 h-4 transition-transform ${isCollapsed ? '' : 'rotate-90'}`}
+                      style={{ color: stepColor }}
+                    />
+                  </button>
                 )}
               </div>
-              <span className="text-[10px] text-gray-500 flex-shrink-0 transition-opacity duration-200">
-                {new Date(step.timestamp).toLocaleTimeString()}
-              </span>
-            </div>
 
-            {/* Metadata Display */}
-            {step.metadata && Object.keys(step.metadata).length > 0 && (
-              <div className="text-[10px] space-y-1 transition-all duration-300">
-                {renderMetadata(step)}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Render Sub-steps with stable height transition */}
-        <div
-          className={cn(
-            "overflow-hidden transition-all duration-300",
-            isCollapsed ? "max-h-0 opacity-0" : "max-h-[2000px] opacity-100"
-          )}
-          style={{
-            transitionProperty: 'max-height, opacity',
-            transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)'
-          }}
-        >
-          {hasSubSteps && !isCollapsed && (
-            <div
-              className="relative ml-6 space-y-1"
-              style={{
-                borderLeft: `2px dashed ${stepColor}40`,
-                marginTop: '-0.5rem',
-                paddingTop: '0.5rem',
-                transition: 'all 0.3s ease-in-out'
-              }}
-            >
-              {subSteps.map(subStep => (
-                <div
-                  key={`${subStep.type}-${subStep.timestamp}`}
-                  className="relative animate-slide-in"
-                >
-                  <div
-                    className="absolute -left-[17px] top-1/2 w-3 h-[2px] transition-all duration-300"
-                    style={{ backgroundColor: `${stepColor}40` }}
-                  />
-                  {renderStep(subStep, true, stepColor)}
+              {extendedStep.description && (
+                <div className={`text-xs ${getTextColor()} mt-0.5`}>
+                  {extendedStep.description}
                 </div>
-              ))}
+              )}
+            </div>
+          </div>
+
+          {/* Collapsible metadata */}
+          {step.metadata && !isCollapsed && (
+            <div className={`mt-3 pt-3 ${theme === 'midnight' ? '' : 'border-t border-gray-200/50 dark:border-gray-700/30'} animate-slide-in`}>
+              {renderMetadata(step)}
             </div>
           )}
         </div>
+
+        {/* Render sub-steps if this is a main step */}
+        {!step.isSubStep && subSteps.length > 0 && !isCollapsed && (
+          <div className="mt-2">
+            {subSteps.map(subStep => renderStep(subStep, true, stepColor))}
+          </div>
+        )}
       </div>
     );
   };

@@ -69,11 +69,11 @@ export function TrashPage() {
   };
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-fixed">
+    <div className="min-h-screen overflow-visible bg-fixed">
       {/* Background */}
       <div className="fixed inset-0 bg-[var(--color-background)] -z-10" />
 
-      <div className="px-6 space-y-8 relative">
+      <div className="space-y-8 relative w-full">
         {/* Trash Header */}
         <motion.div
           initial="hidden"
@@ -97,7 +97,7 @@ export function TrashPage() {
           `}
         >
           <div className="flex flex-col sm:flex-row gap-6 justify-between">
-            <motion.div 
+            <motion.div
               variants={cardVariants}
               className="flex items-center gap-3"
             >

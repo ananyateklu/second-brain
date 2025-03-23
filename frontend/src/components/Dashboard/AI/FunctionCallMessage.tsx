@@ -29,7 +29,7 @@ export function FunctionCallMessage({ message, themeColor }: FunctionCallMessage
   return (
     <div className="flex items-start gap-4 mb-4 animate-message-slide-in">
       {/* Message Container */}
-      <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-md`}>
+      <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-full md:max-w-xl lg:max-w-2xl`}>
         {/* Header with user/bot info */}
         <div className={`flex items-center gap-2 mb-1 ${isUser ? 'flex-row-reverse' : ''}`}>
           {isUser ? (
@@ -64,7 +64,7 @@ export function FunctionCallMessage({ message, themeColor }: FunctionCallMessage
             px-4 py-3 rounded-2xl
             backdrop-blur-md shadow-sm hover:shadow-md
             transition-all duration-200
-            ${isUser 
+            ${isUser
               ? 'bg-gradient-to-br from-primary-500/80 to-primary-600/80 text-white'
               : 'bg-white/90 dark:bg-gray-800/90 text-gray-900 dark:text-gray-100'
             }
@@ -88,7 +88,7 @@ export function FunctionCallMessage({ message, themeColor }: FunctionCallMessage
 
       {/* Thought Process Section */}
       {!isUser && (messageSteps.length > 0 || message.isLoading) && (
-        <div className="flex-1 max-w-xl">
+        <div className="flex-1 max-w-full md:max-w-2xl lg:max-w-3xl">
           <div className="bg-white/50 dark:bg-gray-800/50 rounded-xl p-4 backdrop-blur-sm border border-gray-200/30 dark:border-gray-700/30 shadow-sm">
             <ThoughtProcess
               steps={messageSteps}

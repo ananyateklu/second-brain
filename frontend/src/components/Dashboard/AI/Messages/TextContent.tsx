@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import { CodeBlock } from '../CodeBlock';
 import remarkGfm from 'remark-gfm';
 import { type ComponentPropsWithoutRef } from 'react';
+import { useTheme } from '../../../../contexts/themeContextUtils';
 
 interface TextContentProps {
   message: Message;
@@ -10,6 +11,8 @@ interface TextContentProps {
 }
 
 export function TextContent({ message, themeColor }: TextContentProps) {
+  const { theme } = useTheme();
+
   // Ensure content is a string and handle potential nested structures
   const messageContent = message.content as { content?: string } | string;
   const content = typeof messageContent === 'string'
@@ -30,14 +33,17 @@ export function TextContent({ message, themeColor }: TextContentProps) {
           <div className="space-y-2">
             {thoughtSteps.map((step, index) => (
               <div key={index} className="flex gap-3 items-start">
-                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 
-                  flex items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-300">
+                <div className={`flex-shrink-0 w-6 h-6 rounded-full 
+                  flex items-center justify-center text-xs font-medium 
+                  ${theme === 'midnight'
+                    ? 'bg-gray-800 text-gray-300'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'}`}>
                   {index + 1}
                 </div>
                 <div className="flex-1">
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
-                    className="text-gray-700 dark:text-gray-300"
+                    className={`${theme === 'midnight' ? 'text-gray-300' : 'text-gray-700 dark:text-gray-300'}`}
                   >
                     {step}
                   </ReactMarkdown>

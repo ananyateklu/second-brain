@@ -3,6 +3,7 @@ import { Send, Loader, MessageSquare, Hash, Mic, Sparkles, Zap, Image, Settings2
 import { AIModel } from '../../../types/ai';
 import { RecordButton } from '../../shared/RecordButton';
 import { promptEnhancementService } from '../../../services/ai/promptEnhancementService';
+import { useTheme } from '../../../contexts/themeContextUtils';
 
 interface ChatInterfaceProps {
   model: AIModel;
@@ -21,6 +22,7 @@ export function ChatInterface({
 }: ChatInterfaceProps) {
   const [input, setInput] = useState('');
   const [isEnhancing, setIsEnhancing] = useState(false);
+  const { theme } = useTheme();
 
   const getModelIcon = () => {
     switch (model.category) {
@@ -48,8 +50,8 @@ export function ChatInterface({
       case 'embedding':
         return "Enter text to generate embeddings...";
       case 'audio':
-        return model.id === 'whisper-1' 
-          ? "Select an audio file to transcribe..." 
+        return model.id === 'whisper-1'
+          ? "Select an audio file to transcribe..."
           : "Enter text to convert to speech...";
       case 'image':
         return "Describe the image you want to generate...";
@@ -136,17 +138,17 @@ export function ChatInterface({
           onKeyDown={handleKeyDown}
           placeholder={getPlaceholder()}
           disabled={isLoading}
-          className="w-full px-4 py-2.5 pr-32
-            bg-white/50 dark:bg-gray-800/50
+          className={`w-full px-4 py-2.5 pr-32
+            ${theme === 'midnight' ? 'bg-gray-900/40' : 'bg-white/50 dark:bg-gray-800/50'}
             border border-gray-200/30 dark:border-gray-700/30
             rounded-lg
-            text-gray-900 dark:text-white
+            text-[var(--color-text)]
             placeholder-gray-500 dark:placeholder-gray-400
             transition-all duration-200
             focus:outline-none focus:ring-2 focus:ring-primary-500/50
-            disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled:opacity-50 disabled:cursor-not-allowed`}
         />
-        
+
         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
           {input.trim() && (
             <button
@@ -154,21 +156,25 @@ export function ChatInterface({
               onClick={handleEnhancePrompt}
               disabled={isEnhancing || isLoading}
               className={`p-2 rounded-full transition-all duration-200
-                hover:bg-gray-100 dark:hover:bg-gray-700 
-                text-gray-600 dark:text-gray-300
+                ${theme === 'midnight' ? 'hover:bg-gray-800/50' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}
+                text-[var(--color-textSecondary)]
                 disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               <Wand2 className={`w-4 h-4 ${isEnhancing ? 'animate-spin' : ''}`} />
             </button>
           )}
 
-          <RecordButton 
+          <RecordButton
             onTranscription={handleTranscription}
             disabled={isLoading}
           />
-          
+
           <div className="p-1.5 rounded-md"
-            style={{ backgroundColor: `${model.color}10` }}>
+            style={{
+              backgroundColor: theme === 'midnight'
+                ? `${model.color}25`
+                : `${model.color}10`
+            }}>
             {getModelIcon()}
           </div>
 
@@ -180,8 +186,11 @@ export function ChatInterface({
               transition-all duration-200
               disabled:opacity-50 disabled:cursor-not-allowed
               hover:shadow-md active:scale-95"
-            style={{ 
-              backgroundColor: `${themeColor}cc`,
+            style={{
+              backgroundColor: theme === 'midnight'
+                ? themeColor
+                : `${themeColor}cc`,
+              opacity: theme === 'midnight' ? 0.9 : 1
             }}
           >
             {isLoading ? (

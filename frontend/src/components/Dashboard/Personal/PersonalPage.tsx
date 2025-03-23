@@ -21,7 +21,7 @@ export function PersonalPage() {
     const { user } = useAuth();
     const { theme } = useTheme();
 
-    const joinDate = user?.createdAt 
+    const joinDate = user?.createdAt
         ? new Date(user.createdAt).toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
@@ -70,11 +70,11 @@ export function PersonalPage() {
     }
 
     return (
-        <div className="min-h-screen overflow-x-hidden bg-fixed">
+        <div className="min-h-screen overflow-visible bg-fixed">
             {/* Background */}
             <div className="fixed inset-0 bg-[var(--color-background)] -z-10" />
 
-            <div className="px-6 space-y-8 relative">
+            <div className="space-y-8 relative w-full">
                 {/* Profile Header */}
                 <motion.div
                     initial="hidden"
@@ -190,7 +190,7 @@ export function PersonalPage() {
                             </div>
                         </div>
                     </div>
-                    
+
                     <div className="p-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-4">

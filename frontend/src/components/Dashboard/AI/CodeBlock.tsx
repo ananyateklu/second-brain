@@ -58,12 +58,14 @@ export function CodeBlock({ code, language, themeColor }: CodeBlockProps) {
     <div className="relative group rounded-lg overflow-hidden my-1.5 
       backdrop-blur-sm
       bg-gray-50/80 dark:bg-gray-900/80
-      border border-gray-200/50 dark:border-gray-700/30
+      ${theme === 'midnight' ? '' : 'border border-gray-200/50 dark:border-gray-700/30'}
       shadow-[0_4px_20px_-5px_rgba(0,0,0,0.1),0_2px_8px_-3px_rgba(0,0,0,0.05),4px_0_16px_-4px_rgba(0,0,0,0.05),-4px_0_16px_-4px_rgba(0,0,0,0.05)]
       dark:shadow-[0_4px_20px_-5px_rgba(0,0,0,0.3),0_2px_8px_-3px_rgba(0,0,0,0.2),4px_0_16px_-4px_rgba(0,0,0,0.2),-4px_0_16px_-4px_rgba(0,0,0,0.2)]">
-      <div className="flex items-center justify-between px-2.5 py-1.5 
-        border-b border-gray-200/50 dark:border-gray-700/30
-        bg-white/50 dark:bg-gray-800/50">
+      <div className={`flex items-center justify-between px-2.5 py-1.5 
+        ${theme === 'midnight' ? '' : 'border-b border-gray-200/50 dark:border-gray-700/30'}
+        ${theme === 'midnight'
+          ? 'bg-gray-950/80'
+          : 'bg-white/50 dark:bg-gray-800/50'}`}>
         <div className="flex items-center gap-1">
           <Terminal
             className="w-3 h-3"
@@ -81,10 +83,12 @@ export function CodeBlock({ code, language, themeColor }: CodeBlockProps) {
             transition-all duration-200
             ${copied
               ? 'bg-green-500/10 dark:bg-green-500/20 text-green-600 dark:text-green-400'
-              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200/50 dark:hover:bg-gray-800/50'
+              : theme === 'midnight'
+                ? 'text-gray-400 hover:bg-gray-900/80'
+                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200/50 dark:hover:bg-gray-800/50'
             }
             backdrop-blur-sm
-            border border-gray-200/50 dark:border-gray-700/30`}
+            ${theme === 'midnight' ? '' : 'border border-gray-200/50 dark:border-gray-700/30'}`}
         >
           <AnimatePresence mode="wait" initial={false}>
             {copied ? (
@@ -115,9 +119,11 @@ export function CodeBlock({ code, language, themeColor }: CodeBlockProps) {
       </div>
       <div className="overflow-x-auto custom-scrollbar">
         <pre className={`p-2.5 text-[11px] leading-[1.4]
-          ${theme === 'light'
-            ? 'bg-gray-50'
-            : 'bg-gray-900/50'}`}>
+          ${theme === 'midnight'
+            ? 'bg-gray-950'
+            : theme === 'light'
+              ? 'bg-gray-50'
+              : 'bg-gray-900/50'}`}>
           <code
             className={`language-${language} font-mono`}
             dangerouslySetInnerHTML={{ __html: highlightedCode }}

@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react';
-import { Bot, MessageSquare, Image, Mic, Settings2, Sparkles, Zap, 
-  ChevronDown, Gauge, Cpu, Clock, ArrowDown, ArrowUp } from 'lucide-react';
+import {
+  Bot, MessageSquare, Image, Mic, Settings2, Sparkles, Zap,
+  ChevronDown, Gauge, Cpu, Clock, ArrowDown, ArrowUp
+} from 'lucide-react';
 import { AIModel } from '../../../types/ai';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-   
-  Image as ImageIcon, 
-  Braces, Database, Brain 
+import { useTheme } from '../../../contexts/themeContextUtils';
+import {
+  Image as ImageIcon,
+  Braces, Database, Brain
 } from 'lucide-react';
 
 interface ModelSelectorProps {
@@ -32,9 +34,32 @@ export function ModelSelector({
 }: ModelSelectorProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const { theme } = useTheme();
+
+  // Helper function for background colors
+  const getBackgroundColor = (isSelected: boolean) => {
+    if (theme === 'midnight') {
+      return isSelected ? 'bg-gray-900/80' : 'bg-gray-900/50';
+    }
+    if (theme === 'dark') {
+      return isSelected ? 'bg-gray-800' : 'bg-gray-800/50';
+    }
+    return isSelected ? 'bg-white' : 'bg-white/50';
+  }
+
+  // Helper function for hover states
+  const getHoverBackground = () => {
+    if (theme === 'midnight') {
+      return 'hover:bg-gray-900/90';
+    }
+    if (theme === 'dark') {
+      return 'hover:bg-gray-800/80';
+    }
+    return 'hover:bg-white/80';
+  }
 
   // Memoize categories to prevent unnecessary recalculations
-  const categories = useMemo(() => 
+  const categories = useMemo(() =>
     Array.from(new Set(models.map(model => model.category))),
     [models]
   );
@@ -52,7 +77,7 @@ export function ModelSelector({
   };
 
   // Memoize filtered models for performance
-  const filteredModels = useMemo(() => 
+  const filteredModels = useMemo(() =>
     models.filter(model => model.category === selectedCategory),
     [models, selectedCategory]
   );
@@ -81,7 +106,7 @@ export function ModelSelector({
 
     switch (selectedModel?.category) {
       case 'chat':
-        return selectedModel.provider === 'anthropic' 
+        return selectedModel.provider === 'anthropic'
           ? <Sparkles {...iconProps} />
           : <MessageSquare {...iconProps} />;
       case 'image':
@@ -97,6 +122,17 @@ export function ModelSelector({
       default:
         return <Bot {...iconProps} />;
     }
+  };
+
+  // Get text color class for midnight theme
+  const getTextColorClass = (isSelected = false) => {
+    if (isSelected) {
+      return 'text-primary-500';
+    }
+    if (theme === 'midnight') {
+      return 'text-gray-300';
+    }
+    return 'text-gray-600 dark:text-gray-300';
   };
 
   return (
@@ -117,8 +153,8 @@ export function ModelSelector({
               onHoverEnd={() => setIsHovered(false)}
               animate={{
                 scale: isHovered ? 1.000 : 1,
-                borderColor: isHovered 
-                  ? 'rgba(229, 231, 235, 0.3)' 
+                borderColor: isHovered
+                  ? 'rgba(229, 231, 235, 0.3)'
                   : `${selectedModel.color}30`,
                 boxShadow: isHovered
                   ? `0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)`
@@ -143,8 +179,8 @@ export function ModelSelector({
                   <motion.div
                     className="absolute inset-0 rounded-lg"
                     animate={{
-                      boxShadow: isHovered 
-                        ? `0 0 0 2px ${selectedModel.color}30` 
+                      boxShadow: isHovered
+                        ? `0 0 0 2px ${selectedModel.color}30`
                         : `0 0 0 1px ${selectedModel.color}20`
                     }}
                   />
@@ -153,17 +189,17 @@ export function ModelSelector({
                 {/* Model Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-gray-900 dark:text-white">
+                    <h3 className="font-semibold text-[var(--color-text)]">
                       {selectedModel.name}
                     </h3>
                     <span className="px-2 py-0.5 rounded-full text-xs font-medium
-                      bg-gray-100 dark:bg-gray-800 
-                      text-gray-600 dark:text-gray-400 capitalize
-                      border border-gray-200/50 dark:border-gray-700/50">
+                      bg-gray-100/70 dark:bg-gray-800/50 
+                      text-[var(--color-textSecondary)]
+                      border border-gray-200/30 dark:border-gray-700/30 capitalize">
                       {selectedModel.provider}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
+                  <p className="text-xs text-[var(--color-textSecondary)] mt-1">
                     {selectedModel.description}
                   </p>
                 </div>
@@ -173,8 +209,8 @@ export function ModelSelector({
                   {/* Model Size */}
                   {selectedModel.size && (
                     <div className="flex items-center gap-1.5">
-                      <Database className="w-4 h-4 text-gray-500" />
-                      <div className="text-sm text-gray-900 dark:text-white">
+                      <Database className="w-4 h-4 text-[var(--color-textSecondary)]" />
+                      <div className="text-sm text-[var(--color-text)]">
                         {selectedModel.size}
                       </div>
                     </div>
@@ -183,8 +219,8 @@ export function ModelSelector({
                   {/* TPM (Tokens per Minute) */}
                   {selectedModel.rateLimits?.tpm && (
                     <div className="flex items-center gap-1.5">
-                      <Cpu className="w-4 h-4 text-gray-500" />
-                      <div className="text-sm text-gray-900 dark:text-white">
+                      <Cpu className="w-4 h-4 text-[var(--color-textSecondary)]" />
+                      <div className="text-sm text-[var(--color-text)]">
                         {(selectedModel.rateLimits.tpm / 1000).toFixed(1)}k TPM
                       </div>
                     </div>
@@ -193,8 +229,8 @@ export function ModelSelector({
                   {/* RPM (Requests per Minute) */}
                   {selectedModel.rateLimits?.rpm && (
                     <div className="flex items-center gap-1.5">
-                      <Clock className="w-4 h-4 text-gray-500" />
-                      <div className="text-sm text-gray-900 dark:text-white">
+                      <Clock className="w-4 h-4 text-[var(--color-textSecondary)]" />
+                      <div className="text-sm text-[var(--color-text)]">
                         {selectedModel.rateLimits.rpm} RPM
                       </div>
                     </div>
@@ -214,23 +250,22 @@ export function ModelSelector({
                     whileTap={{ scale: 0.98 }}
                     style={{
                       color: selectedModel.color,
-                      backgroundColor: `${selectedModel.color}10`
+                      backgroundColor: theme === 'midnight' ? `${selectedModel.color}15` : `${selectedModel.color}10`
                     }}
                   >
                     Change Model
                   </motion.button>
                   <motion.button
                     onClick={toggleDetails}
-                    className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800
-                      text-gray-500 dark:text-gray-400 transition-colors
+                    className="p-1.5 rounded-lg
+                      text-[var(--color-textSecondary)] transition-colors
                       border border-transparent hover:border-gray-200/50 dark:hover:border-gray-700/50"
-                    whileHover={{ scale: 1.05 }}
+                    whileHover={{ scale: 1.05, backgroundColor: theme === 'midnight' ? 'rgba(255,255,255,0.05)' : '' }}
                     whileTap={{ scale: 0.95 }}
                   >
                     <ChevronDown
-                      className={`w-4 h-4 transition-transform duration-300 ${
-                        showDetails ? 'rotate-180' : ''
-                      }`}
+                      className={`w-4 h-4 transition-transform duration-300 ${showDetails ? 'rotate-180' : ''
+                        }`}
                     />
                   </motion.button>
                 </div>
@@ -247,16 +282,15 @@ export function ModelSelector({
                     className="overflow-hidden"
                   >
                     <div className="pt-4 mt-4 border-t border-gray-200/30 dark:border-gray-700/30">
-                      {/* Remove the debug section */}
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         {/* Model Size */}
                         {selectedModel.size && (
                           <div className="space-y-1">
-                            <div className="text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                            <div className="text-xs font-medium text-[var(--color-textSecondary)] flex items-center gap-1.5">
                               <Database className="w-3.5 h-3.5" />
                               Model Size
                             </div>
-                            <div className="text-sm text-gray-900 dark:text-white">
+                            <div className="text-sm text-[var(--color-text)]">
                               {selectedModel.size}
                             </div>
                           </div>
@@ -265,11 +299,11 @@ export function ModelSelector({
                         {/* TPM (Tokens per Minute) */}
                         {selectedModel.rateLimits?.tpm && (
                           <div className="space-y-1">
-                            <div className="text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                            <div className="text-xs font-medium text-[var(--color-textSecondary)] flex items-center gap-1.5">
                               <Gauge className="w-3.5 h-3.5" />
                               Tokens per Minute
                             </div>
-                            <div className="text-sm text-gray-900 dark:text-white">
+                            <div className="text-sm text-[var(--color-text)]">
                               {(selectedModel.rateLimits.tpm / 1000).toFixed(1)}k
                             </div>
                           </div>
@@ -278,11 +312,11 @@ export function ModelSelector({
                         {/* Input Context Length */}
                         {selectedModel.rateLimits?.maxInputTokens && (
                           <div className="space-y-1">
-                            <div className="text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                            <div className="text-xs font-medium text-[var(--color-textSecondary)] flex items-center gap-1.5">
                               <ArrowDown className="w-3.5 h-3.5" />
                               Input Context
                             </div>
-                            <div className="text-sm text-gray-900 dark:text-white">
+                            <div className="text-sm text-[var(--color-text)]">
                               {(selectedModel.rateLimits.maxInputTokens / 1000).toFixed(1)}k tokens
                             </div>
                           </div>
@@ -291,11 +325,11 @@ export function ModelSelector({
                         {/* Output Length */}
                         {selectedModel.rateLimits?.maxOutputTokens && (
                           <div className="space-y-1">
-                            <div className="text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                            <div className="text-xs font-medium text-[var(--color-textSecondary)] flex items-center gap-1.5">
                               <ArrowUp className="w-3.5 h-3.5" />
                               Max Output
                             </div>
-                            <div className="text-sm text-gray-900 dark:text-white">
+                            <div className="text-sm text-[var(--color-text)]">
                               {(selectedModel.rateLimits.maxOutputTokens / 1000).toFixed(1)}k tokens
                             </div>
                           </div>
@@ -304,11 +338,11 @@ export function ModelSelector({
                         {/* RPM (Requests per Minute) */}
                         {selectedModel.rateLimits?.rpm && (
                           <div className="space-y-1">
-                            <div className="text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                            <div className="text-xs font-medium text-[var(--color-textSecondary)] flex items-center gap-1.5">
                               <Clock className="w-3.5 h-3.5" />
                               Requests per Minute
                             </div>
-                            <div className="text-sm text-gray-900 dark:text-white">
+                            <div className="text-sm text-[var(--color-text)]">
                               {selectedModel.rateLimits.rpm}
                             </div>
                           </div>
@@ -337,30 +371,31 @@ export function ModelSelector({
                   const Icon = getCategoryIcon(category);
                   const count = models.filter(m => m.category === category).length;
                   const isSelected = selectedCategory === category;
-                  
+
                   return (
                     <motion.button
                       key={category}
                       onClick={() => onCategoryChange(category)}
                       className={`relative flex-shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-lg text-sm
-                        ${isSelected 
-                          ? 'bg-white dark:bg-gray-800 shadow-sm' 
-                          : 'bg-white/50 dark:bg-gray-800/50 hover:bg-white/80 dark:hover:bg-gray-800/80'
-                        } border border-gray-200/30 dark:border-gray-700/30`}
+                        ${getBackgroundColor(isSelected)}
+                        ${!isSelected ? getHoverBackground() : ''}
+                        border border-gray-200/30 dark:border-gray-700/30`}
                       initial={{ scale: 0.95, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
                       exit={{ scale: 0.95, opacity: 0 }}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      <Icon className={`w-3 h-3 ${isSelected ? 'text-primary-500' : 'text-gray-500'}`} />
-                      <span className={`capitalize ${isSelected ? 'text-primary-500 font-medium' : 'text-gray-600 dark:text-gray-300'}`}>
+                      <Icon className={`w-3 h-3 ${isSelected ? 'text-primary-500' : 'text-[var(--color-textSecondary)]'}`} />
+                      <span className={`capitalize ${isSelected ? 'text-primary-500 font-medium' : getTextColorClass()}`}>
                         {category}
                       </span>
                       <span className={`ml-0.5 px-1.5 py-0.5 text-xs rounded-full 
-                        ${isSelected 
-                          ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400' 
-                          : 'bg-gray-100/70 dark:bg-gray-800/70 text-gray-600 dark:text-gray-400'
+                        ${isSelected
+                          ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
+                          : theme === 'midnight'
+                            ? 'bg-gray-800/70 text-gray-300'
+                            : 'bg-gray-100/70 dark:bg-gray-800/70 text-gray-600 dark:text-gray-400'
                         }`}>
                         {count}
                       </span>
@@ -385,7 +420,7 @@ export function ModelSelector({
                   {/* Provider Header */}
                   <div className="sticky top-1 z-10 pb-1.5 bg-inherit">
                     <div className="flex items-center gap-1 px-1">
-                      <span className="text-[10px] font-medium text-gray-600 dark:text-gray-300 truncate">
+                      <span className="text-[10px] font-medium text-[var(--color-textSecondary)] truncate">
                         {provider}
                       </span>
                       <div className="h-px flex-1 bg-gray-200/50 dark:bg-gray-700/50" />
@@ -398,23 +433,23 @@ export function ModelSelector({
                       <button
                         key={model.id}
                         onClick={() => onModelSelect(model)}
-                        className={`w-full text-left p-1.5 rounded-md text-xs transition-all mb-0.5 ${
-                          selectedModel?.id === model.id
-                            ? 'bg-white dark:bg-gray-800 shadow-sm ring-1 ring-primary-500/50 dark:ring-primary-400/50'
-                            : 'hover:bg-white/50 dark:hover:bg-gray-800/50'
-                        }`}
+                        className={`w-full text-left p-1.5 rounded-md text-xs transition-all mb-0.5 ${selectedModel?.id === model.id
+                          ? getBackgroundColor(true) + ' shadow-sm ring-1 ring-primary-500/50 dark:ring-primary-400/50'
+                          : getBackgroundColor(false) + ' ' + getHoverBackground()
+                          }`}
+                        style={
+                          theme === 'midnight' && selectedModel?.id === model.id
+                            ? { backgroundColor: 'rgba(17, 24, 39, 0.7)' }
+                            : {}
+                        }
                       >
                         <div className="flex items-start gap-1.5">
                           <div
-                            className={`p-1 rounded-md shrink-0 transition-colors ${
-                              selectedModel?.id === model.id 
-                                ? 'bg-primary-100 dark:bg-primary-900/30'
-                                : `bg-[${model.color}20]`
-                            }`}
-                            style={{ 
-                              backgroundColor: selectedModel?.id === model.id 
-                                ? undefined 
-                                : `${model.color}20` 
+                            className={`p-1 rounded-md shrink-0 transition-colors`}
+                            style={{
+                              backgroundColor: selectedModel?.id === model.id
+                                ? theme === 'midnight' ? 'rgba(79, 70, 229, 0.2)' : undefined
+                                : theme === 'midnight' ? `${model.color}30` : `${model.color}20`
                             }}
                           >
                             {model.category === 'function' ? (
@@ -426,14 +461,13 @@ export function ModelSelector({
                             )}
                           </div>
                           <div>
-                            <div className={`font-medium line-clamp-1 ${
-                              selectedModel?.id === model.id
-                                ? 'text-primary-600 dark:text-primary-400'
-                                : 'text-gray-900 dark:text-white'
-                            }`}>
+                            <div className={`font-medium line-clamp-1 ${selectedModel?.id === model.id
+                              ? 'text-primary-600 dark:text-primary-400'
+                              : 'text-[var(--color-text)]'
+                              }`}>
                               {model.name}
                             </div>
-                            <div className="text-[10px] text-gray-500 dark:text-gray-400 line-clamp-1">
+                            <div className="text-[10px] text-[var(--color-textSecondary)] line-clamp-1">
                               {model.description}
                             </div>
                           </div>

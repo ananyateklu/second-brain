@@ -159,7 +159,7 @@ export function AIAgentsPage() {
     }
 
     return (
-        <div className="w-full h-[calc(100vh-9rem)] flex flex-col">
+        <div className="w-full h-[calc(100vh-9rem)] flex flex-col overflow-visible">
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -180,7 +180,6 @@ export function AIAgentsPage() {
                     transition-all 
                     duration-300 
                     p-4
-                    mx-6
                     mb-8
                     z-[1]
                 `}
@@ -206,7 +205,7 @@ export function AIAgentsPage() {
                 </div>
             </motion.div>
 
-            <div className="flex-1 px-4 pb-4">
+            <div className="flex-1 pb-4">
                 <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 h-full relative">
                     <AgentSelection
                         selectedProvider={selectedProvider}

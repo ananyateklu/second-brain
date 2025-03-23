@@ -8,7 +8,14 @@ interface LoadingContentProps {
 }
 
 export function LoadingContent({ type, themeColor }: LoadingContentProps) {
-  const { colors } = useTheme();
+  const { colors, theme } = useTheme();
+
+  const getBackgroundClass = () => {
+    if (theme === 'midnight') {
+      return 'bg-gradient-to-r from-gray-900 to-gray-800 dark:from-gray-900 dark:to-gray-800';
+    }
+    return colors.gradientBackground;
+  };
 
   const renderLoadingContent = () => {
     switch (type) {
@@ -33,13 +40,13 @@ export function LoadingContent({ type, themeColor }: LoadingContentProps) {
                 ))}
               </motion.div>
             </div>
-            
+
             {/* Animated placeholder lines */}
-            <div className={`space-y-1 p-2 rounded-lg ${colors.gradientBackground}`}>
+            <div className={`space-y-1 p-2 rounded-lg ${getBackgroundClass()}`}>
               {[...Array(2)].map((_, i) => (
                 <motion.div
                   key={i}
-                  className="h-1 rounded bg-[var(--color-surface)]/30"
+                  className={`h-1 rounded ${theme === 'midnight' ? 'bg-gray-700' : 'bg-[var(--color-surface)]/30'}`}
                   initial={{ width: "0%" }}
                   animate={{ width: ["0%", "100%", "100%", "0%"] }}
                   transition={{
@@ -61,10 +68,10 @@ export function LoadingContent({ type, themeColor }: LoadingContentProps) {
               <Hash className="w-3 h-3" style={{ color: themeColor }} />
               <span className="text-xs">Generating embedding vectors...</span>
             </div>
-            
+
             {/* Animated vector visualization */}
-            <motion.div 
-              className={`h-16 flex items-end gap-px p-2 rounded-lg ${colors.gradientBackground}`}
+            <motion.div
+              className={`h-16 flex items-end gap-px p-2 rounded-lg ${getBackgroundClass()}`}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
             >
@@ -73,7 +80,7 @@ export function LoadingContent({ type, themeColor }: LoadingContentProps) {
                   key={i}
                   className="flex-1"
                   initial={{ height: "0%" }}
-                  animate={{ 
+                  animate={{
                     height: ["0%", "100%", "50%", "80%", "20%"],
                   }}
                   transition={{
@@ -95,9 +102,9 @@ export function LoadingContent({ type, themeColor }: LoadingContentProps) {
               <Music className="w-3 h-3" style={{ color: themeColor }} />
               <span className="text-xs">Generating audio...</span>
             </div>
-            
+
             {/* Animated waveform */}
-            <div className={`h-8 flex items-center gap-1 p-2 rounded-lg ${colors.gradientBackground}`}>
+            <div className={`h-8 flex items-center gap-1 p-2 rounded-lg ${getBackgroundClass()}`}>
               {[...Array(30)].map((_, i) => (
                 <motion.div
                   key={i}
