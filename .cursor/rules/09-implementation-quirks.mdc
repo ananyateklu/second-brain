@@ -344,35 +344,136 @@ const [error, setError] = useState<string | null>(null);
 
 ## Authentication Flow Quirks
 
-### LocalStorage Token Storage
+### Hybrid Token Storage
 
-Access tokens are stored in localStorage, which is vulnerable to XSS attacks:
+The authentication system now uses a hybrid approach to secure token storage:
 
 ```typescript
-localStorage.setItem('access_token', response.accessToken);
+// TokenManager in AuthContext.tsx
+export class TokenManager {
+  private static readonly ACCESS_TOKEN_KEY = 'access_token';
+  private static readonly REFRESH_TOKEN_KEY = 'refresh_token';
+
+  // In-memory storage for access token to avoid XSS attacks
+  private static accessToken: string | null = null;
+
+  static getAccessToken(): string | null {
+    return this.accessToken;
+  }
+
+  static getRefreshToken(): string | null {
+    return localStorage.getItem(this.REFRESH_TOKEN_KEY);
+  }
+
+  static setTokens(accessToken: string, refreshToken: string) {
+    this.accessToken = accessToken;
+    localStorage.setItem(this.ACCESS_TOKEN_KEY, accessToken);
+    localStorage.setItem(this.REFRESH_TOKEN_KEY, refreshToken);
+  }
+}
 ```
 
-### SignalR URL Token Security Concern
+### Refresh Token Management
 
-Tokens can be passed in URL parameters which creates security risks:
+Refresh tokens are managed through a database with explicit rotation and revocation:
 
 ```csharp
-var accessToken = context.Request.Query["access_token"];
-var path = context.HttpContext.Request.Path;
-if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/toolHub")) {
-  context.Token = accessToken;
+// Backend token refresh
+public async Task<TokenResponse> RefreshTokensAsync(string refreshToken)
+{
+    var refreshTokenEntity = await _context.RefreshTokens
+        .Include(rt => rt.User)
+        .FirstOrDefaultAsync(rt => rt.Token == refreshToken && !rt.IsRevoked && rt.ExpiresAt > DateTime.UtcNow);
+
+    if (refreshTokenEntity == null)
+    {
+        throw new SecurityTokenException("Invalid or expired refresh token.");
+    }
+
+    // Revoke the old refresh token
+    refreshTokenEntity.IsRevoked = true;
+    _context.RefreshTokens.Update(refreshTokenEntity);
+    
+    // Generate new tokens
+    var newTokens = await GenerateTokensAsync(refreshTokenEntity.User);
+    
+    await _context.SaveChangesAsync();
+    
+    return newTokens;
 }
 ```
 
-### Token Refresh Race Conditions
+### Concurrent Request Handling
 
-Multiple concurrent requests hitting 401 can trigger multiple refresh attempts:
+The API client has mechanisms to prevent multiple concurrent refresh requests and handle pending requests:
 
 ```typescript
-if (error.response?.status === 401 && !originalRequest._retry) {
-  originalRequest._retry = true;
-  // No locking mechanism for concurrent refreshes
+// Flag to prevent multiple simultaneous refresh token requests
+let isRefreshing = false;
+
+// Store pending requests that are waiting for token refresh
+let pendingRequests: Array<{
+  resolve: (value: unknown) => void;
+  reject: (reason: unknown) => void;
+  config: InternalAxiosRequestConfig;
+}> = [];
+
+// If we're already refreshing, queue this request
+if (isRefreshing) {
+  return new Promise((resolve, reject) => {
+    pendingRequests.push({
+      resolve,
+      reject,
+      config: originalRequest
+    });
+  });
 }
+```
+
+### SignalR Token Management
+
+SignalR connection is explicitly updated with new tokens after authentication events:
+
+```typescript
+// After successful login
+const login = useCallback(async (email: string, password: string) => {
+  try {
+    const response: AuthResponse = await authService.login({ email, password });
+    
+    // Securely store tokens
+    TokenManager.setTokens(response.accessToken, response.refreshToken);
+    
+    // Update SignalR connection with new token
+    await signalRService.updateToken(response.accessToken);
+    
+    setAuthState({
+      isLoading: false,
+      error: null,
+      user: response.user,
+    });
+  } catch (error) {
+    // Error handling
+  }
+}, []);
+```
+
+### TokenManager Registration
+
+The TokenManager must be explicitly registered with services:
+
+```typescript
+// Register TokenManager with API service
+setApiTokenManager({
+  getAccessToken: TokenManager.getAccessToken.bind(TokenManager),
+  getRefreshToken: TokenManager.getRefreshToken.bind(TokenManager),
+  setTokens: TokenManager.setTokens.bind(TokenManager),
+  clearTokens: TokenManager.clearTokens.bind(TokenManager)
+});
+
+// Register with SignalR service
+setTokenManager({
+  getAccessToken: () => TokenManager.getAccessToken()
+});
 ```
 
 ## Database Entity Management Quirks
@@ -668,4 +769,4 @@ const fetchData = async () => {
     setIsLoading(false);
   }
 };
-``` 
+```
