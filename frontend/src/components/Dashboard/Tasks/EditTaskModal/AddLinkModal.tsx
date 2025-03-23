@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, X, Lightbulb, Type } from 'lucide-react';
+import { Search, X, Lightbulb, Type, CheckCircle } from 'lucide-react';
 import { useNotes } from '../../../../contexts/notesContextUtils';
 import { useTasks } from '../../../../contexts/tasksContextUtils';
 
@@ -7,14 +7,16 @@ interface AddLinkModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentTaskId: string;
+  onLinkAdded?: (linkedItemId: string, itemType: string) => Promise<void>;
 }
 
-export function AddLinkModal({ isOpen, onClose, currentTaskId }: AddLinkModalProps) {
+export function AddLinkModal({ isOpen, onClose, currentTaskId, onLinkAdded }: AddLinkModalProps) {
   const { notes } = useNotes();
   const { tasks, addTaskLink } = useTasks();
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [selectedType, setSelectedType] = useState<'all' | 'notes' | 'ideas'>('all');
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -35,12 +37,33 @@ export function AddLinkModal({ isOpen, onClose, currentTaskId }: AddLinkModalPro
   const handleAddLink = async (linkedItemId: string) => {
     try {
       setIsLoading(true);
-      await addTaskLink({
-        taskId: currentTaskId,
-        linkedItemId,
-        itemType: notes.find(n => n.id === linkedItemId)?.isIdea ? 'idea' : 'note'
-      });
-      onClose();
+      setSuccessMessage(null);
+
+      const itemTitle = notes.find(n => n.id === linkedItemId)?.title || 'Item';
+      const itemType = notes.find(n => n.id === linkedItemId)?.isIdea ? 'idea' : 'note';
+
+      if (onLinkAdded) {
+        // If parent component provided a callback, use it
+        await onLinkAdded(linkedItemId, itemType);
+      } else {
+        // Otherwise, handle directly
+        await addTaskLink({
+          taskId: currentTaskId,
+          linkedItemId,
+          itemType
+        });
+      }
+
+      // Show success message instead of closing
+      setSuccessMessage(`Successfully linked ${itemType} "${itemTitle}"`);
+
+      // Clear message after 3 seconds, but DON'T close the modal
+      setTimeout(() => {
+        // Only clear the message if it's still the same one we set
+        setSuccessMessage(current =>
+          current === `Successfully linked ${itemType} "${itemTitle}"` ? null : current
+        );
+      }, 3000);
     } catch (error) {
       console.error('Failed to add link:', error);
     } finally {
@@ -101,8 +124,8 @@ export function AddLinkModal({ isOpen, onClose, currentTaskId }: AddLinkModalPro
                   className="w-full flex items-center gap-3 p-3 bg-white dark:bg-[#1C1C1E] hover:bg-gray-50 dark:hover:bg-[#2C2C2E] rounded-lg transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed border border-gray-200/50 dark:border-[#2C2C2E] mb-2"
                 >
                   <div className={`p-1.5 rounded-lg ${item.isIdea
-                      ? 'bg-amber-100 dark:bg-amber-900/30'
-                      : 'bg-blue-100 dark:bg-blue-900/30'
+                    ? 'bg-amber-100 dark:bg-amber-900/30'
+                    : 'bg-blue-100 dark:bg-blue-900/30'
                     }`}>
                     {item.isIdea ? (
                       <Lightbulb className="w-4 h-4 text-amber-600 dark:text-amber-400" />
@@ -128,6 +151,14 @@ export function AddLinkModal({ isOpen, onClose, currentTaskId }: AddLinkModalPro
               )}
             </div>
           </div>
+
+          {/* Success message */}
+          {successMessage && (
+            <div className="mt-4 flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 rounded-lg">
+              <CheckCircle className="w-5 h-5" />
+              <p className="text-sm">{successMessage}</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

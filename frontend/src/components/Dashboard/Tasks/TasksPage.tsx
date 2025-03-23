@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { CheckSquare, Plus, Search, SlidersHorizontal, LayoutGrid, List } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTasks } from '../../../contexts/tasksContextUtils';
@@ -14,6 +14,14 @@ import { useTheme } from '../../../contexts/themeContextUtils';
 
 export function TasksPage() {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const selectedTaskIdRef = useRef<string | null>(null);
+  const [showEditModal, setShowEditModal] = useState<boolean>(() => {
+    // Initialize from local storage if available
+    const stored = localStorage.getItem('taskEditModalOpen');
+    return stored === 'true';
+  });
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+
   const { tasks } = useTasks();
   const { theme } = useTheme();
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
@@ -27,10 +35,58 @@ export function TasksPage() {
   });
 
   const completedTasks = tasks.filter((task: Task) => task && task.status === 'Completed').length;
-  const selectedTask = selectedTaskId ? tasks.find((t: Task) => t.id === selectedTaskId) : null;
+
+  // Update selectedTask when tasks or selectedTaskId changes
+  useEffect(() => {
+    if (selectedTaskId) {
+      const task = tasks.find((t: Task) => t.id === selectedTaskId);
+      if (task) {
+        setSelectedTask(task);
+        setShowEditModal(true);
+        localStorage.setItem('taskEditModalOpen', 'true');
+        localStorage.setItem('selectedTaskId', selectedTaskId);
+        selectedTaskIdRef.current = selectedTaskId;
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTaskId]);  // Intentionally omitting 'tasks' to prevent modal from closing on task updates
+
+  // This separate effect handles updates to the selected task
+  useEffect(() => {
+    if (selectedTaskIdRef.current) {
+      const task = tasks.find((t: Task) => t.id === selectedTaskIdRef.current);
+      if (task) {
+        setSelectedTask(task);
+      }
+    }
+  }, [tasks]);  // This will update the task when tasks change, but won't toggle the modal
+
+  // Check localStorage on component mount
+  useEffect(() => {
+    const modalOpen = localStorage.getItem('taskEditModalOpen') === 'true';
+    const storedTaskId = localStorage.getItem('selectedTaskId');
+
+    if (modalOpen && storedTaskId) {
+      const task = tasks.find((t: Task) => t.id === storedTaskId);
+      if (task) {
+        setSelectedTaskId(storedTaskId);
+        setSelectedTask(task);
+        setShowEditModal(true);
+        selectedTaskIdRef.current = storedTaskId;
+      }
+    }
+  }, [tasks]);
 
   const handleTaskClick = (task: Task) => {
     setSelectedTaskId(task.id);
+  };
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    setSelectedTaskId(null);
+    selectedTaskIdRef.current = null;
+    localStorage.removeItem('taskEditModalOpen');
+    localStorage.removeItem('selectedTaskId');
   };
 
   const getContainerBackground = () => {
@@ -78,9 +134,9 @@ export function TasksPage() {
       return (
         <div className={cardGridStyles}>
           {tasks.map((task: Task) => (
-            <TaskCard 
+            <TaskCard
               key={task.id}
-              task={task} 
+              task={task}
               viewMode="grid"
               onClick={handleTaskClick}
             />
@@ -92,9 +148,9 @@ export function TasksPage() {
     return (
       <div className="space-y-4 px-0.5">
         {tasks.map((task: Task) => (
-          <TaskCard 
+          <TaskCard
             key={task.id}
-            task={task} 
+            task={task}
             viewMode="list"
             onClick={handleTaskClick}
           />
@@ -132,7 +188,7 @@ export function TasksPage() {
           `}
         >
           <div className="flex flex-col sm:flex-row gap-6 justify-between">
-            <motion.div 
+            <motion.div
               variants={cardVariants}
               className="flex items-center gap-3"
             >
@@ -182,7 +238,7 @@ export function TasksPage() {
             />
           </div>
 
-          <motion.div 
+          <motion.div
             variants={cardVariants}
             className="flex gap-2"
           >
@@ -293,10 +349,10 @@ export function TasksPage() {
         </motion.div>
 
         {/* Modals */}
-        {selectedTask && (
+        {showEditModal && selectedTask && (
           <EditTaskModal
-            isOpen={!!selectedTaskId}
-            onClose={() => setSelectedTaskId(null)}
+            isOpen={showEditModal}
+            onClose={handleCloseEditModal}
             task={selectedTask}
           />
         )}
