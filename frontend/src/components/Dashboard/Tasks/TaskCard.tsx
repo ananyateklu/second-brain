@@ -280,7 +280,6 @@ export function TaskCard({
               </div>
               <div className="ml-auto flex items-center gap-2">
                 {priorityBadgeMemo}
-                {metadataMemo}
                 {tagsMemo}
               </div>
             </div>
