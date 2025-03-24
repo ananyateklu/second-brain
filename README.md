@@ -11,6 +11,28 @@
 
 Second Brain is an AI-enhanced knowledge management and note-taking system that unifies your notes, ideas, tasks, and reminders in one interactive environment. It intelligently links related concepts, highlights relevant information, and provides guidance to help you gain clarity, maintain organization, and discover insights you may have overlooked—all within a single, easy-to-use workspace.
 
+## Application Screenshots
+
+<p align="center">
+  <img src="frontend/src/assets/MainPageSH.png" alt="Dashboard" width="100%">
+  <p align="center"><em>Dashboard with analytics and quick stats</em></p>
+</p>
+
+<p align="center">
+  <img src="frontend/src/assets/NotesPageSH.png" alt="Notes Page" width="100%">
+  <p align="center"><em>Notes collection with filters and categorization</em></p>
+</p>
+
+<p align="center">
+  <img src="frontend/src/assets/LinkedNotesSH.png" alt="Linked Notes" width="100%">
+  <p align="center"><em>Interactive graph visualization of connected notes</em></p>
+</p>
+
+<p align="center">
+  <img src="frontend/src/assets/AIAgentsSH.png" alt="AI Agents" width="100%">
+  <p align="center"><em>AI Agents interface with multi-provider support</em></p>
+</p>
+
 ## Core Features
 
 ### Knowledge Management
