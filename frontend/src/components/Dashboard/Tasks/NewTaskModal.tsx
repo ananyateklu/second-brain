@@ -21,7 +21,7 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
   const [dueDate, setDueDate] = useState('');
   const [priority, setPriority] = useState<PriorityLevel>('medium');
   const [tagInput, setTagInput] = useState('');
-  const [tags, setTags] = useState<string[]>([]);
+  const [tags, setTags] = useState<string[]>(['Task']);
   const [isLoading, setIsLoading] = useState(false);
   const [titleTouched, setTitleTouched] = useState(false);
 
@@ -38,7 +38,9 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    setTags(tags.filter(tag => tag !== tagToRemove));
+    if (tagToRemove !== 'Task') {
+      setTags(tags.filter(tag => tag !== tagToRemove));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -198,7 +200,6 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
                     onChange={(e) => setDueDate(e.target.value)}
                     error={!dueDate ? 'Due date is required' : ''}
                     disabled={isLoading}
-                    disableRecording
                     required
                     requiredIndicatorColor={taskColor}
                   />
@@ -323,7 +324,7 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
                 disabled={isLoading || !title.trim() || !dueDate}
                 style={{
                   backgroundColor: colors.accent,
-                  color: colors.accentForeground,
+                  color: colors.text,
                   '--hover-bg': `${colors.accent}cc`,
                 } as React.CSSProperties}
                 className="px-4 py-2 rounded-lg font-medium transition-colors hover:bg-[--hover-bg] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"

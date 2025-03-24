@@ -21,7 +21,7 @@ export function NewReminderModal({ isOpen, onClose }: NewReminderModalProps) {
   const [dueDateTime, setDueDateTime] = useState('');
   const [repeatInterval, setRepeatInterval] = useState<RepeatInterval | undefined>();
   const [tagInput, setTagInput] = useState('');
-  const [tags, setTags] = useState<string[]>(['reminder']);
+  const [tags, setTags] = useState<string[]>(['Reminder']);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -38,7 +38,7 @@ export function NewReminderModal({ isOpen, onClose }: NewReminderModalProps) {
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    if (tagToRemove !== 'reminder') { // Prevent removing the 'reminder' tag
+    if (tagToRemove !== 'Reminder') { // Prevent removing the 'Reminder' tag
       setTags(tags.filter(tag => tag !== tagToRemove));
     }
   };
@@ -197,7 +197,6 @@ export function NewReminderModal({ isOpen, onClose }: NewReminderModalProps) {
                     onChange={(e) => setDueDateTime(e.target.value)}
                     error={!dueDateTime ? 'Due date and time is required' : ''}
                     disabled={isLoading}
-                    disableRecording
                     required
                     requiredIndicatorColor={taskColor}
                   />
@@ -268,7 +267,7 @@ export function NewReminderModal({ isOpen, onClose }: NewReminderModalProps) {
                       className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm"
                     >
                       {tag}
-                      {tag !== 'reminder' && (
+                      {tag !== 'Reminder' && (
                         <button
                           type="button"
                           onClick={() => handleRemoveTag(tag)}
@@ -338,7 +337,7 @@ export function NewReminderModal({ isOpen, onClose }: NewReminderModalProps) {
                 disabled={isLoading || !title.trim() || !dueDateTime}
                 style={{
                   backgroundColor: colors.accent,
-                  color: colors.accentForeground,
+                  color: colors.text,
                   '--hover-bg': `${colors.accent}cc`,
                 } as React.CSSProperties}
                 className="px-4 py-2 rounded-lg font-medium transition-colors hover:bg-[--hover-bg] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"

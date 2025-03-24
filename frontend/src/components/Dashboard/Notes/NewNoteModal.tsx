@@ -17,7 +17,7 @@ export function NewNoteModal({ isOpen, onClose }: NewNoteModalProps) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [tagInput, setTagInput] = useState('');
-  const [tags, setTags] = useState<string[]>([]);
+  const [tags, setTags] = useState<string[]>(['Note']);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -32,7 +32,9 @@ export function NewNoteModal({ isOpen, onClose }: NewNoteModalProps) {
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    setTags(tags.filter(tag => tag !== tagToRemove));
+    if (tagToRemove !== 'Note') {
+      setTags(tags.filter(tag => tag !== tagToRemove));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -259,7 +261,7 @@ export function NewNoteModal({ isOpen, onClose }: NewNoteModalProps) {
                 disabled={isLoading}
                 style={{
                   backgroundColor: colors.accent,
-                  color: colors.accentForeground,
+                  color: colors.text,
                   '--hover-bg': `${colors.accent}cc`,
                 } as React.CSSProperties}
                 className="px-4 py-2 rounded-lg font-medium transition-colors hover:bg-[--hover-bg] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"

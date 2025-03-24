@@ -18,7 +18,7 @@ export function NewIdeaModal({ isOpen, onClose }: NewIdeaModalProps) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [tagInput, setTagInput] = useState('');
-  const [tags, setTags] = useState<string[]>(['idea']);
+  const [tags, setTags] = useState<string[]>(['Idea']);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -33,7 +33,7 @@ export function NewIdeaModal({ isOpen, onClose }: NewIdeaModalProps) {
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    if (tagToRemove !== 'idea') { // Prevent removing the 'idea' tag
+    if (tagToRemove !== 'Idea') { // Prevent removing the 'Idea' tag
       setTags(tags.filter(tag => tag !== tagToRemove));
     }
   };
@@ -176,7 +176,7 @@ export function NewIdeaModal({ isOpen, onClose }: NewIdeaModalProps) {
                     type="tags"
                     itemType="idea"
                     input={{ title, content }}
-                    onSuggestion={(suggestion) => setTags(['idea', ...(suggestion as string[])])}
+                    onSuggestion={(suggestion) => setTags(['Idea', ...(suggestion as string[])])}
                     disabled={isLoading}
                     context={{
                       currentTags: tags
@@ -194,7 +194,7 @@ export function NewIdeaModal({ isOpen, onClose }: NewIdeaModalProps) {
                       className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm"
                     >
                       {tag}
-                      {tag !== 'idea' && (
+                      {tag !== 'Idea' && (
                         <button
                           type="button"
                           onClick={() => handleRemoveTag(tag)}
@@ -264,7 +264,7 @@ export function NewIdeaModal({ isOpen, onClose }: NewIdeaModalProps) {
                 disabled={isLoading || !title.trim()}
                 style={{
                   backgroundColor: colors.accent,
-                  color: colors.accentForeground,
+                  color: colors.text,
                   '--hover-bg': `${colors.accent}cc`,
                 } as React.CSSProperties}
                 className="px-4 py-2 rounded-lg font-medium transition-colors hover:bg-[--hover-bg] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
