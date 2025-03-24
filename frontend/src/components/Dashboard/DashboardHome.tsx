@@ -53,12 +53,6 @@ export function DashboardHome() {
     return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]'
   }
 
-  const getButtonTextClass = (theme: string) => {
-    if (theme === 'dark') return 'text-emerald-400 hover:text-emerald-300'
-    if (theme === 'midnight') return 'text-emerald-300 hover:text-emerald-200'
-    return 'text-emerald-600 hover:text-emerald-500'
-  }
-
   return (
     <div
       className="space-y-8 px-4 py-4 w-full max-w-[1800px] mx-auto overflow-visible"
@@ -110,7 +104,7 @@ export function DashboardHome() {
         `}>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <div className={`p-1.5 rounded-lg bg-blue-900/20 backdrop-blur-sm text-blue-300`}>
+              <div className={`p-1.5 rounded-lg bg-[var(--color-accent)]/20 backdrop-blur-sm text-[var(--color-accent)]`}>
                 <PinIcon className="w-5 h-5" />
               </div>
               <h2 className="text-lg font-semibold text-[var(--color-text)]">
@@ -122,7 +116,7 @@ export function DashboardHome() {
                 onClick={() => navigate('/dashboard/notes')}
                 className={`
                   flex items-center gap-1 text-sm 
-                  ${getButtonTextClass(theme)} 
+                  text-[var(--color-accent)] hover:text-[var(--color-accent)]/80
                   transition-colors duration-200
                 `}
               >
@@ -133,7 +127,7 @@ export function DashboardHome() {
                 onClick={() => navigate('/dashboard/ideas')}
                 className={`
                   flex items-center gap-1 text-sm 
-                  ${getButtonTextClass(theme)} 
+                  text-[var(--color-accent)] hover:text-[var(--color-accent)]/80
                   transition-colors duration-200
                 `}
               >
