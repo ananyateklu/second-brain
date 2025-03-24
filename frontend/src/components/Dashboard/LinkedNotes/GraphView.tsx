@@ -116,7 +116,8 @@ const nodeTypes = {
 const prepareEdges = (notes: Note[]): CustomEdge[] => {
   const processedPairs = new Set<string>();
 
-  const edges = notes.flatMap(note =>
+  // Process note-to-note links
+  const noteToNoteEdges = notes.flatMap(note =>
     (note.linkedNoteIds || [])
       .filter(targetId => {
         const pairId = [note.id, targetId].sort().join('-');
@@ -144,7 +145,7 @@ const prepareEdges = (notes: Note[]): CustomEdge[] => {
       } as CustomEdge))
   );
 
-  return edges.reduce<CustomEdge[]>((acc, edge) => {
+  return noteToNoteEdges.reduce<CustomEdge[]>((acc, edge) => {
     const parallel = acc.find(e =>
       (e.source === edge.target && e.target === edge.source) ||
       (e.source === edge.source && e.target === edge.target)
@@ -250,7 +251,9 @@ function GraphViewContent({ onNodeSelect, selectedNoteId }: GraphViewProps) {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   const notesWithLinks = useMemo(() => notes.filter(note =>
-    (note.linkedNoteIds?.length ?? 0) > 0 || (note.linkedTasks?.length ?? 0) > 0
+    (note.linkedNoteIds?.length ?? 0) > 0 ||
+    (note.linkedTasks?.length ?? 0) > 0 ||
+    (note.linkedReminders?.length ?? 0) > 0
   ), [notes]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
@@ -348,9 +351,9 @@ function GraphViewContent({ onNodeSelect, selectedNoteId }: GraphViewProps) {
         >
           <Background
             color={theme === 'light' ? 'var(--color-border)' : 'rgb(255, 255, 255)'}
-            style={{ 
+            style={{
               backgroundColor: 'transparent',
-              opacity: theme === 'light' ? 0.3 : 0.03 
+              opacity: theme === 'light' ? 0.3 : 0.03
             }}
           />
           <Panel position="bottom-right" className="flex flex-col gap-4 mb-4 mr-4">

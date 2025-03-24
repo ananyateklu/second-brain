@@ -17,7 +17,7 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
   const { colors, theme } = useTheme();
   const { notes, removeLink } = useNotes();
   const [showAddLinkModal, setShowAddLinkModal] = useState(false);
-  
+
   const note = notes.find(n => n.id === selectedNoteId);
   const isIdea = note?.tags?.includes('idea');
 
@@ -65,8 +65,8 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
   };
 
   const linkedItems = useMemo(() => {
-    if (!note) return { notes: [], tasks: [] };
-    
+    if (!note) return { notes: [], tasks: [], reminders: [] };
+
     const linkedNotes = (note.linkedNoteIds || [])
       .map(id => {
         const linkedNote = notes.find(n => n.id === id);
@@ -84,9 +84,15 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
       type: 'task' as const
     }));
 
+    const reminders = (note.linkedReminders || []).map((reminder) => ({
+      ...reminder,
+      type: 'reminder' as const
+    }));
+
     return {
       notes: linkedNotes,
-      tasks
+      tasks,
+      reminders
     };
   }, [note, notes]);
 
@@ -116,7 +122,7 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
       {/* Header */}
       <div className={`
         shrink-0 p-4
-        ${theme === 'light' 
+        ${theme === 'light'
           ? 'bg-[var(--color-surface)]/80 border-b border-[var(--color-border)]/50'
           : theme === 'midnight'
             ? 'bg-[#1e293b]/20 border-b border-white/[0.02]'
@@ -202,9 +208,9 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
                 <span
                   key={tag}
                   className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium max-w-full"
-                  style={{ 
+                  style={{
                     backgroundColor: `${colors.tag}10`,
-                    color: colors.tag 
+                    color: colors.tag
                   }}
                 >
                   <Tag className="w-3 h-3 flex-shrink-0" />
@@ -229,7 +235,7 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-sm font-medium text-[var(--color-text)] flex items-center gap-2">
               <Link2 className="w-4 h-4 text-[var(--color-textSecondary)]" />
-              Connected Items ({linkedItems.notes.length + linkedItems.tasks.length})
+              Connected Items ({linkedItems.notes.length + linkedItems.tasks.length + linkedItems.reminders.length})
             </h4>
             <button
               onClick={() => setShowAddLinkModal(true)}
@@ -262,11 +268,10 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
                       `}
                     >
                       <div className="flex items-start gap-3">
-                        <div className={`p-1.5 rounded-lg ${
-                          linkedNote.isIdea
-                            ? getIconBg('idea')
-                            : getIconBg('notes')
-                        }`}>
+                        <div className={`p-1.5 rounded-lg ${linkedNote.isIdea
+                          ? getIconBg('idea')
+                          : getIconBg('notes')
+                          }`}>
                           {linkedNote.isIdea ? (
                             <Lightbulb className="w-4 h-4" style={{ color: colors.idea }} />
                           ) : (
@@ -347,7 +352,70 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
               </div>
             )}
 
-            {linkedItems.notes.length === 0 && linkedItems.tasks.length === 0 && (
+            {/* Reminders Section */}
+            {linkedItems.reminders.length > 0 && (
+              <div>
+                <h5 className="text-xs font-medium text-[var(--color-textSecondary)] mb-2">Reminders</h5>
+                <div className="space-y-2">
+                  {linkedItems.reminders.map(reminder => (
+                    <div
+                      key={reminder.id}
+                      className={`
+                        group relative p-3 rounded-lg transition-all
+                        ${theme === 'light'
+                          ? 'bg-[var(--color-surface)]/30 border border-[var(--color-border)]/30'
+                          : theme === 'midnight'
+                            ? 'bg-[#0f172a]/20 border border-white/[0.02]'
+                            : 'bg-[var(--color-surface)]/10 border border-white/[0.02]'
+                        }
+                        hover:border-[var(--color-accent)]/50
+                        shadow-[0_1px_4px_-2px_rgba(0,0,0,0.05)] dark:shadow-[0_1px_4px_-2px_rgba(0,0,0,0.2)]
+                      `}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`p-1.5 rounded-lg ${getIconBg('reminder')}`}>
+                          <Clock className="w-4 h-4" style={{ color: colors.reminder || '#9333ea' }} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h6 className="font-medium text-[var(--color-text)] truncate">
+                            {reminder.title}
+                          </h6>
+                          {reminder.description && (
+                            <p className="text-sm text-[var(--color-textSecondary)] line-clamp-2">
+                              {reminder.description}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-3 mt-1">
+                            <span className="flex items-center gap-1 text-xs text-[var(--color-textSecondary)]">
+                              <Clock className="w-3 h-3" />
+                              {formatDistanceToNow(new Date(reminder.dueDateTime), { addSuffix: true })}
+                            </span>
+                            {reminder.isCompleted && (
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-500">
+                                Completed
+                              </span>
+                            )}
+                            {reminder.isSnoozed && (
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500">
+                                Snoozed
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleUnlink(reminder.id)}
+                          className="opacity-0 group-hover:opacity-100 p-1.5 text-[var(--color-textSecondary)] hover:text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 rounded-lg transition-all"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {linkedItems.notes.length === 0 && linkedItems.tasks.length === 0 && linkedItems.reminders.length === 0 && (
               <div className="flex flex-col items-center justify-center py-8 text-center">
                 <div className={`
                   p-2 rounded-lg mb-3
