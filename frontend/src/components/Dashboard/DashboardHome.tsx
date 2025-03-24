@@ -12,13 +12,14 @@ import { useTasks } from '../../contexts/tasksContextUtils';
 import { useModal } from '../../contexts/modalContextUtils';
 import { Note } from '../../types/note';
 import { WelcomeBar } from './WelcomeBar';
+import { IdeaCard } from './Ideas/IdeaCard';
 
 export function DashboardHome() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { notes } = useNotes();
   const { tasks } = useTasks();
-  const { setSelectedNote } = useModal();
+  const { setSelectedNote, setSelectedIdea } = useModal();
   const { theme } = useTheme();
 
   const stats = {
@@ -29,7 +30,8 @@ export function DashboardHome() {
       weekAgo.setDate(weekAgo.getDate() - 7);
       return noteDate > weekAgo;
     }).length,
-    pinnedNotes: notes.filter(note => note.isPinned),
+    pinnedNotes: notes.filter(note => note.isPinned && !note.isIdea),
+    pinnedIdeas: notes.filter(note => note.isPinned && note.isIdea),
     lastUpdated: notes.length > 0
       ? new Date(Math.max(...notes.map(note => new Date(note.updatedAt).getTime())))
       : null,
@@ -39,6 +41,10 @@ export function DashboardHome() {
 
   const handleEditNote = (note: Note) => {
     setSelectedNote(note);
+  };
+
+  const handleEditIdea = (idea: Note) => {
+    setSelectedIdea(idea);
   };
 
   const getBackgroundClass = (theme: string) => {
@@ -83,8 +89,8 @@ export function DashboardHome() {
         <WelcomeBar isDashboardHome={true} />
       </div>
 
-      {/* Pinned Notes */}
-      {stats.pinnedNotes.length > 0 && (
+      {/* Pinned Notes & Ideas */}
+      {(stats.pinnedNotes.length > 0 || stats.pinnedIdeas.length > 0) && (
         <div className={`
           relative 
           overflow-hidden 
@@ -108,20 +114,33 @@ export function DashboardHome() {
                 <PinIcon className="w-5 h-5" />
               </div>
               <h2 className="text-lg font-semibold text-[var(--color-text)]">
-                Pinned Notes
+                Pinned Notes & Ideas
               </h2>
             </div>
-            <button
-              onClick={() => navigate('/dashboard/notes')}
-              className={`
-                flex items-center gap-1 text-sm 
-                ${getButtonTextClass(theme)} 
-                transition-colors duration-200
-              `}
-            >
-              View all
-              <ChevronRight className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate('/dashboard/notes')}
+                className={`
+                  flex items-center gap-1 text-sm 
+                  ${getButtonTextClass(theme)} 
+                  transition-colors duration-200
+                `}
+              >
+                View all notes
+                <ChevronRight className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => navigate('/dashboard/ideas')}
+                className={`
+                  flex items-center gap-1 text-sm 
+                  ${getButtonTextClass(theme)} 
+                  transition-colors duration-200
+                `}
+              >
+                View all ideas
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {stats.pinnedNotes.map(note => (
@@ -131,6 +150,15 @@ export function DashboardHome() {
                 onClick={() => handleEditNote(note)}
               >
                 <NoteCard note={note} />
+              </div>
+            ))}
+            {stats.pinnedIdeas.map(idea => (
+              <div
+                key={idea.id}
+                className="cursor-pointer w-full text-left transition-transform duration-200 hover:-translate-y-0.5"
+                onClick={() => handleEditIdea(idea)}
+              >
+                <IdeaCard idea={idea} viewMode="grid" />
               </div>
             ))}
           </div>
