@@ -107,14 +107,14 @@ export function ImportNotesSection() {
   const processMarkdownFile = async (fileContent: string): Promise<{ title: string; content: string; }[]> => {
     const notes: { title: string; content: string; }[] = [];
     const sections = fileContent.split(/^# /m).filter(Boolean);
-    
+
     for (const section of sections) {
       const lines = section.trim().split('\n');
       const title = lines[0].trim();
       const noteContent = lines.slice(1).join('\n').trim();
       notes.push({ title, content: noteContent });
     }
-    
+
     return notes;
   };
 
@@ -137,7 +137,7 @@ export function ImportNotesSection() {
     const arrayBuffer = await file.arrayBuffer();
     const result = await mammoth.extractRawText({ arrayBuffer });
     const lines = result.value.split('\n').filter(line => line.trim());
-    
+
     if (lines.length === 0) {
       throw new Error('Empty DOCX file');
     }
@@ -152,36 +152,28 @@ export function ImportNotesSection() {
       throw new Error('PDF processing is not ready yet. Please try again.');
     }
 
-    console.log('Starting PDF processing for file:', file.name);
-
     try {
       const arrayBuffer = await file.arrayBuffer();
       const typedArray = new Uint8Array(arrayBuffer);
-      console.log('PDF file loaded into memory, size:', typedArray.length, 'bytes');
 
       const loadingTask = pdfLib.getDocument({ data: typedArray });
       const pdf = await loadingTask.promise;
-      console.log('PDF document loaded successfully. Number of pages:', pdf.numPages);
 
       let fullText = '';
       const title = file.name.replace('.pdf', ''); // Use filename as default title
-      
+
       try {
         // Extract text from each page
         for (let i = 1; i <= pdf.numPages; i++) {
-          console.log(`Processing page ${i} of ${pdf.numPages}`);
           try {
             const page = await pdf.getPage(i);
             const textContent = await page.getTextContent() as PDFTextContent;
-            console.log(`Page ${i} raw items:`, textContent.items.length);
 
             const pageText = textContent.items
               .filter((item: PDFTextItem) => item.str && typeof item.str === 'string')
               .map((item: PDFTextItem) => item.str.trim())
               .join(' ');
-            
-            console.log(`Page ${i} extracted text (first 100 chars):`, pageText.substring(0, 100));
-            
+
             // Add page number for better organization
             fullText += `Page ${i}:\n${pageText}\n\n`;
           } catch (pageError) {
@@ -198,9 +190,6 @@ export function ImportNotesSection() {
           .filter(line => line)
           .join('\n');
 
-        console.log('Final processed content length:', content.length);
-        console.log('First 200 characters of processed content:', content.substring(0, 200));
-
         if (!content) {
           console.error('No content extracted from PDF');
           throw new Error('No readable text found in PDF file');
@@ -208,7 +197,6 @@ export function ImportNotesSection() {
 
         // Create a more descriptive title
         const finalTitle = `${title} (${pdf.numPages} pages)`;
-        console.log('Final note title:', finalTitle);
 
         return [{
           title: finalTitle,
@@ -216,13 +204,12 @@ export function ImportNotesSection() {
         }];
       } finally {
         // Clean up PDF document
-        console.log('Cleaning up PDF document');
         pdf.destroy();
       }
     } catch (error) {
       console.error('PDF processing error:', error);
       // More descriptive error message
-      const errorMessage = error instanceof Error 
+      const errorMessage = error instanceof Error
         ? `Failed to process PDF: ${error.message}`
         : 'Failed to process PDF file';
       throw new Error(errorMessage);
@@ -242,7 +229,7 @@ export function ImportNotesSection() {
     for (const sheetName of workbook.SheetNames) {
       const sheet = workbook.Sheets[sheetName];
       const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as ExcelRow[][];
-      
+
       // Convert the sheet data to a formatted string
       const content = jsonData
         .map(row => row.map(cell => String(cell)).join('\t'))
@@ -262,7 +249,7 @@ export function ImportNotesSection() {
     // Basic RTF to text conversion (you might want to use a more robust RTF parser)
     const plainText = text.replace(/[\\{}]|\\\w+\s?/g, '');
     const lines = plainText.split('\n').filter(line => line.trim());
-    
+
     if (lines.length === 0) {
       throw new Error('Empty RTF file');
     }
@@ -274,60 +261,45 @@ export function ImportNotesSection() {
 
   const handleFiles = async (files: FileList | null) => {
     if (!files?.length) return;
-    
+
     setIsImporting(true);
     setImportResult(null);
     let importedCount = 0;
 
-    console.log('Starting import process for', files.length, 'files');
 
     try {
       for (const file of Array.from(files)) {
-        console.log('Processing file:', {
-          name: file.name,
-          type: file.type,
-          size: file.size,
-          lastModified: new Date(file.lastModified).toISOString()
-        });
 
         let notes: { title: string; content: string; }[] = [];
 
         try {
           switch (file.type) {
             case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-              console.log('Processing DOCX file:', file.name);
               notes = await processDocxFile(file);
               break;
             case 'application/pdf':
-              console.log('Processing PDF file:', file.name);
               notes = await processPDFFile(file);
               break;
             case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
             case 'application/vnd.ms-excel':
-              console.log('Processing Excel file:', file.name);
               notes = await processExcelFile(file);
               break;
             case 'application/rtf':
             case 'text/rtf':
-              console.log('Processing RTF file:', file.name);
               notes = await processRTFFile(file);
               break;
             case 'text/markdown':
             case 'text/x-markdown':
-              console.log('Processing Markdown file:', file.name);
               notes = await processMarkdownFile(await file.text());
               break;
             case 'text/html':
-              console.log('Processing HTML file:', file.name);
               notes = await processHTMLFile(await file.text());
               break;
             case 'text/plain':
-              console.log('Processing Text file:', file.name);
               notes = await processTextFile(await file.text());
               break;
             default:
               // Handle files by extension if MIME type is not recognized
-              console.log('MIME type not recognized, trying by extension:', file.name);
               if (file.name.endsWith('.docx')) {
                 notes = await processDocxFile(file);
               } else if (file.name.endsWith('.pdf')) {
@@ -345,18 +317,8 @@ export function ImportNotesSection() {
               }
           }
 
-          console.log('Successfully processed file:', file.name, {
-            numberOfNotes: notes.length,
-            firstNoteTitle: notes[0]?.title,
-            contentPreview: notes[0]?.content.substring(0, 100) + '...'
-          });
-
           for (const note of notes) {
-            console.log('Adding note to system:', {
-              title: note.title,
-              contentLength: note.content.length,
-              tags: ['imported', file.type.split('/')[1] || 'unknown']
-            });
+            // Create the note using the addNote function
 
             // Create the note using the addNote function
             await addNote({
@@ -377,19 +339,13 @@ export function ImportNotesSection() {
             error: error instanceof Error ? error.message : 'Unknown error',
             stack: error instanceof Error ? error.stack : undefined
           });
-          
+
           setImportResult({
             success: false,
             message: `Error processing ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`
           });
         }
       }
-
-      console.log('Import process completed:', {
-        totalFiles: files.length,
-        successfulImports: importedCount,
-        failedImports: files.length - importedCount
-      });
 
       if (importedCount > 0) {
         setImportResult({
@@ -506,11 +462,11 @@ export function ImportNotesSection() {
         {/* Import and Export Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Import Section */}
-          <motion.div 
+          <motion.div
             variants={cardVariants}
             className={innerElementClasses}
           >
-            <div 
+            <div
               className={`
                 p-8
                 border-2 
@@ -575,7 +531,7 @@ export function ImportNotesSection() {
           </motion.div>
 
           {/* Export Section */}
-          <motion.div 
+          <motion.div
             variants={cardVariants}
             className={innerElementClasses}
           >

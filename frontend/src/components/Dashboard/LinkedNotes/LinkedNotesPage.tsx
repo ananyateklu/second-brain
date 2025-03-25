@@ -132,9 +132,7 @@ export function LinkedNotesPage() {
   const [viewMode, setViewMode] = useState<'graph' | 'list'>('graph');
 
   const handleNodeSelect = (noteId: string) => {
-    console.log('handleNodeSelect called with:', noteId);
     setSelectedNoteId(noteId);
-    console.log('selectedNoteId set to:', noteId);
   };
 
   // Calculate stats including most connected note and idea
@@ -194,12 +192,6 @@ export function LinkedNotesPage() {
 
     return counts;
   }, [notes]);
-
-  // Add console.log to debug
-  console.log('Most Connected Stats:', {
-    note: stats.mostConnectedNote,
-    idea: stats.mostConnectedIdea
-  });
 
   return (
     <div className="h-[calc(100vh-11rem)] overflow-visible bg-fixed">

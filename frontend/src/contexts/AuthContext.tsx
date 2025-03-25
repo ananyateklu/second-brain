@@ -128,7 +128,6 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
   // SignalR connection state handler
   useEffect(() => {
     const handleConnectionStateChange = (state: ConnectionState, error?: Error) => {
-      console.log(`[SignalR] Connection state changed to: ${state}`, error);
       setSignalRStatus(state);
 
       if (state === 'error' && error) {
@@ -153,7 +152,6 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
   // SignalR connection management
   useEffect(() => {
     let isActive = true;
-    console.log('[SignalR] Auth state changed, user:', authState.user?.email);
 
     const initializeSignalR = async () => {
       try {
@@ -163,8 +161,6 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
           return;
         }
 
-        console.log('[SignalR] Initializing connection...');
-
         // First, clean up any existing connection and wait
         await signalRService.stop();
 
@@ -173,23 +169,18 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
         await signalRService.start();
 
         if (!isActive) return; // Check if still mounted
-        console.log('[SignalR] Connection started');
 
         // Create a stable callback reference
         const handleStatsUpdate = async () => {
           if (!isActive) return;
-          console.log('[SignalR] Received userstatsupdated event');
           await updateUserData();
-          console.log('[SignalR] User data updated');
         };
 
         // Set up the event handler for user stats updates
-        console.log('[SignalR] Setting up event handler for userstatsupdated');
         signalRService.on('userstatsupdated', handleStatsUpdate);
 
         return () => {
           if (isActive) {
-            console.log('[SignalR] Cleaning up event handler and connection');
             signalRService.off('userstatsupdated', handleStatsUpdate);
             signalRService.stop();
           }
@@ -198,24 +189,19 @@ export function AuthProvider({ children }: { readonly children: React.ReactNode 
         console.error('[SignalR] Error initializing SignalR:', error);
         if (isActive) {
           // Retry after a delay if there was an error
-          console.log('[SignalR] Will retry connection in 5 seconds...');
           setTimeout(initializeSignalR, 5000);
         }
       }
     };
 
     if (authState.user) {
-      console.log('[SignalR] User authenticated, starting initialization');
       const cleanup = initializeSignalR();
       return () => {
         isActive = false;
         cleanup?.then(cleanupFn => {
-          console.log('[SignalR] Running cleanup function');
           cleanupFn?.();
         });
       };
-    } else {
-      console.log('[SignalR] No user, skipping initialization');
     }
   }, [authState.user, updateUserData]);
 

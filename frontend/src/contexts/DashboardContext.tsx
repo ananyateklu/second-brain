@@ -243,16 +243,6 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     }
   }, [notes, tasks, notesLoading]);
 
-  // Add debug logs
-  useEffect(() => {
-    console.log('Dashboard state:', {
-      notesLoading,
-      notesCount: notes.length,
-      tasksCount: tasks.length,
-      isLoading
-    });
-  }, [notes, tasks, notesLoading, isLoading]);
-
   const getStatValue = useCallback((statId: string): StatValue => {
     // Keep these declarations
     let allTags: string[];

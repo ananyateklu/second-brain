@@ -97,23 +97,19 @@ const getAvatarRingStyle = (theme: string, agentColor: string) => {
 const parseExecutionStats = (content: string): [string, ExecutionStats | null] => {
     // First, check if we have an Execution Statistics section
     const hasStats = content.includes('### Execution Statistics');
-    console.log('Has Execution Statistics section:', hasStats);
 
     if (!hasStats) return [content, null];
 
     // Get the section after "### Execution Statistics"
     const sections = content.split('### Execution Statistics');
     const statsText = sections[1];
-    console.log('Stats text found:', statsText);
 
     // Parse token usage - simpler pattern
     const tokenLine = statsText.split('\n').find(line => line.includes('***Token Usage:**'));
-    console.log('Token line:', tokenLine);
 
     if (!tokenLine) return [content, null];
 
     const tokenNumbers = tokenLine.match(/\d+(?:,\d+)?/g);
-    console.log('Token numbers:', tokenNumbers);
 
     if (!tokenNumbers || tokenNumbers.length < 3) return [content, null];
 

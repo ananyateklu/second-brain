@@ -17,13 +17,6 @@ export function FunctionContent({ message, isStreaming, themeColor }: FunctionCo
   const contextSteps = executionSteps[message.id] || [];
   const steps = [...messageSteps, ...contextSteps];
 
-  console.log('[FunctionContent] Rendering with:', {
-    messageId: message.id,
-    messageSteps,
-    contextSteps,
-    combinedSteps: steps,
-    isStreaming
-  });
 
   if (steps.length === 0 && isStreaming) {
     return (

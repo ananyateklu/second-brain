@@ -22,19 +22,16 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
   const loadArchivedNotes = useCallback(async () => {
     // Skip if already loaded or loading
     if (hasLoadedArchived.current || isLoadingArchived.current) {
-      console.log('[NotesContext] Skipping load - notes already loaded or loading');
       return;
     }
 
     try {
       isLoadingArchived.current = true;
       setIsLoading(true);
-      console.log('[NotesContext] Loading archived notes');
 
       const notes = await notesService.getArchivedNotes();
       setArchivedNotes(notes);
       hasLoadedArchived.current = true;
-      console.log(`[NotesContext] Successfully loaded ${notes.length} archived notes`);
     } catch (error) {
       console.error('[NotesContext] Failed to load archived notes:', error);
       throw error;
@@ -54,7 +51,6 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoading(true);
       const fetchedNotes = await notesService.getAllNotes();
-      console.log('Fetched notes:', fetchedNotes); // Debug log
 
       const processedNotes = fetchedNotes
         .filter(note => !note.isArchived && !note.isDeleted)
@@ -69,7 +65,6 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
           linkedReminders: note.linkedReminders || []
         })) as Note[];
 
-      console.log('Processed notes:', processedNotes); // Debug log
       setNotes(sortNotes(processedNotes));
       setIsLoading(false);
     } catch (error) {
@@ -497,7 +492,6 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
 
   const linkReminder = useCallback(async (noteId: string, reminderId: string) => {
     try {
-      console.log('Linking reminder:', { noteId, reminderId });
       await notesService.linkReminder(noteId, reminderId);
 
       // Refresh all notes to get the latest state

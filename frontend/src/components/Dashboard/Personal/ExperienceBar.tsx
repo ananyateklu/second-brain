@@ -6,17 +6,10 @@ interface ExperienceBarProps {
   progress: number;
 }
 
-export function ExperienceBar({ currentXP, nextLevelXP, progress }: ExperienceBarProps) {
+export function ExperienceBar({ currentXP, nextLevelXP }: ExperienceBarProps) {
   // Calculate progress percentage based on current and next level XP
   const calculatedProgress = Math.min(100, (currentXP / nextLevelXP) * 100);
   
-  console.log('Progress Bar Values:', {
-    currentXP,
-    nextLevelXP,
-    passedProgress: progress,
-    calculatedProgress,
-    normalizedProgress: calculatedProgress
-  });
 
   return (
     <div className="space-y-2">

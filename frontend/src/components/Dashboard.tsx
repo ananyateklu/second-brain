@@ -15,7 +15,6 @@ import { TrashPage } from './Dashboard/Trash/TrashPage';
 import { TasksPage } from './Dashboard/Tasks/TasksPage';
 import { RemindersPage } from './Dashboard/Reminders/RemindersPage';
 import { RecentPage } from './Dashboard/Recent/RecentPage';
-import { DailyFocus } from './Dashboard/Focus/FocusPage';
 import { AIAgentsPage } from './Dashboard/AI/Agents/components/AIAgentsPage';
 import { AIAssistantPage } from './Dashboard/AI/AIAssistantPage';
 import { SearchPage } from './Dashboard/Search/SearchPage';
@@ -87,7 +86,6 @@ export function Dashboard() {
               <Route path="tasks" element={<TasksPage />} />
               <Route path="reminders" element={<RemindersPage />} />
               <Route path="recent" element={<RecentPage />} />
-              <Route path="focus" element={<DailyFocus />} />
               <Route path="agents" element={<AIAgentsPage />} />
               <Route path="ai" element={<AIAssistantPage />} />
               <Route path="profile" element={<PersonalPage />} />

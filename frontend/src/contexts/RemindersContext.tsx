@@ -51,21 +51,10 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
 
   const updateReminder = useCallback(async (id: string, updates: Partial<Reminder>) => {
     try {
-      console.log('Updating reminder:', id, 'with updates:', updates);
 
       // Check if we have linked items in the update
       const linkedItemsFromUpdate = updates.linkedItems || [];
       const hasLinkedItems = linkedItemsFromUpdate.length > 0;
-      if (hasLinkedItems) {
-        console.log('Update includes linkedItems:', linkedItemsFromUpdate);
-        console.log('LinkedItems types:', linkedItemsFromUpdate.map(item => item.type));
-
-        // Find the existing reminder to compare linked items
-        const existingReminder = reminders.find(r => r.id === id);
-        if (existingReminder) {
-          console.log('Existing linkedItems:', existingReminder.linkedItems);
-        }
-      }
 
       // Clone the updates to avoid mutations
       const updatesToSend = { ...updates };
@@ -78,15 +67,12 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
       // Enhanced logic to preserve linked items
       if (hasLinkedItems) {
         if (!updatedReminder.linkedItems || updatedReminder.linkedItems.length === 0) {
-          console.log('Server response missing linkedItems, using local data');
           updatedReminder.linkedItems = linkedItemsBackup;
         } else {
-          console.log('Server returned linkedItems:', updatedReminder.linkedItems);
 
           // Check if all types of items are included
           const types = new Set(updatedReminder.linkedItems.map(item => item.type));
           if (linkedItemsBackup.some(item => !types.has(item.type))) {
-            console.log('Some link types are missing in response - merging with backup');
 
             // Create a merged version that preserves type diversity
             const existingIds = new Set(updatedReminder.linkedItems.map(item => item.id));
@@ -96,8 +82,6 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
               ...updatedReminder.linkedItems,
               ...missingItems
             ];
-
-            console.log('Enhanced linkedItems after merge:', updatedReminder.linkedItems);
           }
         }
       }
@@ -124,7 +108,7 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
       console.error('Failed to update reminder:', error);
       throw error;
     }
-  }, [createActivity, reminders]);
+  }, [createActivity]);
 
   const deleteReminder = useCallback(async (id: string) => {
     try {
@@ -275,13 +259,9 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
 
   const addReminderLink = useCallback(async (reminderId: string, linkedItemId: string, linkType: string) => {
     try {
-      console.log('Adding reminder link - before API call:', { reminderId, linkedItemId, linkType });
 
       // Track if this is an idea link for special handling
       const isIdeaLink = linkType === 'idea';
-      if (isIdeaLink) {
-        console.log('This is an IDEA link - will apply special handling');
-      }
 
       const updatedReminder = await reminderService.addReminderLink({
         reminderId,
@@ -289,13 +269,8 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
         itemType: linkType as "note" | "idea",
       });
 
-      console.log('Received updated reminder with links:', updatedReminder);
-      console.log('LinkedItems length:', updatedReminder.linkedItems?.length);
-      console.log('LinkedItems data:', JSON.stringify(updatedReminder.linkedItems));
-
       // Special handling for idea links to force full refresh
       if (isIdeaLink) {
-        console.log('Triggering forced data refresh for idea link');
         // Get the complete, fresh list of reminders to ensure all related data is updated
         const freshReminders = await reminderService.getReminders();
 
@@ -303,9 +278,6 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
         const freshReminder = freshReminders.find(r => r.id === reminderId);
 
         if (freshReminder) {
-          console.log('Fresh reminder data found:', freshReminder);
-          console.log('Fresh linkedItems:', freshReminder.linkedItems);
-
           // Update with complete fresh data
           setReminders(prev =>
             prev.map(r => r.id === reminderId ? {

@@ -50,21 +50,12 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
 
       const configs = await agentService.getProviderConfigurations(forceRefresh);
 
-      // Log each configuration status
-      console.log('📊 Configuration Status:');
-      console.log('OpenAI:', configs.openai ? '✅ Configured' : '❌ Not Configured');
-      console.log('Anthropic:', configs.anthropic ? '✅ Configured' : '❌ Not Configured');
-      console.log('Grok:', configs.grok ? '✅ Configured' : '❌ Not Configured');
-      console.log('Gemini:', configs.gemini ? '✅ Configured' : '❌ Not Configured');
-      console.log('Llama:', configs.llama ? '✅ Configured' : '❌ Not Configured');
-
       setIsOpenAIConfigured(configs.openai);
       setIsAnthropicConfigured(configs.anthropic);
       setIsGrokConfigured(configs.grok);
       setIsGeminiConfigured(configs.gemini);
       setIsLlamaConfigured(configs.llama);
 
-      console.log('🔄 State Updated:', configs);
 
     } catch (error) {
       console.error('❌ Error checking configurations:', error);
@@ -98,7 +89,6 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
 
     // Subscribe to execution steps
     const unsubscribe = signalRService.onExecutionStep((step) => {
-      console.log('[AIContext] Received step:', step);
 
       // Get message ID from metadata
       const messageId = step.metadata?.messageId;
@@ -109,10 +99,6 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
 
       setExecutionSteps(prev => {
         const currentSteps = [...(prev[messageId as keyof typeof prev] || []), step];
-        console.log('[AIContext] Updating steps for message:', {
-          messageId,
-          steps: currentSteps
-        });
         return {
           ...prev,
           [messageId as string]: currentSteps
@@ -176,26 +162,17 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
     const lastAssistantMessage = [...messages].reverse().find(m => m.role === 'assistant');
     if (lastAssistantMessage) {
       latestMessageIdRef.current = lastAssistantMessage.id;
-      console.log('[AIContext] Updated latest message ID:', lastAssistantMessage.id);
     }
   }, [messages]);
 
   const handleExecutionStep = useCallback((step: ExecutionStep) => {
-    console.log('[AIContext] Received new step:', step);
-
     const messageId = latestMessageIdRef.current;
     if (!messageId) {
-      console.log('[AIContext] No message ID available for step:', step);
       return;
     }
 
     setExecutionSteps(prev => {
       const currentSteps = [...(prev[messageId] || []), step];
-      console.log('[AIContext] Updating steps for message:', {
-        messageId,
-        steps: currentSteps,
-        isComplete: step.type === 4  // 4 is Result in ExecutionStepType
-      });
 
       return {
         ...prev,

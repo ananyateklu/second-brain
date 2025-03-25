@@ -23,7 +23,6 @@ export const ArchivePage = memo(function ArchivePage() {
 
   // Load archived notes once on mount
   useEffect(() => {
-    console.log('[Archive] Loading archived notes if needed');
     loadArchivedNotes().catch(error => {
       console.error('[Archive] Failed to load archived notes:', error);
     });

@@ -38,8 +38,6 @@ export function EditReminderModal({ reminder: initialReminder, isOpen, onClose }
     try {
       setIsSaving(true);
 
-      console.log('Current reminder state before save:', reminder);
-      console.log('Current linked items before save:', reminder.linkedItems);
 
       // Make sure to include the current linkedItems in the save operation
       const updatesToSave = {
@@ -47,9 +45,6 @@ export function EditReminderModal({ reminder: initialReminder, isOpen, onClose }
         // Include the current linkedItems to prevent them from being lost
         linkedItems: reminder.linkedItems || []
       };
-
-      console.log('Saving reminder with updates:', updatesToSave);
-      console.log('Linked items being saved:', updatesToSave.linkedItems);
 
       await updateReminder(reminder.id, updatesToSave);
       setPendingChanges({});
@@ -80,31 +75,20 @@ export function EditReminderModal({ reminder: initialReminder, isOpen, onClose }
 
   const handleAddLink = async (itemId: string, itemType: 'note' | 'idea') => {
     try {
-      console.log(`Linking ${itemType} with ID ${itemId} to reminder ${reminder.id}`);
-      console.log('Current linked items before adding:', reminder.linkedItems);
-
       // Save current linked items to ensure we don't lose any
       const currentLinkedItems = [...reminder.linkedItems];
-
-      // Special tracking for idea links
-      const isIdeaLink = itemType === 'idea';
-      if (isIdeaLink) {
-        console.log('Handling IDEA link - special handling required');
-      }
 
       // Call the API to add the link
       await addReminderLink(reminder.id, itemId, itemType);
 
       // Find the note or idea to get its title
       const linkedItem = notes.find(note => note.id === itemId);
-      console.log('Found linked item in notes context:', linkedItem);
 
       // Get latest data with fresh reminders
       const latestReminders = await reminderService.getReminders();
       const updatedReminder = latestReminders.find((r: Reminder) => r.id === reminder.id);
 
       if (updatedReminder && updatedReminder.linkedItems && updatedReminder.linkedItems.length > 0) {
-        console.log('Using API response linkedItems:', updatedReminder.linkedItems);
 
         // Create a merged version that includes both previously linked items and new ones
         // This ensures we don't lose any linked items that might not be in the response
@@ -116,15 +100,12 @@ export function EditReminderModal({ reminder: initialReminder, isOpen, onClose }
           ...newItems
         ];
 
-        console.log('Merged linked items:', mergedLinkedItems);
-
         // Update with merged linked items
         setReminder({
           ...updatedReminder,
           linkedItems: mergedLinkedItems
         });
       } else {
-        console.log('Using local state update for linkedItems');
         // Create new linked item
         const newLinkedItem = {
           id: itemId,
