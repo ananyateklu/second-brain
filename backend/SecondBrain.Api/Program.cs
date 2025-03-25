@@ -84,6 +84,9 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 // Register AnthropicService
 builder.Services.AddHttpClient<IAnthropicService, AnthropicService>();
 
+// Register PerplexityService
+builder.Services.AddHttpClient<IPerplexityService, PerplexityService>();
+
 // Define CORS policy
 builder.Services.AddCors(options =>
 {
