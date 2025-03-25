@@ -11,13 +11,13 @@ export interface RateLimits {
 export interface AIModel {
   id: string;
   name: string;
-  provider: 'openai' | 'anthropic' | 'gemini' | 'llama' | 'grok';
-  category: 'chat' | 'completion' | 'embedding' | 'image' | 'audio' | 'function' | 'rag' | 'agent';
+  provider: 'openai' | 'anthropic' | 'gemini' | 'llama' | 'grok' | 'perplexity';
+  category: 'chat' | 'completion' | 'embedding' | 'image' | 'audio' | 'function' | 'rag' | 'agent' | 'search' | 'research' | 'reasoning';
   description: string;
   isConfigured: boolean;
   isReasoner: boolean;
   color: string;
-  endpoint: 'chat' | 'completions' | 'images' | 'audio' | 'embeddings' | 'rag' | 'agent';
+  endpoint: 'chat' | 'completions' | 'images' | 'audio' | 'embeddings' | 'rag' | 'agent' | 'search';
   rateLimits?: RateLimits;
   size?: string;
 }

@@ -116,6 +116,7 @@ export function WelcomeBar({ isDashboardHome = false }: WelcomeBarProps) {
     '/dashboard/trash',
     '/dashboard/recent',
     '/dashboard/tags',
+    '/dashboard/perplexity',
   ];
 
   // Return null if component should be hidden

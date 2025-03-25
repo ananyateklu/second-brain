@@ -19,6 +19,7 @@ import { DailyFocus } from './Dashboard/Focus/FocusPage';
 import { AIAgentsPage } from './Dashboard/AI/Agents/components/AIAgentsPage';
 import { AIAssistantPage } from './Dashboard/AI/AIAssistantPage';
 import { SearchPage } from './Dashboard/Search/SearchPage';
+import { PerplexityPage } from './Dashboard/Perplexity/PerplexityPage';
 import { LoadingScreen } from './shared/LoadingScreen';
 import { useNotes } from '../contexts/notesContextUtils';
 import { useTasks } from '../contexts/tasksContextUtils';
@@ -91,6 +92,7 @@ export function Dashboard() {
               <Route path="ai" element={<AIAssistantPage />} />
               <Route path="profile" element={<PersonalPage />} />
               <Route path="search" element={<SearchPage />} />
+              <Route path="perplexity" element={<PerplexityPage />} />
               <Route path="settings" element={<SettingsPage />} />
             </Routes>
           </div>
