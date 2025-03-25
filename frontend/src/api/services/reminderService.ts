@@ -45,13 +45,11 @@ export const reminderService = {
   },
 
   async addReminderLink(data: ReminderLinkData): Promise<Reminder> {
-    console.log('Adding reminder link:', data);
     const response = await api.post<Reminder>(`/api/Reminders/${data.reminderId}/links`, {
       linkedItemId: data.linkedItemId,
       linkType: data.itemType,
       description: data.description
     });
-    console.log('Reminder link response:', response.data);
     return response.data;
   },
 

@@ -9,12 +9,10 @@ export function useReminderNotifications() {
     // Check for due reminders every minute
     const checkReminders = () => {
       const now = new Date();
-      console.log('Checking reminders at:', now.toLocaleString());
       
       reminders.forEach(reminder => {
         // Skip if reminder is completed
         if (reminder.isCompleted) {
-          console.log('Skipping completed reminder:', reminder.title);
           return;
         }
 
@@ -22,7 +20,6 @@ export function useReminderNotifications() {
         if (reminder.isSnoozed && reminder.snoozeUntil) {
           const snoozeUntil = new Date(reminder.snoozeUntil);
           if (now < snoozeUntil) {
-            console.log('Skipping snoozed reminder:', reminder.title, 'snoozed until:', snoozeUntil.toLocaleString());
             return;
           }
         }
@@ -32,11 +29,6 @@ export function useReminderNotifications() {
         const minutesUntilDue = Math.floor(timeDiff / 60000);
         const hoursUntilDue = Math.floor(minutesUntilDue / 60);
 
-        console.log(
-          'Processing reminder:', reminder.title,
-          '\nDue at:', dueDate.toLocaleString(),
-          '\nMinutes until due:', minutesUntilDue
-        );
 
         // Get the last notification time for this reminder from localStorage
         const lastNotificationKey = `last_notification_${reminder.id}`;
@@ -63,7 +55,6 @@ export function useReminderNotifications() {
 
             description += overdueText;
             
-            console.log('Triggering overdue notification for reminder:', reminder.title);
             notificationService.showReminderNotification({
               ...reminder,
               description
@@ -83,7 +74,6 @@ export function useReminderNotifications() {
               description += `Due in ${hoursUntilDue} hours and ${minutesUntilDue % 60} minutes`;
             }
 
-            console.log('Triggering upcoming notification for reminder:', reminder.title);
             notificationService.showReminderNotification({
               ...reminder,
               description
@@ -95,7 +85,6 @@ export function useReminderNotifications() {
       });
     };
 
-    console.log('Setting up reminder notifications with', reminders.length, 'reminders');
 
     // Check immediately on mount
     checkReminders();
@@ -104,7 +93,6 @@ export function useReminderNotifications() {
     const interval = setInterval(checkReminders, 60000);
 
     return () => {
-      console.log('Cleaning up reminder notifications');
       clearInterval(interval);
     };
   }, [reminders]);

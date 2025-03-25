@@ -19,8 +19,6 @@ export class LlamaService {
     try {
       let finalContent = '';
 
-      console.log(`[LlamaService] Sending message - Model: ${modelId}, Message: ${message}`);
-
       // Build query parameters including the model parameters
       const queryParams = new URLSearchParams({
         prompt: message,
@@ -40,7 +38,6 @@ export class LlamaService {
         eventSource.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
-            console.log('Received event data:', data);
 
             if (data.Type === 'content') {
               finalContent += data.Content;
@@ -52,9 +49,7 @@ export class LlamaService {
                 finalContent += data.Content;
               }
             }
-          } catch (error) {
-            console.log('Error parsing event data:', error);
-            console.log('Raw event data:', event.data);
+          } catch {
             if (!event.data.includes('"Type":"step"')) {
               finalContent += event.data;
             }

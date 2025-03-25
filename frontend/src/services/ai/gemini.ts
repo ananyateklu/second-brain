@@ -19,7 +19,6 @@ export class GeminiService {
     }
   ): Promise<AIResponse> {
     try {
-      console.log('Sending message with model:', modelId, 'parameters:', parameters); // Debug log
       
       const request = {
         message,

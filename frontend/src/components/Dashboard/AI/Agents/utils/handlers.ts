@@ -95,7 +95,6 @@ export const handleNewConversation = async (
     try {
         // Create chat in database
         const newChat = await agentService.createChat(selectedAgent.id, "New Chat");
-        console.log('Created new chat:', newChat);
 
         // Log activity for new chat creation
         await activityService.createActivity({

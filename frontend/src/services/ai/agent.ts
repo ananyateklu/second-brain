@@ -1,5 +1,4 @@
 import { AIModel, AIResponse } from '../../types/ai';
-import { AI_MODELS } from './models';
 import api from '../api/api';
 import { AgentChat, AgentMessage } from '../../types/agent';
 import { LlamaService } from './llama';
@@ -122,7 +121,6 @@ export class AgentService {
     parameters?: AgentRequestParameters
   ): Promise<AIResponse> {
     try {
-      console.log(`Sending message with chatId: ${chatId}`);
       const baseModelId = modelId.replace('-agent', '');
       const response = await api.post('/api/AIAgents/execute', {
         prompt: message,

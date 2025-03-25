@@ -158,7 +158,6 @@ export class AnthropicService {
     }
 
     if (contentBlock.type === 'tool_use' && isContentSuggestion) {
-      console.log('Tool use requested:', contentBlock);
 
       if (contentBlock.input) {
         this.updateAccumulatedContext(accumulatedContext, contentBlock.name!, contentBlock.input);
@@ -195,9 +194,7 @@ export class AnthropicService {
       const tools = isContentSuggestion ? this.getContentSuggestionTools() : [];
       const request = this.createInitialRequest(message, modelId, parameters, tools);
 
-      console.log('Sending request to Claude:', request);
       const response = await api.post<AnthropicResponse>('/api/Claude/send', request);
-      console.log('Received response from Claude:', response.data);
 
       let finalContent = '';
       const toolResults: AnthropicToolResult[] = [];
@@ -439,11 +436,8 @@ export class AnthropicService {
         content: `Context Data: ${JSON.stringify(contextData)}`
       });
 
-      console.log('Sending request to backend:', request);
-
       const response = await api.post<AnthropicResponse>('/api/Claude/send', request);
 
-      console.log('Received response from backend:', response.data);
 
       // Process the response to extract the generated data
       const assistantContent = response.data.content;

@@ -63,6 +63,7 @@ export interface AIResponse {
     tools_used?: ToolExecution[];
     parameters?: Record<string, unknown>;
     toolCalls?: Record<string, unknown>[];
+    toolResults?: AnthropicToolResult[];
     usage?: {
       input_tokens: number;
       output_tokens: number;

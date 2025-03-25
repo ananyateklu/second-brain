@@ -46,7 +46,6 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
 
     try {
       isCheckingRef.current = true;
-      console.group('🤖 AI Model Configurations Check');
 
       const configs = await agentService.getProviderConfigurations(forceRefresh);
 

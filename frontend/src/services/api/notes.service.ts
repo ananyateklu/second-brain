@@ -183,7 +183,6 @@ export const notesService = {
 
   async linkReminder(noteId: string, reminderId: string): Promise<Note> {
     try {
-      console.log('Making API call to link reminder:', { noteId, reminderId }); // Add debug logging
       const response = await api.post<NoteResponse>(`/api/Notes/${noteId}/reminders`, {
         reminderId: reminderId
       });
@@ -206,9 +205,7 @@ export const notesService = {
 
   async getArchivedNotes(): Promise<Note[]> {
     try {
-      console.log('Fetching archived notes from API'); // Debug log
       const response = await api.get<NoteResponse[]>('/api/Notes/archived');
-      console.log('Archived notes API response received'); // Debug log
       return response.data.map(processNoteResponse);
     } catch (error) {
       console.error('Error fetching archived notes:', error);
@@ -252,9 +249,7 @@ export const notesService = {
 
   async triggerUserStatsUpdate(): Promise<void> {
     try {
-      console.log('[Notes] Triggering user stats update');
       await api.post('/api/Users/trigger-stats-update');
-      console.log('[Notes] User stats update triggered');
     } catch (error) {
       console.error('[Notes] Error triggering user stats update:', error);
       throw error;

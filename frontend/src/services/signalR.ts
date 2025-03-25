@@ -80,7 +80,6 @@ export class SignalRService {
           );
 
           this.reconnectAttempts++;
-          console.log(`[SignalR] Next retry in ${delay}ms (attempt ${this.reconnectAttempts})`);
           return delay;
         }
       })
@@ -90,24 +89,20 @@ export class SignalRService {
 
   private setupConnectionHandlers() {
     this.connection.on('ReceiveExecutionStep', (step: ExecutionStep) => {
-      console.log('[SignalR] Received step:', step);
       this.executionStepCallbacks.forEach(callback => callback(step));
     });
 
     this.connection.onreconnecting((error) => {
-      console.log('[SignalR] Reconnecting...', error);
       this.notifyStateChange('reconnecting', error ? new SignalRError('Reconnecting', error) : undefined);
     });
 
-    this.connection.onreconnected((connectionId) => {
-      console.log('[SignalR] Reconnected with connectionId:', connectionId);
+    this.connection.onreconnected(() => {
       this.reconnectAttempts = 0;
       this.reregisterEvents();
       this.notifyStateChange('connected');
     });
 
     this.connection.onclose((error) => {
-      console.log('[SignalR] Connection Closed', error);
       this.notifyStateChange('disconnected', error ? new SignalRError('Connection closed', error) : undefined);
 
       if (this.autoReconnect && this.reconnectAttempts < this.maxReconnectAttempts) {
@@ -123,12 +118,10 @@ export class SignalRService {
   }
 
   private async reregisterEvents() {
-    console.log('[SignalR] Reregistering events:', this.pendingEvents);
 
     try {
       // Re-register all pending events after reconnection
       for (const event of this.pendingEvents) {
-        console.log('[SignalR] Reregistering event:', event.eventName);
         this.connection.on(event.eventName, event.callback);
       }
     } catch (error) {
@@ -174,12 +167,10 @@ export class SignalRService {
     }
 
     if (this.isStarting) {
-      console.log('[SignalR] Connection start already in progress');
       return;
     }
 
     if (this.connection.state === signalR.HubConnectionState.Connected) {
-      console.log('[SignalR] Already connected');
       await this.reregisterEvents();
       this.notifyStateChange('connected');
       return;
@@ -203,9 +194,7 @@ export class SignalRService {
 
       while (retryCount < maxRetries) {
         try {
-          console.log(`[SignalR] Attempting connection (attempt ${retryCount + 1}/${maxRetries})`);
           await this.connection.start();
-          console.log('[SignalR] Connected successfully');
           this.reconnectAttempts = 0;
           await this.reregisterEvents();
           this.notifyStateChange('connected');
@@ -218,7 +207,6 @@ export class SignalRService {
             break;
           }
           const delay = Math.min(1000 * Math.pow(2, retryCount), 5000);
-          console.log(`[SignalR] Connection attempt ${retryCount} failed, retrying in ${delay}ms`);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
@@ -234,7 +222,6 @@ export class SignalRService {
 
       if (this.reconnectAttempts < this.maxReconnectAttempts) {
         const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
-        console.log(`[SignalR] Scheduling retry in ${delay}ms`);
         setTimeout(() => this.start(), delay);
       } else {
         this.notifyStateChange('error', new SignalRError('Max reconnection attempts reached'));
@@ -251,7 +238,6 @@ export class SignalRService {
       if (this.connection.state !== signalR.HubConnectionState.Disconnected) {
         await this.connection.stop();
         await new Promise(resolve => setTimeout(resolve, 500)); // Reduced delay
-        console.log('[SignalR] Disconnected');
         this.notifyStateChange('disconnected');
       }
     } catch (err) {
@@ -278,7 +264,6 @@ export class SignalRService {
   }
 
   on<T extends unknown[]>(eventName: string, callback: (...args: T) => void) {
-    console.log('[SignalR] Registering event:', eventName);
     // Store the event for reconnection
     this.pendingEvents.push({
       eventName,
@@ -287,15 +272,11 @@ export class SignalRService {
 
     // Register the event immediately if connected
     if (this.isConnected()) {
-      console.log('[SignalR] Connection is active, registering immediately:', eventName);
       this.connection.on(eventName, callback);
-    } else {
-      console.log('[SignalR] Connection not active, event will be registered when connected:', eventName);
     }
   }
 
   off<T extends unknown[]>(eventName: string, callback: (...args: T) => void) {
-    console.log('[SignalR] Removing event:', eventName);
     // Remove from pending events
     this.pendingEvents = this.pendingEvents.filter(
       event => event.eventName !== eventName || event.callback !== callback

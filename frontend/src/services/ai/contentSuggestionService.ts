@@ -91,14 +91,9 @@ export class ContentSuggestionService {
     maxLength?: number
   ): Promise<string> {
     try {
-      console.log(`Sending prompt to ${this.modelId}:`, prompt);
       const response = await this.aiService.sendMessage(
         prompt,
         this.modelId
-      );
-      console.log(
-        `Received response from ${this.modelId}:`,
-        response.content
       );
 
       let suggestion = response.content.trim();

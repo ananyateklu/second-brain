@@ -77,13 +77,11 @@ export const tasksService = {
   },
 
   async addTaskLink(data: TaskLinkData): Promise<Task> {
-    console.log('Adding task link:', data); // Debug log
     const response = await api.post<Task>(`/api/Tasks/${data.taskId}/links`, {
       linkedItemId: data.linkedItemId,
       linkType: data.itemType, // Make sure we're sending the correct type
       description: data.description
     });
-    console.log('Task link response:', response.data); // Debug log
     return response.data;
   },
 
