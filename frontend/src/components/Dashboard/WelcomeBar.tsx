@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { Plus, Search, Clock, Hash, Files, CheckSquare, FileText, Lightbulb, Share2, Activity, FolderPlus, Tags, AlignLeft, FolderIcon, TagIcon, Network, AlertCircle, Bell } from 'lucide-react';
+import { Plus, Search, Clock, Hash, Files, CheckSquare, FileText, Lightbulb, Share2, Activity, FolderPlus, Tags, AlignLeft, FolderIcon, TagIcon, Network, AlertCircle, Bell, RefreshCw } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useDashboard } from '../../hooks/useDashboard';
 import { StatsEditor } from './StatsEditor';
@@ -39,7 +39,8 @@ const IconMap = {
   TagIcon,
   Network,
   AlertCircle,
-  Bell
+  Bell,
+  RefreshCw
 };
 
 const getWidthFromSize = (size?: string) => {
@@ -63,7 +64,6 @@ export function WelcomeBar({ isDashboardHome = false }: WelcomeBarProps) {
     toggleStat,
     getStatValue,
     updateStatSize,
-    graphsVisible,
     toggleGraphVisibility,
     updateStatOrder
   } = useDashboard();
@@ -162,7 +162,7 @@ export function WelcomeBar({ isDashboardHome = false }: WelcomeBarProps) {
                 const StatIcon = IconMap[stat.icon as keyof typeof IconMap];
                 const statValue = getStatValue(stat.id);
                 const colSpan = getWidthFromSize(stat.size);
-                const isGraphVisible = graphsVisible[stat.id] !== undefined ? graphsVisible[stat.id] : true;
+                const isGraphVisible = stat.graphVisible !== undefined ? stat.graphVisible : true;
 
                 return (
                   <div

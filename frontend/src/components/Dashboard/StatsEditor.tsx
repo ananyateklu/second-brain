@@ -1,15 +1,31 @@
-import * as Icons from 'lucide-react';
-import { useDashboard } from '../../hooks/useDashboard';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from 'react';
+import { File, CheckSquare, Lightbulb, Network, Activity, Tags, FolderPlus, Files, Clock, FileText, Bell, AlignLeft, LucideIcon, RefreshCw, Gauge, RotateCcw, AlertCircle } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { cardVariants } from '../../utils/welcomeBarUtils';
 import { DashboardStat } from '../../types/dashboard';
-import { LucideIcon } from 'lucide-react';
-import {
-  StyledStatCard,
-  StyledStatContainer,
-} from './WelcomeBarStyles';
+import { StyledStatCard, StyledStatContainer } from './WelcomeBarStyles';
 import { useTheme } from '../../contexts/themeContextUtils';
-import { useState } from 'react';
+import { useDashboard } from '../../hooks/useDashboard';
+
+// Map of icon names to components
+const Icons = {
+  File,
+  Files,
+  CheckSquare,
+  Lightbulb,
+  Network,
+  Activity,
+  Tags,
+  Clock,
+  FolderPlus,
+  FileText,
+  Bell,
+  AlignLeft,
+  RefreshCw,
+  Gauge,
+  RotateCcw,
+  AlertCircle
+};
 
 export function StatsEditor({ isOpen }: { isOpen: boolean }) {
   const { availableStats, toggleStat, getStatValue, updateStatOrder, resetStats } = useDashboard();

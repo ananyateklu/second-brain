@@ -35,7 +35,6 @@ export interface DashboardContextType {
   updateStatSize: (statId: string, size: 'small' | 'medium' | 'large') => void;
   updateStatOrder: (statId: string, newOrder: number) => void;
   isLoading: boolean;
-  graphsVisible: Record<string, boolean>;
   toggleGraphVisibility: (statId: string) => void;
   resetStats: () => Promise<boolean>;
 }
@@ -104,7 +103,10 @@ export const isDashboardStat = (obj: unknown): obj is DashboardStat => {
     'activity',
     'collaboration',
     'notes-stats',
-    'connection-types'
+    'connection-types',
+    'content-freshness',
+    'task-completion-rate',
+    'tasks-due-soon'
   ] as const;
 
   type ValidType = typeof validTypes[number];
@@ -139,23 +141,53 @@ export const DEFAULT_STATS: DashboardStat[] = [
     graphVisible: true
   },
   {
-    id: 'notes-stats',
-    type: 'notes',
-    title: 'Notes Overview',
-    icon: 'FileText',
+    id: 'ideas-count',
+    type: 'ideas',
+    title: 'Ideas',
+    icon: 'Lightbulb',
     enabled: true,
     order: 1,
     size: 'medium',
     graphVisible: true
   },
   {
-    id: 'new-notes',
-    type: 'new-notes',
-    title: 'New Notes',
-    icon: 'FolderPlus',
+    id: 'completed-tasks',
+    type: 'tasks',
+    title: 'Completed Tasks',
+    icon: 'CheckSquare',
     enabled: true,
     order: 2,
     size: 'medium',
+    graphVisible: true
+  },
+  {
+    id: 'reminders',
+    type: 'reminders',
+    title: 'Reminders',
+    icon: 'Bell',
+    enabled: true,
+    order: 3,
+    size: 'medium',
+    graphVisible: true
+  },
+  {
+    id: 'daily-activity',
+    type: 'activity',
+    title: 'Activity',
+    icon: 'Activity',
+    enabled: true,
+    order: 4,
+    size: 'large',
+    graphVisible: true
+  },
+  {
+    id: 'connection-types',
+    type: 'connection-types',
+    title: 'Connection Breakdown',
+    icon: 'Network',
+    enabled: true,
+    order: 5,
+    size: 'large',
     graphVisible: true
   },
   {
@@ -164,7 +196,7 @@ export const DEFAULT_STATS: DashboardStat[] = [
     title: 'Categories',
     icon: 'Tags',
     enabled: true,
-    order: 3,
+    order: 6,
     size: 'small',
     graphVisible: true
   },
@@ -174,18 +206,58 @@ export const DEFAULT_STATS: DashboardStat[] = [
     title: 'Word Count',
     icon: 'AlignLeft',
     enabled: true,
-    order: 4,
+    order: 7,
     size: 'small',
     graphVisible: true
   },
   {
-    id: 'ideas-count',
-    type: 'ideas',
-    title: 'Ideas',
-    icon: 'Lightbulb',
+    id: 'content-freshness',
+    type: 'content-freshness',
+    title: 'Content Freshness',
+    icon: 'RefreshCw',
     enabled: true,
-    order: 5,
-    size: 'small',
+    order: 8,
+    size: 'medium',
+    graphVisible: true
+  },
+  {
+    id: 'task-completion-rate',
+    type: 'task-completion-rate',
+    title: 'Task Completion',
+    icon: 'CheckSquare',
+    enabled: true,
+    order: 9,
+    size: 'medium',
+    graphVisible: true
+  },
+  {
+    id: 'tasks-due-soon',
+    type: 'tasks-due-soon',
+    title: 'Due Soon',
+    icon: 'AlertCircle',
+    enabled: true,
+    order: 10,
+    size: 'medium',
+    graphVisible: true
+  },
+  {
+    id: 'notes-stats',
+    type: 'notes',
+    title: 'Notes Overview',
+    icon: 'FileText',
+    enabled: false,
+    order: 11,
+    size: 'medium',
+    graphVisible: true
+  },
+  {
+    id: 'new-notes',
+    type: 'new-notes',
+    title: 'New Notes',
+    icon: 'FolderPlus',
+    enabled: false,
+    order: 12,
+    size: 'medium',
     graphVisible: true
   },
   {
@@ -193,29 +265,9 @@ export const DEFAULT_STATS: DashboardStat[] = [
     type: 'tasks',
     title: 'Active Tasks',
     icon: 'CheckSquare',
-    enabled: true,
-    order: 6,
-    size: 'small',
-    graphVisible: true
-  },
-  {
-    id: 'completed-tasks',
-    type: 'tasks',
-    title: 'Completed Tasks',
-    icon: 'CheckSquare',
     enabled: false,
-    order: 7,
+    order: 13,
     size: 'small',
-    graphVisible: true
-  },
-  {
-    id: 'daily-activity',
-    type: 'activity',
-    title: 'Activity',
-    icon: 'Activity',
-    enabled: true,
-    order: 8,
-    size: 'large',
     graphVisible: true
   },
   {
@@ -223,29 +275,9 @@ export const DEFAULT_STATS: DashboardStat[] = [
     type: 'connections',
     title: 'Connections',
     icon: 'Network',
-    enabled: true,
-    order: 9,
-    size: 'medium',
-    graphVisible: true
-  },
-  {
-    id: 'connection-types',
-    type: 'connection-types',
-    title: 'Connection Breakdown',
-    icon: 'Network',
-    enabled: true,
-    order: 10,
-    size: 'large',
-    graphVisible: true
-  },
-  {
-    id: 'reminders',
-    type: 'reminders',
-    title: 'Reminders',
-    icon: 'Bell',
     enabled: false,
-    order: 11,
-    size: 'small',
+    order: 14,
+    size: 'medium',
     graphVisible: true
   }
 ]; 

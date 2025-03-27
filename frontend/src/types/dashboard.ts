@@ -12,7 +12,10 @@ export type DashboardStatType =
   | 'activity'
   | 'collaboration'
   | 'notes-stats'
-  | 'connection-types';
+  | 'connection-types'
+  | 'content-freshness'
+  | 'task-completion-rate'
+  | 'tasks-due-soon';
 
 export type StatType =
   | 'notes'
@@ -28,7 +31,10 @@ export type StatType =
   | 'new-notes'
   | 'word-count'
   | 'notes-stats'
-  | 'connection-types';
+  | 'connection-types'
+  | 'content-freshness'
+  | 'task-completion-rate'
+  | 'tasks-due-soon';
 export type ChartType = 'line' | 'bar' | 'progress' | 'none';
 
 export interface DashboardStat {

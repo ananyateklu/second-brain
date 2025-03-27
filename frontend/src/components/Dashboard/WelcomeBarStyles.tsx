@@ -139,6 +139,9 @@ export const StyledStatCard = ({
       case 'word-count':
       case 'notes-stats':
       case 'connections':
+      case 'content-freshness':
+      case 'task-completion-rate':
+      case 'tasks-due-soon':
         return 'line';
       case 'activity':
       case 'categories':
@@ -490,6 +493,12 @@ const getChartColor = (type: string, theme: string) => {
       return theme === 'dark' || theme === 'midnight' ? '#f87171' : '#dc2626';
     case 'connection-types':
       return theme === 'dark' || theme === 'midnight' ? '#06b6d4' : '#0891b2'; // Cyan color for connection types
+    case 'content-freshness':
+      return theme === 'dark' || theme === 'midnight' ? '#14b8a6' : '#0d9488'; // Teal color for freshness
+    case 'task-completion-rate':
+      return theme === 'dark' || theme === 'midnight' ? '#22c55e' : '#16a34a'; // Green color for completion
+    case 'tasks-due-soon':
+      return theme === 'dark' || theme === 'midnight' ? '#f97316' : '#ea580c'; // Orange color for due soon
     default:
       return 'var(--color-accent)';
   }

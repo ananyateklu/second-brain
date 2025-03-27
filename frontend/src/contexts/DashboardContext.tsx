@@ -21,15 +21,6 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     return DEFAULT_STATS;
   });
 
-  // Track graph visibility for each stat
-  const [graphsVisible, setGraphsVisible] = useState<Record<string, boolean>>(() => {
-    // Initialize with default values from stats
-    return stats.reduce((acc, stat) => {
-      acc[stat.id] = stat.graphVisible !== undefined ? stat.graphVisible : true;
-      return acc;
-    }, {} as Record<string, boolean>);
-  });
-
   // Load preferences from API
   useEffect(() => {
     const loadPreferences = async () => {
@@ -44,16 +35,6 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
             }
           } catch (e) {
             console.error('Failed to parse dashboard stats:', e);
-          }
-        }
-
-        // Try to get graphs visibility from API
-        const graphsVisiblePreference = await preferencesService.getPreferenceByType('dashboard_graphs_visible');
-        if (graphsVisiblePreference) {
-          try {
-            setGraphsVisible(JSON.parse(graphsVisiblePreference.value));
-          } catch (e) {
-            console.error('Failed to parse graph visibility settings:', e);
           }
         }
       } catch (error: unknown) {
@@ -156,19 +137,21 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const toggleGraphVisibility = useCallback((statId: string) => {
-    setGraphsVisible(prev => {
-      const newVisibility = {
-        ...prev,
-        [statId]: !prev[statId]
-      };
+    setStats(prevStats => {
+      const newStats = prevStats.map(stat => {
+        if (stat.id === statId) {
+          return { ...stat, graphVisible: !stat.graphVisible };
+        }
+        return stat;
+      });
 
-      // Save to backend API instead of localStorage
+      // Save to backend API
       preferencesService.savePreference({
-        preferenceType: 'dashboard_graphs_visible',
-        value: JSON.stringify(newVisibility)
-      }).catch(err => console.error('Failed to save graph visibility settings:', err));
+        preferenceType: 'dashboard_stats',
+        value: JSON.stringify(newStats)
+      }).catch(err => console.error('Failed to save dashboard stats:', err));
 
-      return newVisibility;
+      return newStats;
     });
   }, []);
 
@@ -178,24 +161,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       // Reset stats to defaults
       setStats(DEFAULT_STATS);
 
-      // Reset graph visibility to defaults
-      const defaultGraphVisibility = DEFAULT_STATS.reduce((acc, stat) => {
-        acc[stat.id] = stat.graphVisible !== undefined ? stat.graphVisible : true;
-        return acc;
-      }, {} as Record<string, boolean>);
-
-      setGraphsVisible(defaultGraphVisibility);
-
       // Save default stats to backend
       await preferencesService.savePreference({
         preferenceType: 'dashboard_stats',
         value: JSON.stringify(DEFAULT_STATS)
-      });
-
-      // Save default graph visibility to backend
-      await preferencesService.savePreference({
-        preferenceType: 'dashboard_graphs_visible',
-        value: JSON.stringify(defaultGraphVisibility)
       });
 
       return true;
@@ -213,7 +182,6 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     updateStatSize,
     updateStatOrder,
     isLoading,
-    graphsVisible,
     toggleGraphVisibility,
     resetStats
   }), [
@@ -223,7 +191,6 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     updateStatSize,
     updateStatOrder,
     isLoading,
-    graphsVisible,
     toggleGraphVisibility,
     resetStats
   ]);

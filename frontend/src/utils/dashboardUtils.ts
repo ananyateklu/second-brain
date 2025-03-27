@@ -26,6 +26,12 @@ export const getIconBg = (type: string) => {
       return `${baseClass} bg-[var(--color-task)]/10`;
     case 'reminders':
       return `${baseClass} bg-[var(--color-reminder)]/10`;
+    case 'content-freshness':
+      return `${baseClass} bg-teal-500/10`;
+    case 'task-completion-rate':
+      return `${baseClass} bg-green-500/10`;
+    case 'tasks-due-soon':
+      return `${baseClass} bg-orange-500/10`;
     default:
       return `${baseClass} bg-[var(--color-text)]/10`;
   }
@@ -59,6 +65,12 @@ export const getIconColor = (type: string) => {
       return `${baseClass} text-teal-600 dark:text-teal-400 midnight:text-teal-400`;
     case 'reminders':
       return `${baseClass} text-purple-600 dark:text-purple-400 midnight:text-purple-400`;
+    case 'content-freshness':
+      return `${baseClass} text-teal-600 dark:text-teal-400 midnight:text-teal-400`;
+    case 'task-completion-rate':
+      return `${baseClass} text-green-600 dark:text-green-400 midnight:text-green-400`;
+    case 'tasks-due-soon':
+      return `${baseClass} text-orange-600 dark:text-orange-400 midnight:text-orange-400`;
     default:
       return `${baseClass} text-gray-600 dark:text-gray-400 midnight:text-gray-400`;
   }

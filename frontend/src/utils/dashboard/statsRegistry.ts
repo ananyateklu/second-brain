@@ -18,7 +18,9 @@ import {
 } from './statsHandlers/noteStatsHandler';
 import {
     getActiveTasksStatValue,
-    getCompletedTasksStatValue
+    getCompletedTasksStatValue,
+    getTaskCompletionRateStatValue,
+    getTasksDueSoonStatValue
 } from './statsHandlers/taskStatsHandler';
 import {
     getRemindersStatValue
@@ -29,6 +31,9 @@ import {
 import {
     getIdeasCountStatValue
 } from './statsHandlers/ideasStatsHandler';
+import {
+    getContentFreshnessStatValue
+} from './statsHandlers/freshnessStatsHandler';
 
 // Import the Reminder interface or redefine it here
 interface Reminder {
@@ -66,6 +71,9 @@ const statsRegistry: Record<string, StatHandler> = {
     'completed-tasks': ({ tasks }) => getCompletedTasksStatValue(tasks),
     'completed': ({ tasks }) => getCompletedTasksStatValue(tasks), // Alias for backwards compatibility
     'reminders': ({ reminders }) => getRemindersStatValue(reminders),
+    'content-freshness': ({ notes }) => getContentFreshnessStatValue(notes),
+    'task-completion-rate': ({ tasks }) => getTaskCompletionRateStatValue(tasks),
+    'tasks-due-soon': ({ tasks }) => getTasksDueSoonStatValue(tasks),
 };
 
 /**
