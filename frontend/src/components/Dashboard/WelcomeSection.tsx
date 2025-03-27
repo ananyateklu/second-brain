@@ -1,10 +1,9 @@
 import React from 'react';
-import { Plus, CheckSquare, Lightbulb, Clock, Edit3, CheckCircle } from 'lucide-react';
+import { Plus, CheckSquare, Lightbulb, BellRing, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { User } from '../../types/user';
 import { Task } from '../../types/task';
 import { useTheme } from '../../contexts/themeContextUtils';
-import { cardVariants, sizeClasses } from '../../utils/welcomeBarUtils';
 
 interface WelcomeSectionProps {
   user: User;
@@ -14,6 +13,7 @@ interface WelcomeSectionProps {
     totalNotes: number;
     totalTasks: number;
     completedTasks: number;
+    totalReminders?: number;
   };
   tasks: Task[];
 }
@@ -24,7 +24,7 @@ const getContainerBackground = (theme: string) => {
   return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]'
 }
 
-export const WelcomeSection = React.memo(({ user, onNewNote, onNavigate, stats, tasks }: WelcomeSectionProps) => {
+export const WelcomeSection = React.memo(({ user, onNewNote, onNavigate }: WelcomeSectionProps) => {
   const { theme } = useTheme();
 
   const getGreeting = () => {
@@ -34,169 +34,155 @@ export const WelcomeSection = React.memo(({ user, onNewNote, onNavigate, stats, 
     return 'Good evening';
   };
 
-  const getIconBg = (type: string) => {
-    switch (type) {
-      case 'clock':
-        return 'bg-purple-100/20 dark:bg-purple-900/20 midnight:bg-purple-900/20';
-      case 'task':
-        return 'bg-green-100/20 dark:bg-green-900/20 midnight:bg-green-900/20';
-      case 'note':
-        return 'bg-blue-100/20 dark:bg-blue-900/20 midnight:bg-blue-900/20';
-      default:
-        return 'bg-gray-100/20 dark:bg-gray-900/20 midnight:bg-gray-900/20';
-    }
-  };
-
-  const getIconColor = (type: string) => {
-    switch (type) {
-      case 'clock':
-        return 'text-purple-600 dark:text-purple-400 midnight:text-purple-300';
-      case 'task':
-        return 'text-green-600 dark:text-green-400 midnight:text-green-300';
-      case 'note':
-        return 'text-blue-600 dark:text-blue-400 midnight:text-blue-300';
-      default:
-        return 'text-gray-600 dark:text-gray-400 midnight:text-gray-300';
-    }
-  };
-
   const buttonClasses = {
     note: theme === 'midnight'
-      ? 'bg-blue-600/80 hover:bg-blue-500/80'
-      : 'bg-primary-600 hover:bg-primary-700',
+      ? 'bg-blue-600/70 hover:bg-blue-700/80'
+      : 'bg-blue-600/70 hover:bg-blue-700/80',
     task: theme === 'midnight'
-      ? 'bg-green-600/80 hover:bg-green-500/80'
-      : 'bg-green-600 hover:bg-green-700',
+      ? 'bg-emerald-600/80 hover:bg-emerald-500/80'
+      : 'bg-primary-600 hover:bg-primary-700',
     idea: theme === 'midnight'
-      ? 'bg-amber-600/80 hover:bg-amber-500/80'
-      : 'bg-amber-600 hover:bg-amber-700'
+      ? 'bg-amber-600/70 hover:bg-amber-500/80'
+      : 'bg-amber-600/70 hover:bg-amber-700/80',
+    reminder: theme === 'midnight'
+      ? 'bg-purple-600/80 hover:bg-purple-500/80'
+      : 'bg-purple-400/70 hover:bg-purple-500/70'
+  };
+
+  const containerVariants = {
+    hidden: { opacity: 0, y: 15 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.4,
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        type: "spring",
+        stiffness: 300,
+        damping: 24
+      }
+    }
   };
 
   return (
     <motion.div
       initial="hidden"
       animate="visible"
-      variants={cardVariants}
+      variants={containerVariants}
       className={`
         relative 
         overflow-hidden 
-        rounded-2xl 
+        rounded-xl
         ${getContainerBackground(theme)}
         backdrop-blur-xl 
         border-[0.5px] 
         border-white/10
-        shadow-[4px_0_24px_-2px_rgba(0,0,0,0.12),8px_0_16px_-4px_rgba(0,0,0,0.08)]
-        dark:shadow-[4px_0_24px_-2px_rgba(0,0,0,0.3),8px_0_16px_-4px_rgba(0,0,0,0.2)]
+        shadow-[0px_8px_30px_-2px_rgba(0,0,0,0.12),0px_8px_24px_-4px_rgba(0,0,0,0.08)]
+        dark:shadow-[0px_8px_30px_-2px_rgba(0,0,0,0.3),0px_8px_24px_-4px_rgba(0,0,0,0.2)]
         ring-1
         ring-white/5
         transition-all 
         duration-300 
-        p-6
-        mb-6
+        px-5
+        py-6
+        mb-5
         w-full
       `}
     >
-      <div className="relative flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
-        <div className="space-y-6">
+      {/* Background decoration elements - made smaller */}
+      <div className="absolute -top-12 -right-12 w-32 h-32 bg-blue-500/10 dark:bg-blue-600/10 rounded-full blur-3xl"></div>
+      <div className="absolute -bottom-12 -left-12 w-32 h-32 bg-purple-500/10 dark:bg-purple-600/10 rounded-full blur-3xl"></div>
+
+      <div className="relative">
+        <div className="space-y-2">
           <motion.div
-            variants={cardVariants}
-            className="space-y-2"
+            variants={itemVariants}
+            className="space-y-0.5"
           >
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold text-[var(--color-text)]">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-xl font-bold text-[var(--color-text)]">
                 {getGreeting()},{' '}
-                <span className="text-[var(--color-accent)]">
+                <span className="text-[var(--color-accent)] inline-flex items-center">
                   {user?.name}
+                  <motion.span
+                    className="ml-1 inline-block"
+                    initial={{ rotate: 0 }}
+                    animate={{ rotate: [0, 15, 0, 15, 0] }}
+                    transition={{ duration: 1.5, delay: 0.5, repeat: 0, repeatDelay: 8 }}
+                  >
+                    👋
+                  </motion.span>
                 </span>
               </h1>
-              <span className="inline-block animate-wave">👋</span>
+              <motion.div
+                className="flex items-center gap-1 bg-[var(--color-surface)] py-0.5 px-2 rounded-full"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.4, duration: 0.3 }}
+              >
+                <Calendar className="w-3 h-3 text-[var(--color-accent)]" />
+                <span className="text-xs font-medium text-[var(--color-textSecondary)]">
+                  {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </span>
+              </motion.div>
             </div>
-            <p className="text-[var(--color-textSecondary)]">
+            <p className="text-sm text-[var(--color-textSecondary)]">
               Ready to capture your thoughts and ideas?
             </p>
           </motion.div>
 
           <motion.div
-            variants={cardVariants}
-            className="flex flex-wrap gap-2"
+            variants={itemVariants}
+            className="flex flex-wrap gap-1.5"
           >
-            <button
+            <motion.button
+              whileHover={{ y: -2, boxShadow: "0 8px 15px -4px rgba(59, 130, 246, 0.5)" }}
+              whileTap={{ scale: 0.97 }}
               onClick={onNewNote}
-              className={`inline-flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-all duration-200 hover:-translate-y-0.5 ${buttonClasses.note}`}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-white rounded-lg transition-all duration-200 ${buttonClasses.note}`}
             >
-              <Plus className="w-4 h-4" />
-              <span className="font-medium text-sm">New Note</span>
-            </button>
-            <button
+              <Plus className="w-3.5 h-3.5" />
+              <span className="font-medium text-xs">New Note</span>
+            </motion.button>
+            <motion.button
+              whileHover={{ y: -2, boxShadow: "0 8px 15px -4px rgba(22, 163, 74, 0.5)" }}
+              whileTap={{ scale: 0.97 }}
               onClick={() => onNavigate('/dashboard/tasks')}
-              className={`inline-flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-all duration-200 hover:-translate-y-0.5 ${buttonClasses.task}`}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-white rounded-lg transition-all duration-200 ${buttonClasses.task}`}
             >
-              <CheckSquare className="w-4 h-4" />
-              <span className="font-medium text-sm">New Task</span>
-            </button>
-            <button
+              <CheckSquare className="w-3.5 h-3.5" />
+              <span className="font-medium text-xs">New Task</span>
+            </motion.button>
+            <motion.button
+              whileHover={{ y: -2, boxShadow: "0 8px 15px -4px rgba(245, 158, 11, 0.5)" }}
+              whileTap={{ scale: 0.97 }}
               onClick={() => onNavigate('/dashboard/ideas')}
-              className={`inline-flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-all duration-200 hover:-translate-y-0.5 ${buttonClasses.idea}`}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-white rounded-lg transition-all duration-200 ${buttonClasses.idea}`}
             >
-              <Lightbulb className="w-4 h-4" />
-              <span className="font-medium text-sm">Capture Idea</span>
-            </button>
+              <Lightbulb className="w-3.5 h-3.5" />
+              <span className="font-medium text-xs">Capture Idea</span>
+            </motion.button>
+            <motion.button
+              whileHover={{ y: -2, boxShadow: "0 8px 15px -4px rgba(147, 51, 234, 0.5)" }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => onNavigate('/dashboard/reminders')}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-white rounded-lg transition-all duration-200 ${buttonClasses.reminder}`}
+            >
+              <BellRing className="w-3.5 h-3.5" />
+              <span className="font-medium text-xs">Set Reminder</span>
+            </motion.button>
           </motion.div>
         </div>
-
-        <motion.div
-          variants={cardVariants}
-          className={`
-            relative 
-            rounded-lg 
-            p-4 
-            space-y-3 
-            min-w-[280px]
-            ${getContainerBackground(theme)}
-            backdrop-blur-xl 
-            border-[0.5px] 
-            border-white/10
-            shadow-[4px_0_24px_-2px_rgba(0,0,0,0.12),8px_0_16px_-4px_rgba(0,0,0,0.08)]
-            dark:shadow-[4px_0_24px_-2px_rgba(0,0,0,0.3),8px_0_16px_-4px_rgba(0,0,0,0.2)]
-            ring-1
-            ring-white/5
-            transition-all 
-            duration-300
-          `}
-        >
-          <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-md ${getIconBg('clock')} backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/10 midnight:ring-white/10`}>
-              <Clock className={`${sizeClasses.medium.iconSize} ${getIconColor('clock')}`} />
-            </div>
-            <span className={`${sizeClasses.medium.titleSize} font-medium text-[var(--color-textSecondary)]`}>
-              {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-md ${getIconBg('task')} backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/10 midnight:ring-white/10`}>
-              <CheckCircle className={`${sizeClasses.medium.iconSize} ${getIconColor('task')}`} />
-            </div>
-            <div className="flex flex-col">
-              <span className={`${sizeClasses.medium.valueSize} font-semibold text-[var(--color-text)]`}>
-                {tasks.filter(task => task.status === 'Completed').length} tasks completed
-              </span>
-              <span className="text-xs text-[var(--color-textSecondary)]">today</span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-md ${getIconBg('note')} backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/10 midnight:ring-white/10`}>
-              <Edit3 className={`${sizeClasses.medium.iconSize} ${getIconColor('note')}`} />
-            </div>
-            <div className="flex flex-col">
-              <span className={`${sizeClasses.medium.valueSize} font-semibold text-[var(--color-text)]`}>
-                {stats.totalNotes} notes
-              </span>
-              <span className="text-xs text-[var(--color-textSecondary)]">in your collection</span>
-            </div>
-          </div>
-        </motion.div>
       </div>
     </motion.div>
   );
