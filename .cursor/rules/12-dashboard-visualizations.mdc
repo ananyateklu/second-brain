@@ -1,0 +1,155 @@
+---
+description: Implementation quirks, edge cases, and potential issues to be aware of when working with the codebase
+globs: **/*.ts, **/*.tsx,*.ts
+alwaysApply: false
+---
+# Dashboard Visualizations
+
+## Overview
+
+The dashboard visualization system in Second Brain provides dynamic, responsive data visualizations for various statistics. The system uses a combination of utility functions, animation components, and styling utilities to create an engaging, informative dashboard experience.
+
+## Visualization Types
+
+The dashboard supports several visualization types:
+
+1. **Sparklines**: Simple line graphs showing trends over time
+2. **Bar Charts**: Visualizing comparative data
+3. **Progress Indicators**: Showing completion rates or progress
+4. **Animated Counters**: For numeric values with transitions
+5. **Distribution Charts**: For showing data distribution patterns
+
+## Animation Systems
+
+The dashboard employs sophisticated animations via the Framer Motion library:
+
+```typescript
+// Examples from welcomeBarUtils.ts
+export const cardVariants = {
+  hidden: {
+    opacity: 0,
+    y: 20,
+    scale: 0.8,
+    rotateX: 10
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    rotateX: 0,
+    transition: {
+      type: "spring",
+      stiffness: 200,
+      damping: 20,
+      mass: 0.8,
+      delay: 0.1
+    }
+  },
+  // ...more variants
+};
+```
+
+Animations include:
+- Entrance/exit animations
+- Hover effects
+- Value change highlights
+- Staggered animations for lists
+- Pulse animations for updates
+
+## Chart Data Processing
+
+Raw data is processed into visualization-friendly formats:
+
+1. **Time Series Data**:
+   - `generateDailyBreakdown`: Creates data points for daily activity
+   - `generateCumulativeData`: Creates cumulative growth charts
+
+2. **Distribution Data**:
+   - `createWordCountDistribution`: Formats word counts for visualization
+   - `createProgressionForValue`: Creates artificial progression for single values
+
+3. **Analysis Utilities**:
+   - `isDataFlat`: Detects if data has little variation
+   - `isDataBackLoaded`: Detects if data is concentrated at the end
+
+## Responsive Design
+
+The visualization system adapts to different card sizes:
+
+```typescript
+export const sizeClasses = {
+  small: {
+    padding: 'p-3',
+    height: 'h-[100px]',
+    iconSize: 'w-3.5 h-3.5',
+    titleSize: 'text-xs',
+    valueSize: 'text-sm font-semibold',
+    chartHeight: 'h-8'
+  },
+  // medium and large sizes...
+};
+```
+
+This allows charts to render appropriately in different card contexts.
+
+## Theme Integration
+
+Visualizations are theme-aware and integrate with the app's theming system:
+
+```typescript
+export const getIconColor = (type: string) => {
+  const baseClass = 'transition-colors duration-200';
+
+  switch (type) {
+    case 'notes':
+      return `${baseClass} text-blue-600 dark:text-blue-400 midnight:text-blue-400`;
+    // other types...
+  }
+};
+```
+
+This ensures consistent styling across light, dark, and custom themes.
+
+## Layout and Sizing
+
+The dashboard uses a responsive grid layout with cards that can be:
+- Small (1x1 unit)
+- Medium (2x1 units)
+- Large (2x2 units or full width)
+
+## Interaction States
+
+Visualizations support various interaction states:
+- Hover effects
+- Focus states 
+- Loading states
+- Empty states
+- Error states
+
+## Accessibility
+
+Visualization components implement accessibility features:
+- Color contrast compliance
+- Screen reader descriptions
+- Keyboard navigation
+- Appropriate ARIA attributes
+
+## Best Practices
+
+When extending or modifying visualizations:
+
+1. **Data Consistency**:
+   - Ensure charts handle all data edge cases
+   - Provide appropriate fallbacks for missing data
+   - Maintain consistent scales within related stats
+
+2. **Visual Clarity**:
+   - Use appropriate chart types for the data
+   - Avoid visual clutter
+   - Ensure readable text and values
+   - Maintain a balanced color palette
+
+3. **Performance**:
+   - Optimize render performance
+   - Use appropriate animation throttling
+   - Handle large datasets efficiently 

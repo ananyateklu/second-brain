@@ -41,7 +41,7 @@ export const ConversationHistory = ({
     }, []);
 
     const filteredConversations = conversations
-        .filter(conv => conv.model.id === selectedAgent?.id)
+        .filter(conv => conv.model && selectedAgent && conv.model.id === selectedAgent.id)
         .sort((a, b) => b.lastUpdated.getTime() - a.lastUpdated.getTime());
 
     if (!selectedAgent || filteredConversations.length === 0) {

@@ -1,0 +1,131 @@
+---
+description: Implementation quirks, edge cases, and potential issues to be aware of when working with the codebase
+globs: **/*.ts, **/*.tsx,*.ts
+alwaysApply: false
+---
+# Dashboard Stats System
+
+## Overview
+
+The dashboard statistics system is a modular, extensible framework for tracking and displaying various metrics related to notes, tasks, activities, and user engagement in the Second Brain application. The system follows a registry pattern where individual stat handlers are registered for different types of metrics, allowing for easy extension and maintenance.
+
+## Architecture
+
+### Core Components
+
+1. **Stats Registry (`statsRegistry.ts`)**: The central registry that maps stat IDs to their respective handler functions.
+2. **Stat Handlers**: Specialized modules that calculate specific statistics (e.g., `noteStatsHandler.ts`, `taskStatsHandler.ts`).
+3. **Dashboard Context**: React context system that manages the state of available and enabled stats.
+4. **Utility Functions**: Helper functions for data processing, visualization, and formatting.
+
+## Stat Handler Structure
+
+Each stat handler:
+- Receives relevant data (notes, tasks, reminders, activities)
+- Processes the data to calculate metrics
+- Returns a standardized `StatValue` object
+
+## StatValue Object
+
+The `StatValue` interface defines the standard structure for all dashboard statistics:
+
+```typescript
+interface StatValue {
+  value: number | string;           // Primary value to display
+  change?: number;                  // Change in value (e.g., week-over-week)
+  timeframe?: string;               // Display text for the time period
+  description?: string;             // Description of the statistic
+  additionalInfo?: Array<{          // Optional secondary metrics
+    icon?: React.ComponentType<{ className?: string }>;
+    label?: string;
+    value: string | number;
+  }>;
+  metadata?: {                      // Data for charts and visualizations
+    breakdown?: {
+      total: number;
+      created: number;
+      edited: number;
+      deleted: number;
+    };
+    activityData?: number[];        // Time series data for charts
+  };
+  topBreakdown?: {                  // Optional high-level breakdown
+    active: number;
+    archived: number;
+  };
+}
+```
+
+## Available Statistics
+
+The system provides handlers for various metric types:
+
+1. **Note Statistics**:
+   - Total Notes
+   - New Notes
+   - Word Count
+   - Notes Overview (combined stats)
+
+2. **Task Statistics**:
+   - Active Tasks
+   - Completed Tasks
+
+3. **Connection Statistics**:
+   - Total Connections
+   - Connection Types
+
+4. **Activity Statistics**:
+   - Daily Activity
+
+5. **Other**:
+   - Categories
+   - Ideas
+   - Reminders
+
+## Data Visualization
+
+Chart data is generated using utility functions that process raw data into formats suitable for visualization:
+
+- `generateDailyBreakdown`: Creates daily counts for the past 7 days
+- `createProgressionForValue`: Generates artificial progression for single values
+- `generateCumulativeData`: Creates cumulative time series data
+- `createWordCountDistribution`: Processes word counts for visualization
+
+## Usage
+
+### Adding a New Stat
+
+1. Create a handler function that processes the relevant data
+2. Register the handler in `statsRegistry.ts`
+3. Add the stat definition to `DEFAULT_STATS` in `dashboardContextUtils.ts`
+
+### Customizing the Dashboard
+
+Users can:
+- Toggle stats on/off
+- Resize stats (small, medium, large)
+- Reorder stats
+- Toggle graph visibility
+
+## Implementation Notes
+
+- The system uses a weekly timeframe for most change calculations
+- Stats can be reset to default configuration
+- Error handling prevents individual stat failures from breaking the dashboard
+- Loading states are handled gracefully with placeholder values
+
+## Extending the System
+
+To add a new stat type:
+1. Create a new handler in the appropriate file under `statsHandlers/`
+2. Export the handler function
+3. Import and register it in `statsRegistry.ts`
+4. Add appropriate visualization support if needed
+
+## Best Practices
+
+- Keep stat calculations pure and focused on a single metric
+- Handle edge cases (empty data, loading states)
+- Maintain consistent formatting across similar stats
+- Use appropriate visualizations for different data types
+- Ensure performance by minimizing expensive calculations 

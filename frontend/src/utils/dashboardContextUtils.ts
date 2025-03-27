@@ -37,6 +37,7 @@ export interface DashboardContextType {
   isLoading: boolean;
   graphsVisible: Record<string, boolean>;
   toggleGraphVisibility: (statId: string) => void;
+  resetStats: () => Promise<boolean>;
 }
 
 export const DashboardContext = createContext<DashboardContextType | undefined>(undefined);

@@ -54,6 +54,11 @@ export const handleAgentSelect = async (
     setSelectedAgent: React.Dispatch<React.SetStateAction<AIModel | null>>,
     navigate: NavigateFunction
 ) => {
+    if (!model || !model.id) {
+        console.error('Invalid model provided to handleAgentSelect');
+        return;
+    }
+
     if (!model.isConfigured) {
         navigate('/dashboard/settings');
         return;
@@ -62,7 +67,7 @@ export const handleAgentSelect = async (
     setSelectedAgent(model);
 
     // Find all conversations for this model
-    const modelConversations = conversations.filter(conv => conv.model.id === model.id);
+    const modelConversations = conversations.filter(conv => conv.model && conv.model.id === model.id);
 
     if (modelConversations.length > 0) {
         // If there are existing conversations, set the most recent one as active
@@ -133,7 +138,10 @@ export const getCurrentConversation = (
     modelId: string,
     conversations: AgentConversation[]
 ): AgentConversation | undefined => {
-    return conversations.find(conv => conv.model.id === modelId && conv.isActive);
+    if (!modelId || !conversations || !Array.isArray(conversations)) {
+        return undefined;
+    }
+    return conversations.find(conv => conv.model && conv.model.id === modelId && conv.isActive);
 };
 
 export const handleSendMessage = async ({
@@ -281,9 +289,9 @@ export const handleDeleteConversation = async (
             const newConversations = prev.filter(conv => conv.id !== conversationId);
             const wasActive = prev.find(conv => conv.id === conversationId)?.isActive;
 
-            if (wasActive && selectedAgent) {
+            if (wasActive && selectedAgent && selectedAgent.id) {
                 const nextConversation = newConversations
-                    .filter(conv => conv.model.id === selectedAgent.id)
+                    .filter(conv => conv.model && conv.model.id === selectedAgent.id)
                     .sort((a, b) => b.lastUpdated.getTime() - a.lastUpdated.getTime())[0];
 
                 if (nextConversation) {

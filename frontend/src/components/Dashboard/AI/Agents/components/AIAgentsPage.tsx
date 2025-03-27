@@ -47,7 +47,7 @@ export function AIAgentsPage() {
     };
 
     const getCurrentConversationWrapper = () => {
-        return selectedAgent
+        return selectedAgent && selectedAgent.id
             ? getCurrentConversation(selectedAgent.id, conversations)
             : undefined;
     };

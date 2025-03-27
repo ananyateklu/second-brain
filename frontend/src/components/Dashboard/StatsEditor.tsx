@@ -9,10 +9,12 @@ import {
   StyledStatContainer,
 } from './WelcomeBarStyles';
 import { useTheme } from '../../contexts/themeContextUtils';
+import { useState } from 'react';
 
 export function StatsEditor({ isOpen }: { isOpen: boolean }) {
-  const { availableStats, toggleStat, getStatValue, updateStatOrder } = useDashboard();
+  const { availableStats, toggleStat, getStatValue, updateStatOrder, resetStats } = useDashboard();
   const { theme } = useTheme();
+  const [isResetting, setIsResetting] = useState(false);
 
   const unusedStats = availableStats.filter((stat: DashboardStat) => !stat.enabled);
 
@@ -20,16 +22,35 @@ export function StatsEditor({ isOpen }: { isOpen: boolean }) {
 
   const getBackgroundClass = () => {
     if (theme === 'midnight') {
-      return 'bg-[#1e293b]/95';
+      return 'bg-[#1e293b]/50';
     }
-    return 'bg-white/50 dark:bg-gray-900/50';
+    if (theme === 'dark') {
+      return 'bg-gray-900/70';
+    }
+    // Increase opacity for light mode
+    return 'bg-white/90';
   };
 
   const getBorderClass = () => {
     if (theme === 'midnight') {
-      return 'border-white/20';
+      return 'border-white/10';
     }
-    return 'border-[var(--color-border)]';
+    if (theme === 'dark') {
+      return 'border-gray-700/50';
+    }
+    // More visible border for light mode
+    return 'border-gray-200';
+  };
+
+  const handleReset = async () => {
+    setIsResetting(true);
+    try {
+      await resetStats();
+    } catch (error) {
+      console.error('Error resetting stats:', error);
+    } finally {
+      setIsResetting(false);
+    }
   };
 
   return (
@@ -37,13 +58,26 @@ export function StatsEditor({ isOpen }: { isOpen: boolean }) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
-      className={`${getBackgroundClass()} backdrop-blur-xl border ${getBorderClass()} rounded-xl w-full shadow-lg`}
+      className={`${getBackgroundClass()} backdrop-blur-xl border ${getBorderClass()} rounded-xl w-full shadow-lg z-10`}
     >
-      <div className={`p-4 border-b ${getBorderClass()}`}>
-        <h3 className={`text-sm font-medium ${theme === 'midnight' ? 'text-white/90' : 'text-[var(--color-text)]'} flex items-center gap-2`}>
+      <div className={`p-4 border-b ${getBorderClass()} flex justify-between items-center`}>
+        <h3 className={`text-sm font-medium ${theme === 'midnight' ? 'text-white/90' : theme === 'dark' ? 'text-white/90' : 'text-gray-800'} flex items-center gap-2`}>
           <Icons.Gauge className="w-4 h-4 text-[var(--color-accent)]" />
           Available Stats
         </h3>
+        <button
+          onClick={handleReset}
+          disabled={isResetting}
+          className={`flex items-center gap-1 text-xs px-2 py-1 rounded-md ${theme === 'midnight'
+            ? 'bg-white/10 hover:bg-white/20 text-white/80'
+            : theme === 'dark'
+              ? 'bg-gray-800 hover:bg-gray-700 text-white/80'
+              : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+            } transition-colors`}
+        >
+          <Icons.RotateCcw className="w-3 h-3" />
+          {isResetting ? 'Resetting...' : 'Reset Stats'}
+        </button>
       </div>
 
       {unusedStats.length > 0 ? (
@@ -83,7 +117,12 @@ export function StatsEditor({ isOpen }: { isOpen: boolean }) {
         </div>
       ) : (
         <div className="p-8 text-center">
-          <p className={`${theme === 'midnight' ? 'text-white/70' : 'text-[var(--color-textSecondary)]'}`}>
+          <p className={`${theme === 'midnight'
+            ? 'text-white/70'
+            : theme === 'dark'
+              ? 'text-gray-400'
+              : 'text-gray-500'
+            }`}>
             All stats are currently displayed on the dashboard.
           </p>
         </div>
