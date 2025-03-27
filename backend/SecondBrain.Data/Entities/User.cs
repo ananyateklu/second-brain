@@ -26,5 +26,6 @@ namespace SecondBrain.Data.Entities
         public ICollection<Reminder> Reminders { get; set; } = new List<Reminder>();
         public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
         public ICollection<UserAchievement> UserAchievements { get; set; } = new List<UserAchievement>();
+        public ICollection<UserPreference> UserPreferences { get; set; } = new List<UserPreference>();
     }
 }

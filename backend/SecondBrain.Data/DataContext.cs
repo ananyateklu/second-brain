@@ -30,6 +30,7 @@ namespace SecondBrain.Data
         public DbSet<ReminderLink> ReminderLinks { get; set; } = null!;
         public DbSet<AgentChat> AgentChats { get; set; } = null!;
         public DbSet<AgentMessage> AgentMessages { get; set; } = null!;
+        public DbSet<UserPreference> UserPreferences { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -195,6 +196,28 @@ namespace SecondBrain.Data
             modelBuilder.Entity<User>()
                 .Property(u => u.Avatar)
                 .HasMaxLength(1000); // Adjust max length based on your needs
+
+            // Configure UserPreference entity
+            modelBuilder.Entity<UserPreference>(entity =>
+            {
+                entity.HasKey(up => up.Id);
+                
+                entity.Property(up => up.PreferenceType)
+                    .IsRequired()
+                    .HasMaxLength(50);
+                
+                entity.Property(up => up.Value)
+                    .IsRequired();
+                
+                entity.HasOne(up => up.User)
+                    .WithMany(u => u.UserPreferences)
+                    .HasForeignKey(up => up.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                
+                // Create a composite unique index on UserId and PreferenceType
+                entity.HasIndex(up => new { up.UserId, up.PreferenceType })
+                    .IsUnique();
+            });
 
             // Configure TaskLink entity
             modelBuilder.Entity<TaskLink>(entity =>

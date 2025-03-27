@@ -9,6 +9,7 @@ import type { Task } from '../api/types/task';
 import { FileText, Archive, Calendar, Clock, CheckSquare, Network, TagIcon, AlertCircle, Lightbulb, Bell } from 'lucide-react';
 import { Note } from '../types/note';
 import { Activity } from '../api/services/activityService';
+import preferencesService from '../api/services/preferencesService';
 
 // Extract these functions outside the component
 const calculateConnectionStats = (notes: Note[]) => {
@@ -205,36 +206,54 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
   // Define stats state
   const [stats, setStats] = useState<DashboardStat[]>(() => {
-    const saved = localStorage.getItem('dashboard_stats');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.every(isDashboardStat)) {
-          return parsed;
-        }
-      } catch (e) {
-        console.error('Failed to parse dashboard stats:', e);
-      }
-    }
+    // Start with default stats (will be overridden by API data when loaded)
     return DEFAULT_STATS;
   });
 
   // Track graph visibility for each stat
   const [graphsVisible, setGraphsVisible] = useState<Record<string, boolean>>(() => {
-    const saved = localStorage.getItem('dashboard_graphs_visible');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error('Failed to parse graph visibility settings:', e);
-      }
-    }
     // Initialize with default values from stats
     return stats.reduce((acc, stat) => {
       acc[stat.id] = stat.graphVisible !== undefined ? stat.graphVisible : true;
       return acc;
     }, {} as Record<string, boolean>);
   });
+
+  // Load preferences from API
+  useEffect(() => {
+    const loadPreferences = async () => {
+      try {
+        // Try to get dashboard stats from API
+        const dashboardStatsPreference = await preferencesService.getPreferenceByType('dashboard_stats');
+        if (dashboardStatsPreference) {
+          try {
+            const parsedStats = JSON.parse(dashboardStatsPreference.value);
+            if (Array.isArray(parsedStats) && parsedStats.every(isDashboardStat)) {
+              setStats(parsedStats);
+            }
+          } catch (e) {
+            console.error('Failed to parse dashboard stats:', e);
+          }
+        }
+
+        // Try to get graphs visibility from API
+        const graphsVisiblePreference = await preferencesService.getPreferenceByType('dashboard_graphs_visible');
+        if (graphsVisiblePreference) {
+          try {
+            setGraphsVisible(JSON.parse(graphsVisiblePreference.value));
+          } catch (e) {
+            console.error('Failed to parse graph visibility settings:', e);
+          }
+        }
+      } catch (error: unknown) {
+        // If preference not found, it's okay - we'll create it on first save
+        console.log('Preferences not found, will create on first save:',
+          error instanceof Error ? error.message : 'Unknown error');
+      }
+    };
+
+    loadPreferences();
+  }, []);
 
   // Update loading state when both notes and tasks are ready
   useEffect(() => {
@@ -1279,7 +1298,13 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         }
         return stat;
       });
-      localStorage.setItem('dashboard_stats', JSON.stringify(newStats));
+
+      // Save to backend API instead of localStorage
+      preferencesService.savePreference({
+        preferenceType: 'dashboard_stats',
+        value: JSON.stringify(newStats)
+      }).catch(err => console.error('Failed to save dashboard stats:', err));
+
       return newStats;
     });
   }, []);
@@ -1292,7 +1317,13 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         }
         return stat;
       });
-      localStorage.setItem('dashboard_stats', JSON.stringify(newStats));
+
+      // Save to backend API instead of localStorage
+      preferencesService.savePreference({
+        preferenceType: 'dashboard_stats',
+        value: JSON.stringify(newStats)
+      }).catch(err => console.error('Failed to save dashboard stats:', err));
+
       return newStats;
     });
   }, []);
@@ -1321,8 +1352,12 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         return stat;
       });
 
-      // Save to localStorage
-      localStorage.setItem('dashboard_stats', JSON.stringify(newStats));
+      // Save to backend API instead of localStorage
+      preferencesService.savePreference({
+        preferenceType: 'dashboard_stats',
+        value: JSON.stringify(newStats)
+      }).catch(err => console.error('Failed to save dashboard stats:', err));
+
       return newStats;
     });
   }, []);
@@ -1333,7 +1368,13 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         ...prev,
         [statId]: !prev[statId]
       };
-      localStorage.setItem('dashboard_graphs_visible', JSON.stringify(newVisibility));
+
+      // Save to backend API instead of localStorage
+      preferencesService.savePreference({
+        preferenceType: 'dashboard_graphs_visible',
+        value: JSON.stringify(newVisibility)
+      }).catch(err => console.error('Failed to save graph visibility settings:', err));
+
       return newVisibility;
     });
   }, []);
