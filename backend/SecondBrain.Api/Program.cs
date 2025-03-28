@@ -188,10 +188,10 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
-app.UseRouting();
 app.UseStaticFiles(); // Add this if you serve static files
-app.UseCors(CORS_POLICY);
 app.UseAuthentication();
+app.UseRouting();
+app.UseCors(CORS_POLICY);
 app.UseAuthorization();
 app.UseWebSockets();
 
