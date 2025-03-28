@@ -24,6 +24,11 @@ const getContainerBackground = (theme: string) => {
   return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]'
 }
 
+const getUserNameColor = () => {
+
+  return 'text-primary-600/80';
+}
+
 export const WelcomeSection = React.memo(({ user, onNewNote, onNavigate }: WelcomeSectionProps) => {
   const { theme } = useTheme();
 
@@ -39,13 +44,13 @@ export const WelcomeSection = React.memo(({ user, onNewNote, onNavigate }: Welco
       ? 'bg-blue-600/70 hover:bg-blue-700/80'
       : 'bg-blue-600/70 hover:bg-blue-700/80',
     task: theme === 'midnight'
-      ? 'bg-emerald-600/80 hover:bg-emerald-500/80'
-      : 'bg-primary-600 hover:bg-primary-700',
+      ? 'bg-primary-600/80 hover:bg-primary-500/80'
+      : 'bg-primary-600/80 hover:bg-primary-700',
     idea: theme === 'midnight'
       ? 'bg-amber-600/70 hover:bg-amber-500/80'
       : 'bg-amber-600/70 hover:bg-amber-700/80',
     reminder: theme === 'midnight'
-      ? 'bg-purple-600/80 hover:bg-purple-500/80'
+      ? 'bg-purple-400/70 hover:bg-purple-500/80'
       : 'bg-purple-400/70 hover:bg-purple-500/70'
   };
 
@@ -95,8 +100,9 @@ export const WelcomeSection = React.memo(({ user, onNewNote, onNavigate }: Welco
         duration-300 
         px-5
         py-6
-        mb-5
+        -mt-4
         w-full
+        z-10
       `}
     >
       {/* Background decoration elements - made smaller */}
@@ -112,7 +118,7 @@ export const WelcomeSection = React.memo(({ user, onNewNote, onNavigate }: Welco
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl font-bold text-[var(--color-text)]">
                 {getGreeting()},{' '}
-                <span className="text-[var(--color-accent)] inline-flex items-center">
+                <span className={`${getUserNameColor()} inline-flex items-center`}>
                   {user?.name}
                   <motion.span
                     className="ml-1 inline-block"
@@ -186,4 +192,4 @@ export const WelcomeSection = React.memo(({ user, onNewNote, onNavigate }: Welco
       </div>
     </motion.div>
   );
-}); 
+});
