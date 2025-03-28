@@ -199,18 +199,25 @@ export function PerplexityPage() {
 
     const handleDeleteConversation = async (id: string) => {
         try {
+            // Copy current conversations to track if we're deleting the last one
+            const isLastConversation = conversations.length === 1;
+
+            // Delete the chat from the backend
             await perplexityService.deleteChat(id);
 
-            const remainingConversations = conversations.filter(conv => conv.id !== id);
-            if (remainingConversations.length > 0) {
+            // If it's the last conversation, we need to create a new one first
+            // before removing the old one to avoid UI flicker
+            if (isLastConversation) {
+                await handleNewChat();
+                // Now remove the deleted conversation from state
+                setConversations(prev => prev.filter(conv => conv.id !== id));
+            } else {
+                const remainingConversations = conversations.filter(conv => conv.id !== id);
                 // If deleted conversation was active, set first conversation as active
                 if (conversations.find(conv => conv.id === id)?.isActive) {
                     remainingConversations[0].isActive = true;
                 }
                 setConversations(remainingConversations);
-            } else {
-                // If no conversations left, create a new one
-                await handleNewChat();
             }
         } catch (error) {
             console.error('Error deleting conversation:', error);
@@ -239,7 +246,7 @@ export function PerplexityPage() {
             {/* Main Chat UI */}
             <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-6 min-h-0 overflow-hidden">
                 {/* Sidebar */}
-                <div className="md:col-span-1 flex flex-col h-full">
+                <div className="md:col-span-1 flex flex-col h-full min-h-0 overflow-hidden">
                     <ConversationsList
                         conversations={conversations}
                         onNewChat={handleNewChat}
