@@ -11,9 +11,9 @@ export interface SearchRequest {
 export interface SearchResponse {
     result: string;
     usage: {
-        promptTokens: number;
-        completionTokens: number;
-        totalTokens: number;
+        prompt_tokens: number;
+        completion_tokens: number;
+        total_tokens: number;
     };
     model: string;
 }
@@ -43,9 +43,9 @@ export interface PerplexityResponse {
         finishReason: string;
     }[];
     usage: {
-        promptTokens: number;
-        completionTokens: number;
-        totalTokens: number;
+        prompt_tokens: number;
+        completion_tokens: number;
+        total_tokens: number;
     };
 }
 
@@ -66,8 +66,8 @@ class PerplexityService {
                 metadata: {
                     model: response.data.model,
                     usage: {
-                        input_tokens: response.data.usage.promptTokens,
-                        output_tokens: response.data.usage.completionTokens
+                        input_tokens: response.data.usage.prompt_tokens,
+                        output_tokens: response.data.usage.completion_tokens
                     }
                 }
             };
@@ -105,8 +105,8 @@ class PerplexityService {
                 metadata: {
                     model: response.data.model,
                     usage: {
-                        input_tokens: response.data.usage.promptTokens,
-                        output_tokens: response.data.usage.completionTokens
+                        input_tokens: response.data.usage.prompt_tokens,
+                        output_tokens: response.data.usage.completion_tokens
                     }
                 }
             };

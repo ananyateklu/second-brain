@@ -44,7 +44,8 @@ namespace SecondBrain.Api.Services
             {
                 var jsonOptions = new JsonSerializerOptions
                 {
-                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                    PropertyNameCaseInsensitive = true
                 };
 
                 var json = JsonSerializer.Serialize(request, jsonOptions);

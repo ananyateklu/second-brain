@@ -268,15 +268,20 @@ export function MessageItem({ message, modelName }: MessageItemProps) {
                             </div>
 
                             {metadata?.usage && (
-                                <span className={`
-                                    text-xs flex items-center gap-1
-                                    ${theme === 'midnight' || theme === 'dark'
-                                        ? 'text-gray-400 bg-gray-800/70 px-2 py-0.5 rounded-full'
-                                        : 'text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full'}
-                                    `}
-                                >
-                                    {metadata.usage.output_tokens || 0} tokens
-                                </span>
+                                <div className="flex items-center gap-2">
+                                    <span className={`
+                                        text-xs flex items-center gap-1.5
+                                        ${theme === 'midnight' || theme === 'dark'
+                                            ? 'text-gray-400 bg-gray-800/70 px-2 py-0.5 rounded-full'
+                                            : 'text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full'}
+                                        `}
+                                        title="Token usage statistics"
+                                    >
+                                        <span title="Input tokens">Input Tokens: {metadata.usage.input_tokens || 0}</span>
+                                        <span className="mx-0.5">•</span>
+                                        <span title="Output tokens">Output Tokens: {metadata.usage.output_tokens || 0}</span>
+                                    </span>
+                                </div>
                             )}
                         </div>
 
