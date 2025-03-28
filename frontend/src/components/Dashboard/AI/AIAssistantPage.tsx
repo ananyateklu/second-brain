@@ -267,9 +267,6 @@ export function AIAssistantPage() {
 
       {/* Error and Input - Fixed at bottom */}
       <div className="absolute bottom-0 left-0 right-0 mb-4 z-10">
-        {/* Gradient overlay for better transition */}
-        <div className="absolute bottom-full left-0 right-0 h-24 bg-gradient-to-t from-[var(--color-background)] to-transparent pointer-events-none"></div>
-
         {error && (
           <div className="mb-4 p-4 backdrop-blur-sm rounded-xl border
             bg-red-50/50 dark:bg-red-900/20 text-red-600 dark:text-red-400
