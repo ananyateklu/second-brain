@@ -1,8 +1,12 @@
-import { Bot, User, Search, ExternalLink, Link2, BookOpen, Clock } from 'lucide-react';
+import { Bot, User, Search, ExternalLink, Link2, BookOpen, Clock, ChevronDown, ChevronUp, Brain } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import Markdown from 'react-markdown';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { CodeBlock } from '../AI/CodeBlock';
+import { type ComponentPropsWithoutRef } from 'react';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { AgentMessage } from '../../../types/agent';
+import { useState, useMemo } from 'react';
 
 interface MessageItemProps {
     message: AgentMessage;
@@ -29,9 +33,72 @@ interface MessageMetadata {
 export function MessageItem({ message, modelName }: MessageItemProps) {
     const { theme } = useTheme();
     const isUser = message.role === 'user';
+    const [showThinking, setShowThinking] = useState(false);
 
     // Type-safe access to metadata
     const metadata = message.metadata as MessageMetadata | undefined;
+
+    // Extract thinking content if present
+    const { hasThinking, thinkingContent, displayContent, thinkingSteps } = useMemo(() => {
+        if (isUser || typeof message.content !== 'string') {
+            return {
+                hasThinking: false,
+                thinkingContent: '',
+                displayContent: message.content,
+                thinkingSteps: []
+            };
+        }
+
+        const content = message.content as string;
+
+        // Check for <think></think> tags
+        if (!content.includes('<think>') || !content.includes('</think>')) {
+            return {
+                hasThinking: false,
+                thinkingContent: '',
+                displayContent: content,
+                thinkingSteps: []
+            };
+        }
+
+        // Extract all think blocks
+        const thinkRegex = /<think>([\s\S]*?)<\/think>/g;
+        const matches = [...content.matchAll(thinkRegex)];
+
+        if (matches.length === 0) {
+            return {
+                hasThinking: false,
+                thinkingContent: '',
+                displayContent: content,
+                thinkingSteps: []
+            };
+        }
+
+        // Combine all thinking content
+        const thinkingContent = matches.map(match => match[1].trim()).join('\n\n');
+
+        // Extract steps from thinking content
+        const thinkingSteps = thinkingContent
+            .split(/\n+/)
+            .filter(step => step.trim().length > 0)
+            .map(step => step.trim());
+
+        // Remove all think blocks from display content
+        let cleanContent = content;
+        matches.forEach(match => {
+            cleanContent = cleanContent.replace(match[0], '');
+        });
+
+        // Clean up extra newlines and spaces
+        const displayContent = cleanContent.replace(/\n{3,}/g, '\n\n').trim();
+
+        return {
+            hasThinking: true,
+            thinkingContent,
+            displayContent,
+            thinkingSteps
+        };
+    }, [message.content, isUser]);
 
     return (
         <div className="mb-8 last:mb-4 group">
@@ -214,59 +281,272 @@ export function MessageItem({ message, modelName }: MessageItemProps) {
                         </div>
 
                         {/* Main content */}
-                        <div className="p-4">
+                        <div className="p-6 space-y-4">
                             {message.status === 'error' ? (
                                 <div className="text-red-500 dark:text-red-400 font-medium">
                                     {message.content}
                                 </div>
                             ) : (
-                                <div className={`
-                                    prose prose-sm max-w-none 
-                                    ${theme === 'midnight'
-                                        ? 'text-gray-200 prose-headings:text-gray-100 prose-a:text-green-300 prose-strong:text-white'
-                                        : theme === 'dark'
+                                <>
+                                    {/* Thinking toggle button (if thinking content exists) */}
+                                    {hasThinking && (
+                                        <div
+                                            className={`
+                                                flex items-center justify-between 
+                                                p-2.5 mb-3 rounded-lg cursor-pointer
+                                                ${theme === 'midnight'
+                                                    ? 'bg-green-950/30 border border-green-900/40 hover:border-green-900/60'
+                                                    : theme === 'dark'
+                                                        ? 'bg-green-900/20 border border-green-800/30 hover:border-green-800/50'
+                                                        : 'bg-green-50 border border-green-200/80 hover:border-green-300/90'}
+                                                transition-all duration-200
+                                            `}
+                                            onClick={() => setShowThinking(!showThinking)}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <Brain className={`w-4 h-4 ${theme === 'midnight' || theme === 'dark' ? 'text-green-400' : 'text-green-600'}`} />
+                                                <span className={`text-xs font-medium ${theme === 'midnight' || theme === 'dark'
+                                                    ? 'text-green-300'
+                                                    : 'text-green-700'}`}
+                                                >
+                                                    AI Thinking Process
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5">
+                                                <span className={`text-xs ${theme === 'midnight' || theme === 'dark' ? 'text-green-400/70' : 'text-green-600/70'}`}>
+                                                    {showThinking ? 'Hide' : 'Show'}
+                                                </span>
+                                                {showThinking ? (
+                                                    <ChevronUp className={`w-4 h-4 ${theme === 'midnight' || theme === 'dark' ? 'text-green-400' : 'text-green-600'}`} />
+                                                ) : (
+                                                    <ChevronDown className={`w-4 h-4 ${theme === 'midnight' || theme === 'dark' ? 'text-green-400' : 'text-green-600'}`} />
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Thinking content (if visible) */}
+                                    {hasThinking && showThinking && (
+                                        <div className={`
+                                            rounded-lg p-4 mb-5 text-sm
+                                            ${theme === 'midnight'
+                                                ? 'bg-green-950/10 border border-green-900/30'
+                                                : theme === 'dark'
+                                                    ? 'bg-green-900/10 border border-green-800/20'
+                                                    : 'bg-green-50/70 border border-green-200/60'}
+                                        `}>
+                                            <div className="mb-2 pb-2 border-b border-dashed border-green-800/20 flex items-center gap-1.5">
+                                                <Brain className={`w-3.5 h-3.5 ${theme === 'midnight' || theme === 'dark' ? 'text-green-400' : 'text-green-600'}`} />
+                                                <span className={`text-xs font-medium ${theme === 'midnight' || theme === 'dark' ? 'text-green-400' : 'text-green-700'}`}>
+                                                    Reasoning Process
+                                                </span>
+                                            </div>
+                                            <div className={`
+                                                prose prose-sm max-w-none 
+                                                ${theme === 'midnight'
+                                                    ? 'text-gray-300/90 prose-headings:text-gray-200'
+                                                    : theme === 'dark'
+                                                        ? 'text-gray-300/90 prose-headings:text-gray-200'
+                                                        : 'text-gray-600/90 prose-headings:text-gray-800'}
+                                                prose-p:leading-relaxed
+                                                prose-pre:bg-black/90
+                                                prose-code:text-pink-500
+                                                dark:prose-invert
+                                                prose-li:marker:text-green-500
+                                            `}>
+                                                {thinkingSteps.length > 3 ? (
+                                                    <div className="space-y-3">
+                                                        {thinkingSteps.map((step, index) => (
+                                                            <div key={`thinking-step-${index}`} className="flex gap-3 items-start">
+                                                                <div className={`
+                                                                    flex-shrink-0 w-5 h-5 rounded-full 
+                                                                    flex items-center justify-center text-xs font-medium
+                                                                    ${theme === 'midnight'
+                                                                        ? 'bg-green-900/50 text-green-300 border border-green-800/50'
+                                                                        : theme === 'dark'
+                                                                            ? 'bg-green-900/40 text-green-300 border border-green-800/40'
+                                                                            : 'bg-green-100 text-green-700 border border-green-200/80'}
+                                                                `}>
+                                                                    {index + 1}
+                                                                </div>
+                                                                <div className="flex-1">
+                                                                    <ReactMarkdown
+                                                                        remarkPlugins={[remarkGfm]}
+                                                                        components={{
+                                                                            p: ({ children }) => <div>{children}</div>
+                                                                        }}
+                                                                    >
+                                                                        {step}
+                                                                    </ReactMarkdown>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <ReactMarkdown
+                                                        remarkPlugins={[remarkGfm]}
+                                                        components={{
+                                                            code(props: ComponentPropsWithoutRef<'code'>) {
+                                                                const { children, className, ...rest } = props;
+                                                                const match = /language-(\w+)/.exec(className || '');
+                                                                const language = match ? match[1] : '';
+
+                                                                return match ? (
+                                                                    <CodeBlock
+                                                                        code={String(children)}
+                                                                        language={language}
+                                                                        themeColor="#15803d"
+                                                                        {...rest}
+                                                                    />
+                                                                ) : (
+                                                                    <code className={className} {...rest}>
+                                                                        {children}
+                                                                    </code>
+                                                                );
+                                                            }
+                                                        }}
+                                                    >
+                                                        {thinkingContent}
+                                                    </ReactMarkdown>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Main content (without thinking) */}
+                                    <div className={`
+                                        prose prose-sm max-w-none 
+                                        ${theme === 'midnight'
                                             ? 'text-gray-200 prose-headings:text-gray-100 prose-a:text-green-300 prose-strong:text-white'
-                                            : 'text-gray-700 prose-headings:text-gray-900 prose-a:text-green-600 prose-strong:text-gray-900'
-                                    } 
-                                    prose-p:leading-relaxed
-                                    prose-pre:bg-black/80 prose-pre:text-gray-200
-                                    prose-pre:border prose-pre:border-gray-800
-                                    prose-pre:rounded-md prose-code:text-pink-500
-                                    prose-img:rounded-md
-                                    dark:prose-invert`
-                                }
-                                >
-                                    <Markdown>{message.content}</Markdown>
-                                </div>
+                                            : theme === 'dark'
+                                                ? 'text-gray-200 prose-headings:text-gray-100 prose-a:text-green-300 prose-strong:text-white'
+                                                : 'text-gray-700 prose-headings:text-gray-900 prose-a:text-green-600 prose-strong:text-gray-900'
+                                        } 
+                                        prose-p:leading-relaxed
+                                        prose-pre:bg-black/80 prose-pre:text-gray-200
+                                        prose-pre:border prose-pre:border-gray-800
+                                        prose-pre:rounded-md prose-code:text-pink-500
+                                        prose-img:rounded-md
+                                        prose-table:border-collapse prose-table:w-full
+                                        prose-thead:bg-gray-100 dark:prose-thead:bg-gray-800
+                                        prose-th:border prose-th:border-gray-300 dark:prose-th:border-gray-700 prose-th:p-2
+                                        prose-td:border prose-td:border-gray-300 dark:prose-td:border-gray-700 prose-td:p-2
+                                        dark:prose-invert`
+                                    }
+                                    >
+                                        <ReactMarkdown
+                                            remarkPlugins={[remarkGfm]}
+                                            components={{
+                                                code(props: ComponentPropsWithoutRef<'code'>) {
+                                                    const { children, className, ...rest } = props;
+                                                    const match = /language-(\w+)/.exec(className || '');
+                                                    const language = match ? match[1] : '';
+
+                                                    return match ? (
+                                                        <CodeBlock
+                                                            code={String(children)}
+                                                            language={language}
+                                                            themeColor="#15803d"
+                                                            {...rest}
+                                                        />
+                                                    ) : (
+                                                        <code className={className} {...rest}>
+                                                            {children}
+                                                        </code>
+                                                    );
+                                                },
+                                                // Enhance links to open in new tab
+                                                a(props) {
+                                                    return (
+                                                        <a
+                                                            {...props}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="flex items-center gap-1 underline hover:no-underline"
+                                                        >
+                                                            {props.children}
+                                                            <ExternalLink className="w-3 h-3" />
+                                                        </a>
+                                                    );
+                                                }
+                                            }}
+                                        >
+                                            {hasThinking ? displayContent : message.content}
+                                        </ReactMarkdown>
+                                    </div>
+                                </>
                             )}
                         </div>
 
                         {/* Footer with source indicators (if any) */}
                         {metadata?.sources && metadata.sources.length > 0 && (
                             <div className={`
-                                px-4 py-2 text-xs flex items-center justify-between border-t
+                                px-6 py-3 text-xs flex flex-col gap-2 border-t
                                 ${theme === 'midnight'
                                     ? 'bg-[#0f172a]/70 border-[#334155]'
                                     : theme === 'dark'
-                                        ? 'bg-gray-900/50 border-gray-700/40'
+                                        ? 'bg-gray-900/70 border-gray-700/40'
                                         : 'bg-gray-50 border-gray-200/80'}
                             `}>
-                                <div className="flex items-center">
-                                    <Link2 className={`w-3 h-3 mr-1 ${theme === 'midnight' || theme === 'dark' ? 'text-[#4c9959]' : 'text-[#15803d]'}`} />
-                                    <span className={theme === 'midnight' || theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}>
-                                        {metadata.sources.length} source{metadata.sources.length !== 1 ? 's' : ''} cited
+                                <div className="flex items-center gap-1 text-xs font-medium mb-1">
+                                    <Link2 className="w-3 h-3" />
+                                    <span className={theme === 'midnight' || theme === 'dark'
+                                        ? 'text-gray-300'
+                                        : 'text-gray-700'
+                                    }>
+                                        {metadata.sources.length} {metadata.sources.length === 1 ? 'Source' : 'Sources'}
                                     </span>
                                 </div>
-                                <span className={`
-                                    inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
-                                    ${theme === 'midnight'
-                                        ? 'bg-[#166534]/30 text-[#4c9959] border border-[#166534]/50'
-                                        : theme === 'dark'
-                                            ? 'bg-[#166534]/20 text-[#4c9959] border border-[#166534]/40'
-                                            : 'bg-green-100 text-[#15803d] border border-green-200'}
-                                `}>
-                                    <ExternalLink className="w-2.5 h-2.5 mr-1" /> View Sources
-                                </span>
+                                <div className="space-y-3">
+                                    {metadata.sources.map((source, index) => (
+                                        <div key={`source-${index}`} className={`
+                                            rounded-lg p-3 
+                                            ${theme === 'midnight'
+                                                ? 'bg-[#1e293b]/80 border border-[#334155] hover:border-[#475569]/70'
+                                                : theme === 'dark'
+                                                    ? 'bg-gray-800/80 border border-gray-700/40 hover:border-gray-600/60'
+                                                    : 'bg-white border border-gray-200/80 hover:border-gray-300/90'}
+                                            transition-all duration-200
+                                        `}>
+                                            {source.title && (
+                                                <div className="font-medium mb-1 text-sm">
+                                                    {source.url ? (
+                                                        <a
+                                                            href={source.url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className={`
+                                                                hover:underline flex items-center gap-1
+                                                                ${theme === 'midnight'
+                                                                    ? 'text-green-300'
+                                                                    : theme === 'dark'
+                                                                        ? 'text-green-300'
+                                                                        : 'text-green-600'}
+                                                            `}
+                                                        >
+                                                            {source.title}
+                                                            <ExternalLink className="w-3 h-3" />
+                                                        </a>
+                                                    ) : (
+                                                        <span>{source.title}</span>
+                                                    )}
+                                                </div>
+                                            )}
+                                            {source.snippet && (
+                                                <div className={`
+                                                    text-xs
+                                                    ${theme === 'midnight'
+                                                        ? 'text-gray-300'
+                                                        : theme === 'dark'
+                                                            ? 'text-gray-300'
+                                                            : 'text-gray-600'}
+                                                `}>
+                                                    {source.snippet}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         )}
                     </div>
