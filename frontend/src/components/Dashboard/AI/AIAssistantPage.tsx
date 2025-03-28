@@ -220,7 +220,6 @@ export function AIAssistantPage() {
               : 'max-h-[25vh]'
           }`}
           style={{
-            borderColor: selectedModel ? `${selectedModel.color}30` : undefined,
             boxShadow: selectedModel
               ? `0 4px 6px -1px ${selectedModel.color}10, 0 2px 4px -2px ${selectedModel.color}10`
               : undefined
@@ -249,7 +248,6 @@ export function AIAssistantPage() {
             ${getShadowClass()}
             rounded-xl`}
           style={{
-            borderColor: selectedModel ? `${selectedModel.color}30` : undefined,
             boxShadow: selectedModel
               ? `0 4px 6px -1px ${selectedModel.color}10, 0 2px 4px -2px ${selectedModel.color}10`
               : undefined
@@ -283,7 +281,6 @@ export function AIAssistantPage() {
             ${getShadowClass()}
             p-4 rounded-xl`}
           style={{
-            borderColor: selectedModel ? `${selectedModel.color}30` : undefined,
             boxShadow: selectedModel
               ? `0 4px 6px -1px ${selectedModel.color}10, 0 2px 4px -2px ${selectedModel.color}10`
               : undefined

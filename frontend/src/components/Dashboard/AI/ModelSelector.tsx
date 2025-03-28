@@ -147,15 +147,15 @@ export function ModelSelector({
           <div className="w-full h-full relative">
             <motion.div
               className={`w-full h-full rounded-xl backdrop-blur-md 
-                border transition-all py-2.5 px-4
-                ${isHovered ? 'shadow-lg' : 'shadow-md'}`}
+                transition-all py-2.5 px-4
+                ${isHovered ? 'shadow-lg' : 'shadow-md'}
+                ${theme === 'midnight' ? 'border border-gray-800' :
+                  theme === 'dark' ? 'border border-gray-700/50' :
+                    'border border-gray-200/30'}`}
               onHoverStart={() => setIsHovered(true)}
               onHoverEnd={() => setIsHovered(false)}
               animate={{
                 scale: isHovered ? 1.000 : 1,
-                borderColor: isHovered
-                  ? 'rgba(229, 231, 235, 0.3)'
-                  : `${selectedModel.color}30`,
                 boxShadow: isHovered
                   ? `0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)`
                   : `0 4px 6px -1px ${selectedModel.color}10, 0 2px 4px -2px ${selectedModel.color}10`
@@ -176,14 +176,6 @@ export function ModelSelector({
                   }}
                 >
                   {getModelIcon()}
-                  <motion.div
-                    className="absolute inset-0 rounded-lg"
-                    animate={{
-                      boxShadow: isHovered
-                        ? `0 0 0 2px ${selectedModel.color}30`
-                        : `0 0 0 1px ${selectedModel.color}20`
-                    }}
-                  />
                 </motion.div>
 
                 {/* Model Info */}
@@ -192,10 +184,12 @@ export function ModelSelector({
                     <h3 className="font-semibold text-[var(--color-text)]">
                       {selectedModel.name}
                     </h3>
-                    <span className="px-2 py-0.5 rounded-full text-xs font-medium
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium
                       bg-gray-100/70 dark:bg-gray-800/50 
                       text-[var(--color-textSecondary)]
-                      border border-gray-200/30 dark:border-gray-700/30 capitalize">
+                      ${theme === 'midnight' ? 'border border-gray-800' :
+                        theme === 'dark' ? 'border border-gray-700/50' :
+                          'border border-gray-200/30'} capitalize`}>
                       {selectedModel.provider}
                     </span>
                   </div>
@@ -241,11 +235,12 @@ export function ModelSelector({
                 <div className="flex items-center gap-2">
                   <motion.button
                     onClick={() => setShowModelSelector(true)}
-                    className="text-xs font-medium
+                    className={`text-xs font-medium
                       px-3 py-1.5 rounded-lg
                       transition-colors duration-200
-                      border border-gray-200/50 dark:border-gray-700/50
-                      hover:border-primary-500/50 dark:hover:border-primary-400/50"
+                      ${theme === 'midnight' ? 'border border-gray-800 hover:border-gray-700' :
+                        theme === 'dark' ? 'border border-gray-700/50 hover:border-gray-600/70' :
+                          'border border-gray-200/50 hover:border-primary-500/50'}`}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     style={{
@@ -257,9 +252,12 @@ export function ModelSelector({
                   </motion.button>
                   <motion.button
                     onClick={toggleDetails}
-                    className="p-1.5 rounded-lg
+                    className={`p-1.5 rounded-lg
                       text-[var(--color-textSecondary)] transition-colors
-                      border border-transparent hover:border-gray-200/50 dark:hover:border-gray-700/50"
+                      border border-transparent 
+                      ${theme === 'midnight' ? 'hover:border-gray-800' :
+                        theme === 'dark' ? 'hover:border-gray-700' :
+                          'hover:border-gray-200/50'}`}
                     whileHover={{ scale: 1.05, backgroundColor: theme === 'midnight' ? 'rgba(255,255,255,0.05)' : '' }}
                     whileTap={{ scale: 0.95 }}
                   >
@@ -399,14 +397,6 @@ export function ModelSelector({
                         }`}>
                         {count}
                       </span>
-                      {isSelected && (
-                        <motion.div
-                          className="absolute inset-0 border-2 border-primary-500/50 rounded-lg"
-                          layoutId="categoryOutline"
-                          initial={false}
-                          transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                        />
-                      )}
                     </motion.button>
                   );
                 })}
@@ -434,7 +424,7 @@ export function ModelSelector({
                         key={model.id}
                         onClick={() => onModelSelect(model)}
                         className={`w-full text-left p-1.5 rounded-md text-xs transition-all mb-0.5 ${selectedModel?.id === model.id
-                          ? getBackgroundColor(true) + ' shadow-sm ring-1 ring-primary-500/50 dark:ring-primary-400/50'
+                          ? getBackgroundColor(true) + ' shadow-sm'
                           : getBackgroundColor(false) + ' ' + getHoverBackground()
                           }`}
                         style={
