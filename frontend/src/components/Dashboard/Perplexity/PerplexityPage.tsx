@@ -5,7 +5,6 @@ import { useTheme } from '../../../contexts/themeContextUtils';
 import { AgentChat, AgentMessage } from '../../../types/agent';
 
 // Component imports
-import { PerplexityHeader } from './PerplexityHeader';
 import { ConversationsList } from './ConversationsList';
 import { ChatMessages } from './ChatMessages';
 import { ChatInput } from './ChatInput';
@@ -17,6 +16,11 @@ export function PerplexityPage() {
     const [conversations, setConversations] = useState<AgentChat[]>([]);
     const [selectedModel, setSelectedModel] = useState(PERPLEXITY_MODELS[0]);
     const { theme } = useTheme();
+
+    // Function to handle prompt selection
+    const handlePromptSelect = (prompt: string) => {
+        setCurrentMessage(prompt);
+    };
 
     const handleNewChat = useCallback(async () => {
         try {
@@ -239,43 +243,36 @@ export function PerplexityPage() {
     };
 
     return (
-        <div className="w-full h-[calc(100vh-9rem)] flex flex-col overflow-visible">
-            {/* Header */}
-            <PerplexityHeader isConnected={isConnected} />
-
+        <div className="w-full h-[calc(100vh-9rem)] flex flex-col overflow-hidden p-2">
             {/* Main Chat UI */}
-            <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-6 min-h-0 overflow-hidden">
-                {/* Sidebar */}
-                <div className="md:col-span-1 flex flex-col h-full min-h-0 overflow-hidden">
+            <div className={`flex-1 flex h-full max-h-full min-h-0 overflow-hidden rounded-xl shadow-md border ${getBorderColor()} backdrop-blur-xl`}>
+                {/* Sidebar - No separate border or rounded corners */}
+                <div className={`w-60 flex-shrink-0 border-r ${getBorderColor()} overflow-hidden`}>
                     <ConversationsList
                         conversations={conversations}
                         onNewChat={handleNewChat}
                         onSelectConversation={handleSelectConversation}
                         onDeleteConversation={handleDeleteConversation}
-                        selectedModelId={selectedModel.id}
-                        onSelectModel={handleSelectModel}
+                        isConnected={isConnected}
                     />
                 </div>
 
-                {/* Main Chat */}
+                {/* Main Chat - No separate border */}
                 <div className={`
-                    md:col-span-3 
+                    flex-1
                     flex 
                     flex-col 
-                    rounded-xl 
-                    shadow-sm 
                     h-full 
+                    max-h-full
                     overflow-hidden
                     ${getContainerBackground()} 
-                    backdrop-blur-xl 
-                    border 
-                    ${getBorderColor()}
                 `}>
                     {/* Chat Header & Messages */}
                     <ChatMessages
                         activeConversation={getCurrentConversation()}
                         selectedModel={selectedModel}
                         isSending={isSending}
+                        onPromptSelect={handlePromptSelect}
                     />
 
                     {/* Input */}
@@ -284,9 +281,11 @@ export function PerplexityPage() {
                         setCurrentMessage={setCurrentMessage}
                         onSendMessage={handleSendMessage}
                         isSending={isSending}
+                        selectedModelId={selectedModel.id}
+                        onSelectModel={handleSelectModel}
                     />
                 </div>
             </div>
         </div>
     );
-} 
+}
