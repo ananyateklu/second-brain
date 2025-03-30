@@ -115,8 +115,8 @@ export function ReminderCard({
 
   const itemColorClasses = useCallback((type: string) => {
     if (type === 'tag') return isDark
-      ? 'bg-purple-900/25 text-purple-300 border-[0.5px] border-purple-500/40'
-      : 'bg-purple-100/80 text-purple-500 border border-purple-200/70';
+      ? 'bg-purple-500/10 text-purple-300 border-[0.5px] border-purple-500/20'
+      : 'bg-purple-50 text-purple-400 border border-purple-100';
     if (type === 'idea') return isDark
       ? 'bg-[var(--color-idea)]/10 text-[var(--color-idea)] border-[0.5px] border-gray-700'
       : 'bg-[var(--color-idea)]/10 text-[var(--color-idea)] border border-[var(--color-idea)]/30';
@@ -227,11 +227,11 @@ export function ReminderCard({
 const Checkbox = memo(function Checkbox({ reminder, context, toggleReminderCompletion, isDark }: CheckboxProps) {
   const colorVariants = {
     dark: {
-      completed: 'bg-purple-900/25 text-purple-300',
+      completed: 'bg-purple-700/20 text-purple-300',
       pending: 'text-purple-300'
     },
     light: {
-      completed: 'bg-purple-100/80 text-purple-500',
+      completed: 'bg-purple-100 text-purple-500',
       pending: 'text-purple-500'
     }
   };
@@ -266,8 +266,8 @@ const RepeatBadge = memo(function RepeatBadge({ repeatInterval, isDark }: Repeat
     <span className={`
       flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium rounded whitespace-nowrap
       ${isDark
-        ? 'bg-purple-900/25 text-purple-300 border-[0.5px] border-purple-500/40'
-        : 'bg-purple-50 text-purple-500 border border-purple-200/70'}
+        ? 'bg-gray-800 text-gray-400 border-[0.5px] border-gray-700'
+        : 'bg-[var(--color-surface)] text-[var(--color-textSecondary)] border border-[var(--color-border)]'}
     `}>
       <Repeat className="w-2.5 h-2.5" />
       {repeatInterval}
@@ -281,7 +281,7 @@ const TagList = memo(function TagList({ visibleItems, remainingCount, itemColorC
     <div className={`
       flex flex-wrap gap-1
       ${viewMode === 'list' ? 'items-center' : 'items-start'}
-      ${viewMode === 'grid' ? 'max-h-[40px]' : ''}
+      ${viewMode === 'grid' ? '' : ''}
       min-h-[20px] overflow-hidden
     `}>
       {visibleItems.map(item => (

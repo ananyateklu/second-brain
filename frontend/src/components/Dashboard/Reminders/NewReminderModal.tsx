@@ -261,8 +261,8 @@ export function NewReminderModal({ isOpen, onClose }: NewReminderModalProps) {
                     <span
                       key={tag}
                       style={{
-                        backgroundColor: `${colors.accent}20`,
-                        color: colors.accent,
+                        backgroundColor: '#a855f733',
+                        color: '#a855f7',
                       }}
                       className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm"
                     >
@@ -271,7 +271,7 @@ export function NewReminderModal({ isOpen, onClose }: NewReminderModalProps) {
                         <button
                           type="button"
                           onClick={() => handleRemoveTag(tag)}
-                          style={{ '--hover-color': colors.accent } as React.CSSProperties}
+                          style={{ '--hover-color': '#a855f7' } as React.CSSProperties}
                           className="p-0.5 transition-colors hover:text-[--hover-color]"
                           aria-label={`Remove ${tag} tag`}
                         >

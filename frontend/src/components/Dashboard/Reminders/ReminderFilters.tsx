@@ -31,7 +31,7 @@ export function ReminderFilters(props: Readonly<ReminderFiltersProps>) {
           className={`
             flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm
             ${selectedFilter === 'due'
-              ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border-2 border-purple-500'
+              ? 'bg-purple-100 dark:bg-purple-400/15 text-purple-600 dark:text-purple-400 border-2 border-purple-400'
               : 'bg-white dark:bg-[#1C1C1E] text-gray-700 dark:text-gray-300 border border-gray-200/50 dark:border-[#2C2C2E] hover:bg-gray-50 dark:hover:bg-[#2C2C2E]'
             }
             transition-colors

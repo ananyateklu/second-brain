@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { Bell, Plus, Search, SlidersHorizontal, LayoutGrid, List } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useReminders } from '../../../contexts/remindersContextUtils';
@@ -69,7 +69,7 @@ export function RemindersPage() {
     `;
 
     if (currentMode === mode) {
-      return `${baseClasses} bg-purple-500/20 text-purple-600 dark:text-purple-400 midnight:text-purple-300`;
+      return `${baseClasses} bg-purple-400/20 text-purple-500 dark:text-purple-400 midnight:text-purple-400`;
     }
 
     return `${baseClasses} ${getContainerBackground()} hover:bg-[var(--color-surfaceHover)] text-[var(--color-text)]`;
@@ -154,8 +154,8 @@ export function RemindersPage() {
               variants={cardVariants}
               className="flex items-center gap-3"
             >
-              <div className="p-2.5 bg-purple-100/20 dark:bg-purple-900/20 midnight:bg-purple-900/20 rounded-lg backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/10 midnight:ring-white/10">
-                <Bell className="w-6 h-6 text-purple-600 dark:text-purple-400 midnight:text-purple-300" />
+              <div className="p-2.5 bg-purple-400/10 dark:bg-purple-400/15 midnight:bg-purple-400/15 rounded-lg backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/10 midnight:ring-white/10">
+                <Bell className="w-6 h-6 text-purple-500 dark:text-purple-400 midnight:text-purple-400" />
               </div>
               <div className="space-y-1">
                 <h1 className="text-2xl font-bold text-[var(--color-text)]">Reminders</h1>
@@ -170,7 +170,9 @@ export function RemindersPage() {
                 onClick={() => setShowNewReminderModal(true)}
                 className={`
                   flex items-center gap-2 px-4 py-2 
-                  ${theme === 'midnight' ? 'bg-purple-600/80 hover:bg-purple-500/80' : 'bg-purple-600 hover:bg-purple-700'}
+                  ${theme === 'midnight'
+                    ? 'bg-purple-400/70 hover:bg-purple-500/80'
+                    : 'bg-purple-400/70 hover:bg-purple-500/70'}
                   text-white rounded-lg transition-all duration-200 
                   hover:scale-105 hover:-translate-y-0.5 
                   shadow-sm hover:shadow-md

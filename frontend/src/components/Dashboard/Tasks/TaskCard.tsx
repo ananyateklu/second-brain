@@ -383,7 +383,7 @@ const TagList = memo(function TagList({ visibleItems, remainingCount, itemColorC
     <div className={`
       flex flex-wrap gap-1
       ${viewMode === 'list' ? 'items-center' : 'items-start'}
-      ${viewMode === 'grid' ? 'max-h-[40px]' : ''}
+      ${viewMode === 'grid' ? '' : ''}
       min-h-[20px] overflow-hidden
     `}>
       {visibleItems.map(item => (

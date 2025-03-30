@@ -25,8 +25,7 @@ const getContainerBackground = (theme: string) => {
 }
 
 const getUserNameColor = () => {
-
-  return 'text-primary-600/80';
+  return 'text-primary-500';
 }
 
 export const WelcomeSection = React.memo(({ user, onNewNote, onNavigate }: WelcomeSectionProps) => {
@@ -44,8 +43,8 @@ export const WelcomeSection = React.memo(({ user, onNewNote, onNavigate }: Welco
       ? 'bg-blue-600/70 hover:bg-blue-700/80'
       : 'bg-blue-600/70 hover:bg-blue-700/80',
     task: theme === 'midnight'
-      ? 'bg-primary-600/80 hover:bg-primary-500/80'
-      : 'bg-primary-600/80 hover:bg-primary-700',
+      ? 'bg-primary-500/80 hover:bg-primary-400/80'
+      : 'bg-primary-500/80 hover:bg-primary-600/90',
     idea: theme === 'midnight'
       ? 'bg-amber-600/70 hover:bg-amber-500/80'
       : 'bg-amber-600/70 hover:bg-amber-700/80',

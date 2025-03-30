@@ -30,10 +30,10 @@ function MiniReminderCard({ reminder, onUnlink, onClick }: MiniReminderCardProps
   return (
     <div
       onClick={onClick}
-      className={`relative flex items-center gap-1.5 p-1.5 ${getItemBackground()} rounded-lg border ${getBorderStyle()} group hover:bg-[var(--color-note)]/5 transition-colors cursor-pointer`}
+      className={`relative flex items-center gap-1.5 p-1.5 ${getItemBackground()} rounded-lg border ${getBorderStyle()} group hover:bg-purple-400/5 transition-colors cursor-pointer`}
     >
-      <div className="shrink-0 p-1 bg-[var(--color-note)]/10 rounded-lg">
-        <Bell className="w-3 h-3 text-[var(--color-note)]" />
+      <div className="shrink-0 p-1 bg-purple-400/10 rounded-lg">
+        <Bell className="w-3 h-3 text-purple-500" />
       </div>
 
       <div className="min-w-0 max-w-[180px]">
@@ -60,7 +60,7 @@ function MiniReminderCard({ reminder, onUnlink, onClick }: MiniReminderCardProps
             e.stopPropagation();
             onUnlink(reminder.id);
           }}
-          className={`absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 p-0.5 ${getItemBackground()} text-[var(--color-textSecondary)] hover:text-[var(--color-note)] hover:bg-[var(--color-note)]/10 rounded-full border ${getBorderStyle()} transition-all z-10`}
+          className={`absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 p-0.5 ${getItemBackground()} text-[var(--color-textSecondary)] hover:text-purple-500 hover:bg-purple-400/10 rounded-full border ${getBorderStyle()} transition-all z-10`}
         >
           <X className="w-2.5 h-2.5" />
         </button>
