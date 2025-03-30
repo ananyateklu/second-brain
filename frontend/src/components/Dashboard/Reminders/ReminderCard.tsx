@@ -196,7 +196,7 @@ export function ReminderCard({
           </div>
         </div>
       ) : (
-        <div className="p-2 min-h-[60px] flex flex-col justify-between">
+        <div className="p-2 h-[110px] flex flex-col">
           <div className="flex items-center gap-2 w-full">
             {checkboxMemo}
             <div className="flex-1 min-w-0 overflow-hidden">
@@ -208,12 +208,12 @@ export function ReminderCard({
             </div>
           </div>
 
-          <div className="flex flex-col gap-1">
-            <div className="mt-1 pl-[27px] min-h-[16px]">
+          <div className="flex flex-col gap-1 flex-grow">
+            <div className="mt-1 pl-[27px]">
               {tagsMemo}
             </div>
 
-            <div className="flex justify-end mt-1 pr-1">
+            <div className="flex justify-end mt-auto pr-1">
               {dateDisplayMemo}
             </div>
           </div>
