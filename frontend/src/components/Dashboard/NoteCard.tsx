@@ -54,7 +54,7 @@ export function NoteCard({
       ${isSelected ? 'ring-2 ring-[var(--color-accent)] rounded-lg' : ''}
       ${getBackgroundColor()} 
       backdrop-blur-xl 
-      border-[0.25px] border-blue-200/30 dark:border-blue-700/30
+      border border-transparent
       hover:border-blue-400/50 dark:hover:border-blue-500/50
       transition-all duration-300 
       rounded-lg

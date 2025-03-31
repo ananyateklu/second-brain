@@ -101,15 +101,18 @@ export function TaskCard({
   const { updateTask } = useTasks();
   const { theme } = useTheme();
   const [showArchiveWarning, setShowArchiveWarning] = useState(false);
+  const [isSafari] = useState(() => /^((?!chrome|android).)*safari/i.test(navigator.userAgent));
 
   const isDark = useMemo(() => theme === 'dark' || theme === 'midnight', [theme]);
   const isMidnight = useMemo(() => theme === 'midnight', [theme]);
 
   const getBackgroundClass = useMemo(() => {
     if (theme === 'dark') return 'bg-gray-900/30';
-    if (theme === 'midnight') return 'bg-white/5';
+    if (theme === 'midnight') {
+      return isSafari ? 'bg-[var(--note-bg-color)] bg-opacity-[var(--note-bg-opacity,0.3)]' : 'bg-[#1e293b]/30';
+    }
     return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]';
-  }, [theme]);
+  }, [theme, isSafari]);
 
   const containerClasses = useMemo(() => {
     const base = `
@@ -117,7 +120,7 @@ export function TaskCard({
       ${isSelected ? 'ring-2 ring-[var(--color-accent)]' : ''}
       ${getBackgroundClass}
       backdrop-blur-xl 
-      border-[0.25px] border-transparent
+      border ${isMidnight ? 'border-white/10' : 'border-transparent'}
       hover:border-green-300/40 dark:hover:border-green-400/40
       transition-all duration-300 
       rounded-lg
@@ -131,7 +134,7 @@ export function TaskCard({
       ${task.status.toLowerCase() === 'completed' ? 'opacity-85' : ''}
     `;
     return base.trim();
-  }, [isSelected, getBackgroundClass, onSelect, onClick, task.status]);
+  }, [isSelected, getBackgroundClass, onSelect, onClick, task.status, isMidnight]);
 
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -356,9 +359,9 @@ const Checkbox = memo(function Checkbox({ task, context, updateTask, isDark }: C
       className={`flex-shrink-0 p-1.5 rounded transition-colors ${colorClasses}`}
     >
       {task.status.toLowerCase() === 'completed' ? (
-        <CheckSquare className="w-3.5 h-3.5" />
+        <CheckSquare className="w-4 h-4" />
       ) : (
-        <Square className="w-3.5 h-3.5" />
+        <Square className="w-4 h-4" />
       )}
     </button>
   );

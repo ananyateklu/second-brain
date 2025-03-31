@@ -36,13 +36,17 @@ export function IdeaCard({
   const { toggleFavoriteNote, togglePinNote, archiveNote } = useNotes();
   const { theme } = useTheme();
   const [showArchiveWarning, setShowArchiveWarning] = useState(false);
+  const [isSafari] = useState(() => /^((?!chrome|android).)*safari/i.test(navigator.userAgent));
 
   const isDark = useMemo(() => theme === 'dark' || theme === 'midnight', [theme]);
+  const isMidnight = useMemo(() => theme === 'midnight', [theme]);
 
   const containerClasses = useMemo(() => {
     const getBackgroundColor = () => {
       if (theme === 'dark') return 'bg-gray-900/30';
-      if (theme === 'midnight') return 'bg-white/5';
+      if (theme === 'midnight') {
+        return isSafari ? 'bg-[var(--note-bg-color)] bg-opacity-[var(--note-bg-opacity,0.3)]' : 'bg-[#1e293b]/30';
+      }
       return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]';
     };
 
@@ -51,7 +55,7 @@ export function IdeaCard({
       ${isSelected ? 'ring-2 ring-[var(--color-accent)]' : ''}
       ${getBackgroundColor()}
       backdrop-blur-xl 
-      border-[0.25px] border-amber-200/30 dark:border-amber-700/30
+      border ${isMidnight ? 'border-white/10' : 'border-transparent'}
       hover:border-amber-400/50 dark:hover:border-amber-500/50
       transition-all duration-300 
       rounded-lg
@@ -64,7 +68,7 @@ export function IdeaCard({
       ${onSelect || onClick ? 'cursor-pointer hover:-translate-y-1 hover:scale-[1.02]' : ''}
     `;
     return base.trim();
-  }, [isSelected, theme, onSelect, onClick]);
+  }, [isSelected, theme, onSelect, onClick, isSafari, isMidnight]);
 
   // Event handlers with useCallback
   const handleFavorite = useCallback((e: React.MouseEvent) => {

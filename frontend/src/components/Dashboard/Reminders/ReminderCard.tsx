@@ -1,4 +1,4 @@
-import { useMemo, useCallback, memo } from 'react';
+import { useMemo, useCallback, memo, useState } from 'react';
 import { Calendar, AlertCircle, CheckSquare, Square, Bell, Repeat, FileText, Lightbulb, Tag as TagIcon } from 'lucide-react';
 import { Reminder, useReminders } from '../../../contexts/remindersContextUtils';
 import { useTheme } from '../../../contexts/themeContextUtils';
@@ -60,6 +60,8 @@ export function ReminderCard({
   const { theme } = useTheme();
   const { toggleReminderCompletion } = useReminders();
   const isDark = useMemo(() => theme === 'dark' || theme === 'midnight', [theme]);
+  const [isSafari] = useState(() => /^((?!chrome|android).)*safari/i.test(navigator.userAgent));
+  const isMidnight = useMemo(() => theme === 'midnight', [theme]);
   const isOverdue = useMemo(() =>
     new Date(reminder.dueDateTime) < new Date() && !reminder.isSnoozed && !reminder.isCompleted,
     [reminder.dueDateTime, reminder.isSnoozed, reminder.isCompleted]
@@ -68,7 +70,9 @@ export function ReminderCard({
   const containerClasses = useMemo(() => {
     const getBackgroundColor = () => {
       if (theme === 'dark') return 'bg-gray-900/30';
-      if (theme === 'midnight') return 'bg-white/5';
+      if (theme === 'midnight') {
+        return isSafari ? 'bg-[var(--note-bg-color)] bg-opacity-[var(--note-bg-opacity,0.3)]' : 'bg-[#1e293b]/30';
+      }
       return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]';
     };
 
@@ -77,7 +81,7 @@ export function ReminderCard({
       ${isSelected ? 'ring-2 ring-[var(--color-accent)]' : ''}
       ${getBackgroundColor()}
       backdrop-blur-xl 
-      border-[0.25px] border-transparent
+      border ${isMidnight ? 'border-white/10' : 'border-transparent'}
       hover:border-purple-300/40 dark:hover:border-purple-400/40
       transition-all duration-300 
       rounded-lg
@@ -91,7 +95,7 @@ export function ReminderCard({
       ${reminder.isCompleted ? 'opacity-85' : ''}
     `;
     return base.trim();
-  }, [isSelected, theme, onSelect, onClick, reminder.isCompleted]);
+  }, [isSelected, theme, onSelect, onClick, reminder.isCompleted, isSafari, isMidnight]);
 
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -251,9 +255,9 @@ const Checkbox = memo(function Checkbox({ reminder, context, toggleReminderCompl
       className={`flex-shrink-0 p-1.5 rounded transition-colors ${colorClasses}`}
     >
       {reminder.isCompleted ? (
-        <CheckSquare className="w-3.5 h-3.5" />
+        <CheckSquare className="w-4 h-4" />
       ) : (
-        <Square className="w-3.5 h-3.5" />
+        <Square className="w-4 h-4" />
       )}
     </button>
   );
