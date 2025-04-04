@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Copy, X, Check, Type, Lightbulb, Bell, CheckSquare } from 'lucide-react';
+import { Copy, X, Type, Lightbulb, Bell, CheckSquare } from 'lucide-react';
 import type { Note } from '../../types/note';
 import { Reminder } from '../../contexts/remindersContextUtils';
 import { Task } from '../../api/types/task';
@@ -37,7 +37,9 @@ export function DuplicateItemsModal({
         }
     }, [isOpen]);
 
-    const handleToggleSelection = (id: string) => {
+    const handleToggleSelection = (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        e.preventDefault();
         setSelectedIds(prev =>
             prev.includes(id)
                 ? prev.filter(itemId => itemId !== id)
@@ -118,30 +120,33 @@ export function DuplicateItemsModal({
         }
     };
 
-    const getSelectionIndicatorColor = (itemId: string) => {
+    const getItemBorderClass = (itemId: string) => {
         switch (itemType) {
             case 'idea':
                 return selectedIds.includes(itemId)
-                    ? 'bg-yellow-500 text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-300';
+                    ? 'ring-2 ring-yellow-500 ring-opacity-80'
+                    : '';
             case 'note':
                 return selectedIds.includes(itemId)
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-300';
+                    ? 'ring-2 ring-blue-500 ring-opacity-80'
+                    : '';
             case 'reminder':
                 return selectedIds.includes(itemId)
-                    ? 'bg-purple-400 text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-300';
+                    ? 'ring-2 ring-purple-400 ring-opacity-80'
+                    : '';
             case 'task':
                 return selectedIds.includes(itemId)
-                    ? 'bg-green-500 text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-300';
+                    ? 'ring-2 ring-green-500 ring-opacity-80'
+                    : '';
             default:
                 return selectedIds.includes(itemId)
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-300';
+                    ? 'ring-2 ring-blue-500 ring-opacity-80'
+                    : '';
         }
     };
+
+    // This is a no-op function to override the default click behavior
+    const emptyFunction = () => { };
 
     const renderItem = (item: DuplicateItem) => {
         switch (itemType) {
@@ -170,6 +175,8 @@ export function DuplicateItemsModal({
                         viewMode="grid"
                         isSelected={selectedIds.includes(item.id)}
                         context="duplicate"
+                        onSelect={emptyFunction}
+                        onClick={emptyFunction}
                     />
                 );
             case 'task':
@@ -179,6 +186,8 @@ export function DuplicateItemsModal({
                         viewMode="grid"
                         isSelected={selectedIds.includes(item.id)}
                         context="duplicate"
+                        onSelect={emptyFunction}
+                        onClick={emptyFunction}
                     />
                 );
             default:
@@ -256,25 +265,17 @@ export function DuplicateItemsModal({
                             </p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 px-1">
                             {items.map(item => (
                                 <div
                                     key={item.id}
-                                    onClick={() => handleToggleSelection(item.id)}
-                                    className="relative cursor-pointer"
+                                    onClick={(e) => handleToggleSelection(item.id, e)}
+                                    className={`relative cursor-pointer rounded-lg transition-all duration-150 ${getItemBorderClass(item.id)} pointer-events-auto overflow-hidden`}
                                 >
-                                    <div className="absolute top-2 right-2 z-10">
-                                        <div className={`
-                      w-6 h-6 rounded-full flex items-center justify-center
-                      ${getSelectionIndicatorColor(item.id)}
-                    `}>
-                                            {selectedIds.includes(item.id) ? (
-                                                <Check className="w-4 h-4" />
-                                            ) : null}
-                                        </div>
+                                    <div className="absolute inset-0 z-10" onClick={(e) => handleToggleSelection(item.id, e)}></div>
+                                    <div className="w-full">
+                                        {renderItem(item)}
                                     </div>
-
-                                    {renderItem(item)}
                                 </div>
                             ))}
                         </div>
