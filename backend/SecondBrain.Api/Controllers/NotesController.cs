@@ -584,13 +584,27 @@ namespace SecondBrain.Api.Controllers
                 return NotFound(new { error = NOTE_NOT_FOUND_ERROR });
             }
 
+            // Check if archiving a note
+            bool isArchiving = request.IsArchived.HasValue && request.IsArchived.Value && !note.IsArchived;
+
             // Update properties if provided
             if (request.Title != null) note.Title = request.Title;
             if (request.Content != null) note.Content = request.Content;
             if (request.Tags != null) note.Tags = string.Join(",", request.Tags);
             if (request.IsPinned.HasValue) note.IsPinned = request.IsPinned.Value;
             if (request.IsFavorite.HasValue) note.IsFavorite = request.IsFavorite.Value;
-            if (request.IsArchived.HasValue) note.IsArchived = request.IsArchived.Value;
+            if (request.IsArchived.HasValue) 
+            {
+                note.IsArchived = request.IsArchived.Value;
+                if (request.IsArchived.Value) 
+                {
+                    note.ArchivedAt = DateTime.UtcNow;
+                }
+                else
+                {
+                    note.ArchivedAt = null;
+                }
+            }
             if (request.IsDeleted.HasValue)
             {
                 note.IsDeleted = request.IsDeleted.Value;
@@ -599,6 +613,19 @@ namespace SecondBrain.Api.Controllers
 
             note.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
+
+            // Award XP if note is being archived
+            if (isArchiving)
+            {
+                string actionType = note.IsIdea ? "archiveidea" : "archivenote";
+                await _xpService.AwardXPAsync(
+                    userId,
+                    actionType,
+                    null,
+                    note.Id,
+                    note.Title
+                );
+            }
 
             var response = NoteResponse.FromEntity(note);
             return Ok(response);

@@ -9,6 +9,7 @@ using System.Linq;
 using System.Security.Claims;
 using SecondBrain.Api.Extensions;
 using Microsoft.Extensions.Logging;
+using SecondBrain.Api.Gamification;
 
 namespace SecondBrain.Api.Controllers
 {
@@ -19,13 +20,15 @@ namespace SecondBrain.Api.Controllers
     {
         private readonly DataContext _context;
         private readonly ILogger<TasksController> _logger;
+        private readonly IXPService _xpService;
         private const string TASK_NOT_FOUND_ERROR = "Task not found.";
         private const string USER_ID_NOT_FOUND_ERROR = "User ID not found in token.";
 
-        public TasksController(DataContext context, ILogger<TasksController> logger)
+        public TasksController(DataContext context, ILogger<TasksController> logger, IXPService xpService)
         {
             _context = context;
             _logger = logger;
+            _xpService = xpService;
         }
 
         [HttpGet]
@@ -81,6 +84,9 @@ namespace SecondBrain.Api.Controllers
             _context.Tasks.Add(task);
             await _context.SaveChangesAsync();
 
+            // Award XP for creating a task
+            await _xpService.AwardXPAsync(userId, "createtask", null, task.Id, task.Title);
+
             var response = TaskResponse.FromEntity(task);
             return CreatedAtAction(nameof(GetTaskById), new { id = task.Id }, response);
         }
@@ -120,6 +126,9 @@ namespace SecondBrain.Api.Controllers
                 return NotFound(new { error = TASK_NOT_FOUND_ERROR });
             }
 
+            // Check if the task is being completed
+            bool wasCompleted = task.Status == Data.Entities.TaskStatus.Completed;
+
             // Update fields if they are provided
             if (!string.IsNullOrEmpty(request.Title))
                 task.Title = request.Title;
@@ -149,6 +158,15 @@ namespace SecondBrain.Api.Controllers
             task.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
+
+            // Check if the task has been completed now but wasn't before
+            if (request.Status.HasValue && 
+                (Data.Entities.TaskStatus)request.Status.Value == Data.Entities.TaskStatus.Completed && 
+                !wasCompleted)
+            {
+                // Award XP for completing a task
+                await _xpService.AwardXPAsync(userId, "completetask", null, task.Id, task.Title);
+            }
 
             var response = TaskResponse.FromEntity(task);
             return Ok(response);

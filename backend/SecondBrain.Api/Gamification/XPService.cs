@@ -2,6 +2,8 @@ using SecondBrain.Data;
 using SecondBrain.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Threading.Tasks;
 
 namespace SecondBrain.Api.Gamification
 {
@@ -15,6 +17,8 @@ namespace SecondBrain.Api.Gamification
         public const int CreateTask = 3;
         public const int CreateReminder = 3;
         public const int UpdateContent = 1;
+        public const int ArchiveNote = 10;
+        public const int ArchiveIdea = 15;
     }
 
     public class XPService : IXPService
@@ -42,7 +46,7 @@ namespace SecondBrain.Api.Gamification
             _logger = logger;
         }
 
-        public async Task<(int newXP, int newLevel, bool leveledUp)> AwardXPAsync(string userId, string action, int? customXP = null)
+        public async Task<(int newXP, int newLevel, bool leveledUp)> AwardXPAsync(string userId, string action, int? customXP = null, string? itemId = null, string? itemTitle = null)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -71,11 +75,29 @@ namespace SecondBrain.Api.Gamification
                     oldLevel, newLevel, oldXP, newXP, xpToAward
                 );
 
+                // Record XP history
+                string source = GetSourceFromAction(action);
+                string actionType = GetActionTypeFromAction(action);
+                
+                var xpHistory = new XPHistoryItem
+                {
+                    UserId = userId,
+                    Source = source,
+                    Action = actionType,
+                    Amount = xpToAward,
+                    ItemId = itemId,
+                    ItemTitle = itemTitle,
+                    CreatedAt = DateTime.UtcNow
+                };
+                
+                _context.XPHistory.Add(xpHistory);
+
                 // Step 1: Update using raw SQL without OUTPUT clause
                 await _context.Database.ExecuteSqlRawAsync(
                     "UPDATE Users SET ExperiencePoints = @p0, Level = @p1 WHERE Id = @p2",
                     newXP, newLevel, userId);
 
+                await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
                 // Step 2: Verify the update
@@ -123,8 +145,28 @@ namespace SecondBrain.Api.Gamification
                 "createtask" => XPValues.CreateTask,
                 "createreminder" => XPValues.CreateReminder,
                 "updatecontent" => XPValues.UpdateContent,
+                "archivenote" => XPValues.ArchiveNote,
+                "archiveidea" => XPValues.ArchiveIdea,
                 _ => 0
             };
+        }
+
+        private string GetSourceFromAction(string action)
+        {
+            if (action.Contains("note", StringComparison.OrdinalIgnoreCase)) return "Note";
+            if (action.Contains("idea", StringComparison.OrdinalIgnoreCase)) return "Idea";
+            if (action.Contains("task", StringComparison.OrdinalIgnoreCase)) return "Task";
+            if (action.Contains("reminder", StringComparison.OrdinalIgnoreCase)) return "Reminder";
+            if (action.Contains("link", StringComparison.OrdinalIgnoreCase)) return "Link";
+            return "Other";
+        }
+
+        private string GetActionTypeFromAction(string action)
+        {
+            if (action.Contains("create", StringComparison.OrdinalIgnoreCase)) return "Create";
+            if (action.Contains("update", StringComparison.OrdinalIgnoreCase)) return "Update";
+            if (action.Contains("complete", StringComparison.OrdinalIgnoreCase)) return "Complete";
+            return "Other";
         }
 
         public int CalculateLevel(int experiencePoints)
@@ -157,7 +199,7 @@ namespace SecondBrain.Api.Gamification
             return 1;
         }
 
-        public async Task<(int currentXP, int xpForNextLevel, int progress)> GetLevelProgressAsync(string userId)
+        public async Task<(int currentXP, int xpForNextLevel, float progress)> GetLevelProgressAsync(string userId)
         {
             var user = await _context.Users.FindAsync(userId);
             if (user == null)
@@ -174,9 +216,79 @@ namespace SecondBrain.Api.Gamification
                 : LevelThresholds[^1];
 
             int xpForNextLevel = nextLevelThreshold - currentXP;
-            int progress = (int)((float)(currentXP - currentLevelThreshold) / (nextLevelThreshold - currentLevelThreshold) * 100);
+            float progress = (float)(currentXP - currentLevelThreshold) / (nextLevelThreshold - currentLevelThreshold) * 100;
 
             return (currentXP, xpForNextLevel, progress);
+        }
+
+        public async Task<object> GetXPBreakdownAsync(string userId)
+        {
+            // Get counts for different content types
+            var noteCount = await _context.Notes
+                .CountAsync(n => n.UserId == userId && !n.IsDeleted && !n.IsIdea);
+            
+            var ideaCount = await _context.Notes
+                .CountAsync(n => n.UserId == userId && !n.IsDeleted && n.IsIdea);
+                
+            var archivedNoteCount = await _context.Notes
+                .CountAsync(n => n.UserId == userId && !n.IsDeleted && !n.IsIdea && n.IsArchived);
+                
+            var archivedIdeaCount = await _context.Notes
+                .CountAsync(n => n.UserId == userId && !n.IsDeleted && n.IsIdea && n.IsArchived);
+            
+            var taskCount = await _context.Tasks
+                .CountAsync(t => t.UserId == userId && !t.IsDeleted);
+            
+            var completedTaskCount = await _context.Tasks
+                .CountAsync(t => t.UserId == userId && !t.IsDeleted && t.Status == Data.Entities.TaskStatus.Completed);
+            
+            var reminderCount = await _context.Reminders
+                .CountAsync(r => r.UserId == userId && !r.IsDeleted);
+            
+            var completedReminderCount = await _context.Reminders
+                .CountAsync(r => r.UserId == userId && !r.IsDeleted && r.IsCompleted);
+
+            // Get XP breakdown by source
+            var xpBySource = await _context.XPHistory
+                .Where(x => x.UserId == userId)
+                .GroupBy(x => x.Source)
+                .Select(g => new {
+                    Source = g.Key,
+                    TotalXP = g.Sum(x => x.Amount)
+                })
+                .ToListAsync();
+            
+            // Get XP breakdown by action
+            var xpByAction = await _context.XPHistory
+                .Where(x => x.UserId == userId)
+                .GroupBy(x => x.Action)
+                .Select(g => new {
+                    Action = g.Key,
+                    TotalXP = g.Sum(x => x.Amount)
+                })
+                .ToListAsync();
+            
+            // Return comprehensive stats
+            return new {
+                Counts = new {
+                    Notes = noteCount,
+                    Ideas = ideaCount,
+                    ArchivedNotes = archivedNoteCount,
+                    ArchivedIdeas = archivedIdeaCount,
+                    Tasks = new {
+                        Total = taskCount,
+                        Completed = completedTaskCount
+                    },
+                    Reminders = new {
+                        Total = reminderCount,
+                        Completed = completedReminderCount
+                    }
+                },
+                XPBreakdown = new {
+                    BySource = xpBySource,
+                    ByAction = xpByAction
+                }
+            };
         }
     }
 } 

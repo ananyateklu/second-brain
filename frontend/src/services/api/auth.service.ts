@@ -33,6 +33,33 @@ export interface AuthResponse {
   user: User;
 }
 
+export interface XPBreakdownResponse {
+  counts: {
+    notes: number;
+    ideas: number;
+    archivedNotes: number;
+    archivedIdeas: number;
+    tasks: {
+      total: number;
+      completed: number;
+    };
+    reminders: {
+      total: number;
+      completed: number;
+    };
+  };
+  xpBreakdown: {
+    bySource: {
+      source: string;
+      totalXP: number;
+    }[];
+    byAction: {
+      action: string;
+      totalXP: number;
+    }[];
+  };
+}
+
 export const authService = {
   async register(data: RegisterData): Promise<AuthResponse> {
     const response = await api.post<AuthResponse>('/auth/register', data);
@@ -60,5 +87,10 @@ export const authService = {
 
   logout() {
     TokenManager.clearTokens();
+  },
+
+  getXPBreakdown: async (): Promise<XPBreakdownResponse> => {
+    const response = await api.get<XPBreakdownResponse>('/auth/me/xp-breakdown');
+    return response.data;
   }
 };

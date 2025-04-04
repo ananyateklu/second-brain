@@ -31,6 +31,7 @@ namespace SecondBrain.Data
         public DbSet<AgentChat> AgentChats { get; set; } = null!;
         public DbSet<AgentMessage> AgentMessages { get; set; } = null!;
         public DbSet<UserPreference> UserPreferences { get; set; } = null!;
+        public DbSet<XPHistoryItem> XPHistory { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -5,6 +5,7 @@ using SecondBrain.Api.DTOs.Llama;
 using SecondBrain.Data.Entities;
 using SecondBrain.Api.Services;
 using SecondBrain.Api.Enums;
+using SecondBrain.Api.Gamification;
 
 namespace SecondBrain.Api.Services
 {
@@ -13,16 +14,19 @@ namespace SecondBrain.Api.Services
         private readonly DataContext _context;
         private readonly ILogger<NoteToolService> _logger;
         private readonly IActivityLogger _activityLogger;
+        private readonly IXPService _xpService;
         private const int MAX_LINKS = 20;
 
         public NoteToolService(
             DataContext context, 
             ILogger<NoteToolService> logger,
-            IActivityLogger activityLogger)
+            IActivityLogger activityLogger,
+            IXPService xpService)
         {
             _context = context;
             _logger = logger;
             _activityLogger = activityLogger;
+            _xpService = xpService;
         }
 
         public async Task<NoteToolResponse> CreateNoteAsync(NoteToolRequest request)
@@ -371,6 +375,16 @@ namespace SecondBrain.Api.Services
                     note.Title,
                     $"Archived {(note.IsIdea ? "idea" : "note")}: {note.Title}",
                     new { ArchivedAt = note.ArchivedAt }
+                );
+
+                // Award XP for archiving note or idea
+                string actionType = note.IsIdea ? "archiveidea" : "archivenote";
+                await _xpService.AwardXPAsync(
+                    userId,
+                    actionType,
+                    null,
+                    note.Id,
+                    note.Title
                 );
 
                 return new NoteToolResponse

@@ -11,6 +11,7 @@ using System;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
+using SecondBrain.Api.Gamification;
 
 namespace SecondBrain.Api.Controllers
 {
@@ -20,13 +21,15 @@ namespace SecondBrain.Api.Controllers
     public class RemindersController : ControllerBase
     {
         private readonly DataContext _context;
-        private const string REMINDER_NOT_FOUND = "Reminder not found.";
         private readonly ILogger<RemindersController> _logger;
+        private readonly IXPService _xpService;
+        private const string REMINDER_NOT_FOUND = "Reminder not found.";
 
-        public RemindersController(DataContext context, ILogger<RemindersController> logger)
+        public RemindersController(DataContext context, ILogger<RemindersController> logger, IXPService xpService)
         {
             _context = context;
             _logger = logger;
+            _xpService = xpService;
         }
 
         private async Task<(Dictionary<string, dynamic> Items, List<ReminderLink> Links)> LoadLinkedItems(IEnumerable<ReminderLink> links)
@@ -150,6 +153,12 @@ namespace SecondBrain.Api.Controllers
             _context.Reminders.Add(reminder);
             await _context.SaveChangesAsync();
 
+            // Award XP for creating a reminder
+            if (!string.IsNullOrEmpty(userId))
+            {
+                await _xpService.AwardXPAsync(userId, "createreminder", null, reminder.Id, reminder.Title);
+            }
+
             return CreatedAtAction(nameof(GetReminderById), new { id = reminder.Id }, ReminderResponse.FromEntity(reminder, null));
         }
 
@@ -167,6 +176,9 @@ namespace SecondBrain.Api.Controllers
             {
                 return NotFound(new { error = REMINDER_NOT_FOUND });
             }
+
+            // Check if the reminder is being completed
+            bool wasCompleted = reminder.IsCompleted;
 
             // Update properties if they are provided
             if (request.Title != null)
@@ -233,6 +245,18 @@ namespace SecondBrain.Api.Controllers
 
             _context.Reminders.Update(reminder);
             await _context.SaveChangesAsync();
+
+            // Check if the reminder has been completed now but wasn't before
+            if (request.IsCompleted.HasValue && 
+                request.IsCompleted.Value && 
+                !wasCompleted)
+            {
+                // Award XP for completing a reminder
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    await _xpService.AwardXPAsync(userId, "completereminder", null, reminder.Id, reminder.Title);
+                }
+            }
 
             if (reminder.ReminderLinks?.Any() == true)
             {

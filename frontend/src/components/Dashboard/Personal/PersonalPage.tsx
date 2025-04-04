@@ -16,6 +16,7 @@ import { motion } from 'framer-motion';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { cardVariants } from '../../../utils/welcomeBarUtils';
 import { ExperienceBar } from './ExperienceBar';
+import { XPBreakdownCard } from './XPBreakdownCard';
 
 export function PersonalPage() {
     const { user } = useAuth();
@@ -63,6 +64,21 @@ export function PersonalPage() {
         transition-all 
         duration-300
         hover:bg-[var(--color-surfaceHover)]
+    `;
+
+    // Create a version without hover effect for XP Breakdown Card
+    const cardClassesNoHover = `
+        relative 
+        overflow-hidden 
+        rounded-2xl 
+        ${getContainerBackground()}
+        backdrop-blur-xl 
+        border-[0.5px] 
+        border-white/10
+        shadow-[4px_0_24px_-2px_rgba(0,0,0,0.12),8px_0_16px_-4px_rgba(0,0,0,0.08)]
+        dark:shadow-[4px_0_24px_-2px_rgba(0,0,0,0.3),8px_0_16px_-4px_rgba(0,0,0,0.2)]
+        ring-1
+        ring-white/5
     `;
 
     if (!user) {
@@ -236,6 +252,9 @@ export function PersonalPage() {
                         </div>
                     </div>
                 </motion.div>
+
+                {/* XP Breakdown Section */}
+                <XPBreakdownCard cardClasses={cardClassesNoHover} />
             </div>
         </div>
     );
