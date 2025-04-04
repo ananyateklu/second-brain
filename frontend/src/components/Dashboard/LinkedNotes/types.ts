@@ -12,3 +12,14 @@ export const DEFAULT_LINK_TYPES: LinkType[] = [
   { id: 'references', label: 'References', color: '#9C27B0', style: 'dotted' },
   { id: 'task', label: 'Task', color: '#FF9800', style: 'dashed' },
 ];
+
+export interface StoredNodePosition {
+  id: string;
+  x: number;
+  y: number;
+}
+
+export interface GraphPositions {
+  positions: StoredNodePosition[];
+  updatedAt: string;
+}

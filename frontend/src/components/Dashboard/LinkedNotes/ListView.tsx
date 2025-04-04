@@ -1,72 +1,99 @@
 import { useNotes } from '../../../contexts/notesContextUtils';
 import { formatDate } from '../../../utils/dateUtils';
-import { Link2 } from 'lucide-react';
+import { Link2, Type, Lightbulb, Calendar, Hash } from 'lucide-react';
+import { Note } from '../../../types/note';
 
 interface ListViewProps {
   onNoteSelect: (noteId: string) => void;
 }
 
+const NoteCard = ({ note, onClick }: { note: Note; onClick: () => void }) => {
+  const isIdea = note.isIdea;
+  const tags = note.tags || [];
+  const connectionCount = note.linkedNoteIds?.length || 0;
+
+  return (
+    <div
+      onClick={onClick}
+      className="bg-[var(--color-surface)]/20 hover:bg-[var(--color-surface)]/40 rounded-lg p-4 transition-colors cursor-pointer"
+    >
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-2">
+          {isIdea ? (
+            <div className="p-1 rounded-md bg-amber-500/10 dark:bg-amber-500/20">
+              <Lightbulb className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+            </div>
+          ) : (
+            <div className="p-1 rounded-md bg-blue-500/10 dark:bg-blue-500/20">
+              <Type className="w-4 h-4 text-blue-500 dark:text-blue-400" />
+            </div>
+          )}
+          <h3 className="font-medium text-[var(--color-text)] truncate">{note.title}</h3>
+        </div>
+
+        <div className="flex items-center gap-1 text-[var(--color-textSecondary)]">
+          <Link2 className="w-3.5 h-3.5" />
+          <span className="text-xs">{connectionCount}</span>
+        </div>
+      </div>
+
+      <div className="mt-2 text-sm text-[var(--color-textSecondary)] line-clamp-2">
+        {note.content || "No content"}
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center justify-between">
+        <div className="flex items-center gap-1 text-xs text-[var(--color-textSecondary)]">
+          <Calendar className="w-3 h-3" />
+          <span>{formatDate(note.updatedAt || note.createdAt)}</span>
+        </div>
+
+        {tags.length > 0 && (
+          <div className="flex items-center gap-1 flex-wrap">
+            {tags.slice(0, 2).map(tag => (
+              <div key={tag} className="flex items-center gap-0.5 bg-[var(--color-surface)]/30 rounded px-1.5 py-0.5">
+                <Hash className="w-2.5 h-2.5 text-[var(--color-textSecondary)]" />
+                <span className="text-xs text-[var(--color-textSecondary)]">{tag}</span>
+              </div>
+            ))}
+            {tags.length > 2 && (
+              <span className="text-xs text-[var(--color-textSecondary)]">+{tags.length - 2}</span>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export function ListView({ onNoteSelect }: ListViewProps) {
   const { notes } = useNotes();
 
+  const sortedNotes = [...notes].sort((a, b) => {
+    const dateA = a.updatedAt || a.createdAt;
+    const dateB = b.updatedAt || b.createdAt;
+    return new Date(dateB).getTime() - new Date(dateA).getTime();
+  });
+
   return (
-    <div className="h-full overflow-auto">
-      <div className="min-w-full divide-y divide-[var(--color-border)]">
-        <div className="bg-[var(--color-surface)]/50">
-          <div className="grid grid-cols-12 px-6 py-3">
-            <div className="col-span-5">
-              <span className="text-xs font-medium text-[var(--color-textSecondary)] uppercase tracking-wider">
-                Title
-              </span>
-            </div>
-            <div className="col-span-3">
-              <span className="text-xs font-medium text-[var(--color-textSecondary)] uppercase tracking-wider">
-                Linked Notes
-              </span>
-            </div>
-            <div className="col-span-4">
-              <span className="text-xs font-medium text-[var(--color-textSecondary)] uppercase tracking-wider">
-                Last Updated
-              </span>
-            </div>
-          </div>
-        </div>
-        <div className="divide-y divide-[var(--color-border)]">
-          {notes.map((note) => (
-            <div
-              key={note.id}
-              onClick={() => onNoteSelect(note.id)}
-              className="grid grid-cols-12 px-6 py-4 hover:bg-[var(--color-surface)]/80 cursor-pointer"
-            >
-              <div className="col-span-5">
-                <div className="text-sm font-medium text-[var(--color-text)]">
-                  {note.title}
-                </div>
-                <div className="text-sm text-[var(--color-textSecondary)] truncate">
-                  {note.content}
-                </div>
-              </div>
-              <div className="col-span-3">
-                <div className="flex items-center gap-2 text-sm text-[var(--color-textSecondary)]">
-                  <Link2 className="w-4 h-4" />
-                  <span>{note.linkedNotes?.length || 0} connections</span>
-                </div>
-              </div>
-              <div className="col-span-4">
-                <div className="text-sm text-[var(--color-textSecondary)]">
-                  {formatDate(note.updatedAt)}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+    <div className="h-full overflow-auto p-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        {sortedNotes.map((note) => (
+          <NoteCard
+            key={note.id}
+            note={note}
+            onClick={() => onNoteSelect(note.id)}
+          />
+        ))}
       </div>
 
       {notes.length === 0 && (
         <div className="flex items-center justify-center h-full">
-          <p className="text-[var(--color-textSecondary)]">
-            No notes available
-          </p>
+          <div className="text-center">
+            <Link2 className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+            <p className="text-[var(--color-textSecondary)]">
+              No connected notes to display
+            </p>
+          </div>
         </div>
       )}
     </div>

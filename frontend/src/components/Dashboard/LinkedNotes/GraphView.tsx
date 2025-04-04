@@ -14,7 +14,8 @@ import ReactFlow, {
   SelectionMode,
   useNodesState,
   useEdgesState,
-  ReactFlowProvider
+  ReactFlowProvider,
+  NodeDragHandler
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import dagre from 'dagre';
@@ -25,6 +26,8 @@ import { NoteCard } from '../NoteCard';
 import { IdeaCard } from '../Ideas/IdeaCard';
 import type { Note } from '../../../types/note';
 import { GraphControls } from './GraphControls';
+import { StoredNodePosition } from './types';
+import { saveNodePositions, loadNodePositions, clearNodePositions } from './utils/graphStorage';
 
 interface GraphViewProps {
   onNodeSelect: (noteId: string) => void;
@@ -164,7 +167,7 @@ const prepareEdges = (notes: Note[]): CustomEdge[] => {
 };
 
 // Optimize layout calculation with configurable parameters
-const getDagreLayout = (nodes: CustomNodeType[], edges: CustomEdge[]) => {
+const getDagreLayout = (nodes: CustomNodeType[], edges: CustomEdge[], savedPositions: StoredNodePosition[] = []) => {
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
 
@@ -190,13 +193,31 @@ const getDagreLayout = (nodes: CustomNodeType[], edges: CustomEdge[]) => {
 
   dagre.layout(dagreGraph);
 
+  // Create a map of saved positions for faster lookup
+  const savedPositionsMap = new Map<string, StoredNodePosition>();
+  savedPositions.forEach(pos => {
+    savedPositionsMap.set(pos.id, pos);
+  });
+
   return {
     nodes: nodes.map((node) => {
-      const nodeWithPosition = dagreGraph.node(node.id);
-      node.position = {
-        x: nodeWithPosition.x - 140,
-        y: nodeWithPosition.y - 60,
-      };
+      // Check if we have a saved position for this node
+      const savedPosition = savedPositionsMap.get(node.id);
+
+      if (savedPosition) {
+        // Use saved position if available
+        node.position = {
+          x: savedPosition.x,
+          y: savedPosition.y,
+        };
+      } else {
+        // Otherwise use the calculated dagre position
+        const nodeWithPosition = dagreGraph.node(node.id);
+        node.position = {
+          x: nodeWithPosition.x - 140,
+          y: nodeWithPosition.y - 60,
+        };
+      }
       return node;
     }),
     edges
@@ -250,6 +271,13 @@ function GraphViewContent({ onNodeSelect, selectedNoteId }: GraphViewProps) {
   const { fitView, zoomIn, zoomOut, setCenter } = useReactFlow();
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
+  // State to track whether positions have changed
+  const [positionsChanged, setPositionsChanged] = useState(false);
+  // State to store saved positions
+  const [savedPositions, setSavedPositions] = useState<StoredNodePosition[]>([]);
+  // Added loading state
+  const [isLoading, setIsLoading] = useState(true);
+
   const notesWithLinks = useMemo(() => notes.filter(note =>
     (note.linkedNoteIds?.length ?? 0) > 0 ||
     (note.linkedTasks?.length ?? 0) > 0 ||
@@ -259,8 +287,27 @@ function GraphViewContent({ onNodeSelect, selectedNoteId }: GraphViewProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges] = useEdgesState<CustomEdge>([]);
 
+  // Load saved positions from database
+  useEffect(() => {
+    const fetchSavedPositions = async () => {
+      setIsLoading(true);
+      try {
+        const positions = await loadNodePositions();
+        setSavedPositions(positions);
+      } catch (error) {
+        console.error('Failed to load saved positions:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSavedPositions();
+  }, []);
+
   // Initialize layout
   useEffect(() => {
+    if (isLoading) return; // Wait until positions are loaded
+
     const initialNodes = notesWithLinks.map((note) => ({
       id: note.id,
       type: 'custom',
@@ -273,15 +320,40 @@ function GraphViewContent({ onNodeSelect, selectedNoteId }: GraphViewProps) {
     }));
 
     const initialEdges = prepareEdges(notesWithLinks);
-    const { nodes: layoutedNodes, edges: layoutedEdges } = getDagreLayout(initialNodes, initialEdges);
+    const { nodes: layoutedNodes, edges: layoutedEdges } = getDagreLayout(initialNodes, initialEdges, savedPositions);
 
     setNodes(layoutedNodes);
     setEdges(layoutedEdges as Edge[]);
-  }, [notesWithLinks, selectedNoteId, setNodes, setEdges]);
+  }, [notesWithLinks, selectedNoteId, setNodes, setEdges, savedPositions, isLoading]);
+
+  // Handle node drag end to save positions
+  const onNodeDragStop: NodeDragHandler = useCallback(() => {
+    setPositionsChanged(true);
+
+    // Mark that positions need to be saved
+  }, []);
+
+  // Save node positions when they change
+  useEffect(() => {
+    if (!positionsChanged || nodes.length === 0) return;
+
+    const savePositions = async () => {
+      const positions: StoredNodePosition[] = nodes.map(node => ({
+        id: node.id,
+        x: node.position.x,
+        y: node.position.y
+      }));
+
+      await saveNodePositions(positions);
+      setPositionsChanged(false);
+    };
+
+    savePositions();
+  }, [positionsChanged, nodes]);
 
   // Optimize view fitting
   useEffect(() => {
-    if (nodes.length === 0) return;
+    if (nodes.length === 0 || isLoading) return;
 
     const timer = setTimeout(() => {
       fitView({
@@ -293,7 +365,7 @@ function GraphViewContent({ onNodeSelect, selectedNoteId }: GraphViewProps) {
     }, isInitialLoad ? 0 : 100);
 
     return () => clearTimeout(timer);
-  }, [nodes.length, fitView, isInitialLoad]);
+  }, [nodes.length, fitView, isInitialLoad, isLoading]);
 
   const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
     onNodeSelect(node.id);
@@ -313,6 +385,51 @@ function GraphViewContent({ onNodeSelect, selectedNoteId }: GraphViewProps) {
     );
   }, [selectedNoteId, setNodes]);
 
+  // Handle resetting node positions to default layout
+  const handleResetPositions = useCallback(async () => {
+    // Clear saved positions from database
+    await clearNodePositions();
+    setSavedPositions([]);
+
+    // Re-calculate layout without saved positions
+    const initialNodes = notesWithLinks.map((note) => ({
+      id: note.id,
+      type: 'custom',
+      position: { x: 0, y: 0 },
+      data: {
+        note,
+        selected: note.id === selectedNoteId,
+      },
+      selected: note.id === selectedNoteId,
+    }));
+
+    const initialEdges = prepareEdges(notesWithLinks);
+    const { nodes: layoutedNodes, edges: layoutedEdges } = getDagreLayout(initialNodes, initialEdges);
+
+    setNodes(layoutedNodes);
+    setEdges(layoutedEdges as Edge[]);
+
+    // Fit the view after resetting
+    setTimeout(() => {
+      fitView({
+        padding: 0.2,
+        duration: 800,
+        maxZoom: 1.5
+      });
+    }, 50);
+  }, [notesWithLinks, selectedNoteId, setNodes, setEdges, fitView]);
+
+  if (isLoading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-[var(--color-textSecondary)] flex flex-col items-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[var(--color-accent)]"></div>
+          <span className="mt-3">Loading graph...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full flex">
       <div className="flex-1 relative">
@@ -322,6 +439,7 @@ function GraphViewContent({ onNodeSelect, selectedNoteId }: GraphViewProps) {
           nodeTypes={nodeTypes}
           onNodeClick={onNodeClick}
           onNodesChange={onNodesChange}
+          onNodeDragStop={onNodeDragStop}
           fitView={false}
           minZoom={0.1}
           maxZoom={2}
@@ -372,6 +490,7 @@ function GraphViewContent({ onNodeSelect, selectedNoteId }: GraphViewProps) {
               setCenter(selectedNode.position.x + 140, selectedNode.position.y + 60, { duration: 800 });
             }
           }}
+          onResetPositions={handleResetPositions}
         />
       </div>
     </div>

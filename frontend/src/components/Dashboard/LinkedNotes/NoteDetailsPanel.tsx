@@ -19,7 +19,7 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
   const [showAddLinkModal, setShowAddLinkModal] = useState(false);
 
   const note = notes.find(n => n.id === selectedNoteId);
-  const isIdea = note?.tags?.includes('idea');
+  const isIdea = note?.isIdea;
 
   const getIconBg = (type: IconType) => {
     if (theme === 'light') {
@@ -73,11 +73,10 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
         if (!linkedNote) return null;
         return {
           ...linkedNote,
-          isIdea: linkedNote.tags?.includes('idea'),
           type: 'note' as const
         };
       })
-      .filter((n): n is (Note & { isIdea: boolean, type: 'note' }) => n !== null);
+      .filter((n): n is (Note & { type: 'note' }) => n !== null);
 
     const tasks = (note.linkedTasks || []).map((task: LinkedTask) => ({
       ...task,

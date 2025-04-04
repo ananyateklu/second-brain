@@ -2,10 +2,11 @@ import { useState, useMemo } from 'react';
 import { GraphView } from './GraphView';
 import { NoteDetailsPanel } from './NoteDetailsPanel';
 import { ListView } from './ListView';
-import { List, Network, Link2, Type, Lightbulb, GitBranch } from 'lucide-react';
+import { List, Network, Link2, Type, Lightbulb, GitBranch, Info } from 'lucide-react';
 import type { Note } from '../../../types/note';
 import { useNotes } from '../../../contexts/notesContextUtils';
 import { useTheme } from '../../../contexts/themeContextUtils';
+import { shouldShowTooltip, markTooltipAsSeen } from './utils/graphStorage';
 
 interface NoteConnection {
   noteId: string;
@@ -43,18 +44,6 @@ const renderContent = (
       selectedNoteId={selectedNoteId}
     />
   );
-};
-
-const calculateConnectionStats = (note: Note, notes: Note[]) => {
-  const linkedNoteIds = note.linkedNoteIds || [];
-  const linkedIdeas = linkedNoteIds.filter(id =>
-    notes.find(n => n.id === id)?.tags?.includes('idea')
-  );
-  const linkedNotes = linkedNoteIds.filter(id =>
-    !notes.find(n => n.id === id)?.tags?.includes('idea')
-  );
-
-  return { linkedNoteIds, linkedIdeas, linkedNotes };
 };
 
 const processNoteConnections = (note: NoteWithConnections, oneWeekAgo: Date, oneMonthAgo: Date) => {
@@ -105,12 +94,6 @@ const getContainerBackground = (theme: string) => {
   return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))] backdrop-blur-xl';
 };
 
-const getHeaderBackground = (theme: string) => {
-  if (theme === 'dark') return 'bg-gray-800/20';
-  if (theme === 'midnight') return 'bg-[#1e293b]/20';
-  return 'bg-white/20';
-};
-
 const getButtonBackground = (isActive: boolean, theme: string) => {
   if (isActive) {
     return 'bg-blue-500/20 text-blue-600 dark:text-blue-400';
@@ -130,6 +113,7 @@ export function LinkedNotesPage() {
   const { theme } = useTheme();
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'graph' | 'list'>('graph');
+  const [showTooltip, setShowTooltip] = useState(shouldShowTooltip());
 
   const handleNodeSelect = (noteId: string) => {
     setSelectedNoteId(noteId);
@@ -137,162 +121,165 @@ export function LinkedNotesPage() {
 
   // Calculate stats including most connected note and idea
   const stats = useMemo(() => {
-    const counts = notes.reduce((acc, note) => {
-      const { linkedNoteIds, linkedIdeas, linkedNotes } = calculateConnectionStats(note, notes);
-      const isIdea = note.tags?.includes('idea');
+    // Count unique notes and ideas
+    const notesCount = notes.filter(note => !note.isIdea).length;
+    const ideasCount = notes.filter(note => note.isIdea).length;
 
+    // Calculate total connections
+    const totalConnections = notes.reduce((sum, note) => sum + (note.linkedNoteIds?.length || 0), 0) / 2;
+
+    // Count isolated notes and ideas (those without connections)
+    const isolatedNotes = notes.filter(note =>
+      !note.isIdea && (!note.linkedNoteIds || note.linkedNoteIds.length === 0)
+    ).length;
+
+    const isolatedIdeas = notes.filter(note =>
+      note.isIdea && (!note.linkedNoteIds || note.linkedNoteIds.length === 0)
+    ).length;
+
+    // Calculate recent connections
+    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const oneMonthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+    let recentConnectionsWeek = 0;
+    let recentConnectionsMonth = 0;
+
+    notes.forEach(note => {
       const { recentWeek, recentMonth } = processNoteConnections(
         note as NoteWithConnections,
-        new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+        oneWeekAgo,
+        oneMonthAgo
       );
 
-      // Use isIdea for calculations
-      if (isIdea) {
-        acc.totalIdeas++;
-        if (linkedNoteIds.length === 0) acc.isolatedIdeas++;
-      } else {
-        acc.totalNotes++;
-        if (linkedNoteIds.length === 0) acc.isolatedNotes++;
-      }
-
-      return {
-        ...acc,
-        notes: acc.notes + linkedNotes.length,
-        ideas: acc.ideas + linkedIdeas.length,
-        totalConnections: acc.totalConnections + linkedNoteIds.length,
-        recentConnectionsWeek: acc.recentConnectionsWeek + recentWeek,
-        recentConnectionsMonth: acc.recentConnectionsMonth + recentMonth
-      };
-    }, {
-      notes: 0,
-      ideas: 0,
-      totalConnections: 0,
-      totalNotes: 0,
-      totalIdeas: 0,
-      isolatedNotes: 0,
-      isolatedIdeas: 0,
-      crossPollination: 0,
-      recentConnectionsWeek: 0,
-      recentConnectionsMonth: 0,
-      mostConnectedNote: null as { note: Note, connectionCount: number } | null,
-      mostConnectedIdea: null as { note: Note, connectionCount: number } | null,
-      connectionDensity: 0,
-      clusterCount: 0
+      recentConnectionsWeek += recentWeek;
+      recentConnectionsMonth += recentMonth;
     });
 
     // Calculate connection density
-    const totalPossibleConnections = (counts.totalNotes + counts.totalIdeas) * (counts.totalNotes + counts.totalIdeas - 1) / 2;
-    counts.connectionDensity = totalPossibleConnections > 0
-      ? Math.round((counts.totalConnections / totalPossibleConnections) * 100)
+    const totalPossibleConnections = (notesCount + ideasCount) * (notesCount + ideasCount - 1) / 2;
+    const connectionDensity = totalPossibleConnections > 0
+      ? Math.round((totalConnections / totalPossibleConnections) * 100)
       : 0;
 
     // Calculate clusters
-    counts.clusterCount = findClusters(notes);
+    const clusterCount = findClusters(notes);
 
-    return counts;
+    return {
+      totalNotes: notesCount,
+      totalIdeas: ideasCount,
+      totalConnections,
+      isolatedNotes,
+      isolatedIdeas,
+      connectionDensity,
+      clusterCount,
+      recentConnectionsWeek,
+      recentConnectionsMonth
+    };
   }, [notes]);
+
+  const handleDismissTooltip = () => {
+    setShowTooltip(false);
+    markTooltipAsSeen();
+  };
 
   return (
     <div className="h-[calc(100vh-11rem)] overflow-visible bg-fixed">
       {/* Background gradient */}
       <div className="fixed inset-0 bg-fixed dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-slate-800 bg-gradient-to-br from-white to-gray-100 -z-10" />
 
-      <div className="flex flex-col h-full mx-3 mt-1 mb-1 space-y-1.5">
-        {/* Header - more compact version */}
-        <div className={`
-          relative 
-          overflow-visible 
-          rounded-lg 
-          ${getHeaderBackground(theme)} 
-          border-[0.5px] 
-          border-white/10
-          shadow-[4px_0_24px_-2px_rgba(0,0,0,0.12),8px_0_16px_-4px_rgba(0,0,0,0.08)]
-          dark:shadow-[4px_0_24px_-2px_rgba(0,0,0,0.3),8px_0_16px_-4px_rgba(0,0,0,0.2)]
-          ring-1
-          ring-white/5
-          backdrop-blur-xl
-        `}>
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-transparent" />
-          <div className="relative px-2 py-0.5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="p-1 bg-blue-100/50 dark:bg-blue-900/30 rounded-lg">
-                  <Link2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-[var(--color-text)]">Linked Notes</h1>
-                  <p className="text-xs text-[var(--color-textSecondary)]">
-                    {stats.totalConnections} connections • {stats.connectionDensity}% density
-                  </p>
-                </div>
-              </div>
-
-              {/* View Toggle Buttons */}
-              <div className="flex gap-0.5">
-                <button
-                  onClick={() => setViewMode('graph')}
-                  className={`p-1 rounded-lg border border-white/40 dark:border-white/30 transition-all ${getButtonBackground(viewMode === 'graph', theme)}`}
-                  title="Graph View"
-                >
-                  <Network className="w-3 h-3" />
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-1 rounded-lg border border-white/40 dark:border-white/30 transition-all ${getButtonBackground(viewMode === 'list', theme)}`}
-                  title="List View"
-                >
-                  <List className="w-3 h-3" />
-                </button>
-              </div>
-            </div>
-
-            {/* Stats Row - more compact */}
-            <div className="flex gap-3 text-xs mt-1">
-              <div className="flex items-center gap-1">
-                <Type className="w-3 h-3 text-[var(--color-note)]" />
-                <span className="font-medium text-[var(--color-note)]">{stats.notes}</span>
-                <span className="text-[var(--color-textSecondary)]">Notes</span>
-              </div>
-
-              <div className="flex items-center gap-1">
-                <Lightbulb className="w-3 h-3 text-[var(--color-idea)]" />
-                <span className="font-medium text-[var(--color-idea)]">{stats.ideas}</span>
-                <span className="text-[var(--color-textSecondary)]">Ideas</span>
-              </div>
-
-              <div className="flex items-center gap-1">
-                <Network className="w-3 h-3 text-[var(--color-note)]" />
-                <span className="font-medium text-[var(--color-note)]">{stats.connectionDensity}%</span>
-                <span className="text-[var(--color-textSecondary)]">Density</span>
-              </div>
-
-              <div className="flex items-center gap-1">
-                <GitBranch className="w-3 h-3 text-[var(--color-note)]" />
-                <span className="font-medium text-[var(--color-note)]">{stats.clusterCount}</span>
-                <span className="text-[var(--color-textSecondary)]">Topics</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Content Area */}
+      <div className="flex flex-col h-full mx-3 mt-1 mb-1">
+        {/* Integrated Container */}
         <div className={`
           flex-1
           min-h-0
           relative 
           rounded-lg 
           ${getContainerBackground(theme)} 
-          border-[0.5px] 
-          border-white/10
-          shadow-[4px_0_24px_-2px_rgba(0,0,0,0.12),8px_0_16px_-4px_rgba(0,0,0,0.08)]
-          dark:shadow-[4px_0_24px_-2px_rgba(0,0,0,0.3),8px_0_16px_-4px_rgba(0,0,0,0.2)]
-          ring-1
-          ring-white/5
+          shadow-[0_2px_12px_-4px_rgba(0,0,0,0.1)]
+          dark:shadow-[0_2px_12px_-4px_rgba(0,0,0,0.2)]
           overflow-visible
         `}>
-          <div className="flex h-full overflow-auto">
-            <div className={`flex-1 ${selectedNoteId ? 'border-r border-[var(--color-border)]' : ''}`}>
+          {/* Header Section */}
+          <div className="flex justify-between items-center px-4 py-3">
+            <div className="flex items-center space-x-2">
+              <div className="flex items-center">
+                <Link2 className="w-5 h-5 text-blue-600 dark:text-blue-400 mr-2" />
+                <h1 className="text-xl font-semibold text-[var(--color-text)]">Linked Notes</h1>
+              </div>
+              <div className="text-xs text-[var(--color-textSecondary)] ml-2">
+                {stats.totalConnections} connections • {stats.connectionDensity}% density
+              </div>
+            </div>
+
+            {/* View Toggle Buttons */}
+            <div className="flex gap-1">
+              <button
+                onClick={() => setViewMode('graph')}
+                className={`p-1.5 rounded-md transition-all ${getButtonBackground(viewMode === 'graph', theme)}`}
+                title="Graph View"
+              >
+                <Network className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-1.5 rounded-md transition-all ${getButtonBackground(viewMode === 'list', theme)}`}
+                title="List View"
+              >
+                <List className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Feature info tooltip */}
+          {showTooltip && viewMode === 'graph' && (
+            <div className="absolute top-14 right-4 z-10 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700/50 rounded-lg shadow-md p-3 max-w-xs">
+              <div className="flex items-start">
+                <Info className="w-4 h-4 text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5 mr-2" />
+                <div>
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    Node positions are now saved to your account! Your graph layout will be remembered across devices and browser sessions.
+                  </p>
+                  <button
+                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1"
+                    onClick={handleDismissTooltip}
+                  >
+                    Got it
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Stats Bar */}
+          <div className="flex px-4 py-1.5 gap-6 bg-[var(--color-surface)]/5">
+            <div className="flex items-center gap-1.5">
+              <Type className="w-3.5 h-3.5 text-[var(--color-note)]" />
+              <span className="font-medium text-[var(--color-note)]">{stats.totalNotes}</span>
+              <span className="text-xs text-[var(--color-textSecondary)]">Notes</span>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <Lightbulb className="w-3.5 h-3.5 text-[var(--color-idea)]" />
+              <span className="font-medium text-[var(--color-idea)]">{stats.totalIdeas}</span>
+              <span className="text-xs text-[var(--color-textSecondary)]">Ideas</span>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <Network className="w-3.5 h-3.5 text-[var(--color-note)]" />
+              <span className="font-medium text-[var(--color-note)]">{stats.connectionDensity}%</span>
+              <span className="text-xs text-[var(--color-textSecondary)]">Density</span>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <GitBranch className="w-3.5 h-3.5 text-[var(--color-note)]" />
+              <span className="font-medium text-[var(--color-note)]">{stats.clusterCount}</span>
+              <span className="text-xs text-[var(--color-textSecondary)]">Topics</span>
+            </div>
+          </div>
+
+          {/* Main Content Area */}
+          <div className="flex h-[calc(100%-80px)] overflow-auto">
+            <div className="flex-1">
               {renderContent(viewMode, notes, handleNodeSelect, selectedNoteId)}
             </div>
             {selectedNoteId && (

@@ -1,45 +1,50 @@
-import { ZoomIn, ZoomOut, Maximize, Target } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize2, Target, RefreshCw } from 'lucide-react';
 
 interface GraphControlsProps {
   onZoomIn: () => void;
   onZoomOut: () => void;
   onFit: () => void;
   onCenter: () => void;
+  onResetPositions: () => void;
 }
 
-export function GraphControls({ onZoomIn, onZoomOut, onFit, onCenter }: GraphControlsProps) {
+export function GraphControls({ onZoomIn, onZoomOut, onFit, onCenter, onResetPositions }: GraphControlsProps) {
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col items-center gap-2">
       <button
+        className="p-2 rounded-lg dark:bg-white/5 bg-black/5 hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-[var(--color-textSecondary)]"
         onClick={onZoomIn}
-        className="p-2 hover:bg-white/10 dark:hover:bg-white/10 rounded-lg transition-colors"
-        title="Zoom in"
+        title="Zoom In"
       >
-        <ZoomIn className="w-5 h-5 text-gray-600 dark:text-gray-400/80" />
+        <ZoomIn className="w-4 h-4" />
       </button>
-
       <button
+        className="p-2 rounded-lg dark:bg-white/5 bg-black/5 hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-[var(--color-textSecondary)]"
         onClick={onZoomOut}
-        className="p-2 hover:bg-white/10 dark:hover:bg-white/10 rounded-lg transition-colors"
-        title="Zoom out"
+        title="Zoom Out"
       >
-        <ZoomOut className="w-5 h-5 text-gray-600 dark:text-gray-400/80" />
+        <ZoomOut className="w-4 h-4" />
       </button>
-
       <button
+        className="p-2 rounded-lg dark:bg-white/5 bg-black/5 hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-[var(--color-textSecondary)]"
         onClick={onFit}
-        className="p-2 hover:bg-white/10 dark:hover:bg-white/10 rounded-lg transition-colors"
-        title="Fit to view"
+        title="Fit View"
       >
-        <Maximize className="w-5 h-5 text-gray-600 dark:text-gray-400/80" />
+        <Maximize2 className="w-4 h-4" />
       </button>
-
       <button
+        className="p-2 rounded-lg dark:bg-white/5 bg-black/5 hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-[var(--color-textSecondary)]"
         onClick={onCenter}
-        className="p-2 hover:bg-white/10 dark:hover:bg-white/10 rounded-lg transition-colors"
-        title="Center view"
+        title="Center on Selected"
       >
-        <Target className="w-5 h-5 text-gray-600 dark:text-gray-400/80" />
+        <Target className="w-4 h-4" />
+      </button>
+      <button
+        className="p-2 rounded-lg dark:bg-white/5 bg-black/5 hover:bg-black/10 dark:hover:bg-white/10 transition-colors text-[var(--color-textSecondary)]"
+        onClick={onResetPositions}
+        title="Reset Positions"
+      >
+        <RefreshCw className="w-4 h-4" />
       </button>
     </div>
   );
