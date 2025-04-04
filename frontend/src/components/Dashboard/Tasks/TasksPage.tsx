@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { CheckSquare, Plus, Search, SlidersHorizontal, LayoutGrid, List } from 'lucide-react';
+import { CheckSquare, Plus, Search, SlidersHorizontal, LayoutGrid, List, Copy } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTasks } from '../../../contexts/tasksContextUtils';
 import { NewTaskModal } from './NewTaskModal';
@@ -11,6 +11,7 @@ import { Task } from '../../../api/types/task';
 import { cardGridStyles } from '../shared/cardStyles';
 import { cardVariants } from '../../../utils/welcomeBarUtils';
 import { useTheme } from '../../../contexts/themeContextUtils';
+import { DuplicateItemsModal } from '../../shared/DuplicateItemsModal';
 
 export function TasksPage() {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -22,12 +23,13 @@ export function TasksPage() {
   });
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
-  const { tasks } = useTasks();
+  const { tasks, duplicateTasks } = useTasks();
   const { theme } = useTheme();
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [filters, setFilters] = useState({
     status: 'all',
     priority: 'all',
@@ -159,6 +161,14 @@ export function TasksPage() {
     );
   };
 
+  const handleDuplicateTasks = async (selectedIds: string[]) => {
+    try {
+      await duplicateTasks(selectedIds);
+    } catch (error) {
+      console.error('Failed to duplicate tasks:', error);
+    }
+  };
+
   return (
     <div className="min-h-screen overflow-visible bg-fixed">
       {/* Background */}
@@ -204,19 +214,39 @@ export function TasksPage() {
             </motion.div>
 
             <motion.div variants={cardVariants}>
-              <button
-                onClick={() => setShowNewTaskModal(true)}
-                className={`
-                  flex items-center gap-2 px-4 py-2 
-                  ${theme === 'midnight' ? 'bg-green-600/80 hover:bg-green-500/80' : 'bg-green-600 hover:bg-green-700'}
-                  text-white rounded-lg transition-all duration-200 
-                  hover:scale-105 hover:-translate-y-0.5 
-                  shadow-sm hover:shadow-md
-                `}
-              >
-                <Plus className="w-4 h-4" />
-                <span className="font-medium text-sm">New Task</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowDuplicateModal(true)}
+                  className={`
+                    flex items-center gap-2 px-3 py-1.5
+                    rounded-lg 
+                    hover:bg-green-400/10
+                    text-green-500 dark:text-green-400
+                    border border-transparent
+                    hover:border-green-300/30 dark:hover:border-green-500/30
+                    transition-colors
+                  `}
+                >
+                  <Copy className="w-4 h-4" />
+                  <span className="text-sm font-medium">Duplicate</span>
+                </button>
+
+                <button
+                  onClick={() => setShowNewTaskModal(true)}
+                  className={`
+                    flex items-center gap-2 px-4 py-2 
+                    ${theme === 'midnight'
+                      ? 'bg-green-500/70 hover:bg-green-600/80'
+                      : 'bg-green-500/70 hover:bg-green-600/70'}
+                    text-white rounded-lg transition-all duration-200 
+                    hover:scale-105 hover:-translate-y-0.5 
+                    shadow-sm hover:shadow-md
+                  `}
+                >
+                  <Plus className="w-4 h-4" />
+                  <span className="font-medium text-sm">New Task</span>
+                </button>
+              </div>
             </motion.div>
           </div>
         </motion.div>
@@ -360,6 +390,14 @@ export function TasksPage() {
         <NewTaskModal
           isOpen={showNewTaskModal}
           onClose={() => setShowNewTaskModal(false)}
+        />
+
+        <DuplicateItemsModal
+          isOpen={showDuplicateModal}
+          onClose={() => setShowDuplicateModal(false)}
+          items={tasks}
+          onDuplicate={handleDuplicateTasks}
+          itemType="task"
         />
       </div>
     </div>

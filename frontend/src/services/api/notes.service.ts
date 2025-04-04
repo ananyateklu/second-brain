@@ -50,6 +50,7 @@ export interface CreateNoteData {
   isArchived?: boolean;
   isDeleted?: boolean;
   deletedAt?: string;
+  isIdea?: boolean;
 }
 
 export interface LinkResponse {
@@ -254,5 +255,53 @@ export const notesService = {
       console.error('[Notes] Error triggering user stats update:', error);
       throw error;
     }
-  }
+  },
+
+  async duplicateNote(noteId: string): Promise<Note> {
+    try {
+      // Get the note to duplicate
+      const response = await api.get<NoteResponse>(`/api/Notes/${noteId}`);
+      const originalNote = response.data;
+
+      // Create the tags array and add isIdea tag if needed
+      const tags = Array.isArray(originalNote.tags) ? [...originalNote.tags] : [];
+      if (originalNote.isIdea && !tags.includes('idea')) {
+        tags.push('idea');
+      }
+
+      // Create a new note with the same content but new ID
+      const newNoteData: CreateNoteData = {
+        title: `${originalNote.title} (copy)`,
+        content: originalNote.content,
+        tags: tags,
+        isPinned: originalNote.isPinned,
+        isFavorite: originalNote.isFavorite,
+        isIdea: originalNote.isIdea // Ensure isIdea property is copied
+      };
+
+      // Create the duplicate
+      const duplicateResponse = await api.post<NoteResponse>('/api/Notes', newNoteData);
+      return processNoteResponse(duplicateResponse.data);
+    } catch (error) {
+      console.error('Failed to duplicate note:', error);
+      throw error;
+    }
+  },
+
+  async duplicateNotes(noteIds: string[]): Promise<Note[]> {
+    try {
+      // Duplicate each note in sequence
+      const duplicatedNotes: Note[] = [];
+
+      for (const noteId of noteIds) {
+        const duplicatedNote = await this.duplicateNote(noteId);
+        duplicatedNotes.push(duplicatedNote);
+      }
+
+      return duplicatedNotes;
+    } catch (error) {
+      console.error('Failed to duplicate notes:', error);
+      throw error;
+    }
+  },
 };

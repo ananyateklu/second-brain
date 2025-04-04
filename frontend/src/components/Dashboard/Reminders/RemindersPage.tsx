@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, Plus, Search, SlidersHorizontal, LayoutGrid, List } from 'lucide-react';
+import { Bell, Plus, Search, SlidersHorizontal, LayoutGrid, List, Copy } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useReminders } from '../../../contexts/remindersContextUtils';
 import { NewReminderModal } from './NewReminderModal';
@@ -11,9 +11,10 @@ import { useTheme } from '../../../contexts/themeContextUtils';
 import { ReminderCard } from './ReminderCard';
 import { Reminder } from '../../../contexts/remindersContextUtils';
 import { EditReminderModal } from './EditReminderModal';
+import { DuplicateItemsModal } from '../../shared/DuplicateItemsModal';
 
 export function RemindersPage() {
-  const { reminders, getDueReminders, getUpcomingReminders } = useReminders();
+  const { reminders, getDueReminders, getUpcomingReminders, duplicateReminders } = useReminders();
   const { theme } = useTheme();
   const [showNewReminderModal, setShowNewReminderModal] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -21,6 +22,7 @@ export function RemindersPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedReminderId, setSelectedReminderId] = useState<string | null>(null);
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
 
   const selectedReminder = selectedReminderId ? reminders.find(r => r.id === selectedReminderId) : null;
 
@@ -121,6 +123,14 @@ export function RemindersPage() {
     );
   };
 
+  const handleDuplicateReminders = async (selectedIds: string[]) => {
+    try {
+      await duplicateReminders(selectedIds);
+    } catch (error) {
+      console.error('Failed to duplicate reminders:', error);
+    }
+  };
+
   return (
     <div className="min-h-screen overflow-visible bg-fixed">
       {/* Background */}
@@ -166,21 +176,39 @@ export function RemindersPage() {
             </motion.div>
 
             <motion.div variants={cardVariants}>
-              <button
-                onClick={() => setShowNewReminderModal(true)}
-                className={`
-                  flex items-center gap-2 px-4 py-2 
-                  ${theme === 'midnight'
-                    ? 'bg-purple-400/70 hover:bg-purple-500/80'
-                    : 'bg-purple-400/70 hover:bg-purple-500/70'}
-                  text-white rounded-lg transition-all duration-200 
-                  hover:scale-105 hover:-translate-y-0.5 
-                  shadow-sm hover:shadow-md
-                `}
-              >
-                <Plus className="w-4 h-4" />
-                <span className="font-medium text-sm">New Reminder</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowDuplicateModal(true)}
+                  className={`
+                    flex items-center gap-2 px-3 py-1.5
+                    rounded-lg 
+                    hover:bg-purple-400/10
+                    text-purple-400 dark:text-purple-400
+                    border border-transparent
+                    hover:border-purple-300/30 dark:hover:border-purple-500/30
+                    transition-colors
+                  `}
+                >
+                  <Copy className="w-4 h-4" />
+                  <span className="text-sm font-medium">Duplicate</span>
+                </button>
+
+                <button
+                  onClick={() => setShowNewReminderModal(true)}
+                  className={`
+                    flex items-center gap-2 px-4 py-2 
+                    ${theme === 'midnight'
+                      ? 'bg-purple-400/70 hover:bg-purple-500/80'
+                      : 'bg-purple-400/70 hover:bg-purple-500/70'}
+                    text-white rounded-lg transition-all duration-200 
+                    hover:scale-105 hover:-translate-y-0.5 
+                    shadow-sm hover:shadow-md
+                  `}
+                >
+                  <Plus className="w-4 h-4" />
+                  <span className="font-medium text-sm">New Reminder</span>
+                </button>
+              </div>
             </motion.div>
           </div>
         </motion.div>
@@ -318,11 +346,19 @@ export function RemindersPage() {
 
         {selectedReminder && (
           <EditReminderModal
-            isOpen={!!selectedReminderId}
+            isOpen={!!selectedReminder}
             onClose={() => setSelectedReminderId(null)}
             reminder={selectedReminder}
           />
         )}
+
+        <DuplicateItemsModal
+          isOpen={showDuplicateModal}
+          onClose={() => setShowDuplicateModal(false)}
+          items={filteredReminders}
+          onDuplicate={handleDuplicateReminders}
+          itemType="reminder"
+        />
       </div>
     </div>
   );

@@ -152,6 +152,65 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     await updateTask(id, { status: newStatus });
   }, [tasks, updateTask]);
 
+  const duplicateTask = useCallback(async (taskId: string): Promise<Task> => {
+    try {
+      const duplicatedTask = await tasksService.duplicateTask(taskId);
+      setTasks(prev => [duplicatedTask, ...prev]);
+
+      if (createActivity) {
+        createActivity({
+          actionType: 'create',
+          itemType: 'task',
+          itemId: duplicatedTask.id,
+          itemTitle: duplicatedTask.title,
+          description: `Duplicated task: ${duplicatedTask.title}`,
+          metadata: {
+            tags: duplicatedTask.tags,
+            dueDate: duplicatedTask.dueDate,
+            priority: duplicatedTask.priority,
+            status: duplicatedTask.status
+          }
+        });
+      }
+
+      return duplicatedTask;
+    } catch (error) {
+      console.error('Failed to duplicate task:', error);
+      throw error;
+    }
+  }, [createActivity]);
+
+  const duplicateTasks = useCallback(async (taskIds: string[]): Promise<Task[]> => {
+    try {
+      const duplicatedTasks = await tasksService.duplicateTasks(taskIds);
+      setTasks(prev => [...duplicatedTasks, ...prev]);
+
+      // Log activity for each duplicated task
+      for (const task of duplicatedTasks) {
+        if (createActivity) {
+          createActivity({
+            actionType: 'create',
+            itemType: 'task',
+            itemId: task.id,
+            itemTitle: task.title,
+            description: `Duplicated task: ${task.title}`,
+            metadata: {
+              tags: task.tags,
+              dueDate: task.dueDate,
+              priority: task.priority,
+              status: task.status
+            }
+          });
+        }
+      }
+
+      return duplicatedTasks;
+    } catch (error) {
+      console.error('Failed to duplicate tasks:', error);
+      throw error;
+    }
+  }, [createActivity]);
+
   const contextValue = useMemo(() => ({
     tasks,
     isLoading,
@@ -163,6 +222,8 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     toggleTaskStatus,
     fetchDeletedTasks,
     restoreTask,
+    duplicateTask,
+    duplicateTasks,
   }), [
     tasks,
     isLoading,
@@ -174,6 +235,8 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     toggleTaskStatus,
     fetchDeletedTasks,
     restoreTask,
+    duplicateTask,
+    duplicateTasks,
   ]);
 
   return (

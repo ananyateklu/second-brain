@@ -14,7 +14,7 @@ interface IdeaCardProps {
   idea: Note;
   viewMode?: 'grid' | 'list' | 'mindMap';
   isSelected?: boolean;
-  context?: 'default' | 'trash' | 'archive' | 'favorites';
+  context?: 'default' | 'trash' | 'archive' | 'favorites' | 'duplicate';
   onSelect?: () => void;
   onClick?: () => void;
   contextData?: {

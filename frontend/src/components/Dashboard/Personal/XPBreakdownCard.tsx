@@ -511,12 +511,12 @@ export function XPBreakdownCard({ cardClasses }: XPBreakdownCardProps) {
                 {/* XP by Action Chart - Using Recharts BarChart */}
                 <div className="mt-8">
                     <h3 className="text-md font-semibold text-[var(--color-text)] mb-4">XP by Action</h3>
-                    <div className="h-[250px]" role="img" aria-label="Bar chart showing XP earned by different actions">
+                    <div className="h-[300px]" role="img" aria-label="Bar chart showing XP earned by different actions">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart
                                 data={actionData}
                                 margin={{
-                                    top: 5,
+                                    top: 30,
                                     right: 30,
                                     left: 20,
                                     bottom: 60
@@ -541,6 +541,7 @@ export function XPBreakdownCard({ cardClasses }: XPBreakdownCardProps) {
                                     tick={{ fill: 'var(--color-textSecondary)', fontSize: 11 }}
                                     tickLine={{ stroke: 'var(--color-border)' }}
                                     axisLine={{ stroke: 'var(--color-border)' }}
+                                    domain={[0, (dataMax: number) => Math.ceil(dataMax * 1.2)]}
                                 />
                                 <Tooltip
                                     content={<BarTooltip />}

@@ -7,7 +7,7 @@ interface ReminderCardProps {
   reminder: Reminder;
   viewMode?: 'grid' | 'list';
   isSelected?: boolean;
-  context?: 'default' | 'trash' | 'archive' | 'favorites';
+  context?: 'default' | 'trash' | 'archive' | 'favorites' | 'duplicate';
   onSelect?: () => void;
   onClick?: (reminder: Reminder) => void;
 }

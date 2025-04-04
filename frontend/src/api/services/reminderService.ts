@@ -44,6 +44,48 @@ export const reminderService = {
     await api.delete(`/api/Reminders/${id}/permanent`);
   },
 
+  async duplicateReminder(reminderId: string): Promise<Reminder> {
+    try {
+      // Get the reminder to duplicate
+      const response = await api.get<Reminder>(`/api/Reminders/${reminderId}`);
+      const originalReminder = response.data;
+
+      // Create a new reminder with the same content but new ID
+      const newReminderData: CreateReminderData = {
+        title: `${originalReminder.title} (copy)`,
+        description: originalReminder.description,
+        dueDateTime: originalReminder.dueDateTime,
+        repeatInterval: originalReminder.repeatInterval as CreateReminderData['repeatInterval'],
+        customRepeatPattern: originalReminder.customRepeatPattern,
+        tags: originalReminder.tags || [],
+      };
+
+      // Create the duplicate
+      const duplicateResponse = await api.post<Reminder>('/api/Reminders', newReminderData);
+      return duplicateResponse.data;
+    } catch (error) {
+      console.error('Failed to duplicate reminder:', error);
+      throw error;
+    }
+  },
+
+  async duplicateReminders(reminderIds: string[]): Promise<Reminder[]> {
+    try {
+      // Duplicate each reminder in sequence
+      const duplicatedReminders: Reminder[] = [];
+
+      for (const reminderId of reminderIds) {
+        const duplicatedReminder = await this.duplicateReminder(reminderId);
+        duplicatedReminders.push(duplicatedReminder);
+      }
+
+      return duplicatedReminders;
+    } catch (error) {
+      console.error('Failed to duplicate reminders:', error);
+      throw error;
+    }
+  },
+
   async addReminderLink(data: ReminderLinkData): Promise<Reminder> {
     const response = await api.post<Reminder>(`/api/Reminders/${data.reminderId}/links`, {
       linkedItemId: data.linkedItemId,

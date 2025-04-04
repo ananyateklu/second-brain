@@ -20,6 +20,8 @@ export interface RemindersContextType {
   deleteReminderPermanently: (id: string) => Promise<void>;
   addReminderLink: (reminderId: string, linkedItemId: string, linkType: string) => Promise<void>;
   removeReminderLink: (reminderId: string, linkedItemId: string) => Promise<void>;
+  duplicateReminder: (reminderId: string) => Promise<Reminder>;
+  duplicateReminders: (reminderIds: string[]) => Promise<Reminder[]>;
 }
 
 export const RemindersContext = createContext<RemindersContextType | null>(null);

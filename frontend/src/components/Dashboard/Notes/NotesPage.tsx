@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Plus, Search, SlidersHorizontal, FileText, Grid, List, Network } from 'lucide-react';
+import { Plus, Search, SlidersHorizontal, FileText, Grid, List, Network, Copy } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNotes } from '../../../contexts/notesContextUtils';
 import { NoteCard } from '../NoteCard';
@@ -15,6 +15,7 @@ import { Filters } from '../../../types/filters';
 import { cardGridStyles } from '../shared/cardStyles';
 import { cardVariants } from '../../../utils/welcomeBarUtils';
 import { useTheme } from '../../../contexts/themeContextUtils';
+import { DuplicateItemsModal } from '../../shared/DuplicateItemsModal';
 
 const defaultFilters: Filters = {
   search: '',
@@ -26,13 +27,14 @@ const defaultFilters: Filters = {
 };
 
 export function NotesPage() {
-  const { notes, isLoading } = useNotes();
+  const { notes, isLoading, duplicateNotes } = useNotes();
   const { setSelectedNote } = useModal();
   const { theme } = useTheme();
   const [showNewNoteModal, setShowNewNoteModal] = useState(false);
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [filters, setFilters] = useState<Filters>(defaultFilters);
-  const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'graph'>('grid');
+  const [showFilters, setShowFilters] = useState(false);
 
   const regularNotes = useMemo(() => {
     return notes.filter(note => !note.isIdea);
@@ -99,6 +101,14 @@ export function NotesPage() {
   });
 
   const toggleFilters = () => setShowFilters(prev => !prev);
+
+  const handleDuplicateNotes = async (selectedIds: string[]) => {
+    try {
+      await duplicateNotes(selectedIds);
+    } catch (error) {
+      console.error('Failed to duplicate notes:', error);
+    }
+  };
 
   const renderNotesList = (notes: Note[]) => {
     if (notes.length === 0) {
@@ -230,19 +240,40 @@ export function NotesPage() {
             </motion.div>
 
             <motion.div variants={cardVariants}>
-              <button
-                onClick={() => setShowNewNoteModal(true)}
-                className={`
-                  flex items-center gap-2 px-4 py-2 
-                  ${theme === 'midnight' ? 'bg-blue-600/80 hover:bg-blue-500/80' : 'bg-blue-600 hover:bg-blue-700'}
-                  text-white rounded-lg transition-all duration-200 
-                  hover:scale-105 hover:-translate-y-0.5 
-                  shadow-sm hover:shadow-md
-                `}
-              >
-                <Plus className="w-4 h-4" />
-                <span className="font-medium text-sm">New Note</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowDuplicateModal(true)}
+                  className={`
+                    flex items-center gap-2 px-3 py-1.5
+                    rounded-lg 
+                    hover:bg-blue-500/10
+                    text-blue-500 dark:text-blue-400
+                    border border-transparent
+                    hover:border-blue-200/30 dark:hover:border-blue-700/30
+                    transition-colors
+                  `}
+                >
+                  <Copy className="w-4 h-4" />
+                  <span className="text-sm font-medium">Duplicate</span>
+                </button>
+
+                <button
+                  onClick={() => setShowNewNoteModal(true)}
+                  className={`
+                    flex items-center gap-2 px-3 py-1.5
+                    rounded-lg 
+                    bg-[var(--color-button)]
+                    hover:bg-[var(--color-buttonHover)]
+                    text-[var(--color-buttonText)]
+                    border border-transparent
+                    hover:border-gray-200/30 dark:hover:border-gray-700/30
+                    transition-colors
+                  `}
+                >
+                  <Plus className="w-4 h-4" />
+                  <span className="text-sm font-medium">New Note</span>
+                </button>
+              </div>
             </motion.div>
           </div>
         </motion.div>
@@ -384,6 +415,14 @@ export function NotesPage() {
         <NewNoteModal
           isOpen={showNewNoteModal}
           onClose={() => setShowNewNoteModal(false)}
+        />
+
+        <DuplicateItemsModal
+          isOpen={showDuplicateModal}
+          onClose={() => setShowDuplicateModal(false)}
+          items={notes.filter(note => !note.isIdea)}
+          onDuplicate={handleDuplicateNotes}
+          itemType="note"
         />
       </div>
     </div>

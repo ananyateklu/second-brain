@@ -13,6 +13,8 @@ export interface TasksContextType {
   toggleTaskStatus: (id: string) => Promise<void>;
   fetchDeletedTasks: () => Promise<Task[]>;
   restoreTask: (id: string) => Promise<void>;
+  duplicateTask: (taskId: string) => Promise<Task>;
+  duplicateTasks: (taskIds: string[]) => Promise<Task[]>;
 }
 
 export const TasksContext = createContext<TasksContextType | null>(null);

@@ -353,7 +353,52 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
     }
   }, [reminders, createActivity]);
 
-  const value = useMemo(() => ({
+  const duplicateReminder = useCallback(async (reminderId: string): Promise<Reminder> => {
+    try {
+      const duplicatedReminder = await reminderService.duplicateReminder(reminderId);
+      setReminders(prev => [duplicatedReminder, ...prev]);
+
+      await createActivity({
+        actionType: 'create',
+        itemType: 'reminder',
+        itemId: duplicatedReminder.id,
+        itemTitle: duplicatedReminder.title,
+        description: `Duplicated reminder: ${duplicatedReminder.title}`,
+        metadata: { tags: duplicatedReminder.tags },
+      });
+
+      return duplicatedReminder;
+    } catch (error) {
+      console.error('Failed to duplicate reminder:', error);
+      throw error;
+    }
+  }, [createActivity]);
+
+  const duplicateReminders = useCallback(async (reminderIds: string[]): Promise<Reminder[]> => {
+    try {
+      const duplicatedReminders = await reminderService.duplicateReminders(reminderIds);
+      setReminders(prev => [...duplicatedReminders, ...prev]);
+
+      // Log activity for each duplicated reminder
+      for (const reminder of duplicatedReminders) {
+        await createActivity({
+          actionType: 'create',
+          itemType: 'reminder',
+          itemId: reminder.id,
+          itemTitle: reminder.title,
+          description: `Duplicated reminder: ${reminder.title}`,
+          metadata: { tags: reminder.tags },
+        });
+      }
+
+      return duplicatedReminders;
+    } catch (error) {
+      console.error('Failed to duplicate reminders:', error);
+      throw error;
+    }
+  }, [createActivity]);
+
+  const contextValue = useMemo(() => ({
     reminders,
     addReminder,
     updateReminder,
@@ -367,7 +412,9 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
     isLoading,
     deleteReminderPermanently,
     addReminderLink,
-    removeReminderLink
+    removeReminderLink,
+    duplicateReminder,
+    duplicateReminders,
   }), [
     reminders,
     addReminder,
@@ -382,11 +429,13 @@ export function RemindersProvider({ children }: { children: React.ReactNode }) {
     isLoading,
     deleteReminderPermanently,
     addReminderLink,
-    removeReminderLink
+    removeReminderLink,
+    duplicateReminder,
+    duplicateReminders,
   ]);
 
   return (
-    <RemindersContext.Provider value={value}>
+    <RemindersContext.Provider value={contextValue}>
       {children}
     </RemindersContext.Provider>
   );

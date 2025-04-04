@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Lightbulb, Plus, Search, SlidersHorizontal, Grid, List, Network } from 'lucide-react';
+import { Lightbulb, Plus, Search, SlidersHorizontal, Grid, List, Network, Copy } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNotes } from '../../../contexts/notesContextUtils';
 import { IdeasMindMap } from './IdeasMindMap';
@@ -11,6 +11,7 @@ import { cardGridStyles } from '../shared/cardStyles';
 import { cardVariants } from '../../../utils/welcomeBarUtils';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { IdeaCard } from './IdeaCard';
+import { DuplicateItemsModal } from '../../shared/DuplicateItemsModal';
 
 type ViewMode = 'list' | 'grid' | 'mindmap';
 
@@ -35,13 +36,14 @@ const defaultFilters: Filters = {
 };
 
 export function IdeasPage() {
-  const { notes } = useNotes();
+  const { notes, duplicateNotes } = useNotes();
   const { setSelectedIdea } = useModal();
   const { theme } = useTheme();
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [showFilters, setShowFilters] = useState(false);
   const [showNewIdeaModal, setShowNewIdeaModal] = useState(false);
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
 
   // Get all ideas and their tags
   const allIdeas = useMemo(() => {
@@ -117,6 +119,14 @@ export function IdeasPage() {
     const idea = notes.find(note => note.id === ideaId);
     if (idea) {
       setSelectedIdea(idea);
+    }
+  };
+
+  const handleDuplicateIdeas = async (selectedIds: string[]) => {
+    try {
+      await duplicateNotes(selectedIds);
+    } catch (error) {
+      console.error('Failed to duplicate ideas:', error);
     }
   };
 
@@ -199,19 +209,40 @@ export function IdeasPage() {
             </motion.div>
 
             <motion.div variants={cardVariants}>
-              <button
-                onClick={() => setShowNewIdeaModal(true)}
-                className={`
-                  flex items-center gap-2 px-4 py-2 
-                  ${theme === 'midnight' ? 'bg-yellow-600/80 hover:bg-yellow-500/80' : 'bg-yellow-600 hover:bg-yellow-700'}
-                  text-white rounded-lg transition-all duration-200 
-                  hover:scale-105 hover:-translate-y-0.5 
-                  shadow-sm hover:shadow-md
-                `}
-              >
-                <Plus className="w-4 h-4" />
-                <span className="font-medium text-sm">New Idea</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowDuplicateModal(true)}
+                  className={`
+                    flex items-center gap-2 px-3 py-1.5
+                    rounded-lg 
+                    hover:bg-yellow-500/10
+                    text-yellow-500 dark:text-yellow-400
+                    border border-transparent
+                    hover:border-yellow-200/30 dark:hover:border-yellow-700/30
+                    transition-colors
+                  `}
+                >
+                  <Copy className="w-4 h-4" />
+                  <span className="text-sm font-medium">Duplicate</span>
+                </button>
+
+                <button
+                  onClick={() => setShowNewIdeaModal(true)}
+                  className={`
+                    flex items-center gap-2 px-3 py-1.5
+                    rounded-lg 
+                    bg-[var(--color-button)]
+                    hover:bg-[var(--color-buttonHover)]
+                    text-[var(--color-buttonText)]
+                    border border-transparent
+                    hover:border-gray-200/30 dark:hover:border-gray-700/30
+                    transition-colors
+                  `}
+                >
+                  <Plus className="w-4 h-4" />
+                  <span className="text-sm font-medium">New Idea</span>
+                </button>
+              </div>
             </motion.div>
           </div>
         </motion.div>
@@ -368,6 +399,14 @@ export function IdeasPage() {
         <NewIdeaModal
           isOpen={showNewIdeaModal}
           onClose={() => setShowNewIdeaModal(false)}
+        />
+
+        <DuplicateItemsModal
+          isOpen={showDuplicateModal}
+          onClose={() => setShowDuplicateModal(false)}
+          items={filteredIdeas}
+          onDuplicate={handleDuplicateIdeas}
+          itemType="idea"
         />
       </div>
     </div>

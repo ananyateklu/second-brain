@@ -706,6 +706,64 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     }
   }, [notes, createActivity]);
 
+  // Add duplicateNote function
+  const duplicateNote = useCallback(async (id: string): Promise<Note> => {
+    try {
+      const duplicatedNote = await notesService.duplicateNote(id);
+
+      // Add to the notes state
+      setNotes(prev => sortNotes([duplicatedNote, ...prev]));
+
+      // Create activity
+      createActivity({
+        actionType: 'create',
+        itemType: duplicatedNote.isIdea ? 'idea' : 'note',
+        itemId: duplicatedNote.id,
+        itemTitle: duplicatedNote.title,
+        description: `Duplicated ${duplicatedNote.isIdea ? 'idea' : 'note'}: ${duplicatedNote.title}`,
+        metadata: { tags: duplicatedNote.tags }
+      });
+
+      // Trigger user stats update
+      await notesService.triggerUserStatsUpdate();
+
+      return duplicatedNote;
+    } catch (error) {
+      console.error('Failed to duplicate note:', error);
+      throw error;
+    }
+  }, [createActivity]);
+
+  // Add duplicateNotes function
+  const duplicateNotes = useCallback(async (ids: string[]): Promise<Note[]> => {
+    try {
+      const duplicatedNotes = await notesService.duplicateNotes(ids);
+
+      // Add to the notes state
+      setNotes(prev => sortNotes([...duplicatedNotes, ...prev]));
+
+      // Create activities for each duplicated note
+      for (const note of duplicatedNotes) {
+        createActivity({
+          actionType: 'create',
+          itemType: note.isIdea ? 'idea' : 'note',
+          itemId: note.id,
+          itemTitle: note.title,
+          description: `Duplicated ${note.isIdea ? 'idea' : 'note'}: ${note.title}`,
+          metadata: { tags: note.tags }
+        });
+      }
+
+      // Trigger user stats update
+      await notesService.triggerUserStatsUpdate();
+
+      return duplicatedNotes;
+    } catch (error) {
+      console.error('Failed to duplicate notes:', error);
+      throw error;
+    }
+  }, [createActivity]);
+
   const contextValue = useMemo(() => ({
     notes,
     archivedNotes,
@@ -727,7 +785,9 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     restoreNote,
     fetchNotes,
     addReminderToNote,
-    removeReminderFromNote
+    removeReminderFromNote,
+    duplicateNote,
+    duplicateNotes
   }), [
     notes,
     archivedNotes,
@@ -749,7 +809,9 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     restoreNote,
     fetchNotes,
     addReminderToNote,
-    removeReminderFromNote
+    removeReminderFromNote,
+    duplicateNote,
+    duplicateNotes
   ]);
 
   // Add a subscription to task changes

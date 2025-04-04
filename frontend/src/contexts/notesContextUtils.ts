@@ -23,6 +23,8 @@ export interface NotesContextType {
   fetchNotes: () => Promise<void>;
   addReminderToNote: (noteId: string, reminderId: string) => Promise<void>;
   removeReminderFromNote: (noteId: string, reminderId: string) => Promise<void>;
+  duplicateNote: (noteId: string) => Promise<Note>;
+  duplicateNotes: (noteIds: string[]) => Promise<Note[]>;
 }
 
 export const NotesContext = createContext<NotesContextType | null>(null);

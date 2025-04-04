@@ -12,7 +12,7 @@ interface TaskCardProps {
   task: Task;
   viewMode?: 'grid' | 'list' | 'mindMap';
   isSelected?: boolean;
-  context?: 'default' | 'trash' | 'archive' | 'favorites';
+  context?: 'default' | 'trash' | 'archive' | 'favorites' | 'duplicate';
   onSelect?: () => void;
   onClick?: (task: Task) => void;
   contextData?: {

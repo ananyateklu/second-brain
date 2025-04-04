@@ -76,6 +76,47 @@ export const tasksService = {
     await api.delete(`/api/Tasks/${id}/permanent`);
   },
 
+  async duplicateTask(taskId: string): Promise<Task> {
+    try {
+      // Get the task to duplicate
+      const response = await api.get<Task>(`/api/Tasks/${taskId}`);
+      const originalTask = response.data;
+
+      // Create the new task data
+      const newTaskData: CreateTaskData = {
+        title: `${originalTask.title} (copy)`,
+        description: originalTask.description || '',
+        priority: originalTask.priority.toLowerCase() as 'low' | 'medium' | 'high',
+        dueDate: originalTask.dueDate,
+        tags: originalTask.tags || []
+      };
+
+      // Create the duplicate
+      const duplicateResponse = await this.createTask(newTaskData);
+      return duplicateResponse;
+    } catch (error) {
+      console.error('Failed to duplicate task:', error);
+      throw error;
+    }
+  },
+
+  async duplicateTasks(taskIds: string[]): Promise<Task[]> {
+    try {
+      // Duplicate each task in sequence
+      const duplicatedTasks: Task[] = [];
+
+      for (const taskId of taskIds) {
+        const duplicatedTask = await this.duplicateTask(taskId);
+        duplicatedTasks.push(duplicatedTask);
+      }
+
+      return duplicatedTasks;
+    } catch (error) {
+      console.error('Failed to duplicate tasks:', error);
+      throw error;
+    }
+  },
+
   async addTaskLink(data: TaskLinkData): Promise<Task> {
     const response = await api.post<Task>(`/api/Tasks/${data.taskId}/links`, {
       linkedItemId: data.linkedItemId,
