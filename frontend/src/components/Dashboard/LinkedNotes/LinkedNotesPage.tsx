@@ -183,113 +183,141 @@ export function LinkedNotesPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-11rem)] overflow-visible bg-fixed">
+    <div className="h-[calc(100vh-11rem)] overflow-visible bg-fixed p-3">
       {/* Background gradient */}
       <div className="fixed inset-0 bg-fixed dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-slate-800 bg-gradient-to-br from-white to-gray-100 -z-10" />
 
-      <div className="flex flex-col h-full mx-3 mt-1 mb-1">
-        {/* Integrated Container */}
+      <div className="flex flex-col h-full">
+        {/* Integrated Container - single outer container with shared border */}
         <div className={`
           flex-1
           min-h-0
           relative 
-          rounded-lg 
-          ${getContainerBackground(theme)} 
-          shadow-[0_2px_12px_-4px_rgba(0,0,0,0.1)]
-          dark:shadow-[0_2px_12px_-4px_rgba(0,0,0,0.2)]
           overflow-visible
+          animate-in fade-in slide-in-from-bottom-5 duration-500
+          rounded-lg
+          ${getContainerBackground(theme)}
+          shadow-[0_8px_30px_-12px_rgba(0,0,0,0.2),0_4px_10px_-6px_rgba(0,0,0,0.1)]
+          dark:shadow-[0_8px_30px_-12px_rgba(0,0,0,0.4),0_4px_10px_-6px_rgba(0,0,0,0.3)]
+          border border-gray-200/20 dark:border-gray-700/30
         `}>
-          {/* Header Section */}
-          <div className="flex justify-between items-center px-4 py-3">
-            <div className="flex items-center space-x-2">
-              <div className="flex items-center">
-                <Link2 className="w-5 h-5 text-blue-600 dark:text-blue-400 mr-2" />
-                <h1 className="text-xl font-semibold text-[var(--color-text)]">Linked Notes</h1>
+          {/* Header Section with Stats - NO borders */}
+          <div className={`
+            rounded-t-lg
+            transition-all duration-300
+          `}>
+            {/* Header Section */}
+            <div className="flex justify-between items-center px-4 py-3">
+              <div className="flex items-center space-x-2">
+                <div className="flex items-center">
+                  <div className="p-1.5 flex items-center justify-center rounded-md bg-blue-500/10 backdrop-blur-xl shadow-sm ring-1 ring-black/5 dark:ring-white/10 bg-[var(--color-surface)]/10 group-hover:scale-110 transition-transform duration-300">
+                    <Link2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <h1 className="text-xl font-semibold text-[var(--color-text)] ml-2">Linked Notes</h1>
+                </div>
+                <div className="text-xs text-[var(--color-textSecondary)] ml-2 bg-white/5 dark:bg-black/10 px-2 py-0.5 rounded-full">
+                  {stats.totalConnections} connections • {stats.connectionDensity}% density
+                </div>
               </div>
-              <div className="text-xs text-[var(--color-textSecondary)] ml-2">
-                {stats.totalConnections} connections • {stats.connectionDensity}% density
+
+              {/* View Toggle Buttons */}
+              <div className="flex gap-1 bg-white/5 dark:bg-black/10 p-1 rounded-lg">
+                <button
+                  onClick={() => setViewMode('graph')}
+                  className={`p-1.5 rounded-md transition-all ${getButtonBackground(viewMode === 'graph', theme)}`}
+                  title="Graph View"
+                >
+                  <Network className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-1.5 rounded-md transition-all ${getButtonBackground(viewMode === 'list', theme)}`}
+                  title="List View"
+                >
+                  <List className="w-4 h-4" />
+                </button>
               </div>
             </div>
 
-            {/* View Toggle Buttons */}
-            <div className="flex gap-1">
-              <button
-                onClick={() => setViewMode('graph')}
-                className={`p-1.5 rounded-md transition-all ${getButtonBackground(viewMode === 'graph', theme)}`}
-                title="Graph View"
-              >
-                <Network className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-1.5 rounded-md transition-all ${getButtonBackground(viewMode === 'list', theme)}`}
-                title="List View"
-              >
-                <List className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+            {/* Feature info tooltip */}
+            {showTooltip && viewMode === 'graph' && (
+              <div className="absolute top-14 right-4 z-10 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700/50 rounded-lg shadow-md p-3 max-w-xs animate-in fade-in slide-in-from-right duration-300">
+                <div className="flex items-start">
+                  <Info className="w-4 h-4 text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5 mr-2" />
+                  <div>
+                    <p className="text-sm text-blue-700 dark:text-blue-300">
+                      Node positions are now saved to your account! Your graph layout will be remembered across devices and browser sessions.
+                    </p>
+                    <button
+                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1"
+                      onClick={handleDismissTooltip}
+                    >
+                      Got it
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
-          {/* Feature info tooltip */}
-          {showTooltip && viewMode === 'graph' && (
-            <div className="absolute top-14 right-4 z-10 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700/50 rounded-lg shadow-md p-3 max-w-xs">
-              <div className="flex items-start">
-                <Info className="w-4 h-4 text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5 mr-2" />
-                <div>
-                  <p className="text-sm text-blue-700 dark:text-blue-300">
-                    Node positions are now saved to your account! Your graph layout will be remembered across devices and browser sessions.
-                  </p>
-                  <button
-                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1"
-                    onClick={handleDismissTooltip}
-                  >
-                    Got it
-                  </button>
+            {/* Stats Bar - no borders, just a subtle background change */}
+            <div className="flex px-4 py-2 gap-8">
+              <div className="flex items-center gap-2">
+                <div className="p-1 flex items-center justify-center rounded-md bg-blue-500/10 backdrop-blur-xl shadow-sm ring-1 ring-black/5 dark:ring-white/10 bg-[var(--color-surface)]/10">
+                  <Type className="w-3.5 h-3.5 text-[var(--color-note)]" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-medium text-[var(--color-note)]">{stats.totalNotes}</span>
+                  <span className="text-xs text-[var(--color-textSecondary)]">Notes</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="p-1 flex items-center justify-center rounded-md bg-amber-500/10 backdrop-blur-xl shadow-sm ring-1 ring-black/5 dark:ring-white/10 bg-[var(--color-surface)]/10">
+                  <Lightbulb className="w-3.5 h-3.5 text-[var(--color-idea)]" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-medium text-[var(--color-idea)]">{stats.totalIdeas}</span>
+                  <span className="text-xs text-[var(--color-textSecondary)]">Ideas</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="p-1 flex items-center justify-center rounded-md bg-blue-500/10 backdrop-blur-xl shadow-sm ring-1 ring-black/5 dark:ring-white/10 bg-[var(--color-surface)]/10">
+                  <Network className="w-3.5 h-3.5 text-[var(--color-note)]" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-medium text-[var(--color-note)]">{stats.connectionDensity}%</span>
+                  <span className="text-xs text-[var(--color-textSecondary)]">Density</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="p-1 flex items-center justify-center rounded-md bg-blue-500/10 backdrop-blur-xl shadow-sm ring-1 ring-black/5 dark:ring-white/10 bg-[var(--color-surface)]/10">
+                  <GitBranch className="w-3.5 h-3.5 text-[var(--color-note)]" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-medium text-[var(--color-note)]">{stats.clusterCount}</span>
+                  <span className="text-xs text-[var(--color-textSecondary)]">Topics</span>
                 </div>
               </div>
             </div>
-          )}
-
-          {/* Stats Bar */}
-          <div className="flex px-4 py-1.5 gap-6 bg-[var(--color-surface)]/5">
-            <div className="flex items-center gap-1.5">
-              <Type className="w-3.5 h-3.5 text-[var(--color-note)]" />
-              <span className="font-medium text-[var(--color-note)]">{stats.totalNotes}</span>
-              <span className="text-xs text-[var(--color-textSecondary)]">Notes</span>
-            </div>
-
-            <div className="flex items-center gap-1.5">
-              <Lightbulb className="w-3.5 h-3.5 text-[var(--color-idea)]" />
-              <span className="font-medium text-[var(--color-idea)]">{stats.totalIdeas}</span>
-              <span className="text-xs text-[var(--color-textSecondary)]">Ideas</span>
-            </div>
-
-            <div className="flex items-center gap-1.5">
-              <Network className="w-3.5 h-3.5 text-[var(--color-note)]" />
-              <span className="font-medium text-[var(--color-note)]">{stats.connectionDensity}%</span>
-              <span className="text-xs text-[var(--color-textSecondary)]">Density</span>
-            </div>
-
-            <div className="flex items-center gap-1.5">
-              <GitBranch className="w-3.5 h-3.5 text-[var(--color-note)]" />
-              <span className="font-medium text-[var(--color-note)]">{stats.clusterCount}</span>
-              <span className="text-xs text-[var(--color-textSecondary)]">Topics</span>
-            </div>
           </div>
 
-          {/* Main Content Area */}
-          <div className="flex h-[calc(100%-80px)] overflow-auto">
-            <div className="flex-1">
-              {renderContent(viewMode, notes, handleNodeSelect, selectedNoteId)}
-            </div>
-            {selectedNoteId && (
-              <div className="w-96">
-                <NoteDetailsPanel
-                  selectedNoteId={selectedNoteId}
-                  onClose={() => setSelectedNoteId(null)}
-                />
+          {/* Main Content Area - NO separate borders */}
+          <div className="transition-all duration-300 h-[calc(100%-80px)]">
+            <div className="flex h-full overflow-auto">
+              <div className="flex-1">
+                {renderContent(viewMode, notes, handleNodeSelect, selectedNoteId)}
               </div>
-            )}
+              {selectedNoteId && (
+                <div className="w-96 h-full overflow-hidden border-l border-gray-200/10 dark:border-gray-700/20">
+                  <NoteDetailsPanel
+                    selectedNoteId={selectedNoteId}
+                    onClose={() => setSelectedNoteId(null)}
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

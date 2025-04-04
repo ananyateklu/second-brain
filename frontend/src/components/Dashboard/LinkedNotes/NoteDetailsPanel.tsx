@@ -108,15 +108,9 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
 
   return (
     <div className={`
-      h-full flex flex-col bg-[var(--color-surface)]/30 overflow-hidden backdrop-blur-xl 
+      h-full flex flex-col overflow-hidden
       shadow-[4px_0_24px_-2px_rgba(0,0,0,0.12),8px_0_16px_-4px_rgba(0,0,0,0.08)] 
       dark:shadow-[4px_0_24px_-2px_rgba(0,0,0,0.3),8px_0_16px_-4px_rgba(0,0,0,0.2)]
-      ${theme === 'light'
-        ? 'border-l border-[var(--color-border)]/50'
-        : theme === 'midnight'
-          ? 'border-l border-white/[0.02]'
-          : 'border-l border-white/[0.02]'
-      }
     `}>
       {/* Header */}
       <div className={`

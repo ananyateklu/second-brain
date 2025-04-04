@@ -230,7 +230,8 @@ const Legend = memo(({ theme }: { theme: string }) => (
     "bg-white/10 dark:bg-white/5",
     "border border-white/20 dark:border-white/10",
     "backdrop-blur-xl p-3 rounded-xl shadow-lg",
-    "transition-all duration-300"
+    "transition-all duration-300",
+    "z-20 relative"
   )}>
     <div className="flex flex-row gap-4">
       <div className="flex items-center gap-2">
@@ -431,8 +432,8 @@ function GraphViewContent({ onNodeSelect, selectedNoteId }: GraphViewProps) {
   }
 
   return (
-    <div className="h-full flex">
-      <div className="flex-1 relative">
+    <div className="h-full flex overflow-hidden">
+      <div className="flex-1 relative overflow-hidden" style={{ minHeight: "400px" }}>
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -450,6 +451,7 @@ function GraphViewContent({ onNodeSelect, selectedNoteId }: GraphViewProps) {
           panOnScrollMode={PanOnScrollMode.Free}
           selectionMode={SelectionMode.Full}
           connectionMode={ConnectionMode.Loose}
+          className="!absolute inset-0"
           defaultEdgeOptions={{
             type: 'default',
             animated: false,
@@ -474,12 +476,16 @@ function GraphViewContent({ onNodeSelect, selectedNoteId }: GraphViewProps) {
               opacity: theme === 'light' ? 0.3 : 0.03
             }}
           />
-          <Panel position="bottom-right" className="flex flex-col gap-4 mb-4 mr-4">
+          <Panel
+            position="bottom-left"
+            className="flex flex-col gap-4 mb-4 mr-4 z-50"
+            style={{ position: 'absolute', bottom: '40px', left: '0px' }}
+          >
             <Legend theme={theme} />
           </Panel>
         </ReactFlow>
       </div>
-      <div className="w-16 flex items-center justify-center border-l border-gray-200/10 dark:border-gray-700/10 shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.1)] dark:shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.2)]">
+      <div className="w-16 flex items-center justify-center">
         <GraphControls
           onZoomIn={zoomIn}
           onZoomOut={zoomOut}
