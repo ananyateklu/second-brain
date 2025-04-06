@@ -229,7 +229,7 @@ const Legend = memo(({ theme }: { theme: string }) => (
   <div className={clsx(
     "bg-white/10 dark:bg-white/5",
     "border border-white/20 dark:border-white/10",
-    "backdrop-blur-xl p-3 rounded-xl shadow-lg",
+    "backdrop-blur-xl p-3 rounded-lg shadow-lg",
     "transition-all duration-300",
     "z-20 relative"
   )}>
@@ -479,7 +479,7 @@ function GraphViewContent({ onNodeSelect, selectedNoteId }: GraphViewProps) {
           <Panel
             position="bottom-left"
             className="flex flex-col gap-4 mb-4 mr-4 z-50"
-            style={{ position: 'absolute', bottom: '40px', left: '0px' }}
+            style={{ position: 'absolute', bottom: '38px', left: '0px' }}
           >
             <Legend theme={theme} />
           </Panel>

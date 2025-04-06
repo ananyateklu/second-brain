@@ -60,6 +60,26 @@ export interface XPBreakdownResponse {
   };
 }
 
+export interface XPHistoryItem {
+  id: string;
+  source: string;
+  action: string;
+  amount: number;
+  createdAt: string;
+  itemId?: string;
+  itemTitle?: string;
+}
+
+export interface XPHistoryResponse {
+  history: XPHistoryItem[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
 export const authService = {
   async register(data: RegisterData): Promise<AuthResponse> {
     const response = await api.post<AuthResponse>('/auth/register', data);
@@ -91,6 +111,11 @@ export const authService = {
 
   getXPBreakdown: async (): Promise<XPBreakdownResponse> => {
     const response = await api.get<XPBreakdownResponse>('/auth/me/xp-breakdown');
+    return response.data;
+  },
+
+  getXPHistory: async (page: number = 1, pageSize: number = 20): Promise<XPHistoryResponse> => {
+    const response = await api.get<XPHistoryResponse>(`/auth/me/xp-history?page=${page}&pageSize=${pageSize}`);
     return response.data;
   }
 };

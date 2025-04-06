@@ -1,26 +1,63 @@
 import { useAuth } from '../../../hooks/useAuth';
 import {
-    User,
     Mail,
     Calendar,
     Trophy,
-    Star,
-    TrendingUp,
-    Award,
-    Target,
     CheckCheck,
-    Clock,
-    Shield
+    CheckCircle
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { cardVariants } from '../../../utils/welcomeBarUtils';
-import { ExperienceBar } from './ExperienceBar';
-import { XPBreakdownCard } from './XPBreakdownCard';
+import { LevelProgressSection } from './LevelProgressSection';
+import { XPBreakdownSection } from './XPBreakdownSection';
+import { authService, XPBreakdownResponse } from '../../../services/api/auth.service';
+import api from '../../../services/api/api';
+import { useState, useEffect, useCallback } from 'react';
 
 export function PersonalPage() {
-    const { user } = useAuth();
+    const { user, isLoading: authLoading, error: authError } = useAuth();
     const { theme } = useTheme();
+
+    const [xpData, setXpData] = useState<XPBreakdownResponse | null>(null);
+    const [xpLoading, setXpLoading] = useState(true);
+    const [xpError, setXpError] = useState<string | null>(null);
+    const [seedingXP, setSeedingXP] = useState(false);
+
+    const fetchXPData = useCallback(async () => {
+        try {
+            setXpLoading(true);
+            setXpError(null);
+            const response = await authService.getXPBreakdown();
+            setXpData(response);
+        } catch (err) {
+            console.error('Error fetching XP breakdown:', err);
+            setXpError('Failed to load XP data');
+        } finally {
+            setXpLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (user) {
+            fetchXPData();
+        }
+    }, [user, fetchXPData]);
+
+    const handleSeedXPHistory = useCallback(async () => {
+        try {
+            setSeedingXP(true);
+            setXpError(null);
+            await api.post('/auth/me/seed-xp-history');
+            // Refetch the data after seeding
+            await fetchXPData();
+        } catch (err) {
+            console.error('Error seeding XP history:', err);
+            setXpError('Failed to seed XP history data');
+        } finally {
+            setSeedingXP(false);
+        }
+    }, [fetchXPData]);
 
     const joinDate = user?.createdAt
         ? new Date(user.createdAt).toLocaleDateString('en-US', {
@@ -30,19 +67,6 @@ export function PersonalPage() {
         })
         : 'N/A';
 
-    const LevelThresholds = [
-        0,      // Level 1: 0-99
-        100,    // Level 2: 100-249
-        250,    // Level 3: 250-449
-        450,    // Level 4: 450-699
-        700,    // Level 5: 700-999
-        1000,   // Level 6: 1000-1349
-        1350,   // Level 7: 1350-1749
-        1750,   // Level 8: 1750-2199
-        2200,   // Level 9: 2200-2699
-        2700    // Level 10: 2700+
-    ];
-
     const getContainerBackground = () => {
         if (theme === 'dark') return 'bg-gray-900/30';
         if (theme === 'midnight') return 'bg-[#1e293b]/30';
@@ -50,39 +74,27 @@ export function PersonalPage() {
     };
 
     const cardClasses = `
-        relative 
-        overflow-hidden 
-        rounded-2xl 
+        relative
+        overflow-hidden
+        rounded-xl
         ${getContainerBackground()}
-        backdrop-blur-xl 
-        border-[0.5px] 
+        backdrop-blur-xl
+        border-[0.5px]
         border-white/10
-        shadow-[4px_0_24px_-2px_rgba(0,0,0,0.12),8px_0_16px_-4px_rgba(0,0,0,0.08)]
-        dark:shadow-[4px_0_24px_-2px_rgba(0,0,0,0.3),8px_0_16px_-4px_rgba(0,0,0,0.2)]
+        shadow-md dark:shadow-lg
         ring-1
         ring-white/5
-        transition-all 
+        transition-all
         duration-300
         hover:bg-[var(--color-surfaceHover)]
     `;
 
-    // Create a version without hover effect for XP Breakdown Card
-    const cardClassesNoHover = `
-        relative 
-        overflow-hidden 
-        rounded-2xl 
-        ${getContainerBackground()}
-        backdrop-blur-xl 
-        border-[0.5px] 
-        border-white/10
-        shadow-[4px_0_24px_-2px_rgba(0,0,0,0.12),8px_0_16px_-4px_rgba(0,0,0,0.08)]
-        dark:shadow-[4px_0_24px_-2px_rgba(0,0,0,0.3),8px_0_16px_-4px_rgba(0,0,0,0.2)]
-        ring-1
-        ring-white/5
-    `;
+    if (authLoading) {
+        return <div>Loading User Data...</div>;
+    }
 
-    if (!user) {
-        return <div>Loading...</div>;
+    if (authError || !user) {
+        return <div>Error loading user data. Please try again later.</div>;
     }
 
     return (
@@ -90,171 +102,79 @@ export function PersonalPage() {
             {/* Background */}
             <div className="fixed inset-0 bg-[var(--color-background)] -z-10" />
 
-            <div className="space-y-8 relative w-full">
-                {/* Profile Header */}
+            <div className="space-y-5 relative w-full">
+                {/* Profile Header - Updated Styling */}
                 <motion.div
                     initial="hidden"
                     animate="visible"
                     variants={cardVariants}
                     className={cardClasses}
                 >
-                    <div className="p-8">
-                        <div className="flex flex-col md:flex-row items-center gap-6">
-                            <div className="relative">
+                    <div className="p-4 flex flex-row items-center justify-between gap-4">
+                        <div className="flex flex-row items-center gap-4 flex-shrink-0">
+                            <div className="relative flex-shrink-0">
                                 <img
                                     src={user.avatar}
                                     alt={user.name}
-                                    className="w-24 h-24 rounded-full border-[0.5px] border-white/10 shadow-md"
+                                    className="w-16 h-16 rounded-full border-[0.5px] border-white/10 shadow-md"
                                 />
-                                <div className="absolute -bottom-2 -right-2 bg-[var(--color-accent)] text-white rounded-full px-2.5 py-1 text-xs font-semibold shadow-lg">
+                                <div className="absolute -bottom-1 -right-1 bg-[var(--color-accent)] text-white rounded-full px-2 py-0.5 text-xs font-semibold shadow-lg">
                                     Level {user.level}
                                 </div>
                             </div>
-                            <div className="flex-1 text-center md:text-left">
-                                <h1 className="text-3xl font-bold text-[var(--color-text)]">{user.name}</h1>
-                                <div className="flex flex-col md:flex-row gap-4 mt-2 text-[var(--color-textSecondary)]">
-                                    <div className="flex items-center gap-2">
-                                        <Mail className="w-4 h-4" />
+                            <div className="text-left">
+                                <h1 className="text-xl font-bold text-[var(--color-text)]">{user.name}</h1>
+                                <div className="flex flex-row flex-wrap gap-x-3 gap-y-1 mt-1 text-xs text-[var(--color-textSecondary)]">
+                                    <div className="flex items-center gap-1">
+                                        <Mail className="w-3 h-3" />
                                         <span>{user.email}</span>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                        <Calendar className="w-4 h-4" />
+                                    <div className="flex items-center gap-1">
+                                        <Calendar className="w-3 h-3" />
                                         <span>Joined {joinDate}</span>
                                     </div>
+                                    <div className="flex items-center gap-1 text-green-500 dark:text-green-400">
+                                        <CheckCircle className="w-3 h-3" />
+                                        <span>Active</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-row items-center gap-x-6 text-right">
+                            <div className="flex flex-col items-end">
+                                <p className="text-xs text-[var(--color-textSecondary)] uppercase tracking-wider mb-0.5">Total XP</p>
+                                <p className="text-lg font-semibold text-[var(--color-text)]">{user.experiencePoints.toLocaleString()}</p>
+                            </div>
+                            <div className="flex flex-col items-end">
+                                <p className="text-xs text-[var(--color-textSecondary)] uppercase tracking-wider mb-0.5">Achievements</p>
+                                <div className="flex items-center justify-end gap-1.5 text-[var(--color-text)]">
+                                    <Trophy className="w-4 h-4 text-amber-500" />
+                                    <span className="text-lg font-semibold">{user.achievementCount.toLocaleString()}</span>
+                                </div>
+                            </div>
+                            <div className="flex flex-col items-end">
+                                <p className="text-xs text-[var(--color-textSecondary)] uppercase tracking-wider mb-0.5">Achievement XP</p>
+                                <div className="flex items-center justify-end gap-1.5 text-[var(--color-text)]">
+                                    <CheckCheck className="w-4 h-4 text-red-500" />
+                                    <span className="text-lg font-semibold">{user.totalXPFromAchievements.toLocaleString()}</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </motion.div>
 
-                {/* Level Progress */}
-                <motion.div
-                    variants={cardVariants}
-                    className={cardClasses}
-                >
-                    <div className="p-6 space-y-4">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-[var(--color-accent)]/10 rounded-lg backdrop-blur-sm border-[0.5px] border-white/10">
-                                    <TrendingUp className="w-5 h-5 text-[var(--color-accent)]" />
-                                </div>
-                                <div>
-                                    <h2 className="text-lg font-semibold text-[var(--color-text)]">Level Progress</h2>
-                                    <p className="text-sm text-[var(--color-textSecondary)]">Track your journey</p>
-                                </div>
-                            </div>
-                            <div className="text-sm text-[var(--color-textSecondary)]">
-                                Level {user.level}
-                            </div>
-                        </div>
-
-                        <ExperienceBar
-                            currentXP={user.experiencePoints - (LevelThresholds[user.level - 1] || 0)}
-                            nextLevelXP={LevelThresholds[user.level] - LevelThresholds[user.level - 1]}
-                            progress={user.levelProgress}
-                        />
-                    </div>
-                </motion.div>
-
-                {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                    {[
-                        { icon: Trophy, label: 'Achievements', value: user.achievementCount, color: 'amber' },
-                        { icon: Star, label: 'Total XP', value: user.experiencePoints, color: 'blue' },
-                        { icon: Award, label: 'Current Level', value: user.level, color: 'green' },
-                        { icon: CheckCheck, label: 'XP from Achievements', value: user.totalXPFromAchievements, color: 'red' },
-                        { icon: Target, label: 'Next Level', value: user.xpForNextLevel, color: 'purple' }
-                    ].map((stat, index) => (
-                        <motion.div
-                            key={stat.label}
-                            variants={cardVariants}
-                            initial="hidden"
-                            animate="visible"
-                            transition={{ delay: index * 0.1 }}
-                            className={cardClasses}
-                        >
-                            <div className="p-4">
-                                <div className="flex items-center gap-4">
-                                    <div className="p-2 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm border-[0.5px] border-white/10">
-                                        <stat.icon className="w-5 h-5 text-[var(--color-accent)]" />
-                                    </div>
-                                    <div>
-                                        <div className="text-sm text-[var(--color-textSecondary)]">{stat.label}</div>
-                                        <div className="text-lg font-semibold text-[var(--color-text)]">
-                                            {stat.value.toLocaleString()}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </motion.div>
-                    ))}
-                </div>
-
-                {/* Account Details */}
-                <motion.div
-                    variants={cardVariants}
-                    className={cardClasses}
-                >
-                    <div className="p-6 border-b border-white/10">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-[var(--color-accent)]/10 rounded-lg backdrop-blur-sm border-[0.5px] border-white/10">
-                                <Shield className="w-5 h-5 text-[var(--color-accent)]" />
-                            </div>
-                            <div>
-                                <h2 className="text-lg font-semibold text-[var(--color-text)]">Account Details</h2>
-                                <p className="text-sm text-[var(--color-textSecondary)]">Your account information</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="p-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm border-[0.5px] border-white/10">
-                                        <User className="w-5 h-5 text-[var(--color-accent)]" />
-                                    </div>
-                                    <div>
-                                        <div className="text-sm text-[var(--color-textSecondary)]">Username</div>
-                                        <div className="text-[var(--color-text)]">{user.name}</div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm border-[0.5px] border-white/10">
-                                        <Mail className="w-5 h-5 text-[var(--color-accent)]" />
-                                    </div>
-                                    <div>
-                                        <div className="text-sm text-[var(--color-textSecondary)]">Email</div>
-                                        <div className="text-[var(--color-text)]">{user.email}</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm border-[0.5px] border-white/10">
-                                        <Calendar className="w-5 h-5 text-[var(--color-accent)]" />
-                                    </div>
-                                    <div>
-                                        <div className="text-sm text-[var(--color-textSecondary)]">Member Since</div>
-                                        <div className="text-[var(--color-text)]">{joinDate}</div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 rounded-lg bg-[var(--color-accent)]/10 backdrop-blur-sm border-[0.5px] border-white/10">
-                                        <Clock className="w-5 h-5 text-[var(--color-accent)]" />
-                                    </div>
-                                    <div>
-                                        <div className="text-sm text-[var(--color-textSecondary)]">Account Status</div>
-                                        <div className="text-[var(--color-accent)]">Active</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </motion.div>
+                {/* Level Progress Section */}
+                <LevelProgressSection user={user} />
 
                 {/* XP Breakdown Section */}
-                <XPBreakdownCard cardClasses={cardClassesNoHover} />
+                <XPBreakdownSection
+                    data={xpData}
+                    loading={xpLoading}
+                    error={xpError}
+                    seedingXP={seedingXP}
+                    onSeedXPHistory={handleSeedXPHistory}
+                />
             </div>
         </div>
     );

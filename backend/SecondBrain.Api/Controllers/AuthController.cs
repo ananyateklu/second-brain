@@ -390,5 +390,58 @@ namespace SecondBrain.Api.Controllers
                 return StatusCode(500, new { error = "An error occurred while seeding XP history data." });
             }
         }
+
+        [HttpGet("me/xp-history")]
+        [Authorize]
+        public async Task<IActionResult> GetXPHistory([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized(new { error = "User ID not found in token." });
+                }
+
+                // Get paginated XP history
+                var historyQuery = _context.XPHistory
+                    .Where(x => x.UserId == userId)
+                    .OrderByDescending(x => x.CreatedAt);
+
+                var total = await historyQuery.CountAsync();
+                
+                var history = await historyQuery
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(x => new
+                    {
+                        x.Id,
+                        x.Source,
+                        x.Action,
+                        x.Amount,
+                        x.CreatedAt,
+                        x.ItemId,
+                        x.ItemTitle
+                    })
+                    .ToListAsync();
+
+                return Ok(new
+                {
+                    history,
+                    pagination = new
+                    {
+                        page,
+                        pageSize,
+                        total,
+                        totalPages = (int)Math.Ceiling((double)total / pageSize)
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving XP history for user");
+                return StatusCode(500, new { error = "An error occurred while retrieving XP history data." });
+            }
+        }
     }
 }

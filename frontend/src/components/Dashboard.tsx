@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { Sidebar } from './Dashboard/Sidebar';
 import { Header } from './Dashboard/Header';
 import { WelcomeBar } from './Dashboard/WelcomeBar';
@@ -38,11 +38,15 @@ export function Dashboard() {
   const { isLoading: remindersLoading } = useReminders();
   const { selectedNote, selectedIdea, setSelectedNote, setSelectedIdea } = useModal();
   const { colors } = useTheme();
+  const location = useLocation();
 
   // Initialize reminder notifications
   useReminderNotifications();
 
   const isLoading = notesLoading || tasksLoading || remindersLoading;
+
+  // Check if current path is profile to hide WelcomeBar
+  const isProfilePage = location.pathname.includes('/profile');
 
   if (isLoading) {
     return <LoadingScreen />;
@@ -73,7 +77,7 @@ export function Dashboard() {
         {/* Scrollable Content */}
         <main className="flex-1 overflow-y-auto overflow-x-hidden pt-20 relative">
           <div className={`max-w-[1920px] mx-auto transition-all duration-300 ${isSidebarOpen ? 'px-4 sm:px-6 lg:px-12' : 'px-6 sm:px-12 lg:px-16'} py-8`}>
-            <WelcomeBar />
+            {!isProfilePage && <WelcomeBar />}
             <Routes>
               <Route index element={<DashboardHome />} />
               <Route path="notes" element={<NotesPage />} />
