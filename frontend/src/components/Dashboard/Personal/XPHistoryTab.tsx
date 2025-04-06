@@ -72,7 +72,7 @@ export function XPHistoryTab({ initialData }: XPHistoryTabProps) {
 
     const formatDate = (dateString: string) => {
         try {
-            const date = new Date(dateString);
+            const date = new Date(dateString + 'Z');
             return {
                 full: format(date, 'MMM d, yyyy h:mm a'),
                 relative: formatDistance(date, new Date(), { addSuffix: true })
