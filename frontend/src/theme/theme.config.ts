@@ -95,11 +95,11 @@ export const themes: Record<ThemeName, ThemeConfig> = {
     colors: {
       primary: '#60a5fa',
       secondary: '#94a3b8',
-      background: '#0a0a0a',
-      surface: '#27272a',
+      background: '#000000',
+      surface: 'rgba(39, 39, 42, 0.8)',
       text: '#ededed',
       textSecondary: '#a1a1aa',
-      border: '#2d2d2d',
+      border: 'rgba(45, 45, 45, 0.5)',
       accent: '#4c9959',
       // Semantic colors
       note: '#60a5fa',
@@ -108,11 +108,11 @@ export const themes: Record<ThemeName, ThemeConfig> = {
       reminder: '#a78bfa',
       tag: '#60a5fa',
       // Additional UI colors
-      surfaceHover: '#3f3f46',
-      surfaceActive: '#52525b',
-      divider: '#2d2d2d',
+      surfaceHover: 'rgba(63, 63, 70, 0.85)',
+      surfaceActive: 'rgba(82, 82, 91, 0.9)',
+      divider: 'rgba(45, 45, 45, 0.5)',
       focus: 'rgba(96, 165, 250, 0.5)',
-      gradientBackground: 'bg-gradient-to-br from-[#0a0a0a] via-[#27272a] to-[#3f3f46]',
+      gradientBackground: 'bg-gradient-to-br from-[#000000] via-[#050505] to-[#0f0f0f]',
       // RGB values for opacity support
       'surface-rgb': '39, 39, 42',
       'text-rgb': '237, 237, 237',

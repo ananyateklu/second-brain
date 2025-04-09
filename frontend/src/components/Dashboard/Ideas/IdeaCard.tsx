@@ -38,8 +38,8 @@ export function IdeaCard({
   const [showArchiveWarning, setShowArchiveWarning] = useState(false);
   const [isSafari] = useState(() => /^((?!chrome|android).)*safari/i.test(navigator.userAgent));
 
-  const isDark = useMemo(() => theme === 'dark' || theme === 'midnight', [theme]);
-  const isMidnight = useMemo(() => theme === 'midnight', [theme]);
+  const isDark = useMemo(() => theme === 'dark' || theme === 'midnight' || theme === 'full-dark', [theme]);
+
 
   const containerClasses = useMemo(() => {
     const getBackgroundColor = () => {
@@ -67,7 +67,7 @@ export function IdeaCard({
       ${onSelect || onClick ? 'cursor-pointer hover:-translate-y-1 hover:scale-[1.02]' : ''}
     `;
     return base.trim();
-  }, [isSelected, theme, onSelect, onClick, isSafari, isMidnight]);
+  }, [isSelected, theme, onSelect, onClick, isSafari]);
 
   // Event handlers with useCallback
   const handleFavorite = useCallback((e: React.MouseEvent) => {

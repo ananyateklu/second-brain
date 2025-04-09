@@ -195,7 +195,7 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative w-full max-w-5xl max-h-[85vh] bg-[var(--color-background)] rounded-2xl shadow-xl overflow-hidden border border-[var(--color-border)]">
+      <div className="relative w-full max-w-5xl max-h-[85vh] bg-[var(--color-surface)] backdrop-blur-md rounded-2xl shadow-xl overflow-hidden border border-[var(--color-border)]">
         <form onSubmit={handleSubmit} className="flex flex-col h-full">
           <Header
             note={currentNote}

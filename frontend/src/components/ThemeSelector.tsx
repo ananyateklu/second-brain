@@ -48,7 +48,7 @@ export function ThemeSelector() {
         case 'midnight':
           return 'bg-[#1e293b]/95';
         case 'full-dark':
-          return 'bg-[rgba(20,20,20,0.85)]';
+          return 'bg-[rgba(0,0,0,0.85)]';
         default:
           return 'bg-[#f8fafc]/95';
       }
@@ -70,7 +70,7 @@ export function ThemeSelector() {
         case 'midnight':
           return `${baseStyles} text-gray-200 hover:bg-[#2a3a53]`;
         case 'full-dark':
-          return `${baseStyles} text-gray-200 hover:bg-[rgba(31,31,31,0.9)]`;
+          return `${baseStyles} text-gray-200 hover:bg-[rgba(25,25,25,0.9)]`;
         default:
           return `${baseStyles} text-gray-700 hover:bg-[#f1f5f9]`;
       }

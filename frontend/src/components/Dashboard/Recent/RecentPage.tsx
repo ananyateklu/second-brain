@@ -56,38 +56,42 @@ export function RecentPage() {
   };
 
   const getThemeStyles = () => {
-    const defaultStyles = {
-      headerGradient: 'from-emerald-500/10 to-transparent',
-      iconBg: 'bg-emerald-100/50',
-      iconColor: 'text-emerald-600'
-    };
+    const isDarkTheme = theme === 'dark' || theme === 'midnight' || theme === 'full-dark';
 
+    // Light theme styles
+    if (!isDarkTheme) {
+      return {
+        headerGradient: 'from-emerald-500/10 to-transparent',
+        iconBg: 'bg-emerald-100/50',
+        iconColor: 'text-emerald-600'
+      };
+    }
+
+    // Dark theme styles (for dark, midnight, and full-dark)
     switch (theme) {
-      case 'dark':
-        return {
-          headerGradient: 'from-emerald-500/20 to-transparent',
-          iconBg: 'bg-emerald-500/20',
-          iconColor: 'text-emerald-400'
-        };
       case 'midnight':
         return {
           headerGradient: 'from-emerald-400/20 to-transparent',
           iconBg: 'bg-emerald-400/20',
           iconColor: 'text-emerald-300'
         };
-      default:
-        return defaultStyles;
+      default: // handles 'dark' and 'full-dark'
+        return {
+          headerGradient: 'from-emerald-500/20 to-transparent',
+          iconBg: 'bg-emerald-500/20',
+          iconColor: 'text-emerald-400'
+        };
     }
   };
 
   const getBackgroundGradient = (theme: string) => {
     if (theme === 'light') return 'from-zinc-50 to-zinc-100';
-    if (theme === 'dark') return 'from-zinc-900 via-zinc-900 to-zinc-800';
-    return 'from-[#0F172A] via-[#1E293B] to-[#334155]';
+    if (theme === 'dark' || theme === 'full-dark') return 'from-zinc-900 via-zinc-900 to-zinc-800';
+    return 'from-[#0F172A] via-[#1E293B] to-[#334155]'; // midnight
   };
 
   const getContainerBackground = () => {
-    if (theme === 'dark') return 'bg-gray-900/30';
+    if (theme === 'dark' || theme === 'full-dark') return 'bg-gray-900/30';
     if (theme === 'midnight') return 'bg-[#1e293b]/30';
     return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]';
   };
@@ -154,11 +158,10 @@ export function RecentPage() {
 
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
-              showFilters
-                ? 'bg-[var(--color-accent)]/10 text-[var(--color-accent)] border-[var(--color-accent)]/30'
-                : 'bg-[var(--color-surface)] hover:bg-[var(--color-surfaceHover)] text-[var(--color-text)] border-[var(--color-border)]'
-            }`}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${showFilters
+              ? 'bg-[var(--color-accent)]/10 text-[var(--color-accent)] border-[var(--color-accent)]/30'
+              : 'bg-[var(--color-surface)] hover:bg-[var(--color-surfaceHover)] text-[var(--color-text)] border-[var(--color-border)]'
+              }`}
           >
             <SlidersHorizontal className="w-5 h-5" />
             <span>Filters</span>
@@ -185,7 +188,7 @@ export function RecentPage() {
             </div>
             <ActivityFilters
               filters={filters}
-              onFilterChange={(key, value) => 
+              onFilterChange={(key, value) =>
                 setFilters(prev => ({ ...prev, [key]: value }))
               }
             />

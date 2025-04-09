@@ -52,7 +52,7 @@ const applyTheme = (themeName: ThemeName) => {
     } else if (themeName === 'full-dark') {
       root.style.setProperty('--note-bg-opacity', '0.4');
       root.style.setProperty('--note-bg-color', '#27272a');
-      root.style.setProperty('--color-background', '#0a0a0a');
+      root.style.setProperty('--color-background', '#000000');
       root.style.setProperty('--color-surface', '#27272a');
       root.style.backgroundColor = theme.colors.background;
       document.body.style.backgroundColor = theme.colors.background;

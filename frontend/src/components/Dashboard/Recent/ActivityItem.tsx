@@ -46,11 +46,12 @@ export function ActivityItem({ activity, onClick }: ActivityItemProps) {
   const { theme } = useTheme();
   const Icon = getActivityIcon(activity.itemType);
   const metadata = activity.metadata as ActivityMetadata | undefined;
-  const isDark = theme === 'dark' || theme === 'midnight';
+  const isDark = theme === 'dark' || theme === 'midnight' || theme === 'full-dark';
   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  const isFullDark = theme === 'full-dark';
 
   const getContainerBackground = () => {
-    if (theme === 'dark') return 'bg-gray-900/30';
+    if (theme === 'dark' || theme === 'full-dark') return 'bg-gray-900/30';
     if (theme === 'midnight') {
       return isSafari
         ? 'bg-[var(--note-bg-color)] bg-opacity-[var(--note-bg-opacity,0.3)]'
@@ -59,21 +60,54 @@ export function ActivityItem({ activity, onClick }: ActivityItemProps) {
     return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]';
   };
 
+  const getBorderClasses = () => {
+    if (theme === 'full-dark') {
+      return 'border-[0.25px] border-gray-700/30 hover:border-gray-600/50';
+    }
+    if (theme === 'dark' || theme === 'midnight') {
+      return 'border-[0.25px] border-blue-700/30 hover:border-blue-500/50';
+    }
+    return 'border-[0.25px] border-blue-200/30 hover:border-blue-400/50';
+  };
+
+  const getShadowClasses = () => {
+    if (isFullDark) {
+      return `
+        shadow-[0_4px_12px_-2px_rgba(0,0,0,0.4),0_4px_8px_-2px_rgba(0,0,0,0.3)]
+        hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.5),0_6px_12px_-4px_rgba(0,0,0,0.4)]
+      `;
+    }
+
+    if (isDark) {
+      return `
+        shadow-[0_4px_12px_-2px_rgba(0,0,0,0.4),0_4px_8px_-2px_rgba(0,0,0,0.3)]
+        hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.5),0_6px_12px_-4px_rgba(0,0,0,0.4)]
+      `;
+    }
+
+    return `
+      shadow-[0_4px_12px_-2px_rgba(0,0,0,0.12),0_4px_8px_-2px_rgba(0,0,0,0.08)]
+      hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.2),0_6px_12px_-4px_rgba(0,0,0,0.15)]
+    `;
+  };
+
+  const getRingClasses = () => {
+    if (isFullDark) {
+      return 'ring-1 ring-black/5 dark:ring-gray-700/30 hover:ring-black/10 dark:hover:ring-gray-600/40';
+    }
+    return 'ring-1 ring-black/5 dark:ring-white/10 hover:ring-black/10 dark:hover:ring-white/20';
+  };
+
   const getContainerClasses = () => {
     const base = `
       relative group w-full
       ${getContainerBackground()}
       backdrop-blur-xl 
-      border-[0.25px] border-blue-200/30 dark:border-blue-700/30
-      hover:border-blue-400/50 dark:hover:border-blue-500/50
+      ${getBorderClasses()}
       transition-all duration-300 
       rounded-lg
-      shadow-[0_4px_12px_-2px_rgba(0,0,0,0.12),0_4px_8px_-2px_rgba(0,0,0,0.08)]
-      dark:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.4),0_4px_8px_-2px_rgba(0,0,0,0.3)]
-      hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.2),0_6px_12px_-4px_rgba(0,0,0,0.15)]
-      dark:hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.5),0_6px_12px_-4px_rgba(0,0,0,0.4)]
-      ring-1 ring-black/5 dark:ring-white/10
-      hover:ring-black/10 dark:hover:ring-white/20
+      ${getShadowClasses()}
+      ${getRingClasses()}
       cursor-pointer hover:-translate-y-1 hover:scale-[1.02]
     `;
     return base.trim();
@@ -141,6 +175,13 @@ export function ActivityItem({ activity, onClick }: ActivityItemProps) {
     return isDark ? colors.dark : colors.light;
   };
 
+  const getIconRingClasses = () => {
+    if (isFullDark) {
+      return 'ring-1 ring-black/5 dark:ring-gray-700/30';
+    }
+    return 'ring-1 ring-black/5 dark:ring-white/10';
+  };
+
   const renderAIMetadata = (metadata: AIMetadata) => {
     if (!metadata) return null;
 
@@ -181,7 +222,7 @@ export function ActivityItem({ activity, onClick }: ActivityItemProps) {
       className={getContainerClasses()}
     >
       <div className="flex gap-4 p-4 items-start">
-        <div className={`shrink-0 flex items-center justify-center w-9 h-9 rounded-lg ${getItemTypeColor(activity.itemType)} shadow-[0_2px_8px_-2px_rgba(0,0,0,0.12)] dark:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.15)] dark:hover:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.4)] ring-1 ring-black/5 dark:ring-white/10 transition-shadow duration-200`}>
+        <div className={`shrink-0 flex items-center justify-center w-9 h-9 rounded-lg ${getItemTypeColor(activity.itemType)} shadow-[0_2px_8px_-2px_rgba(0,0,0,0.12)] dark:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.3)] hover:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.15)] dark:hover:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.4)] ${getIconRingClasses()} transition-shadow duration-200`}>
           <Icon className="w-[18px] h-[18px]" />
         </div>
 
@@ -215,7 +256,7 @@ export function ActivityItem({ activity, onClick }: ActivityItemProps) {
                   {metadata.tags.map((tag: string) => (
                     <span
                       key={tag}
-                      className="px-2 py-0.5 bg-[var(--color-tagBg)] text-xs rounded-full text-[var(--color-tagText)] ring-1 ring-black/5 dark:ring-white/10"
+                      className={`px-2 py-0.5 bg-[var(--color-tagBg)] text-xs rounded-full text-[var(--color-tagText)] ${isFullDark ? 'ring-1 ring-gray-700/30' : 'ring-1 ring-black/5 dark:ring-white/10'}`}
                     >
                       {tag}
                     </span>

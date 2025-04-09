@@ -34,7 +34,7 @@ export const themeScript = `
         } else if (theme === 'full-dark') {
           root.style.setProperty('--note-bg-opacity', '0.4');
           root.style.setProperty('--note-bg-color', '#27272a'); // Use updated surface color (zinc-800)
-          root.style.setProperty('--color-background', '#0a0a0a');
+          root.style.setProperty('--color-background', '#000000');
           root.style.setProperty('--color-surface', '#27272a'); // Use updated surface color (zinc-800)
         } else {
           root.style.removeProperty('--note-bg-opacity');

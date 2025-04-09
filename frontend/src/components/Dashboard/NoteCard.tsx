@@ -38,7 +38,7 @@ export function NoteCard({
   const [showArchiveWarning, setShowArchiveWarning] = useState(false);
   const [isSafari] = useState(() => /^((?!chrome|android).)*safari/i.test(navigator.userAgent));
 
-  const isDark = useMemo(() => theme === 'dark' || theme === 'midnight', [theme]);
+  const isDark = useMemo(() => theme === 'dark' || theme === 'midnight' || theme === 'full-dark', [theme]);
 
   const containerClasses = useMemo(() => {
     function getBackgroundColor() {

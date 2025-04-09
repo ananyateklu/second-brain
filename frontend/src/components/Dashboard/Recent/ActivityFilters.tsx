@@ -19,7 +19,7 @@ interface ActivityFiltersProps {
     itemTypes: string[];
     dateRange: 'all' | 'today' | 'week' | 'month';
   };
-  onFilterChange: (key: string, value: any) => void;
+  onFilterChange: (key: string, value: string[] | 'all' | 'today' | 'week' | 'month') => void;
 }
 
 export function ActivityFilters({ filters, onFilterChange }: ActivityFiltersProps) {
@@ -122,7 +122,7 @@ export function ActivityFilters({ filters, onFilterChange }: ActivityFiltersProp
           {dateRanges.map(({ id, label }) => (
             <button
               key={id}
-              onClick={() => onFilterChange('dateRange', id)}
+              onClick={() => onFilterChange('dateRange', id as 'all' | 'today' | 'week' | 'month')}
               className={`
                 flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-glass transition-all
                 ${filters.dateRange === id
