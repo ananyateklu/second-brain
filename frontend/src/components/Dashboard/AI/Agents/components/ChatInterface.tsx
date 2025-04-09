@@ -26,6 +26,7 @@ interface ChatInterfaceProps {
 const getContainerBackground = (theme: string) => {
     if (theme === 'dark') return 'bg-gray-900/30';
     if (theme === 'midnight') return 'bg-[#1e293b]/30';
+    if (theme === 'full-dark') return 'bg-[rgba(var(--color-surface-rgb),0.8)]';
     return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]';
 };
 
@@ -48,7 +49,7 @@ export const ChatInterface = ({
 
     if (!selectedAgent) {
         return (
-            <div className={`h-full flex items-center justify-center ${cardClasses} border border-[var(--color-border)] dark:border-white/10`}>
+            <div className={`h-full flex items-center justify-center ${cardClasses} border border-[var(--color-border)]`}>
                 <div className="text-center">
                     <MessageSquare className="w-10 h-10 text-[var(--color-textSecondary)] mx-auto mb-3" />
                     <h3 className="text-base font-semibold text-[var(--color-text)] mb-1">
@@ -63,16 +64,16 @@ export const ChatInterface = ({
     }
 
     return (
-        <div className={`h-full flex flex-col ${cardClasses} border border-[var(--color-border)] dark:border-white/10`}>
+        <div className={`h-full flex flex-col ${cardClasses} border border-[var(--color-border)]`}>
             {/* Chat Header */}
             <div className={`
-                shrink-0 p-3 border-b border-[var(--color-border)] dark:border-white/10 flex items-center justify-between
+                shrink-0 p-3 border-b border-[var(--color-border)] flex items-center justify-between
                 ${getContainerBackground(theme)}
                 backdrop-blur-xl
                 relative z-[10]
             `}>
                 <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-lg border border-[var(--color-border)] dark:border-white/10" style={{ backgroundColor: `${selectedAgent.color}20` }}>
+                    <div className="p-1.5 rounded-lg border border-[var(--color-border)]" style={{ backgroundColor: `${selectedAgent.color}20` }}>
                         <Bot className="w-4 h-4" style={{ color: selectedAgent.color }} />
                     </div>
                     <div>
@@ -83,7 +84,7 @@ export const ChatInterface = ({
                 <div className="flex items-center gap-1.5">
                     <button
                         onClick={onNewChat}
-                        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md bg-[var(--color-surface)]/50 backdrop-blur-sm text-[var(--color-textSecondary)] border border-[var(--color-border)] dark:border-white/10 hover:bg-[var(--color-surfaceHover)] hover:border-[var(--color-textSecondary)] dark:hover:border-white/20 transition-colors"
+                        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md bg-[var(--color-surface)]/50 backdrop-blur-sm text-[var(--color-textSecondary)] border border-[var(--color-border)] hover:bg-[var(--color-surfaceHover)] hover:border-[var(--color-textSecondary)] transition-colors"
                     >
                         <MessageSquare className="w-3.5 h-3.5" />
                         <span>New Chat</span>
@@ -102,7 +103,7 @@ export const ChatInterface = ({
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-1.5 rounded-md bg-[var(--color-surface)]/50 backdrop-blur-sm hover:bg-[var(--color-surfaceHover)] text-[var(--color-textSecondary)] border border-[var(--color-border)] dark:border-white/10 hover:border-[var(--color-textSecondary)] dark:hover:border-white/20 transition-colors"
+                        className="p-1.5 rounded-md bg-[var(--color-surface)]/50 backdrop-blur-sm hover:bg-[var(--color-surfaceHover)] text-[var(--color-textSecondary)] border border-[var(--color-border)] hover:border-[var(--color-textSecondary)] transition-colors"
                     >
                         <X className="w-4 h-4" />
                     </button>

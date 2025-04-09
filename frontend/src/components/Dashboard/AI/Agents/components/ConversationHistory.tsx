@@ -26,6 +26,7 @@ export const ConversationHistory = ({
     const getContainerBackground = () => {
         if (theme === 'dark') return 'bg-gray-900/95';
         if (theme === 'midnight') return 'bg-[#1e293b]/95';
+        if (theme === 'full-dark') return 'bg-[rgba(var(--color-surface-rgb),0.95)]';
         return 'bg-[color-mix(in_srgb,var(--color-background)_98%,var(--color-surface))]';
     };
 
@@ -62,7 +63,7 @@ export const ConversationHistory = ({
         <div className="relative" ref={dropdownRef}>
             <button
                 onClick={handleHistoryClick}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md bg-[var(--color-surface)]/50 backdrop-blur-sm text-[var(--color-textSecondary)] border border-[var(--color-border)] dark:border-white/10 hover:bg-[var(--color-surfaceHover)] hover:border-[var(--color-textSecondary)] dark:hover:border-white/20 transition-colors"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-md bg-[var(--color-surface)]/50 backdrop-blur-sm text-[var(--color-textSecondary)] border border-[var(--color-border)] hover:bg-[var(--color-surfaceHover)] hover:border-[var(--color-textSecondary)] transition-colors"
             >
                 <History className="w-3.5 h-3.5" />
                 <span>History</span>
@@ -75,8 +76,8 @@ export const ConversationHistory = ({
                         exit={{ opacity: 0, y: -10 }}
                         className={`
                             absolute top-full right-0 mt-2 w-72 rounded-lg 
-                            shadow-[0_2px_8px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.16)] 
-                            border border-[var(--color-border)] dark:border-white/10 
+                            shadow-[0_2px_8px_rgba(0,0,0,0.08)] 
+                            border border-[var(--color-border)] 
                             p-2 backdrop-blur-xl
                             ${getContainerBackground()}
                         `}

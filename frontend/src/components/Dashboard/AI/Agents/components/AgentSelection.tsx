@@ -71,12 +71,12 @@ export const AgentSelection = ({
         >
             <div className={`h-full flex flex-col bg-[var(--color-surface)] rounded-lg ${cardClasses?.replace(/border(?:-[a-z]+)?/g, '')} border ${getBorderColor()} shadow-[0_8px_16px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_16px_rgba(0,0,0,0.3)]`}>
                 {/* Provider Selection and Search */}
-                <div className="shrink-0 p-3 border-b border-[var(--color-border)] dark:border-[#1e293b] space-y-2">
+                <div className="shrink-0 p-3 border-b border-[var(--color-border)] space-y-2">
                     <div className="relative group">
                         <select
                             value={selectedProvider ?? ''}
                             onChange={(e) => setSelectedProvider(e.target.value)}
-                            className="w-full pl-2.5 pr-8 py-1.5 text-xs rounded-lg bg-[var(--color-surface)] text-[var(--color-text)] border border-[var(--color-border)] dark:border-[#1e293b] focus:outline-none hover:bg-[var(--color-surfaceHover)] appearance-none transition-all duration-200"
+                            className="w-full pl-2.5 pr-8 py-1.5 text-xs rounded-lg bg-[var(--color-surface)] text-[var(--color-text)] border border-[var(--color-border)] focus:outline-none hover:bg-[var(--color-surfaceHover)] appearance-none transition-all duration-200"
                         >
                             {Object.keys(groupedModels).map((provider) => (
                                 <option key={provider} value={provider}>{provider} Agents</option>
@@ -93,7 +93,7 @@ export const AgentSelection = ({
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder="Search agents..."
-                            className="w-full px-2.5 py-1.5 pl-8 pr-7 text-xs rounded-lg bg-[var(--color-surface)] text-[var(--color-text)] border border-[var(--color-border)] dark:border-[#1e293b] focus:outline-none hover:bg-[var(--color-surfaceHover)] transition-all duration-200"
+                            className="w-full px-2.5 py-1.5 pl-8 pr-7 text-xs rounded-lg bg-[var(--color-surface)] text-[var(--color-text)] border border-[var(--color-border)] focus:outline-none hover:bg-[var(--color-surfaceHover)] transition-all duration-200"
                         />
                         <AnimatePresence mode="sync">
                             {searchQuery && (
@@ -134,14 +134,13 @@ export const AgentSelection = ({
                                             w-full px-2 py-1.5 rounded-lg
                                             ${selectedAgent?.id === model.id
                                                 ? `bg-[${model.color}]/5 border border-[${model.color}] text-[${model.color}]`
-                                                : 'bg-[var(--color-surface)] text-[var(--color-text)] hover:bg-[var(--color-surfaceHover)] border border-[var(--color-border)] dark:border-[#1e293b] hover:border-[var(--color-textSecondary)] dark:hover:border-[#334155]'
+                                                : 'bg-[var(--color-surface)] text-[var(--color-text)] hover:bg-[var(--color-surfaceHover)] border border-[var(--color-border)] hover:border-[var(--color-textSecondary)]'
                                             }
                                             ${!model.isConfigured ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
                                             flex items-center gap-2
                                             group focus:outline-none
                                             transition-all duration-200
                                             shadow-[0_2px_8px_rgba(0,0,0,0.08)]
-                                            dark:shadow-[0_2px_8px_rgba(0,0,0,0.16)]
                                         `}
                                         style={selectedAgent?.id === model.id ? {
                                             backgroundColor: `${model.color}10`,
@@ -191,7 +190,7 @@ export const AgentSelection = ({
                                 animate={{ opacity: 1, y: 0 }}
                                 className="text-center py-6"
                             >
-                                <div className="bg-[var(--color-surface)] rounded-xl p-4 mx-auto max-w-[200px] border border-[var(--color-border)] dark:border-[#1e293b] shadow-[0_2px_8px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.16)]">
+                                <div className="bg-[var(--color-surface)] rounded-xl p-4 mx-auto max-w-[200px] border border-[var(--color-border)] shadow-[0_2px_8px_rgba(0,0,0,0.08)]">
                                     <Bot className="w-8 h-8 text-[var(--color-textSecondary)] mx-auto mb-2" />
                                     <h3 className="text-sm font-semibold text-[var(--color-text)] mb-1">
                                         {searchQuery ? 'No Matching Agents' : 'No Agents Available'}

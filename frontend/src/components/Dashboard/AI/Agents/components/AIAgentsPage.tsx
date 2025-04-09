@@ -73,12 +73,14 @@ export function AIAgentsPage() {
     const getContainerBackground = () => {
         if (theme === 'dark') return 'bg-gray-900/30';
         if (theme === 'midnight') return 'bg-white/5';
+        if (theme === 'full-dark') return 'bg-[rgba(var(--color-surface-rgb),0.8)]';
         return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]';
     };
 
     const getBorderColor = () => {
         if (theme === 'midnight') return 'border-[#334155]';
         if (theme === 'dark') return 'border-[#1e293b]';
+        if (theme === 'full-dark') return 'border-[rgba(var(--color-border-rgb),0.5)]';
         return 'border-[var(--color-border)]';
     };
 

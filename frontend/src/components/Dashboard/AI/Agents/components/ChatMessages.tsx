@@ -15,9 +15,11 @@ interface ChatMessagesProps {
 }
 
 const getContainerBackground = (theme: string) => {
-    if (theme === 'dark') return 'bg-gray-900/20';
-    if (theme === 'midnight') return 'bg-[#1e293b]/20';
-    return 'bg-[color-mix(in_srgb,var(--color-background)_90%,var(--color-surface))]';
+    if (theme === 'light') {
+        return 'bg-[color-mix(in_srgb,var(--color-background)_90%,var(--color-surface))]';
+    } else {
+        return 'bg-[rgba(var(--color-surface-rgb),0.2)]';
+    }
 };
 
 export const ChatMessages = ({
@@ -35,11 +37,10 @@ export const ChatMessages = ({
             ${getContainerBackground(theme)}
             backdrop-blur-xl 
             border-[0.5px] 
-            border-white/10
+            border-[rgba(var(--color-border-rgb),0.1)]
             shadow-[0_4px_24px_-4px_rgba(0,0,0,0.12)]
-            dark:shadow-[0_4px_24px_-4px_rgba(0,0,0,0.3)]
             ring-1
-            ring-white/5
+            ring-[rgba(var(--color-border-rgb),0.05)]
             transition-all 
             duration-300
         `}>

@@ -5,9 +5,11 @@ interface TypingAnimationProps {
 }
 
 const getContainerBackground = (theme: string) => {
-    if (theme === 'dark') return 'bg-gray-800/30';
-    if (theme === 'midnight') return 'bg-[#1e293b]/30';
-    return 'bg-white/50';
+    if (theme === 'light') {
+        return 'bg-white/50';
+    } else {
+        return 'bg-[rgba(var(--color-surface-rgb),0.3)]';
+    }
 };
 
 export const TypingAnimation = ({ agentColor = 'var(--color-accent)' }: TypingAnimationProps) => {
@@ -18,7 +20,7 @@ export const TypingAnimation = ({ agentColor = 'var(--color-accent)' }: TypingAn
             flex items-center gap-3 px-4 py-2.5
             ${getContainerBackground(theme)}
             backdrop-blur-xl
-            border border-[var(--color-border)] dark:border-white/10
+            border border-[rgba(var(--color-border-rgb),0.1)]
             rounded-2xl rounded-bl-md
             shadow-sm
             transition-all duration-300

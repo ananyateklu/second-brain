@@ -10,15 +10,19 @@ interface MessageInputProps {
 }
 
 const getContainerBackground = (theme: string) => {
-    if (theme === 'dark') return 'bg-gray-900/30';
-    if (theme === 'midnight') return 'bg-[#1e293b]/30';
-    return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]';
+    if (theme === 'light') {
+        return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]';
+    } else {
+        return 'bg-[rgba(var(--color-surface-rgb),0.3)]';
+    }
 };
 
 const getInputBackground = (theme: string) => {
-    if (theme === 'dark') return 'bg-gray-900/50';
-    if (theme === 'midnight') return 'bg-[#1e293b]/50';
-    return 'bg-[color-mix(in_srgb,var(--color-background)_90%,var(--color-surface))]';
+    if (theme === 'light') {
+        return 'bg-[color-mix(in_srgb,var(--color-background)_90%,var(--color-surface))]';
+    } else {
+        return 'bg-[rgba(var(--color-surface-rgb),0.5)]';
+    }
 };
 
 export const MessageInput = ({
@@ -61,7 +65,7 @@ export const MessageInput = ({
 
     return (
         <div className={`
-            shrink-0 border-t border-[var(--color-border)] dark:border-white/10
+            shrink-0 border-t border-[var(--color-border)]
             ${getContainerBackground(theme)}
             backdrop-blur-xl
         `}>
@@ -79,12 +83,12 @@ export const MessageInput = ({
                                 w-full px-3 pr-16 py-[7px] text-sm rounded-md
                                 ${getInputBackground(theme)}
                                 backdrop-blur-sm text-[var(--color-text)]
-                                border border-[var(--color-border)] dark:border-white/10
+                                border border-[var(--color-border)]
                                 focus:outline-none focus:border-[var(--color-textSecondary)]
                                 placeholder-[var(--color-textSecondary)]
                                 transition-all duration-200
                                 hover:bg-[var(--color-surfaceHover)]
-                                hover:border-[var(--color-textSecondary)] dark:hover:border-white/20
+                                hover:border-[var(--color-textSecondary)]
                                 resize-none
                                 ${hasMultipleLines ? 'overflow-y-auto scrollbar-thin scrollbar-thumb-[var(--color-border)] hover:scrollbar-thumb-[var(--color-textSecondary)] scrollbar-track-transparent' : 'overflow-hidden'}
                                 leading-[1.4]
@@ -108,7 +112,7 @@ export const MessageInput = ({
                                 px-3 py-1.5 rounded-md
                                 ${currentMessage.trim()
                                     ? 'bg-[var(--color-accent)] hover:bg-[var(--color-accent)]/90 text-white border border-[var(--color-accent)]'
-                                    : 'bg-[var(--color-surface)]/50 text-[var(--color-textSecondary)] border border-[var(--color-border)] dark:border-white/10'
+                                    : 'bg-[var(--color-surface)]/50 text-[var(--color-textSecondary)] border border-[var(--color-border)]'
                                 }
                                 disabled:opacity-50 disabled:cursor-not-allowed
                                 transition-all duration-200

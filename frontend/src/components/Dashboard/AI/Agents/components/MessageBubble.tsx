@@ -42,24 +42,30 @@ interface ExecutionStats {
 }
 
 const getContainerBackground = (theme: string) => {
-    if (theme === 'dark') return 'bg-gray-800/30 border-gray-700/20 dark:shadow-[inset_0px_0.5px_0px_0px_rgba(255,255,255,0.05)]';
-    if (theme === 'midnight') return 'bg-[#1e293b]/30 border-slate-700/20 shadow-[inset_0px_0.5px_0px_0px_rgba(255,255,255,0.05)]';
-    return 'bg-white/50 border-gray-200/40 shadow-[inset_0px_0.5px_0px_0px_rgba(255,255,255,0.8)]';
+    // Use CSS variables for consistency across themes
+    if (theme === 'light') {
+        return 'bg-white/50 border-[rgba(var(--color-border-rgb),0.4)] shadow-[inset_0px_0.5px_0px_0px_rgba(255,255,255,0.8)]';
+    } else {
+        // Handles dark, midnight, and full-dark
+        return 'bg-[rgba(var(--color-surface-rgb),0.3)] border-[rgba(var(--color-border-rgb),0.2)] shadow-[inset_0px_0.5px_0px_0px_rgba(255,255,255,0.05)]';
+    }
 };
 
 const getUserMessageStyle = (theme: string, agentColor: string = 'var(--color-accent)') => {
     const baseStyle = {
+        // Base styles suitable for light theme
         backgroundColor: `${agentColor}08`,
         borderColor: `${agentColor}15`,
         color: agentColor,
-        boxShadow: 'inset 0px 0.5px 0px 0px rgba(255,255,255,0.08)'
+        boxShadow: 'inset 0px 0.5px 0px 0px rgba(255,255,255,0.08)' // Subtle inner shadow
     };
 
-    if (theme === 'dark' || theme === 'midnight') {
+    // Adjust for dark themes (dark, midnight, full-dark)
+    if (theme !== 'light') {
         return {
             ...baseStyle,
-            backgroundColor: `${agentColor}10`,
-            borderColor: `${agentColor}20`,
+            backgroundColor: `${agentColor}15`, // Slightly more prominent background in dark modes
+            borderColor: `${agentColor}25`,     // Slightly more prominent border in dark modes
         };
     }
 
@@ -76,20 +82,18 @@ const formatText = (text: string) => {
 };
 
 const getAvatarRingStyle = (theme: string, agentColor: string) => {
+    // Use CSS variables for theme adaptability
     const baseStyle = {
-        backgroundColor: `${agentColor}10`,
-        '--tw-ring-color': `${agentColor}30`,
-        '--tw-ring-offset-color': 'var(--color-background)'
+        backgroundColor: `${agentColor}10`, // Base background for the avatar circle
+        '--tw-ring-color': `${agentColor}30`, // Ring color based on agent color
+        '--tw-ring-offset-color': 'var(--color-background)' // Ring offset should match the main background
     } as React.CSSProperties;
 
-    if (theme === 'midnight') {
-        return {
-            ...baseStyle,
-            backgroundColor: 'rgba(30, 41, 59, 0.4)',
-            '--tw-ring-color': 'rgba(148, 163, 184, 0.1)',
-            '--tw-ring-offset-color': 'rgba(30, 41, 59, 0.3)'
-        };
-    }
+    // Specific adjustments can be made here if needed for certain themes, but relying on CSS variables is preferred.
+    // Example: If midnight needed a specific override that variables couldn't handle:
+    // if (theme === 'midnight') { 
+    //     return { ...baseStyle, /* specific overrides */ };
+    // }
 
     return baseStyle;
 };
@@ -248,51 +252,15 @@ export function MessageBubble({ message, onReact, onCopy, agentName, agentColor 
                             relative px-4 py-2.5
                             shadow-sm 
                             hover:shadow-md
-                            backdrop-blur-xl
-                            border
-                            transition-all duration-300
-                            ${isUser ? 'rounded-2xl rounded-br-md' : 'rounded-2xl rounded-bl-md'}
-                            ${!isUser ? getContainerBackground(theme) : ''}
-                            hover:scale-[1.0015]
-                            active:scale-[0.9985]
-                            before:absolute
-                            before:inset-0
-                            before:rounded-2xl
-                            before:bg-gradient-to-b
-                            before:from-white/5
-                            before:to-transparent
-                            before:opacity-50
-                            dark:before:opacity-30
-                            overflow-hidden
+                            rounded-lg border
+                            backdrop-blur-sm
+                            transition-all duration-200
+                            ${isUser ? '' : getContainerBackground(theme)}
                         `}
-                        style={isUser ? getUserMessageStyle(theme, agentColor) : undefined}
+                        style={isUser ? getUserMessageStyle(theme, agentColor) : {}}
                     >
-                        <div className="relative prose max-w-none text-[14px] leading-relaxed">
-                            <div className="space-y-3">
-                                {message.content.split('\n').map((line, index) => {
-                                    if (line.startsWith('**') && line.endsWith('**') || line.startsWith('#')) {
-                                        return (
-                                            <h3 key={index} className="text-[15px] font-semibold mt-4 first:mt-0 text-[var(--color-text)] dark:text-[var(--color-text)]/95">
-                                                {line.replace(/\*\*|#/g, '')}
-                                            </h3>
-                                        );
-                                    }
-                                    if (line.trim().startsWith('*') || line.trim().startsWith('-')) {
-                                        return (
-                                            <div key={index} className="flex gap-2 pl-2">
-                                                <span className="text-[var(--color-textSecondary)]">•</span>
-                                                <span className="text-[var(--color-text)] dark:text-[var(--color-text)]/95">{formatText(line.trim().replace(/^\*\s*|-\s*/, ''))}</span>
-                                            </div>
-                                        );
-                                    }
-                                    if (!line.trim()) return null;
-                                    return (
-                                        <p key={index} className="text-[var(--color-text)] dark:text-[var(--color-text)]/95">
-                                            {formatText(line)}
-                                        </p>
-                                    );
-                                })}
-                            </div>
+                        <div className="prose prose-sm max-w-none text-[var(--color-text)] dark:text-inherit leading-relaxed">
+                            {formatText(message.content)}
                         </div>
                     </div>
 
@@ -308,7 +276,7 @@ export function MessageBubble({ message, onReact, onCopy, agentName, agentColor 
                                         <Clock className="w-3 h-3 animate-pulse" />
                                     )}
                                     {message.status === 'sent' && (
-                                        <CheckCircle  className="w-3 h-3" />
+                                        <CheckCircle className="w-3 h-3" />
                                     )}
                                     {message.status === 'error' && (
                                         <AlertCircle className="w-3 h-3 text-[var(--color-error)]" />
@@ -323,7 +291,7 @@ export function MessageBubble({ message, onReact, onCopy, agentName, agentColor 
                                             {/* Token count */}
                                             <span>tokens used:</span>
                                             <span className="opacity-80">{executionStats.tokenUsage?.total.toLocaleString()}</span>
-                          
+
 
                                             {/* Core metrics */}
                                             {executionStats.coreMetrics && (
