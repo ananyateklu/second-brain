@@ -59,7 +59,7 @@ export function ReminderCard({
 }: ReminderCardProps) {
   const { theme } = useTheme();
   const { toggleReminderCompletion } = useReminders();
-  const isDark = useMemo(() => theme === 'dark' || theme === 'midnight', [theme]);
+  const isDark = useMemo(() => theme === 'dark' || theme === 'midnight' || theme === 'full-dark', [theme]);
   const [isSafari] = useState(() => /^((?!chrome|android).)*safari/i.test(navigator.userAgent));
   const isOverdue = useMemo(() =>
     new Date(reminder.dueDateTime) < new Date() && !reminder.isSnoozed && !reminder.isCompleted,
@@ -117,14 +117,14 @@ export function ReminderCard({
 
   const itemColorClasses = useCallback((type: string) => {
     if (type === 'tag') return isDark
-      ? 'bg-purple-500/10 text-purple-300 border-[0.5px] border-purple-500/20'
-      : 'bg-purple-50 text-purple-400 border border-purple-100';
+      ? 'bg-[var(--color-surface)]/50 text-[var(--color-reminder)] ring-1 ring-white/10'
+      : 'bg-purple-50 text-purple-600 ring-1 ring-purple-100';
     if (type === 'idea') return isDark
-      ? 'bg-[var(--color-idea)]/10 text-[var(--color-idea)] border-[0.5px] border-gray-700'
-      : 'bg-[var(--color-idea)]/10 text-[var(--color-idea)] border border-[var(--color-idea)]/30';
+      ? 'bg-[var(--color-idea)]/10 text-[var(--color-idea)] ring-1 ring-white/10'
+      : 'bg-[var(--color-idea)]/10 text-[var(--color-idea)] ring-1 ring-black/5';
     if (type === 'note') return isDark
-      ? 'bg-[var(--color-note)]/10 text-[var(--color-note)] border-[0.5px] border-gray-700'
-      : 'bg-[var(--color-note)]/10 text-[var(--color-note)] border border-[var(--color-note)]/30';
+      ? 'bg-[var(--color-note)]/10 text-[var(--color-note)] ring-1 ring-white/10'
+      : 'bg-[var(--color-note)]/10 text-[var(--color-note)] ring-1 ring-black/5';
     return ''; // Default case
   }, [isDark]);
 
@@ -284,7 +284,7 @@ const TagList = memo(function TagList({ visibleItems, remainingCount, itemColorC
       flex flex-wrap gap-1
       ${viewMode === 'list' ? 'items-center' : 'items-start'}
       ${viewMode === 'grid' ? '' : ''}
-      min-h-[20px] overflow-hidden
+      min-h-[20px]
     `}>
       {visibleItems.map(item => (
         <span

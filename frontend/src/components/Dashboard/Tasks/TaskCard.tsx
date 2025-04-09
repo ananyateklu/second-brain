@@ -103,7 +103,7 @@ export function TaskCard({
   const [showArchiveWarning, setShowArchiveWarning] = useState(false);
   const [isSafari] = useState(() => /^((?!chrome|android).)*safari/i.test(navigator.userAgent));
 
-  const isDark = useMemo(() => theme === 'dark' || theme === 'midnight', [theme]);
+  const isDark = useMemo(() => theme === 'dark' || theme === 'midnight' || theme === 'full-dark', [theme]);
   const isMidnight = useMemo(() => theme === 'midnight', [theme]);
 
   const getBackgroundClass = useMemo(() => {
@@ -171,14 +171,14 @@ export function TaskCard({
 
   const itemColorClasses = useCallback((type: string) => {
     if (type === 'tag') return isDark
-      ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)] border-[0.5px] border-gray-700'
-      : 'bg-[var(--color-accent)]/10 text-[var(--color-accent)] border border-[var(--color-accent)]/30';
+      ? 'bg-[var(--color-surface)]/50 text-[var(--color-accent)] ring-1 ring-white/10'
+      : 'bg-[var(--color-accent)]/10 text-[var(--color-accent)] ring-1 ring-black/5';
     if (type === 'idea') return isDark
-      ? 'bg-[var(--color-idea)]/10 text-[var(--color-idea)] border-[0.5px] border-gray-700'
-      : 'bg-[var(--color-idea)]/10 text-[var(--color-idea)] border border-[var(--color-idea)]/30';
+      ? 'bg-[var(--color-surface)]/50 text-[var(--color-idea)] ring-1 ring-white/10'
+      : 'bg-[var(--color-idea)]/10 text-[var(--color-idea)] ring-1 ring-black/5';
     if (type === 'note') return isDark
-      ? 'bg-[var(--color-note)]/10 text-[var(--color-note)] border-[0.5px] border-gray-700'
-      : 'bg-[var(--color-note)]/10 text-[var(--color-note)] border border-[var(--color-note)]/30';
+      ? 'bg-[var(--color-surface)]/50 text-[var(--color-note)] ring-1 ring-white/10'
+      : 'bg-[var(--color-note)]/10 text-[var(--color-note)] ring-1 ring-black/5';
     return ''; // Default case
   }, [isDark]);
 
@@ -386,7 +386,7 @@ const TagList = memo(function TagList({ visibleItems, remainingCount, itemColorC
       flex flex-wrap gap-1
       ${viewMode === 'list' ? 'items-center' : 'items-start'}
       ${viewMode === 'grid' ? '' : ''}
-      min-h-[20px] overflow-hidden
+      min-h-[20px]
     `}>
       {visibleItems.map(item => (
         <span
