@@ -61,7 +61,6 @@ export function ReminderCard({
   const { toggleReminderCompletion } = useReminders();
   const isDark = useMemo(() => theme === 'dark' || theme === 'midnight', [theme]);
   const [isSafari] = useState(() => /^((?!chrome|android).)*safari/i.test(navigator.userAgent));
-  const isMidnight = useMemo(() => theme === 'midnight', [theme]);
   const isOverdue = useMemo(() =>
     new Date(reminder.dueDateTime) < new Date() && !reminder.isSnoozed && !reminder.isCompleted,
     [reminder.dueDateTime, reminder.isSnoozed, reminder.isCompleted]
@@ -81,7 +80,7 @@ export function ReminderCard({
       ${isSelected ? 'ring-2 ring-[var(--color-accent)]' : ''}
       ${getBackgroundColor()}
       backdrop-blur-xl 
-      border ${isMidnight ? 'border-white/10' : 'border-transparent'}
+      border border-[color:var(--color-border)]
       hover:border-purple-300/40 dark:hover:border-purple-400/40
       transition-all duration-300 
       rounded-lg
@@ -89,13 +88,12 @@ export function ReminderCard({
       dark:shadow-[0_2px_6px_-1px_rgba(0,0,0,0.2),0_2px_4px_-1px_rgba(0,0,0,0.15)]
       hover:shadow-[0_4px_10px_-2px_rgba(0,0,0,0.15),0_3px_6px_-2px_rgba(0,0,0,0.1)]
       dark:hover:shadow-[0_4px_10px_-2px_rgba(0,0,0,0.25),0_3px_6px_-2px_rgba(0,0,0,0.2)]
-      ring-1 ring-black/5 dark:ring-white/10
       hover:ring-black/10 dark:hover:ring-white/15
       ${onSelect || onClick ? 'cursor-pointer hover:-translate-y-0.5 hover:scale-[1.01]' : ''}
       ${reminder.isCompleted ? 'opacity-85' : ''}
     `;
     return base.trim();
-  }, [isSelected, theme, onSelect, onClick, reminder.isCompleted, isSafari, isMidnight]);
+  }, [isSelected, theme, onSelect, onClick, reminder.isCompleted, isSafari]);
 
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();

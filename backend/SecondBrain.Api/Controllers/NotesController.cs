@@ -668,6 +668,7 @@ namespace SecondBrain.Api.Controllers
                 ArchivedAt = n.ArchivedAt,
                 CreatedAt = n.CreatedAt,
                 UpdatedAt = n.UpdatedAt,
+                IsIdea = n.IsIdea,
                 LinkedNoteIds = n.NoteLinks
                     .Where(nl => !nl.IsDeleted)
                     .Select(nl => nl.LinkedNoteId)

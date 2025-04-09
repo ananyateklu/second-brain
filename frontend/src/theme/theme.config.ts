@@ -89,5 +89,34 @@ export const themes: Record<ThemeName, ThemeConfig> = {
       'text-rgb': '241, 245, 249',
       'border-rgb': '30, 41, 59'
     }
+  },
+  'full-dark': {
+    name: 'Full Dark',
+    colors: {
+      primary: '#60a5fa',
+      secondary: '#94a3b8',
+      background: '#0a0a0a',
+      surface: '#27272a',
+      text: '#ededed',
+      textSecondary: '#a1a1aa',
+      border: '#2d2d2d',
+      accent: '#4c9959',
+      // Semantic colors
+      note: '#60a5fa',
+      idea: '#fcd34d',
+      task: '#64ab6f',
+      reminder: '#a78bfa',
+      tag: '#60a5fa',
+      // Additional UI colors
+      surfaceHover: '#3f3f46',
+      surfaceActive: '#52525b',
+      divider: '#2d2d2d',
+      focus: 'rgba(96, 165, 250, 0.5)',
+      gradientBackground: 'bg-gradient-to-br from-[#0a0a0a] via-[#27272a] to-[#3f3f46]',
+      // RGB values for opacity support
+      'surface-rgb': '39, 39, 42',
+      'text-rgb': '237, 237, 237',
+      'border-rgb': '45, 45, 45'
+    }
   }
 }; 

@@ -1,6 +1,6 @@
 import { useTheme } from '../contexts/themeContextUtils';
 import { themes, ThemeName } from '../theme/theme.config';
-import { Sun, Moon, Palette } from 'lucide-react';
+import { Sun, Moon, Palette, Eclipse } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export function ThemeSelector() {
@@ -33,6 +33,8 @@ export function ThemeSelector() {
         return <Moon className={`w-4 h-4 ${iconColor}`} />;
       case 'midnight':
         return <Palette className={`w-4 h-4 ${iconColor}`} />;
+      case 'full-dark':
+        return <Eclipse className={`w-4 h-4 ${iconColor}`} />;
       default:
         return null;
     }
@@ -45,6 +47,8 @@ export function ThemeSelector() {
           return 'bg-gray-900/30';
         case 'midnight':
           return 'bg-[#1e293b]/95';
+        case 'full-dark':
+          return 'bg-[rgba(20,20,20,0.85)]';
         default:
           return 'bg-[#f8fafc]/95';
       }
@@ -65,6 +69,8 @@ export function ThemeSelector() {
           return `${baseStyles} text-gray-200 hover:bg-[#323842]`;
         case 'midnight':
           return `${baseStyles} text-gray-200 hover:bg-[#2a3a53]`;
+        case 'full-dark':
+          return `${baseStyles} text-gray-200 hover:bg-[rgba(31,31,31,0.9)]`;
         default:
           return `${baseStyles} text-gray-700 hover:bg-[#f1f5f9]`;
       }
@@ -75,6 +81,7 @@ export function ThemeSelector() {
     switch (themeName) {
       case 'midnight':
       case 'dark':
+      case 'full-dark':
         return `${baseStyles} ${textColor} hover:bg-[var(--color-secondary)]/30`;
       default:
         return `${baseStyles} ${textColor} hover:bg-[var(--color-secondary)]`;
@@ -86,7 +93,7 @@ export function ThemeSelector() {
   }
 
   return (
-    <div className={`flex gap-2 p-2 rounded-lg transition-colors duration-200 ${getContainerBackground()} ${theme === 'dark' ? 'border border-white/10' : ''}`}>
+    <div className={`flex gap-2 p-2 rounded-lg transition-colors duration-200 ${getContainerBackground()} ${theme === 'dark' || theme === 'midnight' || theme === 'full-dark' ? 'border border-white/10' : ''}`}>
       {Object.keys(themes).map((themeName) => {
         const currentTheme = themes[themeName as ThemeName];
         const isSelected = theme === themeName;

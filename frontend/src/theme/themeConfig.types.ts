@@ -1,4 +1,4 @@
-export type ThemeName = 'light' | 'dark' | 'midnight';
+export type ThemeName = 'light' | 'dark' | 'midnight' | 'full-dark';
 
 export interface ThemeColor {
   primary: string;

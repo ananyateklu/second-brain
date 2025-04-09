@@ -16,12 +16,12 @@ const applyTheme = (themeName: ThemeName) => {
   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
   // Remove existing theme classes
-  root.classList.remove('light', 'dark', 'midnight');
+  root.classList.remove('light', 'dark', 'midnight', 'full-dark');
   root.classList.add(themeName);
 
   // Set data-theme attribute
   root.setAttribute('data-theme', themeName);
-  
+
   // Set color-scheme
   root.style.colorScheme = themeName === 'light' ? 'light' : 'dark';
 
@@ -49,7 +49,14 @@ const applyTheme = (themeName: ThemeName) => {
       root.style.removeProperty('--color-surface');
       root.style.backgroundColor = theme.colors.background;
       document.body.style.backgroundColor = theme.colors.background;
-    } else {
+    } else if (themeName === 'full-dark') {
+      root.style.setProperty('--note-bg-opacity', '0.4');
+      root.style.setProperty('--note-bg-color', '#27272a');
+      root.style.setProperty('--color-background', '#0a0a0a');
+      root.style.setProperty('--color-surface', '#27272a');
+      root.style.backgroundColor = theme.colors.background;
+      document.body.style.backgroundColor = theme.colors.background;
+    } else { // Light theme
       root.style.removeProperty('--note-bg-opacity');
       root.style.removeProperty('--note-bg-color');
       root.style.removeProperty('--color-background');
@@ -91,8 +98,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       switch (prev) {
         case 'light': return 'dark';
         case 'dark': return 'midnight';
-        case 'midnight': return 'light';
-        default: return 'light';
+        case 'midnight': return 'full-dark';
+        case 'full-dark': return 'light';
+        default: return 'light'; // Fallback
       }
     });
   }, []);

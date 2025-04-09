@@ -17,7 +17,7 @@ export const themeScript = `
       root.setAttribute('data-theme', theme);
       
       // Add dark class for dark themes
-      root.classList.toggle('dark', theme === 'dark' || theme === 'midnight');
+      root.classList.toggle('dark', theme === 'dark' || theme === 'midnight' || theme === 'full-dark');
 
       // Safari-specific fixes
       if (isSafari) {
@@ -31,6 +31,11 @@ export const themeScript = `
           root.style.setProperty('--note-bg-color', 'rgb(17, 24, 39)'); // bg-gray-900
           root.style.removeProperty('--color-background');
           root.style.removeProperty('--color-surface');
+        } else if (theme === 'full-dark') {
+          root.style.setProperty('--note-bg-opacity', '0.4');
+          root.style.setProperty('--note-bg-color', '#27272a'); // Use updated surface color (zinc-800)
+          root.style.setProperty('--color-background', '#0a0a0a');
+          root.style.setProperty('--color-surface', '#27272a'); // Use updated surface color (zinc-800)
         } else {
           root.style.removeProperty('--note-bg-opacity');
           root.style.removeProperty('--note-bg-color');

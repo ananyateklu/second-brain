@@ -54,7 +54,7 @@ export function NoteCard({
       ${isSelected ? 'ring-2 ring-[var(--color-accent)] rounded-lg' : ''}
       ${getBackgroundColor()} 
       backdrop-blur-xl 
-      border border-transparent
+      border border-[color:var(--color-border)]
       hover:border-blue-400/50 dark:hover:border-blue-500/50
       transition-all duration-300 
       rounded-lg
@@ -62,7 +62,6 @@ export function NoteCard({
       dark:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.4),0_4px_8px_-2px_rgba(0,0,0,0.3)]
       hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.2),0_6px_12px_-4px_rgba(0,0,0,0.15)]
       dark:hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.5),0_6px_12px_-4px_rgba(0,0,0,0.4)]
-      ring-1 ring-black/5 dark:ring-white/10
       hover:ring-black/10 dark:hover:ring-white/20
       ${onSelect || onClick ? 'cursor-pointer hover:-translate-y-1 hover:scale-[1.02]' : ''}
     `;
