@@ -71,7 +71,6 @@ export function ModelSelector({
       case 'audio': return Mic;
       case 'function': return Braces;
       case 'embedding': return Brain;
-      case 'rag': return Database;
       default: return Bot;
     }
   };
@@ -117,8 +116,6 @@ export function ModelSelector({
         return <Braces {...iconProps} />;
       case 'embedding':
         return <Brain {...iconProps} />;
-      case 'rag':
-        return <Database {...iconProps} />;
       default:
         return <Bot {...iconProps} />;
     }

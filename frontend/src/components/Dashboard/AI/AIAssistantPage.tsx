@@ -10,7 +10,6 @@ import { MessageList } from './MessageList';
 import { AudioInterface } from './AudioInterface';
 import { ImageInterface } from './ImageInterface';
 import { FunctionInterface } from './FunctionInterface';
-import { RAGInterface } from './RAGInterface';
 import { useTheme } from '../../../contexts/themeContextUtils';
 
 export function AIAssistantPage() {
@@ -302,12 +301,6 @@ export function AIAssistantPage() {
                   isLoading={isLoading}
                   setIsLoading={setIsLoading}
                   setError={setError}
-                />
-              ) : selectedModel.category === 'rag' ? (
-                <RAGInterface
-                  addMessage={addMessage}
-                  updateMessage={updateMessage}
-                  themeColor={themeColor}
                 />
               ) : selectedModel.category === 'audio' ? (
                 <ChatInterface

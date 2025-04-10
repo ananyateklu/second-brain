@@ -982,17 +982,6 @@ export const AI_MODELS: AIModel[] = [
     size: '175B',
   },
   {
-    id: 'rag-assistant',
-    name: 'Document Assistant',
-    provider: 'openai',
-    category: 'rag',
-    description: 'Upload and query documents using GPT-4',
-    isConfigured: true,
-    isReasoner: false,
-    color: '#10B981',
-    endpoint: 'rag'
-  },
-  {
     id: 'llama3.1:8b-agent',
     name: 'Llama 3.1 (Agent)',
     provider: 'llama',

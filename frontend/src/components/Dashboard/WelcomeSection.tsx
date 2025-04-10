@@ -21,6 +21,7 @@ interface WelcomeSectionProps {
 const getContainerBackground = (theme: string) => {
   if (theme === 'dark') return 'bg-gray-900/30'
   if (theme === 'midnight') return 'bg-[#1e293b]/30'
+  if (theme === 'full-dark') return 'bg-[rgba(var(--color-surface-rgb),0.8)]'
   return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]'
 }
 

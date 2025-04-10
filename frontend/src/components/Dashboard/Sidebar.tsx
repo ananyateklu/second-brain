@@ -38,6 +38,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   function getBackgroundColor() {
     if (theme === 'dark') return 'bg-gray-900/30';
     if (theme === 'midnight') return 'bg-white/5';
+    if (theme === 'full-dark') return 'bg-[rgba(var(--color-surface-rgb),0.8)]';
     return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]';
   }
 
@@ -147,7 +148,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             shadow-[0_4px_16px_-4px_rgba(0,0,0,0.1)]
             dark:shadow-[0_4px_16px_-4px_rgba(0,0,0,0.2)]`}>
             <img
-              src={theme === 'dark' || theme === 'midnight' ? darkLogo : lightLogo}
+              src={theme === 'dark' || theme === 'midnight' || theme === 'full-dark' ? darkLogo : lightLogo}
               alt="Second Brain Logo"
               className="max-h-12 max-w-full"
             />

@@ -40,6 +40,8 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
         return 'hover:bg-[var(--color-secondary)]/50';
       case 'dark':
         return 'hover:bg-[var(--color-secondary)]/30';
+      case 'full-dark':
+        return 'hover:bg-[var(--color-secondary)]/30';
       default:
         return 'hover:bg-[var(--color-secondary)]';
     }
@@ -48,6 +50,7 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
   const getContainerBackground = () => {
     if (theme === 'dark') return 'bg-gray-900/30';
     if (theme === 'midnight') return 'bg-white/5';
+    if (theme === 'full-dark') return 'bg-[rgba(var(--color-surface-rgb),0.8)]';
     return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]';
   };
 
