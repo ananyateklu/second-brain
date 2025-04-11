@@ -13,25 +13,28 @@ Second Brain is an AI-enhanced knowledge management and note-taking system that 
 
 ## Application Screenshots
 
-<p align="center">
-  <img src="frontend/src/assets/MainPageSH.png" alt="Dashboard" width="100%">
-  <p align="center"><em>Dashboard with analytics and quick stats</em></p>
-</p>
-
-<p align="center">
-  <img src="frontend/src/assets/NotesPageSH.png" alt="Notes Page" width="100%">
-  <p align="center"><em>Notes collection with filters and categorization</em></p>
-</p>
-
-<p align="center">
-  <img src="frontend/src/assets/LinkedNotesSH.png" alt="Linked Notes" width="100%">
-  <p align="center"><em>Interactive graph visualization of connected notes</em></p>
-</p>
-
-<p align="center">
-  <img src="frontend/src/assets/AIAgentsSH.png" alt="AI Agents" width="100%">
-  <p align="center"><em>AI Agents interface with multi-provider support</em></p>
-</p>
+<table>
+  <tr>
+    <td align="center">
+      <img src="frontend/src/assets/MainPageSH.png" alt="Dashboard" width="400">
+      <br><em>Dashboard with analytics and quick stats</em>
+    </td>
+    <td align="center">
+      <img src="frontend/src/assets/NotesPageSH.png" alt="Notes Page" width="400">
+      <br><em>Notes collection with filters and categorization</em>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="frontend/src/assets/LinkedNotesSH.png" alt="Linked Notes" width="400">
+      <br><em>Interactive graph visualization of connected notes</em>
+    </td>
+    <td align="center">
+      <img src="frontend/src/assets/AIAgentsSH.png" alt="AI Agents" width="400">
+      <br><em>AI Agents interface with multi-provider support</em>
+    </td>
+  </tr>
+</table>
 
 ## Core Features
 
