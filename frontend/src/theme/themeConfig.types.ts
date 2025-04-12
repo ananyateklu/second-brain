@@ -25,6 +25,33 @@ export interface ThemeColor {
   'surface-rgb': string;
   'text-rgb': string;
   'border-rgb': string;
+
+  // New Semantic Colors for specific components/areas
+  sidebarBackground: string;
+  headerBackground: string;
+  welcomeBarBackground: string;
+  dashboardHomeBackground: string;
+  chatInterfaceBackground: string;
+  conversationHistoryBackground: string;
+  statsEditorBackground: string;
+  statsEditorBorder: string;
+  activityItemBorder: string;
+  activityItemBorderHover: string;
+  themeSelectorContainerBackground: string;
+  themeSelectorButtonBackground: string;
+  themeSelectorButtonBackgroundHover: string;
+  themeSelectorButtonBackgroundSelected: string;
+  themeSelectorButtonText: string;
+  themeSelectorButtonTextSelected: string;
+  themeDropdownButtonBackground: string;
+  themeDropdownButtonBackgroundHover: string;
+  themeDropdownBackground: string;
+  themeDropdownBorder: string;
+  themeDropdownItemBackground: string;
+  themeDropdownItemBackgroundHover: string;
+  themeDropdownItemBackgroundSelected: string;
+  themeDropdownItemText: string;
+  themeDropdownItemTextSelected: string;
 }
 
 export interface ThemeConfig {

@@ -5,7 +5,6 @@ import { getIconBg, getIconColor } from '../../utils/dashboardUtils';
 import { sizeClasses, cardVariants } from '../../utils/welcomeBarUtils';
 import { StatValue } from '../../utils/dashboardContextUtils';
 import { LayoutGrid, Columns, Layout, X, LucideIcon, Settings, BarChart2, ArrowUp, ArrowDown } from 'lucide-react';
-import { useTheme } from '../../contexts/themeContextUtils';
 import {
   AnimatedCounter,
   ChangeIndicator,
@@ -21,37 +20,28 @@ interface StyledWelcomeBarProps {
   className?: string;
 }
 
-const getContainerBackground = (theme: string) => {
-  if (theme === 'dark') return 'bg-gray-900/30'
-  if (theme === 'midnight') return 'bg-[#1e293b]/30'
-  if (theme === 'full-dark') return 'bg-[rgba(var(--color-surface-rgb),0.8)]'
-  return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]'
-}
-
 export const StyledWelcomeBarContainer = ({ children, className = '' }: StyledWelcomeBarProps) => {
-  const { theme } = useTheme();
+  const containerClass = `
+    relative 
+    overflow-hidden 
+    rounded-2xl 
+    bg-[var(--welcome-bar-background)] 
+    backdrop-blur-xl 
+    border-[0.5px] 
+    border-white/10
+    shadow-[4px_0_24px_-2px_rgba(0,0,0,0.12),8px_0_16px_-4px_rgba(0,0,0,0.08)]
+    dark:shadow-[4px_0_24px_-2px_rgba(0,0,0,0.3),8px_0_16px_-4px_rgba(0,0,0,0.2)]
+    ring-1
+    ring-white/5
+    transition-all 
+    duration-300 
+    p-6 
+    mb-6
+    ${className}
+  `;
 
   return (
-    <div
-      className={`
-        relative 
-        overflow-hidden 
-        rounded-2xl 
-        ${getContainerBackground(theme)} 
-        backdrop-blur-xl 
-        border-[0.5px] 
-        border-white/10
-        shadow-[4px_0_24px_-2px_rgba(0,0,0,0.12),8px_0_16px_-4px_rgba(0,0,0,0.08)]
-        dark:shadow-[4px_0_24px_-2px_rgba(0,0,0,0.3),8px_0_16px_-4px_rgba(0,0,0,0.2)]
-        ring-1
-        ring-white/5
-        transition-all 
-        duration-300 
-        p-6 
-        mb-6
-        ${className}
-      `}
-    >
+    <div className={containerClass}>
       {children}
     </div>
   );
@@ -128,7 +118,6 @@ export const StyledStatCard = ({
   onOrderChange
 }: StyledStatCardProps) => {
   const size = sizeClasses[stat.size || 'medium'];
-  const { theme } = useTheme();
 
   // Determine chart type based on stat type
   const getChartType = () => {
@@ -162,7 +151,7 @@ export const StyledStatCard = ({
       className={`
         w-full
         h-full 
-        ${getContainerBackground(theme)} 
+        bg-[var(--welcome-bar-background)] 
         backdrop-blur-xl 
         p-3
         rounded-lg 
@@ -266,7 +255,7 @@ export const StyledStatCard = ({
                 statValue.metadata?.activityData ? (
                   <ActivityHeatmap
                     maxHeight={Number(size.chartHeight.replace('h-', ''))}
-                    baseColor={getChartColor(stat.type, theme)}
+                    baseColor={getChartColor(stat.type)}
                     animated={true}
                     data={statValue.metadata.activityData}
                   />
@@ -282,7 +271,7 @@ export const StyledStatCard = ({
                 <ProgressIndicator
                   value={Number(statValue.value)}
                   total={statValue.metadata?.breakdown?.total || 100}
-                  color={getChartColor(stat.type, theme)}
+                  color={getChartColor(stat.type)}
                   animated={true}
                 />
               ) : (
@@ -292,12 +281,12 @@ export const StyledStatCard = ({
                     {stat.type === 'connection-types' ? (
                       <ConnectionDiagram
                         data={statValue.metadata.activityData}
-                        color={getChartColor(stat.type, theme)}
+                        color={getChartColor(stat.type)}
                       />
                     ) : chartType === 'line' && (
                       <MiniLineChart
                         height={Number(size.chartHeight.replace('h-', ''))}
-                        color={getChartColor(stat.type, theme)}
+                        color={getChartColor(stat.type)}
                         animated={true}
                         data={statValue.metadata?.activityData}
                       />
@@ -305,7 +294,7 @@ export const StyledStatCard = ({
                     {chartType === 'bar' && stat.type !== 'connection-types' && (
                       <MiniBarChart
                         height={Number(size.chartHeight.replace('h-', ''))}
-                        color={getChartColor(stat.type, theme)}
+                        color={getChartColor(stat.type)}
                         animated={true}
                         data={statValue.metadata?.activityData}
                         labels={[]}
@@ -478,28 +467,28 @@ export const StyledStatCard = ({
 };
 
 // Helper function to determine chart color based on stat type
-const getChartColor = (type: string, theme: string) => {
+const getChartColor = (type: string) => {
   switch (type) {
     case 'notes':
-      return theme === 'dark' || theme === 'midnight' ? '#3b82f6' : '#2563eb';
+      return '#3b82f6';
     case 'ideas':
-      return theme === 'dark' || theme === 'midnight' ? '#f59e0b' : '#d97706';
+      return '#f59e0b';
     case 'tasks':
-      return theme === 'dark' || theme === 'midnight' ? '#22c55e' : '#16a34a';
+      return '#22c55e';
     case 'reminders':
-      return theme === 'dark' || theme === 'midnight' ? '#a78bfa' : '#8b5cf6';
+      return '#a78bfa';
     case 'activity':
-      return theme === 'dark' || theme === 'midnight' ? '#6366f1' : '#4f46e5';
+      return '#6366f1';
     case 'word-count':
-      return theme === 'dark' || theme === 'midnight' ? '#f87171' : '#dc2626';
+      return '#f87171';
     case 'connection-types':
-      return theme === 'dark' || theme === 'midnight' ? '#06b6d4' : '#0891b2'; // Cyan color for connection types
+      return '#06b6d4';
     case 'content-freshness':
-      return theme === 'dark' || theme === 'midnight' ? '#14b8a6' : '#0d9488'; // Teal color for freshness
+      return '#14b8a6';
     case 'task-completion-rate':
-      return theme === 'dark' || theme === 'midnight' ? '#22c55e' : '#16a34a'; // Green color for completion
+      return '#22c55e';
     case 'tasks-due-soon':
-      return theme === 'dark' || theme === 'midnight' ? '#f97316' : '#ea580c'; // Orange color for due soon
+      return '#f97316';
     default:
       return 'var(--color-accent)';
   }

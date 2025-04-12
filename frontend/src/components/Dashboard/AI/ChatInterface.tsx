@@ -139,7 +139,7 @@ export function ChatInterface({
           placeholder={getPlaceholder()}
           disabled={isLoading}
           className={`w-full px-4 py-2.5 pr-32
-            ${theme === 'midnight' ? 'bg-gray-900/40' : 'bg-white/50 dark:bg-gray-800/50'}
+            bg-[var(--chatInterfaceBackground)]
             border border-gray-200/30 dark:border-gray-700/30
             rounded-lg
             text-[var(--color-text)]
@@ -156,7 +156,7 @@ export function ChatInterface({
               onClick={handleEnhancePrompt}
               disabled={isEnhancing || isLoading}
               className={`p-2 rounded-full transition-all duration-200
-                ${theme === 'midnight' ? 'hover:bg-gray-800/50' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}
+                hover:bg-[var(--color-surfaceHover)]
                 text-[var(--color-textSecondary)]
                 disabled:opacity-50 disabled:cursor-not-allowed`}
             >

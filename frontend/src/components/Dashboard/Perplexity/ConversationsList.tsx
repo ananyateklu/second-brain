@@ -1,18 +1,14 @@
 import { Plus, MessageSquare, Trash2, History, PlusCircle, Search, Sparkles } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
-import { useTheme } from '../../../contexts/themeContextUtils';
 import { AgentChat } from '../../../types/agent';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
 
 // Custom Perplexity logo component
 const PerplexityLogo = ({ className = "" }: { className?: string }) => {
-    const { theme } = useTheme();
-
+    // Use accent color from theme system for the logo
     const getLogoColor = () => {
-        if (theme === 'midnight') return '#4c9959';
-        if (theme === 'dark') return '#4c9959';
-        return '#15803d';
+        return 'var(--color-accent)';
     };
 
     return (
@@ -86,58 +82,29 @@ export function ConversationsList({
     onDeleteConversation,
     isConnected
 }: ConversationsListProps) {
-    const { theme } = useTheme();
     const [hoveredId, setHoveredId] = useState<string | null>(null);
 
     const getContainerBackground = () => {
-        if (theme === 'dark') return 'bg-gray-900/80';
-        if (theme === 'midnight') return 'bg-[#1e293b]/90';
-        return 'bg-white/95';
+        return 'bg-[var(--sidebar-background)]';
     };
 
     const getBorderColor = () => {
-        if (theme === 'midnight') return 'border-[#334155]';
-        if (theme === 'dark') return 'border-[#1e293b]';
-        return 'border-gray-200/70';
+        return 'border-[var(--color-border)]';
     };
 
     const getActiveStyle = (isActive: boolean) => {
         if (isActive) {
-            if (theme === 'midnight') {
-                return 'bg-[#166534]/30 border-l-2 border-l-[#15803d] shadow-glow-sm shadow-[#4c9959]/20';
-            } else if (theme === 'dark') {
-                return 'bg-[#166534]/20 border-l-2 border-l-[#15803d] shadow-sm';
-            } else {
-                return 'bg-green-100 border-l-2 border-l-green-700 shadow-sm';
-            }
+            return 'bg-[rgba(var(--color-accent-rgb),0.2)] border-l-2 border-l-[var(--color-accent)] shadow-sm';
         } else {
-            if (theme === 'midnight') {
-                return 'border border-transparent hover:bg-[#1e293b]/60';
-            } else if (theme === 'dark') {
-                return 'border border-transparent hover:bg-gray-800/20';
-            } else {
-                return 'border border-transparent hover:bg-gray-50';
-            }
+            return 'border border-transparent hover:bg-[var(--color-surface-hover)]';
         }
     };
 
     const getIconBackground = (isActive: boolean) => {
         if (isActive) {
-            if (theme === 'midnight') {
-                return 'bg-[#166534]/60 text-[#4c9959]';
-            } else if (theme === 'dark') {
-                return 'bg-[#166534]/40 text-[#4c9959]';
-            } else {
-                return 'bg-green-100 text-[#15803d]';
-            }
+            return 'bg-[rgba(var(--color-accent-rgb),0.3)] text-[var(--color-accent)]';
         } else {
-            if (theme === 'midnight') {
-                return 'bg-[#1e293b]/60 text-gray-400';
-            } else if (theme === 'dark') {
-                return 'bg-gray-800 text-gray-400';
-            } else {
-                return 'bg-gray-100 text-gray-500';
-            }
+            return 'bg-[var(--color-surface)] text-[var(--color-text-secondary)]';
         }
     };
 
@@ -181,12 +148,7 @@ export function ConversationsList({
                 {/* Perplexity Search title and description */}
                 <div className="mb-1">
                     <motion.h3
-                        className={`text-xs font-semibold mb-1.5 flex items-center ${theme === 'midnight'
-                            ? 'text-white'
-                            : theme === 'dark'
-                                ? 'text-white'
-                                : 'text-gray-800'
-                            }`}
+                        className="text-xs font-semibold mb-1.5 flex items-center text-[var(--color-text)]"
                         initial={{ opacity: 0, y: -5 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3, delay: 0.1 }}
@@ -195,12 +157,7 @@ export function ConversationsList({
                         Perplexity Search
                     </motion.h3>
                     <motion.p
-                        className={`text-[10px] ${theme === 'midnight'
-                            ? 'text-gray-400'
-                            : theme === 'dark'
-                                ? 'text-gray-400'
-                                : 'text-gray-500'
-                            }`}
+                        className="text-[10px] text-[var(--color-text-secondary)]"
                         initial={{ opacity: 0, y: -5 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3, delay: 0.2 }}
@@ -219,15 +176,9 @@ export function ConversationsList({
                     {isConnected === null ? (
                         // Loading state with shimmering effect
                         <motion.div
-                            className={`
-                                text-[10px] font-medium px-3 py-1 rounded-md inline-flex items-center gap-2
+                            className="text-[10px] font-medium px-3 py-1 rounded-md inline-flex items-center gap-2 
                                 backdrop-blur-md shadow-sm
-                                ${theme === 'midnight'
-                                    ? 'bg-gradient-to-r from-[#334155]/40 to-[#1e293b]/40 text-gray-300 border border-[#334155]/30'
-                                    : theme === 'dark'
-                                        ? 'bg-gradient-to-r from-[#334155]/30 to-[#1e293b]/30 text-gray-300 border border-[#1e293b]/30'
-                                        : 'bg-gradient-to-r from-gray-100/70 to-gray-50/70 text-gray-600 border border-gray-200/50'}
-                            `}
+                                bg-[var(--color-surface)] text-[var(--color-text-secondary)] border border-[var(--color-border)]"
                             whileHover={{ scale: 1.03 }}
                             layout
                         >
@@ -235,14 +186,8 @@ export function ConversationsList({
                             <div className="relative w-2.5 h-2.5">
                                 {/* Spinner outer circle */}
                                 <motion.div
-                                    className={`
-                                        absolute inset-0 rounded-full border-2 border-t-transparent border-b-transparent
-                                        ${theme === 'midnight'
-                                            ? 'border-r-blue-400/60 border-l-blue-400/20'
-                                            : theme === 'dark'
-                                                ? 'border-r-blue-400/60 border-l-blue-400/20'
-                                                : 'border-r-blue-500/70 border-l-blue-500/30'}
-                                    `}
+                                    className="absolute inset-0 rounded-full border-2 border-t-transparent border-b-transparent
+                                        border-r-blue-400/60 border-l-blue-400/20"
                                     animate={{ rotate: 360 }}
                                     transition={{
                                         duration: 1.5,
@@ -253,14 +198,8 @@ export function ConversationsList({
 
                                 {/* Inner spinner */}
                                 <motion.div
-                                    className={`
-                                        absolute inset-0.5 rounded-full border border-t-transparent border-b-transparent
-                                        ${theme === 'midnight'
-                                            ? 'border-r-indigo-400/80 border-l-indigo-400/20'
-                                            : theme === 'dark'
-                                                ? 'border-r-indigo-400/80 border-l-indigo-400/20'
-                                                : 'border-r-indigo-500/80 border-l-indigo-500/30'}
-                                    `}
+                                    className="absolute inset-0.5 rounded-full border border-t-transparent border-b-transparent
+                                        border-r-indigo-400/80 border-l-indigo-400/20"
                                     animate={{ rotate: -180 }}
                                     transition={{
                                         duration: 2,
@@ -271,14 +210,8 @@ export function ConversationsList({
 
                                 {/* Center dot */}
                                 <motion.div
-                                    className={`
-                                        absolute w-1 h-1 rounded-full top-[calc(50%-2px)] left-[calc(50%-2px)]
-                                        ${theme === 'midnight'
-                                            ? 'bg-violet-400'
-                                            : theme === 'dark'
-                                                ? 'bg-violet-400'
-                                                : 'bg-violet-600'}
-                                    `}
+                                    className="absolute w-1 h-1 rounded-full top-[calc(50%-2px)] left-[calc(50%-2px)]
+                                        bg-violet-400"
                                     animate={{
                                         scale: [1, 1.3, 1],
                                         opacity: [0.7, 1, 0.7]
@@ -301,9 +234,7 @@ export function ConversationsList({
                                 <motion.div
                                     className="absolute inset-0 z-0"
                                     style={{
-                                        background: theme === 'midnight' || theme === 'dark'
-                                            ? 'linear-gradient(90deg, transparent, rgba(148, 163, 184, 0.15), transparent)'
-                                            : 'linear-gradient(90deg, transparent, rgba(107, 114, 128, 0.1), transparent)',
+                                        background: 'linear-gradient(90deg, transparent, rgba(148, 163, 184, 0.15), transparent)',
                                         backgroundSize: '200% 100%'
                                     }}
                                     animate={{
@@ -323,17 +254,9 @@ export function ConversationsList({
                                 text-[10px] font-medium px-3 py-1 rounded-md inline-flex items-center gap-2
                                 backdrop-blur-md shadow-sm
                                 ${isConnected
-                                    ? theme === 'midnight'
-                                        ? 'bg-gradient-to-r from-[#0f766e]/30 to-[#166534]/30 text-[#4c9959] border border-[#166534]/30'
-                                        : theme === 'dark'
-                                            ? 'bg-gradient-to-r from-[#0f766e]/20 to-[#166534]/20 text-[#4c9959] border border-[#166534]/20'
-                                            : 'bg-gradient-to-r from-emerald-100/70 to-green-100/70 text-[#15803d] border border-green-200/50'
-                                    : theme === 'midnight'
-                                        ? 'bg-gradient-to-r from-[#7f1d1d]/30 to-[#991b1b]/30 text-[#f87171] border border-[#7f1d1d]/30'
-                                        : theme === 'dark'
-                                            ? 'bg-gradient-to-r from-[#7f1d1d]/20 to-[#991b1b]/20 text-[#f87171] border border-[#7f1d1d]/20'
-                                            : 'bg-gradient-to-r from-red-100/70 to-rose-100/70 text-red-600 border border-red-200/50'
-                                }`}
+                                    ? 'bg-green-100/70 text-[var(--color-accent)] border border-green-200/50'
+                                    : 'bg-red-100/70 text-red-600 border border-red-200/50'}
+                            `}
                             whileHover={{
                                 scale: 1.03,
                                 boxShadow: isConnected
@@ -349,7 +272,7 @@ export function ConversationsList({
                                     className={`
                                         absolute inset-0 rounded-full 
                                         ${isConnected
-                                            ? 'bg-[#4c9959]'
+                                            ? 'bg-[var(--color-accent)]'
                                             : 'bg-red-400'
                                         }
                                     `}
@@ -368,7 +291,7 @@ export function ConversationsList({
                                     className={`
                                         absolute inset-0 rounded-full 
                                         ${isConnected
-                                            ? 'bg-[#3d7e49]'
+                                            ? 'bg-[var(--color-accent)]'
                                             : 'bg-red-500'
                                         }
                                     `}
@@ -394,7 +317,7 @@ export function ConversationsList({
                                     className={`
                                         w-2.5 h-2.5 rounded-full 
                                         ${isConnected
-                                            ? 'bg-[#166534]'
+                                            ? 'bg-[var(--color-accent)]'
                                             : 'bg-red-600'
                                         }
                                     `}
@@ -441,23 +364,9 @@ export function ConversationsList({
 
                 <motion.button
                     onClick={onNewChat}
-                    className={`
-                        w-full 
-                        flex 
-                        items-center 
-                        justify-center 
-                        gap-1.5
-                        py-2 
-                        rounded-md
-                        font-medium 
-                        text-xs
-                        transition-colors
-                        ${theme === 'midnight'
-                            ? 'bg-[#166534]/30 text-[#4c9959] hover:bg-[#166534]/50 border border-[#166534]/30'
-                            : theme === 'dark'
-                                ? 'bg-[#166534]/20 text-[#4c9959] hover:bg-[#166534]/30 border border-[#166534]/20'
-                                : 'bg-green-100 text-[#15803d] hover:bg-green-200 border border-green-200'}
-                    `}
+                    className="w-full flex items-center justify-center gap-1.5 py-2 rounded-md font-medium text-xs
+                        transition-colors bg-[rgba(var(--color-accent-rgb),0.2)] text-[var(--color-accent)] 
+                        hover:bg-[rgba(var(--color-accent-rgb),0.3)] border border-[rgba(var(--color-accent-rgb),0.2)]"
                     variants={buttonVariants}
                     initial="rest"
                     whileHover="hover"
@@ -468,16 +377,11 @@ export function ConversationsList({
                 </motion.button>
 
                 <div className="flex items-center justify-between mt-3">
-                    <h3 className={`text-xs font-medium flex items-center ${theme === 'midnight' ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
+                    <h3 className="text-xs font-medium flex items-center text-[var(--color-text)]">
                         <History className="w-3 h-3 mr-1" /> History
                     </h3>
                     <motion.span
-                        className={`text-xs px-1.5 py-0.5 rounded-full ${theme === 'midnight'
-                            ? 'bg-[#1e293b] text-gray-400'
-                            : theme === 'dark'
-                                ? 'bg-gray-800 text-gray-400'
-                                : 'bg-gray-100 text-gray-500'}`
-                        }
+                        className="text-xs px-1.5 py-0.5 rounded-full bg-[var(--color-surface)] text-[var(--color-text-secondary)]"
                         initial={{ scale: 0.9 }}
                         animate={{ scale: 1 }}
                         transition={{ duration: 0.2 }}
@@ -491,22 +395,14 @@ export function ConversationsList({
                 {/* Search input - Moved to top for easier access */}
                 {conversations.length > 3 && (
                     <div className={`px-2 py-2 border-b ${getBorderColor()}`}>
-                        <div className={`
-                            flex items-center gap-1.5 px-2 py-1 rounded-md
-                            ${theme === 'midnight'
-                                ? 'bg-[#0f172a]/70 border border-[#334155]'
-                                : theme === 'dark'
-                                    ? 'bg-gray-800 border border-gray-700'
-                                    : 'bg-gray-100 border border-gray-200'}
-                        `}>
-                            <Search className={`w-3 h-3 ${theme === 'midnight' ? 'text-gray-400' : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`} />
+                        <div className="flex items-center gap-1.5 px-2 py-1 rounded-md
+                            bg-[var(--color-surface)] border border-[var(--color-border)]">
+                            <Search className="w-3 h-3 text-[var(--color-text-secondary)]" />
                             <input
                                 type="text"
                                 placeholder="Search chats..."
-                                className={`
-                                    w-full text-xs bg-transparent border-none outline-none
-                                    ${theme === 'midnight' ? 'text-gray-300 placeholder-gray-500' : theme === 'dark' ? 'text-gray-300 placeholder-gray-500' : 'text-gray-700 placeholder-gray-400'}
-                                `}
+                                className="w-full text-xs bg-transparent border-none outline-none
+                                    text-[var(--color-text)] placeholder:text-[var(--color-text-secondary)]"
                             />
                         </div>
                     </div>
@@ -515,11 +411,7 @@ export function ConversationsList({
                 <div
                     className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700 scrollbar-track-transparent"
                     style={{
-                        background: theme === 'midnight'
-                            ? 'linear-gradient(180deg, rgba(15, 23, 42, 0.2) 0%, transparent 100%)'
-                            : theme === 'dark'
-                                ? 'linear-gradient(180deg, rgba(31, 41, 55, 0.1) 0%, transparent 100%)'
-                                : 'linear-gradient(180deg, rgba(249, 250, 251, 0.5) 0%, transparent 100%)'
+                        background: 'linear-gradient(180deg, rgba(var(--color-surface-rgb), 0.2) 0%, transparent 100%)'
                     }}
                 >
                     <motion.div
@@ -559,7 +451,7 @@ export function ConversationsList({
                                         </motion.div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center justify-between">
-                                                <p className={`text-xs font-medium truncate mr-1.5 ${theme === 'midnight' ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
+                                                <p className="text-xs font-medium truncate mr-1.5 text-[var(--color-text)]">
                                                     {conv.title}
                                                 </p>
 
@@ -570,14 +462,8 @@ export function ConversationsList({
                                                                 e.stopPropagation();
                                                                 onDeleteConversation(conv.id);
                                                             }}
-                                                            className={`
-                                                                p-1 rounded-md
-                                                                ${theme === 'midnight'
-                                                                    ? 'hover:bg-[#1e293b]/90 text-gray-400 hover:text-red-300'
-                                                                    : theme === 'dark'
-                                                                        ? 'hover:bg-gray-700 text-gray-400 hover:text-red-300'
-                                                                        : 'hover:bg-gray-200 text-gray-500 hover:text-red-500'}
-                                                            `}
+                                                            className="p-1 rounded-md hover:bg-[var(--color-surface-hover)] 
+                                                                text-[var(--color-text-secondary)] hover:text-red-500"
                                                             initial={{ opacity: 0, scale: 0.8 }}
                                                             animate={{ opacity: 1, scale: 1 }}
                                                             exit={{ opacity: 0, scale: 0.8 }}
@@ -590,20 +476,12 @@ export function ConversationsList({
                                                     )}
                                                 </AnimatePresence>
                                             </div>
-                                            <p className={`text-[10px] flex items-center ${theme === 'midnight' ? 'text-gray-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                                            <p className="text-[10px] flex items-center text-[var(--color-text-secondary)]">
                                                 <span className="truncate max-w-[80px]">
                                                     {formatRelativeTime(conv.lastUpdated)}
                                                 </span>
                                                 <span className="mx-1">•</span>
-                                                <span className={`
-                                                    ${conv.messages.length > 0
-                                                        ? theme === 'midnight'
-                                                            ? 'text-[#4c9959]'
-                                                            : theme === 'dark'
-                                                                ? 'text-[#4c9959]'
-                                                                : 'text-[#15803d]'
-                                                        : ''}
-                                                `}>
+                                                <span className={conv.messages.length > 0 ? 'text-[var(--color-accent)]' : ''}>
                                                     {conv.messages.length}
                                                 </span>
                                             </p>
@@ -619,14 +497,8 @@ export function ConversationsList({
                                 transition={{ delay: 0.2, duration: 0.5 }}
                             >
                                 <motion.div
-                                    className={`
-                                        w-12 h-12 rounded-full mx-auto mb-3 flex items-center justify-center
-                                        ${theme === 'midnight'
-                                            ? 'bg-[#1e293b]/60 border border-[#334155]'
-                                            : theme === 'dark'
-                                                ? 'bg-gray-800 border border-gray-700'
-                                                : 'bg-gray-100 border border-gray-200'}
-                                    `}
+                                    className="w-12 h-12 rounded-full mx-auto mb-3 flex items-center justify-center
+                                        bg-[var(--color-surface)] border border-[var(--color-border)]"
                                     animate={{
                                         scale: [1, 1.05, 1],
                                         rotate: [0, 5, -5, 0]
@@ -638,10 +510,10 @@ export function ConversationsList({
                                         ease: "easeInOut"
                                     }}
                                 >
-                                    <Sparkles className={`w-6 h-6 ${theme === 'midnight' ? 'text-[#4c9959]' : theme === 'dark' ? 'text-[#4c9959]' : 'text-[#15803d]'}`} />
+                                    <Sparkles className="w-6 h-6 text-[var(--color-accent)]" />
                                 </motion.div>
                                 <motion.p
-                                    className={`text-xs font-medium mb-1 ${theme === 'midnight' ? 'text-white' : 'text-gray-700 dark:text-white'}`}
+                                    className="text-xs font-medium mb-1 text-[var(--color-text)]"
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.3, duration: 0.5 }}
@@ -649,7 +521,7 @@ export function ConversationsList({
                                     No conversations yet
                                 </motion.p>
                                 <motion.p
-                                    className={`text-[10px] mb-3 ${theme === 'midnight' ? 'text-gray-400' : 'text-gray-500 dark:text-gray-400'}`}
+                                    className="text-[10px] mb-3 text-[var(--color-text-secondary)]"
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.4, duration: 0.5 }}
@@ -658,14 +530,9 @@ export function ConversationsList({
                                 </motion.p>
                                 <motion.button
                                     onClick={onNewChat}
-                                    className={`
-                                        inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium
-                                        ${theme === 'midnight'
-                                            ? 'bg-[#166534]/30 text-[#4c9959] border border-[#166534]/30 hover:bg-[#166534]/50'
-                                            : theme === 'dark'
-                                                ? 'bg-[#166534]/20 text-[#4c9959] border border-[#166534]/20 hover:bg-[#166534]/30'
-                                                : 'bg-green-100 text-[#15803d] border border-green-200 hover:bg-green-200'}
-                                    `}
+                                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium
+                                        bg-[rgba(var(--color-accent-rgb),0.2)] text-[var(--color-accent)] 
+                                        border border-[rgba(var(--color-accent-rgb),0.2)] hover:bg-[rgba(var(--color-accent-rgb),0.3)]"
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.5, duration: 0.5 }}

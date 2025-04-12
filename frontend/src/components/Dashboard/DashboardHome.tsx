@@ -1,6 +1,5 @@
 import { useNavigate } from 'react-router-dom';
 import { useNotes } from '../../hooks/useNotes';
-import { useTheme } from '../../contexts/themeContextUtils';
 import {
   ChevronRight,
   PinIcon
@@ -20,7 +19,6 @@ export function DashboardHome() {
   const { notes } = useNotes();
   const { tasks } = useTasks();
   const { setSelectedNote, setSelectedIdea } = useModal();
-  const { theme } = useTheme();
 
   const stats = {
     totalNotes: notes.length,
@@ -46,13 +44,6 @@ export function DashboardHome() {
   const handleEditIdea = (idea: Note) => {
     setSelectedIdea(idea);
   };
-
-  const getBackgroundClass = (theme: string) => {
-    if (theme === 'dark') return 'bg-gray-900/30'
-    if (theme === 'midnight') return 'bg-[#1e293b]/30'
-    if (theme === 'full-dark') return 'bg-[rgba(var(--color-surface-rgb),0.8)]'
-    return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]'
-  }
 
   return (
     <div
@@ -90,7 +81,7 @@ export function DashboardHome() {
           relative 
           overflow-hidden 
           rounded-2xl 
-          ${getBackgroundClass(theme)} 
+          bg-[var(--dashboardHomeBackground)]
           backdrop-blur-xl 
           border-[0.5px] 
           border-white/10

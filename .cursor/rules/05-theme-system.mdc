@@ -1,6 +1,6 @@
 ---
 description: Guidelines and patterns for the multi-layered theme system implementation
-globs: **/*theme*.ts, **/*theme*.tsx, **/*Theme*.ts, **/*Theme*.tsx, **/*.css, **/*.scss, tailwind.config.js
+globs: **/*theme*.ts, **/*theme*.tsx, **/*Theme*.ts, **/*Theme*.tsx, **/*.css, tailwind.config.js
 alwaysApply: false
 ---
 ## Core Components

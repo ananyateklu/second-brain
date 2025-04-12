@@ -23,6 +23,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/themeContextUtils';
 import lightLogo from '../../assets/second-brain-logo-light-mode.png';
 import darkLogo from '../../assets/second-brain-logo-dark-mode.png';
+import clsx from 'clsx';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -34,13 +35,6 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   const { theme } = useTheme();
 
   const sidebarRef = useRef<HTMLDivElement>(null);
-
-  function getBackgroundColor() {
-    if (theme === 'dark') return 'bg-gray-900/30';
-    if (theme === 'midnight') return 'bg-white/5';
-    if (theme === 'full-dark') return 'bg-[rgba(var(--color-surface-rgb),0.8)]';
-    return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]';
-  }
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -107,7 +101,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   const ToggleSidebarButton = () => (
     <button
       onClick={() => setIsOpen(!isOpen)}
-      className="absolute top-1/2 right-0 translate-x-1/2 -translate-y-1/2 p-1.5 rounded-full
+      className="absolute top-1/2 -right-3 -translate-y-1/2 p-1.5 rounded-full
       bg-[var(--color-accent)] text-white
       shadow-[0_2px_8px_-2px_rgba(76,153,89,0.4)]
       hover:bg-[var(--color-accent)]/90 transition-all duration-200"
@@ -128,18 +122,11 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
 
       <aside
         ref={sidebarRef}
-        className={`
-          fixed top-0 left-0 z-40 h-screen w-60 
-          ${getBackgroundColor()} 
-          backdrop-blur-xl 
-          border-r-[0.5px] border-white/10
-          transition-transform duration-200 ease-in-out
-          shadow-[4px_0_24px_-2px_rgba(0,0,0,0.12),8px_0_16px_-4px_rgba(0,0,0,0.08)]
-          dark:shadow-[4px_0_24px_-2px_rgba(0,0,0,0.3),8px_0_16px_-4px_rgba(0,0,0,0.2)]
-          ring-1 ring-white/5
-          ${isOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0
-          relative
-        `}
+        className={clsx(
+          'fixed inset-y-0 left-0 z-30 flex h-full w-64 flex-col transition-all duration-300 ease-in-out backdrop-blur-lg',
+          'border-r border-white/10',
+          'bg-[var(--sidebar-background)]'
+        )}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
