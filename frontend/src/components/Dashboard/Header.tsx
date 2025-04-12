@@ -47,20 +47,13 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
     }
   };
 
-  const getContainerBackground = () => {
-    if (theme === 'dark') return 'bg-gray-900/30';
-    if (theme === 'midnight') return 'bg-white/5';
-    if (theme === 'full-dark') return 'bg-[rgba(var(--color-surface-rgb),0.8)]';
-    return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]';
-  };
-
   return (
     <motion.header
       initial="hidden"
       animate="visible"
       variants={cardVariants}
       className={`fixed top-0 right-0 left-0 z-40 
-        ${getContainerBackground()} 
+        bg-[var(--header-background)] 
         backdrop-blur-xl 
         border-b-[0.5px] border-white/10
         transition-all duration-200

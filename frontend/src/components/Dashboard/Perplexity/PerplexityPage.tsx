@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import perplexityService, { PerplexityMessage } from '../../../services/ai/perplexityService';
 import { PERPLEXITY_MODELS } from '../../../services/ai/perplexityModels';
-import { useTheme } from '../../../contexts/themeContextUtils';
 import { AgentChat, AgentMessage } from '../../../types/agent';
 
 // Component imports
@@ -15,7 +14,6 @@ export function PerplexityPage() {
     const [isConnected, setIsConnected] = useState<boolean | null>(null);
     const [conversations, setConversations] = useState<AgentChat[]>([]);
     const [selectedModel, setSelectedModel] = useState(PERPLEXITY_MODELS[0]);
-    const { theme } = useTheme();
 
     // Function to handle prompt selection
     const handlePromptSelect = (prompt: string) => {
@@ -40,18 +38,14 @@ export function PerplexityPage() {
         }
     }, [selectedModel]);
 
-    // Get container background based on theme
+    // Get container background based on unified theme
     const getContainerBackground = () => {
-        if (theme === 'dark') return 'bg-gray-900/30';
-        if (theme === 'midnight') return 'bg-white/5';
-        return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]';
+        return 'bg-[var(--chatInterfaceBackground)] backdrop-blur-xl';
     };
 
-    // Get border color based on theme
+    // Get border color based on unified theme
     const getBorderColor = () => {
-        if (theme === 'midnight') return 'border-[#334155]';
-        if (theme === 'dark') return 'border-[#1e293b]';
-        return 'border-gray-200/40';
+        return 'border-white/10 dark:border-white/10 midnight:border-white/10 border-[0.5px]';
     };
 
     // Load conversations on initial render

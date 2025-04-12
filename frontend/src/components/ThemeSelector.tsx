@@ -40,22 +40,6 @@ export function ThemeSelector() {
     }
   };
 
-  const getContainerBackground = () => {
-    if (isSafari) {
-      switch (theme) {
-        case 'dark':
-          return 'bg-gray-900/30';
-        case 'midnight':
-          return 'bg-[#1e293b]/95';
-        case 'full-dark':
-          return 'bg-[rgba(0,0,0,0.85)]';
-        default:
-          return 'bg-[#f8fafc]/95';
-      }
-    }
-    return 'bg-[var(--color-secondary)]/30 backdrop-blur-sm';
-  };
-
   const getButtonStyles = (isSelected: boolean, themeName: ThemeName) => {
     const baseStyles = "flex items-center gap-2 px-3 py-2 rounded-md transition-colors duration-200";
 
@@ -93,7 +77,7 @@ export function ThemeSelector() {
   }
 
   return (
-    <div className={`flex gap-2 p-2 rounded-lg transition-colors duration-200 ${getContainerBackground()} ${theme === 'dark' || theme === 'midnight' || theme === 'full-dark' ? 'border border-white/10' : ''}`}>
+    <div className={`flex gap-2 p-2 rounded-lg transition-colors duration-200 bg-[var(--themeSelectorContainerBackground)] ${theme === 'dark' || theme === 'midnight' || theme === 'full-dark' ? 'border border-white/10' : ''}`}>
       {Object.keys(themes).map((themeName) => {
         const currentTheme = themes[themeName as ThemeName];
         const isSelected = theme === themeName;

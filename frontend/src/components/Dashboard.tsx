@@ -58,7 +58,7 @@ export function Dashboard() {
       <div className={`fixed inset-0 ${colors.gradientBackground}`} />
 
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-30 transition-all duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-60'}`}>
+      <div className={`fixed inset-y-0 left-0 z-30 transition-all duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-[15.85rem]'}`}>
         <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
       </div>
 

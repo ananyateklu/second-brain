@@ -4,7 +4,6 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { CodeBlock } from '../AI/CodeBlock';
 import { type ComponentPropsWithoutRef } from 'react';
-import { useTheme } from '../../../contexts/themeContextUtils';
 import { AgentMessage } from '../../../types/agent';
 import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -33,7 +32,6 @@ interface MessageMetadata {
 }
 
 export function MessageItem({ message, modelName }: MessageItemProps) {
-    const { theme } = useTheme();
     const isUser = message.role === 'user';
     const [showThinking, setShowThinking] = useState(false);
     const [isLiked, setIsLiked] = useState(false);
@@ -55,11 +53,11 @@ export function MessageItem({ message, modelName }: MessageItemProps) {
                 @keyframes citation-pulse {
                     0%, 100% { 
                         transform: scale(1);
-                        box-shadow: 0 0 0 rgba(76, 153, 89, 0);
+                        box-shadow: 0 0 0 rgba(var(--color-accent-rgb), 0);
                     }
                     50% { 
                         transform: scale(1.03); 
-                        box-shadow: 0 0 15px rgba(76, 153, 89, 0.5);
+                        box-shadow: 0 0 15px rgba(var(--color-accent-rgb), 0.5);
                     }
                 }
             `;
@@ -189,39 +187,19 @@ export function MessageItem({ message, modelName }: MessageItemProps) {
                 <div className="mb-2">
                     <div className="flex items-center gap-2 mb-1.5">
                         <motion.div
-                            className={`
-                                w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0
-                                ${theme === 'midnight'
-                                    ? 'bg-green-900/50 border border-green-800/50 shadow-glow-sm shadow-green-900/30'
-                                    : theme === 'dark'
-                                        ? 'bg-green-800/50 border border-green-700/40 shadow-glow-sm shadow-green-900/20'
-                                        : 'bg-[#15803d] shadow-sm'}
-                                transition-all duration-200
-                            `}
+                            className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 bg-[var(--themeSelectorButtonBackgroundSelected)] border border-[var(--color-accent)]/50 shadow-glow-sm shadow-[var(--color-accent)]/30 transition-all duration-200"
                             whileHover={{ scale: 1.1 }}
                             transition={{ type: "spring", stiffness: 400, damping: 10 }}
                         >
                             <User className="w-3 h-3 text-white" />
                         </motion.div>
                         <div className="flex justify-between items-center w-full">
-                            <span className={`text-sm font-medium ${theme === 'midnight'
-                                ? 'text-gray-200'
-                                : theme === 'dark'
-                                    ? 'text-gray-200'
-                                    : 'text-gray-700'
-                                }`}>
+                            <span className="text-sm font-medium text-[var(--color-text)]">
                                 You
                             </span>
                             <div className="flex items-center">
-                                <Clock className={`w-3 h-3 mr-1 ${theme === 'midnight' ? 'text-gray-400' : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`} />
-                                <span className={`
-                                    text-xs
-                                    ${theme === 'midnight'
-                                        ? 'text-gray-400'
-                                        : theme === 'dark'
-                                            ? 'text-gray-400'
-                                            : 'text-gray-500'}
-                                `}>
+                                <Clock className="w-3 h-3 mr-1 text-[var(--color-textSecondary)]" />
+                                <span className="text-xs text-[var(--color-textSecondary)]">
                                     {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true })}
                                 </span>
                             </div>
@@ -230,38 +208,15 @@ export function MessageItem({ message, modelName }: MessageItemProps) {
 
                     {/* Query content */}
                     <motion.div
-                        className={`
-                            relative px-4 py-3 rounded-lg
-                            ${theme === 'midnight'
-                                ? 'bg-[#1e293b]/80 border border-[#334155] group-hover:border-[#475569]/60 shadow-md'
-                                : theme === 'dark'
-                                    ? 'bg-gray-800/80 border border-gray-700/40 group-hover:border-gray-600/50 shadow-sm'
-                                    : 'bg-gray-100 border border-gray-200/60 group-hover:border-gray-300/80 shadow-sm'}
-                            transition-all duration-200
-                        `}
+                        className="relative px-4 py-3 rounded-lg bg-[var(--color-surfaceHover)] border border-[var(--color-border)] group-hover:border-[var(--color-border)]/80 shadow-sm transition-all duration-200"
                         whileHover={{ y: -2 }}
                         transition={{ type: "spring", stiffness: 200, damping: 10 }}
                     >
-                        <div className={`
-                            text-sm font-medium
-                            ${theme === 'midnight'
-                                ? 'text-white'
-                                : theme === 'dark'
-                                    ? 'text-white'
-                                    : 'text-gray-800'}
-                        `}>
+                        <div className="text-sm font-medium text-[var(--color-text)]">
                             {message.content}
                         </div>
 
-                        <div className={`
-                            absolute top-0 right-0 flex items-center gap-1 px-2 py-1 text-xs rounded-bl-lg rounded-tr-lg
-                            ${theme === 'midnight'
-                                ? 'bg-[#166534]/50 text-[#4c9959] border-l border-b border-[#166534]/50'
-                                : theme === 'dark'
-                                    ? 'bg-[#166534]/50 text-[#4c9959] border-l border-b border-[#166534]/40'
-                                    : 'bg-green-100 text-[#15803d] border-l border-b border-green-200'}
-                            transition-all duration-200
-                        `}>
+                        <div className="absolute top-0 right-0 flex items-center gap-1 px-2 py-1 text-xs rounded-bl-lg rounded-tr-lg bg-[var(--themeSelectorButtonBackgroundSelected)] text-[var(--color-accent)] border-l border-b border-[var(--color-accent)]/40 transition-all duration-200">
                             <Search className="w-3 h-3" />
                         </div>
                     </motion.div>
@@ -271,19 +226,9 @@ export function MessageItem({ message, modelName }: MessageItemProps) {
                 <div>
                     <div className="flex items-center gap-2 mb-1.5">
                         <motion.div
-                            className={`
-                                w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0
-                                ${theme === 'midnight'
-                                    ? 'border border-[#475569]/50 shadow-glow-sm bg-[#166534]/40'
-                                    : theme === 'dark'
-                                        ? 'border border-gray-700/40 shadow-glow-sm bg-[#166534]/30'
-                                        : 'shadow-sm border border-gray-200/60 bg-green-100'}
-                                transition-all duration-200
-                            `}
+                            className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 border border-[var(--color-border)]/50 shadow-glow-sm bg-[var(--themeSelectorButtonBackgroundSelected)] transition-all duration-200"
                             style={{
-                                boxShadow: theme === 'midnight' || theme === 'dark'
-                                    ? '0 0 8px 0 rgba(76,153,89,0.3)'
-                                    : 'none'
+                                boxShadow: '0 0 8px 0 rgba(var(--color-accent-rgb),0.3)'
                             }}
                             whileHover={{ scale: 1.1 }}
                             animate={{
@@ -302,32 +247,18 @@ export function MessageItem({ message, modelName }: MessageItemProps) {
                                 }
                             }}
                         >
-                            <Bot className={`w-3 h-3 ${theme === 'midnight'
-                                ? 'text-[#4c9959]'
-                                : theme === 'dark'
-                                    ? 'text-[#4c9959]'
-                                    : 'text-[#15803d]'}`} />
+                            <Bot className="w-3 h-3 text-[var(--color-accent)]" />
                         </motion.div>
                         <div className="flex justify-between items-center w-full">
                             <span className="text-sm font-medium flex items-center">
                                 {modelName}
-                                <span className={`ml-2 text-xs ${theme === 'midnight' || theme === 'dark'
-                                    ? 'text-gray-400'
-                                    : 'text-gray-500'}`
-                                }>
+                                <span className="ml-2 text-xs text-[var(--color-textSecondary)]">
                                     AI Response
                                 </span>
                             </span>
                             <div className="flex items-center">
-                                <Clock className={`w-3 h-3 mr-1 ${theme === 'midnight' ? 'text-gray-400' : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`} />
-                                <span className={`
-                                    text-xs
-                                    ${theme === 'midnight'
-                                        ? 'text-gray-400'
-                                        : theme === 'dark'
-                                            ? 'text-gray-400'
-                                            : 'text-gray-500'}
-                                `}>
+                                <Clock className="w-3 h-3 mr-1 text-[var(--color-textSecondary)]" />
+                                <span className="text-xs text-[var(--color-textSecondary)]">
                                     {formatDistanceToNow(new Date(message.timestamp), { addSuffix: true })}
                                 </span>
                             </div>
@@ -336,57 +267,26 @@ export function MessageItem({ message, modelName }: MessageItemProps) {
 
                     {/* Response content */}
                     <motion.div
-                        className={`
-                            rounded-lg overflow-hidden shadow-md
-                            ${theme === 'midnight'
-                                ? 'bg-[#1e293b]/90 border border-[#334155] group-hover:border-[#475569]/60'
-                                : theme === 'dark'
-                                    ? 'bg-gray-800/95 border border-gray-700/40 group-hover:border-gray-600/50'
-                                    : 'bg-white border border-gray-200/80 group-hover:border-gray-300/90'}
-                            transition-all duration-300
-                            backdrop-blur-sm
-                        `}
+                        className="rounded-lg overflow-hidden shadow-md bg-[var(--color-surface)] border border-[var(--color-border)] group-hover:border-[var(--color-border)]/80 transition-all duration-300 backdrop-blur-sm"
                         whileHover={{ y: -2 }}
                         transition={{ type: "spring", stiffness: 200, damping: 10 }}
                     >
                         {/* Top bar with AI model info */}
-                        <div className={`
-                            px-4 py-2 flex items-center justify-between
-                            ${theme === 'midnight'
-                                ? 'bg-[#1e293b]/90 border-b border-[#334155]'
-                                : theme === 'dark'
-                                    ? 'bg-gray-900/50 border-b border-gray-700/40'
-                                    : 'bg-gray-50 border-b border-gray-200/80'}
-                        `}>
+                        <div className="px-4 py-2 flex items-center justify-between bg-[var(--color-surfaceHover)] border-b border-[var(--color-border)]">
                             <div className="flex items-center">
-                                <div className={`w-3 h-3 rounded-full mr-2 ${theme === 'midnight' || theme === 'dark' ? 'glow-sm' : ''}`}
+                                <div className="w-3 h-3 rounded-full mr-2 glow-sm bg-[var(--color-accent)]"
                                     style={{
-                                        backgroundColor: theme === 'midnight'
-                                            ? '#4c9959'
-                                            : theme === 'dark'
-                                                ? '#4c9959'
-                                                : '#15803d',
-                                        boxShadow: theme === 'midnight' || theme === 'dark' ? '0 0 6px 0 rgba(76,153,89,0.6)' : 'none'
+                                        boxShadow: '0 0 6px 0 rgba(var(--color-accent-rgb),0.6)'
                                     }}>
                                 </div>
-                                <span className={`text-xs font-medium flex items-center gap-1 ${theme === 'midnight'
-                                    ? 'text-gray-300'
-                                    : theme === 'dark'
-                                        ? 'text-gray-300'
-                                        : 'text-gray-600'}`
-                                }>
+                                <span className="text-xs font-medium flex items-center gap-1 text-[var(--color-textSecondary)]">
                                     <BookOpen className="w-3 h-3" /> Perplexity {modelName}
                                 </span>
                             </div>
 
                             {metadata?.usage && (
                                 <div className="flex items-center gap-2">
-                                    <span className={`
-                                        text-xs flex items-center gap-1.5
-                                        ${theme === 'midnight' || theme === 'dark'
-                                            ? 'text-gray-400 bg-gray-800/70 px-2 py-0.5 rounded-full'
-                                            : 'text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full'}
-                                        `}
+                                    <span className="text-xs flex items-center gap-1.5 text-[var(--color-textSecondary)] bg-[var(--color-surfaceHover)] px-2 py-0.5 rounded-full"
                                         title="Token usage statistics"
                                     >
                                         <span title="Input tokens">Input Tokens: {metadata.usage.input_tokens || 0}</span>
@@ -408,16 +308,7 @@ export function MessageItem({ message, modelName }: MessageItemProps) {
                                     {/* Thinking toggle button (if thinking content exists) */}
                                     {hasThinking && (
                                         <motion.div
-                                            className={`
-                                                flex items-center justify-between 
-                                                p-2.5 mb-3 rounded-lg cursor-pointer
-                                                ${theme === 'midnight'
-                                                    ? 'bg-green-950/30 border border-green-900/40 hover:border-green-900/60'
-                                                    : theme === 'dark'
-                                                        ? 'bg-green-900/20 border border-green-800/30 hover:border-green-800/50'
-                                                        : 'bg-green-50 border border-green-200/80 hover:border-green-300/90'}
-                                                transition-all duration-200
-                                            `}
+                                            className="flex items-center justify-between p-2.5 mb-3 rounded-lg cursor-pointer bg-[var(--themeSelectorButtonBackgroundSelected)]/50 border border-[var(--color-accent)]/30 hover:border-[var(--color-accent)]/60 transition-all duration-200"
                                             onClick={() => setShowThinking(!showThinking)}
                                             whileHover={{ scale: 1.01 }}
                                             transition={{ type: "spring", stiffness: 400, damping: 10 }}
@@ -427,17 +318,14 @@ export function MessageItem({ message, modelName }: MessageItemProps) {
                                                     animate={{ rotate: showThinking ? 360 : 0 }}
                                                     transition={{ duration: 0.5 }}
                                                 >
-                                                    <Brain className={`w-4 h-4 ${theme === 'midnight' || theme === 'dark' ? 'text-green-400' : 'text-green-600'}`} />
+                                                    <Brain className="w-4 h-4 text-[var(--color-accent)]" />
                                                 </motion.div>
-                                                <span className={`text-xs font-medium ${theme === 'midnight' || theme === 'dark'
-                                                    ? 'text-green-300'
-                                                    : 'text-green-700'}`}
-                                                >
+                                                <span className="text-xs font-medium text-[var(--color-accent)]">
                                                     AI Thinking Process
                                                 </span>
                                             </div>
                                             <div className="flex items-center gap-1.5">
-                                                <span className={`text-xs ${theme === 'midnight' || theme === 'dark' ? 'text-green-400/70' : 'text-green-600/70'}`}>
+                                                <span className="text-xs text-[var(--color-accent)]/70">
                                                     {showThinking ? 'Hide' : 'Show'}
                                                 </span>
                                                 <motion.div
@@ -445,9 +333,9 @@ export function MessageItem({ message, modelName }: MessageItemProps) {
                                                     transition={{ duration: 0.3 }}
                                                 >
                                                     {showThinking ? (
-                                                        <ChevronUp className={`w-4 h-4 ${theme === 'midnight' || theme === 'dark' ? 'text-green-400' : 'text-green-600'}`} />
+                                                        <ChevronUp className="w-4 h-4 text-[var(--color-accent)]" />
                                                     ) : (
-                                                        <ChevronDown className={`w-4 h-4 ${theme === 'midnight' || theme === 'dark' ? 'text-green-400' : 'text-green-600'}`} />
+                                                        <ChevronDown className="w-4 h-4 text-[var(--color-accent)]" />
                                                     )}
                                                 </motion.div>
                                             </div>
@@ -458,38 +346,19 @@ export function MessageItem({ message, modelName }: MessageItemProps) {
                                     <AnimatePresence>
                                         {hasThinking && showThinking && (
                                             <motion.div
-                                                className={`
-                                                    rounded-lg p-4 mb-5 text-sm
-                                                    ${theme === 'midnight'
-                                                        ? 'bg-green-950/10 border border-green-900/30'
-                                                        : theme === 'dark'
-                                                            ? 'bg-green-900/10 border border-green-800/20'
-                                                            : 'bg-green-50/70 border border-green-200/60'}
-                                                `}
+                                                className="rounded-lg p-4 mb-5 text-sm bg-[var(--themeSelectorButtonBackgroundSelected)]/30 border border-[var(--color-accent)]/20"
                                                 initial={{ opacity: 0, height: 0 }}
                                                 animate={{ opacity: 1, height: 'auto' }}
                                                 exit={{ opacity: 0, height: 0 }}
                                                 transition={{ duration: 0.3 }}
                                             >
-                                                <div className="mb-2 pb-2 border-b border-dashed border-green-800/20 flex items-center gap-1.5">
-                                                    <Brain className={`w-3.5 h-3.5 ${theme === 'midnight' || theme === 'dark' ? 'text-green-400' : 'text-green-600'}`} />
-                                                    <span className={`text-xs font-medium ${theme === 'midnight' || theme === 'dark' ? 'text-green-400' : 'text-green-700'}`}>
+                                                <div className="mb-2 pb-2 border-b border-dashed border-[var(--color-accent)]/20 flex items-center gap-1.5">
+                                                    <Brain className="w-3.5 h-3.5 text-[var(--color-accent)]" />
+                                                    <span className="text-xs font-medium text-[var(--color-accent)]">
                                                         Reasoning Process
                                                     </span>
                                                 </div>
-                                                <div className={`
-                                                    prose prose-sm max-w-none 
-                                                    ${theme === 'midnight'
-                                                        ? 'text-gray-300/90 prose-headings:text-gray-200'
-                                                        : theme === 'dark'
-                                                            ? 'text-gray-300/90 prose-headings:text-gray-200'
-                                                            : 'text-gray-600/90 prose-headings:text-gray-800'}
-                                                    prose-p:leading-relaxed
-                                                    prose-pre:bg-black/90
-                                                    prose-code:text-pink-500
-                                                    dark:prose-invert
-                                                    prose-li:marker:text-green-500
-                                                `}>
+                                                <div className="prose prose-sm max-w-none text-[var(--color-text)]/90 prose-headings:text-[var(--color-text)] prose-p:leading-relaxed prose-pre:bg-black/90 prose-code:text-pink-500 dark:prose-invert prose-li:marker:text-[var(--color-accent)]">
                                                     {thinkingSteps.length > 3 ? (
                                                         <div className="space-y-3">
                                                             {thinkingSteps.map((step, index) => (
@@ -500,15 +369,7 @@ export function MessageItem({ message, modelName }: MessageItemProps) {
                                                                     animate={{ opacity: 1, x: 0 }}
                                                                     transition={{ delay: index * 0.05, duration: 0.2 }}
                                                                 >
-                                                                    <div className={`
-                                                                        flex-shrink-0 w-5 h-5 rounded-full 
-                                                                        flex items-center justify-center text-xs font-medium
-                                                                        ${theme === 'midnight'
-                                                                            ? 'bg-green-900/50 text-green-300 border border-green-800/50'
-                                                                            : theme === 'dark'
-                                                                                ? 'bg-green-900/40 text-green-300 border border-green-800/40'
-                                                                                : 'bg-green-100 text-green-700 border border-green-200/80'}
-                                                                    `}>
+                                                                    <div className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium bg-[var(--themeSelectorButtonBackgroundSelected)] text-[var(--color-accent)] border border-[var(--color-accent)]/30">
                                                                         {index + 1}
                                                                     </div>
                                                                     <div className="flex-1">
@@ -557,26 +418,7 @@ export function MessageItem({ message, modelName }: MessageItemProps) {
                                     </AnimatePresence>
 
                                     {/* Main content (without thinking) */}
-                                    <div className={`
-                                        prose prose-sm max-w-none 
-                                        ${theme === 'midnight'
-                                            ? 'text-gray-200 prose-headings:text-gray-100 prose-a:text-green-300 prose-strong:text-white'
-                                            : theme === 'dark'
-                                                ? 'text-gray-200 prose-headings:text-gray-100 prose-a:text-green-300 prose-strong:text-white'
-                                                : 'text-gray-700 prose-headings:text-gray-900 prose-a:text-green-600 prose-strong:text-gray-900'
-                                        } 
-                                        prose-p:leading-relaxed
-                                        prose-pre:bg-black/80 prose-pre:text-gray-200
-                                        prose-pre:border prose-pre:border-gray-800
-                                        prose-pre:rounded-md prose-code:text-pink-500
-                                        prose-img:rounded-md
-                                        prose-table:border-collapse prose-table:w-full
-                                        prose-thead:bg-gray-100 dark:prose-thead:bg-gray-800
-                                        prose-th:border prose-th:border-gray-300 dark:prose-th:border-gray-700 prose-th:p-2
-                                        prose-td:border prose-td:border-gray-300 dark:prose-td:border-gray-700 prose-td:p-2
-                                        dark:prose-invert`
-                                    }
-                                    >
+                                    <div className="prose prose-sm max-w-none text-[var(--color-text)] prose-headings:text-[var(--color-text)] prose-a:text-[var(--color-accent)] prose-strong:text-[var(--color-text)] prose-p:leading-relaxed prose-pre:bg-black/80 prose-pre:text-gray-200 prose-pre:border prose-pre:border-gray-800 prose-pre:rounded-md prose-code:text-pink-500 prose-img:rounded-md prose-table:border-collapse prose-table:w-full prose-thead:bg-gray-100 dark:prose-thead:bg-gray-800 prose-th:border prose-th:border-gray-300 dark:prose-th:border-gray-700 prose-th:p-2 prose-td:border prose-td:border-gray-300 dark:prose-td:border-gray-700 prose-td:p-2 dark:prose-invert">
                                         {/* Process content with citations if sources are available */}
                                         {metadata?.sources && metadata.sources.length > 0 ? (
                                             <ReactMarkdown
@@ -644,17 +486,7 @@ export function MessageItem({ message, modelName }: MessageItemProps) {
                                                                 parts.push(
                                                                     <button
                                                                         key={`cite-${match.index}`}
-                                                                        className={`
-                                                                            inline-flex items-center justify-center
-                                                                            px-1.5 py-0.5 rounded-md text-xs font-medium
-                                                                            ${theme === 'midnight'
-                                                                                ? 'bg-green-950/50 text-green-300 border border-green-900/40 hover:bg-green-900/30'
-                                                                                : theme === 'dark'
-                                                                                    ? 'bg-green-900/30 text-green-300 border border-green-800/30 hover:bg-green-800/40'
-                                                                                    : 'bg-green-100 text-green-700 border border-green-200 hover:bg-green-200'}
-                                                                            transition-colors duration-200
-                                                                            mx-0.5 cursor-pointer
-                                                                        `}
+                                                                        className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-md text-xs font-medium bg-[var(--themeSelectorButtonBackgroundSelected)] text-[var(--color-accent)] border border-[var(--color-accent)]/30 hover:bg-[var(--themeSelectorButtonBackgroundSelected)]/60 transition-colors duration-200 mx-0.5 cursor-pointer"
                                                                         onClick={() => {
                                                                             // Scroll to source and highlight it
                                                                             const sourceEl = document.getElementById(`source-${sourceIndex}`);
@@ -738,20 +570,10 @@ export function MessageItem({ message, modelName }: MessageItemProps) {
 
                         {/* Footer with source indicators (if any) */}
                         {metadata?.sources && metadata.sources.length > 0 && (
-                            <div className={`
-                                px-6 py-3 text-xs flex flex-col gap-2 border-t
-                                ${theme === 'midnight'
-                                    ? 'bg-[#0f172a]/70 border-[#334155]'
-                                    : theme === 'dark'
-                                        ? 'bg-gray-900/70 border-gray-700/40'
-                                        : 'bg-gray-50 border-gray-200/80'}
-                            `}>
+                            <div className="px-6 py-3 text-xs flex flex-col gap-2 border-t bg-[var(--color-surfaceHover)]/90 border-[var(--color-border)]">
                                 <div className="flex items-center gap-1 text-xs font-medium mb-1">
                                     <Link2 className="w-3 h-3" />
-                                    <span className={theme === 'midnight' || theme === 'dark'
-                                        ? 'text-gray-300'
-                                        : 'text-gray-700'
-                                    }>
+                                    <span className="text-[var(--color-textSecondary)]">
                                         {metadata.sources.length} {metadata.sources.length === 1 ? 'Source' : 'Sources'}
                                     </span>
                                 </div>
@@ -760,15 +582,7 @@ export function MessageItem({ message, modelName }: MessageItemProps) {
                                         <motion.div
                                             key={`source-${index}`}
                                             id={`source-${index}`}
-                                            className={`
-                                                rounded-lg p-3 
-                                                ${theme === 'midnight'
-                                                    ? 'bg-[#1e293b]/80 border border-[#334155] hover:border-[#475569]/70'
-                                                    : theme === 'dark'
-                                                        ? 'bg-gray-800/80 border border-gray-700/40 hover:border-gray-600/60'
-                                                        : 'bg-white border border-gray-200/80 hover:border-gray-300/90'}
-                                                transition-all duration-200 citation-target
-                                            `}
+                                            className="rounded-lg p-3 bg-[var(--color-surface)] border border-[var(--color-border)] hover:border-[var(--color-border)]/80 transition-all duration-200 citation-target"
                                             whileHover={{ scale: 1.01, x: 2 }}
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
@@ -781,14 +595,7 @@ export function MessageItem({ message, modelName }: MessageItemProps) {
                                                             href={source.url}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
-                                                            className={`
-                                                                hover:underline flex items-center gap-1
-                                                                ${theme === 'midnight'
-                                                                    ? 'text-green-300'
-                                                                    : theme === 'dark'
-                                                                        ? 'text-green-300'
-                                                                        : 'text-green-600'}
-                                                            `}
+                                                            className="hover:underline flex items-center gap-1 text-[var(--color-accent)]"
                                                         >
                                                             {source.title}
                                                             <ExternalLink className="w-3 h-3" />
@@ -799,14 +606,7 @@ export function MessageItem({ message, modelName }: MessageItemProps) {
                                                 </div>
                                             )}
                                             {source.snippet && (
-                                                <div className={`
-                                                    text-xs
-                                                    ${theme === 'midnight'
-                                                        ? 'text-gray-300'
-                                                        : theme === 'dark'
-                                                            ? 'text-gray-300'
-                                                            : 'text-gray-600'}
-                                                `}>
+                                                <div className="text-xs text-[var(--color-textSecondary)]">
                                                     {source.snippet}
                                                 </div>
                                             )}
@@ -820,45 +620,24 @@ export function MessageItem({ message, modelName }: MessageItemProps) {
                         <AnimatePresence>
                             {showActions && !isUser && message.status !== 'error' && (
                                 <motion.div
-                                    className={`
-                                        absolute top-2 right-2 flex gap-1
-                                        rounded-lg p-1
-                                        ${theme === 'midnight'
-                                            ? 'bg-[#0f172a]/90 border border-[#334155]'
-                                            : theme === 'dark'
-                                                ? 'bg-gray-900/90 border border-gray-700/40'
-                                                : 'bg-white/90 border border-gray-200/80'}
-                                        shadow-lg backdrop-blur-sm
-                                    `}
+                                    className="absolute top-2 right-2 flex gap-1 rounded-lg p-1 bg-[var(--color-surface)]/90 border border-[var(--color-border)] shadow-lg backdrop-blur-sm"
                                     initial={{ opacity: 0, scale: 0.8, y: -5 }}
                                     animate={{ opacity: 1, scale: 1, y: 0 }}
                                     exit={{ opacity: 0, scale: 0.8, y: -5 }}
                                     transition={{ duration: 0.2 }}
                                 >
                                     <motion.button
-                                        className={`
-                                            p-1.5 rounded-md
-                                            ${theme === 'midnight' || theme === 'dark'
-                                                ? 'hover:bg-gray-800 text-gray-400 hover:text-green-400'
-                                                : 'hover:bg-gray-100 text-gray-500 hover:text-green-600'}
-                                            transition-colors duration-200
-                                        `}
+                                        className="p-1.5 rounded-md hover:bg-[var(--color-surfaceHover)] text-[var(--color-textSecondary)] hover:text-[var(--color-accent)] transition-colors duration-200"
                                         onClick={handleToggleLike}
                                         whileHover={{ scale: 1.1 }}
                                         whileTap={{ scale: 0.9 }}
                                         title="Like this response"
                                     >
-                                        <ThumbsUp className={`w-4 h-4 ${isLiked ? 'text-green-500 fill-green-500' : ''}`} />
+                                        <ThumbsUp className={`w-4 h-4 ${isLiked ? 'text-[var(--color-accent)] fill-[var(--color-accent)]' : ''}`} />
                                     </motion.button>
 
                                     <motion.button
-                                        className={`
-                                            p-1.5 rounded-md
-                                            ${theme === 'midnight' || theme === 'dark'
-                                                ? 'hover:bg-gray-800 text-gray-400 hover:text-indigo-400'
-                                                : 'hover:bg-gray-100 text-gray-500 hover:text-indigo-600'}
-                                            transition-colors duration-200
-                                        `}
+                                        className="p-1.5 rounded-md hover:bg-[var(--color-surfaceHover)] text-[var(--color-textSecondary)] hover:text-indigo-400 transition-colors duration-200"
                                         onClick={handleCopyContent}
                                         whileHover={{ scale: 1.1 }}
                                         whileTap={{ scale: 0.9 }}
@@ -868,13 +647,7 @@ export function MessageItem({ message, modelName }: MessageItemProps) {
                                     </motion.button>
 
                                     <motion.button
-                                        className={`
-                                            p-1.5 rounded-md
-                                            ${theme === 'midnight' || theme === 'dark'
-                                                ? 'hover:bg-gray-800 text-gray-400 hover:text-amber-400'
-                                                : 'hover:bg-gray-100 text-gray-500 hover:text-amber-600'}
-                                            transition-colors duration-200
-                                        `}
+                                        className="p-1.5 rounded-md hover:bg-[var(--color-surfaceHover)] text-[var(--color-textSecondary)] hover:text-amber-400 transition-colors duration-200"
                                         onClick={handleToggleBookmark}
                                         whileHover={{ scale: 1.1 }}
                                         whileTap={{ scale: 0.9 }}
@@ -884,13 +657,7 @@ export function MessageItem({ message, modelName }: MessageItemProps) {
                                     </motion.button>
 
                                     <motion.button
-                                        className={`
-                                            p-1.5 rounded-md
-                                            ${theme === 'midnight' || theme === 'dark'
-                                                ? 'hover:bg-gray-800 text-gray-400 hover:text-blue-400'
-                                                : 'hover:bg-gray-100 text-gray-500 hover:text-blue-600'}
-                                            transition-colors duration-200
-                                        `}
+                                        className="p-1.5 rounded-md hover:bg-[var(--color-surfaceHover)] text-[var(--color-textSecondary)] hover:text-blue-400 transition-colors duration-200"
                                         onClick={handleShare}
                                         whileHover={{ scale: 1.1 }}
                                         whileTap={{ scale: 0.9 }}

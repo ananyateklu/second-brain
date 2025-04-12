@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect, KeyboardEvent } from 'react';
 import { Send, X, Loader2, Sparkles, Bot, Paperclip, Image, Command, Clock, Search, AlertCircle } from 'lucide-react';
-import { useTheme } from '../../../contexts/themeContextUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ModelSelection } from './ModelSelection';
 import { PERPLEXITY_MODELS } from '../../../services/ai/perplexityModels';
@@ -27,7 +26,6 @@ export function ChatInput({
     selectedModelId,
     onSelectModel
 }: ChatInputProps) {
-    const { theme } = useTheme();
     const [isFocused, setIsFocused] = useState(false);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
@@ -48,21 +46,15 @@ export function ChatInput({
     const selectedModel = PERPLEXITY_MODELS.find(model => model.id === selectedModelId);
 
     const getContainerBackground = () => {
-        if (theme === 'dark') return 'bg-gray-900/50';
-        if (theme === 'midnight') return 'bg-[#1e293b]/80';
-        return 'bg-white/90';
+        return 'bg-[var(--color-surface)]';
     };
 
     const getBorderColor = () => {
-        if (theme === 'midnight') return 'border-[#334155]';
-        if (theme === 'dark') return 'border-[#1e293b]';
-        return 'border-gray-200/70';
+        return 'border-[var(--color-border)]';
     };
 
     const getFocusBorderColor = () => {
-        if (theme === 'midnight') return 'border-[#166534]/60';
-        if (theme === 'dark') return 'border-[#166534]/50';
-        return 'border-green-300';
+        return 'border-[rgba(var(--color-accent-rgb),0.6)]';
     };
 
     // Auto resize textarea
@@ -170,19 +162,9 @@ export function ChatInput({
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                     {/* Model info */}
                     <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                        <div className={`
-                            w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0
-                            ${theme === 'midnight'
-                                ? 'bg-[#0f172a] border border-[#334155]'
-                                : theme === 'dark'
-                                    ? 'bg-gray-900 border border-gray-700'
-                                    : 'bg-gray-100 border border-gray-200'}
-                        `}>
-                            <Bot className={`w-3.5 h-3.5 ${theme === 'midnight'
-                                ? 'text-[#4c9959]'
-                                : theme === 'dark'
-                                    ? 'text-[#4c9959]'
-                                    : 'text-[#15803d]'}`} />
+                        <div className="w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0
+                            bg-[var(--color-surface)] border border-[var(--color-border)]">
+                            <Bot className="w-3.5 h-3.5 text-[var(--color-accent)]" />
                         </div>
                         <div className="flex-1 min-w-0">
                             <ModelSelection
@@ -195,14 +177,8 @@ export function ChatInput({
 
                     {/* Category Badge */}
                     {selectedModel && (
-                        <span className={`
-                            text-xs px-2 py-0.5 rounded-full flex-shrink-0
-                            ${theme === 'midnight'
-                                ? 'bg-[#0f172a]/90 text-gray-400 border border-[#334155]'
-                                : theme === 'dark'
-                                    ? 'bg-gray-800/90 text-gray-400 border border-gray-700'
-                                    : 'bg-gray-100 text-gray-500 border border-gray-200'}
-                        `}>
+                        <span className="text-xs px-2 py-0.5 rounded-full flex-shrink-0
+                            bg-[var(--color-surface)] text-[var(--color-text-secondary)] border border-[var(--color-border)]">
                             {selectedModel.category === 'search' ? 'Search' :
                                 selectedModel.category === 'research' ? 'Research' :
                                     selectedModel.category === 'reasoning' ? 'Reasoning' :
@@ -213,15 +189,9 @@ export function ChatInput({
 
                 {/* AI assistant indicator */}
                 <motion.div
-                    className={`
-                        text-xs flex items-center gap-1 px-2 py-0.5 rounded-full flex-shrink-0 ml-2
-                        ${theme === 'midnight'
-                            ? 'bg-[#0f172a]/80 text-[#4c9959] border border-[#334155]'
-                            : theme === 'dark'
-                                ? 'bg-gray-900/70 text-[#4c9959] border border-gray-800'
-                                : 'bg-white/90 text-[#15803d] border border-gray-200/70'}
-                        shadow-sm backdrop-blur-md
-                    `}
+                    className="text-xs flex items-center gap-1 px-2 py-0.5 rounded-full flex-shrink-0 ml-2
+                        bg-[var(--color-surface)] text-[var(--color-accent)] border border-[var(--color-border)]
+                        shadow-sm backdrop-blur-md"
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3, duration: 0.3 }}
@@ -236,13 +206,8 @@ export function ChatInput({
                 <AnimatePresence>
                     {errorMsg && (
                         <motion.div
-                            className={`
-                                absolute -top-10 left-0 right-0 p-2 rounded-lg flex items-center gap-2 text-sm
-                                ${theme === 'midnight' || theme === 'dark'
-                                    ? 'bg-red-900/50 text-red-200 border border-red-800/50'
-                                    : 'bg-red-100 text-red-800 border border-red-200'
-                                }
-                            `}
+                            className="absolute -top-10 left-0 right-0 p-2 rounded-lg flex items-center gap-2 text-sm
+                                bg-red-100 text-red-800 border border-red-200"
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 10 }}
@@ -264,15 +229,8 @@ export function ChatInput({
                 <AnimatePresence>
                     {uploadedFiles.length > 0 && (
                         <motion.div
-                            className={`
-                                mb-2 p-2 rounded-lg
-                                ${theme === 'midnight'
-                                    ? 'bg-[#0f172a]/50 border border-[#334155]'
-                                    : theme === 'dark'
-                                        ? 'bg-gray-800/50 border border-gray-700'
-                                        : 'bg-gray-100/80 border border-gray-200'
-                                }
-                            `}
+                            className="mb-2 p-2 rounded-lg
+                                bg-[var(--color-surface)] border border-[var(--color-border)]"
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: 'auto' }}
                             exit={{ opacity: 0, height: 0 }}
@@ -281,15 +239,8 @@ export function ChatInput({
                                 {uploadedFiles.map((file, index) => (
                                     <div
                                         key={index}
-                                        className={`
-                                            flex items-center gap-1.5 px-2 py-1 rounded-md text-xs
-                                            ${theme === 'midnight'
-                                                ? 'bg-[#1e293b] text-gray-300 border border-[#334155]'
-                                                : theme === 'dark'
-                                                    ? 'bg-gray-700 text-gray-300 border border-gray-600'
-                                                    : 'bg-white text-gray-700 border border-gray-200 shadow-sm'
-                                            }
-                                        `}
+                                        className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs
+                                            bg-[var(--color-surface)] text-[var(--color-text)] border border-[var(--color-border)]"
                                     >
                                         {file.type.startsWith('image/')
                                             ? <Image className="w-3 h-3" />
@@ -314,52 +265,28 @@ export function ChatInput({
                 <AnimatePresence>
                     {showSuggestions && (
                         <motion.div
-                            className={`
-                                absolute -top-36 left-0 right-0 p-2 rounded-lg
-                                ${theme === 'midnight'
-                                    ? 'bg-[#0f172a]/90 border border-[#334155]'
-                                    : theme === 'dark'
-                                        ? 'bg-gray-800/90 border border-gray-700'
-                                        : 'bg-white/90 border border-gray-200 shadow-md'
-                                }
-                                backdrop-blur-md z-10
-                            `}
+                            className="absolute -top-36 left-0 right-0 p-2 rounded-lg
+                                bg-[var(--color-surface)] border border-[var(--color-border)]
+                                backdrop-blur-md z-10"
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 10 }}
                         >
-                            <div className="text-xs font-medium mb-1.5 px-1.5 opacity-70">
-                                {theme === 'midnight' || theme === 'dark'
-                                    ? 'Suggested searches'
-                                    : 'Suggested searches'
-                                }
+                            <div className="text-xs font-medium mb-1.5 px-1.5 opacity-70 text-[var(--color-text-secondary)]">
+                                Suggested searches
                             </div>
                             <div className="space-y-1">
                                 {quickSuggestions.map((suggestion, index) => (
                                     <motion.button
                                         key={index}
                                         type="button"
-                                        className={`
-                                            w-full text-left px-2 py-1.5 rounded flex items-center gap-2 text-sm
-                                            ${theme === 'midnight'
-                                                ? 'hover:bg-[#1e293b] text-gray-300'
-                                                : theme === 'dark'
-                                                    ? 'hover:bg-gray-700 text-gray-300'
-                                                    : 'hover:bg-gray-100 text-gray-700'
-                                            }
-                                        `}
+                                        className="w-full text-left px-2 py-1.5 rounded flex items-center gap-2 text-sm
+                                            hover:bg-[var(--color-surface-hover)] text-[var(--color-text)]"
                                         onClick={() => applyQuickSuggestion(suggestion.text)}
                                         whileHover={{ x: 2 }}
                                     >
-                                        <span className={`
-                                            p-1 rounded
-                                            ${theme === 'midnight'
-                                                ? 'bg-[#0f172a] text-[#4c9959]'
-                                                : theme === 'dark'
-                                                    ? 'bg-gray-900 text-[#4c9959]'
-                                                    : 'bg-gray-100 text-[#15803d]'
-                                            }
-                                        `}>
+                                        <span className="p-1 rounded
+                                            bg-[var(--color-surface)] text-[var(--color-accent)]">
                                             {suggestion.icon}
                                         </span>
                                         {suggestion.text}
@@ -373,28 +300,16 @@ export function ChatInput({
                 <motion.div
                     className={`
                         flex flex-col gap-2 p-3 rounded-xl 
-                        ${theme === 'midnight'
-                            ? 'bg-[#0f172a]/80 backdrop-blur-md'
-                            : theme === 'dark'
-                                ? 'bg-gray-800/80 backdrop-blur-md'
-                                : 'bg-gray-100/80 backdrop-blur-md'}
+                        bg-[var(--color-surface)]
                         ${isFocused
-                            ? `border ${getFocusBorderColor()} ring-1 ring-green-500/20`
+                            ? `border ${getFocusBorderColor()} ring-1 ring-[var(--color-accent)]/20`
                             : `border ${getBorderColor()}`}
                         transition-all duration-200
                     `}
                     animate={{
                         borderColor: isFocused
-                            ? theme === 'midnight'
-                                ? 'rgba(22, 101, 52, 0.6)'
-                                : theme === 'dark'
-                                    ? 'rgba(22, 101, 52, 0.5)'
-                                    : 'rgba(134, 239, 172, 0.8)'
-                            : theme === 'midnight'
-                                ? 'rgba(51, 65, 85, 1)'
-                                : theme === 'dark'
-                                    ? 'rgba(31, 41, 55, 1)'
-                                    : 'rgba(229, 231, 235, 0.7)'
+                            ? 'rgba(var(--color-accent-rgb), 0.6)'
+                            : 'var(--color-border)'
                     }}
                 >
                     <div className="flex items-end gap-2">
@@ -408,15 +323,9 @@ export function ChatInput({
                             placeholder="Message Perplexity..."
                             rows={1}
                             disabled={isSending}
-                            className={`
-                                w-full resize-none bg-transparent outline-none py-1
-                                ${theme === 'midnight'
-                                    ? 'text-gray-200 placeholder-gray-500'
-                                    : theme === 'dark'
-                                        ? 'text-gray-200 placeholder-gray-500'
-                                        : 'text-gray-800 placeholder-gray-400'}
-                                disabled:opacity-60
-                            `}
+                            className="w-full resize-none bg-transparent outline-none py-1
+                                text-[var(--color-text)] placeholder:text-[var(--color-text-secondary)]
+                                disabled:opacity-60"
                         />
 
                         <div className="flex items-center gap-2">
@@ -425,16 +334,10 @@ export function ChatInput({
                                 type="button"
                                 disabled={isSending}
                                 onClick={handleFileSelect}
-                                className={`
-                                    p-2 rounded-full
-                                    ${theme === 'midnight'
-                                        ? 'hover:bg-[#1e293b] text-gray-400 hover:text-gray-300'
-                                        : theme === 'dark'
-                                            ? 'hover:bg-gray-700 text-gray-400 hover:text-gray-300'
-                                            : 'hover:bg-gray-200 text-gray-500 hover:text-gray-700'}
+                                className="p-2 rounded-full
+                                    hover:bg-[var(--color-surface-hover)] text-[var(--color-text-secondary)] hover:text-[var(--color-text)]
                                     transition-colors duration-200
-                                    disabled:opacity-50 disabled:cursor-not-allowed
-                                `}
+                                    disabled:opacity-50 disabled:cursor-not-allowed"
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                             >
@@ -455,14 +358,8 @@ export function ChatInput({
                                     <motion.button
                                         type="button"
                                         onClick={() => setCurrentMessage('')}
-                                        className={`
-                                            p-1.5 rounded-full
-                                            ${theme === 'midnight'
-                                                ? 'hover:bg-[#1e293b] text-gray-400 hover:text-gray-300'
-                                                : theme === 'dark'
-                                                    ? 'hover:bg-gray-700 text-gray-400 hover:text-gray-300'
-                                                    : 'hover:bg-gray-200 text-gray-500 hover:text-gray-700'}
-                                        `}
+                                        className="p-1.5 rounded-full
+                                            hover:bg-[var(--color-surface-hover)] text-[var(--color-text-secondary)] hover:text-[var(--color-text)]"
                                         initial={{ opacity: 0, scale: 0 }}
                                         animate={{ opacity: 1, scale: 1 }}
                                         exit={{ opacity: 0, scale: 0 }}
@@ -481,17 +378,8 @@ export function ChatInput({
                                 className={`
                                     p-2.5 rounded-full flex items-center justify-center
                                     ${(currentMessage.trim() || uploadedFiles.length > 0)
-                                        ? theme === 'midnight'
-                                            ? 'bg-[#166534]/40 text-[#4ade80] hover:bg-[#166534]/60'
-                                            : theme === 'dark'
-                                                ? 'bg-[#166534]/30 text-[#4ade80] hover:bg-[#166534]/50'
-                                                : 'bg-green-500 text-white hover:bg-green-600'
-                                        : theme === 'midnight'
-                                            ? 'bg-[#1e293b]/60 text-gray-500'
-                                            : theme === 'dark'
-                                                ? 'bg-gray-800 text-gray-500'
-                                                : 'bg-gray-200 text-gray-400'
-                                    }
+                                        ? 'bg-[rgba(var(--color-accent-rgb),0.3)] text-[var(--color-accent)] hover:bg-[rgba(var(--color-accent-rgb),0.5)]'
+                                        : 'bg-[var(--color-surface-hover)] text-[var(--color-text-secondary)]'}
                                     transition-colors duration-200
                                     disabled:cursor-not-allowed
                                 `}
@@ -509,41 +397,21 @@ export function ChatInput({
 
                     {/* Keyboard shortcut hint */}
                     <motion.div
-                        className={`
-                            flex justify-end text-xs gap-3 mt-1 opacity-60
-                            ${theme === 'midnight' || theme === 'dark'
-                                ? 'text-gray-500'
-                                : 'text-gray-500'
-                            }
-                        `}
+                        className="flex justify-end text-xs gap-3 mt-1 opacity-60 text-[var(--color-text-secondary)]"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 0.6 }}
                     >
                         <div className="flex items-center gap-1">
-                            <kbd className={`
-                                px-1.5 rounded text-[10px]
-                                ${theme === 'midnight'
-                                    ? 'bg-[#0f172a] border border-[#334155]'
-                                    : theme === 'dark'
-                                        ? 'bg-gray-900 border border-gray-700'
-                                        : 'bg-white border border-gray-200'
-                                }
-                            `}>
+                            <kbd className="px-1.5 rounded text-[10px]
+                                bg-[var(--color-surface)] border border-[var(--color-border)]">
                                 <Command className="w-2.5 h-2.5 inline mr-0.5" />
                                 Enter
                             </kbd>
                             <span>send</span>
                         </div>
                         <div className="flex items-center gap-1">
-                            <kbd className={`
-                                px-1.5 rounded text-[10px]
-                                ${theme === 'midnight'
-                                    ? 'bg-[#0f172a] border border-[#334155]'
-                                    : theme === 'dark'
-                                        ? 'bg-gray-900 border border-gray-700'
-                                        : 'bg-white border border-gray-200'
-                                }
-                            `}>↑</kbd>
+                            <kbd className="px-1.5 rounded text-[10px]
+                                bg-[var(--color-surface)] border border-[var(--color-border)]">↑</kbd>
                             <span>history</span>
                         </div>
                     </motion.div>

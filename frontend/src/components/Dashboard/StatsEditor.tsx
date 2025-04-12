@@ -36,34 +36,6 @@ export function StatsEditor({ isOpen }: { isOpen: boolean }) {
 
   if (!isOpen) return null;
 
-  const getBackgroundClass = () => {
-    if (theme === 'midnight') {
-      return 'bg-[#1e293b]/50';
-    }
-    if (theme === 'dark') {
-      return 'bg-gray-900/70';
-    }
-    if (theme === 'full-dark') {
-      return 'bg-[rgba(var(--color-surface-rgb),0.8)]';
-    }
-    // Increase opacity for light mode
-    return 'bg-white/90';
-  };
-
-  const getBorderClass = () => {
-    if (theme === 'midnight') {
-      return 'border-white/10';
-    }
-    if (theme === 'dark') {
-      return 'border-gray-700/50';
-    }
-    if (theme === 'full-dark') {
-      return 'border-[rgba(var(--color-border-rgb),0.5)]';
-    }
-    // More visible border for light mode
-    return 'border-gray-200';
-  };
-
   const handleReset = async () => {
     setIsResetting(true);
     try {
@@ -80,9 +52,9 @@ export function StatsEditor({ isOpen }: { isOpen: boolean }) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
-      className={`${getBackgroundClass()} backdrop-blur-xl border ${getBorderClass()} rounded-xl w-full shadow-lg z-10`}
+      className={`bg-[var(--statsEditorBackground)] backdrop-blur-xl border border-[var(--statsEditorBorder)] rounded-xl w-full shadow-lg z-10`}
     >
-      <div className={`p-4 border-b ${getBorderClass()} flex justify-between items-center`}>
+      <div className={`p-4 border-b border-[var(--statsEditorBorder)] flex justify-between items-center`}>
         <h3 className={`text-sm font-medium ${theme === 'midnight' ? 'text-white/90' : theme === 'dark' ? 'text-white/90' : theme === 'full-dark' ? 'text-white/90' : 'text-gray-800'} flex items-center gap-2`}>
           <Icons.Gauge className="w-4 h-4 text-[var(--color-accent)]" />
           Available Stats

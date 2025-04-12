@@ -34,38 +34,30 @@ const applyTheme = (themeName: ThemeName) => {
 
   // Safari-specific fixes
   if (isSafari) {
-    // Set note card background colors for Safari
+    // Set note card background colors for Safari - KEEPING these specific overrides for now
     if (themeName === 'midnight') {
       root.style.setProperty('--note-bg-opacity', '0.3');
       root.style.setProperty('--note-bg-color', '#1e293b');
-      root.style.setProperty('--color-background', '#0f172a');
-      root.style.setProperty('--color-surface', '#1e293b');
       root.style.backgroundColor = theme.colors.background;
       document.body.style.backgroundColor = theme.colors.background;
     } else if (themeName === 'dark') {
       root.style.setProperty('--note-bg-opacity', '0.3');
       root.style.setProperty('--note-bg-color', 'rgb(17, 24, 39)');
-      root.style.removeProperty('--color-background');
-      root.style.removeProperty('--color-surface');
       root.style.backgroundColor = theme.colors.background;
       document.body.style.backgroundColor = theme.colors.background;
     } else if (themeName === 'full-dark') {
       root.style.setProperty('--note-bg-opacity', '0.4');
-      root.style.setProperty('--note-bg-color', '#27272a');
-      root.style.setProperty('--color-background', '#000000');
-      root.style.setProperty('--color-surface', '#27272a');
+      root.style.setProperty('--note-bg-color', '#27272a'); // Matches new config surface for full-dark
       root.style.backgroundColor = theme.colors.background;
       document.body.style.backgroundColor = theme.colors.background;
     } else { // Light theme
       root.style.removeProperty('--note-bg-opacity');
       root.style.removeProperty('--note-bg-color');
-      root.style.removeProperty('--color-background');
-      root.style.removeProperty('--color-surface');
       root.style.backgroundColor = '';
       document.body.style.backgroundColor = '';
     }
 
-    // Force a repaint in Safari
+    // Force a repaint in Safari - KEEPING
     const body = document.body;
     body.style.display = 'none';
     window.getComputedStyle(body).getPropertyValue('height'); // Force reflow

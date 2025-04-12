@@ -1,4 +1,3 @@
-import { useTheme } from '../../../contexts/themeContextUtils';
 import { PERPLEXITY_MODELS } from '../../../services/ai/perplexityModels';
 import { Bot, Cpu, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
@@ -11,21 +10,8 @@ interface ModelSelectionProps {
 }
 
 export function ModelSelection({ selectedModelId, onSelectModel, compact = false }: ModelSelectionProps) {
-    const { theme } = useTheme();
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
-
-    const getBorderColor = () => {
-        if (theme === 'midnight') return 'border-[#334155]';
-        if (theme === 'dark') return 'border-[#1e293b]';
-        return 'border-gray-200/70';
-    };
-
-    const getContainerBackground = () => {
-        if (theme === 'dark') return 'bg-gray-900';
-        if (theme === 'midnight') return 'bg-[#1e293b]';
-        return 'bg-white';
-    };
 
     // Group models by category
     const modelsByCategory = PERPLEXITY_MODELS.reduce((acc, model) => {
@@ -67,11 +53,10 @@ export function ModelSelection({ selectedModelId, onSelectModel, compact = false
                 <motion.button
                     className={`
                         flex items-center gap-1 px-3 py-1.5 rounded-md text-xs min-w-[140px] max-w-[200px]
-                        ${theme === 'midnight'
-                            ? 'bg-[#0f172a] text-[#4c9959] border border-[#334155] hover:bg-[#0f172a]/80'
-                            : theme === 'dark'
-                                ? 'bg-gray-800 text-[#4c9959] border border-gray-700 hover:bg-gray-800/90'
-                                : 'bg-gray-100 text-[#15803d] border border-gray-200 hover:bg-gray-200'}
+                        bg-[var(--themeDropdownButtonBackground)]
+                        hover:bg-[var(--themeDropdownButtonBackgroundHover)]
+                        text-[var(--color-accent)]
+                        border border-[var(--color-border)]
                         transition-colors duration-200
                     `}
                     onClick={() => setIsOpen(!isOpen)}
@@ -94,8 +79,8 @@ export function ModelSelection({ selectedModelId, onSelectModel, compact = false
                         <motion.div
                             className={`
                                 absolute bottom-12 left-0 w-80 p-4 rounded-md shadow-xl
-                                ${getContainerBackground()}
-                                border ${getBorderColor()}
+                                bg-[var(--color-surface)]
+                                border border-[var(--color-border)]
                                 z-[999]
                             `}
                             initial={{ opacity: 0, y: 10, scale: 0.95 }}
@@ -106,7 +91,7 @@ export function ModelSelection({ selectedModelId, onSelectModel, compact = false
                             <div className="space-y-3">
                                 {Object.entries(modelsByCategory).map(([category, models]) => (
                                     <div key={category} className="space-y-1.5">
-                                        <p className={`text-[10px] font-medium uppercase ${theme === 'midnight' ? 'text-gray-300' : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                                        <p className="text-[10px] font-medium uppercase text-[var(--color-textSecondary)]">
                                             {formatCategoryName(category)}
                                         </p>
                                         <div className="flex flex-col gap-1">
@@ -118,16 +103,8 @@ export function ModelSelection({ selectedModelId, onSelectModel, compact = false
                                                         className={`
                                                             relative flex items-center p-1.5 rounded-md transition-all duration-200
                                                             ${isSelected
-                                                                ? theme === 'midnight'
-                                                                    ? 'bg-[#166534]/40 border border-[#15803d]/60'
-                                                                    : theme === 'dark'
-                                                                        ? 'bg-[#166534]/30 border border-[#15803d]/40'
-                                                                        : 'bg-green-100 border border-green-700/30'
-                                                                : theme === 'midnight'
-                                                                    ? 'bg-[#1e293b]/90 border border-[#334155] hover:bg-[#1e293b] hover:border-[#475569]/60'
-                                                                    : theme === 'dark'
-                                                                        ? 'bg-gray-800/60 border border-gray-700/40 hover:bg-gray-800/90 hover:border-gray-700/60'
-                                                                        : 'bg-white border border-gray-200/70 hover:border-gray-300'}
+                                                                ? 'bg-[var(--themeSelectorButtonBackgroundSelected)] border border-[var(--color-accent)]/60'
+                                                                : 'bg-[var(--color-surface)] border border-[var(--color-border)] hover:bg-[var(--color-surfaceHover)] hover:border-[var(--color-border)]/60'}
                                                         `}
                                                         onClick={() => {
                                                             onSelectModel(model.id);
@@ -136,46 +113,24 @@ export function ModelSelection({ selectedModelId, onSelectModel, compact = false
                                                         whileHover={{ x: 2 }}
                                                         whileTap={{ scale: 0.98 }}
                                                     >
-                                                        <div className={`
-                                                            w-4 h-4 rounded-md flex items-center justify-center mr-2
-                                                            ${theme === 'midnight'
-                                                                ? 'bg-[#0f172a] border border-[#334155]'
-                                                                : theme === 'dark'
-                                                                    ? 'bg-gray-900 border border-gray-700'
-                                                                    : 'bg-gray-100 border border-gray-200'}
-                                                        `}>
-                                                            <Bot className={`w-2.5 h-2.5 ${theme === 'midnight'
-                                                                ? 'text-[#4c9959]'
-                                                                : theme === 'dark'
-                                                                    ? 'text-[#4c9959]'
-                                                                    : 'text-[#15803d]'}`} />
+                                                        <div className="w-4 h-4 rounded-md flex items-center justify-center mr-2 bg-[var(--color-surfaceHover)] border border-[var(--color-border)]">
+                                                            <Bot className="w-2.5 h-2.5 text-[var(--color-accent)]" />
                                                         </div>
                                                         <div className="flex flex-col items-start flex-1 min-w-0">
                                                             <span className={`
                                                                 text-xs font-medium truncate w-full
                                                                 ${isSelected
-                                                                    ? theme === 'midnight' || theme === 'dark'
-                                                                        ? 'text-[#4c9959]'
-                                                                        : 'text-[#15803d]'
-                                                                    : theme === 'midnight'
-                                                                        ? 'text-white'
-                                                                        : theme === 'dark'
-                                                                            ? 'text-white'
-                                                                            : 'text-gray-700'}
+                                                                    ? 'text-[var(--color-accent)]'
+                                                                    : 'text-[var(--color-text)]'}
                                                             `}>
                                                                 {model.name}
                                                             </span>
-                                                            <span className={`text-[10px] truncate w-full ${theme === 'midnight' ? 'text-gray-400' : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                                                            <span className="text-[10px] truncate w-full text-[var(--color-textSecondary)]">
                                                                 {model.description.substring(0, 50)}...
                                                             </span>
                                                         </div>
                                                         {isSelected && (
-                                                            <div className={`
-                                                                absolute top-1/2 right-2 -translate-y-1/2 w-1.5 h-1.5 rounded-full flex-shrink-0
-                                                                ${theme === 'midnight' || theme === 'dark'
-                                                                    ? 'bg-[#4c9959] shadow-glow-sm shadow-[#4c9959]/50'
-                                                                    : 'bg-[#15803d]'}
-                                                            `}></div>
+                                                            <div className="absolute top-1/2 right-2 -translate-y-1/2 w-1.5 h-1.5 rounded-full flex-shrink-0 bg-[var(--color-accent)] shadow-glow-sm shadow-[var(--color-accent)]/50"></div>
                                                         )}
                                                     </motion.button>
                                                 );
@@ -193,10 +148,10 @@ export function ModelSelection({ selectedModelId, onSelectModel, compact = false
 
     // Original version for sidebar
     return (
-        <div className={`p-3 border-t ${getBorderColor()} shrink-0 ${getContainerBackground()}`}>
+        <div className="p-3 border-t border-[var(--color-border)] shrink-0 bg-[var(--color-surface)]">
             <div className="flex items-center gap-1 mb-2">
-                <Cpu className={`w-3 h-3 ${theme === 'midnight' ? 'text-[#4c9959]' : theme === 'dark' ? 'text-[#4c9959]' : 'text-[#166534]'}`} />
-                <p className={`text-xs font-medium ${theme === 'midnight' ? 'text-white' : theme === 'dark' ? 'text-white' : 'text-gray-800'}`}>
+                <Cpu className="w-3 h-3 text-[var(--color-accent)]" />
+                <p className="text-xs font-medium text-[var(--color-text)]">
                     Perplexity Model
                 </p>
             </div>
@@ -204,7 +159,7 @@ export function ModelSelection({ selectedModelId, onSelectModel, compact = false
             <div className="space-y-2">
                 {Object.entries(modelsByCategory).map(([category, models]) => (
                     <div key={category} className="space-y-1.5">
-                        <p className={`text-[10px] font-medium ${theme === 'midnight' ? 'text-gray-300' : theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                        <p className="text-[10px] font-medium text-[var(--color-textSecondary)]">
                             {formatCategoryName(category)}
                         </p>
                         <div className="grid grid-cols-2 gap-1.5">
@@ -216,53 +171,23 @@ export function ModelSelection({ selectedModelId, onSelectModel, compact = false
                                         className={`
                                             relative flex flex-col items-start p-1.5 rounded-lg transition-all duration-200
                                             ${isSelected
-                                                ? theme === 'midnight'
-                                                    ? 'bg-[#166534]/40 border border-[#15803d]/60 shadow-glow-sm shadow-[#4c9959]/20'
-                                                    : theme === 'dark'
-                                                        ? 'bg-[#166534]/30 border border-[#15803d]/40 shadow-sm'
-                                                        : 'bg-green-100 border border-green-700/30 shadow-sm'
-                                                : theme === 'midnight'
-                                                    ? 'bg-[#1e293b]/90 border border-[#334155] hover:bg-[#1e293b] hover:border-[#475569]/60'
-                                                    : theme === 'dark'
-                                                        ? 'bg-gray-800/60 border border-gray-700/40 hover:bg-gray-800/90 hover:border-gray-700/60'
-                                                        : 'bg-white border border-gray-200/70 hover:border-gray-300 hover:shadow-sm'}
+                                                ? 'bg-[var(--themeSelectorButtonBackgroundSelected)] border border-[var(--color-accent)]/60 shadow-glow-sm shadow-[var(--color-accent)]/20'
+                                                : 'bg-[var(--color-surface)] border border-[var(--color-border)] hover:bg-[var(--color-surfaceHover)] hover:border-[var(--color-border)]/60 hover:shadow-sm'}
                                         `}
                                         onClick={() => onSelectModel(model.id)}
                                     >
                                         {isSelected && (
-                                            <div className={`
-                                                absolute top-1 right-1 w-1.5 h-1.5 rounded-full
-                                                ${theme === 'midnight' || theme === 'dark'
-                                                    ? 'bg-[#4c9959] shadow-glow-sm shadow-[#4c9959]/50'
-                                                    : 'bg-[#15803d]'}
-                                            `}></div>
+                                            <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-[var(--color-accent)] shadow-glow-sm shadow-[var(--color-accent)]/50"></div>
                                         )}
                                         <div className="flex items-center w-full">
-                                            <div className={`
-                                                w-3.5 h-3.5 rounded-md flex items-center justify-center mr-1
-                                                ${theme === 'midnight'
-                                                    ? 'bg-[#1e293b] border border-[#334155]'
-                                                    : theme === 'dark'
-                                                        ? 'bg-gray-900 border border-gray-700'
-                                                        : 'bg-gray-100 border border-gray-200'}
-                                            `}>
-                                                <Bot className={`w-2 h-2 ${theme === 'midnight'
-                                                    ? 'text-[#4c9959]'
-                                                    : theme === 'dark'
-                                                        ? 'text-[#4c9959]'
-                                                        : 'text-[#15803d]'}`} />
+                                            <div className="w-3.5 h-3.5 rounded-md flex items-center justify-center mr-1 bg-[var(--color-surfaceHover)] border border-[var(--color-border)]">
+                                                <Bot className="w-2 h-2 text-[var(--color-accent)]" />
                                             </div>
                                             <span className={`
                                                 text-[10px] font-medium truncate
                                                 ${isSelected
-                                                    ? theme === 'midnight' || theme === 'dark'
-                                                        ? 'text-[#4c9959]'
-                                                        : 'text-[#15803d]'
-                                                    : theme === 'midnight'
-                                                        ? 'text-white'
-                                                        : theme === 'dark'
-                                                            ? 'text-white'
-                                                            : 'text-gray-700'}
+                                                    ? 'text-[var(--color-accent)]'
+                                                    : 'text-[var(--color-text)]'}
                                             `}>
                                                 {model.name}
                                             </span>

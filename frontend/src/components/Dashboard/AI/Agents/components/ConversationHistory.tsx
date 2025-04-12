@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 import { AIModel } from '../../../../../types/ai';
 import { AgentConversation } from '../types';
-import { useTheme } from '../../../../../contexts/themeContextUtils';
 
 interface ConversationHistoryProps {
     conversations: AgentConversation[];
@@ -21,14 +20,6 @@ export const ConversationHistory = ({
 }: ConversationHistoryProps) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
-    const { theme } = useTheme();
-
-    const getContainerBackground = () => {
-        if (theme === 'dark') return 'bg-gray-900/95';
-        if (theme === 'midnight') return 'bg-[#1e293b]/95';
-        if (theme === 'full-dark') return 'bg-[rgba(var(--color-surface-rgb),0.95)]';
-        return 'bg-[color-mix(in_srgb,var(--color-background)_98%,var(--color-surface))]';
-    };
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -79,7 +70,7 @@ export const ConversationHistory = ({
                             shadow-[0_2px_8px_rgba(0,0,0,0.08)] 
                             border border-[var(--color-border)] 
                             p-2 backdrop-blur-xl
-                            ${getContainerBackground()}
+                            bg-[var(--conversationHistoryBackground)]
                         `}
                         style={{ zIndex: 100 }}
                     >

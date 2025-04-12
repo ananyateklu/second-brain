@@ -18,13 +18,6 @@ interface WelcomeSectionProps {
   tasks: Task[];
 }
 
-const getContainerBackground = (theme: string) => {
-  if (theme === 'dark') return 'bg-gray-900/30'
-  if (theme === 'midnight') return 'bg-[#1e293b]/30'
-  if (theme === 'full-dark') return 'bg-[rgba(var(--color-surface-rgb),0.8)]'
-  return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]'
-}
-
 const getUserNameColor = () => {
   return 'text-primary-500';
 }
@@ -88,7 +81,7 @@ export const WelcomeSection = React.memo(({ user, onNewNote, onNavigate }: Welco
         relative 
         overflow-hidden 
         rounded-xl
-        ${getContainerBackground(theme)}
+        bg-[var(--welcomeBarBackground)]
         backdrop-blur-xl 
         border-[0.5px] 
         border-white/10
