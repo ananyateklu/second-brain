@@ -173,12 +173,20 @@ export function TasksPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode] = useState<'grid' | 'list'>('grid');
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
-  const [taskSourceFilter, setTaskSourceFilter] = useState<'all' | 'local' | 'ticktick'>('all');
+  const [taskSourceFilter, setTaskSourceFilter] = useState<'all' | 'local' | 'ticktick'>(() => {
+    const stored = localStorage.getItem('task_source_filter');
+    return (stored as 'all' | 'local' | 'ticktick') || 'all';
+  });
   const [filters, setFilters] = useState({
     status: 'all',
     priority: 'all',
     dueDate: 'all'
   });
+
+  // Persist task source filter to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('task_source_filter', taskSourceFilter);
+  }, [taskSourceFilter]);
 
   const mappedTickTickTasks: TaskWithSource[] = useMemo(() =>
     tickTickTasks.map(mapTickTickToLocalTask),

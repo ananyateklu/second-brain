@@ -1,0 +1,144 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# TickTick Integration
+
+This document outlines the architecture and workflow of the TickTick integration within the Second Brain application.
+
+## Overview
+
+The TickTick integration allows users to connect their TickTick account to Second Brain, enabling the synchronization and management of tasks directly within the application. The integration involves an OAuth 2.0 authentication flow and utilizes dedicated frontend and backend components to handle data fetching, updates, and state management.
+
+## Authentication Flow (OAuth 2.0)
+
+1.  **Initiation (Frontend)**:
+    *   The connection process starts in the `SettingsPage` component ([SettingsPage.tsx](mdc:frontend/src/components/Dashboard/Settings/SettingsPage.tsx)).
+    *   When the user clicks "Connect", the `handleConnectTickTick` function generates a unique `state` parameter (stored in `localStorage`), constructs the TickTick authorization URL using configuration variables (Client ID, Redirect URI, Scope), and redirects the user to TickTick.
+
+2.  **User Authorization (TickTick)**:
+    *   The user logs into TickTick (if not already logged in) and authorizes Second Brain to access their tasks.
+
+3.  **Callback (Frontend & Backend)**:
+    *   TickTick redirects the user back to the application's callback URL (`/dashboard/callback/ticktick`).
+    *   The `TickTickCallback` component ([TickTickCallback.tsx](mdc:frontend/src/components/Callback/TickTickCallback.tsx)) handles this redirect.
+    *   It extracts the `code` and `state` parameters from the URL.
+    *   It verifies the `state` parameter against the value stored in `localStorage` to prevent CSRF attacks.
+    *   If valid, it calls the backend API endpoint `/api/integrations/ticktick/exchange-code` via `integrationsService.exchangeTickTickCode` ([integrations.service.ts](mdc:frontend/src/services/api/integrations.service.ts)), sending the authorization `code`.
+
+4.  **Code Exchange & Token Storage (Backend)**:
+    *   The `IntegrationsController` ([IntegrationsController.cs](mdc:backend/SecondBrain.Api/Controllers/IntegrationsController.cs)) receives the code in the `ExchangeTickTickCode` action.
+    *   It retrieves TickTick API credentials (Client ID, Secret) from configuration.
+    *   It makes a POST request to the TickTick token endpoint (`https://ticktick.com/oauth/token`) with the code, client credentials, and redirect URI to exchange the code for access and refresh tokens.
+    *   The response structure is defined in [TickTickTokenResponse.cs](mdc:backend/SecondBrain.Api/Models/Integrations/TickTickTokenResponse.cs). Errors are handled via [TickTickErrorResponse.cs](mdc:backend/SecondBrain.Api/Models/Integrations/TickTickErrorResponse.cs).
+    *   Upon successful exchange, the `IntegrationService` ([IntegrationService.cs](mdc:backend/SecondBrain.Api/Services/IntegrationService.cs)) is called to save the tokens.
+    *   The `SaveTickTickCredentialsAsync` method encrypts (TODO: Encryption not yet implemented) and stores the `access_token`, `refresh_token`, `expires_at`, `scope`, and `token_type` in the `UserIntegrationCredentials` table ([UserIntegrationCredential.cs](mdc:backend/SecondBrain.Data/Entities/UserIntegrationCredential.cs)). It updates existing credentials or creates new ones based on the `UserId` and `Provider` ("TickTick").
+
+5.  **Confirmation (Frontend)**:
+    *   The `TickTickCallback` component receives a success/failure response from the backend.
+    *   On success, it sets a `localStorage` flag (`ticktick_connected`) to `true`, updates the application state (though the primary state update happens via checking the backend status), and redirects the user back to the settings page, often with a success parameter (`/dashboard/settings?integration_status=ticktick_success`).
+    *   The `SettingsPage` ([SettingsPage.tsx](mdc:frontend/src/components/Dashboard/Settings/SettingsPage.tsx)) detects this parameter and updates its local connection state accordingly.
+
+## Frontend Integration
+
+*   **Settings Page (`SettingsPage.tsx`)**:
+    *   Displays the connection status (`isTickTickConnected` state).
+    *   Provides "Connect" and "Disconnect" buttons.
+    *   Initiates the OAuth flow (`handleConnectTickTick`).
+    *   Calls the backend to delete credentials (`handleDisconnectTickTick` -> `integrationsService.disconnectTickTick`).
+    *   Checks the connection status on load and after potential callbacks using `integrationsService.getTickTickStatus`.
+
+*   **Tasks Context (`TasksContext.tsx`, `tasksContextUtils.ts`)**:
+    *   Manages the state related to TickTick integration:
+        *   `tickTickTasks`: Array of tasks fetched from TickTick.
+        *   `isTickTickLoading`, `tickTickError`: Loading and error states for TickTick operations.
+        *   `isTickTickConnected`: Boolean flag indicating connection status (synced with localStorage and backend checks).
+        *   `tickTickProjectId`: The ID of the specific TickTick project to sync (stored in localStorage).
+    *   Provides functions to interact with the integration:
+        *   `fetchTickTickTasks`: Fetches tasks for the selected `tickTickProjectId`.
+        *   `checkTickTickStatus` / `refreshTickTickConnection`: Validates connection status with the backend.
+        *   `updateTickTickProjectId`: Updates the selected project ID and triggers a task refetch.
+        *   CRUD operations wrappers (`getTickTickTask`, `updateTickTickTask`, `completeTickTickTask`, `deleteTickTickTask`, `createTickTickTask`) that call the `integrationsService`.
+
+*   **Integration Service (`integrations.service.ts`)**:
+    *   Acts as the intermediary between frontend components/context and the backend API.
+    *   Contains functions for all TickTick-related API calls:
+        *   `getTickTickStatus`, `disconnectTickTick`, `exchangeTickTickCode`
+        *   `getTickTickProjects`
+        *   `getTickTickTasks`, `getTickTickTask`
+        *   `updateTickTickTask`, `completeTickTickTask`, `deleteTickTickTask`, `createTickTickTask`
+
+*   **Task Components (`TasksPage.tsx`, `TaskCard.tsx`, `TaskList.tsx`, `TickTickTaskEditModal.tsx`)**:
+    *   `TasksPage.tsx` uses the `TasksContext` to fetch and display both local and TickTick tasks.
+    *   It maps TickTick tasks (`TickTickTask` type from [integrations.ts](mdc:frontend/src/types/integrations.ts)) to the local `Task` type ([task.ts](mdc:frontend/src/api/types/task.ts)) using `mapTickTickToLocalTask` before rendering.
+    *   Provides filtering options (`taskSourceFilter`) to show 'all', 'local', or 'ticktick' tasks.
+    *   Includes a `TickTickSettingsModal` to allow users to select which TickTick project to sync.
+    *   `TaskCard.tsx` renders tasks differently based on their source (`isTickTick` prop) and handles click actions, directing TickTick tasks to the `TickTickTaskEditModal`.
+    *   `TickTickTaskEditModal.tsx` provides a dedicated interface for viewing and editing TickTick tasks, using context functions (`getTickTickTask`, `updateTickTickTask`, etc.) to interact with the API.
+
+## Backend Integration
+
+*   **Controller (`IntegrationsController.cs`)**:
+    *   Defines API endpoints for TickTick integration under the `/api/integrations/ticktick/` route.
+    *   Requires user authorization (`[Authorize]` attribute).
+    *   Handles:
+        *   `/exchange-code` (POST): Exchanges the OAuth code for tokens.
+        *   `/` (DELETE): Disconnects the integration by deleting credentials.
+        *   `/status` (GET): Checks if valid credentials exist for the user.
+        *   `/projects` (GET): Fetches all projects from the TickTick API.
+        *   `/tasks` (GET): Fetches tasks. Can optionally filter by `projectId` (using `/project/{projectId}/data` TickTick endpoint) or fetch all tasks (using `/task` TickTick endpoint).
+        *   `/tasks/{projectId}/{taskId}` (GET): Fetches a single task by ID.
+        *   `/tasks/{taskId}` (POST): Updates a specific task. **Note:** The API route seems slightly inconsistent here, using only `taskId` while the frontend sends `projectId` in the body. Needs verification. The frontend uses `/api/integrations/ticktick/tasks/${taskId}`.
+        *   `/tasks/{projectId}/{taskId}/complete` (POST): Marks a task as complete.
+        *   `/tasks/{projectId}/{taskId}` (DELETE): Deletes a task.
+        *   `/projects/{projectId}/tasks` (POST): Creates a new task within a specific project.
+
+*   **Service (`IntegrationService.cs`, `IIntegrationService.cs`)**:
+    *   Implements the logic for managing integration credentials.
+    *   `SaveTickTickCredentialsAsync`: Saves/Updates tokens in the database. (Handles encryption - TODO).
+    *   `GetTickTickCredentialsAsync`: Retrieves credentials for a user. (Handles decryption - TODO).
+    *   `DeleteTickTickCredentialsAsync`: Removes credentials from the database.
+    *   Uses `IHttpClientFactory` to make requests to the TickTick API.
+    *   Uses `DataContext` to interact with the `UserIntegrationCredentials` entity.
+
+*   **Data (`UserIntegrationCredential.cs`, `DataContext.cs`, Migrations)**:
+    *   `UserIntegrationCredential` entity stores the tokens and associated metadata.
+    *   `UserId` field length was updated via migrations ([Migration files](mdc:backend/SecondBrain.Data/Migrations)) to match the `User.Id` length (`nvarchar(450)`).
+    *   `DataContext` defines the `DbSet<UserIntegrationCredential>`.
+
+## Key Functionality
+
+*   **Connecting/Disconnecting**: Managed via `SettingsPage.tsx` and backend `IntegrationsController` actions (`/exchange-code`, `/`).
+*   **Fetching Projects**: `integrationsService.getTickTickProjects` calls backend `/projects` endpoint. Used in `TickTickSettingsModal` within `TasksPage.tsx`.
+*   **Fetching Tasks**: `TasksContext` calls `integrationsService.getTickTickTasks` (with optional `projectId`). Backend controller fetches from TickTick API using stored credentials.
+*   **Viewing/Editing Task**: `TickTickTaskEditModal.tsx` uses `getTickTickTask` and `updateTickTickTask` context functions.
+*   **Completing Task**: `TickTickTaskEditModal.tsx` uses `completeTickTickTask`.
+*   **Deleting Task**: `TickTickTaskEditModal.tsx` uses `deleteTickTickTask`.
+*   **Creating Task**: `TasksContext` provides `createTickTickTask` function, calling the backend endpoint.
+
+## Data Mapping
+
+*   TickTick tasks ([TickTickTask.cs](mdc:backend/SecondBrain.Api/Models/Integrations/TickTickTask.cs), [integrations.ts](mdc:frontend/src/types/integrations.ts)) are mapped to the application's internal `Task` type ([task.ts](mdc:frontend/src/api/types/task.ts)) in the frontend (`TasksPage.tsx` -> `mapTickTickToLocalTask`).
+*   Mapping includes:
+    *   Prefixing ID: `ticktick-${tickTickTask.id}`
+    *   Priority: Numeric (TickTick) to string ('low', 'medium', 'high') using `mapTickTickPriority`.
+    *   Status: Numeric (TickTick: 0=incomplete, 2=completed) to string ('Incomplete', 'Completed') using `mapTickTickStatus`.
+    *   Content/Description: Handles potential differences (`content` vs `description`).
+    *   Adding `source: 'ticktick'` property.
+
+## Error Handling & Token Management
+
+*   **Backend**: Controller actions include try-catch blocks for `HttpRequestException` and general `Exception`. Logs errors using `ILogger`. Handles unsuccessful status codes from TickTick API, attempting to parse `TickTickErrorResponse`.
+*   **Frontend**: `integrations.service.ts` includes error handling for API calls. `TasksContext` manages `tickTickError` state. `TickTickCallback` handles OAuth errors. `TickTickTaskEditModal` handles errors during CRUD operations.
+*   **Token Expiry**: The backend controller checks for token expiry (`credentials.ExpiresAt <= DateTime.UtcNow.AddMinutes(1)`) before making API calls. **However, the refresh token logic is currently missing (marked as TODO in `IntegrationService.cs` and controller actions)**. Currently, it returns a 401 error if the token is expired, requiring the user to reconnect manually.
+*   **Connection Status**: Frontend relies on `localStorage` for initial status but validates with the backend via `getTickTickStatus`. The service includes logic to handle potential network errors during status checks to avoid flickering.
+
+## Potential Issues & Quirks
+
+*   **Missing Token Refresh**: The lack of automatic token refresh means the integration will break once the access token expires, requiring manual reconnection.
+*   **Missing Token Encryption**: Tokens are currently stored unencrypted in the database (marked as TODO in `IntegrationService.cs`).
+*   **Project ID Requirement**: Fetching and creating TickTick tasks generally requires a `projectId`. The user must select a project in the settings (`TickTickSettingsModal`).
+*   **API Rate Limits**: No explicit handling for TickTick API rate limits is visible.
+*   **Data Synchronization**: This is a one-way fetch currently. Changes made in TickTick externally won't automatically reflect in Second Brain without a manual refresh/refetch. There's no webhook or polling mechanism.
+*   **Inconsistent API Route**: The backend route for updating a task (`/api/integrations/ticktick/tasks/{taskId}`) seems inconsistent with the frontend usage and typical REST patterns which might expect the project ID as well.
