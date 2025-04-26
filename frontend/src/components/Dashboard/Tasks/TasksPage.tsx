@@ -9,6 +9,7 @@ import { TaskCard } from './TaskCard';
 import { EditTaskModal } from './EditTaskModal';
 import { Task, TaskPriority, TaskStatus } from '../../../api/types/task';
 import { TickTickTask } from '../../../types/integrations';
+import { TickTickTaskModal } from './TickTickTaskModal';
 import { cardGridStyles } from '../shared/cardStyles';
 import { cardVariants } from '../../../utils/welcomeBarUtils';
 import { useTheme } from '../../../contexts/themeContextUtils';
@@ -78,7 +79,7 @@ function TickTickSettingsModal({
             <select
               value={newProjectId}
               onChange={(e) => setNewProjectId(e.target.value)}
-              className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              className="w-full py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 shadow-sm focus:border-primary-500 focus:ring-primary-500"
             >
               <option value="">-- Select a project --</option>
               {tickTickProjects.map((project) => (
@@ -114,7 +115,7 @@ function TickTickSettingsModal({
   );
 }
 
-type TaskWithSource = Task & { source: 'local' | 'ticktick' };
+type TaskWithSource = Task & { source: 'local' | 'ticktick'; projectId?: string };
 
 function mapTickTickPriority(tickTickPriority: number): TaskPriority {
   if (tickTickPriority >= 5) return 'high';
@@ -130,6 +131,7 @@ function mapTickTickStatus(tickTickStatus: number): TaskStatus {
 function mapTickTickToLocalTask(tickTickTask: TickTickTask): TaskWithSource {
   return {
     id: `ticktick-${tickTickTask.id}`,
+    projectId: tickTickTask.projectId,
     title: tickTickTask.title,
     description: tickTickTask.content || tickTickTask.description || '',
     status: mapTickTickStatus(tickTickTask.status),
@@ -286,7 +288,18 @@ export function TasksPage() {
   }, [selectedTaskId]);
 
   const handleTaskClick = (task: Task & { source?: 'local' | 'ticktick' }) => {
-    setSelectedTaskId(task.id);
+    if (task.source === 'ticktick') {
+      const originalId = task.id.replace('ticktick-', '');
+      const pid = (task as TaskWithSource).projectId || tickTickProjectId; // fallback
+      if (pid) {
+        setTickTickTaskInfo({ projectId: pid, taskId: originalId });
+        setShowTickTickTaskModal(true);
+      } else {
+        alert('Unable to determine TickTick project for this task.');
+      }
+    } else {
+      setSelectedTaskId(task.id);
+    }
   };
 
   const handleCloseEditModal = () => {
@@ -297,6 +310,11 @@ export function TasksPage() {
     localStorage.removeItem('selectedTaskId');
   };
 
+  const handleCloseTickTickTaskModal = () => {
+    setShowTickTickTaskModal(false);
+    setTickTickTaskInfo(null);
+  };
+
   const getContainerBackground = () => {
     if (theme === 'dark') return 'bg-gray-900/30';
     if (theme === 'midnight') return 'bg-[#1e293b]/30';
@@ -305,7 +323,7 @@ export function TasksPage() {
 
   const getSourceFilterButtonClass = (mode: 'all' | 'local' | 'ticktick', currentMode: string) => {
     const baseClasses = `
-      flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm
+      flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm
       border-[0.5px] border-white/10
       backdrop-blur-xl 
       ring-1 ring-white/5
@@ -406,16 +424,19 @@ export function TasksPage() {
     }
 
     const commonCardProps = (task: TaskWithSource) => ({
-      key: task.id,
       task: task,
       viewMode: viewMode,
       onClick: handleTaskClick,
-      isTickTick: task.source === 'ticktick'
+      isTickTick: task.source === 'ticktick',
+      projectId: task.source === 'ticktick' ? task.projectId : undefined
     });
 
     return (
       <div className={cardGridStyles}>
-        {filteredTasks.map(task => <TaskCard {...commonCardProps(task)} />)}
+        {filteredTasks.map(task => {
+          const props = commonCardProps(task);
+          return <TaskCard key={task.id} {...props} />;
+        })}
       </div>
     );
   };
@@ -438,21 +459,23 @@ export function TasksPage() {
 
     return (
       <div className="mt-4">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="font-medium text-[var(--color-text)]">TickTick Project</h3>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center">
+            <h3 className="font-semibold text-[var(--color-text)]">TickTick Project</h3>
+          </div>
           <button
             onClick={() => setShowTickTickSettings(true)}
-            className="text-sm flex items-center text-[var(--color-primary)] hover:text-[var(--color-primaryDark)]"
+            className="text-sm flex items-center gap-1.5 text-[var(--color-primary)] hover:text-[var(--color-primaryDark)]"
           >
-            <Settings className="w-3.5 h-3.5 mr-1" />
+            <Settings className="w-3.5 h-3.5" />
             Change Project
           </button>
         </div>
 
         <div className="p-3 rounded-md bg-[var(--color-surface)] border border-[var(--color-border)]">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between">
-            <div className="mb-2 sm:mb-0">
-              <span className="text-sm text-[var(--color-textSecondary)]">Current: </span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <span className="text-sm mr-2">Current:</span>
               <span className="font-medium text-[var(--color-text)]">
                 {currentTickTickProject?.name || 'All Projects'}
               </span>
@@ -474,27 +497,28 @@ export function TasksPage() {
           className={getSourceFilterButtonClass('all', taskSourceFilter)}
           title="Show All Tasks"
         >
-          <Cloud className="w-4 h-4" /> All
+          <Cloud className="w-4 h-4 mr-2" /> All
         </button>
         <button
           onClick={() => setTaskSourceFilter('local')}
           className={getSourceFilterButtonClass('local', taskSourceFilter)}
           title="Show Local Tasks Only"
         >
-          <Server className="w-4 h-4" /> Local
+          <Server className="w-4 h-4 mr-2" /> Local
         </button>
         <button
           onClick={() => setTaskSourceFilter('ticktick')}
           className={getSourceFilterButtonClass('ticktick', taskSourceFilter)}
           title="Show TickTick Tasks Only"
         >
-          {/* Placeholder TickTick Icon */}
-          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" /></svg>
           TickTick
         </button>
       </>
     );
   };
+
+  const [showTickTickTaskModal, setShowTickTickTaskModal] = useState(false);
+  const [tickTickTaskInfo, setTickTickTaskInfo] = useState<{ projectId: string; taskId: string } | null>(null);
 
   return (
     <div className="min-h-screen overflow-visible bg-fixed">
@@ -692,6 +716,15 @@ export function TasksPage() {
           projectId={tickTickProjectId}
           onSave={handleSaveTickTickProjectId}
         />
+
+        {showTickTickTaskModal && tickTickTaskInfo && (
+          <TickTickTaskModal
+            isOpen={showTickTickTaskModal}
+            onClose={handleCloseTickTickTaskModal}
+            projectId={tickTickTaskInfo.projectId}
+            taskId={tickTickTaskInfo.taskId}
+          />
+        )}
       </div>
     </div>
   );

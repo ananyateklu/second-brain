@@ -304,6 +304,62 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     }
   }, [createActivity]);
 
+  const getTickTickTask = useCallback(async (projectId: string, taskId: string): Promise<TickTickTask | null> => {
+    try {
+      const task = await integrationsService.getTickTickTask(projectId, taskId);
+      return task;
+    } catch (error) {
+      console.error('Failed to fetch TickTick task:', error);
+      return null;
+    }
+  }, []);
+
+  const updateTickTickTask = useCallback(async (taskId: string, task: Partial<TickTickTask> & { id: string; projectId: string }): Promise<TickTickTask | null> => {
+    try {
+      const updatedTask = await integrationsService.updateTickTickTask(taskId, task);
+
+      // After successful update, refresh the TickTick tasks list to show updated data
+      await fetchTickTickTasks();
+
+      return updatedTask;
+    } catch (error) {
+      console.error('Failed to update TickTick task:', error);
+      return null;
+    }
+  }, [fetchTickTickTasks]);
+
+  const completeTickTickTask = useCallback(async (projectId: string, taskId: string): Promise<boolean> => {
+    try {
+      const success = await integrationsService.completeTickTickTask(projectId, taskId);
+
+      // After successful completion, refresh the TickTick tasks list to show updated data
+      if (success) {
+        await fetchTickTickTasks();
+      }
+
+      return success;
+    } catch (error) {
+      console.error('Failed to complete TickTick task:', error);
+      return false;
+    }
+  }, [fetchTickTickTasks]);
+
+  const deleteTickTickTask = useCallback(async (projectId: string, taskId: string): Promise<boolean> => {
+    try {
+      const success = await integrationsService.deleteTickTickTask(projectId, taskId);
+
+      // After successful deletion, refresh the TickTick tasks list to show updated data
+      if (success) {
+        await fetchTickTickTasks();
+      }
+
+      return success;
+    } catch (error) {
+      console.error('Failed to delete TickTick task:', error);
+      return false;
+    }
+  }, [fetchTickTickTasks]);
+
   const contextValue = useMemo(() => ({
     tasks,
     isLoading,
@@ -325,6 +381,10 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     restoreTask,
     duplicateTask,
     duplicateTasks,
+    getTickTickTask,
+    updateTickTickTask,
+    completeTickTickTask,
+    deleteTickTickTask,
   }), [
     tasks,
     isLoading,
@@ -346,6 +406,10 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     restoreTask,
     duplicateTask,
     duplicateTasks,
+    getTickTickTask,
+    updateTickTickTask,
+    completeTickTickTask,
+    deleteTickTickTask,
   ]);
 
   return (

@@ -16,6 +16,7 @@ interface TaskCardProps {
   onSelect?: () => void;
   onClick?: (task: Task & { source?: 'local' | 'ticktick' }) => void;
   isTickTick?: boolean;
+  projectId?: string;
   contextData?: {
     expiresAt?: string;
     deletedAt?: string;
@@ -34,7 +35,9 @@ interface CheckboxProps {
   context: TaskCardProps['context'];
   updateTask: (id: string, updates: Partial<Task>) => void;
   isDark: boolean;
-  disabled?: boolean;
+  isTickTick?: boolean;
+  projectId?: string;
+  completeTickTickTask?: (projectId: string, taskId: string) => Promise<boolean>;
 }
 
 interface PriorityBadgeProps {
@@ -99,9 +102,10 @@ export function TaskCard({
   onSelect,
   onClick,
   isTickTick,
+  projectId,
   contextData
 }: TaskCardProps) {
-  const { updateTask } = useTasks();
+  const { updateTask, completeTickTickTask } = useTasks();
   const { theme } = useTheme();
   const [showArchiveWarning, setShowArchiveWarning] = useState(false);
   const [isSafari] = useState(() => /^((?!chrome|android).)*safari/i.test(navigator.userAgent));
@@ -197,10 +201,12 @@ export function TaskCard({
       task={task}
       context={context}
       updateTask={updateTask}
+      completeTickTickTask={completeTickTickTask}
       isDark={isDark}
-      disabled={isTickTick}
+      isTickTick={isTickTick}
+      projectId={projectId}
     />
-  ), [task, context, updateTask, isDark, isTickTick]);
+  ), [task, context, updateTask, completeTickTickTask, isDark, isTickTick, projectId]);
 
   const priorityBadgeMemo = useMemo(() => (
     <PriorityBadge
@@ -333,7 +339,8 @@ export function TaskCard({
 
 // Define memoized subcomponents
 
-const Checkbox = memo(function Checkbox({ task, context, updateTask, isDark, disabled }: CheckboxProps) {
+const Checkbox = memo(function Checkbox({ task, context, updateTask, isDark, isTickTick, projectId, completeTickTickTask }: CheckboxProps) {
+  const [isLoading, setIsLoading] = useState(false);
   const colorVariants = {
     dark: {
       completed: 'bg-green-900/25 text-green-300',
@@ -349,20 +356,42 @@ const Checkbox = memo(function Checkbox({ task, context, updateTask, isDark, dis
   const status = task.status.toLowerCase() === 'completed' ? 'completed' : 'pending';
   const colorClasses = colorVariants[themeMode][status];
 
+  const handleToggleComplete = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    if (context !== 'default') return;
+
+    if (isLoading) return;
+
+    if (isTickTick) {
+      if (!completeTickTickTask || !projectId || task.status.toLowerCase() === 'completed') return;
+
+      setIsLoading(true);
+      try {
+        const originalId = task.id.replace('ticktick-', '');
+        await completeTickTickTask(projectId, originalId);
+      } catch (error) {
+        console.error('Failed to complete TickTick task:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
+      // Handle local task completion as before
+      updateTask(task.id, {
+        status: task.status.toLowerCase() === 'completed' ? 'Incomplete' : 'Completed'
+      });
+    }
+  };
+
   return (
     <button
-      onClick={(e) => {
-        e.stopPropagation();
-        if (context === 'default' && !disabled) {
-          updateTask(task.id, {
-            status: task.status.toLowerCase() === 'completed' ? 'Incomplete' : 'Completed'
-          });
-        }
-      }}
-      className={`flex-shrink-0 p-1.5 rounded transition-colors ${colorClasses} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-      disabled={disabled}
+      onClick={handleToggleComplete}
+      className={`flex-shrink-0 p-1.5 rounded transition-colors ${colorClasses} ${isLoading ? 'opacity-50' : ''} ${isTickTick && task.status.toLowerCase() === 'completed' ? 'opacity-50 cursor-not-allowed' : ''}`}
+      disabled={isLoading || (isTickTick && task.status.toLowerCase() === 'completed')}
     >
-      {task.status.toLowerCase() === 'completed' ? (
+      {isLoading ? (
+        <div className="w-4 h-4 border-2 border-t-transparent border-green-500 rounded-full animate-spin"></div>
+      ) : task.status.toLowerCase() === 'completed' ? (
         <CheckSquare className="w-4 h-4" />
       ) : (
         <Square className="w-4 h-4" />
