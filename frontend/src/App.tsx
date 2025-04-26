@@ -33,7 +33,10 @@ const logError = (error: Error, errorInfo: React.ErrorInfo) => {
 const AppProviders = ({ children }: { children: React.ReactNode }) => (
   <ErrorBoundary onError={logError}>
     <ThemeProvider>
-      <BrowserRouter>
+      <BrowserRouter future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true
+      }}>
         <AuthProvider>
           {children}
         </AuthProvider>

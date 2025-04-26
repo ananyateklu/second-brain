@@ -13,19 +13,32 @@ import { AISettings } from '../../../types/ai';
 import { ThemeName } from '../../../theme/theme.config';
 import { cardVariants } from '../../../utils/welcomeBarUtils';
 import { notificationService } from '../../../services/notification/notificationService';
-import { integrationsService } from '../../../services/api/integrations.service';
+import { integrationsService, SyncResult } from '../../../services/api/integrations.service';
 import { useTasks } from '../../../contexts/tasksContextUtils';
+import { SyncResultModal } from './SyncResultModal';
 
 // Placeholder function to generate state parameter
 const generateState = () => Math.random().toString(36).substring(2, 15);
+
+// Type for the settings tabs
+type SettingsTabs = 'appearance' | 'notifications' | 'security' | 'aiconfig' | 'dataManagement' | 'account' | 'integrations';
 
 export function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const [pushNotifications, setPushNotifications] = useState(false);
-  const [activeTab, setActiveTab] = useState('appearance');
+  const [activeTab, setActiveTab] = useState<SettingsTabs>(() => {
+    // Initialize from localStorage or default to 'appearance'
+    const savedTab = localStorage.getItem('settings_active_tab') as SettingsTabs | null;
+    return savedTab || 'appearance';
+  });
   const { isTickTickConnected, syncWithTickTick, getSyncStatus, resetSyncData, isSyncing, syncError: tasksSyncError } = useTasks();
+
+  // Save activeTab to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('settings_active_tab', activeTab);
+  }, [activeTab]);
 
   // Initialize from localStorage for immediate UI feedback
   const [isTickTickConnectedUI, setIsTickTickConnectedUI] = useState<boolean>(() => {
@@ -52,6 +65,10 @@ export function SettingsPage() {
   });
   // Define a constant for the TickTick project ID instead of using useState
   const tickTickProjectId = '680d480e99b2d107415feee4'; // 'Second Brain' project ID
+
+  // State for the sync result modal
+  const [showSyncResultModal, setShowSyncResultModal] = useState(false);
+  const [currentSyncResult, setCurrentSyncResult] = useState<SyncResult | null>(null);
 
   // Use the sync error from context if available
   useEffect(() => {
@@ -323,9 +340,12 @@ export function SettingsPage() {
       // Refresh the sync status to update counts
       await loadSyncStatus();
 
-      // Show success notification
-      const successMessage = `Sync completed! Created: ${result.created}, Updated: ${result.updated}, Deleted: ${result.deleted}`;
-      alert(successMessage); // Replace with proper notification
+      // Show success notification using the modal
+      // alert(successMessage); // Replace with proper notification
+      setCurrentSyncResult(result);
+      setShowSyncResultModal(true);
+      console.log("[handleSyncNow] Sync Success. Setting modal state:", result);
+
     } catch (error) {
       console.error("Error syncing tasks:", error);
 
@@ -337,8 +357,19 @@ export function SettingsPage() {
 
       setSyncError(errorMessage);
 
-      // Show error notification
-      alert(errorMessage); // Replace with proper notification
+      // Show error notification using the modal (or a separate error notification system)
+      // alert(errorMessage); // Replace with proper notification
+      setCurrentSyncResult({
+        success: false,
+        created: 0,
+        updated: 0,
+        deleted: 0,
+        errors: 1, // Assume at least one error occurred
+        message: errorMessage,
+        lastSynced: lastSynced || new Date().toISOString() // Use last known or current time
+      });
+      setShowSyncResultModal(true);
+      console.log("[handleSyncNow] Sync Error. Setting modal state with error:", errorMessage);
     }
   };
 
@@ -1018,6 +1049,7 @@ export function SettingsPage() {
                     <p className="text-xs text-[var(--color-textSecondary)]">Sync to update tasks between platforms</p>
                   </div>
                   <button
+                    type="button"
                     className={`${primaryButtonClasses} ${isSyncing ? 'opacity-70 cursor-not-allowed' : ''}`}
                     onClick={handleSyncNow}
                     disabled={isSyncing}
@@ -1152,6 +1184,14 @@ export function SettingsPage() {
           </motion.div>
         </div>
       </div>
+
+      {/* Render the SyncResultModal */}
+      <SyncResultModal
+        isOpen={showSyncResultModal}
+        onClose={() => setShowSyncResultModal(false)}
+        result={currentSyncResult}
+        key={currentSyncResult ? `sync-result-${currentSyncResult.lastSynced}` : 'sync-result-modal'}
+      />
     </div>
   );
 }
