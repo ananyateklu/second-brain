@@ -5,7 +5,7 @@ import { TickTickTask } from '../types/integrations';
 import { useAuth } from '../hooks/useAuth';
 import { useActivities } from './activityContextUtils';
 import { tasksService, TaskLinkData, CreateTaskData } from '../services/api/tasks.service';
-import { integrationsService } from '../services/api/integrations.service';
+import { integrationsService, SyncConfig, SyncResult } from '../services/api/integrations.service';
 
 export function TasksProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -23,6 +23,10 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
   const [tickTickProjectId, setTickTickProjectId] = useState<string>(() => {
     return localStorage.getItem('ticktick_project_id') || '';
   });
+
+  // Add sync related state
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
 
   // Persist TickTick connection status to localStorage whenever it changes
   useEffect(() => {
@@ -373,6 +377,114 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     }
   }, [fetchTickTickTasks]);
 
+  // Sync with TickTick
+  const syncWithTickTick = useCallback(async (config: SyncConfig): Promise<SyncResult> => {
+    if (!user) {
+      throw new Error("User must be authenticated to sync tasks");
+    }
+
+    if (!isTickTickConnected) {
+      throw new Error("TickTick must be connected to sync tasks");
+    }
+
+    // Ensure we have a project ID to sync with
+    if (!tickTickProjectId) {
+      throw new Error("No TickTick project selected for synchronization");
+    }
+
+    setIsSyncing(true);
+    setSyncError(null);
+
+    try {
+      // Type-safe way to ensure direction is correct
+      let direction: 'two-way' | 'to-ticktick' | 'from-ticktick' = 'two-way';
+
+      if (config.direction === 'from-ticktick') {
+        direction = 'from-ticktick';
+      } else if (config.direction === 'to-ticktick') {
+        direction = 'to-ticktick';
+      }
+
+      // Add the project ID to the sync config
+      const syncConfig: SyncConfig = {
+        ...config,
+        direction: direction,
+        projectId: tickTickProjectId
+      };
+
+      console.log("Starting sync with config:", JSON.stringify(syncConfig));
+
+      const result = await integrationsService.syncTickTickTasks(syncConfig);
+
+      console.log("Sync completed with result:", JSON.stringify(result));
+
+      // After successful sync, refresh both local and TickTick tasks
+      await fetchTasks();
+      if (tickTickProjectId) {
+        await fetchTickTickTasks();
+      }
+
+      return result;
+    } catch (error) {
+      console.error("Error syncing with TickTick:", error);
+
+      // More detailed error handling
+      let errorMessage = "Unknown error during sync";
+
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        console.error("Error details:", error.message);
+
+        if (error.message.includes("404")) {
+          errorMessage = "TickTick project not found. Please select a different project.";
+        } else if (error.message.includes("401")) {
+          errorMessage = "Authentication error. Please reconnect TickTick.";
+        } else if (error.message.includes("from-ticktick")) {
+          errorMessage = "Error syncing from TickTick to Second Brain. Check server logs for details.";
+        }
+      }
+
+      setSyncError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [user, isTickTickConnected, tickTickProjectId, fetchTasks, fetchTickTickTasks]);
+
+  // Get sync status
+  const getSyncStatus = useCallback(async () => {
+    if (!user || !isTickTickConnected) {
+      return {
+        lastSynced: null,
+        taskCount: { local: 0, tickTick: 0, mapped: 0 }
+      };
+    }
+
+    try {
+      return await integrationsService.getTickTickSyncStatus();
+    } catch (error) {
+      console.error("Error getting sync status:", error);
+      return {
+        lastSynced: null,
+        taskCount: { local: tasks.length, tickTick: tickTickTasks.length, mapped: 0 }
+      };
+    }
+  }, [user, isTickTickConnected, tasks.length, tickTickTasks.length]);
+
+  // Reset sync data
+  const resetSyncData = useCallback(async (): Promise<boolean> => {
+    if (!user || !isTickTickConnected) {
+      return false;
+    }
+
+    try {
+      return await integrationsService.resetSyncData();
+    } catch (error) {
+      console.error("Error resetting sync data:", error);
+      return false;
+    }
+  }, [user, isTickTickConnected]);
+
   const contextValue = useMemo(() => ({
     tasks,
     isLoading,
@@ -399,6 +511,12 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     completeTickTickTask,
     deleteTickTickTask,
     createTickTickTask,
+    // Add sync functionality to context value
+    syncWithTickTick,
+    getSyncStatus,
+    resetSyncData,
+    isSyncing,
+    syncError,
   }), [
     tasks,
     isLoading,
@@ -425,6 +543,12 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     completeTickTickTask,
     deleteTickTickTask,
     createTickTickTask,
+    // Add sync functionality to dependencies
+    syncWithTickTick,
+    getSyncStatus,
+    resetSyncData,
+    isSyncing,
+    syncError,
   ]);
 
   return (

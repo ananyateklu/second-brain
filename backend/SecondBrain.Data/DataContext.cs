@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Json;
 using System.IO;
+using SecondBrain.Data.Extensions;
 
 namespace SecondBrain.Data
 {
@@ -33,6 +34,7 @@ namespace SecondBrain.Data
         public DbSet<UserPreference> UserPreferences { get; set; } = null!;
         public DbSet<XPHistoryItem> XPHistory { get; set; } = null!;
         public DbSet<UserIntegrationCredential> UserIntegrationCredentials { get; set; } = null!;
+        public DbSet<TaskSyncMapping> TaskSyncMappings { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -388,6 +390,41 @@ namespace SecondBrain.Data
                 //     .HasForeignKey(e => e.UserId)
                 //     .OnDelete(DeleteBehavior.Cascade); // Cascade delete if user is deleted
             });
+
+            // Configure TaskSyncMapping relationship
+            modelBuilder.Entity<TaskSyncMapping>()
+                .HasOne(tsm => tsm.LocalTask)
+                .WithMany() // TaskItem doesn't need a direct navigation property back
+                .HasForeignKey(tsm => tsm.LocalTaskId)
+                .OnDelete(DeleteBehavior.Cascade); // If local task is deleted, delete the mapping
+
+            modelBuilder.Entity<TaskSyncMapping>()
+                .HasOne(tsm => tsm.User)
+                .WithMany() // User doesn't need direct navigation property back
+                .HasForeignKey(tsm => tsm.UserId)
+                .OnDelete(DeleteBehavior.NoAction); // Changed from Cascade to NoAction to avoid multiple cascade paths
+
+            // Make TickTickTaskId + Provider + UserId unique
+            modelBuilder.Entity<TaskSyncMapping>()
+                .HasIndex(tsm => new { tsm.TickTickTaskId, tsm.Provider, tsm.UserId })
+                .IsUnique();
+
+            // Seed Achievements
+            // modelBuilder.SeedAchievements();  // Commented out since the extension method is missing
+
+            // Soft Delete Query Filters
+            modelBuilder.Entity<Note>().HasQueryFilter(e => !e.IsDeleted);
+            modelBuilder.Entity<TaskItem>().HasQueryFilter(e => !e.IsDeleted);
+            modelBuilder.Entity<Reminder>().HasQueryFilter(e => !e.IsDeleted);
+            modelBuilder.Entity<NoteLink>().HasQueryFilter(e => !e.IsDeleted);
+            modelBuilder.Entity<TaskLink>().HasQueryFilter(e => !e.IsDeleted);
+            modelBuilder.Entity<ReminderLink>().HasQueryFilter(e => !e.IsDeleted);
+            
+            // Add query filter for TaskSyncMapping to match the TaskItem filter
+            modelBuilder.Entity<TaskSyncMapping>().HasQueryFilter(e => !e.LocalTask.IsDeleted);
+            
+            // Add query filter for TaskItemNote to match the Note filter
+            modelBuilder.Entity<TaskItemNote>().HasQueryFilter(e => !e.Note.IsDeleted);
         }
     }
 

@@ -4,6 +4,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using SecondBrain.Api.Models.Integrations;
 using SecondBrain.Api.Services.Interfaces;
+using SecondBrain.Data;
+using SecondBrain.Data.Entities;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -13,6 +15,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Linq; // Add LINQ using
+using Microsoft.EntityFrameworkCore;
 
 namespace SecondBrain.Api.Controllers
 {
@@ -25,17 +28,55 @@ namespace SecondBrain.Api.Controllers
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IConfiguration _configuration;
         private readonly ILogger<IntegrationsController> _logger;
+        private readonly DataContext _context;
 
         public IntegrationsController(
             IIntegrationService integrationService,
             IHttpClientFactory httpClientFactory,
             IConfiguration configuration,
-            ILogger<IntegrationsController> logger)
+            ILogger<IntegrationsController> logger,
+            DataContext context)
         {
             _integrationService = integrationService;
             _httpClientFactory = httpClientFactory;
             _configuration = configuration;
             _logger = logger;
+            _context = context;
+        }
+
+        // Add a new model for sync requests
+        public class TaskSyncRequest
+        {
+            public string Direction { get; set; } = "two-way"; // "two-way", "to-ticktick", "from-ticktick"
+            public string ResolutionStrategy { get; set; } = "newer"; // "newer", "ticktick", "secondbrain", "ask"
+            public bool IncludeTags { get; set; } = true;
+            public required string ProjectId { get; set; } // Add this property
+        }
+
+        // Add a new model for sync results
+        public class TaskSyncResult
+        {
+            public bool Success { get; set; }
+            public int Created { get; set; }
+            public int Updated { get; set; }
+            public int Deleted { get; set; }
+            public int Errors { get; set; }
+            public string? Message { get; set; }
+            public string LastSynced { get; set; } = DateTime.UtcNow.ToString("o");
+        }
+
+        // Add a new model for sync status
+        public class TaskSyncStatus
+        {
+            public string? LastSynced { get; set; }
+            public TaskCountInfo TaskCount { get; set; } = new TaskCountInfo();
+            
+            public class TaskCountInfo
+            {
+                public int Local { get; set; }
+                public int TickTick { get; set; }
+                public int Mapped { get; set; }
+            }
         }
 
         // POST: api/integrations/ticktick/exchange-code
@@ -780,6 +821,982 @@ namespace SecondBrain.Api.Controllers
             {
                 _logger.LogError(ex, "Error creating TickTick task");
                 return StatusCode(500, new { error = "An error occurred while creating the task." });
+            }
+        }
+
+        // POST: api/integrations/ticktick/sync
+        [HttpPost("ticktick/sync")]
+        [ProducesResponseType(typeof(TaskSyncResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> SyncTickTickTasks([FromBody] TaskSyncRequest request)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { message = "User authentication failed." });
+            }
+
+            // Validate project ID exists in request
+            if (string.IsNullOrEmpty(request.ProjectId))
+            {
+                return BadRequest(new { message = "TickTick project ID is required for synchronization." });
+            }
+
+            _logger.LogInformation("Starting TickTick task sync for user {UserId} with direction {Direction}, project {ProjectId}", 
+                userId, request.Direction, request.ProjectId);
+
+            // 1. Check if the user has TickTick credentials
+            var credentials = await _integrationService.GetTickTickCredentialsAsync(userId);
+            if (credentials == null)
+            {
+                return NotFound(new { message = "TickTick integration not found. Please connect TickTick first." });
+            }
+
+            // 2. Check if tokens are valid (and refresh if needed)
+            if (credentials.ExpiresAt <= DateTime.UtcNow.AddMinutes(1))
+            {
+                // TODO: Implement token refresh logic
+                return StatusCode(401, new { message = "TickTick access token has expired. Please reconnect your account." });
+            }
+
+            try
+            {
+                // 3. Get local tasks
+                var localTasks = await _context.Tasks
+                    .Where(t => t.UserId == userId && !t.IsDeleted)
+                    .ToListAsync();
+                
+                // 4. Get TickTick tasks - Use project/{projectId}/data endpoint instead of /task
+                var tickTickTasks = new List<TickTickTask>();
+                try
+                {
+                    var httpClient = _httpClientFactory.CreateClient();
+                    httpClient.DefaultRequestHeaders.Authorization = 
+                        new AuthenticationHeaderValue("Bearer", credentials.AccessToken);
+                    
+                    var tickTickApiUrl = _configuration["TickTick:ApiBaseUrl"] ?? "https://api.ticktick.com";
+                    var taskEndpoint = $"{tickTickApiUrl}/open/v1/project/{request.ProjectId}/data";
+                    
+                    _logger.LogInformation("Fetching TickTick tasks from project {ProjectId} for sync", request.ProjectId);
+                    var response = await httpClient.GetAsync(taskEndpoint);
+                    response.EnsureSuccessStatusCode();
+                    
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    var projectData = JsonSerializer.Deserialize<TickTickProjectData>(responseContent);
+                    tickTickTasks = projectData?.Tasks ?? new List<TickTickTask>();
+                    
+                    _logger.LogInformation("Retrieved {Count} TickTick tasks for sync from project {ProjectId}", 
+                        tickTickTasks.Count, request.ProjectId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error fetching TickTick tasks for user {UserId} from project {ProjectId}", 
+                        userId, request.ProjectId);
+                    return StatusCode(502, new { message = "Failed to retrieve tasks from TickTick." });
+                }
+                
+                // 5. Get existing task mappings
+                var existingMappings = await _context.TaskSyncMappings
+                    .Where(m => m.UserId == userId && m.Provider == "TickTick")
+                    .ToListAsync();
+                    
+                // 6. Perform the sync based on direction
+                var result = new TaskSyncResult();
+                
+                switch (request.Direction)
+                {
+                    case "two-way":
+                        result = await PerformTwoWaySync(userId, localTasks, tickTickTasks, existingMappings, request);
+                        break;
+                    case "to-ticktick":
+                        result = await PerformToTickTickSync(userId, localTasks, tickTickTasks, existingMappings, request);
+                        break;
+                    case "from-ticktick":
+                        result = await PerformFromTickTickSync(userId, localTasks, tickTickTasks, existingMappings, request);
+                        break;
+                    default:
+                        return BadRequest(new { message = "Invalid sync direction." });
+                }
+                
+                // 7. Update the last sync time
+                var now = DateTime.UtcNow;
+                foreach (var mapping in existingMappings)
+                {
+                    mapping.LastSyncedAt = now;
+                }
+                
+                await _context.SaveChangesAsync();
+                
+                _logger.LogInformation("Completed TickTick task sync for user {UserId}. Created: {Created}, Updated: {Updated}, Deleted: {Deleted}, Errors: {Errors}",
+                    userId, result.Created, result.Updated, result.Deleted, result.Errors);
+                
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during TickTick task sync for user {UserId}", userId);
+                return StatusCode(500, new { message = "An unexpected error occurred during synchronization." });
+            }
+        }
+
+        // GET: api/integrations/ticktick/sync/status
+        [HttpGet("ticktick/sync/status")]
+        [ProducesResponseType(typeof(TaskSyncStatus), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetTickTickSyncStatus()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { message = "User authentication failed." });
+            }
+
+            try
+            {
+                var mappings = await _context.TaskSyncMappings
+                    .Where(m => m.UserId == userId && m.Provider == "TickTick")
+                    .OrderByDescending(m => m.LastSyncedAt)
+                    .ToListAsync();
+                
+                var localTaskCount = await _context.Tasks
+                    .Where(t => t.UserId == userId && !t.IsDeleted)
+                    .CountAsync();
+                
+                var result = new TaskSyncStatus
+                {
+                    LastSynced = mappings.FirstOrDefault()?.LastSyncedAt.ToString("o"),
+                    TaskCount = new TaskSyncStatus.TaskCountInfo
+                    {
+                        Local = localTaskCount,
+                        Mapped = mappings.Count,
+                        // We don't have a local cache of TickTick task count, so use mapped as an estimate
+                        TickTick = mappings.Count
+                    }
+                };
+                
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving TickTick sync status for user {UserId}", userId);
+                return StatusCode(500, new { message = "An error occurred while retrieving sync status." });
+            }
+        }
+
+        // GET: api/integrations/ticktick/task-mappings
+        [HttpGet("ticktick/task-mappings")]
+        public async Task<IActionResult> GetTaskMappings()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { message = "User authentication failed." });
+            }
+
+            try
+            {
+                var mappings = await _context.TaskSyncMappings
+                    .Where(m => m.UserId == userId && m.Provider == "TickTick")
+                    .Select(m => new
+                    {
+                        localTaskId = m.LocalTaskId,
+                        tickTickTaskId = m.TickTickTaskId,
+                        lastSynced = m.LastSyncedAt.ToString("o")
+                    })
+                    .ToListAsync();
+                
+                return Ok(mappings);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving task mappings for user {UserId}", userId);
+                return StatusCode(500, new { message = "An error occurred while retrieving task mappings." });
+            }
+        }
+
+        // POST: api/integrations/ticktick/sync/reset
+        [HttpPost("ticktick/sync/reset")]
+        public async Task<IActionResult> ResetTickTickSync()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { message = "User authentication failed." });
+            }
+
+            try
+            {
+                var mappings = await _context.TaskSyncMappings
+                    .Where(m => m.UserId == userId && m.Provider == "TickTick")
+                    .ToListAsync();
+                
+                _context.TaskSyncMappings.RemoveRange(mappings);
+                await _context.SaveChangesAsync();
+                
+                _logger.LogInformation("Reset TickTick sync data for user {UserId}. Removed {Count} mappings.", userId, mappings.Count);
+                
+                return Ok(new { message = "Sync data reset successfully." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error resetting sync data for user {UserId}", userId);
+                return StatusCode(500, new { message = "An error occurred while resetting sync data." });
+            }
+        }
+
+        // Helper method for two-way sync
+        private async Task<TaskSyncResult> PerformTwoWaySync(
+            string userId, 
+            List<TaskItem> localTasks, 
+            List<TickTickTask> tickTickTasks, 
+            List<TaskSyncMapping> existingMappings, 
+            TaskSyncRequest request)
+        {
+            var result = new TaskSyncResult();
+            int created = 0, updated = 0, errors = 0;
+            
+            try
+            {
+                // 1. Process tasks that exist in both systems (have mappings)
+                foreach (var mapping in existingMappings)
+                {
+                    try
+                    {
+                        var localTask = localTasks.FirstOrDefault(t => t.Id == mapping.LocalTaskId);
+                        var tickTickTask = tickTickTasks.FirstOrDefault(t => t.Id == mapping.TickTickTaskId);
+                        
+                        // Handle deleted tasks in both systems
+                        if (localTask == null && tickTickTask == null)
+                        {
+                            // Both tasks have been deleted - remove the mapping
+                            _context.TaskSyncMappings.Remove(mapping);
+                            continue;
+                        }
+                        else if (tickTickTask == null)
+                        {
+                            // TickTick task is deleted but local task exists
+                            if (localTask?.IsDeleted == false)
+                            {
+                                // Local task is not deleted - create new TickTick task
+                                var newTickTickTask = MapLocalTaskToTickTick(localTask, request.ProjectId);
+                                var createdTickTickTask = await CreateTickTickTaskInternal(userId, newTickTickTask);
+                                
+                                if (createdTickTickTask != null)
+                                {
+                                    // Update mapping with new TickTick ID
+                                    mapping.TickTickTaskId = createdTickTickTask.Id;
+                                    mapping.LastSyncedAt = DateTime.UtcNow;
+                                    created++;
+                                }
+                                else
+                                {
+                                    errors++;
+                                }
+                            }
+                            else
+                            {
+                                // Both tasks are effectively deleted - remove mapping
+                                _context.TaskSyncMappings.Remove(mapping);
+                            }
+                            continue;
+                        }
+                        else if (localTask == null)
+                        {
+                            // Local task doesn't exist, but TickTick task does
+                            // Check if the local task may have been soft-deleted
+                            var softDeletedTask = await _context.Tasks
+                                .IgnoreQueryFilters()
+                                .FirstOrDefaultAsync(t => t.Id == mapping.LocalTaskId && t.IsDeleted);
+                                
+                            if (softDeletedTask != null)
+                            {
+                                // Local task exists but is soft-deleted
+                                // Restore the soft-deleted task and update it with TickTick data
+                                softDeletedTask.IsDeleted = false;
+                                UpdateLocalTaskFromTickTick(softDeletedTask, tickTickTask);
+                                mapping.LastSyncedAt = DateTime.UtcNow;
+                                updated++;
+                            }
+                            else
+                            {
+                                // Local task was hard-deleted or never existed
+                                // Create a new local task from TickTick data
+                                var newLocalTask = MapTickTickTaskToLocal(tickTickTask, userId);
+                                _context.Tasks.Add(newLocalTask);
+                                
+                                // Update mapping with new local task ID
+                                mapping.LocalTaskId = newLocalTask.Id;
+                                mapping.LastSyncedAt = DateTime.UtcNow;
+                                created++;
+                            }
+                            continue;
+                        }
+                        
+                        // Both tasks exist - check which one was updated more recently
+                        if (localTask.IsDeleted)
+                        {
+                            // Local task is soft-deleted - delete the TickTick task
+                            var success = await DeleteTickTickTaskInternal(userId, request.ProjectId, tickTickTask.Id);
+                            if (success)
+                            {
+                                // Remove the mapping since both tasks are now deleted
+                                _context.TaskSyncMappings.Remove(mapping);
+                            }
+                            else
+                            {
+                                errors++;
+                            }
+                            continue;
+                        }
+                        
+                        DateTime? localUpdateTime = localTask.UpdatedAt;
+                        DateTime? tickTickUpdateTime = null;
+                        
+                        // Parse TickTick modification time if available
+                        if (!string.IsNullOrEmpty(tickTickTask.ModifiedTime))
+                        {
+                            tickTickUpdateTime = DateTime.Parse(tickTickTask.ModifiedTime);
+                        }
+                        else if (!string.IsNullOrEmpty(tickTickTask.CreatedTime))
+                        {
+                            tickTickUpdateTime = DateTime.Parse(tickTickTask.CreatedTime);
+                        }
+                        
+                        if (localUpdateTime > tickTickUpdateTime)
+                        {
+                            // Local task is more recent - update TickTick task
+                            var updatedTickTickTask = MapLocalTaskToTickTick(localTask, request.ProjectId);
+                            updatedTickTickTask.Id = tickTickTask.Id;
+                            
+                            var success = await UpdateTickTickTaskInternal(userId, updatedTickTickTask);
+                            if (success)
+                            {
+                                mapping.LastSyncedAt = DateTime.UtcNow;
+                                updated++;
+                            }
+                            else
+                            {
+                                errors++;
+                            }
+                        }
+                        else
+                        {
+                            // TickTick task is more recent - update local task
+                            UpdateLocalTaskFromTickTick(localTask, tickTickTask);
+                            mapping.LastSyncedAt = DateTime.UtcNow;
+                            updated++;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error processing task mapping {MappingId}", mapping.Id);
+                        errors++;
+                    }
+                }
+                
+                // 2. Process local tasks that don't have mappings (create in TickTick)
+                var unmappedLocalTasks = localTasks
+                    .Where(t => !t.IsDeleted && !existingMappings.Any(m => m.LocalTaskId == t.Id))
+                    .ToList();
+                    
+                foreach (var localTask in unmappedLocalTasks)
+                {
+                    try
+                    {
+                        var newTickTickTask = MapLocalTaskToTickTick(localTask, request.ProjectId);
+                        var createdTickTickTask = await CreateTickTickTaskInternal(userId, newTickTickTask);
+                        
+                        if (createdTickTickTask != null)
+                        {
+                            var newMapping = new TaskSyncMapping
+                            {
+                                UserId = userId,
+                                LocalTaskId = localTask.Id,
+                                TickTickTaskId = createdTickTickTask.Id,
+                                Provider = "TickTick",
+                                LastSyncedAt = DateTime.UtcNow
+                            };
+                            
+                            _context.TaskSyncMappings.Add(newMapping);
+                            existingMappings.Add(newMapping);
+                            created++;
+                        }
+                        else
+                        {
+                            errors++;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error creating TickTick task for local task {TaskId}", localTask.Id);
+                        errors++;
+                    }
+                }
+                
+                // 3. Process TickTick tasks that don't have mappings (create locally)
+                var unmappedTickTickTasks = tickTickTasks
+                    .Where(t => !existingMappings.Any(m => m.TickTickTaskId == t.Id))
+                    .ToList();
+                    
+                foreach (var tickTickTask in unmappedTickTickTasks)
+                {
+                    try
+                    {
+                        // Check if this might be a task that was previously mapped but got deleted locally
+                        var existingLocalTask = await _context.Tasks
+                            .IgnoreQueryFilters()
+                            .FirstOrDefaultAsync(t => 
+                                t.IsDeleted && 
+                                existingMappings.Any(m => m.LocalTaskId == t.Id && m.TickTickTaskId == tickTickTask.Id));
+                                
+                        if (existingLocalTask != null)
+                        {
+                            // Restore the soft-deleted task and update it
+                            existingLocalTask.IsDeleted = false;
+                            UpdateLocalTaskFromTickTick(existingLocalTask, tickTickTask);
+                            
+                            // Update the mapping timestamp
+                            var mapping = existingMappings.First(m => m.LocalTaskId == existingLocalTask.Id);
+                            mapping.LastSyncedAt = DateTime.UtcNow;
+                            updated++;
+                        }
+                        else
+                        {
+                            // Create a new local task
+                            var newLocalTask = MapTickTickTaskToLocal(tickTickTask, userId);
+                            _context.Tasks.Add(newLocalTask);
+                            
+                            // Create a new mapping
+                            var newMapping = new TaskSyncMapping
+                            {
+                                UserId = userId,
+                                LocalTaskId = newLocalTask.Id,
+                                TickTickTaskId = tickTickTask.Id,
+                                Provider = "TickTick",
+                                LastSyncedAt = DateTime.UtcNow
+                            };
+                            
+                            _context.TaskSyncMappings.Add(newMapping);
+                            existingMappings.Add(newMapping);
+                            created++;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error creating local task for TickTick task {TaskId}", tickTickTask.Id);
+                        errors++;
+                    }
+                }
+                
+                await _context.SaveChangesAsync();
+                
+                result.Success = true;
+                result.Created = created;
+                result.Updated = updated;
+                result.Errors = errors;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during two-way sync");
+                result.Success = false;
+                result.Errors += 1;
+                result.Message = $"Error during sync: {ex.Message}";
+            }
+            
+            return result;
+        }
+
+        // Helper method for local to TickTick sync (one-way)
+        private async Task<TaskSyncResult> PerformToTickTickSync(
+            string userId, 
+            List<TaskItem> localTasks, 
+            List<TickTickTask> tickTickTasks, 
+            List<TaskSyncMapping> existingMappings, 
+            TaskSyncRequest request)
+        {
+            var result = new TaskSyncResult();
+            int created = 0, updated = 0, errors = 0;
+            
+            try
+            {
+                // Filter out soft-deleted local tasks - don't sync deleted tasks to TickTick
+                var nonDeletedLocalTasks = localTasks.Where(t => !t.IsDeleted).ToList();
+                
+                // Process local tasks - create or update them in TickTick
+                foreach (var localTask in nonDeletedLocalTasks)
+                {
+                    try
+                    {
+                        // Check if this local task already has a mapping
+                        var mapping = existingMappings.FirstOrDefault(m => m.LocalTaskId == localTask.Id);
+                        
+                        if (mapping == null)
+                        {
+                            // No mapping exists - create a new TickTick task
+                            var newTickTickTask = MapLocalTaskToTickTick(localTask, request.ProjectId);
+                            
+                            // Call TickTick API to create task
+                            var createdTickTickTask = await CreateTickTickTaskInternal(userId, newTickTickTask);
+                            
+                            if (createdTickTickTask != null)
+                            {
+                                // Create mapping record
+                                var newMapping = new TaskSyncMapping
+                                {
+                                    UserId = userId,
+                                    LocalTaskId = localTask.Id,
+                                    TickTickTaskId = createdTickTickTask.Id,
+                                    Provider = "TickTick",
+                                    LastSyncedAt = DateTime.UtcNow
+                                };
+                                
+                                _context.TaskSyncMappings.Add(newMapping);
+                                existingMappings.Add(newMapping);
+                                created++;
+                            }
+                            else
+                            {
+                                errors++;
+                            }
+                        }
+                        else
+                        {
+                            // Mapping exists - update the TickTick task
+                            var tickTickTask = tickTickTasks.FirstOrDefault(t => t.Id == mapping.TickTickTaskId);
+                            
+                            if (tickTickTask != null)
+                            {
+                                // Update TickTick task with local data
+                                var updatedTickTickTask = MapLocalTaskToTickTick(localTask, request.ProjectId);
+                                updatedTickTickTask.Id = tickTickTask.Id;
+                                
+                                // Call TickTick API to update task
+                                var success = await UpdateTickTickTaskInternal(userId, updatedTickTickTask);
+                                
+                                if (success)
+                                {
+                                    mapping.LastSyncedAt = DateTime.UtcNow;
+                                    updated++;
+                                }
+                                else
+                                {
+                                    errors++;
+                                }
+                            }
+                            else
+                            {
+                                // TickTick task might have been deleted in TickTick
+                                // Create a new one and update the mapping
+                                var newTickTickTask = MapLocalTaskToTickTick(localTask, request.ProjectId);
+                                
+                                // Call TickTick API to create task
+                                var createdTickTickTask = await CreateTickTickTaskInternal(userId, newTickTickTask);
+                                
+                                if (createdTickTickTask != null)
+                                {
+                                    // Update mapping with new TickTick task ID
+                                    mapping.TickTickTaskId = createdTickTickTask.Id;
+                                    mapping.LastSyncedAt = DateTime.UtcNow;
+                                    created++;
+                                }
+                                else
+                                {
+                                    errors++;
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error syncing local task {TaskId} to TickTick", localTask.Id);
+                        errors++;
+                    }
+                }
+                
+                await _context.SaveChangesAsync();
+                
+                result.Success = true;
+                result.Created = created;
+                result.Updated = updated;
+                result.Errors = errors;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during one-way sync to TickTick");
+                result.Success = false;
+                result.Errors += 1;
+                result.Message = $"Error during sync: {ex.Message}";
+            }
+            
+            return result;
+        }
+
+        // Helper method for TickTick to local sync (one-way)
+        private async Task<TaskSyncResult> PerformFromTickTickSync(
+            string userId, 
+            List<TaskItem> localTasks, 
+            List<TickTickTask> tickTickTasks, 
+            List<TaskSyncMapping> existingMappings, 
+            TaskSyncRequest request)
+        {
+            // Ensure we don't process duplicate TickTick tasks which can lead to duplicate mapping inserts
+            tickTickTasks = tickTickTasks
+                .GroupBy(t => t.Id)
+                .Select(g => g.First())
+                .ToList();
+
+            var result = new TaskSyncResult();
+            int created = 0, updated = 0, errors = 0;
+            
+            try
+            {
+                // Process TickTick tasks - create or update them locally
+                foreach (var tickTickTask in tickTickTasks)
+                {
+                    try
+                    {
+                        // Check if this TickTick task already has a mapping
+                        var mapping = existingMappings.FirstOrDefault(m => m.TickTickTaskId == tickTickTask.Id);
+                        
+                        if (mapping == null)
+                        {
+                            // Check if there's already a mapping in the database that wasn't loaded
+                            var existingMapping = await _context.TaskSyncMappings
+                                .FirstOrDefaultAsync(m => m.TickTickTaskId == tickTickTask.Id && 
+                                                         m.Provider == "TickTick" && 
+                                                         m.UserId == userId);
+                            
+                            if (existingMapping != null)
+                            {
+                                // Mapping exists in database but wasn't in our loaded list
+                                // Check if the task was soft-deleted locally
+                                var localTask = await _context.Tasks
+                                    .FirstOrDefaultAsync(t => t.Id == existingMapping.LocalTaskId);
+                                
+                                if (localTask != null)
+                                {
+                                    if (localTask.IsDeleted)
+                                    {
+                                        // The local task was soft-deleted - restore it since this is from-ticktick sync
+                                        localTask.IsDeleted = false;
+                                        localTask.DeletedAt = null;
+                                        
+                                        // Update content from TickTick
+                                        UpdateLocalTaskFromTickTick(localTask, tickTickTask);
+                                        _context.Tasks.Update(localTask);
+                                        
+                                        // Update mapping timestamp
+                                        existingMapping.LastSyncedAt = DateTime.UtcNow;
+                                        updated++;
+                                    }
+                                    else
+                                    {
+                                        // Task exists and is not deleted - update it
+                                        UpdateLocalTaskFromTickTick(localTask, tickTickTask);
+                                        _context.Tasks.Update(localTask);
+                                        
+                                        // Update mapping timestamp
+                                        existingMapping.LastSyncedAt = DateTime.UtcNow;
+                                        updated++;
+                                    }
+                                }
+                                else
+                                {
+                                    // Local task doesn't exist anymore (hard-deleted) - create a new one
+                                    var newLocalTask = MapTickTickTaskToLocal(tickTickTask, userId);
+                                    _context.Tasks.Add(newLocalTask);
+                                    await _context.SaveChangesAsync();
+                                    
+                                    // Update mapping to point to the new local task
+                                    existingMapping.LocalTaskId = newLocalTask.Id;
+                                    existingMapping.LastSyncedAt = DateTime.UtcNow;
+                                    created++;
+                                }
+                            }
+                            else
+                            {
+                                // No mapping exists - create a new local task
+                                var newLocalTask = MapTickTickTaskToLocal(tickTickTask, userId);
+                                
+                                _context.Tasks.Add(newLocalTask);
+                                await _context.SaveChangesAsync();
+                                
+                                // Create mapping record
+                                var newMapping = new TaskSyncMapping
+                                {
+                                    UserId = userId,
+                                    LocalTaskId = newLocalTask.Id,
+                                    TickTickTaskId = tickTickTask.Id,
+                                    Provider = "TickTick",
+                                    LastSyncedAt = DateTime.UtcNow
+                                };
+                                
+                                _context.TaskSyncMappings.Add(newMapping);
+                                existingMappings.Add(newMapping);
+                                created++;
+                            }
+                        }
+                        else
+                        {
+                            // Mapping exists - update the local task
+                            var localTask = localTasks.FirstOrDefault(t => t.Id == mapping.LocalTaskId);
+                            
+                            if (localTask != null)
+                            {
+                                UpdateLocalTaskFromTickTick(localTask, tickTickTask);
+                                
+                                _context.Tasks.Update(localTask);
+                                mapping.LastSyncedAt = DateTime.UtcNow;
+                                updated++;
+                            }
+                            else
+                            {
+                                // Local task not found in memory - check database directly
+                                var dbLocalTask = await _context.Tasks
+                                    .FirstOrDefaultAsync(t => t.Id == mapping.LocalTaskId);
+                                
+                                if (dbLocalTask != null)
+                                {
+                                    if (dbLocalTask.IsDeleted)
+                                    {
+                                        // Local task is soft-deleted - restore it since this is from-ticktick sync
+                                        dbLocalTask.IsDeleted = false;
+                                        dbLocalTask.DeletedAt = null;
+                                        
+                                        // Update task content from TickTick
+                                        UpdateLocalTaskFromTickTick(dbLocalTask, tickTickTask);
+                                        _context.Tasks.Update(dbLocalTask);
+                                        mapping.LastSyncedAt = DateTime.UtcNow;
+                                        updated++;
+                                    }
+                                    else
+                                    {
+                                        // Task exists but not in memory list - update it
+                                        UpdateLocalTaskFromTickTick(dbLocalTask, tickTickTask);
+                                        _context.Tasks.Update(dbLocalTask);
+                                        mapping.LastSyncedAt = DateTime.UtcNow;
+                                        updated++;
+                                    }
+                                }
+                                else
+                                {
+                                    // Local task is hard-deleted - create a new one
+                                    var newLocalTask = MapTickTickTaskToLocal(tickTickTask, userId);
+                                    _context.Tasks.Add(newLocalTask);
+                                    await _context.SaveChangesAsync();
+                                    
+                                    // Update mapping to point to the new local task
+                                    mapping.LocalTaskId = newLocalTask.Id;
+                                    mapping.LastSyncedAt = DateTime.UtcNow;
+                                    created++;
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error syncing TickTick task {TaskId} to local", tickTickTask.Id);
+                        errors++;
+                    }
+                }
+                
+                await _context.SaveChangesAsync();
+                
+                result.Success = true;
+                result.Created = created;
+                result.Updated = updated;
+                result.Errors = errors;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during one-way sync from TickTick");
+                result.Success = false;
+                result.Errors += 1;
+                result.Message = $"Error during sync: {ex.Message}";
+            }
+            
+            return result;
+        }
+        
+        // Helper methods for task mapping and synchronization
+
+        private TickTickTask MapLocalTaskToTickTick(TaskItem localTask, string projectId)
+        {
+            return new TickTickTask
+            {
+                ProjectId = projectId,
+                Title = localTask.Title,
+                Content = localTask.Description,
+                Status = localTask.Status == Data.Entities.TaskStatus.Completed ? 2 : 0, // 0 for incomplete, 2 for completed
+                Priority = (int)localTask.Priority, // Assuming priorities align
+                DueDate = localTask.DueDate?.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
+                Tags = !string.IsNullOrEmpty(localTask.Tags) ? localTask.Tags.Split(',').ToList() : new List<string>()
+            };
+        }
+        
+        private TaskItem MapTickTickTaskToLocal(TickTickTask tickTickTask, string userId)
+        {
+            return new TaskItem
+            {
+                Id = Guid.NewGuid().ToString(),
+                Title = tickTickTask.Title,
+                Description = tickTickTask.Content ?? tickTickTask.Description ?? string.Empty,
+                Status = tickTickTask.Status == 2 ? Data.Entities.TaskStatus.Completed : Data.Entities.TaskStatus.Incomplete,
+                Priority = MapTickTickPriorityToLocal(tickTickTask.Priority),
+                DueDate = string.IsNullOrEmpty(tickTickTask.DueDate) ? null : DateTime.Parse(tickTickTask.DueDate),
+                Tags = tickTickTask.Tags != null ? string.Join(",", tickTickTask.Tags) : string.Empty,
+                CreatedAt = string.IsNullOrEmpty(tickTickTask.CreatedTime) ? DateTime.UtcNow : DateTime.Parse(tickTickTask.CreatedTime),
+                UpdatedAt = string.IsNullOrEmpty(tickTickTask.ModifiedTime) ? DateTime.UtcNow : DateTime.Parse(tickTickTask.ModifiedTime),
+                UserId = userId,
+                IsDeleted = false
+            };
+        }
+        
+        private void UpdateLocalTaskFromTickTick(TaskItem localTask, TickTickTask tickTickTask)
+        {
+            localTask.Title = tickTickTask.Title;
+            localTask.Description = tickTickTask.Content ?? tickTickTask.Description ?? string.Empty;
+            localTask.Status = tickTickTask.Status == 2 ? Data.Entities.TaskStatus.Completed : Data.Entities.TaskStatus.Incomplete;
+            localTask.Priority = MapTickTickPriorityToLocal(tickTickTask.Priority);
+            localTask.DueDate = string.IsNullOrEmpty(tickTickTask.DueDate) ? null : DateTime.Parse(tickTickTask.DueDate);
+            localTask.Tags = tickTickTask.Tags != null ? string.Join(",", tickTickTask.Tags) : string.Empty;
+            localTask.UpdatedAt = DateTime.UtcNow;
+        }
+        
+        private Data.Entities.TaskPriority MapTickTickPriorityToLocal(int tickTickPriority)
+        {
+            // TickTick priority: 1 (low), 3 (medium), 5 (high)
+            // Local priority: Low (1), Medium (2), High (3)
+            return tickTickPriority switch
+            {
+                5 => Data.Entities.TaskPriority.High,
+                3 => Data.Entities.TaskPriority.Medium,
+                _ => Data.Entities.TaskPriority.Low
+            };
+        }
+        
+        private bool ShouldUpdateTickTick(TaskItem localTask, TickTickTask tickTickTask, string resolutionStrategy)
+        {
+            // Convert timestamps to DateTime for comparison
+            DateTime localUpdated = localTask.UpdatedAt;
+            DateTime tickTickUpdated = string.IsNullOrEmpty(tickTickTask.ModifiedTime) 
+                ? DateTime.MinValue 
+                : DateTime.Parse(tickTickTask.ModifiedTime);
+                
+            switch (resolutionStrategy)
+            {
+                case "newer":
+                    return localUpdated > tickTickUpdated;
+                case "ticktick":
+                    return false; // Never update TickTick in this strategy
+                case "secondbrain":
+                    return true; // Always update TickTick in this strategy
+                default:
+                    return localUpdated > tickTickUpdated; // Default to newer
+            }
+        }
+        
+        private bool ShouldUpdateLocal(TaskItem localTask, TickTickTask tickTickTask, string resolutionStrategy)
+        {
+            // Convert timestamps to DateTime for comparison
+            DateTime localUpdated = localTask.UpdatedAt;
+            DateTime tickTickUpdated = string.IsNullOrEmpty(tickTickTask.ModifiedTime) 
+                ? DateTime.MinValue 
+                : DateTime.Parse(tickTickTask.ModifiedTime);
+                
+            switch (resolutionStrategy)
+            {
+                case "newer":
+                    return tickTickUpdated > localUpdated;
+                case "ticktick":
+                    return true; // Always update local in this strategy
+                case "secondbrain":
+                    return false; // Never update local in this strategy
+                default:
+                    return tickTickUpdated > localUpdated; // Default to newer
+            }
+        }
+        
+        private async Task<TickTickTask?> CreateTickTickTaskInternal(string userId, TickTickTask task)
+        {
+            try
+            {
+                var credentials = await _integrationService.GetTickTickCredentialsAsync(userId);
+                if (credentials == null) return null;
+                
+                var tickTickApiUrl = _configuration["TickTick:ApiBaseUrl"] ?? "https://api.ticktick.com";
+                var createTaskEndpoint = $"{tickTickApiUrl}/open/v1/task";
+                
+                var httpClient = _httpClientFactory.CreateClient();
+                httpClient.DefaultRequestHeaders.Authorization = 
+                    new AuthenticationHeaderValue("Bearer", credentials.AccessToken);
+                
+                var response = await httpClient.PostAsJsonAsync(createTaskEndpoint, task);
+                if (!response.IsSuccessStatusCode) return null;
+                
+                return await response.Content.ReadFromJsonAsync<TickTickTask>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating TickTick task for user {UserId}", userId);
+                return null;
+            }
+        }
+        
+        private async Task<bool> UpdateTickTickTaskInternal(string userId, TickTickTask task)
+        {
+            try
+            {
+                var credentials = await _integrationService.GetTickTickCredentialsAsync(userId);
+                if (credentials == null) return false;
+                
+                var tickTickApiUrl = _configuration["TickTick:ApiBaseUrl"] ?? "https://api.ticktick.com";
+                var updateEndpoint = $"{tickTickApiUrl}/open/v1/task/{task.Id}";
+                
+                var httpClient = _httpClientFactory.CreateClient();
+                httpClient.DefaultRequestHeaders.Authorization = 
+                    new AuthenticationHeaderValue("Bearer", credentials.AccessToken);
+                
+                var content = new StringContent(
+                    JsonSerializer.Serialize(task),
+                    Encoding.UTF8,
+                    "application/json"
+                );
+                
+                var response = await httpClient.PostAsync(updateEndpoint, content);
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating TickTick task {TaskId} for user {UserId}", task.Id, userId);
+                return false;
+            }
+        }
+
+        // Add this helper method for TickTick task deletion
+        private async Task<bool> DeleteTickTickTaskInternal(string userId, string projectId, string taskId)
+        {
+            try
+            {
+                var credentials = await _integrationService.GetTickTickCredentialsAsync(userId);
+                if (credentials == null) return false;
+                
+                var tickTickApiUrl = _configuration["TickTick:ApiBaseUrl"] ?? "https://api.ticktick.com";
+                var deleteEndpoint = $"{tickTickApiUrl}/open/v1/project/{projectId}/task/{taskId}";
+                
+                var httpClient = _httpClientFactory.CreateClient();
+                httpClient.DefaultRequestHeaders.Authorization = 
+                    new AuthenticationHeaderValue("Bearer", credentials.AccessToken);
+                
+                var response = await httpClient.DeleteAsync(deleteEndpoint);
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting TickTick task {TaskId} for user {UserId}", taskId, userId);
+                return false;
             }
         }
     }

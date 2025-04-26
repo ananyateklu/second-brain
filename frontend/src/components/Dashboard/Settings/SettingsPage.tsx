@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Moon, Sun, Bell, Shield, Database, Settings2, Palette, Sparkles, Cpu,
   Lock, BarChart2, KeyRound, History, Link2, BellRing, Timer,
-  Zap, User, Puzzle
+  Zap, User, Puzzle, RefreshCw, AlertCircle
 } from 'lucide-react';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { motion } from 'framer-motion';
@@ -14,6 +14,7 @@ import { ThemeName } from '../../../theme/theme.config';
 import { cardVariants } from '../../../utils/welcomeBarUtils';
 import { notificationService } from '../../../services/notification/notificationService';
 import { integrationsService } from '../../../services/api/integrations.service';
+import { useTasks } from '../../../contexts/tasksContextUtils';
 
 // Placeholder function to generate state parameter
 const generateState = () => Math.random().toString(36).substring(2, 15);
@@ -24,18 +25,110 @@ export function SettingsPage() {
   const navigate = useNavigate();
   const [pushNotifications, setPushNotifications] = useState(false);
   const [activeTab, setActiveTab] = useState('appearance');
+  const { isTickTickConnected, syncWithTickTick, getSyncStatus, resetSyncData, isSyncing, syncError: tasksSyncError } = useTasks();
 
   // Initialize from localStorage for immediate UI feedback
-  const [isTickTickConnected, setIsTickTickConnected] = useState<boolean>(() => {
+  const [isTickTickConnectedUI, setIsTickTickConnectedUI] = useState<boolean>(() => {
     const stored = localStorage.getItem('ticktick_connected');
     return stored === 'true';
   });
 
-  // Update localStorage when connection state changes
+  // Ensure local connection state matches the context value
   useEffect(() => {
-    localStorage.setItem('ticktick_connected', isTickTickConnected.toString());
-    console.log(`[SettingsPage] Updated localStorage ticktick_connected: ${isTickTickConnected}`);
+    setIsTickTickConnectedUI(isTickTickConnected);
   }, [isTickTickConnected]);
+
+  // Sync configuration state
+  const [syncDirection, setSyncDirection] = useState<'two-way' | 'to-ticktick' | 'from-ticktick'>('two-way');
+  const [syncFrequency, setSyncFrequency] = useState<string>('manual');
+  const [conflictResolution, setConflictResolution] = useState<string>('newer');
+  const [syncTags, setSyncTags] = useState<boolean>(true);
+  const [lastSynced, setLastSynced] = useState<string | null>(null);
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const [syncStats, setSyncStats] = useState<{ local: number; tickTick: number; mapped: number }>({
+    local: 0,
+    tickTick: 0,
+    mapped: 0
+  });
+  // Define a constant for the TickTick project ID instead of using useState
+  const tickTickProjectId = '680d480e99b2d107415feee4'; // 'Second Brain' project ID
+
+  // Use the sync error from context if available
+  useEffect(() => {
+    if (tasksSyncError) {
+      setSyncError(tasksSyncError);
+    }
+  }, [tasksSyncError]);
+
+  // Formatted last synced time
+  const formatLastSynced = () => {
+    if (!lastSynced) return 'Never';
+
+    try {
+      const date = new Date(lastSynced);
+      const now = new Date();
+
+      // If synced today, show time
+      if (date.toDateString() === now.toDateString()) {
+        return `Today at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      }
+
+      // If synced yesterday, show "Yesterday"
+      const yesterday = new Date(now);
+      yesterday.setDate(now.getDate() - 1);
+      if (date.toDateString() === yesterday.toDateString()) {
+        return `Yesterday at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      }
+
+      // Otherwise show date and time
+      return date.toLocaleString([], {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return 'Unknown';
+    }
+  };
+
+  // Load sync settings from localStorage
+  useEffect(() => {
+    const storedDirection = localStorage.getItem('ticktick_sync_direction');
+    if (storedDirection && (storedDirection === 'two-way' || storedDirection === 'to-ticktick' || storedDirection === 'from-ticktick')) {
+      setSyncDirection(storedDirection);
+    }
+
+    const storedFrequency = localStorage.getItem('ticktick_sync_frequency');
+    if (storedFrequency) {
+      setSyncFrequency(storedFrequency);
+    }
+
+    const storedResolution = localStorage.getItem('ticktick_conflict_resolution');
+    if (storedResolution) {
+      setConflictResolution(storedResolution);
+    }
+
+    const storedSyncTags = localStorage.getItem('ticktick_sync_tags');
+    if (storedSyncTags !== null) {
+      setSyncTags(storedSyncTags === 'true');
+    }
+
+    const storedLastSynced = localStorage.getItem('ticktick_last_synced');
+    if (storedLastSynced) {
+      setLastSynced(storedLastSynced);
+    }
+  }, []);
+
+  // Save sync settings to localStorage when they change
+  useEffect(() => {
+    if (isTickTickConnected) {
+      localStorage.setItem('ticktick_sync_direction', syncDirection);
+      localStorage.setItem('ticktick_sync_frequency', syncFrequency);
+      localStorage.setItem('ticktick_conflict_resolution', conflictResolution);
+      localStorage.setItem('ticktick_sync_tags', String(syncTags));
+    }
+  }, [isTickTickConnected, syncDirection, syncFrequency, conflictResolution, syncTags]);
 
   // Check for OAuth callback and verify current status
   useEffect(() => {
@@ -50,7 +143,7 @@ export function SettingsPage() {
 
     if (integrationStatus === 'ticktick_success') {
       console.log("[SettingsPage Effect] TickTick success detected! Setting connected state.");
-      setIsTickTickConnected(true);
+      setIsTickTickConnectedUI(true);
 
       // Remove the query parameter from the URL without reloading the page
       console.log("[SettingsPage Effect] Removing query param...");
@@ -62,7 +155,7 @@ export function SettingsPage() {
         try {
           const status = await integrationsService.getTickTickStatus();
           console.log("[SettingsPage] Backend reports TickTick status:", status.isConnected);
-          setIsTickTickConnected(status.isConnected);
+          setIsTickTickConnectedUI(status.isConnected);
         } catch (error) {
           console.error("[SettingsPage] Error checking TickTick status:", error);
           // Don't change the state on error - keep whatever was in localStorage
@@ -72,6 +165,35 @@ export function SettingsPage() {
       checkStatus();
     }
   }, [location, navigate]);
+
+  // Load sync status from backend using the Tasks context
+  const loadSyncStatus = useCallback(async () => {
+    if (!isTickTickConnected) return;
+
+    try {
+      const status = await getSyncStatus();
+      if (status.lastSynced) {
+        setLastSynced(status.lastSynced);
+        localStorage.setItem('ticktick_last_synced', status.lastSynced);
+      }
+
+      setSyncStats(status.taskCount);
+    } catch (error) {
+      console.error("Error loading sync status:", error);
+      // Use cached values from localStorage if available
+      const storedLastSynced = localStorage.getItem('ticktick_last_synced');
+      if (storedLastSynced) {
+        setLastSynced(storedLastSynced);
+      }
+    }
+  }, [isTickTickConnected, getSyncStatus]);
+
+  // Load sync status when component mounts or when ticktick connection changes
+  useEffect(() => {
+    if (isTickTickConnected && activeTab === 'integrations') {
+      loadSyncStatus();
+    }
+  }, [isTickTickConnected, activeTab, loadSyncStatus]);
 
   const handleThemeChange = (newTheme: ThemeName) => {
     setTheme(newTheme);
@@ -138,7 +260,7 @@ export function SettingsPage() {
       const success = await integrationsService.disconnectTickTick();
       if (success) {
         console.log("TickTick disconnected successfully.");
-        setIsTickTickConnected(false);
+        setIsTickTickConnectedUI(false);
         // Optional: Show a success notification
       } else {
         throw new Error("Disconnect operation failed.");
@@ -151,6 +273,72 @@ export function SettingsPage() {
         errorMessage = error.message;
       }
       alert(`Error: ${errorMessage}`); // Replace alert with a proper notification
+    }
+  };
+
+  const handleSyncDirectionChange = (direction: 'two-way' | 'to-ticktick' | 'from-ticktick') => {
+    // Fix casing if needed to match backend expectations
+    setSyncDirection(direction);
+
+    // Clear any previous sync errors when changing direction
+    setSyncError(null);
+
+    console.log(`Changed sync direction to: ${direction}`);
+  };
+
+  const handleSyncFrequencyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSyncFrequency(e.target.value);
+  };
+
+  const handleConflictResolutionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setConflictResolution(e.target.value);
+  };
+
+  const handleSyncTagsChange = () => {
+    setSyncTags(!syncTags);
+  };
+
+  const handleSyncNow = async () => {
+    if (isSyncing) return;
+
+    setSyncError(null);
+
+    try {
+      console.log(`Starting sync with direction: ${syncDirection}, resolutionStrategy: ${conflictResolution}, includeTags: ${syncTags}, projectId: ${tickTickProjectId}`);
+
+      // Call the sync API with the current configuration using the Tasks context
+      const result = await syncWithTickTick({
+        direction: syncDirection,
+        resolutionStrategy: conflictResolution,
+        includeTags: syncTags,
+        projectId: tickTickProjectId // Add the projectId to the config
+      });
+
+      console.log("Sync completed successfully:", result);
+
+      // Update the last synced time
+      setLastSynced(result.lastSynced);
+      localStorage.setItem('ticktick_last_synced', result.lastSynced);
+
+      // Refresh the sync status to update counts
+      await loadSyncStatus();
+
+      // Show success notification
+      const successMessage = `Sync completed! Created: ${result.created}, Updated: ${result.updated}, Deleted: ${result.deleted}`;
+      alert(successMessage); // Replace with proper notification
+    } catch (error) {
+      console.error("Error syncing tasks:", error);
+
+      let errorMessage = "Failed to sync tasks. Please try again.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        console.error(`Detailed sync error: ${errorMessage}`);
+      }
+
+      setSyncError(errorMessage);
+
+      // Show error notification
+      alert(errorMessage); // Replace with proper notification
     }
   };
 
@@ -657,11 +845,11 @@ export function SettingsPage() {
               <div>
                 <p className="font-medium text-[var(--color-text)]">TickTick</p>
                 <p className="text-xs text-[var(--color-textSecondary)]">
-                  {isTickTickConnected ? "Connected" : "Sync tasks with your TickTick account"}
+                  {isTickTickConnectedUI ? "Connected" : "Sync tasks with your TickTick account"}
                 </p>
               </div>
             </div>
-            {isTickTickConnected ? (
+            {isTickTickConnectedUI ? (
               <button
                 onClick={handleDisconnectTickTick}
                 className={secondaryButtonClasses} // Use secondary style for disconnect
@@ -677,6 +865,184 @@ export function SettingsPage() {
               </button>
             )}
           </div>
+
+          {/* Add TickTick Sync Configuration (only visible when connected) */}
+          {isTickTickConnectedUI && (
+            <div className={`mt-4 p-4 ${innerElementClasses}`}>
+              <div className="flex items-center justify-between mb-3">
+                <h5 className="font-medium text-[var(--color-text)]">Sync Configuration</h5>
+                {/* Reset button handler */}
+                {syncStats.mapped > 0 && (
+                  <button
+                    onClick={async () => {
+                      if (confirm("Are you sure you want to reset all sync data? This will not delete any tasks but will remove all mappings between Second Brain and TickTick.")) {
+                        try {
+                          await resetSyncData();
+                          setSyncStats({ local: syncStats.local, tickTick: 0, mapped: 0 });
+                          setLastSynced(null);
+                          localStorage.removeItem('ticktick_last_synced');
+                          alert("Sync data reset successfully.");
+                        } catch (error) {
+                          console.error("Error resetting sync data:", error);
+                          alert("Failed to reset sync data.");
+                        }
+                      }
+                    }}
+                    className={`text-xs px-2 py-1 text-red-500 hover:text-red-600 hover:bg-red-500/10 rounded transition-colors`}
+                  >
+                    Reset Sync
+                  </button>
+                )}
+              </div>
+
+              {/* Show sync stats */}
+              <div className="mb-4 grid grid-cols-3 gap-3">
+                <div className="p-2 bg-[var(--color-surface)]/50 rounded-lg border border-[var(--color-border)]">
+                  <div className="text-[10px] text-[var(--color-textSecondary)]">Local Tasks</div>
+                  <div className="text-lg font-semibold text-[var(--color-text)]">{syncStats.local}</div>
+                </div>
+                <div className="p-2 bg-[var(--color-surface)]/50 rounded-lg border border-[var(--color-border)]">
+                  <div className="text-sm text-[var(--color-textSecondary)]">TickTick Tasks</div>
+                  <div className="text-lg font-semibold text-[var(--color-text)]">{syncStats.tickTick}</div>
+                </div>
+                <div className="p-2 bg-[var(--color-surface)]/50 rounded-lg border border-[var(--color-border)]">
+                  <div className="text-[10px] text-[var(--color-textSecondary)]">Synced Tasks</div>
+                  <div className="text-lg font-semibold text-[var(--color-text)]">{syncStats.mapped}</div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {/* Sync Direction */}
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-medium text-[var(--color-textSecondary)]">Sync Direction</label>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleSyncDirectionChange('two-way')}
+                      className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors 
+                        ${getContainerBackground()} hover:bg-[var(--color-surfaceHover)] border border-white/10
+                        ${syncDirection === 'two-way' ? 'text-[var(--color-accent)]' : 'text-[var(--color-textSecondary)]'}`}
+                    >
+                      Two-way Sync
+                    </button>
+                    <button
+                      onClick={() => handleSyncDirectionChange('to-ticktick')}
+                      className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors 
+                        ${getContainerBackground()} hover:bg-[var(--color-surfaceHover)] border border-white/10
+                        ${syncDirection === 'to-ticktick' ? 'text-[var(--color-accent)]' : 'text-[var(--color-textSecondary)]'}`}
+                    >
+                      Second Brain → TickTick
+                    </button>
+                    <button
+                      onClick={() => handleSyncDirectionChange('from-ticktick')}
+                      className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors 
+                        ${getContainerBackground()} hover:bg-[var(--color-surfaceHover)] border border-white/10
+                        ${syncDirection === 'from-ticktick' ? 'text-[var(--color-accent)]' : 'text-[var(--color-textSecondary)]'}`}
+                    >
+                      TickTick → Second Brain
+                    </button>
+                  </div>
+                </div>
+
+                {/* Sync Frequency */}
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-medium text-[var(--color-textSecondary)]">Sync Frequency</label>
+                  <select
+                    value={syncFrequency}
+                    onChange={handleSyncFrequencyChange}
+                    className={`px-3 py-2 rounded-lg text-sm
+                      ${getContainerBackground()}
+                      border-[0.5px] border-white/10
+                      text-[var(--color-text)]
+                      hover:bg-[var(--color-surfaceHover)]
+                      transition-all duration-200
+                    `}
+                  >
+                    <option value="manual">Manual Sync Only</option>
+                    <option value="5">Every 5 minutes</option>
+                    <option value="15">Every 15 minutes</option>
+                    <option value="30">Every 30 minutes</option>
+                    <option value="60">Every hour</option>
+                  </select>
+                </div>
+
+                {/* Conflict Resolution */}
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-medium text-[var(--color-textSecondary)]">Conflict Resolution</label>
+                  <select
+                    value={conflictResolution}
+                    onChange={handleConflictResolutionChange}
+                    className={`px-3 py-2 rounded-lg text-sm
+                      ${getContainerBackground()}
+                      border-[0.5px] border-white/10
+                      text-[var(--color-text)]
+                      hover:bg-[var(--color-surfaceHover)]
+                      transition-all duration-200
+                    `}
+                  >
+                    <option value="newer">Use Newest Change</option>
+                    <option value="ticktick">Prefer TickTick</option>
+                    <option value="secondbrain">Prefer Second Brain</option>
+                    <option value="ask">Ask Me</option>
+                  </select>
+                </div>
+
+                {/* Sync Tags */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium text-[var(--color-textSecondary)]">Sync Tags</p>
+                    <p className="text-xs text-[var(--color-textSecondary)]">Keep tags in sync between platforms</p>
+                  </div>
+                  <div className="relative inline-flex">
+                    <input
+                      type="checkbox"
+                      checked={syncTags}
+                      onChange={handleSyncTagsChange}
+                      className="sr-only peer"
+                    />
+                    <div className={toggleClasses}></div>
+                  </div>
+                </div>
+
+                {/* Error message if any */}
+                {syncError && (
+                  <div className="mt-1 p-3 bg-red-500/10 rounded-lg flex items-center gap-2 text-red-500 dark:text-red-400">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <p className="text-xs">{syncError}</p>
+                  </div>
+                )}
+
+                {/* Manual Sync Button */}
+                <div className="pt-4 flex justify-between items-center border-t border-white/10">
+                  <div>
+                    <p className="text-xs font-medium text-[var(--color-text)]">Last synced: {formatLastSynced()}</p>
+                    <p className="text-xs text-[var(--color-textSecondary)]">Sync to update tasks between platforms</p>
+                  </div>
+                  <button
+                    className={`${primaryButtonClasses} ${isSyncing ? 'opacity-70 cursor-not-allowed' : ''}`}
+                    onClick={handleSyncNow}
+                    disabled={isSyncing}
+                  >
+                    {isSyncing ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-1 animate-spin" />
+                        Syncing...
+                      </>
+                    ) : (
+                      <>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 2v6h-6"></path>
+                          <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+                          <path d="M3 22v-6h6"></path>
+                          <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+                        </svg>
+                        Sync Now
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     )
