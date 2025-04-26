@@ -723,5 +723,64 @@ namespace SecondBrain.Api.Controllers
                 return StatusCode(500, new { message = "An internal server error occurred." });
             }
         }
+
+        // Change route to be more specific
+        [HttpPost("ticktick/projects/{projectId}/tasks")]
+        public async Task<IActionResult> CreateTickTickTask(string projectId, [FromBody] TickTickTask request)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized(new { error = "User ID not found in token." });
+                }
+
+                // Get user's TickTick access token
+                var credentials = await _integrationService.GetTickTickCredentialsAsync(userId);
+                if (credentials == null || string.IsNullOrEmpty(credentials.AccessToken))
+                {
+                    return NotFound(new { error = "TickTick integration not found or invalid credentials." });
+                }
+
+                // Set the provided project ID
+                request.ProjectId = projectId;
+
+                // Create endpoint for TickTick API
+                var tickTickApiUrl = _configuration["TickTick:ApiBaseUrl"] ?? "https://api.ticktick.com";
+                var createTaskEndpoint = $"{tickTickApiUrl}/open/v1/task";
+
+                // Configure HTTP Client for TickTick API request
+                var client = _httpClientFactory.CreateClient();
+                client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", credentials.AccessToken);
+
+                // Make the API call to create the task
+                var response = await client.PostAsJsonAsync(createTaskEndpoint, request);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogError("Failed to create TickTick task: {Error}", errorContent);
+                    return StatusCode((int)response.StatusCode, new { error = $"Failed to create TickTick task: {errorContent}" });
+                }
+
+                // Parse and return the created task
+                var createdTask = await response.Content.ReadFromJsonAsync<TickTickTask>();
+
+                // Add null check here
+                if (createdTask == null || string.IsNullOrEmpty(createdTask.Id))
+                {
+                    _logger.LogError("Failed to deserialize or invalid created task response from TickTick for user {UserId}", userId);
+                    return StatusCode(500, new { error = "Failed to process response from TickTick after creating task." });
+                }
+
+                return CreatedAtAction(nameof(GetTickTickTaskById), new { projectId, taskId = createdTask.Id }, createdTask); // Use correct casing
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating TickTick task");
+                return StatusCode(500, new { error = "An error occurred while creating the task." });
+            }
+        }
     }
 } 

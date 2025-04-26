@@ -57,6 +57,7 @@ Second Brain is an AI-enhanced knowledge management and note-taking system that 
 - Task dependency visualization and tracking
 - Linking tasks to notes, ideas, and reference materials
 - Progress tracking and completion status management
+- **TickTick Integration**: Sync tasks with your TickTick account.
 
 ### AI Integration
 
@@ -71,6 +72,9 @@ Second Brain is an AI-enhanced knowledge management and note-taking system that 
 - Voice transcription and audio processing
 - Retrieval-augmented generation (RAG) via OpenAI Assistants API
 - Natural language database operations
+- HTTP-only cookies for refresh tokens
+- SignalR secure connections with authentication
+- **TickTick OAuth**: Secure connection flow for TickTick integration.
 
 ### Multi-Layered Theme System
 
@@ -79,14 +83,6 @@ Second Brain is an AI-enhanced knowledge management and note-taking system that 
 - System preference detection
 - Browser-specific optimizations (especially for Safari)
 - Dynamic theme switching with persistence
-
-### Privacy & Security
-
-- JWT authentication with refresh token rotation
-- API keys stored securely on backend
-- User-specific data isolation
-- HTTP-only cookies for refresh tokens
-- SignalR secure connections with authentication
 
 ## Technical Architecture
 
@@ -111,6 +107,7 @@ Second Brain is an AI-enhanced knowledge management and note-taking system that 
 - Soft delete pattern with query filters
 - Multi-layer response processing
 - Provider-specific AI integrations
+- **Integration Service**: Dedicated service for managing third-party integrations like TickTick.
 
 ### Database Structure
 
@@ -120,6 +117,11 @@ Second Brain is an AI-enhanced knowledge management and note-taking system that 
 - Soft delete pattern with automatic query filters
 - Activity and achievement tracking
 - Flexible tag system across entities
+- **Node.js 18+ and npm**
+- **.NET SDK 8.0**
+- **SQL Server 2019+**
+- **TickTick Developer Account**: Credentials (Client ID, Client Secret) required for TickTick integration.
+
 
 ## Getting Started
 
@@ -144,7 +146,13 @@ npm install
 npm run dev
 ```
 
-Configure the `.env` file with the appropriate API URLs before running `npm run dev`.
+Configure the `.env` file with the appropriate API URLs and TickTick credentials before running `npm run dev`:
+
+```plaintext
+# Example .env entries
+VITE_TICKTICK_CLIENT_ID=your_ticktick_client_id
+VITE_TICKTICK_REDIRECT_URI=http://localhost:5173/dashboard/callback/ticktick
+```
 
 ### Backend Setup
 
@@ -219,6 +227,14 @@ Here's a template for `appsettings.json`:
 
   "AIService": {
     "BaseUrl": "http://localhost:8000"
+  },
+
+  "TickTick": {
+    "ClientId": "your_ticktick_client_id",
+    "ClientSecret": "your_ticktick_client_secret",
+    "RedirectUri": "http://localhost:5173/dashboard/callback/ticktick",
+    "TokenEndpoint": "https://ticktick.com/oauth/token",
+    "ApiBaseUrl": "https://api.ticktick.com"
   }
 }
 ```
@@ -319,6 +335,20 @@ The application provides RESTful API endpoints for various resources. Below is a
   - `DELETE /api/ai/rag/file` - Delete RAG file
   - `DELETE /api/ai/rag/assistant` - Delete RAG assistant
 
+### Integrations (/api/integrations)
+
+- **Endpoints:**
+  - `POST /api/integrations/ticktick/exchange-code` - Exchange authorization code for TickTick tokens
+  - `DELETE /api/integrations/ticktick` - Disconnect TickTick integration and remove credentials
+  - `GET /api/integrations/ticktick/status` - Check if TickTick is connected
+  - `GET /api/integrations/ticktick/tasks` - Get all tasks from the configured TickTick project (or all if none configured)
+  - `GET /api/integrations/ticktick/projects` - Get available TickTick projects
+  - `GET /api/integrations/ticktick/tasks/{projectId}/{taskId}` - Get a specific TickTick task by ID
+  - `POST /api/integrations/ticktick/tasks/{taskId}` - Update a specific TickTick task
+  - `POST /api/integrations/ticktick/projects/{projectId}/tasks` - Create a new task in a specific TickTick project
+  - `POST /api/integrations/ticktick/tasks/{projectId}/{taskId}/complete` - Mark a TickTick task as complete
+  - `DELETE /api/integrations/ticktick/tasks/{projectId}/{taskId}` - Delete a specific TickTick task
+
 ## Content Linking Features
 
 The system implements bi-directional linking across all content types, enabling seamless navigation and relationship management:
@@ -346,6 +376,7 @@ All connections are bi-directional and support:
 - **Soft Delete**: Entities use soft delete with query filters
 - **Context Dependencies**: The nested context structure creates complex dependencies
 - **Token Refresh**: JWT tokens refresh automatically with rotation for security
+- **TickTick Sync**: Task data is synced with TickTick, subject to API rate limits and potential inconsistencies.
 
 ## Future Improvements
 
@@ -361,6 +392,7 @@ All connections are bi-directional and support:
 
 Thanks to the following projects and organizations that make Second Brain possible:
 
+- **TickTick**: For providing an API to integrate task management.
 - OpenAI for GPT-4 and DALL-E 3
 - Anthropic for Claude models
 - Google for Gemini

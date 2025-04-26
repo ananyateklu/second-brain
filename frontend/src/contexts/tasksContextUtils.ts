@@ -21,6 +21,9 @@ export interface TasksContextType {
   completeTickTickTask: (projectId: string, taskId: string) => Promise<boolean>; // Complete a TickTick task
   deleteTickTickTask: (projectId: string, taskId: string) => Promise<boolean>; // Delete a TickTick task
 
+  // Add the new function type here
+  createTickTickTask: (projectId: string, taskData: Partial<TickTickTask>) => Promise<TickTickTask | null>;
+
   // Existing actions
   addTask: (taskData: CreateTaskData) => Promise<void>;
   updateTask: (id: string, updates: UpdateTaskDto) => Promise<void>;
