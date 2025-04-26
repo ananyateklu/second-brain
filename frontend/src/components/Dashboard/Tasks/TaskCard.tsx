@@ -14,7 +14,8 @@ interface TaskCardProps {
   isSelected?: boolean;
   context?: 'default' | 'trash' | 'archive' | 'favorites' | 'duplicate';
   onSelect?: () => void;
-  onClick?: (task: Task) => void;
+  onClick?: (task: Task & { source?: 'local' | 'ticktick' }) => void;
+  isTickTick?: boolean;
   contextData?: {
     expiresAt?: string;
     deletedAt?: string;
@@ -33,6 +34,7 @@ interface CheckboxProps {
   context: TaskCardProps['context'];
   updateTask: (id: string, updates: Partial<Task>) => void;
   isDark: boolean;
+  disabled?: boolean;
 }
 
 interface PriorityBadgeProps {
@@ -96,6 +98,7 @@ export function TaskCard({
   context = 'default',
   onSelect,
   onClick,
+  isTickTick,
   contextData
 }: TaskCardProps) {
   const { updateTask } = useTasks();
@@ -140,9 +143,9 @@ export function TaskCard({
     if (onSelect) {
       onSelect();
     } else if (onClick) {
-      onClick(task);
+      onClick({ ...task, source: isTickTick ? 'ticktick' : 'local' });
     }
-  }, [onSelect, onClick, task]);
+  }, [onSelect, onClick, task, isTickTick]);
 
 
   const handleArchiveConfirm = useCallback(() => {
@@ -195,8 +198,9 @@ export function TaskCard({
       context={context}
       updateTask={updateTask}
       isDark={isDark}
+      disabled={isTickTick}
     />
-  ), [task, context, updateTask, isDark]);
+  ), [task, context, updateTask, isDark, isTickTick]);
 
   const priorityBadgeMemo = useMemo(() => (
     <PriorityBadge
@@ -329,7 +333,7 @@ export function TaskCard({
 
 // Define memoized subcomponents
 
-const Checkbox = memo(function Checkbox({ task, context, updateTask, isDark }: CheckboxProps) {
+const Checkbox = memo(function Checkbox({ task, context, updateTask, isDark, disabled }: CheckboxProps) {
   const colorVariants = {
     dark: {
       completed: 'bg-green-900/25 text-green-300',
@@ -349,13 +353,14 @@ const Checkbox = memo(function Checkbox({ task, context, updateTask, isDark }: C
     <button
       onClick={(e) => {
         e.stopPropagation();
-        if (context === 'default') {
+        if (context === 'default' && !disabled) {
           updateTask(task.id, {
             status: task.status.toLowerCase() === 'completed' ? 'Incomplete' : 'Completed'
           });
         }
       }}
-      className={`flex-shrink-0 p-1.5 rounded transition-colors ${colorClasses}`}
+      className={`flex-shrink-0 p-1.5 rounded transition-colors ${colorClasses} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+      disabled={disabled}
     >
       {task.status.toLowerCase() === 'completed' ? (
         <CheckSquare className="w-4 h-4" />

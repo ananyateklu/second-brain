@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Moon, Sun, Bell, Shield, Database, Settings2, Palette, Sparkles, Cpu,
   Lock, BarChart2, KeyRound, History, Link2, BellRing, Timer,
-  Zap, User
+  Zap, User, Puzzle
 } from 'lucide-react';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { motion } from 'framer-motion';
@@ -12,16 +13,65 @@ import { AISettings } from '../../../types/ai';
 import { ThemeName } from '../../../theme/theme.config';
 import { cardVariants } from '../../../utils/welcomeBarUtils';
 import { notificationService } from '../../../services/notification/notificationService';
+import { integrationsService } from '../../../services/api/integrations.service';
+
+// Placeholder function to generate state parameter
+const generateState = () => Math.random().toString(36).substring(2, 15);
 
 export function SettingsPage() {
   const { theme, setTheme } = useTheme();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [pushNotifications, setPushNotifications] = useState(false);
   const [activeTab, setActiveTab] = useState('appearance');
 
+  // Initialize from localStorage for immediate UI feedback
+  const [isTickTickConnected, setIsTickTickConnected] = useState<boolean>(() => {
+    const stored = localStorage.getItem('ticktick_connected');
+    return stored === 'true';
+  });
+
+  // Update localStorage when connection state changes
   useEffect(() => {
+    localStorage.setItem('ticktick_connected', isTickTickConnected.toString());
+    console.log(`[SettingsPage] Updated localStorage ticktick_connected: ${isTickTickConnected}`);
+  }, [isTickTickConnected]);
+
+  // Check for OAuth callback and verify current status
+  useEffect(() => {
+    console.log("[SettingsPage Effect] Running. Location search:", location.search);
+
     // Initialize push notification state
     setPushNotifications(notificationService.isNotificationsEnabled());
-  }, []);
+
+    const params = new URLSearchParams(location.search);
+    const integrationStatus = params.get('integration_status');
+    console.log("[SettingsPage Effect] Integration status param:", integrationStatus);
+
+    if (integrationStatus === 'ticktick_success') {
+      console.log("[SettingsPage Effect] TickTick success detected! Setting connected state.");
+      setIsTickTickConnected(true);
+
+      // Remove the query parameter from the URL without reloading the page
+      console.log("[SettingsPage Effect] Removing query param...");
+      navigate(location.pathname, { replace: true });
+    } else {
+      console.log("[SettingsPage Effect] No TickTick success param found. Checking backend status.");
+      // Check actual status from backend
+      const checkStatus = async () => {
+        try {
+          const status = await integrationsService.getTickTickStatus();
+          console.log("[SettingsPage] Backend reports TickTick status:", status.isConnected);
+          setIsTickTickConnected(status.isConnected);
+        } catch (error) {
+          console.error("[SettingsPage] Error checking TickTick status:", error);
+          // Don't change the state on error - keep whatever was in localStorage
+        }
+      };
+
+      checkStatus();
+    }
+  }, [location, navigate]);
 
   const handleThemeChange = (newTheme: ThemeName) => {
     setTheme(newTheme);
@@ -61,6 +111,46 @@ export function SettingsPage() {
       }
     } catch (error) {
       console.error('Failed to save settings:', error);
+    }
+  };
+
+  const handleConnectTickTick = () => {
+    // Access environment variables using Vite's import.meta.env
+    const clientId = import.meta.env.VITE_TICKTICK_CLIENT_ID || 'YOUR_TICKTICK_CLIENT_ID';
+    // Use the new callback path within the dashboard
+    const redirectUri = import.meta.env.VITE_TICKTICK_REDIRECT_URI || 'http://localhost:5173/dashboard/callback/ticktick';
+    const scope = 'tasks:read tasks:write';
+    const state = generateState();
+
+    localStorage.setItem('ticktick_oauth_state', state);
+
+    console.log("TickTick Auth Params:", { clientId, redirectUri, scope, state });
+
+    const authUrl = `https://ticktick.com/oauth/authorize?client_id=${encodeURIComponent(clientId)}&scope=${encodeURIComponent(scope)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&state=${encodeURIComponent(state)}`;
+
+    console.log("Redirecting to:", authUrl);
+    window.location.href = authUrl;
+  };
+
+  const handleDisconnectTickTick = async () => {
+    console.log("Attempting to disconnect TickTick...");
+    try {
+      const success = await integrationsService.disconnectTickTick();
+      if (success) {
+        console.log("TickTick disconnected successfully.");
+        setIsTickTickConnected(false);
+        // Optional: Show a success notification
+      } else {
+        throw new Error("Disconnect operation failed.");
+      }
+    } catch (error: unknown) {
+      console.error("Error disconnecting TickTick:", error);
+      // Optional: Show an error notification to the user
+      let errorMessage = "Could not disconnect TickTick.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      alert(`Error: ${errorMessage}`); // Replace alert with a proper notification
     }
   };
 
@@ -154,6 +244,15 @@ export function SettingsPage() {
     hover:scale-105 hover:-translate-y-0.5 
     shadow-sm hover:shadow-md
     text-sm font-medium
+  `;
+
+  const secondaryButtonClasses = `
+    flex items-center gap-2 px-4 py-2
+    bg-gray-500/20 hover:bg-gray-500/30
+    text-[var(--color-textSecondary)] rounded-lg transition-all duration-200
+    shadow-sm hover:shadow-md
+    text-sm font-medium
+    border-[0.5px] border-white/10
   `;
 
   const tabContent = {
@@ -540,8 +639,51 @@ export function SettingsPage() {
           </div>
         </div>
       </div>
+    ),
+    integrations: (
+      <div className="space-y-6">
+        <h3 className="text-lg font-bold text-[var(--color-text)]">Integrations</h3>
+        <p className="text-sm text-[var(--color-textSecondary)]">Connect Second Brain with other services.</p>
+
+        <div className="space-y-4 mt-6 pt-6 border-t border-white/10">
+          <h4 className="font-medium text-[var(--color-text)] mb-4">Task Management</h4>
+
+          <div className={`flex items-center justify-between p-4 ${innerElementClasses}`}>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-[#4CAF50]/10 backdrop-blur-sm">
+                {/* Placeholder TickTick Icon - Replace if you have a specific one */}
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-[#4CAF50]" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" /></svg>
+              </div>
+              <div>
+                <p className="font-medium text-[var(--color-text)]">TickTick</p>
+                <p className="text-xs text-[var(--color-textSecondary)]">
+                  {isTickTickConnected ? "Connected" : "Sync tasks with your TickTick account"}
+                </p>
+              </div>
+            </div>
+            {isTickTickConnected ? (
+              <button
+                onClick={handleDisconnectTickTick}
+                className={secondaryButtonClasses} // Use secondary style for disconnect
+              >
+                Disconnect
+              </button>
+            ) : (
+              <button
+                onClick={handleConnectTickTick}
+                className={primaryButtonClasses}
+              >
+                Connect
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
     )
   };
+
+  // Log the state value just before rendering
+  console.log('[SettingsPage Render] isTickTickConnected:', isTickTickConnected);
 
   return (
     <div className="min-h-screen overflow-visible bg-fixed">
@@ -623,6 +765,14 @@ export function SettingsPage() {
               >
                 <User className="w-4 h-4" />
                 Account
+              </button>
+              {/* Integrations Tab Button */}
+              <button
+                onClick={() => setActiveTab('integrations')}
+                className={activeTab === 'integrations' ? activeButtonClasses : buttonClasses}
+              >
+                <Puzzle className="w-4 h-4" />
+                Integrations
               </button>
             </nav>
           </motion.div>

@@ -29,6 +29,7 @@ import { EditIdeaModal } from './Dashboard/Ideas/EditIdeaModal';
 import { useModal } from '../contexts/modalContextUtils';
 import { useTheme } from '../contexts/themeContextUtils';
 import { useReminderNotifications } from '../hooks/useReminderNotifications';
+import { TickTickCallback } from './Callback/TickTickCallback';
 
 export function Dashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -96,6 +97,7 @@ export function Dashboard() {
               <Route path="search" element={<SearchPage />} />
               <Route path="perplexity" element={<PerplexityPage />} />
               <Route path="settings" element={<SettingsPage />} />
+              <Route path="/callback/ticktick" element={<TickTickCallback />} />
             </Routes>
           </div>
         </main>

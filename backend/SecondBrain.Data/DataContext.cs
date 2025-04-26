@@ -32,6 +32,7 @@ namespace SecondBrain.Data
         public DbSet<AgentMessage> AgentMessages { get; set; } = null!;
         public DbSet<UserPreference> UserPreferences { get; set; } = null!;
         public DbSet<XPHistoryItem> XPHistory { get; set; } = null!;
+        public DbSet<UserIntegrationCredential> UserIntegrationCredentials { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -352,6 +353,40 @@ namespace SecondBrain.Data
 
                 entity.Property(e => e.Status)
                     .HasMaxLength(50);
+            });
+
+            // Add configuration for UserIntegrationCredential
+            modelBuilder.Entity<UserIntegrationCredential>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.UserId)
+                    .IsRequired()
+                    .HasMaxLength(36); // Assuming User ID is a GUID string
+
+                entity.Property(e => e.Provider)
+                    .IsRequired()
+                    .HasMaxLength(50); // e.g., "TickTick", "Google"
+
+                entity.Property(e => e.AccessToken)
+                    .IsRequired(); // Consider adding MaxLength and encryption via ValueConverter
+
+                entity.Property(e => e.RefreshToken);
+                    // Consider adding MaxLength and encryption via ValueConverter
+
+                entity.Property(e => e.TokenType)
+                    .IsRequired()
+                    .HasMaxLength(50);
+
+                // Add index on UserId and Provider for faster lookups
+                entity.HasIndex(e => new { e.UserId, e.Provider })
+                    .IsUnique(); // A user should only have one credential set per provider
+
+                // Optional: Configure relationship to User if navigation property is uncommented
+                // entity.HasOne<User>() // Specify User entity type if no nav property
+                //     .WithMany() // Assuming User doesn't have a collection of credentials
+                //     .HasForeignKey(e => e.UserId)
+                //     .OnDelete(DeleteBehavior.Cascade); // Cascade delete if user is deleted
             });
         }
     }

@@ -6,6 +6,7 @@ using Microsoft.OpenApi.Models;
 using SecondBrain.Data;
 using Microsoft.EntityFrameworkCore;
 using SecondBrain.Api.Services;
+using SecondBrain.Api.Services.Interfaces;
 using SecondBrain.Api.Configuration;
 using System.Text.Json;
 using SecondBrain.Api.Gamification;
@@ -67,6 +68,9 @@ builder.Services.AddAuthentication(options =>
 
 // Register TokenService
 builder.Services.AddScoped<ITokenService, TokenService>();
+
+//Register TickTick
+builder.Services.AddScoped<IIntegrationService, IntegrationService>();
 
 // Add Authorization services
 builder.Services.AddAuthorization();
