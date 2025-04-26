@@ -2,6 +2,7 @@ import { createContext, useContext } from 'react';
 import { Task, UpdateTaskDto } from '../api/types/task';
 import { TaskLinkData, CreateTaskData } from '../services/api/tasks.service';
 import { TickTickTask } from '../types/integrations'; // Import TickTickTask type
+import { SyncConfig, SyncResult } from '../services/api/integrations.service';
 
 export interface TasksContextType {
   tasks: Task[]; // Local tasks
@@ -20,6 +21,16 @@ export interface TasksContextType {
   updateTickTickTask: (taskId: string, task: Partial<TickTickTask> & { id: string; projectId: string }) => Promise<TickTickTask | null>; // Update a TickTick task
   completeTickTickTask: (projectId: string, taskId: string) => Promise<boolean>; // Complete a TickTick task
   deleteTickTickTask: (projectId: string, taskId: string) => Promise<boolean>; // Delete a TickTick task
+
+  // Sync functionality
+  syncWithTickTick: (config: SyncConfig) => Promise<SyncResult>;
+  getSyncStatus: () => Promise<{
+    lastSynced: string | null;
+    taskCount: { local: number; tickTick: number; mapped: number };
+  }>;
+  resetSyncData: () => Promise<boolean>;
+  isSyncing: boolean;
+  syncError: string | null;
 
   // Add the new function type here
   createTickTickTask: (projectId: string, taskData: Partial<TickTickTask>) => Promise<TickTickTask | null>;

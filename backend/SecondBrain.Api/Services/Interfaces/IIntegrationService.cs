@@ -16,6 +16,9 @@ namespace SecondBrain.Api.Services.Interfaces
         // Removes TickTick credentials for a given user.
         Task<bool> DeleteTickTickCredentialsAsync(string userId);
 
+        // Initiates a two-way synchronization between local tasks and TickTick tasks.
+        Task<bool> SyncTickTickTasksAsync(string userId, string? tickTickProjectId);
+
         // Method to handle refreshing the token if necessary (implement later)
         // Task<string?> RefreshTickTickTokenAsync(UserIntegrationCredential credential);
     }

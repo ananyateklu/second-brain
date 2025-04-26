@@ -7,6 +7,23 @@ export interface TickTickStatus {
     expiresAt?: string;
 }
 
+export interface SyncConfig {
+    direction: 'two-way' | 'to-ticktick' | 'from-ticktick';
+    resolutionStrategy: string;
+    includeTags: boolean;
+    projectId: string;
+}
+
+export interface SyncResult {
+    success: boolean;
+    created: number;
+    updated: number;
+    deleted: number;
+    errors: number;
+    message?: string;
+    lastSynced: string;
+}
+
 export const integrationsService = {
     /**
      * Checks if the current user has connected their TickTick account
@@ -171,6 +188,83 @@ export const integrationsService = {
             return response.data;
         } catch (error) {
             console.error(`Error creating TickTick task:`, error);
+            throw error;
+        }
+    },
+
+    /**
+     * Synchronize tasks between Second Brain and TickTick
+     * @param config Synchronization configuration
+     */
+    async syncTickTickTasks(config: SyncConfig): Promise<SyncResult> {
+        try {
+            const response = await api.post<SyncResult>('/api/integrations/ticktick/sync', config);
+            return response.data;
+        } catch (error) {
+            console.error('Error syncing TickTick tasks:', error);
+
+            if (axios.isAxiosError(error)) {
+                const axiosError = error as AxiosError<{ message: string }>;
+                if (axiosError.response?.data?.message) {
+                    throw new Error(axiosError.response.data.message);
+                }
+            }
+
+            throw new Error('Failed to synchronize tasks with TickTick');
+        }
+    },
+
+    /**
+     * Get sync status and statistics
+     */
+    async getTickTickSyncStatus(): Promise<{
+        lastSynced: string | null;
+        taskCount: { local: number; tickTick: number; mapped: number };
+    }> {
+        try {
+            const response = await api.get<{
+                lastSynced: string | null;
+                taskCount: { local: number; tickTick: number; mapped: number };
+            }>('/api/integrations/ticktick/sync/status');
+
+            return response.data;
+        } catch (error) {
+            console.error('Error getting TickTick sync status:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Get all task mappings between local and TickTick tasks
+     */
+    async getTaskMappings(): Promise<Array<{
+        localTaskId: string;
+        tickTickTaskId: string;
+        lastSynced: string;
+    }>> {
+        try {
+            const response = await api.get<Array<{
+                localTaskId: string;
+                tickTickTaskId: string;
+                lastSynced: string;
+            }>>('/api/integrations/ticktick/task-mappings');
+
+            return response.data;
+        } catch (error) {
+            console.error('Error getting task mappings:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Reset all sync data
+     */
+    async resetSyncData(): Promise<boolean> {
+        try {
+            await api.post('/api/integrations/ticktick/sync/reset');
+            return true;
+        } catch (error) {
+            console.error('Error resetting sync data:', error);
             throw error;
         }
     },

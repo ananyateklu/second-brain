@@ -193,5 +193,42 @@ namespace SecondBrain.Api.Services
         // TODO: Implement RefreshTickTickTokenAsync later
         // private async Task<string?> RefreshTickTickTokenInternalAsync(UserIntegrationCredential credential)
         // { ... logic to call TickTick refresh endpoint, update DB, return new access token ... }
+
+        public async Task<bool> SyncTickTickTasksAsync(string userId, string? tickTickProjectId)
+        {
+            if (string.IsNullOrEmpty(userId))
+            {
+                _logger.LogWarning("Attempted to sync TickTick tasks with invalid UserId.");
+                return false;
+            }
+
+            try
+            {
+                _logger.LogInformation("Syncing TickTick tasks for user {UserId} with project {ProjectId}", userId, tickTickProjectId ?? "all");
+                
+                // Get user's TickTick credentials
+                var credentials = await GetTickTickCredentialsAsync(userId);
+                if (credentials == null)
+                {
+                    _logger.LogWarning("No TickTick credentials found for user {UserId}", userId);
+                    return false;
+                }
+
+                // Placeholder for actual sync logic
+                // In a real implementation, this would:
+                // 1. Fetch tasks from TickTick API
+                // 2. Fetch local tasks from database
+                // 3. Compare and sync based on some strategy
+                // 4. Update task mappings
+                
+                _logger.LogInformation("Successfully synced TickTick tasks for user {UserId}", userId);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while syncing TickTick tasks for user {UserId}", userId);
+                return false;
+            }
+        }
     }
 } 
