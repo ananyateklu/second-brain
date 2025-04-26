@@ -101,6 +101,65 @@ export const integrationsService = {
         }
     },
 
+    /**
+     * Fetch a single TickTick task by project ID and task ID.
+     */
+    async getTickTickTask(projectId: string, taskId: string): Promise<TickTickTask> {
+        try {
+            const endpoint = `/api/integrations/ticktick/tasks/${projectId}/${taskId}`;
+            const response = await api.get<TickTickTask>(endpoint);
+            return response.data;
+        } catch (error) {
+            console.error(`Error fetching TickTick task ${taskId} from project ${projectId}:`, error);
+            throw error;
+        }
+    },
+
+    /**
+     * Update a TickTick task
+     * @param taskId The ID of the task to update
+     * @param task The task data to update
+     */
+    async updateTickTickTask(taskId: string, task: Partial<TickTickTask> & { id: string; projectId: string }): Promise<TickTickTask> {
+        try {
+            const response = await api.post<TickTickTask>(`/api/integrations/ticktick/tasks/${taskId}`, task);
+            return response.data;
+        } catch (error) {
+            console.error(`Error updating TickTick task ${taskId}:`, error);
+            throw error;
+        }
+    },
+
+    /**
+     * Complete a TickTick task
+     * @param projectId The project ID containing the task
+     * @param taskId The ID of the task to complete
+     */
+    async completeTickTickTask(projectId: string, taskId: string): Promise<boolean> {
+        try {
+            await api.post(`/api/integrations/ticktick/tasks/${projectId}/${taskId}/complete`);
+            return true;
+        } catch (error) {
+            console.error(`Error completing TickTick task ${taskId}:`, error);
+            throw error;
+        }
+    },
+
+    /**
+     * Delete a TickTick task
+     * @param projectId The project ID containing the task
+     * @param taskId The ID of the task to delete
+     */
+    async deleteTickTickTask(projectId: string, taskId: string): Promise<boolean> {
+        try {
+            await api.delete(`/api/integrations/ticktick/tasks/${projectId}/${taskId}`);
+            return true;
+        } catch (error) {
+            console.error(`Error deleting TickTick task ${taskId}:`, error);
+            throw error;
+        }
+    },
+
     // Add functions for other integrations or integration actions here later
     // e.g., getTickTickProjects(), createTickTickTask(), etc.
 }; 

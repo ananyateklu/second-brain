@@ -392,5 +392,336 @@ namespace SecondBrain.Api.Controllers
                 return StatusCode(500, new { message = "An internal server error occurred." });
             }
         }
+
+        // GET: api/integrations/ticktick/tasks/{projectId}/{taskId}
+        [HttpGet("ticktick/tasks/{projectId}/{taskId}")]
+        public async Task<IActionResult> GetTickTickTaskById(string projectId, string taskId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { message = "User authentication failed." });
+            }
+
+            _logger.LogInformation("Fetching TickTick task for user {UserId}. ProjectId: {ProjectId}, TaskId: {TaskId}", userId, projectId, taskId);
+
+            var credentials = await _integrationService.GetTickTickCredentialsAsync(userId);
+            if (credentials == null)
+            {
+                return NotFound(new { message = "TickTick integration not found or credentials missing." });
+            }
+
+            if (credentials.ExpiresAt <= DateTime.UtcNow.AddMinutes(1))
+            {
+                return StatusCode(401, new { message = "TickTick token expired. Please reconnect." });
+            }
+
+            var accessToken = credentials.AccessToken;
+            var tickTickApiBaseUrl = _configuration["TickTick:ApiBaseUrl"] ?? "https://api.ticktick.com";
+            var taskEndpoint = $"{tickTickApiBaseUrl}/open/v1/project/{projectId}/task/{taskId}";
+
+            using var httpClient = _httpClientFactory.CreateClient("TickTickApiClient");
+            using var request = new HttpRequestMessage(HttpMethod.Get, taskEndpoint);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            try
+            {
+                using var response = await httpClient.SendAsync(request);
+                var content = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    try
+                    {
+                        var task = JsonSerializer.Deserialize<TickTickTask>(content);
+                        if (task == null)
+                        {
+                            _logger.LogWarning("Deserialized TickTick task is null for user {UserId}. Content: {Content}", userId, content);
+                            return StatusCode(500, new { message = "Failed to process TickTick task data." });
+                        }
+                        return Ok(task);
+                    }
+                    catch (JsonException jsonEx)
+                    {
+                        _logger.LogError(jsonEx, "Failed to deserialize TickTick task response for user {UserId}. Content: {Content}", userId, content);
+                        return StatusCode(500, new { message = "Error processing TickTick task data." });
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to fetch TickTick task for user {UserId}. Status: {StatusCode}, Response: {Content}", userId, response.StatusCode, content);
+                    string errorMessage = "Failed to retrieve task from TickTick.";
+                    try
+                    {
+                        var errorResponse = JsonSerializer.Deserialize<TickTickErrorResponse>(content);
+                        if (errorResponse != null && !string.IsNullOrEmpty(errorResponse.Error))
+                        {
+                            errorMessage = $"TickTick API Error: {errorResponse.Error} ({errorResponse.ErrorDescription ?? "-"})";
+                        }
+                    }
+                    catch (JsonException) { /* Ignore */ }
+                    return StatusCode((int)response.StatusCode, new { message = errorMessage });
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogError(ex, "HTTP request exception while fetching TickTick task for user {UserId}. Endpoint: {Endpoint}", userId, taskEndpoint);
+                return StatusCode(502, new { message = "Network error communicating with TickTick." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error while fetching TickTick task for user {UserId}", userId);
+                return StatusCode(500, new { message = "An internal server error occurred." });
+            }
+        }
+
+        // POST: api/integrations/ticktick/tasks/{taskId}
+        [HttpPost("ticktick/tasks/{taskId}")]
+        public async Task<IActionResult> UpdateTickTickTask(string taskId, [FromBody] TickTickTask request)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { message = "User authentication failed." });
+            }
+
+            if (string.IsNullOrEmpty(request?.Id) || string.IsNullOrEmpty(request?.ProjectId))
+            {
+                return BadRequest(new { message = "Task ID and Project ID are required." });
+            }
+
+            _logger.LogInformation("Updating TickTick task for user {UserId}. TaskId: {TaskId}, ProjectId: {ProjectId}", 
+                userId, taskId, request.ProjectId);
+
+            // Verify taskId in path matches taskId in request body
+            if (taskId != request.Id)
+            {
+                return BadRequest(new { message = "Task ID in path must match Task ID in request body." });
+            }
+
+            var credentials = await _integrationService.GetTickTickCredentialsAsync(userId);
+            if (credentials == null)
+            {
+                return NotFound(new { message = "TickTick integration not found or credentials missing." });
+            }
+
+            if (credentials.ExpiresAt <= DateTime.UtcNow.AddMinutes(1))
+            {
+                return StatusCode(401, new { message = "TickTick token expired. Please reconnect." });
+            }
+
+            var accessToken = credentials.AccessToken;
+            var tickTickApiBaseUrl = _configuration["TickTick:ApiBaseUrl"] ?? "https://api.ticktick.com";
+            var updateEndpoint = $"{tickTickApiBaseUrl}/open/v1/task/{taskId}";
+
+            using var httpClient = _httpClientFactory.CreateClient("TickTickApiClient");
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Post, updateEndpoint)
+            {
+                Content = new StringContent(
+                    JsonSerializer.Serialize(request),
+                    Encoding.UTF8,
+                    "application/json"
+                )
+            };
+            
+            httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            try
+            {
+                using var response = await httpClient.SendAsync(httpRequest);
+                var content = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    try
+                    {
+                        var updatedTask = JsonSerializer.Deserialize<TickTickTask>(content);
+                        return Ok(updatedTask);
+                    }
+                    catch (JsonException jsonEx)
+                    {
+                        _logger.LogError(jsonEx, "Failed to deserialize TickTick task response for user {UserId}. Content: {Content}", userId, content);
+                        return StatusCode(500, new { message = "Error processing TickTick task data." });
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to update TickTick task for user {UserId}. Status: {StatusCode}, Response: {Content}", 
+                        userId, response.StatusCode, content);
+                    
+                    string errorMessage = "Failed to update task in TickTick.";
+                    try
+                    {
+                        var errorResponse = JsonSerializer.Deserialize<TickTickErrorResponse>(content);
+                        if (errorResponse != null && !string.IsNullOrEmpty(errorResponse.Error))
+                        {
+                            errorMessage = $"TickTick API Error: {errorResponse.Error} ({errorResponse.ErrorDescription ?? "-"})";
+                        }
+                    }
+                    catch (JsonException) { /* Ignore */ }
+                    
+                    return StatusCode((int)response.StatusCode, new { message = errorMessage });
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogError(ex, "HTTP request exception while updating TickTick task for user {UserId}. Endpoint: {Endpoint}", 
+                    userId, updateEndpoint);
+                return StatusCode(502, new { message = "Network error communicating with TickTick." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error while updating TickTick task for user {UserId}", userId);
+                return StatusCode(500, new { message = "An internal server error occurred." });
+            }
+        }
+
+        // POST: api/integrations/ticktick/tasks/{projectId}/{taskId}/complete
+        [HttpPost("ticktick/tasks/{projectId}/{taskId}/complete")]
+        public async Task<IActionResult> CompleteTickTickTask(string projectId, string taskId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { message = "User authentication failed." });
+            }
+
+            _logger.LogInformation("Completing TickTick task for user {UserId}. ProjectId: {ProjectId}, TaskId: {TaskId}", 
+                userId, projectId, taskId);
+
+            var credentials = await _integrationService.GetTickTickCredentialsAsync(userId);
+            if (credentials == null)
+            {
+                return NotFound(new { message = "TickTick integration not found or credentials missing." });
+            }
+
+            if (credentials.ExpiresAt <= DateTime.UtcNow.AddMinutes(1))
+            {
+                return StatusCode(401, new { message = "TickTick token expired. Please reconnect." });
+            }
+
+            var accessToken = credentials.AccessToken;
+            var tickTickApiBaseUrl = _configuration["TickTick:ApiBaseUrl"] ?? "https://api.ticktick.com";
+            var completeEndpoint = $"{tickTickApiBaseUrl}/open/v1/project/{projectId}/task/{taskId}/complete";
+
+            using var httpClient = _httpClientFactory.CreateClient("TickTickApiClient");
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Post, completeEndpoint);
+            httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            try
+            {
+                using var response = await httpClient.SendAsync(httpRequest);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    _logger.LogInformation("Successfully completed TickTick task for user {UserId}. TaskId: {TaskId}", userId, taskId);
+                    return Ok(new { message = "Task completed successfully." });
+                }
+                else
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning("Failed to complete TickTick task for user {UserId}. Status: {StatusCode}, Response: {Content}", 
+                        userId, response.StatusCode, content);
+                    
+                    string errorMessage = "Failed to complete task in TickTick.";
+                    try
+                    {
+                        var errorResponse = JsonSerializer.Deserialize<TickTickErrorResponse>(content);
+                        if (errorResponse != null && !string.IsNullOrEmpty(errorResponse.Error))
+                        {
+                            errorMessage = $"TickTick API Error: {errorResponse.Error} ({errorResponse.ErrorDescription ?? "-"})";
+                        }
+                    }
+                    catch (JsonException) { /* Ignore */ }
+                    
+                    return StatusCode((int)response.StatusCode, new { message = errorMessage });
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogError(ex, "HTTP request exception while completing TickTick task for user {UserId}. Endpoint: {Endpoint}", 
+                    userId, completeEndpoint);
+                return StatusCode(502, new { message = "Network error communicating with TickTick." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error while completing TickTick task for user {UserId}", userId);
+                return StatusCode(500, new { message = "An internal server error occurred." });
+            }
+        }
+
+        // DELETE: api/integrations/ticktick/tasks/{projectId}/{taskId}
+        [HttpDelete("ticktick/tasks/{projectId}/{taskId}")]
+        public async Task<IActionResult> DeleteTickTickTask(string projectId, string taskId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { message = "User authentication failed." });
+            }
+
+            _logger.LogInformation("Deleting TickTick task for user {UserId}. ProjectId: {ProjectId}, TaskId: {TaskId}", 
+                userId, projectId, taskId);
+
+            var credentials = await _integrationService.GetTickTickCredentialsAsync(userId);
+            if (credentials == null)
+            {
+                return NotFound(new { message = "TickTick integration not found or credentials missing." });
+            }
+
+            if (credentials.ExpiresAt <= DateTime.UtcNow.AddMinutes(1))
+            {
+                return StatusCode(401, new { message = "TickTick token expired. Please reconnect." });
+            }
+
+            var accessToken = credentials.AccessToken;
+            var tickTickApiBaseUrl = _configuration["TickTick:ApiBaseUrl"] ?? "https://api.ticktick.com";
+            var deleteEndpoint = $"{tickTickApiBaseUrl}/open/v1/project/{projectId}/task/{taskId}";
+
+            using var httpClient = _httpClientFactory.CreateClient("TickTickApiClient");
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Delete, deleteEndpoint);
+            httpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            try
+            {
+                using var response = await httpClient.SendAsync(httpRequest);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    _logger.LogInformation("Successfully deleted TickTick task for user {UserId}. TaskId: {TaskId}", userId, taskId);
+                    return Ok(new { message = "Task deleted successfully." });
+                }
+                else
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning("Failed to delete TickTick task for user {UserId}. Status: {StatusCode}, Response: {Content}", 
+                        userId, response.StatusCode, content);
+                    
+                    string errorMessage = "Failed to delete task in TickTick.";
+                    try
+                    {
+                        var errorResponse = JsonSerializer.Deserialize<TickTickErrorResponse>(content);
+                        if (errorResponse != null && !string.IsNullOrEmpty(errorResponse.Error))
+                        {
+                            errorMessage = $"TickTick API Error: {errorResponse.Error} ({errorResponse.ErrorDescription ?? "-"})";
+                        }
+                    }
+                    catch (JsonException) { /* Ignore */ }
+                    
+                    return StatusCode((int)response.StatusCode, new { message = errorMessage });
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogError(ex, "HTTP request exception while deleting TickTick task for user {UserId}. Endpoint: {Endpoint}", 
+                    userId, deleteEndpoint);
+                return StatusCode(502, new { message = "Network error communicating with TickTick." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error while deleting TickTick task for user {UserId}", userId);
+                return StatusCode(500, new { message = "An internal server error occurred." });
+            }
+        }
     }
 } 

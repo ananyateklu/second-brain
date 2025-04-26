@@ -16,6 +16,10 @@ export interface TasksContextType {
   refreshTickTickConnection: () => Promise<void>; // Add a method to refresh the connection status
   tickTickProjectId: string; // Store the currently selected project ID
   updateTickTickProjectId: (projectId: string) => Promise<void>; // Update the project ID
+  getTickTickTask: (projectId: string, taskId: string) => Promise<TickTickTask | null>; // Fetch single TickTick task
+  updateTickTickTask: (taskId: string, task: Partial<TickTickTask> & { id: string; projectId: string }) => Promise<TickTickTask | null>; // Update a TickTick task
+  completeTickTickTask: (projectId: string, taskId: string) => Promise<boolean>; // Complete a TickTick task
+  deleteTickTickTask: (projectId: string, taskId: string) => Promise<boolean>; // Delete a TickTick task
 
   // Existing actions
   addTask: (taskData: CreateTaskData) => Promise<void>;
