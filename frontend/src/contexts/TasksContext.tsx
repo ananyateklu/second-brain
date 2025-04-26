@@ -461,15 +461,17 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      return await integrationsService.getTickTickSyncStatus();
+      // Pass the current tickTickProjectId to the service call
+      return await integrationsService.getTickTickSyncStatus(tickTickProjectId);
     } catch (error) {
       console.error("Error getting sync status:", error);
       return {
         lastSynced: null,
+        // Provide counts from state as fallback on error
         taskCount: { local: tasks.length, tickTick: tickTickTasks.length, mapped: 0 }
       };
     }
-  }, [user, isTickTickConnected, tasks.length, tickTickTasks.length]);
+  }, [user, isTickTickConnected, tickTickProjectId, tasks.length, tickTickTasks.length]);
 
   // Reset sync data
   const resetSyncData = useCallback(async (): Promise<boolean> => {

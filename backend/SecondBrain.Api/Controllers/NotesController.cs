@@ -422,20 +422,34 @@ namespace SecondBrain.Api.Controllers
         }
 
         [HttpGet("deleted")]
-        public async Task<IActionResult> GetDeletedNotes()
+        public async Task<ActionResult<IEnumerable<NoteResponse>>> GetDeletedNotes()
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userId = GetUserId();
             if (string.IsNullOrEmpty(userId))
             {
                 return Unauthorized(new { error = USER_ID_NOT_FOUND_ERROR });
             }
 
-            var deletedNotes = await _context.Notes
+            // Use IgnoreQueryFilters to bypass the global query filter for soft deleted items
+            var notes = await _context.Notes
+                .IgnoreQueryFilters()
+                .Include(n => n.NoteLinks.Where(nl => !nl.IsDeleted))
+                    .ThenInclude(nl => nl.LinkedNote)
+                .Include(n => n.TaskLinks.Where(tl => !tl.IsDeleted))
+                    .ThenInclude(tl => tl.Task)
+                .Include(n => n.ReminderLinks.Where(rl => !rl.IsDeleted))
+                    .ThenInclude(rl => rl.Reminder)
                 .Where(n => n.UserId == userId && n.IsDeleted)
                 .ToListAsync();
 
-            var response = deletedNotes.Select(NoteResponse.FromEntity);
-            return Ok(response);
+            var reminderLinks = await _context.ReminderLinks
+                .Where(rl => !rl.IsDeleted && notes.Select(n => n.Id).Contains(rl.LinkedItemId))
+                .Include(rl => rl.Reminder)
+                .ToListAsync();
+
+            var responses = notes.Select(note => NoteResponse.FromEntity(note)).ToList();
+            
+            return Ok(responses);
         }
 
         [HttpPost("{id}/restore")]

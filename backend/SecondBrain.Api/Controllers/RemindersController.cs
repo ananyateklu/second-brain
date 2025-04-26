@@ -294,7 +294,13 @@ namespace SecondBrain.Api.Controllers
         public async Task<IActionResult> GetDeletedReminders()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { error = "User ID not found in token." });
+            }
+            
             var reminders = await _context.Reminders
+                .IgnoreQueryFilters()
                 .Include(r => r.ReminderLinks)
                 .Where(r => r.UserId == userId && r.IsDeleted)
                 .ToListAsync();
