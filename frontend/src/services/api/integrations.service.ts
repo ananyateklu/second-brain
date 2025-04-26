@@ -160,6 +160,21 @@ export const integrationsService = {
         }
     },
 
+    /**
+     * Create a new TickTick task
+     * @param projectId The project ID to create the task in
+     * @param task The task data to create
+     */
+    async createTickTickTask(projectId: string, task: Partial<TickTickTask>): Promise<TickTickTask> {
+        try {
+            const response = await api.post<TickTickTask>(`/api/integrations/ticktick/projects/${projectId}/tasks`, task);
+            return response.data;
+        } catch (error) {
+            console.error(`Error creating TickTick task:`, error);
+            throw error;
+        }
+    },
+
     // Add functions for other integrations or integration actions here later
     // e.g., getTickTickProjects(), createTickTickTask(), etc.
 }; 

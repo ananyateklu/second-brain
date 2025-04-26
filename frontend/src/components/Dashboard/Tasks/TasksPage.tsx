@@ -9,7 +9,7 @@ import { TaskCard } from './TaskCard';
 import { EditTaskModal } from './EditTaskModal';
 import { Task, TaskPriority, TaskStatus } from '../../../api/types/task';
 import { TickTickTask } from '../../../types/integrations';
-import { TickTickTaskModal } from './TickTickTaskModal';
+import { TickTickTaskModal } from './TickTickTaskEditModal';
 import { cardGridStyles } from '../shared/cardStyles';
 import { cardVariants } from '../../../utils/welcomeBarUtils';
 import { useTheme } from '../../../contexts/themeContextUtils';

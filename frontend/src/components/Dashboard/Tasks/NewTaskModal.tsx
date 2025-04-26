@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
-import { X, Type, Tag as TagIcon, Calendar, Loader, AlignLeft } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Type, Tag as TagIcon, Calendar, Loader, AlignLeft, Server, CheckCircle } from 'lucide-react';
 import { Input } from '../../shared/Input';
 import { TextArea } from '../../shared/TextArea';
 import { useTasks } from '../../../contexts/tasksContextUtils';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { SuggestionButton } from '../../shared/SuggestionButton';
+import { TickTickTask } from '../../../types/integrations';
+import { formatTickTickDate } from '../../../utils/dateUtils';
 
 interface NewTaskModalProps {
   isOpen: boolean;
@@ -15,7 +17,7 @@ type PriorityLevel = 'low' | 'medium' | 'high';
 
 export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
   const { colors } = useTheme();
-  const { addTask } = useTasks();
+  const { addTask, createTickTickTask, isTickTickConnected, tickTickProjectId } = useTasks();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
@@ -24,6 +26,13 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
   const [tags, setTags] = useState<string[]>(['Task']);
   const [isLoading, setIsLoading] = useState(false);
   const [titleTouched, setTitleTouched] = useState(false);
+  const [taskSource, setTaskSource] = useState<'local' | 'ticktick'>('local');
+
+  useEffect(() => {
+    if (!isTickTickConnected) {
+      setTaskSource('local');
+    }
+  }, [isTickTickConnected]);
 
   if (!isOpen) return null;
 
@@ -51,16 +60,33 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
       return;
     }
 
+    if (taskSource === 'ticktick' && !tickTickProjectId) {
+      console.error("TickTick Project ID is not set. Cannot create task in TickTick.");
+      alert("Please select a TickTick project in settings first.");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      addTask({
-        title: title.trim(),
-        description: description.trim(),
-        priority,
-        dueDate: dueDate ? new Date(dueDate).toISOString() : null,
-        tags
-      });
+      if (taskSource === 'ticktick' && tickTickProjectId) {
+        const tickTickTaskData: Partial<TickTickTask> = {
+          title: title.trim(),
+          content: description.trim(),
+          priority: priority === 'low' ? 1 : priority === 'medium' ? 3 : 5,
+          dueDate: dueDate ? formatTickTickDate(new Date(dueDate)) : undefined,
+          tags: tags.filter(t => t !== 'Task')
+        };
+        await createTickTickTask(tickTickProjectId, tickTickTaskData);
+      } else {
+        await addTask({
+          title: title.trim(),
+          description: description.trim(),
+          priority,
+          dueDate: dueDate ? new Date(dueDate).toISOString() : null,
+          tags
+        });
+      }
 
       onClose();
     } catch (error) {
@@ -231,6 +257,49 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
                 </div>
               </div>
 
+              {/* Task Source Selector (if TickTick is connected) */}
+              {isTickTickConnected && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium" style={{ color: colors.textSecondary }}>
+                    Save Task To
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setTaskSource('local')}
+                      disabled={isLoading}
+                      style={{
+                        backgroundColor: taskSource === 'local' ? `${colors.accent}20` : colors.surface,
+                        color: taskSource === 'local' ? colors.accent : colors.textSecondary,
+                        borderColor: taskSource === 'local' ? colors.accent : colors.border,
+                        '--hover-bg': colors.surfaceHover,
+                      } as React.CSSProperties}
+                      className="flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[--hover-bg] flex items-center justify-center gap-2"
+                    >
+                      <Server className="w-4 h-4" /> Local
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTaskSource('ticktick')}
+                      disabled={isLoading || !tickTickProjectId}
+                      style={{
+                        backgroundColor: taskSource === 'ticktick' ? `#4CAF5020` : colors.surface,
+                        color: taskSource === 'ticktick' ? `#4CAF50` : colors.textSecondary,
+                        borderColor: taskSource === 'ticktick' ? `#4CAF50` : colors.border,
+                        '--hover-bg': colors.surfaceHover,
+                      } as React.CSSProperties}
+                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[--hover-bg] flex items-center justify-center gap-2 ${!tickTickProjectId ? 'cursor-not-allowed' : ''}`}
+                      title={!tickTickProjectId ? "Connect TickTick and select a project in Settings" : ""}
+                    >
+                      <CheckCircle className="w-4 h-4" /> TickTick
+                    </button>
+                  </div>
+                  {!tickTickProjectId && (
+                    <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">A TickTick project must be selected in settings to save tasks there.</p>
+                  )}
+                </div>
+              )}
+
               {/* Tags Section */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -335,7 +404,7 @@ export function NewTaskModal({ isOpen, onClose }: NewTaskModalProps) {
                     Creating...
                   </>
                 ) : (
-                  'Create Task'
+                  taskSource === 'ticktick' ? 'Create in TickTick' : 'Create Local Task'
                 )}
               </button>
             </div>

@@ -360,6 +360,19 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     }
   }, [fetchTickTickTasks]);
 
+  const createTickTickTask = useCallback(async (projectId: string, taskData: Partial<TickTickTask>): Promise<TickTickTask | null> => {
+    try {
+      const createdTask = await integrationsService.createTickTickTask(projectId, taskData);
+      // Refresh TickTick tasks after creation
+      await fetchTickTickTasks();
+      return createdTask;
+    } catch (error) {
+      console.error('Failed to create TickTick task:', error);
+      setTickTickError('Failed to create task in TickTick.');
+      return null;
+    }
+  }, [fetchTickTickTasks]);
+
   const contextValue = useMemo(() => ({
     tasks,
     isLoading,
@@ -385,6 +398,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     updateTickTickTask,
     completeTickTickTask,
     deleteTickTickTask,
+    createTickTickTask,
   }), [
     tasks,
     isLoading,
@@ -410,6 +424,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     updateTickTickTask,
     completeTickTickTask,
     deleteTickTickTask,
+    createTickTickTask,
   ]);
 
   return (
