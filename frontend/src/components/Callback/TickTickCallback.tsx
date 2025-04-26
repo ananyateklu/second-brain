@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { integrationsService } from '../../services/api/integrations.service';
+import { useTasks } from '../../contexts/tasksContextUtils';
 
 // Exchanges the authorization code for TickTick tokens via backend
 const exchangeTickTickCodeForTokens = async (code: string): Promise<{ success: boolean }> => {
@@ -17,6 +18,7 @@ const exchangeTickTickCodeForTokens = async (code: string): Promise<{ success: b
 export function TickTickCallback() {
     const location = useLocation();
     const navigate = useNavigate();
+    const { refreshTickTickConnection } = useTasks();
     const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
     const [error, setError] = useState<string | null>(null);
 
@@ -47,8 +49,9 @@ export function TickTickCallback() {
                 const result = await exchangeTickTickCodeForTokens(code);
                 if (result.success) {
                     setStatus('success');
-                    // TODO: Update global state or context to reflect connection status
-                    console.log('TickTick connected successfully!');
+                    // Update global state or context to reflect connection status
+                    await refreshTickTickConnection();
+                    console.log('TickTick connected successfully and context updated!');
                     // Redirect back to settings page after a short delay
                     setTimeout(() => {
                         navigate('/dashboard/settings?integration_status=ticktick_success'); // Add param to potentially show success message
@@ -70,7 +73,7 @@ export function TickTickCallback() {
         };
 
         handleCallback();
-    }, [location, navigate]);
+    }, [location, navigate, refreshTickTickConnection]);
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-[var(--color-background)] text-[var(--color-text)]">

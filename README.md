@@ -57,7 +57,11 @@ Second Brain is an AI-enhanced knowledge management and note-taking system that 
 - Task dependency visualization and tracking
 - Linking tasks to notes, ideas, and reference materials
 - Progress tracking and completion status management
-- **TickTick Integration**: Sync tasks with your TickTick account.
+- **TickTick Integration**:
+  - Connect your TickTick account via OAuth 2.0.
+  - Create, view, update, and complete TickTick tasks directly within Second Brain.
+  - Synchronize tasks between Second Brain and a selected TickTick project (two-way, one-way).
+  - Configure synchronization direction and conflict resolution strategies.
 
 ### AI Integration
 
@@ -121,7 +125,6 @@ Second Brain is an AI-enhanced knowledge management and note-taking system that 
 - **.NET SDK 8.0**
 - **SQL Server 2019+**
 - **TickTick Developer Account**: Credentials (Client ID, Client Secret) required for TickTick integration.
-
 
 ## Getting Started
 
@@ -348,6 +351,10 @@ The application provides RESTful API endpoints for various resources. Below is a
   - `POST /api/integrations/ticktick/projects/{projectId}/tasks` - Create a new task in a specific TickTick project
   - `POST /api/integrations/ticktick/tasks/{projectId}/{taskId}/complete` - Mark a TickTick task as complete
   - `DELETE /api/integrations/ticktick/tasks/{projectId}/{taskId}` - Delete a specific TickTick task
+  - `POST /api/integrations/ticktick/sync` - Synchronize tasks between Second Brain and TickTick
+  - `GET /api/integrations/ticktick/sync/status` - Get synchronization status and statistics
+  - `GET /api/integrations/ticktick/task-mappings` - Retrieve task mappings between local and TickTick tasks
+  - `POST /api/integrations/ticktick/sync/reset` - Reset synchronization data (removes mappings)
 
 ## Content Linking Features
 
@@ -376,7 +383,7 @@ All connections are bi-directional and support:
 - **Soft Delete**: Entities use soft delete with query filters
 - **Context Dependencies**: The nested context structure creates complex dependencies
 - **Token Refresh**: JWT tokens refresh automatically with rotation for security
-- **TickTick Sync**: Task data is synced with TickTick, subject to API rate limits and potential inconsistencies.
+- **TickTick Sync**: Task data can be synced with TickTick, subject to API rate limits and potential inconsistencies. Supports configurable sync direction and conflict resolution.
 
 ## Future Improvements
 

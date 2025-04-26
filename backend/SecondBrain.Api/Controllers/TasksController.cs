@@ -101,6 +101,9 @@ namespace SecondBrain.Api.Controllers
             }
 
             var deletedTasks = await _context.Tasks
+                .IgnoreQueryFilters()
+                .Include(t => t.TaskLinks.Where(tl => !tl.IsDeleted))
+                    .ThenInclude(tl => tl.LinkedItem)
                 .Where(t => t.UserId == userId && t.IsDeleted)
                 .ToListAsync();
 

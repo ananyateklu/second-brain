@@ -217,15 +217,20 @@ export const integrationsService = {
     /**
      * Get sync status and statistics
      */
-    async getTickTickSyncStatus(): Promise<{
+    async getTickTickSyncStatus(projectId?: string): Promise<{
         lastSynced: string | null;
         taskCount: { local: number; tickTick: number; mapped: number };
     }> {
         try {
+            // Construct endpoint with projectId if provided
+            const endpoint = projectId
+                ? `/api/integrations/ticktick/sync/status?projectId=${projectId}`
+                : '/api/integrations/ticktick/sync/status';
+
             const response = await api.get<{
                 lastSynced: string | null;
                 taskCount: { local: number; tickTick: number; mapped: number };
-            }>('/api/integrations/ticktick/sync/status');
+            }>(endpoint);
 
             return response.data;
         } catch (error) {
