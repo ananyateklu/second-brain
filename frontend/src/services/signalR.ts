@@ -100,6 +100,10 @@ export class SignalRService {
       this.reconnectAttempts = 0;
       this.reregisterEvents();
       this.notifyStateChange('connected');
+
+      // Dispatch a custom event for components to react to reconnection
+      const reconnectEvent = new CustomEvent('signalr:reconnected');
+      window.dispatchEvent(reconnectEvent);
     });
 
     this.connection.onclose((error) => {

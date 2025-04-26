@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
-import { CheckSquare, Plus, Search, SlidersHorizontal, LayoutGrid, List, Copy } from 'lucide-react';
+import { useState, useRef, useEffect, useMemo } from 'react';
+import { CheckSquare, Plus, Search, SlidersHorizontal, Copy, Server, Cloud, AlertCircle, Settings, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTasks } from '../../../contexts/tasksContextUtils';
 import { NewTaskModal } from './NewTaskModal';
@@ -7,79 +7,285 @@ import { TaskFilters } from './TaskFilters';
 import { Input } from '../../shared/Input';
 import { TaskCard } from './TaskCard';
 import { EditTaskModal } from './EditTaskModal';
-import { Task } from '../../../api/types/task';
+import { Task, TaskPriority, TaskStatus } from '../../../api/types/task';
+import { TickTickTask } from '../../../types/integrations';
 import { cardGridStyles } from '../shared/cardStyles';
 import { cardVariants } from '../../../utils/welcomeBarUtils';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { DuplicateItemsModal } from '../../shared/DuplicateItemsModal';
+import { integrationsService } from '../../../services/api/integrations.service';
+import { Modal } from '../../shared/Modal';
+
+// Modal for TickTick project settings
+function TickTickSettingsModal({
+  isOpen,
+  onClose,
+  projectId,
+  onSave
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  projectId: string;
+  onSave: (projectId: string) => void;
+}) {
+  const [newProjectId, setNewProjectId] = useState(projectId);
+  const [tickTickProjects, setTickTickProjects] = useState<Array<{ id: string; name: string; color?: string }>>([]);
+  const [isLoadingProjects, setIsLoadingProjects] = useState(false);
+  const [projectError, setProjectError] = useState<string | null>(null);
+
+  // Fetch TickTick projects when modal opens
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        setIsLoadingProjects(true);
+        setProjectError(null);
+        const projects = await integrationsService.getTickTickProjects();
+        setTickTickProjects(projects);
+      } catch (error) {
+        console.error('Failed to fetch TickTick projects:', error);
+        setProjectError('Failed to load projects. Please try again.');
+      } finally {
+        setIsLoadingProjects(false);
+      }
+    };
+
+    if (isOpen) {
+      fetchProjects();
+    }
+  }, [isOpen]);
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="TickTick Settings">
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Select TickTick Project
+          </label>
+          {isLoadingProjects ? (
+            <div className="flex items-center justify-center p-4">
+              <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
+              <span className="ml-2 text-sm text-gray-500">Loading projects...</span>
+            </div>
+          ) : projectError ? (
+            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-md text-red-600 dark:text-red-400 text-sm">
+              {projectError}
+            </div>
+          ) : tickTickProjects.length === 0 ? (
+            <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-800 rounded-md text-yellow-600 dark:text-yellow-400 text-sm">
+              No projects found in your TickTick account.
+            </div>
+          ) : (
+            <select
+              value={newProjectId}
+              onChange={(e) => setNewProjectId(e.target.value)}
+              className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+            >
+              <option value="">-- Select a project --</option>
+              {tickTickProjects.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.name}
+                </option>
+              ))}
+            </select>
+          )}
+
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Choose which TickTick project to sync with your Second Brain.
+          </p>
+        </div>
+
+        <div className="flex justify-end space-x-2 pt-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => onSave(newProjectId)}
+            disabled={isLoadingProjects}
+            className={`px-4 py-2 rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none ${isLoadingProjects ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            Save
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+type TaskWithSource = Task & { source: 'local' | 'ticktick' };
+
+function mapTickTickPriority(tickTickPriority: number): TaskPriority {
+  if (tickTickPriority >= 5) return 'high';
+  if (tickTickPriority >= 3) return 'medium';
+  if (tickTickPriority >= 1) return 'low';
+  return 'low';
+}
+
+function mapTickTickStatus(tickTickStatus: number): TaskStatus {
+  return tickTickStatus === 2 ? 'Completed' : 'Incomplete';
+}
+
+function mapTickTickToLocalTask(tickTickTask: TickTickTask): TaskWithSource {
+  return {
+    id: `ticktick-${tickTickTask.id}`,
+    title: tickTickTask.title,
+    description: tickTickTask.content || tickTickTask.description || '',
+    status: mapTickTickStatus(tickTickTask.status),
+    priority: mapTickTickPriority(tickTickTask.priority),
+    dueDate: tickTickTask.dueDate || null,
+    tags: tickTickTask.tags || [],
+    linkedItems: [],
+    createdAt: tickTickTask.createdTime || new Date().toISOString(),
+    updatedAt: tickTickTask.modifiedTime || new Date().toISOString(),
+    source: 'ticktick',
+  };
+}
 
 export function TasksPage() {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const selectedTaskIdRef = useRef<string | null>(null);
   const [showEditModal, setShowEditModal] = useState<boolean>(() => {
-    // Initialize from local storage if available
     const stored = localStorage.getItem('taskEditModalOpen');
     return stored === 'true';
   });
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [selectedTask, setSelectedTask] = useState<TaskWithSource | null>(null);
+  const [showTickTickSettings, setShowTickTickSettings] = useState(false);
+  const [currentTickTickProject, setCurrentTickTickProject] = useState<{ id: string; name: string } | null>(null);
 
-  const { tasks, duplicateTasks } = useTasks();
+  const {
+    tasks,
+    duplicateTasks,
+    tickTickTasks,
+    tickTickError,
+    isTickTickConnected,
+    fetchTickTickTasks,
+    tickTickProjectId,
+    updateTickTickProjectId
+  } = useTasks();
+
   const { theme } = useTheme();
   const [showNewTaskModal, setShowNewTaskModal] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode] = useState<'grid' | 'list'>('grid');
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [taskSourceFilter, setTaskSourceFilter] = useState<'all' | 'local' | 'ticktick'>('all');
   const [filters, setFilters] = useState({
     status: 'all',
     priority: 'all',
     dueDate: 'all'
   });
 
-  const completedTasks = tasks.filter((task: Task) => task && task.status === 'Completed').length;
+  const mappedTickTickTasks: TaskWithSource[] = useMemo(() =>
+    tickTickTasks.map(mapTickTickToLocalTask),
+    [tickTickTasks]
+  );
 
-  // Update selectedTask when tasks or selectedTaskId changes
+  const localTasksWithSource: TaskWithSource[] = useMemo(() =>
+    tasks.map(task => ({ ...task, source: 'local' })),
+    [tasks]
+  );
+
+  const filteredTasks = useMemo(() => {
+    let combinedTasks: TaskWithSource[] = [];
+
+    if (taskSourceFilter === 'all') {
+      combinedTasks = [...localTasksWithSource, ...mappedTickTickTasks];
+    } else if (taskSourceFilter === 'local') {
+      combinedTasks = localTasksWithSource;
+    } else if (taskSourceFilter === 'ticktick') {
+      combinedTasks = mappedTickTickTasks;
+    }
+
+    const uniqueTasksMap = new Map<string, TaskWithSource>();
+    combinedTasks.forEach(task => {
+      const originalId = task.source === 'ticktick' ? task.id.replace('ticktick-', '') : task.id;
+      if (!uniqueTasksMap.has(originalId) || task.source === 'local') {
+        uniqueTasksMap.set(originalId, task);
+      }
+    });
+    const uniqueTasks = Array.from(uniqueTasksMap.values());
+
+    return uniqueTasks.filter(task => {
+      if (!task || typeof task.title !== 'string' || typeof task.description !== 'string') {
+        return false;
+      }
+      const lowerSearch = searchQuery.toLowerCase();
+      const matchesSearch =
+        task.title.toLowerCase().includes(lowerSearch) ||
+        (task.description && task.description.toLowerCase().includes(lowerSearch));
+
+      const matchesStatus = filters.status === 'all' || task.status.toLowerCase() === filters.status.toLowerCase();
+      const matchesPriority = filters.priority === 'all' || task.priority.toLowerCase() === filters.priority.toLowerCase();
+
+      let matchesDueDate = true;
+      if (filters.dueDate !== 'all') {
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        const dueDate = task.dueDate ? new Date(task.dueDate) : null;
+        if (dueDate) dueDate.setHours(0, 0, 0, 0);
+
+        switch (filters.dueDate) {
+          case 'today': matchesDueDate = dueDate?.getTime() === today.getTime(); break;
+          case 'week': { const week = new Date(today); week.setDate(today.getDate() + 7); matchesDueDate = dueDate ? dueDate <= week : false; break; }
+          case 'overdue': matchesDueDate = dueDate ? dueDate < today : false; break;
+          case 'no-date': matchesDueDate = !dueDate; break;
+        }
+      }
+      return matchesSearch && matchesStatus && matchesPriority && matchesDueDate;
+    });
+  }, [taskSourceFilter, searchQuery, filters, localTasksWithSource, mappedTickTickTasks]);
+
+  const completedTasksCount = filteredTasks.filter(task => task.status === 'Completed').length;
+
   useEffect(() => {
     if (selectedTaskId) {
-      const task = tasks.find((t: Task) => t.id === selectedTaskId);
+      const task = filteredTasks.find(t => t.id === selectedTaskId);
       if (task) {
         setSelectedTask(task);
-        setShowEditModal(true);
-        localStorage.setItem('taskEditModalOpen', 'true');
-        localStorage.setItem('selectedTaskId', selectedTaskId);
-        selectedTaskIdRef.current = selectedTaskId;
+        if (task.source === 'local') {
+          setShowEditModal(true);
+          localStorage.setItem('taskEditModalOpen', 'true');
+          localStorage.setItem('selectedTaskId', selectedTaskId);
+          selectedTaskIdRef.current = selectedTaskId;
+        } else {
+          console.log("Selected TickTick task (read-only):", task);
+          alert("Viewing TickTick tasks directly is not yet supported. Editing is disabled.");
+          setSelectedTaskId(null);
+        }
+      } else {
+        setSelectedTask(null);
+        setShowEditModal(false);
+        setSelectedTaskId(null);
+        selectedTaskIdRef.current = null;
+        localStorage.removeItem('taskEditModalOpen');
+        localStorage.removeItem('selectedTaskId');
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedTaskId]);  // Intentionally omitting 'tasks' to prevent modal from closing on task updates
+  }, [selectedTaskId, filteredTasks]);
 
-  // This separate effect handles updates to the selected task
   useEffect(() => {
     if (selectedTaskIdRef.current) {
-      const task = tasks.find((t: Task) => t.id === selectedTaskIdRef.current);
+      const task = filteredTasks.find(t => t.id === selectedTaskIdRef.current);
       if (task) {
         setSelectedTask(task);
+      } else {
+        handleCloseEditModal();
       }
     }
-  }, [tasks]);  // This will update the task when tasks change, but won't toggle the modal
+  }, [filteredTasks]);
 
-  // Check localStorage on component mount
   useEffect(() => {
     const modalOpen = localStorage.getItem('taskEditModalOpen') === 'true';
     const storedTaskId = localStorage.getItem('selectedTaskId');
 
-    if (modalOpen && storedTaskId) {
-      const task = tasks.find((t: Task) => t.id === storedTaskId);
-      if (task) {
-        setSelectedTaskId(storedTaskId);
-        setSelectedTask(task);
-        setShowEditModal(true);
-        selectedTaskIdRef.current = storedTaskId;
-      }
+    if (modalOpen && storedTaskId && !selectedTaskId) {
+      setSelectedTaskId(storedTaskId);
     }
-  }, [tasks]);
+  }, [selectedTaskId]);
 
-  const handleTaskClick = (task: Task) => {
+  const handleTaskClick = (task: Task & { source?: 'local' | 'ticktick' }) => {
     setSelectedTaskId(task.id);
   };
 
@@ -97,26 +303,93 @@ export function TasksPage() {
     return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]';
   };
 
-  const getViewModeButtonClass = (mode: 'grid' | 'list', currentMode: string) => {
+  const getSourceFilterButtonClass = (mode: 'all' | 'local' | 'ticktick', currentMode: string) => {
     const baseClasses = `
-      p-2 rounded-lg 
+      flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm
       border-[0.5px] border-white/10
       backdrop-blur-xl 
       ring-1 ring-white/5
       transition-all duration-200
       hover:-translate-y-0.5
       shadow-sm hover:shadow-md
+      whitespace-nowrap
     `;
-
     if (currentMode === mode) {
-      return `${baseClasses} bg-green-500/20 text-green-600 dark:text-green-400 midnight:text-green-300`;
+      return `${baseClasses} bg-green-500/20 text-green-600 dark:text-green-400 midnight:text-green-300 font-medium`;
     }
-
     return `${baseClasses} ${getContainerBackground()} hover:bg-[var(--color-surfaceHover)] text-[var(--color-text)]`;
   };
 
+  const handleSaveTickTickProjectId = async (newProjectId: string) => {
+    try {
+      await updateTickTickProjectId(newProjectId);
+      setShowTickTickSettings(false);
+    } catch (error) {
+      console.error('Failed to update TickTick project ID:', error);
+    }
+  };
+
+  // Fetch TickTick project name when projectId changes or component loads
+  useEffect(() => {
+    const fetchTickTickProjectName = async () => {
+      if (!isTickTickConnected || !tickTickProjectId) {
+        setCurrentTickTickProject(null);
+        return;
+      }
+
+      try {
+        const projects = await integrationsService.getTickTickProjects();
+        const project = projects.find(p => p.id === tickTickProjectId);
+        if (project) {
+          setCurrentTickTickProject({ id: project.id, name: project.name });
+        } else {
+          setCurrentTickTickProject({ id: tickTickProjectId, name: 'Unknown Project' });
+        }
+      } catch (error) {
+        console.error('Error fetching TickTick project name:', error);
+        setCurrentTickTickProject({ id: tickTickProjectId, name: 'Unknown Project' });
+      }
+    };
+
+    fetchTickTickProjectName();
+  }, [isTickTickConnected, tickTickProjectId]);
+
   const renderTaskContent = () => {
-    if (tasks.length === 0) {
+    if (tickTickError && (taskSourceFilter === 'all' || taskSourceFilter === 'ticktick')) {
+      return (
+        <div className="flex flex-col items-center justify-center h-[400px] text-center text-red-500">
+          <AlertCircle className="w-12 h-12 mb-4" />
+          <h3 className="text-lg font-medium mb-2">Error Loading TickTick Tasks</h3>
+          <p className="text-sm max-w-md mb-4">{tickTickError}</p>
+          <button
+            onClick={fetchTickTickTasks}
+            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      );
+    }
+
+    if (taskSourceFilter === 'ticktick' && !isTickTickConnected) {
+      return (
+        <div className="flex flex-col items-center justify-center h-[400px] text-center">
+          <Server className="w-12 h-12 mb-4 text-gray-400" />
+          <h3 className="text-lg font-medium mb-2">TickTick Not Connected</h3>
+          <p className="text-sm max-w-md mb-4">
+            You need to connect your TickTick account to view tasks here.
+          </p>
+          <a
+            href="/dashboard/settings/integrations"
+            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+          >
+            Connect TickTick
+          </a>
+        </div>
+      );
+    }
+
+    if (filteredTasks.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center h-[400px] text-center">
           <CheckSquare className="w-16 h-16 text-green-400/50 dark:text-green-500/30 mb-4" />
@@ -125,57 +398,110 @@ export function TasksPage() {
           </h3>
           <p className="text-[var(--color-textSecondary)] max-w-md">
             {searchQuery || Object.values(filters).some(v => v !== 'all')
-              ? "Try adjusting your filters to find what you're looking for."
-              : "Start organizing your tasks! Click the 'New Task' button to create your first task."}
+              ? "Try adjusting your filters or changing the task source."
+              : `No ${taskSourceFilter !== 'all' ? taskSourceFilter : ''} tasks found. Click 'New Task' to create one.`}
           </p>
         </div>
       );
     }
 
-    if (viewMode === 'grid') {
-      return (
-        <div className={cardGridStyles}>
-          {tasks.map((task: Task) => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              viewMode="grid"
-              onClick={handleTaskClick}
-            />
-          ))}
-        </div>
-      );
-    }
+    const commonCardProps = (task: TaskWithSource) => ({
+      key: task.id,
+      task: task,
+      viewMode: viewMode,
+      onClick: handleTaskClick,
+      isTickTick: task.source === 'ticktick'
+    });
 
     return (
-      <div className="space-y-4 px-0.5">
-        {tasks.map((task: Task) => (
-          <TaskCard
-            key={task.id}
-            task={task}
-            viewMode="list"
-            onClick={handleTaskClick}
-          />
-        ))}
+      <div className={cardGridStyles}>
+        {filteredTasks.map(task => <TaskCard {...commonCardProps(task)} />)}
       </div>
     );
   };
 
   const handleDuplicateTasks = async (selectedIds: string[]) => {
     try {
-      await duplicateTasks(selectedIds);
+      const localTaskIds = selectedIds.filter(id => !id.startsWith('ticktick-'));
+      if (localTaskIds.length > 0) {
+        await duplicateTasks(localTaskIds);
+      } else {
+        alert("Cannot duplicate tasks imported from TickTick.");
+      }
     } catch (error) {
       console.error('Failed to duplicate tasks:', error);
     }
   };
 
+  const renderTickTickFilterSection = () => {
+    if (!isTickTickConnected) return null;
+
+    return (
+      <div className="mt-4">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="font-medium text-[var(--color-text)]">TickTick Project</h3>
+          <button
+            onClick={() => setShowTickTickSettings(true)}
+            className="text-sm flex items-center text-[var(--color-primary)] hover:text-[var(--color-primaryDark)]"
+          >
+            <Settings className="w-3.5 h-3.5 mr-1" />
+            Change Project
+          </button>
+        </div>
+
+        <div className="p-3 rounded-md bg-[var(--color-surface)] border border-[var(--color-border)]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between">
+            <div className="mb-2 sm:mb-0">
+              <span className="text-sm text-[var(--color-textSecondary)]">Current: </span>
+              <span className="font-medium text-[var(--color-text)]">
+                {currentTickTickProject?.name || 'All Projects'}
+              </span>
+            </div>
+            <div className="flex space-x-2">
+              {getTaskSourceFilterButtons()}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const getTaskSourceFilterButtons = () => {
+    return (
+      <>
+        <button
+          onClick={() => setTaskSourceFilter('all')}
+          className={getSourceFilterButtonClass('all', taskSourceFilter)}
+          title="Show All Tasks"
+        >
+          <Cloud className="w-4 h-4" /> All
+        </button>
+        <button
+          onClick={() => setTaskSourceFilter('local')}
+          className={getSourceFilterButtonClass('local', taskSourceFilter)}
+          title="Show Local Tasks Only"
+        >
+          <Server className="w-4 h-4" /> Local
+        </button>
+        <button
+          onClick={() => setTaskSourceFilter('ticktick')}
+          className={getSourceFilterButtonClass('ticktick', taskSourceFilter)}
+          title="Show TickTick Tasks Only"
+        >
+          {/* Placeholder TickTick Icon */}
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" /></svg>
+          TickTick
+        </button>
+      </>
+    );
+  };
+
   return (
     <div className="min-h-screen overflow-visible bg-fixed">
-      {/* Background */}
       <div className="fixed inset-0 bg-[var(--color-background)] -z-10" />
 
-      <div className="space-y-8 relative w-full">
-        {/* Header */}
+      <div className="space-y-6 relative w-full">
+        {/* Header with Search */}
         <motion.div
           initial="hidden"
           animate="visible"
@@ -208,7 +534,7 @@ export function TasksPage() {
               <div className="space-y-1">
                 <h1 className="text-2xl font-bold text-[var(--color-text)]">Tasks</h1>
                 <p className="text-sm text-[var(--color-textSecondary)]">
-                  {completedTasks} of {tasks.length} tasks completed
+                  {completedTasksCount} of {filteredTasks.length} tasks displayed
                 </p>
               </div>
             </motion.div>
@@ -249,67 +575,27 @@ export function TasksPage() {
               </div>
             </motion.div>
           </div>
-        </motion.div>
 
-        {/* Search and View Controls */}
-        <motion.div
-          variants={cardVariants}
-          className="flex flex-col sm:flex-row gap-4"
-        >
-          <div className="flex-1">
-            <Input
-              label=""
-              icon={Search}
-              type="text"
-              placeholder="Search tasks..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full"
-            />
+          {/* Search and Filter Controls */}
+          <div className="mt-6 flex flex-col sm:flex-row gap-4 items-center">
+            <div className="flex-1 w-full sm:w-auto">
+              <Input
+                label=""
+                icon={Search}
+                type="text"
+                placeholder="Search tasks..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full"
+              />
+            </div>
           </div>
 
-          <motion.div
-            variants={cardVariants}
-            className="flex gap-2"
-          >
-            <button
-              onClick={() => setShowFilters(prev => !prev)}
-              className={`
-                flex items-center gap-2 px-4 py-2 rounded-lg 
-                border-[0.5px] border-white/10
-                ${getContainerBackground()}
-                backdrop-blur-xl 
-                ring-1 ring-white/5
-                hover:bg-[var(--color-surfaceHover)]
-                text-[var(--color-text)]
-                transition-all duration-200
-                hover:-translate-y-0.5
-                shadow-sm hover:shadow-md
-              `}
-            >
-              <SlidersHorizontal className="w-4 h-4" />
-              <span className="font-medium text-sm">Filters</span>
-            </button>
-
-            <button
-              onClick={() => setViewMode('grid')}
-              className={getViewModeButtonClass('grid', viewMode)}
-              title="Grid View"
-            >
-              <LayoutGrid className="w-5 h-5" />
-            </button>
-
-            <button
-              onClick={() => setViewMode('list')}
-              className={getViewModeButtonClass('list', viewMode)}
-              title="List View"
-            >
-              <List className="w-5 h-5" />
-            </button>
-          </motion.div>
+          {/* TickTick Project Info */}
+          {isTickTickConnected && renderTickTickFilterSection()}
         </motion.div>
 
-        {/* Filters Panel */}
+        {/* Filters Panel (if enabled) */}
         {showFilters && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -398,6 +684,13 @@ export function TasksPage() {
           items={tasks}
           onDuplicate={handleDuplicateTasks}
           itemType="task"
+        />
+
+        <TickTickSettingsModal
+          isOpen={showTickTickSettings}
+          onClose={() => setShowTickTickSettings(false)}
+          projectId={tickTickProjectId}
+          onSave={handleSaveTickTickProjectId}
         />
       </div>
     </div>

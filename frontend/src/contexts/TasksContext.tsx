@@ -1,15 +1,59 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { TasksContext } from './tasksContextUtils';
 import type { Task, UpdateTaskDto } from '../api/types/task';
+import { TickTickTask } from '../types/integrations';
 import { useAuth } from '../hooks/useAuth';
 import { useActivities } from './activityContextUtils';
 import { tasksService, TaskLinkData, CreateTaskData } from '../services/api/tasks.service';
+import { integrationsService } from '../services/api/integrations.service';
 
 export function TasksProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth();
   const { createActivity } = useActivities();
+
+  const [tickTickTasks, setTickTickTasks] = useState<TickTickTask[]>([]);
+  const [isTickTickLoading, setIsTickTickLoading] = useState(false);
+  const [tickTickError, setTickTickError] = useState<string | null>(null);
+  const [isTickTickConnected, setIsTickTickConnected] = useState<boolean>(() => {
+    const stored = localStorage.getItem('ticktick_connected');
+    return stored === 'true';
+  });
+  const [tickTickProjectId, setTickTickProjectId] = useState<string>(() => {
+    return localStorage.getItem('ticktick_project_id') || '';
+  });
+
+  // Persist TickTick connection status to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('ticktick_connected', isTickTickConnected.toString());
+  }, [isTickTickConnected]);
+
+  // Persist TickTick project ID to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('ticktick_project_id', tickTickProjectId);
+  }, [tickTickProjectId]);
+
+  // Check TickTick connection status
+  const checkTickTickStatus = useCallback(async (forceCheck: boolean = false) => {
+    try {
+      // Skip network request if we already know we're connected and this isn't a forced check
+      if (isTickTickConnected && !forceCheck) {
+        return;
+      }
+
+      const status = await integrationsService.getTickTickStatus(isTickTickConnected);
+
+      // Only update the state if it's different from current state or we're forcing a check
+      if (status.isConnected !== isTickTickConnected || forceCheck) {
+        console.log(`TickTick connection status changed: ${isTickTickConnected} → ${status.isConnected}`);
+        setIsTickTickConnected(status.isConnected);
+      }
+    } catch (error) {
+      console.error('Failed to check TickTick connection status:', error);
+      // Don't change state on errors to avoid flickering during network issues
+    }
+  }, [isTickTickConnected]);
 
   const fetchTasks = useCallback(async () => {
     if (!user) return;
@@ -18,15 +62,67 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
       const fetchedTasks = await tasksService.getTasks();
       setTasks(fetchedTasks);
     } catch (error) {
-      console.error('Failed to fetch tasks:', error);
+      console.error('Failed to fetch local tasks:', error);
     } finally {
       setIsLoading(false);
     }
   }, [user]);
 
+  const fetchTickTickTasks = useCallback(async () => {
+    if (!user || !isTickTickConnected) return;
+    setIsTickTickLoading(true);
+    setTickTickError(null);
+    try {
+      const fetchedTickTickTasks = await integrationsService.getTickTickTasks(tickTickProjectId);
+      setTickTickTasks(fetchedTickTickTasks);
+    } catch (error: unknown) {
+      console.error('Failed to fetch TickTick tasks:', error);
+      let message = "Failed to load TickTick tasks.";
+      if (error instanceof Error) {
+        message = error.message;
+      }
+      setTickTickError(message);
+    } finally {
+      setIsTickTickLoading(false);
+    }
+  }, [user, isTickTickConnected, tickTickProjectId]);
+
+  // Update TickTick project ID and refetch tasks
+  const updateTickTickProjectId = useCallback(async (projectId: string) => {
+    setTickTickProjectId(projectId);
+    // If there's a project ID and we're connected, fetch tasks immediately
+    if (projectId && isTickTickConnected) {
+      await fetchTickTickTasks();
+    }
+  }, [isTickTickConnected, fetchTickTickTasks]);
+
   useEffect(() => {
     fetchTasks();
-  }, [fetchTasks]);
+    if (isTickTickConnected && tickTickProjectId) {
+      fetchTickTickTasks();
+    }
+  }, [fetchTasks, fetchTickTickTasks, isTickTickConnected, tickTickProjectId]);
+
+  // Add a separate effect to check TickTick connection status on mount and when auth changes
+  useEffect(() => {
+    if (user) {
+      // If user is authenticated, validate our localStorage connection status with backend
+      checkTickTickStatus(true); // Force a check on authentication
+
+      // Subscribe to SignalR reconnection events to revalidate TickTick connection
+      const handleReconnect = () => {
+        console.log("SignalR reconnected - validating TickTick connection status");
+        // Delay check slightly to ensure backend services are fully available
+        setTimeout(() => checkTickTickStatus(true), 1000);
+      };
+
+      window.addEventListener('signalr:reconnected', handleReconnect);
+
+      return () => {
+        window.removeEventListener('signalr:reconnected', handleReconnect);
+      };
+    }
+  }, [user, checkTickTickStatus]);
 
   const addTask = useCallback(async (taskData: CreateTaskData) => {
     try {
@@ -95,7 +191,6 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         task.id === data.taskId ? updatedTask : task
       ));
 
-      // Dispatch event to notify note context
       window.dispatchEvent(new Event('taskChange'));
     } catch (error) {
       console.error('Failed to add task link:', error);
@@ -108,7 +203,6 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
       const updatedTask = await tasksService.removeTaskLink(taskId, linkedItemId);
       setTasks(prev => prev.map(task => task.id === taskId ? updatedTask : task));
 
-      // Dispatch event to notify note context
       window.dispatchEvent(new Event('taskChange'));
     } catch (error) {
       console.error('Failed to remove task link:', error);
@@ -185,7 +279,6 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
       const duplicatedTasks = await tasksService.duplicateTasks(taskIds);
       setTasks(prev => [...duplicatedTasks, ...prev]);
 
-      // Log activity for each duplicated task
       for (const task of duplicatedTasks) {
         if (createActivity) {
           createActivity({
@@ -214,6 +307,14 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
   const contextValue = useMemo(() => ({
     tasks,
     isLoading,
+    tickTickTasks,
+    isTickTickLoading,
+    tickTickError,
+    fetchTickTickTasks,
+    isTickTickConnected,
+    refreshTickTickConnection: checkTickTickStatus,
+    tickTickProjectId,
+    updateTickTickProjectId,
     addTask,
     updateTask,
     deleteTask,
@@ -227,6 +328,14 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
   }), [
     tasks,
     isLoading,
+    tickTickTasks,
+    isTickTickLoading,
+    tickTickError,
+    fetchTickTickTasks,
+    isTickTickConnected,
+    checkTickTickStatus,
+    tickTickProjectId,
+    updateTickTickProjectId,
     addTask,
     updateTask,
     deleteTask,
