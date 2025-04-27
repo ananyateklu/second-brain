@@ -17,6 +17,12 @@ const string CORS_POLICY = "AllowFrontend";
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure Kestrel from appsettings.json
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    serverOptions.Configure(builder.Configuration.GetSection("Kestrel"));
+});
+
 // Bind JwtSettings from configuration
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Authentication:Jwt"));
 
