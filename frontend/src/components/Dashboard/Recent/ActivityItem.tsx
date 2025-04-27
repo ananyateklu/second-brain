@@ -1,6 +1,7 @@
 import { Activity } from '../../../api/services/activityService';
 import { getActivityIcon } from './utils';
 import { useTheme } from '../../../contexts/themeContextUtils';
+import { TickTickActivityMeta } from './TickTickActivityMeta';
 
 interface ActivityItemProps {
   activity: Activity;
@@ -36,6 +37,20 @@ interface AIMetadata {
   };
 }
 
+interface TickTickMetadata {
+  projectId?: string;
+  dueDate?: string;
+  priority?: number;
+  tags?: string[];
+  direction?: string;
+  created?: number;
+  updated?: number;
+  deleted?: number;
+  errors?: number;
+  provider?: string;
+  method?: string;
+}
+
 const isAIMetadata = (metadata: unknown): metadata is AIMetadata => {
   if (typeof metadata !== 'object' || !metadata) return false;
   const m = metadata as Record<string, unknown>;
@@ -49,6 +64,10 @@ export function ActivityItem({ activity, onClick }: ActivityItemProps) {
   const isDark = theme === 'dark' || theme === 'midnight' || theme === 'full-dark';
   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
   const isFullDark = theme === 'full-dark';
+
+  const isTickTickRelated = activity.itemType === 'TICKTICK_TASK' ||
+    activity.itemType === 'TICKTICK_INTEGRATION' ||
+    activity.itemType === 'INTEGRATION';
 
   const getContainerBackground = () => {
     if (theme === 'dark' || theme === 'full-dark') return 'bg-gray-900/30';
@@ -122,6 +141,10 @@ export function ActivityItem({ activity, onClick }: ActivityItemProps) {
       dark: 'bg-emerald-500/20 text-emerald-400',
       light: 'bg-emerald-100 text-emerald-600'
     },
+    ticktick_task: {
+      dark: 'bg-pink-500/20 text-pink-400',
+      light: 'bg-pink-100 text-pink-600'
+    },
     reminder: {
       dark: 'bg-purple-500/20 text-purple-400',
       light: 'bg-purple-100 text-purple-600'
@@ -129,6 +152,14 @@ export function ActivityItem({ activity, onClick }: ActivityItemProps) {
     idea: {
       dark: 'bg-amber-500/20 text-amber-400',
       light: 'bg-amber-100 text-amber-600'
+    },
+    integration: {
+      dark: 'bg-cyan-500/20 text-cyan-400',
+      light: 'bg-cyan-100 text-cyan-600'
+    },
+    ticktick_integration: {
+      dark: 'bg-pink-500/20 text-pink-400',
+      light: 'bg-pink-100 text-pink-600'
     },
     ai_chat: {
       dark: 'bg-[#4c9959]/20 text-[#4c9959]',
@@ -147,6 +178,9 @@ export function ActivityItem({ activity, onClick }: ActivityItemProps) {
   const actionTypeColors = {
     create: { dark: 'text-emerald-400', light: 'text-emerald-600' },
     complete: { dark: 'text-emerald-400', light: 'text-emerald-600' },
+    connect: { dark: 'text-cyan-400', light: 'text-cyan-600' },
+    disconnect: { dark: 'text-red-400', light: 'text-red-600' },
+    sync: { dark: 'text-indigo-400', light: 'text-indigo-600' },
     ai_chat_create: { dark: 'text-violet-400', light: 'text-violet-600' },
     ai_message_receive: { dark: 'text-indigo-400', light: 'text-indigo-600' },
     update: { dark: 'text-blue-400', light: 'text-blue-600' },
@@ -243,7 +277,15 @@ export function ActivityItem({ activity, onClick }: ActivityItemProps) {
           {(activity.itemType === 'AI_CHAT' || activity.itemType === 'AI_MESSAGE') &&
             activity.metadata && isAIMetadata(activity.metadata) && renderAIMetadata(activity.metadata)}
 
-          {metadata && activity.itemType !== 'AI_CHAT' && activity.itemType !== 'AI_MESSAGE' && (
+          {isTickTickRelated && activity.metadata && (
+            <TickTickActivityMeta
+              actionType={activity.actionType}
+              itemType={activity.itemType}
+              metadata={activity.metadata as TickTickMetadata}
+            />
+          )}
+
+          {metadata && !isTickTickRelated && activity.itemType !== 'AI_CHAT' && activity.itemType !== 'AI_MESSAGE' && (
             <div className="mt-3 text-sm text-[var(--color-textSecondary)]">
               {metadata.dueDate && (
                 <div>

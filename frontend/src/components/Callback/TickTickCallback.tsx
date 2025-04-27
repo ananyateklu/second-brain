@@ -51,6 +51,7 @@ export function TickTickCallback() {
                     setStatus('success');
                     // Update global state or context to reflect connection status
                     await refreshTickTickConnection();
+
                     console.log('TickTick connected successfully and context updated!');
                     // Redirect back to settings page after a short delay
                     setTimeout(() => {

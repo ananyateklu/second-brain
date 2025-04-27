@@ -1,5 +1,15 @@
 import { Activity } from '../../../api/services/activityService';
-import { FileText, Lightbulb, CheckSquare, Bell, Tag, Bot, MessageSquare } from 'lucide-react';
+import {
+  FileText,
+  CheckSquare,
+  Lightbulb,
+  Bell,
+  MessageSquare,
+  Tag,
+  Settings,
+  Link as LinkIcon,
+  Cloud
+} from 'lucide-react';
 import { ElementType } from 'react';
 
 export function formatTimeAgo(timestamp: string): string {
@@ -61,22 +71,32 @@ export function groupActivitiesByDate(activities: Activity[]): Record<string, Ac
   return groups;
 }
 
-export const getActivityIcon = (itemType: string): ElementType => {
-  switch (itemType.toLowerCase()) {
+export const getActivityIcon = (type: string): ElementType => {
+  const normalizedType = type.toLowerCase();
+
+  switch (normalizedType) {
     case 'note':
       return FileText;
     case 'task':
       return CheckSquare;
+    case 'ticktick_task':
+      return CheckSquare; // Using same icon as regular tasks for consistency
     case 'idea':
       return Lightbulb;
     case 'reminder':
       return Bell;
-    case 'tag':
-      return Tag;
     case 'ai_chat':
-      return Bot;
     case 'ai_message':
       return MessageSquare;
+    case 'tag':
+      return Tag;
+    case 'notelink':
+      return LinkIcon;
+    case 'integration':
+    case 'ticktick_integration':
+      return Cloud;
+    case 'settings':
+      return Settings;
     default:
       return FileText;
   }

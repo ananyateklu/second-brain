@@ -17,7 +17,11 @@ namespace SecondBrain.Api.Enums
         AI_MESSAGE_SEND,
         AI_MESSAGE_RECEIVE,
         AI_CHAT_DELETE,
-        AI_MESSAGE_REACT
+        AI_MESSAGE_REACT,
+        CONNECT,
+        DISCONNECT,
+        SYNC,
+        COMPLETE
     }
 
     public enum ActivityItemType
@@ -26,6 +30,9 @@ namespace SecondBrain.Api.Enums
         IDEA,
         NOTELINK,
         AI_CHAT,
-        AI_MESSAGE
+        AI_MESSAGE,
+        INTEGRATION,
+        TICKTICK_TASK,
+        TICKTICK_INTEGRATION
     }
 }

@@ -274,6 +274,14 @@ export const integrationsService = {
         }
     },
 
-    // Add functions for other integrations or integration actions here later
-    // e.g., getTickTickProjects(), createTickTickTask(), etc.
+    // Helper method to get a task's title - preserved for utility purposes
+    async getTaskTitle(projectId: string, taskId: string): Promise<string> {
+        try {
+            const task = await this.getTickTickTask(projectId, taskId);
+            return task.title;
+        } catch (error) {
+            console.error(`Error getting TickTick task title:`, error);
+            return 'Unknown Task';
+        }
+    }
 }; 
