@@ -10,7 +10,11 @@ import {
   Trash2,
   Link2,
   Star,
-  Calendar
+  Calendar,
+  Cloud,
+  RefreshCw,
+  Link,
+  Check
 } from 'lucide-react';
 
 interface ActivityFiltersProps {
@@ -28,15 +32,21 @@ export function ActivityFilters({ filters, onFilterChange }: ActivityFiltersProp
     { id: 'edit', label: 'Modified', icon: Pencil },
     { id: 'delete', label: 'Deleted', icon: Trash2 },
     { id: 'link', label: 'Linked', icon: Link2 },
-    { id: 'favorite', label: 'Favorited', icon: Star }
+    { id: 'favorite', label: 'Favorited', icon: Star },
+    { id: 'complete', label: 'Completed', icon: Check },
+    { id: 'connect', label: 'Connected', icon: Link },
+    { id: 'sync', label: 'Synced', icon: RefreshCw }
   ];
 
   const itemTypes = [
     { id: 'note', label: 'Notes', icon: FileText },
     { id: 'task', label: 'Tasks', icon: CheckSquare },
+    { id: 'ticktick_task', label: 'TickTick Tasks', icon: CheckSquare },
     { id: 'idea', label: 'Ideas', icon: Lightbulb },
     { id: 'reminder', label: 'Reminders', icon: Bell },
     { id: 'tag', label: 'Tags', icon: Tag },
+    { id: 'integration', label: 'Integrations', icon: Cloud },
+    { id: 'ticktick_integration', label: 'TickTick', icon: Cloud },
     { id: 'settings', label: 'Settings', icon: Settings }
   ];
 

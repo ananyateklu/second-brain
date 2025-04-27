@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using SecondBrain.Api.Models.Integrations;
 using SecondBrain.Api.Services.Interfaces;
+using SecondBrain.Api.Services;
 using SecondBrain.Data;
 using SecondBrain.Data.Entities;
 using System;
@@ -29,19 +30,22 @@ namespace SecondBrain.Api.Controllers
         private readonly IConfiguration _configuration;
         private readonly ILogger<IntegrationsController> _logger;
         private readonly DataContext _context;
+        private readonly IActivityLogger _activityLogger;
 
         public IntegrationsController(
             IIntegrationService integrationService,
             IHttpClientFactory httpClientFactory,
             IConfiguration configuration,
             ILogger<IntegrationsController> logger,
-            DataContext context)
+            DataContext context,
+            IActivityLogger activityLogger)
         {
             _integrationService = integrationService;
             _httpClientFactory = httpClientFactory;
             _configuration = configuration;
             _logger = logger;
             _context = context;
+            _activityLogger = activityLogger;
         }
 
         // Add a new model for sync requests
@@ -83,19 +87,17 @@ namespace SecondBrain.Api.Controllers
         [HttpPost("ticktick/exchange-code")]
         public async Task<IActionResult> ExchangeTickTickCode([FromBody] TickTickCodeExchangeRequest request)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            _logger.LogInformation("TickTick code exchange request from user with ID: {UserId}", userId);
-            
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
             {
-                _logger.LogWarning("TickTick code exchange attempt failed: User ID not found in token.");
-                return Unauthorized(new { message = "User authentication failed." });
+                return Unauthorized(new { error = "Invalid user credentials." });
             }
-
-            if (string.IsNullOrEmpty(request?.Code))
+            
+            // Get the code from the request body
+            var code = request.Code;
+            if (string.IsNullOrEmpty(code))
             {
-                 _logger.LogWarning("TickTick code exchange attempt failed for user {UserId}: Authorization code missing.", userId);
-                return BadRequest(new { message = "Authorization code is required." });
+                return BadRequest(new { error = "Authorization code is required." });
             }
 
             // --- Retrieve Configuration --- 
@@ -117,7 +119,7 @@ namespace SecondBrain.Api.Controllers
             {
                 { "client_id", clientId },
                 { "client_secret", clientSecret },
-                { "code", request.Code },
+                { "code", code },
                 { "grant_type", "authorization_code" },
                 { "redirect_uri", redirectUri },
                 // { "scope", "tasks:read tasks:write" } // Usually needed for auth, not token exchange, but check docs
@@ -164,7 +166,17 @@ namespace SecondBrain.Api.Controllers
                     if (saveSuccess)
                     {
                         _logger.LogInformation("TickTick connection successful and credentials stored for user {UserId}", userId);
-                        return Ok(new { message = "TickTick connected successfully." });
+                        // If successful, log the activity
+                        await _activityLogger.LogActivityAsync(
+                            userId,
+                            "CONNECT",
+                            "INTEGRATION",
+                            "TICKTICK",
+                            "TickTick Integration",
+                            "Connected TickTick account",
+                            new { provider = "TickTick" });
+                        
+                        return Ok(new { success = true });
                     }
                     else
                     {
@@ -203,11 +215,10 @@ namespace SecondBrain.Api.Controllers
         [HttpDelete("ticktick")]
         public async Task<IActionResult> DisconnectTickTick()
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
             {
-                _logger.LogWarning("TickTick disconnect attempt failed: User ID not found in token.");
-                return Unauthorized(new { message = "User authentication failed." });
+                return Unauthorized(new { error = "Invalid user credentials." });
             }
 
             _logger.LogInformation("Attempting to disconnect TickTick for user {UserId}", userId);
@@ -218,7 +229,17 @@ namespace SecondBrain.Api.Controllers
             {
                 _logger.LogInformation("TickTick disconnected successfully for user {UserId}", userId);
                 // TODO: Potentially call TickTick API to revoke the token if their API supports it.
-                return Ok(new { message = "TickTick disconnected successfully." });
+                // If successful, log the activity
+                await _activityLogger.LogActivityAsync(
+                    userId,
+                    "DISCONNECT",
+                    "INTEGRATION",
+                    "TICKTICK",
+                    "TickTick Integration",
+                    "Disconnected TickTick account",
+                    new { provider = "TickTick" });
+                
+                return Ok(new { success = true });
             }
             else
             {
@@ -520,10 +541,10 @@ namespace SecondBrain.Api.Controllers
         [HttpPost("ticktick/tasks/{taskId}")]
         public async Task<IActionResult> UpdateTickTickTask(string taskId, [FromBody] TickTickTask request)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
             {
-                return Unauthorized(new { message = "User authentication failed." });
+                return Unauthorized(new { error = "Invalid user credentials." });
             }
 
             if (string.IsNullOrEmpty(request?.Id) || string.IsNullOrEmpty(request?.ProjectId))
@@ -577,6 +598,21 @@ namespace SecondBrain.Api.Controllers
                     try
                     {
                         var updatedTask = JsonSerializer.Deserialize<TickTickTask>(content);
+                        // Log the activity for task update
+                        await _activityLogger.LogActivityAsync(
+                            userId,
+                            "UPDATE",
+                            "TICKTICK_TASK",
+                            request.Id,
+                            request.Title,
+                            $"Updated TickTick task in project {request.ProjectId}",
+                            new { 
+                                projectId = request.ProjectId,
+                                dueDate = request.DueDate,
+                                priority = request.Priority,
+                                tags = request.Tags
+                            });
+                        
                         return Ok(updatedTask);
                     }
                     catch (JsonException jsonEx)
@@ -621,10 +657,10 @@ namespace SecondBrain.Api.Controllers
         [HttpPost("ticktick/tasks/{projectId}/{taskId}/complete")]
         public async Task<IActionResult> CompleteTickTickTask(string projectId, string taskId)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
             {
-                return Unauthorized(new { message = "User authentication failed." });
+                return Unauthorized(new { error = "Invalid user credentials." });
             }
 
             _logger.LogInformation("Completing TickTick task for user {UserId}. ProjectId: {ProjectId}, TaskId: {TaskId}", 
@@ -656,7 +692,25 @@ namespace SecondBrain.Api.Controllers
                 if (response.IsSuccessStatusCode)
                 {
                     _logger.LogInformation("Successfully completed TickTick task for user {UserId}. TaskId: {TaskId}", userId, taskId);
-                    return Ok(new { message = "Task completed successfully." });
+                    // Get task details for logging - we need the title
+                    // Assuming API response gives us task details or we already have them
+                    var task = await GetTickTickTaskDetails(userId, projectId, taskId);
+                    if (task == null)
+                    {
+                        return NotFound(new { error = "Task not found" });
+                    }
+                    
+                    // Log the activity for task completion
+                    await _activityLogger.LogActivityAsync(
+                        userId,
+                        "COMPLETE",
+                        "TICKTICK_TASK",
+                        taskId,
+                        task.Title,
+                        $"Completed TickTick task in project {projectId}",
+                        new { projectId = projectId });
+                    
+                    return Ok(new { success = true });
                 }
                 else
                 {
@@ -695,10 +749,10 @@ namespace SecondBrain.Api.Controllers
         [HttpDelete("ticktick/tasks/{projectId}/{taskId}")]
         public async Task<IActionResult> DeleteTickTickTask(string projectId, string taskId)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userId))
             {
-                return Unauthorized(new { message = "User authentication failed." });
+                return Unauthorized(new { error = "Invalid user credentials." });
             }
 
             _logger.LogInformation("Deleting TickTick task for user {UserId}. ProjectId: {ProjectId}, TaskId: {TaskId}", 
@@ -730,7 +784,25 @@ namespace SecondBrain.Api.Controllers
                 if (response.IsSuccessStatusCode)
                 {
                     _logger.LogInformation("Successfully deleted TickTick task for user {UserId}. TaskId: {TaskId}", userId, taskId);
-                    return Ok(new { message = "Task deleted successfully." });
+                    // Get task details for logging - we need the title
+                    // Assuming API response gives us task details or we already have them
+                    var task = await GetTickTickTaskDetails(userId, projectId, taskId);
+                    if (task == null)
+                    {
+                        return NotFound(new { error = "Task not found" });
+                    }
+                    
+                    // Log the activity for task deletion
+                    await _activityLogger.LogActivityAsync(
+                        userId,
+                        "DELETE",
+                        "TICKTICK_TASK",
+                        taskId,
+                        task.Title,
+                        $"Deleted TickTick task from project {projectId}",
+                        new { projectId = projectId });
+                    
+                    return Ok(new { success = true });
                 }
                 else
                 {
@@ -771,10 +843,10 @@ namespace SecondBrain.Api.Controllers
         {
             try
             {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (string.IsNullOrEmpty(userId))
                 {
-                    return Unauthorized(new { error = "User ID not found in token." });
+                    return Unauthorized(new { error = "Invalid user credentials." });
                 }
 
                 // Get user's TickTick access token
@@ -815,6 +887,21 @@ namespace SecondBrain.Api.Controllers
                     return StatusCode(500, new { error = "Failed to process response from TickTick after creating task." });
                 }
 
+                // Log the activity for task creation
+                await _activityLogger.LogActivityAsync(
+                    userId,
+                    "CREATE",
+                    "TICKTICK_TASK",
+                    createdTask.Id,
+                    createdTask.Title,
+                    $"Created TickTick task in project {projectId}",
+                    new { 
+                        projectId = projectId,
+                        dueDate = createdTask.DueDate,
+                        priority = createdTask.Priority,
+                        tags = createdTask.Tags
+                    });
+                
                 return CreatedAtAction(nameof(GetTickTickTaskById), new { projectId, taskId = createdTask.Id }, createdTask); // Use correct casing
             }
             catch (Exception ex)
@@ -832,13 +919,13 @@ namespace SecondBrain.Api.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> SyncTickTickTasks([FromBody] TaskSyncRequest request)
         {
-            string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            string? userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             
             try
             {
                 if (string.IsNullOrEmpty(userId))
                 {
-                    return Unauthorized(new { error = "User ID not found in token." });
+                    return Unauthorized(new { error = "Invalid user credentials." });
                 }
                 
                 _logger.LogInformation("Starting task sync for user {UserId} with direction {Direction}", 
@@ -945,6 +1032,23 @@ namespace SecondBrain.Api.Controllers
                 
                 _logger.LogInformation("Completed TickTick task sync for user {UserId}. Created: {Created}, Updated: {Updated}, Deleted: {Deleted}, Errors: {Errors}",
                     userId, result.Created, result.Updated, result.Deleted, result.Errors);
+                
+                // Log the activity for task sync
+                await _activityLogger.LogActivityAsync(
+                    userId,
+                    "SYNC",
+                    "TICKTICK_INTEGRATION",
+                    request.ProjectId,
+                    "TickTick Sync",
+                    $"Synchronized tasks with TickTick ({result.Created} created, {result.Updated} updated, {result.Deleted} deleted)",
+                    new { 
+                        projectId = request.ProjectId,
+                        direction = request.Direction,
+                        created = result.Created,
+                        updated = result.Updated,
+                        deleted = result.Deleted,
+                        errors = result.Errors
+                    });
                 
                 return Ok(result);
             }
@@ -2014,6 +2118,40 @@ namespace SecondBrain.Api.Controllers
             {
                 _logger.LogError(ex, "Unexpected error while fetching TickTick project tasks for user {UserId}, project {ProjectId}", userId, projectId);
                 return null; // Indicate unexpected error
+            }
+        }
+
+        // Helper method to get TickTick task details for logging
+        private async Task<TickTickTask?> GetTickTickTaskDetails(string userId, string projectId, string taskId)
+        {
+            try
+            {
+                var credentials = await _integrationService.GetTickTickCredentialsAsync(userId);
+                if (credentials == null)
+                {
+                    return null;
+                }
+                
+                // Create HTTP client with appropriate headers
+                var client = _httpClientFactory.CreateClient();
+                client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(
+                    "Bearer", credentials.AccessToken);
+                    
+                // Get task details from TickTick API
+                var response = await client.GetAsync($"https://api.ticktick.com/open/v1/project/{projectId}/task/{taskId}");
+                if (!response.IsSuccessStatusCode)
+                {
+                    return null;
+                }
+                
+                var content = await response.Content.ReadAsStringAsync();
+                var task = System.Text.Json.JsonSerializer.Deserialize<TickTickTask>(content);
+                return task;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting TickTick task details for logging");
+                return null;
             }
         }
     }
