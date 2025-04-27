@@ -79,10 +79,12 @@ export const integrationsService = {
 
     /**
      * Fetch TickTick projects available for the connected user.
+     * @param kind Optional filter for project kind (e.g., "TASK", "NOTE")
      */
-    async getTickTickProjects(): Promise<{ id: string; name: string; color?: string; }[]> {
+    async getTickTickProjects(kind?: string): Promise<{ id: string; name: string; color?: string; kind?: string; }[]> {
         try {
-            const response = await api.get('/api/integrations/ticktick/projects');
+            const endpoint = kind ? `/api/integrations/ticktick/projects?kind=${kind}` : '/api/integrations/ticktick/projects';
+            const response = await api.get(endpoint);
             return response.data;
         } catch (error) {
             console.error('Error fetching TickTick projects:', error);

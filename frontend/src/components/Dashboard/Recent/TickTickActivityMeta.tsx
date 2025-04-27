@@ -1,4 +1,3 @@
-import React from 'react';
 import { Calendar, Clock, Tag, List, ArrowRightLeft, Cloud } from 'lucide-react';
 
 interface TickTickMetadata {

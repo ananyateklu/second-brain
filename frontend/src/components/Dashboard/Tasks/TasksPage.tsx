@@ -17,6 +17,14 @@ import { DuplicateItemsModal } from '../../shared/DuplicateItemsModal';
 import { integrationsService } from '../../../services/api/integrations.service';
 import { Modal } from '../../shared/Modal';
 
+// Define project type locally
+interface TickTickProject {
+  id: string;
+  name: string;
+  color?: string;
+  kind?: string;
+}
+
 // Modal for TickTick project settings
 function TickTickSettingsModal({
   isOpen,
@@ -30,7 +38,7 @@ function TickTickSettingsModal({
   onSave: (projectId: string) => void;
 }) {
   const [newProjectId, setNewProjectId] = useState(projectId);
-  const [tickTickProjects, setTickTickProjects] = useState<Array<{ id: string; name: string; color?: string }>>([]);
+  const [tickTickProjects, setTickTickProjects] = useState<TickTickProject[]>([]); // Use local type
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
   const [projectError, setProjectError] = useState<string | null>(null);
 
@@ -40,7 +48,8 @@ function TickTickSettingsModal({
       try {
         setIsLoadingProjects(true);
         setProjectError(null);
-        const projects = await integrationsService.getTickTickProjects();
+        // Only get projects with kind "TASK"
+        const projects = await integrationsService.getTickTickProjects("TASK");
         setTickTickProjects(projects);
       } catch (error) {
         console.error('Failed to fetch TickTick projects:', error);
@@ -182,6 +191,28 @@ export function TasksPage() {
     priority: 'all',
     dueDate: 'all'
   });
+  const [tickTickProjectsList, setTickTickProjectsList] = useState<TickTickProject[]>([]); // State to store fetched projects
+  const [hasFetchedProjects, setHasFetchedProjects] = useState(false); // Flag to prevent multiple fetches
+
+  // Refs to track previous state for effects
+  const prevIsTickTickConnectedRef = useRef<boolean | undefined>();
+  const prevTickTickProjectIdRef = useRef<string | undefined>();
+
+  // Fetch TickTick tasks when the page loads, or when connection/project changes
+  useEffect(() => {
+    const hasConnected = isTickTickConnected && !prevIsTickTickConnectedRef.current;
+    const projectIdChanged = isTickTickConnected && tickTickProjectId !== prevTickTickProjectIdRef.current;
+
+    if (isTickTickConnected && tickTickProjectId && (hasConnected || projectIdChanged)) {
+      console.log(`[TasksPage] Fetching TickTick tasks. Connected: ${isTickTickConnected}, ProjectID: ${tickTickProjectId}, HasConnectedNow: ${hasConnected}, ProjectIDChanged: ${projectIdChanged}`);
+      fetchTickTickTasks();
+    }
+
+    // Update refs for next render
+    prevIsTickTickConnectedRef.current = isTickTickConnected;
+    prevTickTickProjectIdRef.current = tickTickProjectId;
+
+  }, [isTickTickConnected, tickTickProjectId, fetchTickTickTasks]);
 
   // Persist task source filter to localStorage whenever it changes
   useEffect(() => {
@@ -349,36 +380,74 @@ export function TasksPage() {
   const handleSaveTickTickProjectId = async (newProjectId: string) => {
     try {
       await updateTickTickProjectId(newProjectId);
+      // Manually refetch tasks after project ID update
+      if (isTickTickConnected && newProjectId) {
+        await fetchTickTickTasks(); // Task fetch is fine here
+      }
+      // No need to refetch project *name* here, it will update from the stored list via useEffect
       setShowTickTickSettings(false);
     } catch (error) {
       console.error('Failed to update TickTick project ID:', error);
     }
   };
 
-  // Fetch TickTick project name when projectId changes or component loads
+  // Fetch TickTick project list *once* when connected, and update current project name
   useEffect(() => {
-    const fetchTickTickProjectName = async () => {
-      if (!isTickTickConnected || !tickTickProjectId) {
+    const fetchProjectsAndSetCurrent = async () => {
+      const wasConnected = prevIsTickTickConnectedRef.current;
+      const justConnected = isTickTickConnected && !wasConnected;
+
+      if (!isTickTickConnected) {
         setCurrentTickTickProject(null);
+        setHasFetchedProjects(false); // Reset fetch status if disconnected
+        prevIsTickTickConnectedRef.current = false; // Update ref
         return;
       }
 
-      try {
-        const projects = await integrationsService.getTickTickProjects();
-        const project = projects.find(p => p.id === tickTickProjectId);
+      let projectsToUse: TickTickProject[] = tickTickProjectsList;
+
+      // Fetch the list only if not already fetched OR if we just connected
+      if (justConnected || !hasFetchedProjects) {
+        try {
+          console.log(`[TasksPage] Fetching TickTick project list. JustConnected: ${justConnected}, HasFetched: ${hasFetchedProjects}`);
+          projectsToUse = await integrationsService.getTickTickProjects();
+          setTickTickProjectsList(projectsToUse);
+          setHasFetchedProjects(true);
+        } catch (error) {
+          console.error('Error fetching TickTick project list:', error);
+          setCurrentTickTickProject({ id: tickTickProjectId, name: 'Error Loading Project' });
+          setHasFetchedProjects(false); // Allow refetch on next attempt
+          prevIsTickTickConnectedRef.current = isTickTickConnected; // Update ref even on error
+          return; // Exit if fetch failed
+        }
+      } else {
+        // Use the already fetched list
+        projectsToUse = tickTickProjectsList;
+      }
+
+      // Find the current project name from the list
+      if (tickTickProjectId && projectsToUse.length > 0) {
+        const project = projectsToUse.find(p => p.id === tickTickProjectId);
         if (project) {
           setCurrentTickTickProject({ id: project.id, name: project.name });
         } else {
           setCurrentTickTickProject({ id: tickTickProjectId, name: 'Unknown Project' });
         }
-      } catch (error) {
-        console.error('Error fetching TickTick project name:', error);
+      } else if (!tickTickProjectId) {
+        setCurrentTickTickProject(null); // No project selected
+      } else {
+        // Project list might be empty from API, or ID is invalid
         setCurrentTickTickProject({ id: tickTickProjectId, name: 'Unknown Project' });
       }
+
+      // Update ref for next render
+      prevIsTickTickConnectedRef.current = isTickTickConnected;
     };
 
-    fetchTickTickProjectName();
-  }, [isTickTickConnected, tickTickProjectId]);
+    fetchProjectsAndSetCurrent();
+    // Only re-run when connection status or selected project ID changes
+    // Keep tickTickProjectsList and hasFetchedProjects dependencies for internal logic
+  }, [isTickTickConnected, tickTickProjectId, hasFetchedProjects, tickTickProjectsList]);
 
   const renderTaskContent = () => {
     if (tickTickError && (taskSourceFilter === 'all' || taskSourceFilter === 'ticktick')) {
