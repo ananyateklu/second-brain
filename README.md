@@ -9,7 +9,7 @@
 
 # AI-Powered Personal Knowledge Management System
 
-Second Brain is an AI-enhanced knowledge management and note-taking system that unifies your notes, ideas, tasks, and reminders in one interactive environment. It intelligently links related concepts, highlights relevant information, and provides guidance to help you gain clarity, maintain organization, and discover insights you may have overlooked—all within a single, easy-to-use workspace.
+Second Brain is a knowledge management and note-taking system that unifies your notes, ideas, tasks, and reminders in one interactive environment. It intelligently links related concepts, highlights relevant information, and provides guidance to help you gain clarity, maintain organization, and discover insights you may have overlooked—all within a single, easy-to-use workspace.
 
 ## Application Screenshots
 
@@ -41,90 +41,51 @@ Second Brain is an AI-enhanced knowledge management and note-taking system that 
 ### Knowledge Management
 
 - Rich text editing with Markdown support
-- Bi-directional linking across notes, ideas, tasks, and reminders with redundant storage for quick traversal
-- Interactive graph visualization:
-  - Node types for different content entities (notes, tasks, ideas, reminders)
-  - Real-time updates reflecting content relationships
-  - Intuitive navigation interface
-- Tagging and categorization system
-- Version tracking, archiving, and focus mode
-- Soft delete implementation with restore capabilities
+- Bi-directional linking across notes, ideas, tasks, and reminders
+- Interactive graph visualization of content relationships
+- Tagging, categorization, versioning, archiving, and soft delete features
 
 ### Tasks & Reminders
 
-- Priority-based task management with status tracking
+- Priority-based task management with status tracking and dependencies
 - Time-based reminders with recurrence options
-- Task dependency visualization and tracking
-- Linking tasks to notes, ideas, and reference materials
-- Progress tracking and completion status management
-- **TickTick Integration**:
-  - Connect your TickTick account via OAuth 2.0.
-  - Create, view, update, and complete TickTick tasks directly within Second Brain.
-  - Synchronize tasks between Second Brain and a selected TickTick project (two-way, one-way).
-  - Configure synchronization direction and conflict resolution strategies.
+- Progress tracking and linking to related content
+- **TickTick Integration**: Connect via OAuth 2.0 to manage TickTick tasks and synchronize them with Second Brain (configurable).
 
 ### AI Integration
 
-- Multi-provider architecture supporting:
-  - OpenAI (GPT-4, GPT-3.5, DALL-E)
-  - Anthropic Claude (Opus, Sonnet, Haiku)
-  - Google Gemini (Pro, Pro Vision)
-  - Grok
-  - Local models via Ollama
-- Real-time streaming responses with SignalR
-- Tool execution framework for executing AI-driven actions
-- Voice transcription and audio processing
-- Retrieval-augmented generation (RAG) via OpenAI Assistants API
+- Multi-provider support (OpenAI, Claude, Gemini, Grok, Local via Ollama)
+- Real-time streaming responses via SignalR
+- AI-driven actions via a tool execution framework
+- Voice transcription, audio processing, and RAG capabilities
 - Natural language database operations
-- HTTP-only cookies for refresh tokens
-- SignalR secure connections with authentication
-- **TickTick OAuth**: Secure connection flow for TickTick integration.
 
 ### Multi-Layered Theme System
 
-- Three distinct themes: Light, Dark, and Midnight
-- Combined CSS variables and Tailwind implementation
-- System preference detection
-- Browser-specific optimizations (especially for Safari)
-- Dynamic theme switching with persistence
+- Three themes: Light, Dark, and Midnight with system preference detection
+- CSS variables and Tailwind implementation with dynamic switching
 
 ## Technical Architecture
 
 ### Frontend
 
 - React 18 with TypeScript and Vite
-- State management with React Context API and custom hooks
-  - Nested provider architecture for different concerns
-  - Optimistic updates with rollback capabilities
-- Tailwind CSS with custom theming
-- SignalR for real-time updates and streaming
-- Component organization by feature
-- Axios with interceptors for API authentication
+- State management via React Context API and custom hooks (optimistic updates)
+- Tailwind CSS for styling
+- SignalR client for real-time communication
 
 ### Backend
 
-- ASP.NET Core 8.0 Web API
-- Entity Framework Core with SQL Server
-- Controller-service-repository pattern
-- JWT authentication system
-- SignalR hubs for real-time communication
-- Soft delete pattern with query filters
-- Multi-layer response processing
-- Provider-specific AI integrations
-- **Integration Service**: Dedicated service for managing third-party integrations like TickTick.
+- ASP.NET Core 8.0 Web API with Entity Framework Core
+- SQL Server database
+- Standard patterns: Controller-service-repository, JWT authentication, SignalR hubs, soft delete
+- Dedicated services for AI provider integration and third-party connections (e.g., TickTick)
 
 ### Database Structure
 
-- Entity Framework Core code-first approach
-- Comprehensive entity relationships
-- Bidirectional linking implementation
-- Soft delete pattern with automatic query filters
-- Activity and achievement tracking
-- Flexible tag system across entities
-- **Node.js 18+ and npm**
-- **.NET SDK 8.0**
-- **SQL Server 2019+**
-- **TickTick Developer Account**: Credentials (Client ID, Client Secret) required for TickTick integration.
+- EF Core code-first approach
+- Designed for comprehensive relationships, bidirectional linking, and activity tracking
+- Implements soft delete pattern and flexible tagging
 
 ## Getting Started
 
@@ -133,12 +94,9 @@ Second Brain is an AI-enhanced knowledge management and note-taking system that 
 - Node.js 18+ and npm
 - .NET SDK 8.0
 - SQL Server 2019+
-- API keys for:
-  - OpenAI
-  - Anthropic Claude
-  - Google Gemini
-  - Grok
-- Optional: Ollama for local AI models (<http://localhost:11434>)
+- Relevant API keys (OpenAI, Claude, Gemini, Grok)
+- TickTick Developer Account credentials for integration
+- Optional: Ollama setup (<http://localhost:11434>) for local AI models
 
 ### Frontend Setup
 
@@ -146,6 +104,7 @@ Second Brain is an AI-enhanced knowledge management and note-taking system that 
 git clone https://github.com/yourusername/second-brain.git
 cd second-brain/frontend
 npm install
+# Configure .env with API URLs and TickTick credentials (see .env.example if available)
 npm run dev
 ```
 
@@ -162,238 +121,31 @@ VITE_TICKTICK_REDIRECT_URI=http://localhost:5173/dashboard/callback/ticktick
 ```bash
 cd ../backend/SecondBrain.Api
 dotnet restore
+# Configure appsettings.json with connection string, JWT secret, AI keys, etc. (see appsettings.template.json or documentation)
 dotnet ef database update
 dotnet run
 ```
 
-Here's a template for `appsettings.json`:
-
-```json
-{
-  "Logging": {
-    "LogLevel": {
-      "Default": "Information",
-      "Microsoft.AspNetCore": "Warning"
-    }
-  },
-
-  "AllowedHosts": "*",
-
-  "ConnectionStrings": {
-    "DefaultConnection": "your-connection-string"
-  },
-
-  "Authentication": {
-    "Jwt": {
-      "Secret": "your-jwt-secret",
-      "Issuer": "SecondBrain",
-      "Audience": "SecondBrain",
-      "AccessTokenExpirationMinutes": "30",
-      "RefreshTokenExpirationDays": "7"
-    }
-  },
-
-  "Anthropic": {
-    "ApiKey": "your-api-key-here",
-    "ApiEndpoint": "https://api.anthropic.com/v1/messages"
-  },
-
-  "Grok": {
-    "ApiKey": "your-grok-api-key",
-    "BaseUrl": "https://api.x.ai/v1"
-  },
-
-  "OpenAI": {
-    "ApiKey": "your-openai-api-key",
-    "ApiEndpoint": "https://api.openai.com/v1"
-  },
-
-  "Gemini": {
-    "ApiKey": "your-api-key",
-    "BaseUrl": "https://generativelanguage.googleapis.com/v1beta/"
-  },
-
-  "Llama": {
-    "OllamaUri": "http://localhost:11434/"
-  },
-
-  "Kestrel": {
-    "Endpoints": {
-      "Http": {
-        "Url": "http://localhost:5127"
-      },
-      "Https": {
-        "Url": "https://localhost:7056"
-      }
-    }
-  },
-
-  "AIService": {
-    "BaseUrl": "http://localhost:8000"
-  },
-
-  "TickTick": {
-    "ClientId": "your_ticktick_client_id",
-    "ClientSecret": "your_ticktick_client_secret",
-    "RedirectUri": "http://localhost:5173/dashboard/callback/ticktick",
-    "TokenEndpoint": "https://ticktick.com/oauth/token",
-    "ApiBaseUrl": "https://api.ticktick.com"
-  }
-}
-```
-
-Before running these commands, ensure that appsettings.json is configured with the correct database connection string, JWT secrets, and AI keys. After completing the setup, the backend will be ready to accept requests.
-
-## API Reference
-
-The application provides RESTful API endpoints for various resources. Below is a list of available controllers and their primary routes:
-
-### Authentication (/api/auth)
-
-- **Endpoints:**
-  - `POST /api/auth/register` - Register a new user
-  - `POST /api/auth/login` - Authenticate a user and obtain tokens
-  - `POST /api/auth/refresh-token` - Refresh access tokens using a refresh token
-  - `POST /api/auth/logout` - Logout and invalidate tokens
-  - `GET /api/auth/me` - Retrieve the authenticated user's profile
-  - `PUT /api/auth/me/avatar` - Update user avatar
-
-### Notes (/api/notes)
-
-- **Endpoints:**
-  - `GET /api/notes` - Get all notes
-  - `POST /api/notes` - Create a new note
-  - `GET /api/notes/{id}` - Get a note by ID
-  - `PUT /api/notes/{id}` - Update a note
-  - `DELETE /api/notes/{id}` - Soft-delete a note
-  - `POST /api/notes/{id}/restore` - Restore a soft-deleted note
-  - `DELETE /api/notes/{id}/permanent` - Permanently delete a note
-  - `GET /api/notes/deleted` - Get all soft-deleted notes
-  - `GET /api/notes/archived` - Get all archived notes
-  - `POST /api/notes/{id}/unarchive` - Unarchive a note
-
-### Tasks (/api/tasks)
-
-- **Endpoints:**
-  - `GET /api/tasks` - Get all tasks
-  - `POST /api/tasks` - Create a new task
-  - `GET /api/tasks/{id}` - Get a task by ID
-  - `PATCH /api/tasks/{id}` - Update a task
-  - `DELETE /api/tasks/{id}` - Soft-delete a task
-  - `POST /api/tasks/{id}/restore` - Restore a soft-deleted task
-  - `GET /api/tasks/deleted` - Get all soft-deleted tasks
-
-### Reminders (/api/reminders)
-
-- **Endpoints:**
-  - `GET /api/reminders` - Get all reminders
-  - `POST /api/reminders` - Create a new reminder
-  - `GET /api/reminders/{id}` - Get a reminder by ID
-  - `PUT /api/reminders/{id}` - Update a reminder
-  - `DELETE /api/reminders/{id}` - Delete a reminder
-  - `GET /api/reminders/deleted` - Get all deleted reminders
-
-### AI Integrations
-
-#### AI Agents (/api/ai/agents)
-
-- **Endpoints:**
-  - `GET /api/ai/agents/models` - Get available AI models
-  - `GET /api/ai/agents/configs` - Get provider configurations
-  - `POST /api/ai/agents/execute` - Execute tool with AI
-
-#### OpenAI (/api/openai)
-
-- **Endpoints:**
-  - `GET /api/openai/status` - Check OpenAI API status
-  - `POST /api/openai/chat` - Send a message to OpenAI Chat API
-  - `POST /api/openai/images/generate` - Generate images
-  - `POST /api/openai/audio/transcribe` - Transcribe audio
-  - `POST /api/openai/audio/speech` - Convert text to speech
-
-#### Anthropic Claude (/api/claude)
-
-- **Endpoints:**
-  - `POST /api/claude/send-message` - Send a message to Claude
-  - `GET /api/claude/status` - Check Claude API status
-
-#### Google Gemini (/api/gemini)
-
-- **Endpoints:**
-  - `POST /api/gemini/chat` - Chat with the Gemini model
-  - `POST /api/gemini/generate` - Generate content with Gemini
-
-#### Llama (/api/llama)
-
-- **Endpoints:**
-  - `GET /api/llama/stream` - Stream responses from local Llama models
-  - `POST /api/llama/execute-db` - Execute database operations via natural language
-
-#### RAG (/api/ai/rag)
-
-- **Endpoints:**
-  - `POST /api/ai/rag/upload` - Upload file for RAG processing
-  - `POST /api/ai/rag/create-assistant` - Create RAG assistant with file
-  - `POST /api/ai/rag/query` - Query RAG assistant
-  - `DELETE /api/ai/rag/file` - Delete RAG file
-  - `DELETE /api/ai/rag/assistant` - Delete RAG assistant
-
-### Integrations (/api/integrations)
-
-- **Endpoints:**
-  - `POST /api/integrations/ticktick/exchange-code` - Exchange authorization code for TickTick tokens
-  - `DELETE /api/integrations/ticktick` - Disconnect TickTick integration and remove credentials
-  - `GET /api/integrations/ticktick/status` - Check if TickTick is connected
-  - `GET /api/integrations/ticktick/tasks` - Get all tasks from the configured TickTick project (or all if none configured)
-  - `GET /api/integrations/ticktick/projects` - Get available TickTick projects
-  - `GET /api/integrations/ticktick/tasks/{projectId}/{taskId}` - Get a specific TickTick task by ID
-  - `POST /api/integrations/ticktick/tasks/{taskId}` - Update a specific TickTick task
-  - `POST /api/integrations/ticktick/projects/{projectId}/tasks` - Create a new task in a specific TickTick project
-  - `POST /api/integrations/ticktick/tasks/{projectId}/{taskId}/complete` - Mark a TickTick task as complete
-  - `DELETE /api/integrations/ticktick/tasks/{projectId}/{taskId}` - Delete a specific TickTick task
-  - `POST /api/integrations/ticktick/sync` - Synchronize tasks between Second Brain and TickTick
-  - `GET /api/integrations/ticktick/sync/status` - Get synchronization status and statistics
-  - `GET /api/integrations/ticktick/task-mappings` - Retrieve task mappings between local and TickTick tasks
-  - `POST /api/integrations/ticktick/sync/reset` - Reset synchronization data (removes mappings)
+Ensure `appsettings.json` is correctly configured before running the application. Refer to documentation or a template file for structure.
 
 ## Content Linking Features
 
-The system implements bi-directional linking across all content types, enabling seamless navigation and relationship management:
+The system supports bi-directional linking across notes, tasks, reminders, and ideas, allowing for:
 
-### Content Types & Connections
-
-- **Notes**: Reference other notes, tasks, reminders, and ideas with bidirectional links
-- **Tasks**: Link to documentation, dependencies, and meeting notes
-- **Reminders**: Connect to related tasks and reference materials
-- **Ideas**: Associate with research, implementation tasks, and related concepts
-
-All connections are bi-directional and support:
-
-- Contextual relationships with link types and metadata
-- Dependency tracking with status propagation
-- Project organization and categorization
+- Seamless navigation and relationship management
+- Contextual connections with link types and metadata
+- Dependency tracking and project organization
 - Knowledge discovery through relationship exploration
 
 ## Implementation Considerations
 
-- **Optimistic Updates**: Most data modifications use optimistic updates with rollback
-- **SignalR Streaming**: AI responses stream in real-time with fallback mechanisms
-- **Provider-Specific Streaming**: Each AI provider implements streaming differently
-- **Safari Compatibility**: Theme system includes special handling for Safari browser
-- **Soft Delete**: Entities use soft delete with query filters
-- **Context Dependencies**: The nested context structure creates complex dependencies
-- **Token Refresh**: JWT tokens refresh automatically with rotation for security
-- **TickTick Sync**: Task data can be synced with TickTick, subject to API rate limits and potential inconsistencies. Supports configurable sync direction and conflict resolution.
+Key aspects to be aware of:
 
-## Future Improvements
-
-- Complete RAG implementation with notes integration
-- Enhance bidirectional linking with improved error handling
-- Optimize context provider architecture to reduce nesting
-- Improve error handling consistency across components
-- Standardize streaming implementations across AI providers
-- Implement a more unified theme system approach
-- Add mobile and offline support
+- Optimistic updates are used for most UI interactions.
+- AI response streaming uses SignalR, with provider-specific handling.
+- The theme system includes some browser-specific adjustments.
+- JWT tokens use refresh token rotation for security.
+- TickTick synchronization behavior is configurable and subject to API limits.
 
 ## Acknowledgments
 
