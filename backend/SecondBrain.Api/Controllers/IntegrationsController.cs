@@ -403,7 +403,7 @@ namespace SecondBrain.Api.Controllers
 
         // GET: api/integrations/ticktick/projects
         [HttpGet("ticktick/projects")]
-        public async Task<IActionResult> GetTickTickProjects()
+        public async Task<IActionResult> GetTickTickProjects([FromQuery] string? kind = null)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
@@ -411,7 +411,7 @@ namespace SecondBrain.Api.Controllers
                 return Unauthorized(new { message = "User authentication failed." });
             }
 
-            _logger.LogInformation("Fetching TickTick projects for user {UserId}", userId);
+            _logger.LogInformation("Fetching TickTick projects for user {UserId} with kind filter: {Kind}", userId, kind ?? "all");
 
             var credentials = await _integrationService.GetTickTickCredentialsAsync(userId);
             if (credentials == null)
@@ -439,8 +439,16 @@ namespace SecondBrain.Api.Controllers
 
                 if (response.IsSuccessStatusCode)
                 {
-                    var projects = JsonSerializer.Deserialize<List<TickTickProject>>(content) ?? new List<TickTickProject>();
-                    return Ok(projects);
+                    var allProjects = JsonSerializer.Deserialize<List<TickTickProject>>(content) ?? new List<TickTickProject>();
+                    
+                    // Filter projects by kind if specified
+                    if (!string.IsNullOrEmpty(kind))
+                    {
+                        var filteredProjects = allProjects.Where(p => string.Equals(p.Kind, kind, StringComparison.OrdinalIgnoreCase)).ToList();
+                        return Ok(filteredProjects);
+                    }
+                    
+                    return Ok(allProjects);
                 }
                 else
                 {

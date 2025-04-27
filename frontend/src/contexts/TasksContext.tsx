@@ -102,10 +102,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     fetchTasks();
-    if (isTickTickConnected && tickTickProjectId) {
-      fetchTickTickTasks();
-    }
-  }, [fetchTasks, fetchTickTickTasks, isTickTickConnected, tickTickProjectId]);
+  }, [fetchTasks, isTickTickConnected, tickTickProjectId]);
 
   // Add a separate effect to check TickTick connection status on mount and when auth changes
   useEffect(() => {
