@@ -145,6 +145,10 @@ export function ActivityItem({ activity, onClick }: ActivityItemProps) {
       dark: 'bg-pink-500/20 text-pink-400',
       light: 'bg-pink-100 text-pink-600'
     },
+    ticktick_note: {
+      dark: 'bg-sky-500/20 text-sky-400',
+      light: 'bg-sky-100 text-sky-600'
+    },
     reminder: {
       dark: 'bg-purple-500/20 text-purple-400',
       light: 'bg-purple-100 text-purple-600'

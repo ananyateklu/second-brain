@@ -560,7 +560,7 @@ namespace SecondBrain.Api.Controllers
                 return BadRequest(new { message = "Task ID and Project ID are required." });
             }
 
-            _logger.LogInformation("Updating TickTick task for user {UserId}. TaskId: {TaskId}, ProjectId: {ProjectId}", 
+            _logger.LogInformation("Updating TickTick item for user {UserId}. TaskId: {TaskId}, ProjectId: {ProjectId}", 
                 userId, taskId, request.ProjectId);
 
             // Verify taskId in path matches taskId in request body
@@ -568,6 +568,12 @@ namespace SecondBrain.Api.Controllers
             {
                 return BadRequest(new { message = "Task ID in path must match Task ID in request body." });
             }
+
+            // Fetch project details to determine type for logging
+            var project = await GetTickTickProjectAsync(userId, request.ProjectId);
+            var entityType = project?.Kind?.Equals("NOTE", StringComparison.OrdinalIgnoreCase) == true 
+                ? "TICKTICK_NOTE" 
+                : "TICKTICK_TASK"; // Default to TASK
 
             var credentials = await _integrationService.GetTickTickCredentialsAsync(userId);
             if (credentials == null)
@@ -606,16 +612,17 @@ namespace SecondBrain.Api.Controllers
                     try
                     {
                         var updatedTask = JsonSerializer.Deserialize<TickTickTask>(content);
-                        // Log the activity for task update
+                        // Log the activity for task update using dynamic entityType
                         await _activityLogger.LogActivityAsync(
                             userId,
                             "UPDATE",
-                            "TICKTICK_TASK",
+                            entityType, // Use dynamic entity type
                             request.Id,
                             request.Title,
-                            $"Updated TickTick task in project {request.ProjectId}",
+                            $"Updated TickTick item in project {request.ProjectId}", // Use generic "item"
                             new { 
                                 projectId = request.ProjectId,
+                                kind = project?.Kind ?? "Unknown", // Log the kind
                                 dueDate = request.DueDate,
                                 priority = request.Priority,
                                 tags = request.Tags
@@ -631,10 +638,10 @@ namespace SecondBrain.Api.Controllers
                 }
                 else
                 {
-                    _logger.LogWarning("Failed to update TickTick task for user {UserId}. Status: {StatusCode}, Response: {Content}", 
+                    _logger.LogWarning("Failed to update TickTick item for user {UserId}. Status: {StatusCode}, Response: {Content}", 
                         userId, response.StatusCode, content);
                     
-                    string errorMessage = "Failed to update task in TickTick.";
+                    string errorMessage = "Failed to update item in TickTick.";
                     try
                     {
                         var errorResponse = JsonSerializer.Deserialize<TickTickErrorResponse>(content);
@@ -650,13 +657,13 @@ namespace SecondBrain.Api.Controllers
             }
             catch (HttpRequestException ex)
             {
-                _logger.LogError(ex, "HTTP request exception while updating TickTick task for user {UserId}. Endpoint: {Endpoint}", 
+                _logger.LogError(ex, "HTTP request exception while updating TickTick item for user {UserId}. Endpoint: {Endpoint}", 
                     userId, updateEndpoint);
                 return StatusCode(502, new { message = "Network error communicating with TickTick." });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected error while updating TickTick task for user {UserId}", userId);
+                _logger.LogError(ex, "Unexpected error while updating TickTick item for user {UserId}", userId);
                 return StatusCode(500, new { message = "An internal server error occurred." });
             }
         }
@@ -671,8 +678,14 @@ namespace SecondBrain.Api.Controllers
                 return Unauthorized(new { error = "Invalid user credentials." });
             }
 
-            _logger.LogInformation("Completing TickTick task for user {UserId}. ProjectId: {ProjectId}, TaskId: {TaskId}", 
+            _logger.LogInformation("Completing TickTick item for user {UserId}. ProjectId: {ProjectId}, TaskId: {TaskId}", 
                 userId, projectId, taskId);
+                
+            // Fetch project details to determine type for logging
+            var project = await GetTickTickProjectAsync(userId, projectId);
+            var entityType = project?.Kind?.Equals("NOTE", StringComparison.OrdinalIgnoreCase) == true 
+                ? "TICKTICK_NOTE" 
+                : "TICKTICK_TASK"; // Default to TASK
 
             var credentials = await _integrationService.GetTickTickCredentialsAsync(userId);
             if (credentials == null)
@@ -699,34 +712,38 @@ namespace SecondBrain.Api.Controllers
                 
                 if (response.IsSuccessStatusCode)
                 {
-                    _logger.LogInformation("Successfully completed TickTick task for user {UserId}. TaskId: {TaskId}", userId, taskId);
+                    _logger.LogInformation("Successfully completed TickTick item for user {UserId}. TaskId: {TaskId}", userId, taskId);
                     // Get task details for logging - we need the title
-                    // Assuming API response gives us task details or we already have them
                     var task = await GetTickTickTaskDetails(userId, projectId, taskId);
-                    if (task == null)
-                    {
-                        return NotFound(new { error = "Task not found" });
-                    }
+                    // if (task == null)
+                    // {
+                    //     // Task might already be deleted or inaccessible after completion, handle gracefully
+                    //     _logger.LogWarning("Could not retrieve details for completed TickTick item {TaskId} for logging.", taskId);
+                    //     // Still log the activity, but maybe with a placeholder title
+                    // }
                     
-                    // Log the activity for task completion
+                    // Log the activity for task completion using dynamic entityType
                     await _activityLogger.LogActivityAsync(
                         userId,
                         "COMPLETE",
-                        "TICKTICK_TASK",
+                        entityType, // Use dynamic entity type
                         taskId,
-                        task.Title,
-                        $"Completed TickTick task in project {projectId}",
-                        new { projectId = projectId });
+                        task?.Title ?? "Completed Item", // Use placeholder if task details not found
+                        $"Completed TickTick item in project {projectId}", // Use generic "item"
+                        new { 
+                            projectId = projectId,
+                            kind = project?.Kind ?? "Unknown" // Log the kind
+                         });
                     
                     return Ok(new { success = true });
                 }
                 else
                 {
                     var content = await response.Content.ReadAsStringAsync();
-                    _logger.LogWarning("Failed to complete TickTick task for user {UserId}. Status: {StatusCode}, Response: {Content}", 
+                    _logger.LogWarning("Failed to complete TickTick item for user {UserId}. Status: {StatusCode}, Response: {Content}", 
                         userId, response.StatusCode, content);
                     
-                    string errorMessage = "Failed to complete task in TickTick.";
+                    string errorMessage = "Failed to complete item in TickTick.";
                     try
                     {
                         var errorResponse = JsonSerializer.Deserialize<TickTickErrorResponse>(content);
@@ -742,13 +759,13 @@ namespace SecondBrain.Api.Controllers
             }
             catch (HttpRequestException ex)
             {
-                _logger.LogError(ex, "HTTP request exception while completing TickTick task for user {UserId}. Endpoint: {Endpoint}", 
+                _logger.LogError(ex, "HTTP request exception while completing TickTick item for user {UserId}. Endpoint: {Endpoint}", 
                     userId, completeEndpoint);
                 return StatusCode(502, new { message = "Network error communicating with TickTick." });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected error while completing TickTick task for user {UserId}", userId);
+                _logger.LogError(ex, "Unexpected error while completing TickTick item for user {UserId}", userId);
                 return StatusCode(500, new { message = "An internal server error occurred." });
             }
         }
@@ -763,7 +780,17 @@ namespace SecondBrain.Api.Controllers
                 return Unauthorized(new { error = "Invalid user credentials." });
             }
 
-            _logger.LogInformation("Deleting TickTick task for user {UserId}. ProjectId: {ProjectId}, TaskId: {TaskId}", 
+            // Fetch project details to determine type for logging BEFORE attempting deletion
+            var project = await GetTickTickProjectAsync(userId, projectId);
+             var entityType = project?.Kind?.Equals("NOTE", StringComparison.OrdinalIgnoreCase) == true 
+                ? "TICKTICK_NOTE" 
+                : "TICKTICK_TASK"; // Default to TASK
+
+            // Get task details for logging BEFORE deletion
+            var task = await GetTickTickTaskDetails(userId, projectId, taskId);
+            var taskTitleForLog = task?.Title ?? "Deleted Item"; // Get title before deletion
+
+            _logger.LogInformation("Deleting TickTick item for user {UserId}. ProjectId: {ProjectId}, TaskId: {TaskId}", 
                 userId, projectId, taskId);
 
             var credentials = await _integrationService.GetTickTickCredentialsAsync(userId);
@@ -791,34 +818,30 @@ namespace SecondBrain.Api.Controllers
                 
                 if (response.IsSuccessStatusCode)
                 {
-                    _logger.LogInformation("Successfully deleted TickTick task for user {UserId}. TaskId: {TaskId}", userId, taskId);
-                    // Get task details for logging - we need the title
-                    // Assuming API response gives us task details or we already have them
-                    var task = await GetTickTickTaskDetails(userId, projectId, taskId);
-                    if (task == null)
-                    {
-                        return NotFound(new { error = "Task not found" });
-                    }
-                    
-                    // Log the activity for task deletion
+                    _logger.LogInformation("Successfully deleted TickTick item for user {UserId}. TaskId: {TaskId}", userId, taskId);
+                   
+                    // Log the activity for task deletion using dynamic entityType
                     await _activityLogger.LogActivityAsync(
                         userId,
                         "DELETE",
-                        "TICKTICK_TASK",
+                        entityType, // Use dynamic entity type
                         taskId,
-                        task.Title,
-                        $"Deleted TickTick task from project {projectId}",
-                        new { projectId = projectId });
+                        taskTitleForLog, // Use title fetched before deletion
+                        $"Deleted TickTick item from project {projectId}", // Use generic "item"
+                         new { 
+                            projectId = projectId,
+                            kind = project?.Kind ?? "Unknown" // Log the kind
+                         });
                     
                     return Ok(new { success = true });
                 }
                 else
                 {
                     var content = await response.Content.ReadAsStringAsync();
-                    _logger.LogWarning("Failed to delete TickTick task for user {UserId}. Status: {StatusCode}, Response: {Content}", 
+                    _logger.LogWarning("Failed to delete TickTick item for user {UserId}. Status: {StatusCode}, Response: {Content}", 
                         userId, response.StatusCode, content);
                     
-                    string errorMessage = "Failed to delete task in TickTick.";
+                    string errorMessage = "Failed to delete item in TickTick.";
                     try
                     {
                         var errorResponse = JsonSerializer.Deserialize<TickTickErrorResponse>(content);
@@ -834,13 +857,13 @@ namespace SecondBrain.Api.Controllers
             }
             catch (HttpRequestException ex)
             {
-                _logger.LogError(ex, "HTTP request exception while deleting TickTick task for user {UserId}. Endpoint: {Endpoint}", 
+                _logger.LogError(ex, "HTTP request exception while deleting TickTick item for user {UserId}. Endpoint: {Endpoint}", 
                     userId, deleteEndpoint);
                 return StatusCode(502, new { message = "Network error communicating with TickTick." });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected error while deleting TickTick task for user {UserId}", userId);
+                _logger.LogError(ex, "Unexpected error while deleting TickTick item for user {UserId}", userId);
                 return StatusCode(500, new { message = "An internal server error occurred." });
             }
         }
@@ -849,14 +872,20 @@ namespace SecondBrain.Api.Controllers
         [HttpPost("ticktick/projects/{projectId}/tasks")]
         public async Task<IActionResult> CreateTickTickTask(string projectId, [FromBody] TickTickTask request)
         {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { error = "Invalid user credentials." });
+            }
+            
+            // Fetch project details to determine type for logging
+            var project = await GetTickTickProjectAsync(userId, projectId);
+            var entityType = project?.Kind?.Equals("NOTE", StringComparison.OrdinalIgnoreCase) == true 
+                ? "TICKTICK_NOTE" 
+                : "TICKTICK_TASK"; // Default to TASK if kind is unknown or fetch fails
+
             try
             {
-                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userId))
-                {
-                    return Unauthorized(new { error = "Invalid user credentials." });
-                }
-
                 // Get user's TickTick access token
                 var credentials = await _integrationService.GetTickTickCredentialsAsync(userId);
                 if (credentials == null || string.IsNullOrEmpty(credentials.AccessToken))
@@ -895,16 +924,17 @@ namespace SecondBrain.Api.Controllers
                     return StatusCode(500, new { error = "Failed to process response from TickTick after creating task." });
                 }
 
-                // Log the activity for task creation
+                // Log the activity for task creation using the determined entityType
                 await _activityLogger.LogActivityAsync(
                     userId,
                     "CREATE",
-                    "TICKTICK_TASK",
+                    entityType, // Use dynamic entity type
                     createdTask.Id,
                     createdTask.Title,
-                    $"Created TickTick task in project {projectId}",
+                    $"Created TickTick item in project {projectId}", // Use generic "item"
                     new { 
                         projectId = projectId,
+                        kind = project?.Kind ?? "Unknown", // Log the kind
                         dueDate = createdTask.DueDate,
                         priority = createdTask.Priority,
                         tags = createdTask.Tags
@@ -2159,6 +2189,55 @@ namespace SecondBrain.Api.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting TickTick task details for logging");
+                return null;
+            }
+        }
+
+        // Helper method to get details for a single TickTick project
+        private async Task<TickTickProject?> GetTickTickProjectAsync(string userId, string projectId)
+        {
+            var credentials = await _integrationService.GetTickTickCredentialsAsync(userId);
+            if (credentials == null)
+            {
+                _logger.LogWarning("Cannot fetch TickTick project {ProjectId}, credentials missing for user {UserId}", projectId, userId);
+                return null;
+            }
+
+            if (credentials.ExpiresAt <= DateTime.UtcNow.AddMinutes(1))
+            {
+                _logger.LogWarning("Cannot fetch TickTick project {ProjectId}, token expired for user {UserId}", projectId, userId);
+                return null;
+            }
+
+            var accessToken = credentials.AccessToken;
+            var tickTickApiBaseUrl = _configuration["TickTick:ApiBaseUrl"] ?? "https://api.ticktick.com";
+            // Assuming TickTick has an endpoint like this based on common API patterns
+            var projectEndpoint = $"{tickTickApiBaseUrl}/open/v1/project/{projectId}"; 
+
+            using var httpClient = _httpClientFactory.CreateClient("TickTickApiClient");
+            using var request = new HttpRequestMessage(HttpMethod.Get, projectEndpoint);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            try
+            {
+                using var response = await httpClient.SendAsync(request);
+                var content = await response.Content.ReadAsStringAsync();
+
+                if (response.IsSuccessStatusCode)
+                {
+                    // Assuming the response is a single TickTickProject object
+                    var project = JsonSerializer.Deserialize<TickTickProject>(content); 
+                    return project;
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to fetch TickTick project {ProjectId} for user {UserId}. Status: {StatusCode}", projectId, userId, response.StatusCode);
+                    return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching TickTick project {ProjectId} for user {UserId}", projectId, userId);
                 return null;
             }
         }
