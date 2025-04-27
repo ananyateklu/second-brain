@@ -49,8 +49,10 @@ export const integrationsService = {
     },
 
     /**
-     * Fetches tasks from the user's connected TickTick account via the backend.
+     * Fetches tasks or notes from the user's connected TickTick account via the backend.
      * Requires the user to be authenticated and have connected TickTick.
+     * @param projectId Optional project ID to filter tasks by project
+     * @returns A list of TickTick tasks or notes depending on the project type
      */
     async getTickTickTasks(projectId?: string): Promise<TickTickTask[]> {
         try {
@@ -80,6 +82,7 @@ export const integrationsService = {
     /**
      * Fetch TickTick projects available for the connected user.
      * @param kind Optional filter for project kind (e.g., "TASK", "NOTE")
+     * @returns A list of TickTick projects, optionally filtered by kind
      */
     async getTickTickProjects(kind?: string): Promise<{ id: string; name: string; color?: string; kind?: string; }[]> {
         try {
@@ -121,7 +124,7 @@ export const integrationsService = {
     },
 
     /**
-     * Fetch a single TickTick task by project ID and task ID.
+     * Fetch a single TickTick task or note by project ID and item ID.
      */
     async getTickTickTask(projectId: string, taskId: string): Promise<TickTickTask> {
         try {
@@ -129,22 +132,22 @@ export const integrationsService = {
             const response = await api.get<TickTickTask>(endpoint);
             return response.data;
         } catch (error) {
-            console.error(`Error fetching TickTick task ${taskId} from project ${projectId}:`, error);
+            console.error(`Error fetching TickTick item ${taskId} from project ${projectId}:`, error);
             throw error;
         }
     },
 
     /**
-     * Update a TickTick task
-     * @param taskId The ID of the task to update
-     * @param task The task data to update
+     * Update a TickTick task or note
+     * @param taskId The ID of the item to update
+     * @param task The item data to update
      */
     async updateTickTickTask(taskId: string, task: Partial<TickTickTask> & { id: string; projectId: string }): Promise<TickTickTask> {
         try {
             const response = await api.post<TickTickTask>(`/api/integrations/ticktick/tasks/${taskId}`, task);
             return response.data;
         } catch (error) {
-            console.error(`Error updating TickTick task ${taskId}:`, error);
+            console.error(`Error updating TickTick item ${taskId}:`, error);
             throw error;
         }
     },
@@ -165,31 +168,31 @@ export const integrationsService = {
     },
 
     /**
-     * Delete a TickTick task
-     * @param projectId The project ID containing the task
-     * @param taskId The ID of the task to delete
+     * Delete a TickTick task or note
+     * @param projectId The project ID containing the item
+     * @param taskId The ID of the item to delete
      */
     async deleteTickTickTask(projectId: string, taskId: string): Promise<boolean> {
         try {
             await api.delete(`/api/integrations/ticktick/tasks/${projectId}/${taskId}`);
             return true;
         } catch (error) {
-            console.error(`Error deleting TickTick task ${taskId}:`, error);
+            console.error(`Error deleting TickTick item ${taskId}:`, error);
             throw error;
         }
     },
 
     /**
-     * Create a new TickTick task
-     * @param projectId The project ID to create the task in
-     * @param task The task data to create
+     * Create a new TickTick task or note
+     * @param projectId The project ID to create the item in
+     * @param task The item data to create
      */
     async createTickTickTask(projectId: string, task: Partial<TickTickTask>): Promise<TickTickTask> {
         try {
             const response = await api.post<TickTickTask>(`/api/integrations/ticktick/projects/${projectId}/tasks`, task);
             return response.data;
         } catch (error) {
-            console.error(`Error creating TickTick task:`, error);
+            console.error(`Error creating TickTick item:`, error);
             throw error;
         }
     },

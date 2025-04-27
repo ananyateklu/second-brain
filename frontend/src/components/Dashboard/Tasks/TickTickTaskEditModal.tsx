@@ -469,17 +469,6 @@ export function TickTickTaskModal({ isOpen, onClose, projectId, taskId }: TickTi
                     </div>
                 </div>
                 <div className="flex items-center gap-1.5">
-                    {!isEditing && (
-                        <button
-                            type="button"
-                            onClick={() => setShowDeleteConfirm(true)}
-                            disabled={loading || !task}
-                            className="p-1.5 text-[var(--color-textSecondary)] hover:text-red-400 hover:bg-[var(--color-surfaceHover)] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            title="Delete task"
-                        >
-                            <Trash2 className="w-4.5 h-4.5" />
-                        </button>
-                    )}
                     <button
                         onClick={onClose}
                         className="p-1.5 text-[var(--color-textSecondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-surfaceHover)] rounded-lg transition-colors"
