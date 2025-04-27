@@ -421,10 +421,10 @@ namespace SecondBrain.Data
             modelBuilder.Entity<ReminderLink>().HasQueryFilter(e => !e.IsDeleted);
             
             // Add query filter for TaskSyncMapping to match the TaskItem filter
-            modelBuilder.Entity<TaskSyncMapping>().HasQueryFilter(e => !e.LocalTask.IsDeleted);
+            modelBuilder.Entity<TaskSyncMapping>().HasQueryFilter(e => e.LocalTask == null || !e.LocalTask.IsDeleted);
             
             // Add query filter for TaskItemNote to match the Note filter
-            modelBuilder.Entity<TaskItemNote>().HasQueryFilter(e => !e.Note.IsDeleted);
+            modelBuilder.Entity<TaskItemNote>().HasQueryFilter(e => e.Note != null && !e.Note.IsDeleted);
         }
     }
 

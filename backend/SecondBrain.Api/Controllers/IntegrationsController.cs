@@ -832,7 +832,7 @@ namespace SecondBrain.Api.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> SyncTickTickTasks([FromBody] TaskSyncRequest request)
         {
-            string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             
             try
             {
@@ -1288,7 +1288,7 @@ namespace SecondBrain.Api.Controllers
                                 m.LocalTask != null && 
                                 m.LocalTask.IsDeleted);
                                 
-                        if (existingMapping != null)
+                        if (existingMapping != null && existingMapping.LocalTask != null)
                         {
                             // Found a mapping with a soft-deleted local task - restore it
                             existingMapping.LocalTask.IsDeleted = false;
@@ -1590,7 +1590,7 @@ namespace SecondBrain.Api.Controllers
                                 m.LocalTask != null && 
                                 m.LocalTask.IsDeleted);
                                 
-                        if (existingMapping != null)
+                        if (existingMapping != null && existingMapping.LocalTask != null)
                         {
                             // Found a mapping with a soft-deleted local task - restore it
                             existingMapping.LocalTask.IsDeleted = false;
