@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { X, Type, Tag as TagIcon, Loader, AlignLeft } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Type, Tag as TagIcon, Loader, AlignLeft, Server, CheckCircle } from 'lucide-react';
 import { Input } from '../../shared/Input';
 import { TextArea } from '../../shared/TextArea';
 import { useNotes } from '../../../contexts/notesContextUtils';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { SuggestionButton } from '../../shared/SuggestionButton';
+import { TickTickTask } from '../../../types/integrations';
 
 interface NewNoteModalProps {
   isOpen: boolean;
@@ -13,13 +14,20 @@ interface NewNoteModalProps {
 
 export function NewNoteModal({ isOpen, onClose }: NewNoteModalProps) {
   const { colors } = useTheme();
-  const { addNote } = useNotes();
+  const { addNote, createTickTickNote, isTickTickConnected, tickTickProjectId } = useNotes();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [tagInput, setTagInput] = useState('');
   const [tags, setTags] = useState<string[]>(['Note']);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [noteSource, setNoteSource] = useState<'local' | 'ticktick'>('local');
+
+  useEffect(() => {
+    if (!isTickTickConnected) {
+      setNoteSource('local');
+    }
+  }, [isTickTickConnected]);
 
   if (!isOpen) return null;
 
@@ -45,20 +53,37 @@ export function NewNoteModal({ isOpen, onClose }: NewNoteModalProps) {
       return;
     }
 
+    if (noteSource === 'ticktick' && !tickTickProjectId) {
+      console.error("TickTick Project ID is not set. Cannot create note in TickTick.");
+      setError("Please select a TickTick project in settings first.");
+      return;
+    }
+
     setIsLoading(true);
     setError('');
 
     try {
-      addNote({
-        title: title.trim(),
-        content: content.trim(),
-        tags,
-        isPinned: false,
-        isFavorite: false,
-        isArchived: false,
-        isDeleted: false,
-        isIdea: false
-      });
+      if (noteSource === 'ticktick' && tickTickProjectId) {
+        // Create note in TickTick
+        const tickTickNoteData: Partial<TickTickTask> = {
+          title: title.trim(),
+          content: content.trim(),
+          tags: tags.filter(t => t !== 'Note')
+        };
+        await createTickTickNote(tickTickProjectId, tickTickNoteData);
+      } else {
+        // Create local note
+        addNote({
+          title: title.trim(),
+          content: content.trim(),
+          tags,
+          isPinned: false,
+          isFavorite: false,
+          isArchived: false,
+          isDeleted: false,
+          isIdea: false
+        });
+      }
 
       onClose();
     } catch (error) {
@@ -168,6 +193,49 @@ export function NewNoteModal({ isOpen, onClose }: NewNoteModalProps) {
                 />
               </div>
 
+              {/* Note Source Selector (if TickTick is connected) */}
+              {isTickTickConnected && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium" style={{ color: colors.textSecondary }}>
+                    Save Note To
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setNoteSource('local')}
+                      disabled={isLoading}
+                      style={{
+                        backgroundColor: noteSource === 'local' ? `${colors.accent}20` : colors.surface,
+                        color: noteSource === 'local' ? colors.accent : colors.textSecondary,
+                        borderColor: noteSource === 'local' ? colors.accent : colors.border,
+                        '--hover-bg': colors.surfaceHover,
+                      } as React.CSSProperties}
+                      className="flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[--hover-bg] flex items-center justify-center gap-2"
+                    >
+                      <Server className="w-4 h-4" /> Local
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNoteSource('ticktick')}
+                      disabled={isLoading || !tickTickProjectId}
+                      style={{
+                        backgroundColor: noteSource === 'ticktick' ? `#4CAF5020` : colors.surface,
+                        color: noteSource === 'ticktick' ? `#4CAF50` : colors.textSecondary,
+                        borderColor: noteSource === 'ticktick' ? `#4CAF50` : colors.border,
+                        '--hover-bg': colors.surfaceHover,
+                      } as React.CSSProperties}
+                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[--hover-bg] flex items-center justify-center gap-2 ${!tickTickProjectId ? 'cursor-not-allowed' : ''}`}
+                      title={!tickTickProjectId ? "Connect TickTick and select a project in Settings" : ""}
+                    >
+                      <CheckCircle className="w-4 h-4" /> TickTick
+                    </button>
+                  </div>
+                  {!tickTickProjectId && (
+                    <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">A TickTick project must be selected in settings to save notes there.</p>
+                  )}
+                </div>
+              )}
+
               {/* Tags Section */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -258,7 +326,7 @@ export function NewNoteModal({ isOpen, onClose }: NewNoteModalProps) {
               </button>
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || !title.trim()}
                 style={{
                   backgroundColor: colors.accent,
                   color: colors.text,
@@ -272,7 +340,7 @@ export function NewNoteModal({ isOpen, onClose }: NewNoteModalProps) {
                     Creating...
                   </>
                 ) : (
-                  'Create Note'
+                  noteSource === 'ticktick' ? 'Create in TickTick' : 'Create Local Note'
                 )}
               </button>
             </div>
