@@ -1,21 +1,154 @@
-import { useState, useMemo } from 'react';
-import { Plus, Search, SlidersHorizontal, FileText, Grid, List, Network, Copy } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Plus, Search, FileText, Grid, List, Network, Copy, Server, Cloud, AlertCircle, Settings, Loader2, SlidersHorizontal } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNotes } from '../../../contexts/notesContextUtils';
 import { NoteCard } from '../NoteCard';
 import { Note } from '../../../types/note';
+import { TickTickTask } from '../../../types/integrations';
+import { integrationsService } from '../../../services/api/integrations.service';
 import { NewNoteModal } from './NewNoteModal';
 import { FilterDropdown } from './FilterDropdown';
 import { NotesMindMap as NotesGraph } from './NotesMindMap';
 import { LoadingScreen } from '../../shared/LoadingScreen';
 import { Input } from '../../shared/Input';
 import { useModal } from '../../../contexts/modalContextUtils';
-import { sortNotes } from '../../../utils/noteUtils';
 import { Filters } from '../../../types/filters';
 import { cardGridStyles } from '../shared/cardStyles';
 import { cardVariants } from '../../../utils/welcomeBarUtils';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { DuplicateItemsModal } from '../../shared/DuplicateItemsModal';
+import { Modal } from '../../shared/Modal';
+import { TickTickNoteModal } from './TickTickNoteModal';
+
+// Define project type locally
+interface TickTickProject {
+  id: string;
+  name: string;
+  color?: string;
+  kind?: string;
+}
+
+// Modal for TickTick project settings
+function TickTickSettingsModal({
+  isOpen,
+  onClose,
+  projectId,
+  onSave
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  projectId: string;
+  onSave: (projectId: string) => void;
+}) {
+  const [newProjectId, setNewProjectId] = useState(projectId);
+  const [tickTickProjects, setTickTickProjects] = useState<TickTickProject[]>([]);
+  const [isLoadingProjects, setIsLoadingProjects] = useState(false);
+  const [projectError, setProjectError] = useState<string | null>(null);
+
+  // Fetch TickTick projects when modal opens
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        setIsLoadingProjects(true);
+        setProjectError(null);
+        // Only get projects with kind "NOTE"
+        const projects = await integrationsService.getTickTickProjects("NOTE");
+        setTickTickProjects(projects);
+      } catch (error) {
+        console.error('Failed to fetch TickTick projects:', error);
+        setProjectError('Failed to load projects. Please try again.');
+      } finally {
+        setIsLoadingProjects(false);
+      }
+    };
+
+    if (isOpen) {
+      fetchProjects();
+    }
+  }, [isOpen]);
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="TickTick Notes Settings">
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Select TickTick Notes Project
+          </label>
+          {isLoadingProjects ? (
+            <div className="flex items-center justify-center p-4">
+              <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
+              <span className="ml-2 text-sm text-gray-500">Loading projects...</span>
+            </div>
+          ) : projectError ? (
+            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-md text-red-600 dark:text-red-400 text-sm">
+              {projectError}
+            </div>
+          ) : tickTickProjects.length === 0 ? (
+            <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-800 rounded-md text-yellow-600 dark:text-yellow-400 text-sm">
+              No note projects found in your TickTick account.
+            </div>
+          ) : (
+            <select
+              value={newProjectId}
+              onChange={(e) => setNewProjectId(e.target.value)}
+              className="w-full py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+            >
+              <option value="">-- Select a project --</option>
+              {tickTickProjects.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.name}
+                </option>
+              ))}
+            </select>
+          )}
+
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Choose which TickTick notes project to use with Second Brain.
+          </p>
+        </div>
+
+        <div className="flex justify-end space-x-2 pt-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => onSave(newProjectId)}
+            disabled={isLoadingProjects}
+            className={`px-4 py-2 rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none ${isLoadingProjects ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            Save
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+type NoteWithSource = Note & { source: 'local' | 'ticktick'; projectId?: string };
+
+function mapTickTickToLocalNote(tickTickNote: TickTickTask): NoteWithSource {
+  return {
+    id: `ticktick-${tickTickNote.id}`,
+    projectId: tickTickNote.projectId,
+    title: tickTickNote.title,
+    content: tickTickNote.content || '',
+    tags: tickTickNote.tags || [],
+    isFavorite: false,
+    isPinned: false,
+    isIdea: false,
+    isArchived: false,
+    isDeleted: false,
+    createdAt: tickTickNote.createdTime || new Date().toISOString(),
+    updatedAt: tickTickNote.modifiedTime || new Date().toISOString(),
+    linkedNoteIds: [],
+    links: [],
+    linkedReminders: [],
+    source: 'ticktick',
+  };
+}
 
 const defaultFilters: Filters = {
   search: '',
@@ -27,46 +160,151 @@ const defaultFilters: Filters = {
 };
 
 export function NotesPage() {
-  const { notes, isLoading, duplicateNotes } = useNotes();
+  const {
+    notes,
+    isLoading,
+    duplicateNotes,
+    tickTickNotes,
+    tickTickError,
+    isTickTickConnected,
+    fetchTickTickNotes,
+    tickTickProjectId,
+    updateTickTickProjectId
+  } = useNotes();
+
   const { setSelectedNote } = useModal();
   const { theme } = useTheme();
   const [showNewNoteModal, setShowNewNoteModal] = useState(false);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'graph'>('grid');
+  const [showTickTickSettings, setShowTickTickSettings] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [noteSourceFilter, setNoteSourceFilter] = useState<'all' | 'local' | 'ticktick'>(() => {
+    const stored = localStorage.getItem('note_source_filter');
+    return (stored as 'all' | 'local' | 'ticktick') || 'all';
+  });
+  const [currentTickTickProject, setCurrentTickTickProject] = useState<{ id: string; name: string } | null>(null);
+  const [tickTickProjectsList, setTickTickProjectsList] = useState<TickTickProject[]>([]);
+  const [hasFetchedProjects, setHasFetchedProjects] = useState(false);
+  const [showTickTickNoteModal, setShowTickTickNoteModal] = useState(false);
+  const [selectedTickTickNote, setSelectedTickTickNote] = useState<{ projectId: string; noteId: string } | null>(null);
+
+  // Persist note source filter to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('note_source_filter', noteSourceFilter);
+  }, [noteSourceFilter]);
 
   const regularNotes = useMemo(() => {
     return notes.filter(note => !note.isIdea);
   }, [notes]);
 
+  const mappedTickTickNotes: NoteWithSource[] = useMemo(() =>
+    tickTickNotes.map(mapTickTickToLocalNote),
+    [tickTickNotes]
+  );
+
+  const localNotesWithSource: NoteWithSource[] = useMemo(() =>
+    regularNotes.map(note => ({ ...note, source: 'local' })),
+    [regularNotes]
+  );
+
   const filteredNotes = useMemo(() => {
-    const filtered = regularNotes
-      .filter(note => {
-        const matchesSearch = note.title.toLowerCase().includes(filters.search.toLowerCase()) ||
-          note.content.toLowerCase().includes(filters.search.toLowerCase());
-        const matchesPinned = !filters.showPinned || note.isPinned;
-        const matchesFavorites = !filters.showFavorites || note.isFavorite;
-        const matchesTags = filters.tags.length === 0 ||
-          filters.tags.some(tag => note.tags.includes(tag));
+    let combinedNotes: NoteWithSource[] = [];
 
-        return matchesSearch && matchesPinned && matchesFavorites && matchesTags;
-      });
-
-    if (filters.sortBy === 'title') {
-      return filtered.sort((a, b) => {
-        return filters.sortOrder === 'asc'
-          ? a.title.localeCompare(b.title)
-          : b.title.localeCompare(a.title);
-      });
+    if (noteSourceFilter === 'all') {
+      combinedNotes = [...localNotesWithSource, ...mappedTickTickNotes];
+    } else if (noteSourceFilter === 'local') {
+      combinedNotes = localNotesWithSource;
+    } else if (noteSourceFilter === 'ticktick') {
+      combinedNotes = mappedTickTickNotes;
     }
 
-    return sortNotes(filtered);
-  }, [regularNotes, filters]);
+    return combinedNotes.filter(note => {
+      if (!note || typeof note.title !== 'string' || typeof note.content !== 'string') {
+        return false;
+      }
+      const matchesSearch = note.title.toLowerCase().includes(filters.search.toLowerCase()) ||
+        note.content.toLowerCase().includes(filters.search.toLowerCase());
+      const matchesPinned = !filters.showPinned || note.isPinned;
+      const matchesFavorites = !filters.showFavorites || note.isFavorite;
+      const matchesTags = filters.tags.length === 0 ||
+        filters.tags.some(tag => note.tags.includes(tag));
+
+      return matchesSearch && matchesPinned && matchesFavorites && matchesTags;
+    });
+  }, [localNotesWithSource, mappedTickTickNotes, noteSourceFilter, filters]);
 
   const allTags = useMemo(() => {
-    return Array.from(new Set(regularNotes.flatMap(note => note.tags)));
-  }, [regularNotes]);
+    const allNotes = noteSourceFilter === 'all'
+      ? [...localNotesWithSource, ...mappedTickTickNotes]
+      : noteSourceFilter === 'local'
+        ? localNotesWithSource
+        : mappedTickTickNotes;
+
+    return Array.from(new Set(allNotes.flatMap(note => note.tags)));
+  }, [localNotesWithSource, mappedTickTickNotes, noteSourceFilter]);
+
+  // Fetch TickTick project list and update current project name
+  useEffect(() => {
+    const fetchProjectsAndSetCurrent = async () => {
+      if (!isTickTickConnected) {
+        setCurrentTickTickProject(null);
+        setHasFetchedProjects(false); // Reset fetch status if disconnected
+        return;
+      }
+
+      let projectsToUse: TickTickProject[] = tickTickProjectsList;
+
+      // Fetch the list only if not already fetched OR we just connected
+      if (!hasFetchedProjects) {
+        try {
+          console.log(`[NotesPage] Fetching TickTick project list.`);
+          projectsToUse = await integrationsService.getTickTickProjects("NOTE");
+          setTickTickProjectsList(projectsToUse);
+          setHasFetchedProjects(true);
+        } catch (error) {
+          console.error('Error fetching TickTick project list:', error);
+          setCurrentTickTickProject({ id: tickTickProjectId, name: 'Error Loading Project' });
+          setHasFetchedProjects(false); // Allow refetch on next attempt
+          return; // Exit if fetch failed
+        }
+      } else {
+        // Use the already fetched list
+        projectsToUse = tickTickProjectsList;
+      }
+
+      // Find the current project name from the list
+      if (tickTickProjectId && projectsToUse.length > 0) {
+        const project = projectsToUse.find(p => p.id === tickTickProjectId);
+        if (project) {
+          setCurrentTickTickProject({ id: project.id, name: project.name });
+        } else {
+          setCurrentTickTickProject({ id: tickTickProjectId, name: 'Unknown Project' });
+        }
+      } else if (!tickTickProjectId) {
+        setCurrentTickTickProject(null); // No project selected
+      } else {
+        // Project list might be empty from API, or ID is invalid
+        setCurrentTickTickProject({ id: tickTickProjectId, name: 'Unknown Project' });
+      }
+    };
+
+    fetchProjectsAndSetCurrent();
+  }, [isTickTickConnected, tickTickProjectId, hasFetchedProjects, tickTickProjectsList]);
+
+  const handleSaveTickTickProjectId = async (newProjectId: string) => {
+    try {
+      await updateTickTickProjectId(newProjectId);
+      // Manually refetch notes after project ID update
+      if (isTickTickConnected && newProjectId) {
+        await fetchTickTickNotes();
+      }
+      setShowTickTickSettings(false);
+    } catch (error) {
+      console.error('Failed to update TickTick project ID:', error);
+    }
+  };
 
   if (isLoading) {
     return <LoadingScreen variant="notes" message="Loading your notes..." />;
@@ -76,41 +314,184 @@ export function NotesPage() {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleEditNote = (note: Note) => {
-    const fullNote: Note = {
-      ...note,
-      isIdea: note.isIdea || false,
-      linkedNoteIds: note.linkedNoteIds || []
-    };
-    setSelectedNote(fullNote);
+  const handleEditNote = (note: NoteWithSource) => {
+    if (note.source === 'ticktick') {
+      // Extract the actual ID (remove "ticktick-" prefix)
+      const tickTickId = note.id.replace('ticktick-', '');
+
+      // Set the selected note and open the modal
+      setSelectedTickTickNote({
+        projectId: note.projectId || tickTickProjectId,
+        noteId: tickTickId
+      });
+      setShowTickTickNoteModal(true);
+    } else {
+      // Convert the note to a full Note object that setSelectedNote expects
+      const fullNote: Note = {
+        ...note,
+        isIdea: note.isIdea || false,
+        linkedNoteIds: note.linkedNoteIds || []
+      };
+      setSelectedNote(fullNote);
+    }
+  };
+
+  // Add a function to close the TickTick note modal
+  const handleCloseTickTickNoteModal = () => {
+    setShowTickTickNoteModal(false);
+    setSelectedTickTickNote(null);
   };
 
   const clearFilters = () => {
     setFilters(defaultFilters);
   };
 
-  const graphNotes = filteredNotes.map(note => {
-    const linkedNotes = note.linkedNoteIds
-      .map(id => notes.find(n => n.id === id))
-      .filter((n): n is Note => n !== undefined && !n.isArchived && !n.isDeleted);
+  const graphNotes = filteredNotes
+    .filter(note => note.source === 'local') // Only include local notes in graph view
+    .map(note => {
+      const linkedNotes = (note as Note).linkedNoteIds
+        ?.map(id => notes.find(n => n.id === id))
+        .filter((n): n is Note => n !== undefined && !n.isArchived && !n.isDeleted);
 
-    return {
-      ...note,
-      linkedNoteIds: linkedNotes.map(n => n.id)
-    };
-  });
+      return {
+        ...note,
+        linkedNoteIds: linkedNotes?.map(n => n.id) || []
+      };
+    });
 
   const toggleFilters = () => setShowFilters(prev => !prev);
 
   const handleDuplicateNotes = async (selectedIds: string[]) => {
     try {
-      await duplicateNotes(selectedIds);
+      // Filter out TickTick notes - only duplicate local notes
+      const localNoteIds = selectedIds.filter(id => !id.startsWith('ticktick-'));
+      await duplicateNotes(localNoteIds);
     } catch (error) {
       console.error('Failed to duplicate notes:', error);
     }
   };
 
-  const renderNotesList = (notes: Note[]) => {
+  const getContainerBackground = () => {
+    if (theme === 'dark') return 'bg-gray-900/30';
+    if (theme === 'midnight') return 'bg-[#1e293b]/30';
+    return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]';
+  };
+
+  const getSourceFilterButtonClass = (mode: 'all' | 'local' | 'ticktick', currentMode: string) => {
+    const baseClasses = `
+      flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm
+      border-[0.5px] border-white/10
+      backdrop-blur-xl 
+      ring-1 ring-white/5
+      transition-all duration-200
+      hover:-translate-y-0.5
+      shadow-sm hover:shadow-md
+      whitespace-nowrap
+    `;
+    if (currentMode === mode) {
+      return `${baseClasses} bg-blue-500/20 text-blue-600 dark:text-blue-400 midnight:text-blue-300 font-medium`;
+    }
+    return `${baseClasses} ${getContainerBackground()} hover:bg-[var(--color-surfaceHover)] text-[var(--color-text)]`;
+  };
+
+  const renderTickTickFilterSection = () => {
+    if (!isTickTickConnected) return null;
+
+    return (
+      <div className="mt-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center">
+            <h3 className="font-semibold text-[var(--color-text)]">TickTick Project</h3>
+          </div>
+          <button
+            onClick={() => setShowTickTickSettings(true)}
+            className="text-sm flex items-center gap-1.5 text-[var(--color-primary)] hover:text-[var(--color-primaryDark)]"
+          >
+            <Settings className="w-3.5 h-3.5" />
+            Change Project
+          </button>
+        </div>
+
+        <div className="p-3 rounded-md bg-[var(--color-surface)] border border-[var(--color-border)]">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <span className="text-sm mr-2">Current:</span>
+              <span className="font-medium text-[var(--color-text)]">
+                {currentTickTickProject?.name || 'All Projects'}
+              </span>
+            </div>
+            <div className="flex space-x-2">
+              {getSourceFilterButtons()}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const getSourceFilterButtons = () => {
+    return (
+      <>
+        <button
+          onClick={() => setNoteSourceFilter('all')}
+          className={getSourceFilterButtonClass('all', noteSourceFilter)}
+          title="Show All Notes"
+        >
+          <Cloud className="w-4 h-4 mr-2" /> All
+        </button>
+        <button
+          onClick={() => setNoteSourceFilter('local')}
+          className={getSourceFilterButtonClass('local', noteSourceFilter)}
+          title="Show Local Notes Only"
+        >
+          <Server className="w-4 h-4 mr-2" /> Local
+        </button>
+        <button
+          onClick={() => setNoteSourceFilter('ticktick')}
+          className={getSourceFilterButtonClass('ticktick', noteSourceFilter)}
+          title="Show TickTick Notes Only"
+        >
+          TickTick
+        </button>
+      </>
+    );
+  };
+
+  const renderNotesList = (notes: NoteWithSource[]) => {
+    if (tickTickError && (noteSourceFilter === 'all' || noteSourceFilter === 'ticktick')) {
+      return (
+        <div className="flex flex-col items-center justify-center h-[400px] text-center text-red-500">
+          <AlertCircle className="w-12 h-12 mb-4" />
+          <h3 className="text-lg font-medium mb-2">Error Loading TickTick Notes</h3>
+          <p className="text-sm max-w-md mb-4">{tickTickError}</p>
+          <button
+            onClick={fetchTickTickNotes}
+            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      );
+    }
+
+    if (noteSourceFilter === 'ticktick' && !isTickTickConnected) {
+      return (
+        <div className="flex flex-col items-center justify-center h-[400px] text-center">
+          <Server className="w-12 h-12 mb-4 text-gray-400" />
+          <h3 className="text-lg font-medium mb-2">TickTick Not Connected</h3>
+          <p className="text-sm max-w-md mb-4">
+            You need to connect your TickTick account to view notes here.
+          </p>
+          <a
+            href="/dashboard/settings/integrations"
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+          >
+            Connect TickTick
+          </a>
+        </div>
+      );
+    }
+
     if (notes.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center h-[400px] text-center">
@@ -121,7 +502,7 @@ export function NotesPage() {
           <p className="text-[var(--color-textSecondary)] max-w-md">
             {filters.search || filters.tags.length > 0 || filters.showPinned || filters.showFavorites
               ? "Try adjusting your filters to find what you're looking for."
-              : "Start capturing your thoughts! Click the 'New Note' button to create your first note."}
+              : `No ${noteSourceFilter !== 'all' ? noteSourceFilter : ''} notes found. Click the 'New Note' button to create one.`}
           </p>
         </div>
       );
@@ -189,12 +570,6 @@ export function NotesPage() {
     return `${baseClasses} ${getContainerBackground()} hover:bg-[var(--color-surfaceHover)] text-[var(--color-text)]`;
   };
 
-  const getContainerBackground = () => {
-    if (theme === 'dark') return 'bg-gray-900/30';
-    if (theme === 'midnight') return 'bg-[#1e293b]/30';
-    return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]';
-  };
-
   return (
     <div className="min-h-screen overflow-visible bg-fixed">
       {/* Background */}
@@ -234,7 +609,11 @@ export function NotesPage() {
               <div className="space-y-1">
                 <h1 className="text-2xl font-bold text-[var(--color-text)]">Notes</h1>
                 <p className="text-sm text-[var(--color-textSecondary)]">
-                  {regularNotes.length} notes in your collection
+                  {noteSourceFilter === 'all'
+                    ? `${regularNotes.length + mappedTickTickNotes.length} notes in your collection`
+                    : noteSourceFilter === 'local'
+                      ? `${regularNotes.length} notes in your collection`
+                      : `${mappedTickTickNotes.length} notes in TickTick`}
                 </p>
               </div>
             </motion.div>
@@ -276,6 +655,9 @@ export function NotesPage() {
               </div>
             </motion.div>
           </div>
+
+          {/* TickTick Project Info */}
+          {isTickTickConnected && renderTickTickFilterSection()}
         </motion.div>
 
         {/* Search and View Controls */}
@@ -338,6 +720,7 @@ export function NotesPage() {
               onClick={() => setViewMode('graph')}
               className={getViewModeButtonClass('graph', viewMode)}
               title="Graph View"
+              disabled={noteSourceFilter === 'ticktick'} // Disable graph view for TickTick notes
             >
               <Network className="w-5 h-5" />
             </button>
@@ -424,6 +807,23 @@ export function NotesPage() {
           onDuplicate={handleDuplicateNotes}
           itemType="note"
         />
+
+        <TickTickSettingsModal
+          isOpen={showTickTickSettings}
+          onClose={() => setShowTickTickSettings(false)}
+          projectId={tickTickProjectId}
+          onSave={handleSaveTickTickProjectId}
+        />
+
+        {/* Add the TickTickNoteModal */}
+        {showTickTickNoteModal && selectedTickTickNote && (
+          <TickTickNoteModal
+            isOpen={showTickTickNoteModal}
+            onClose={handleCloseTickTickNoteModal}
+            projectId={selectedTickTickNote.projectId}
+            noteId={selectedTickTickNote.noteId}
+          />
+        )}
       </div>
     </div>
   );

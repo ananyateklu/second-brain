@@ -1,10 +1,26 @@
 import { createContext, useContext } from 'react';
 import type { Note } from '../types/note';
+import { TickTickTask } from '../types/integrations';
 
 export interface NotesContextType {
   notes: Note[];
   archivedNotes: Note[];
   isLoading: boolean;
+
+  // TickTick specific state
+  tickTickNotes: TickTickTask[];
+  isTickTickLoading: boolean;
+  tickTickError: string | null;
+  fetchTickTickNotes: () => Promise<void>;
+  isTickTickConnected: boolean;
+  refreshTickTickConnection: () => Promise<void>;
+  tickTickProjectId: string;
+  updateTickTickProjectId: (projectId: string) => Promise<void>;
+  getTickTickNote: (projectId: string, noteId: string) => Promise<TickTickTask | null>;
+  updateTickTickNote: (noteId: string, note: Partial<TickTickTask> & { id: string; projectId: string }) => Promise<TickTickTask | null>;
+  deleteTickTickNote: (projectId: string, noteId: string) => Promise<boolean>;
+  createTickTickNote: (projectId: string, noteData: Partial<TickTickTask>) => Promise<TickTickTask | null>;
+
   addNote: (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'linkedNoteIds' | 'linkedNotes' | 'linkedTasks' | 'linkedReminders' | 'links'>) => void;
   updateNote: (id: string, updates: Partial<Note>) => Promise<Note>;
   deleteNote: (id: string) => Promise<void>;

@@ -2,10 +2,12 @@ import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { NotesContext, useNotes } from './notesContextUtils';
 import { useActivities } from './activityContextUtils';
 import { notesService, type UpdateNoteData } from '../services/api/notes.service';
+import { integrationsService } from '../services/api/integrations.service';
 import { useTrash } from './trashContextUtils';
 import { useAuth } from '../hooks/useAuth';
 import { sortNotes } from '../utils/noteUtils';
 import type { Note } from '../types/note';
+import { TickTickTask } from '../types/integrations';
 import { useReminders } from './remindersContextUtils';
 
 export function NotesProvider({ children }: { children: React.ReactNode }) {
@@ -15,6 +17,49 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
   const { createActivity } = useActivities();
   const { moveToTrash } = useTrash();
   const { user } = useAuth();
+
+  // TickTick specific state
+  const [tickTickNotes, setTickTickNotes] = useState<TickTickTask[]>([]);
+  const [isTickTickLoading, setIsTickTickLoading] = useState(false);
+  const [tickTickError, setTickTickError] = useState<string | null>(null);
+  const [isTickTickConnected, setIsTickTickConnected] = useState<boolean>(() => {
+    const stored = localStorage.getItem('ticktick_connected');
+    return stored === 'true';
+  });
+  const [tickTickProjectId, setTickTickProjectId] = useState<string>(() => {
+    return localStorage.getItem('ticktick_notes_project_id') || '';
+  });
+
+  // Persist TickTick connection status to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('ticktick_connected', isTickTickConnected.toString());
+  }, [isTickTickConnected]);
+
+  // Persist TickTick project ID to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('ticktick_notes_project_id', tickTickProjectId);
+  }, [tickTickProjectId]);
+
+  // Check TickTick connection status
+  const checkTickTickStatus = useCallback(async (forceCheck: boolean = false) => {
+    try {
+      // Skip network request if we already know we're connected and this isn't a forced check
+      if (isTickTickConnected && !forceCheck) {
+        return;
+      }
+
+      const status = await integrationsService.getTickTickStatus(isTickTickConnected);
+
+      // Only update the state if it's different from current state or we're forcing a check
+      if (status.isConnected !== isTickTickConnected || forceCheck) {
+        console.log(`TickTick connection status changed: ${isTickTickConnected} → ${status.isConnected}`);
+        setIsTickTickConnected(status.isConnected);
+      }
+    } catch (error) {
+      console.error('Failed to check TickTick connection status:', error);
+      // Don't change state on errors to avoid flickering during network issues
+    }
+  }, [isTickTickConnected]);
 
   const isLoadingArchived = useRef(false);
   const hasLoadedArchived = useRef(false);
@@ -73,12 +118,125 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Fetch TickTick notes
+  const fetchTickTickNotes = useCallback(async () => {
+    if (!user || !isTickTickConnected) return;
+    setIsTickTickLoading(true);
+    setTickTickError(null);
+    try {
+      // Get TickTick notes, filtering by NOTE kind
+      const fetchedTickTickNotes = await integrationsService.getTickTickTasks(tickTickProjectId);
+      setTickTickNotes(fetchedTickTickNotes);
+    } catch (error: unknown) {
+      console.error('Failed to fetch TickTick notes:', error);
+      let message = "Failed to load TickTick notes.";
+      if (error instanceof Error) {
+        message = error.message;
+      }
+      setTickTickError(message);
+    } finally {
+      setIsTickTickLoading(false);
+    }
+  }, [user, isTickTickConnected, tickTickProjectId]);
+
+  // Add a separate effect to check TickTick connection status on mount and when auth changes
+  useEffect(() => {
+    if (user) {
+      // If user is authenticated, validate our localStorage connection status with backend
+      checkTickTickStatus(true); // Force a check on authentication
+
+      // Subscribe to SignalR reconnection events to revalidate TickTick connection
+      const handleReconnect = () => {
+        console.log("SignalR reconnected - validating TickTick connection status");
+        // Delay check slightly to ensure backend services are fully available
+        setTimeout(() => checkTickTickStatus(true), 1000);
+      };
+
+      window.addEventListener('signalr:reconnected', handleReconnect);
+
+      return () => {
+        window.removeEventListener('signalr:reconnected', handleReconnect);
+      };
+    }
+  }, [user, checkTickTickStatus]);
+
+  // Update TickTick project ID and refetch notes
+  const updateTickTickProjectId = useCallback(async (projectId: string) => {
+    setTickTickProjectId(projectId);
+    // If there's a project ID and we're connected, fetch notes immediately
+    if (projectId && isTickTickConnected) {
+      await fetchTickTickNotes();
+    }
+  }, [isTickTickConnected, fetchTickTickNotes]);
+
   // Load regular notes when user is available
   useEffect(() => {
     if (user) {
       fetchNotes();
     }
   }, [user, fetchNotes]);
+
+  // Fetch TickTick notes when the page loads, or when connection/project changes
+  useEffect(() => {
+    if (isTickTickConnected && tickTickProjectId) {
+      console.log(`[NotesContext] Fetching TickTick notes. Connected: ${isTickTickConnected}, ProjectID: ${tickTickProjectId}`);
+      fetchTickTickNotes();
+    }
+  }, [isTickTickConnected, tickTickProjectId, fetchTickTickNotes]);
+
+  // TickTick note operations
+  const getTickTickNote = useCallback(async (projectId: string, noteId: string): Promise<TickTickTask | null> => {
+    try {
+      const note = await integrationsService.getTickTickTask(projectId, noteId);
+      return note;
+    } catch (error) {
+      console.error('Failed to fetch TickTick note:', error);
+      return null;
+    }
+  }, []);
+
+  const updateTickTickNote = useCallback(async (noteId: string, note: Partial<TickTickTask> & { id: string; projectId: string }): Promise<TickTickTask | null> => {
+    try {
+      const updatedNote = await integrationsService.updateTickTickTask(noteId, note);
+
+      // After successful update, refresh the TickTick notes list to show updated data
+      await fetchTickTickNotes();
+
+      return updatedNote;
+    } catch (error) {
+      console.error('Failed to update TickTick note:', error);
+      return null;
+    }
+  }, [fetchTickTickNotes]);
+
+  const deleteTickTickNote = useCallback(async (projectId: string, noteId: string): Promise<boolean> => {
+    try {
+      const success = await integrationsService.deleteTickTickTask(projectId, noteId);
+
+      // After successful deletion, refresh the TickTick notes list to show updated data
+      if (success) {
+        await fetchTickTickNotes();
+      }
+
+      return success;
+    } catch (error) {
+      console.error('Failed to delete TickTick note:', error);
+      return false;
+    }
+  }, [fetchTickTickNotes]);
+
+  const createTickTickNote = useCallback(async (projectId: string, noteData: Partial<TickTickTask>): Promise<TickTickTask | null> => {
+    try {
+      const createdNote = await integrationsService.createTickTickTask(projectId, noteData);
+      // Refresh TickTick notes after creation
+      await fetchTickTickNotes();
+      return createdNote;
+    } catch (error) {
+      console.error('Failed to create TickTick note:', error);
+      setTickTickError('Failed to create note in TickTick.');
+      return null;
+    }
+  }, [fetchTickTickNotes]);
 
   const createSafeNote = (newNote: Note): Note => ({
     ...newNote,
@@ -768,6 +926,20 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     notes,
     archivedNotes,
     isLoading,
+    // TickTick related values
+    tickTickNotes,
+    isTickTickLoading,
+    tickTickError,
+    fetchTickTickNotes,
+    isTickTickConnected,
+    refreshTickTickConnection: checkTickTickStatus,
+    tickTickProjectId,
+    updateTickTickProjectId,
+    getTickTickNote,
+    updateTickTickNote,
+    deleteTickTickNote,
+    createTickTickNote,
+    // Original methods
     addNote,
     updateNote,
     deleteNote,
@@ -792,6 +964,20 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     notes,
     archivedNotes,
     isLoading,
+    // TickTick related dependencies
+    tickTickNotes,
+    isTickTickLoading,
+    tickTickError,
+    fetchTickTickNotes,
+    isTickTickConnected,
+    checkTickTickStatus,
+    tickTickProjectId,
+    updateTickTickProjectId,
+    getTickTickNote,
+    updateTickTickNote,
+    deleteTickTickNote,
+    createTickTickNote,
+    // Original dependencies
     addNote,
     updateNote,
     deleteNote,

@@ -142,7 +142,7 @@ function mapTickTickToLocalTask(tickTickTask: TickTickTask): TaskWithSource {
     id: `ticktick-${tickTickTask.id}`,
     projectId: tickTickTask.projectId,
     title: tickTickTask.title,
-    description: tickTickTask.content || tickTickTask.description || '',
+    description: tickTickTask.content || '',
     status: mapTickTickStatus(tickTickTask.status),
     priority: mapTickTickPriority(tickTickTask.priority),
     dueDate: tickTickTask.dueDate || null,
