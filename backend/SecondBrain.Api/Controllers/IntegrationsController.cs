@@ -51,7 +51,6 @@ namespace SecondBrain.Api.Controllers
         // Add a new model for sync requests
         public class TaskSyncRequest
         {
-            public string Direction { get; set; } = "two-way"; // "two-way", "to-ticktick", "from-ticktick"
             public string ResolutionStrategy { get; set; } = "newer"; // "newer", "ticktick", "secondbrain", "ask"
             public bool IncludeTags { get; set; } = true;
             public required string ProjectId { get; set; } // Add this property
@@ -967,7 +966,7 @@ namespace SecondBrain.Api.Controllers
                 }
                 
                 _logger.LogInformation("Starting task sync for user {UserId} with direction {Direction}", 
-                    userId, request.Direction);
+                    userId, request.ResolutionStrategy);
                 
                 // 1. Get TickTick credentials
                 var credentials = await _integrationService.GetTickTickCredentialsAsync(userId);
@@ -994,16 +993,16 @@ namespace SecondBrain.Api.Controllers
 
                 // 3. Get local tasks
                 var localTasks = new List<TaskItem>();
-                if (request.Direction == "to-ticktick") 
+                if (request.ResolutionStrategy == "from-ticktick") 
                 {
-                    // For to-ticktick sync, we only need non-deleted tasks
+                    // For from-ticktick sync, we only need non-deleted tasks
                     localTasks = await _context.Tasks
                         .Where(t => t.UserId == userId && !t.IsDeleted)
                         .ToListAsync();
                 }
                 else
                 {
-                    // For from-ticktick or two-way sync, we need all tasks including soft-deleted ones
+                    // For two-way or ask sync, we need all tasks including soft-deleted ones
                     localTasks = await _context.Tasks
                         .IgnoreQueryFilters()
                         .Where(t => t.UserId == userId)
@@ -1044,20 +1043,8 @@ namespace SecondBrain.Api.Controllers
                 // 5. Perform the sync based on direction
                 var result = new TaskSyncResult();
                 
-                switch (request.Direction)
-                {
-                    case "two-way":
-                        result = await PerformTwoWaySync(userId, localTasks, tickTickTasks, existingMappings, request);
-                        break;
-                    case "to-ticktick":
-                        result = await PerformToTickTickSync(userId, localTasks, tickTickTasks, existingMappings, request);
-                        break;
-                    case "from-ticktick":
-                        result = await PerformFromTickTickSync(userId, localTasks, tickTickTasks, existingMappings, request);
-                        break;
-                    default:
-                        return BadRequest(new { message = "Invalid sync direction." });
-                }
+                // Always perform sync from TickTick to local
+                result = await PerformFromTickTickSync(userId, localTasks, tickTickTasks, existingMappings, request);
                 
                 // 6. Update the last sync time
                 var now = DateTime.UtcNow;
@@ -1081,7 +1068,7 @@ namespace SecondBrain.Api.Controllers
                     $"Synchronized tasks with TickTick ({result.Created} created, {result.Updated} updated, {result.Deleted} deleted)",
                     new { 
                         projectId = request.ProjectId,
-                        direction = request.Direction,
+                        direction = request.ResolutionStrategy,
                         created = result.Created,
                         updated = result.Updated,
                         deleted = result.Deleted,
@@ -1211,490 +1198,6 @@ namespace SecondBrain.Api.Controllers
                 _logger.LogError(ex, "Error resetting sync data for user {UserId}", userId);
                 return StatusCode(500, new { message = "An error occurred while resetting sync data." });
             }
-        }
-
-        // Helper method for two-way sync
-        private async Task<TaskSyncResult> PerformTwoWaySync(
-            string userId, 
-            List<TaskItem> localTasks, 
-            List<TickTickTask> tickTickTasks, 
-            List<TaskSyncMapping> existingMappings, 
-            TaskSyncRequest request)
-        {
-            var result = new TaskSyncResult();
-            int created = 0, updated = 0, errors = 0;
-            
-            try
-            {
-                // 1. Process tasks that exist in both systems (have mappings)
-                foreach (var mapping in existingMappings)
-                {
-                    try
-                    {
-                        var localTask = localTasks.FirstOrDefault(t => t.Id == mapping.LocalTaskId);
-                        var tickTickTask = tickTickTasks.FirstOrDefault(t => t.Id == mapping.TickTickTaskId);
-                        
-                        // Handle deleted tasks in both systems
-                        if (localTask == null && tickTickTask == null)
-                        {
-                            // Both tasks have been deleted - remove the mapping
-                            _context.TaskSyncMappings.Remove(mapping);
-                            continue;
-                        }
-                        else if (tickTickTask == null)
-                        {
-                            // TickTick task is deleted but local task exists
-                            if (localTask?.IsDeleted == false)
-                            {
-                                // Local task is not deleted - create new TickTick task
-                                var newTickTickTask = MapLocalTaskToTickTick(localTask, request.ProjectId);
-                                var createdTickTickTask = await CreateTickTickTaskInternal(userId, newTickTickTask);
-                                
-                                if (createdTickTickTask != null)
-                                {
-                                    // Update mapping with new TickTick ID
-                                    mapping.TickTickTaskId = createdTickTickTask.Id;
-                                    mapping.LastSyncedAt = DateTime.UtcNow;
-                                    created++;
-                                }
-                                else
-                                {
-                                    errors++;
-                                }
-                            }
-                            else
-                            {
-                                // Both tasks are effectively deleted - remove mapping
-                                _context.TaskSyncMappings.Remove(mapping);
-                            }
-                            continue;
-                        }
-                        else if (localTask == null)
-                        {
-                            // Local task doesn't exist, but TickTick task does
-                            // Check if the local task may have been soft-deleted
-                            var softDeletedTask = await _context.Tasks
-                                .IgnoreQueryFilters()
-                                .FirstOrDefaultAsync(t => t.Id == mapping.LocalTaskId && t.IsDeleted);
-                                
-                            if (softDeletedTask != null)
-                            {
-                                // Local task exists but is soft-deleted
-                                // Restore the soft-deleted task and update it with TickTick data
-                                softDeletedTask.IsDeleted = false;
-                                UpdateLocalTaskFromTickTick(softDeletedTask, tickTickTask);
-                                mapping.LastSyncedAt = DateTime.UtcNow;
-                                updated++;
-                            }
-                            else
-                            {
-                                // Local task was hard-deleted or never existed
-                                // Create a new local task from TickTick data
-                                var newLocalTask = MapTickTickTaskToLocal(tickTickTask, userId);
-                                _context.Tasks.Add(newLocalTask);
-                                
-                                // Update mapping with new local task ID
-                                mapping.LocalTaskId = newLocalTask.Id;
-                                mapping.LastSyncedAt = DateTime.UtcNow;
-                                created++;
-                            }
-                            continue;
-                        }
-                        
-                        // Both tasks exist - check which one was updated more recently
-                        if (localTask.IsDeleted)
-                        {
-                            // Local task is soft-deleted - delete the TickTick task
-                            var success = await DeleteTickTickTaskInternal(userId, request.ProjectId, tickTickTask.Id);
-                            if (success)
-                            {
-                                // Remove the mapping since both tasks are now deleted
-                                _context.TaskSyncMappings.Remove(mapping);
-                            }
-                            else
-                            {
-                                errors++;
-                            }
-                            continue;
-                        }
-                        
-                        DateTime? localUpdateTime = localTask.UpdatedAt;
-                        DateTime? tickTickUpdateTime = null;
-                        
-                        // Parse TickTick modification time if available
-                        if (!string.IsNullOrEmpty(tickTickTask.ModifiedTime))
-                        {
-                            tickTickUpdateTime = DateTime.Parse(tickTickTask.ModifiedTime);
-                        }
-                        else if (!string.IsNullOrEmpty(tickTickTask.CreatedTime))
-                        {
-                            tickTickUpdateTime = DateTime.Parse(tickTickTask.CreatedTime);
-                        }
-                        
-                        if (localUpdateTime > tickTickUpdateTime)
-                        {
-                            // Local task is more recent - update TickTick task
-                            var updatedTickTickTask = MapLocalTaskToTickTick(localTask, request.ProjectId);
-                            updatedTickTickTask.Id = tickTickTask.Id;
-                            
-                            var success = await UpdateTickTickTaskInternal(userId, updatedTickTickTask);
-                            if (success)
-                            {
-                                mapping.LastSyncedAt = DateTime.UtcNow;
-                                updated++;
-                            }
-                            else
-                            {
-                                errors++;
-                            }
-                        }
-                        else
-                        {
-                            // TickTick task is more recent - update local task
-                            UpdateLocalTaskFromTickTick(localTask, tickTickTask);
-                            mapping.LastSyncedAt = DateTime.UtcNow;
-                            updated++;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Error processing task mapping {MappingId}", mapping.Id);
-                        errors++;
-                    }
-                }
-                
-                // 2. Process local tasks that don't have mappings (create in TickTick)
-                var unmappedLocalTasks = localTasks
-                    .Where(t => !t.IsDeleted && !existingMappings.Any(m => m.LocalTaskId == t.Id))
-                    .ToList();
-                    
-                foreach (var localTask in unmappedLocalTasks)
-                {
-                    try
-                    {
-                        var newTickTickTask = MapLocalTaskToTickTick(localTask, request.ProjectId);
-                        var createdTickTickTask = await CreateTickTickTaskInternal(userId, newTickTickTask);
-                        
-                        if (createdTickTickTask != null)
-                        {
-                            var newMapping = new TaskSyncMapping
-                            {
-                                UserId = userId,
-                                LocalTaskId = localTask.Id,
-                                TickTickTaskId = createdTickTickTask.Id,
-                                Provider = "TickTick",
-                                LastSyncedAt = DateTime.UtcNow
-                            };
-                            
-                            _context.TaskSyncMappings.Add(newMapping);
-                            existingMappings.Add(newMapping);
-                            created++;
-                        }
-                        else
-                        {
-                            errors++;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Error creating TickTick task for local task {TaskId}", localTask.Id);
-                        errors++;
-                    }
-                }
-                
-                // 3. Process TickTick tasks that don't have mappings (create locally)
-                // More efficient query to find unmapped TickTick tasks
-                var mappedTickTickIds = await _context.TaskSyncMappings
-                    .Where(m => m.UserId == userId && m.Provider == "TickTick")
-                    .Select(m => m.TickTickTaskId)
-                    .ToListAsync();
-
-                var unmappedTickTickTasks = tickTickTasks
-                    .Where(t => !mappedTickTickIds.Contains(t.Id))
-                    .ToList();
-
-                _logger.LogInformation("Found {Count} unmapped TickTick tasks to sync", unmappedTickTickTasks.Count);
-                
-                foreach (var tickTickTask in unmappedTickTickTasks)
-                {
-                    try
-                    {
-                        // Check if a soft-deleted task exists with a mapping to this TickTick task ID
-                        var existingMapping = await _context.TaskSyncMappings
-                            .IgnoreQueryFilters()
-                            .Include(m => m.LocalTask)
-                            .FirstOrDefaultAsync(m => 
-                                m.TickTickTaskId == tickTickTask.Id && 
-                                m.Provider == "TickTick" && 
-                                m.UserId == userId &&
-                                m.LocalTask != null && 
-                                m.LocalTask.IsDeleted);
-                                
-                        if (existingMapping != null && existingMapping.LocalTask != null)
-                        {
-                            // Found a mapping with a soft-deleted local task - restore it
-                            existingMapping.LocalTask.IsDeleted = false;
-                            existingMapping.LocalTask.DeletedAt = null;
-                            
-                            // Update task content from TickTick
-                            UpdateLocalTaskFromTickTick(existingMapping.LocalTask, tickTickTask);
-                            _context.Tasks.Update(existingMapping.LocalTask);
-                            
-                            // Update mapping timestamp
-                            existingMapping.LastSyncedAt = DateTime.UtcNow;
-                            updated++;
-                            continue; // Skip creating a new task
-                        }
-                        
-                        // Check if this might be a task that was previously mapped but got deleted locally
-                        var existingLocalTask = await _context.Tasks
-                            .IgnoreQueryFilters()
-                            .FirstOrDefaultAsync(t => 
-                                t.IsDeleted && 
-                                t.UserId == userId && 
-                                _context.TaskSyncMappings.Any(m => m.LocalTaskId == t.Id && m.TickTickTaskId == tickTickTask.Id));
-                                
-                        if (existingLocalTask != null)
-                        {
-                            // Restore the soft-deleted task and update it
-                            existingLocalTask.IsDeleted = false;
-                            existingLocalTask.DeletedAt = null;
-                            UpdateLocalTaskFromTickTick(existingLocalTask, tickTickTask);
-                            
-                            // Update the mapping timestamp
-                            var mapping = await _context.TaskSyncMappings.FirstAsync(m => m.LocalTaskId == existingLocalTask.Id);
-                            mapping.LastSyncedAt = DateTime.UtcNow;
-                            updated++;
-                        }
-                        else
-                        {
-                            // Check if an existing sync mapping exists but is not returned in our loaded mappings
-                            var existingDbMapping = await _context.TaskSyncMappings
-                                .FirstOrDefaultAsync(m => 
-                                    m.TickTickTaskId == tickTickTask.Id && 
-                                    m.Provider == "TickTick" && 
-                                    m.UserId == userId);
-                                    
-                            if (existingDbMapping != null)
-                            {
-                                // Mapping exists in database but wasn't in our loaded list
-                                // Check if the task was soft-deleted locally
-                                var localTask = await _context.Tasks
-                                    .IgnoreQueryFilters()
-                                    .FirstOrDefaultAsync(t => t.Id == existingDbMapping.LocalTaskId);
-                                
-                                if (localTask != null)
-                                {
-                                    if (localTask.IsDeleted)
-                                    {
-                                        // The local task was soft-deleted - restore it since this is from-ticktick sync
-                                        localTask.IsDeleted = false;
-                                        localTask.DeletedAt = null;
-                                        
-                                        // Update content from TickTick
-                                        UpdateLocalTaskFromTickTick(localTask, tickTickTask);
-                                        _context.Tasks.Update(localTask);
-                                        
-                                        // Update mapping timestamp
-                                        existingDbMapping.LastSyncedAt = DateTime.UtcNow;
-                                        updated++;
-                                    }
-                                    else
-                                    {
-                                        // Task exists and is not deleted - update it
-                                        UpdateLocalTaskFromTickTick(localTask, tickTickTask);
-                                        _context.Tasks.Update(localTask);
-                                        
-                                        // Update mapping timestamp
-                                        existingDbMapping.LastSyncedAt = DateTime.UtcNow;
-                                        updated++;
-                                    }
-                                }
-                                else
-                                {
-                                    // Local task doesn't exist anymore (hard-deleted) - create a new one
-                                    var newLocalTask = MapTickTickTaskToLocal(tickTickTask, userId);
-                                    _context.Tasks.Add(newLocalTask);
-                                    await _context.SaveChangesAsync();
-                                    
-                                    // Update mapping to point to the new local task
-                                    existingDbMapping.LocalTaskId = newLocalTask.Id;
-                                    existingDbMapping.LastSyncedAt = DateTime.UtcNow;
-                                    created++;
-                                }
-                            }
-                            else
-                            {
-                                // No mapping exists - create a new local task
-                                var newLocalTask = MapTickTickTaskToLocal(tickTickTask, userId);
-                                
-                                _context.Tasks.Add(newLocalTask);
-                                await _context.SaveChangesAsync();
-                                
-                                // Create mapping record
-                                var newMapping = new TaskSyncMapping
-                                {
-                                    UserId = userId,
-                                    LocalTaskId = newLocalTask.Id,
-                                    TickTickTaskId = tickTickTask.Id,
-                                    Provider = "TickTick",
-                                    LastSyncedAt = DateTime.UtcNow
-                                };
-                                
-                                _context.TaskSyncMappings.Add(newMapping);
-                                existingMappings.Add(newMapping);
-                                created++;
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Error processing TickTick task {TickTickTaskId} during sync", tickTickTask.Id);
-                        errors++;
-                    }
-                }
-                
-                await _context.SaveChangesAsync();
-                
-                result.Success = true;
-                result.Created = created;
-                result.Updated = updated;
-                result.Errors = errors;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error during two-way sync");
-                result.Success = false;
-                result.Errors += 1;
-                result.Message = $"Error during sync: {ex.Message}";
-            }
-            
-            return result;
-        }
-
-        // Helper method for local to TickTick sync (one-way)
-        private async Task<TaskSyncResult> PerformToTickTickSync(
-            string userId, 
-            List<TaskItem> localTasks, 
-            List<TickTickTask> tickTickTasks, 
-            List<TaskSyncMapping> existingMappings, 
-            TaskSyncRequest request)
-        {
-            var result = new TaskSyncResult();
-            int created = 0, updated = 0, errors = 0;
-            
-            try
-            {
-                // Filter out soft-deleted local tasks - don't sync deleted tasks to TickTick
-                var nonDeletedLocalTasks = localTasks.Where(t => !t.IsDeleted).ToList();
-                
-                // Process local tasks - create or update them in TickTick
-                foreach (var localTask in nonDeletedLocalTasks)
-                {
-                    try
-                    {
-                        // Check if this local task already has a mapping
-                        var mapping = existingMappings.FirstOrDefault(m => m.LocalTaskId == localTask.Id);
-                        
-                        if (mapping == null)
-                        {
-                            // No mapping exists - create a new TickTick task
-                            var newTickTickTask = MapLocalTaskToTickTick(localTask, request.ProjectId);
-                            
-                            // Call TickTick API to create task
-                            var createdTickTickTask = await CreateTickTickTaskInternal(userId, newTickTickTask);
-                            
-                            if (createdTickTickTask != null)
-                            {
-                                // Create mapping record
-                                var newMapping = new TaskSyncMapping
-                                {
-                                    UserId = userId,
-                                    LocalTaskId = localTask.Id,
-                                    TickTickTaskId = createdTickTickTask.Id,
-                                    Provider = "TickTick",
-                                    LastSyncedAt = DateTime.UtcNow
-                                };
-                                
-                                _context.TaskSyncMappings.Add(newMapping);
-                                existingMappings.Add(newMapping);
-                                created++;
-                            }
-                            else
-                            {
-                                errors++;
-                            }
-                        }
-                        else
-                        {
-                            // Mapping exists - update the TickTick task
-                            var tickTickTask = tickTickTasks.FirstOrDefault(t => t.Id == mapping.TickTickTaskId);
-                            
-                            if (tickTickTask != null)
-                            {
-                                // Update TickTick task with local data
-                                var updatedTickTickTask = MapLocalTaskToTickTick(localTask, request.ProjectId);
-                                updatedTickTickTask.Id = tickTickTask.Id;
-                                
-                                // Call TickTick API to update task
-                                var success = await UpdateTickTickTaskInternal(userId, updatedTickTickTask);
-                                
-                                if (success)
-                                {
-                                    mapping.LastSyncedAt = DateTime.UtcNow;
-                                    updated++;
-                                }
-                                else
-                                {
-                                    errors++;
-                                }
-                            }
-                            else
-                            {
-                                // TickTick task might have been deleted in TickTick
-                                // Create a new one and update the mapping
-                                var newTickTickTask = MapLocalTaskToTickTick(localTask, request.ProjectId);
-                                
-                                // Call TickTick API to create task
-                                var createdTickTickTask = await CreateTickTickTaskInternal(userId, newTickTickTask);
-                                
-                                if (createdTickTickTask != null)
-                                {
-                                    // Update mapping with new TickTick task ID
-                                    mapping.TickTickTaskId = createdTickTickTask.Id;
-                                    mapping.LastSyncedAt = DateTime.UtcNow;
-                                    created++;
-                                }
-                                else
-                                {
-                                    errors++;
-                                }
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Error syncing local task {TaskId} to TickTick", localTask.Id);
-                        errors++;
-                    }
-                }
-                
-                await _context.SaveChangesAsync();
-                
-                result.Success = true;
-                result.Created = created;
-                result.Updated = updated;
-                result.Errors = errors;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error during one-way sync to TickTick");
-                result.Success = false;
-                result.Errors += 1;
-                result.Message = $"Error during sync: {ex.Message}";
-            }
-            
-            return result;
         }
 
         // Helper method for TickTick to local sync (one-way)

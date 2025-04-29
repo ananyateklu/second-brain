@@ -52,7 +52,6 @@ export function SettingsPage() {
   }, [isTickTickConnected]);
 
   // Sync configuration state
-  const [syncDirection, setSyncDirection] = useState<'two-way' | 'to-ticktick' | 'from-ticktick'>('two-way');
   const [syncFrequency, setSyncFrequency] = useState<string>('manual');
   const [conflictResolution, setConflictResolution] = useState<string>('newer');
   const [syncTags, setSyncTags] = useState<boolean>(true);
@@ -111,11 +110,6 @@ export function SettingsPage() {
 
   // Load sync settings from localStorage
   useEffect(() => {
-    const storedDirection = localStorage.getItem('ticktick_sync_direction');
-    if (storedDirection && (storedDirection === 'two-way' || storedDirection === 'to-ticktick' || storedDirection === 'from-ticktick')) {
-      setSyncDirection(storedDirection);
-    }
-
     const storedFrequency = localStorage.getItem('ticktick_sync_frequency');
     if (storedFrequency) {
       setSyncFrequency(storedFrequency);
@@ -140,12 +134,11 @@ export function SettingsPage() {
   // Save sync settings to localStorage when they change
   useEffect(() => {
     if (isTickTickConnected) {
-      localStorage.setItem('ticktick_sync_direction', syncDirection);
       localStorage.setItem('ticktick_sync_frequency', syncFrequency);
       localStorage.setItem('ticktick_conflict_resolution', conflictResolution);
       localStorage.setItem('ticktick_sync_tags', String(syncTags));
     }
-  }, [isTickTickConnected, syncDirection, syncFrequency, conflictResolution, syncTags]);
+  }, [isTickTickConnected, syncFrequency, conflictResolution, syncTags]);
 
   // Check for OAuth callback and verify current status
   useEffect(() => {
@@ -293,16 +286,6 @@ export function SettingsPage() {
     }
   };
 
-  const handleSyncDirectionChange = (direction: 'two-way' | 'to-ticktick' | 'from-ticktick') => {
-    // Fix casing if needed to match backend expectations
-    setSyncDirection(direction);
-
-    // Clear any previous sync errors when changing direction
-    setSyncError(null);
-
-    console.log(`Changed sync direction to: ${direction}`);
-  };
-
   const handleSyncFrequencyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSyncFrequency(e.target.value);
   };
@@ -321,11 +304,10 @@ export function SettingsPage() {
     setSyncError(null);
 
     try {
-      console.log(`Starting sync with direction: ${syncDirection}, resolutionStrategy: ${conflictResolution}, includeTags: ${syncTags}, projectId: ${tickTickProjectId}`);
+      console.log(`Starting sync (from TickTick) with resolutionStrategy: ${conflictResolution}, includeTags: ${syncTags}, projectId: ${tickTickProjectId}`);
 
       // Call the sync API with the current configuration using the Tasks context
       const result = await syncWithTickTick({
-        direction: syncDirection,
         resolutionStrategy: conflictResolution,
         includeTags: syncTags,
         projectId: tickTickProjectId // Add the projectId to the config
@@ -943,37 +925,6 @@ export function SettingsPage() {
               </div>
 
               <div className="space-y-4">
-                {/* Sync Direction */}
-                <div className="flex flex-col gap-2">
-                  <label className="text-xs font-medium text-[var(--color-textSecondary)]">Sync Direction</label>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleSyncDirectionChange('two-way')}
-                      className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors 
-                        ${getContainerBackground()} hover:bg-[var(--color-surfaceHover)] border border-white/10
-                        ${syncDirection === 'two-way' ? 'text-[var(--color-accent)]' : 'text-[var(--color-textSecondary)]'}`}
-                    >
-                      Two-way Sync
-                    </button>
-                    <button
-                      onClick={() => handleSyncDirectionChange('to-ticktick')}
-                      className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors 
-                        ${getContainerBackground()} hover:bg-[var(--color-surfaceHover)] border border-white/10
-                        ${syncDirection === 'to-ticktick' ? 'text-[var(--color-accent)]' : 'text-[var(--color-textSecondary)]'}`}
-                    >
-                      Second Brain → TickTick
-                    </button>
-                    <button
-                      onClick={() => handleSyncDirectionChange('from-ticktick')}
-                      className={`flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-colors 
-                        ${getContainerBackground()} hover:bg-[var(--color-surfaceHover)] border border-white/10
-                        ${syncDirection === 'from-ticktick' ? 'text-[var(--color-accent)]' : 'text-[var(--color-textSecondary)]'}`}
-                    >
-                      TickTick → Second Brain
-                    </button>
-                  </div>
-                </div>
-
                 {/* Sync Frequency */}
                 <div className="flex flex-col gap-2">
                   <label className="text-xs font-medium text-[var(--color-textSecondary)]">Sync Frequency</label>

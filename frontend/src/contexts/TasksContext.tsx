@@ -393,19 +393,10 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     setSyncError(null);
 
     try {
-      // Type-safe way to ensure direction is correct
-      let direction: 'two-way' | 'to-ticktick' | 'from-ticktick' = 'two-way';
-
-      if (config.direction === 'from-ticktick') {
-        direction = 'from-ticktick';
-      } else if (config.direction === 'to-ticktick') {
-        direction = 'to-ticktick';
-      }
-
-      // Add the project ID to the sync config
-      const syncConfig: SyncConfig = {
+      // Pass the simplified config, ensuring projectId is included.
+      // The backend will handle the 'from-ticktick' logic implicitly.
+      const syncConfig = {
         ...config,
-        direction: direction,
         projectId: tickTickProjectId
       };
 

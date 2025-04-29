@@ -8,7 +8,6 @@ export interface TickTickStatus {
 }
 
 export interface SyncConfig {
-    direction: 'two-way' | 'to-ticktick' | 'from-ticktick';
     resolutionStrategy: string;
     includeTags: boolean;
     projectId: string;
@@ -199,10 +198,11 @@ export const integrationsService = {
 
     /**
      * Synchronize tasks between Second Brain and TickTick
-     * @param config Synchronization configuration
+     * @param config Synchronization configuration (direction is ignored, always syncs from TickTick)
      */
-    async syncTickTickTasks(config: SyncConfig): Promise<SyncResult> {
+    async syncTickTickTasks(config: Omit<SyncConfig, 'direction'>): Promise<SyncResult> {
         try {
+            // Backend now handles direction implicitly as 'from-ticktick'
             const response = await api.post<SyncResult>('/api/integrations/ticktick/sync', config);
             return response.data;
         } catch (error) {
