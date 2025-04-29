@@ -28,6 +28,6 @@ namespace SecondBrain.Api.Models.Integrations
         public string Name { get; set; } = string.Empty;
 
         [JsonPropertyName("sortOrder")]
-        public int SortOrder { get; set; }
+        public long SortOrder { get; set; }
     }
 } 
