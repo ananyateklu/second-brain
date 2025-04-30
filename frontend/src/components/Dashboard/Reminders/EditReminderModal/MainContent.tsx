@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Reminder } from '../../../../api/types/reminder';
+import { Reminder } from '../../../../types/reminder';
 import { Type, Calendar, RepeatIcon, AlignLeft, Tag as TagIcon, X } from 'lucide-react';
 import { Input } from '../../../../components/shared/Input';
 import { TextArea } from '../../../../components/shared/TextArea';

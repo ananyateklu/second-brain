@@ -28,8 +28,8 @@ function SuccessState({ email, onClose, theme }: { email: string; onClose: () =>
       <button
         onClick={onClose}
         className={`font-medium ${theme === 'light'
-            ? 'text-primary-600 hover:text-primary-700'
-            : 'text-[#4c9959] hover:text-[#64AB6F]'
+          ? 'text-primary-600 hover:text-primary-700'
+          : 'text-[#4c9959] hover:text-[#64AB6F]'
           } transition-colors`}
       >
         Back to Login
@@ -79,8 +79,6 @@ function ResetForm({
           placeholder="Enter your email"
           error={error}
           disabled={isLoading}
-          disableEnhancement={true}
-          disableRecording={true}
           className={`${getInputClasses()} transition-colors duration-200`}
         />
 

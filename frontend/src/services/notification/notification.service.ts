@@ -1,4 +1,4 @@
-import { Reminder } from '../../api/types/reminder';
+import { Reminder } from '../../types/reminder';
 
 interface CustomNotificationOptions extends NotificationOptions {
   force?: boolean;

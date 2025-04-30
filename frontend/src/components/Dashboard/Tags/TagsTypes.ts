@@ -1,4 +1,4 @@
-import { TaskStatus, TaskPriority } from '../../../api/types/task';
+import { TaskStatus, TaskPriority } from '../../../types/task';
 
 // Define interfaces before the component
 export interface LinkedItem {

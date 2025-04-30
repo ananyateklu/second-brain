@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useReminders } from '../contexts/remindersContextUtils';
-import { notificationService } from '../services/notification/notificationService';
+import { notificationService } from '../services/notification/notification.service';
 
 export function useReminderNotifications() {
   const { reminders } = useReminders();
@@ -9,7 +9,7 @@ export function useReminderNotifications() {
     // Check for due reminders every minute
     const checkReminders = () => {
       const now = new Date();
-      
+
       reminders.forEach(reminder => {
         // Skip if reminder is completed
         if (reminder.isCompleted) {
@@ -54,7 +54,7 @@ export function useReminderNotifications() {
             if (overdueMinutes > 0) overdueText += `${overdueMinutes} minutes`;
 
             description += overdueText;
-            
+
             notificationService.showReminderNotification({
               ...reminder,
               description

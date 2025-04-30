@@ -1,4 +1,4 @@
-import { AIModel } from '../../../../../types/ai';
+import { AIModel, AIResponse } from '../../../../../types/ai';
 
 export interface AIMessage {
     id: string;

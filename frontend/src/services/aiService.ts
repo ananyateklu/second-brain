@@ -3,7 +3,7 @@ import { AnthropicService } from './ai/anthropic';
 import { GeminiService } from './ai/gemini';
 import { LlamaService } from './ai/llama';
 import { GrokService } from './ai/grok';
-import { AgentService, agentService } from './ai/agent';
+import { AgentService } from './ai/agent';
 import { AIModel, AIResponse, GrokFunction } from '../types/ai';
 
 interface ModelOptions {
@@ -39,7 +39,7 @@ export class AIService {
 
     // Handle special categories first
     if (model.category === 'agent') {
-      return this.agentService.sendMessage(message, modelId, options);
+      return this.agentService.sendMessage(message, modelId, undefined, options);
     }
     if (model.category === 'function' && model.provider === 'grok') {
       return this.grokService.executeFunctionCall(message, modelId, []);
@@ -75,8 +75,8 @@ export class AIService {
 
   getAvailableModels(): AIModel[] {
     // First get all agent models
-    const agentModels = this.agentService.getModels();
-    const agentModelIds = new Set(agentModels.map(m => m.id));
+    const agentModels = this.agentService.getAvailableModels();
+    const agentModelIds = new Set(agentModels.map((m: AIModel) => m.id));
 
     // Then get all other models, excluding those that are already in agent models
     const otherModels = [
@@ -111,7 +111,7 @@ export class AIService {
   }
 
   async isAgentConfigured(): Promise<boolean> {
-    return this.agentService.isConfigured();
+    return this.agentService.testConnection();
   }
 
   async executeFunctionCall(

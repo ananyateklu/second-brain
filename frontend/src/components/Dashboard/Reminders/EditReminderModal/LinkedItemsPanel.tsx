@@ -1,5 +1,5 @@
 import { Link2, Plus, Type, Lightbulb, X } from 'lucide-react';
-import { LinkedItem } from '../../../../api/types/reminder';
+import { LinkedItem } from '../../../../types/reminder';
 import { useTheme } from '../../../../contexts/themeContextUtils';
 
 interface LinkedItemsPanelProps {

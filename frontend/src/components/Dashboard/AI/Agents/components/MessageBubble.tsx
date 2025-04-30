@@ -89,13 +89,19 @@ const getAvatarRingStyle = (theme: string, agentColor: string) => {
         '--tw-ring-offset-color': 'var(--color-background)' // Ring offset should match the main background
     } as React.CSSProperties;
 
-    // Specific adjustments can be made here if needed for certain themes, but relying on CSS variables is preferred.
-    // Example: If midnight needed a specific override that variables couldn't handle:
-    // if (theme === 'midnight') { 
-    //     return { ...baseStyle, /* specific overrides */ };
-    // }
-
-    return baseStyle;
+    // Apply theme-specific adjustments
+    if (theme === 'light') {
+        return {
+            ...baseStyle,
+            '--tw-ring-opacity': '0.7'
+        };
+    } else {
+        // For dark and midnight themes
+        return {
+            ...baseStyle,
+            '--tw-ring-opacity': '0.9'
+        };
+    }
 };
 
 const parseExecutionStats = (content: string): [string, ExecutionStats | null] => {

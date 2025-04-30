@@ -3,8 +3,8 @@ import { TrashedItem, TrashProviderProps, TrashContext } from './trashContextUti
 import { useActivities } from './activityContextUtils';
 import { tasksService } from '../services/api/tasks.service';
 import { notesService } from '../services/api/notes.service';
-import { reminderService } from '../api/services/reminderService';
-import type { TaskStatus } from '../api/types/task';
+import { reminderService } from '../services/api/reminders.service';
+import type { TaskStatus } from '../types/task';
 
 const getMappedPriority = (priority: number | string | undefined): 'low' | 'medium' | 'high' => {
   if (typeof priority === 'number') {
@@ -121,7 +121,7 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
 
       // Update state immediately with the new item
       setTrashedItems(prev => [...prev, trashedItem]);
-      
+
       // No need to fetch all items again, as we just added one item
       return true;
     } catch (error) {
@@ -132,7 +132,7 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
 
   const cleanupExpiredItems = useCallback(async () => {
     const now = new Date();
-    setTrashedItems(prev => 
+    setTrashedItems(prev =>
       prev.filter(item => new Date(item.expiresAt) > now)
     );
   }, []);
@@ -145,7 +145,7 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
 
   const restoreTask = useCallback(async (item: TrashedItem) => {
     setTrashedItems(prev => prev.filter(i => i.id !== item.id));
-    
+
     const mappedPriority = getMappedPriority(item.metadata?.priority);
     const updateData = {
       isDeleted: false,
@@ -193,7 +193,7 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
 
   const restoreItems = useCallback(async (itemIds: string[]) => {
     const itemsToRestore = trashedItems.filter(item => itemIds.includes(item.id));
-    
+
     for (const item of itemsToRestore) {
       try {
         switch (item.type) {
@@ -221,7 +221,7 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
   const handleTaskDeletion = useCallback(async (item: TrashedItem) => {
     const taskLinkedItems = item.metadata?.linkedItems || [];
     for (const linkedItem of taskLinkedItems) {
-      await tasksService.removeTaskLink(item.id, linkedItem).catch(error => 
+      await tasksService.removeTaskLink(item.id, linkedItem).catch(error =>
         console.warn(`Failed to unlink item ${linkedItem} from task ${item.id}`, error)
       );
     }
@@ -324,8 +324,8 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
         }
         setTrashedItems(prev => prev.filter(i => i.id !== item.id));
       } catch (error) {
-        errors.push({ 
-          itemId: item.id, 
+        errors.push({
+          itemId: item.id,
           error: error instanceof Error ? error : new Error('Unknown error occurred')
         });
       }

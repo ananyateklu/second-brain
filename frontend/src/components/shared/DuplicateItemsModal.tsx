@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Copy, X, Type, Lightbulb, Bell, CheckSquare } from 'lucide-react';
 import type { Note } from '../../types/note';
 import { Reminder } from '../../contexts/remindersContextUtils';
-import { Task } from '../../api/types/task';
+import { Task } from '../../types/task';
 import { useTheme } from '../../contexts/themeContextUtils';
 import { NoteCard } from '../Dashboard/NoteCard';
 import { IdeaCard } from '../Dashboard/Ideas/IdeaCard';

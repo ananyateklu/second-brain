@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { reminderService } from '../api/services/reminderService';
+import { reminderService } from '../services/api/reminders.service';
 import { useActivities } from './activityContextUtils';
 import { useTrash } from './trashContextUtils';
 import { Reminder, RemindersContext } from './remindersContextUtils';

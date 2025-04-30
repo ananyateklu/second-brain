@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, memo, Suspense, lazy } from 'react';
+import { useState, useMemo, useCallback, memo } from 'react';
 import { Clock, Tag as TagIcon, Star, Pin, FileText, Archive, Link2, CheckSquare } from 'lucide-react';
 import { useNotes } from '../../contexts/notesContextUtils';
 import { formatDate } from '../../utils/dateUtils';
@@ -6,9 +6,7 @@ import { Note } from '../../types/note';
 import { formatTimeAgo } from './Recent/utils';
 import { useTheme } from '../../contexts/themeContextUtils';
 import { getIconBg } from '../../utils/dashboardUtils';
-
-// Lazy load the WarningModal so it's only loaded when needed
-const WarningModal = lazy(() => import('../shared/WarningModal').then(module => ({ default: module.WarningModal })));
+import { WarningModal } from '../shared/WarningModal';
 
 interface NoteCardProps {
   note: Note;
@@ -17,6 +15,7 @@ interface NoteCardProps {
   context?: 'default' | 'trash' | 'archive' | 'favorites' | 'duplicate';
   onSelect?: () => void;
   onClick?: () => void;
+  isArchiveView?: boolean;
   contextData?: {
     expiresAt?: string;
     deletedAt?: string;
@@ -31,6 +30,7 @@ export function NoteCard({
   context = 'default',
   onSelect,
   onClick,
+  isArchiveView,
   contextData
 }: NoteCardProps) {
   const { toggleFavoriteNote, togglePinNote, archiveNote } = useNotes();
@@ -166,8 +166,9 @@ export function NoteCard({
       pinButtonClasses={pinButtonClasses}
       favoriteButtonClasses={favoriteButtonClasses}
       note={note}
+      isArchiveView={isArchiveView}
     />
-  ), [context, handlePin, handleFavorite, handleArchiveClick, pinButtonClasses, favoriteButtonClasses, note]);
+  ), [context, handlePin, handleFavorite, handleArchiveClick, pinButtonClasses, favoriteButtonClasses, note, isArchiveView]);
 
   if (viewMode === 'mindMap') {
     return (
@@ -291,17 +292,13 @@ export function NoteCard({
         )}
       </div>
 
-      <Suspense fallback={null}>
-        {showArchiveWarning && (
-          <WarningModal
-            isOpen={showArchiveWarning}
-            onClose={() => setShowArchiveWarning(false)}
-            onConfirm={handleArchiveConfirm}
-            type="archive"
-            title={note.title}
-          />
-        )}
-      </Suspense>
+      <WarningModal
+        isOpen={showArchiveWarning}
+        onClose={() => setShowArchiveWarning(false)}
+        onConfirm={handleArchiveConfirm}
+        type="archive"
+        title={note.title}
+      />
     </>
   );
 }
@@ -373,10 +370,21 @@ interface ActionsProps {
   pinButtonClasses: string;
   favoriteButtonClasses: string;
   note: Note;
+  isArchiveView?: boolean;
 }
 
-const Actions = memo(function Actions({ context, handlePin, handleFavorite, handleArchiveClick, pinButtonClasses, favoriteButtonClasses, note }: ActionsProps) {
-  if (context !== 'default') return null;
+const Actions = memo(function Actions({
+  context,
+  handlePin,
+  handleFavorite,
+  handleArchiveClick,
+  pinButtonClasses,
+  favoriteButtonClasses,
+  note,
+  isArchiveView
+}: ActionsProps) {
+  if (isArchiveView || (context !== 'default')) return null;
+
   return (
     <div className="flex gap-1">
       <button

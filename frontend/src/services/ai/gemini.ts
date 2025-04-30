@@ -8,7 +8,7 @@ export class GeminiService {
   }
 
   async sendMessage(
-    message: string, 
+    message: string,
     modelId: string,
     parameters?: {
       max_tokens?: number;
@@ -19,7 +19,7 @@ export class GeminiService {
     }
   ): Promise<AIResponse> {
     try {
-      
+
       const request = {
         message,
         modelId,

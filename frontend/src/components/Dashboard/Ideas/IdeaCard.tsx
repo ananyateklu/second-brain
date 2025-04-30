@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, memo, Suspense, lazy } from 'react';
+import { useState, useMemo, useCallback, memo } from 'react';
 import { Star, Link2, Tag as TagIcon, Lightbulb, Archive, Pin, CheckSquare, Clock } from 'lucide-react';
 import type { Note } from '../../../types/note';
 import { formatDate } from '../../../utils/dateUtils';
@@ -6,9 +6,7 @@ import { useNotes } from '../../../contexts/notesContextUtils';
 import { formatTimeAgo } from '../Recent/utils';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { getIconBg } from '../../../utils/dashboardUtils';
-
-// Lazy load the WarningModal
-const WarningModal = lazy(() => import('../../shared/WarningModal').then(module => ({ default: module.WarningModal })));
+import { WarningModal } from '../../shared/WarningModal';
 
 interface IdeaCardProps {
   idea: Note;
@@ -17,6 +15,7 @@ interface IdeaCardProps {
   context?: 'default' | 'trash' | 'archive' | 'favorites' | 'duplicate';
   onSelect?: () => void;
   onClick?: () => void;
+  isArchiveView?: boolean;
   contextData?: {
     expiresAt?: string;
     deletedAt?: string;
@@ -31,6 +30,7 @@ export function IdeaCard({
   context = 'default',
   onSelect,
   onClick,
+  isArchiveView,
   contextData
 }: IdeaCardProps) {
   const { toggleFavoriteNote, togglePinNote, archiveNote } = useNotes();
@@ -163,8 +163,9 @@ export function IdeaCard({
       pinButtonClasses={pinButtonClasses}
       favoriteButtonClasses={favoriteButtonClasses}
       idea={idea}
+      isArchiveView={isArchiveView}
     />
-  ), [context, handlePin, handleFavorite, handleArchiveClick, pinButtonClasses, favoriteButtonClasses, idea]);
+  ), [context, handlePin, handleFavorite, handleArchiveClick, pinButtonClasses, favoriteButtonClasses, idea, isArchiveView]);
 
   if (viewMode === 'mindMap') {
     return (
@@ -294,17 +295,13 @@ export function IdeaCard({
         )}
       </div>
 
-      <Suspense fallback={null}>
-        {showArchiveWarning && (
-          <WarningModal
-            isOpen={showArchiveWarning}
-            onClose={() => setShowArchiveWarning(false)}
-            onConfirm={handleArchiveConfirm}
-            type="archive"
-            title={idea.title}
-          />
-        )}
-      </Suspense>
+      <WarningModal
+        isOpen={showArchiveWarning}
+        onClose={() => setShowArchiveWarning(false)}
+        onConfirm={handleArchiveConfirm}
+        type="archive"
+        title={idea.title}
+      />
     </>
   );
 }
@@ -407,6 +404,7 @@ interface ActionsProps {
   pinButtonClasses: string;
   favoriteButtonClasses: string;
   idea: Note;
+  isArchiveView?: boolean;
 }
 
 const Actions = memo(function Actions({
@@ -416,9 +414,10 @@ const Actions = memo(function Actions({
   handleArchiveClick,
   pinButtonClasses,
   favoriteButtonClasses,
-  idea
+  idea,
+  isArchiveView
 }: ActionsProps) {
-  if (context !== 'default') return null;
+  if (isArchiveView || (context !== 'default')) return null;
   return (
     <div className="flex gap-1">
       <button

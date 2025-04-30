@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Star, ArrowUp } from 'lucide-react';
 import { useEffect } from 'react';
-import { notificationService } from '../../services/notification/notificationService';
+import { notificationService } from '../../services/notification/notification.service';
 
 interface XPNotificationProps {
   xp: number;

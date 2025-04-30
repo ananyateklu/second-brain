@@ -4,8 +4,6 @@ import { motion } from 'framer-motion';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { cardVariants } from '../../../utils/welcomeBarUtils';
 import { useNotes } from '../../../contexts/notesContextUtils';
-import mammoth from 'mammoth';
-import * as XLSX from 'xlsx';
 import { CustomDropdown } from '../../shared/CustomDropdown';
 
 interface Note {
@@ -134,6 +132,8 @@ export function DataManagementSettingsSection() {
     };
 
     const processDocxFile = async (file: File): Promise<{ title: string; content: string; }[]> => {
+        // Dynamically import mammoth
+        const mammoth = (await import('mammoth')).default;
         const arrayBuffer = await file.arrayBuffer();
         const result = await mammoth.extractRawText({ arrayBuffer });
         const lines = result.value.split('\n').filter(line => line.trim());
@@ -221,6 +221,8 @@ export function DataManagementSettingsSection() {
     }
 
     const processExcelFile = async (file: File): Promise<{ title: string; content: string; }[]> => {
+        // Dynamically import xlsx
+        const XLSX = await import('xlsx');
         const arrayBuffer = await file.arrayBuffer();
         const workbook = XLSX.read(arrayBuffer);
         const notes: { title: string; content: string; }[] = [];

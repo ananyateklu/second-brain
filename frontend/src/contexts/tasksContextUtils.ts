@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import { Task, UpdateTaskDto } from '../api/types/task';
+import { Task, UpdateTaskDto } from '../types/task';
 import { TaskLinkData, CreateTaskData } from '../services/api/tasks.service';
 import { TickTickTask } from '../types/integrations'; // Import TickTickTask type
 import { SyncConfig, SyncResult } from '../services/api/integrations.service';

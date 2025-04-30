@@ -1,5 +1,5 @@
 import { CheckSquare, Trash2, X } from 'lucide-react';
-import { Task } from '../../../../api/types/task';
+import { Task } from '../../../../types/task';
 import { useTheme } from '../../../../contexts/themeContextUtils';
 
 interface HeaderProps {

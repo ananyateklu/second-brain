@@ -42,7 +42,7 @@ type CustomNodeType = {
 
 const CustomNode = ({ data }: NodeProps) => {
   const { theme } = useTheme();
-  
+
   const getBorderColor = () => {
     if (data.selected) return theme === 'dark' ? '#64AB6F' : '#059669';
     return theme === 'dark' ? 'rgb(59, 130, 246)' : 'rgb(37, 99, 235)';
@@ -52,13 +52,13 @@ const CustomNode = ({ data }: NodeProps) => {
 
   return (
     <div className="group">
-      <Handle 
-        type="target" 
-        position={Position.Top} 
-        className="!w-2 !h-2 !bg-transparent !border-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300" 
+      <Handle
+        type="target"
+        position={Position.Top}
+        className="!w-2 !h-2 !bg-transparent !border-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
         style={{ borderColor, top: -8 }}
       />
-      
+
       <div className={clsx(
         data.selected && 'ring-2 ring-[#64AB6F] dark:ring-[#059669]'
       )}>
@@ -69,10 +69,10 @@ const CustomNode = ({ data }: NodeProps) => {
         />
       </div>
 
-      <Handle 
-        type="source" 
-        position={Position.Bottom} 
-        className="!w-2 !h-2 !bg-transparent !border-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300" 
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        className="!w-2 !h-2 !bg-transparent !border-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
         style={{ borderColor, bottom: -8 }}
       />
     </div>
@@ -85,7 +85,7 @@ const nodeTypes = {
 
 const prepareEdges = (notes: NotesMindMapProps['notes']): FlowEdge[] => {
   const processedPairs = new Set<string>();
-  
+
   return notes.flatMap(note =>
     (note.linkedNoteIds || [])
       .filter(targetId => {
@@ -118,8 +118,8 @@ const prepareEdges = (notes: NotesMindMapProps['notes']): FlowEdge[] => {
 const getDagreLayout = (nodes: CustomNodeType[], edges: FlowEdge[]) => {
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
-  
-  dagreGraph.setGraph({ 
+
+  dagreGraph.setGraph({
     rankdir: 'TB',
     ranksep: 60,
     nodesep: 30,
@@ -220,6 +220,12 @@ function NotesMindMapContent({ notes, onNoteSelect, selectedNoteId }: NotesMindM
     }
   }, [selectedNoteId, nodes, setCenter]);
 
+  const handleResetPositions = useCallback(() => {
+    const newNodes = getDagreLayout(initialNodes, edges).nodes;
+    setNodes(newNodes);
+    setTimeout(() => fitView({ padding: 0.5, duration: 800 }), 50);
+  }, [initialNodes, edges, fitView]);
+
   return (
     <div className="h-[50vh] w-full bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-xl overflow-hidden">
       <ReactFlow
@@ -253,9 +259,9 @@ function NotesMindMapContent({ notes, onNoteSelect, selectedNoteId }: NotesMindM
           }
         }}
       >
-        <Background 
-          color={theme === 'dark' ? '#374151' : '#E5E7EB'} 
-          gap={32} 
+        <Background
+          color={theme === 'dark' ? '#374151' : '#E5E7EB'}
+          gap={32}
           size={1}
           style={{ opacity: 0.2 }}
         />
@@ -264,6 +270,7 @@ function NotesMindMapContent({ notes, onNoteSelect, selectedNoteId }: NotesMindM
           onZoomOut={zoomOut}
           onFit={() => fitView({ padding: 0.5, duration: 800 })}
           onCenter={handleCenter}
+          onResetPositions={handleResetPositions}
         />
       </ReactFlow>
     </div>

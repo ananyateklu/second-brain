@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { EditNoteModal } from '../EditNoteModal';
 import { EditTaskModal } from '../../Tasks/EditTaskModal';
 import { useTasks } from '../../../../contexts/tasksContextUtils';
-import type { Task } from '../../../../api/types/task';
+import type { Task } from '../../../../types/task';
 import { useTheme } from '../../../../contexts/themeContextUtils';
 
 interface LinkedNotesPanelProps {

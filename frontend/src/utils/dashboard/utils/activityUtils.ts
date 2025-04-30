@@ -1,4 +1,4 @@
-import { Activity } from '../../../api/services/activityService';
+import { Activity } from '../../../services/api/activities.service';
 
 export const calculateActivityStats = (activities: Activity[]) => {
     if (!activities || activities.length === 0) {

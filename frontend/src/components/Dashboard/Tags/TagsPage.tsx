@@ -171,7 +171,8 @@ export function TagsPage() {
           isDeleted: false,
           linkedNoteIds: [],
           linkedTasks: [],
-          linkedReminders: []
+          linkedReminders: [],
+          links: []
         });
         break;
       case 'idea':
@@ -189,7 +190,8 @@ export function TagsPage() {
           isDeleted: false,
           linkedNoteIds: [],
           linkedTasks: [],
-          linkedReminders: []
+          linkedReminders: [],
+          links: []
         });
         break;
       case 'reminder':

@@ -1,4 +1,4 @@
-import { Activity } from '../../../api/services/activityService';
+import { Activity } from '../../../services/api/activities.service';
 import { getActivityIcon } from './utils';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { TickTickActivityMeta } from './TickTickActivityMeta';

@@ -1,4 +1,4 @@
-import { Activity } from '../../../api/services/activityService';
+import { Activity } from '../../../services/api/activities.service';
 import { StatValue } from '../../dashboardContextUtils';
 import {
     calculateActivityStats,

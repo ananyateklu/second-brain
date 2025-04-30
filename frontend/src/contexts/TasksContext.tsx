@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { TasksContext } from './tasksContextUtils';
-import type { Task, UpdateTaskDto } from '../api/types/task';
+import type { Task, UpdateTaskDto } from '../types/task';
 import { TickTickTask } from '../types/integrations';
 import { useAuth } from '../hooks/useAuth';
 import { useActivities } from './activityContextUtils';

@@ -1,5 +1,5 @@
 import { Trash2, Bell, X } from 'lucide-react';
-import { Reminder } from '../../../../api/types/reminder';
+import { Reminder } from '../../../../types/reminder';
 import { useTheme } from '../../../../contexts/themeContextUtils';
 
 interface HeaderProps {

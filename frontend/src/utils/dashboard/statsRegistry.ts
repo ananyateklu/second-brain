@@ -1,6 +1,6 @@
 import { Note } from '../../types/note';
-import { Task } from '../../api/types/task';
-import { Activity } from '../../api/services/activityService';
+import { Task } from '../../types/task';
+import { Activity } from '../../services/api/activities.service';
 import { StatValue } from '../dashboardContextUtils';
 import {
     getConnectionsStatValue,

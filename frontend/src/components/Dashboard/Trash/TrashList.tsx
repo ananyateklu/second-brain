@@ -7,7 +7,7 @@ import { ReminderCard } from '../Reminders/ReminderCard';
 import { ConfirmationDialog } from './ConfirmationDialog';
 import { Trash2, RotateCcw } from 'lucide-react';
 import type { Note } from '../../../types/note';
-import type { Task, TaskStatus, TaskPriority } from '../../../api/types/task';
+import type { Task, TaskStatus, TaskPriority } from '../../../types/task';
 import type { Reminder } from '../../../contexts/remindersContextUtils';
 
 interface TrashListProps {
@@ -24,9 +24,9 @@ interface TrashListProps {
   onDelete: (items: string[]) => void;
 }
 
-export function TrashList({ 
+export function TrashList({
   trashedItems,
-  filters, 
+  filters,
   searchQuery,
   selectedItems,
   onSelectionChange,
@@ -38,11 +38,11 @@ export function TrashList({
 
   const filteredItems = trashedItems.filter(item => {
     // Search filter
-    const matchesSearch = 
+    const matchesSearch =
       item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.content?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (item.type === 'reminder' && item.metadata?.dueDate && 
-       new Date(item.metadata.dueDate).toLocaleDateString().toLowerCase().includes(searchQuery.toLowerCase()));
+      (item.type === 'reminder' && item.metadata?.dueDate &&
+        new Date(item.metadata.dueDate).toLocaleDateString().toLowerCase().includes(searchQuery.toLowerCase()));
 
     // Type filter
     const matchesType = filters.types.length === 0 || filters.types.includes(item.type);
@@ -79,7 +79,7 @@ export function TrashList({
   });
 
   // Sort items by deletion date, newest first
-  const sortedItems = [...filteredItems].sort((a, b) => 
+  const sortedItems = [...filteredItems].sort((a, b) =>
     new Date(b.deletedAt).getTime() - new Date(a.deletedAt).getTime()
   );
 
@@ -147,6 +147,7 @@ export function TrashList({
                 linkedNoteIds: item.metadata?.linkedItems || [],
                 linkedTasks: [],
                 linkedReminders: [],
+                links: [],
                 isArchived: false,
                 isDeleted: true,
                 createdAt: new Date().toISOString(),
@@ -165,7 +166,7 @@ export function TrashList({
             case 'task': {
               const status = (item.metadata?.status ?? 'Incomplete') as TaskStatus;
               const priority = (item.metadata?.priority ?? 'low') as TaskPriority;
-              
+
               const task: Task = {
                 id: item.id,
                 title: item.title,
@@ -202,6 +203,7 @@ export function TrashList({
                 linkedNoteIds: item.metadata?.linkedItems || [],
                 linkedTasks: [],
                 linkedReminders: [],
+                links: [],
                 isArchived: false,
                 isDeleted: true,
                 createdAt: new Date().toISOString(),
@@ -256,9 +258,8 @@ export function TrashList({
         onClose={() => setShowRestoreDialog(false)}
         onConfirm={() => onRestore(selectedItems)}
         title="Restore Items"
-        description={`Are you sure you want to restore ${selectedItems.length} selected ${
-          selectedItems.length === 1 ? 'item' : 'items'
-        }?`}
+        description={`Are you sure you want to restore ${selectedItems.length} selected ${selectedItems.length === 1 ? 'item' : 'items'
+          }?`}
         confirmLabel="Restore"
         confirmIcon={RotateCcw}
       />
@@ -268,9 +269,8 @@ export function TrashList({
         onClose={() => setShowDeleteDialog(false)}
         onConfirm={() => onDelete(selectedItems)}
         title="Delete Items Permanently"
-        description={`Are you sure you want to permanently delete ${selectedItems.length} selected ${
-          selectedItems.length === 1 ? 'item' : 'items'
-        }? This action cannot be undone.`}
+        description={`Are you sure you want to permanently delete ${selectedItems.length} selected ${selectedItems.length === 1 ? 'item' : 'items'
+          }? This action cannot be undone.`}
         confirmLabel="Delete Permanently"
         confirmIcon={Trash2}
         isDangerous

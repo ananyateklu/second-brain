@@ -1,5 +1,5 @@
 import { Note } from '../../../types/note';
-import { Task } from '../../../api/types/task';
+import { Task } from '../../../types/task';
 import { FileText, CheckSquare } from 'lucide-react';
 import { StatValue } from '../../dashboardContextUtils';
 

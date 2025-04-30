@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ActivityContext } from './activityContextUtils';
-import { Activity, activityService } from '../api/services/activityService';
+import { Activity, activityService } from '../services/api/activities.service';
 import { useAuth } from '../hooks/useAuth';
 
 export function ActivityProvider({ children }: { children: React.ReactNode }) {

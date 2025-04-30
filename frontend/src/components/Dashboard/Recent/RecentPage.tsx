@@ -13,7 +13,7 @@ import { useNotes } from '../../../contexts/notesContextUtils';
 import { useTasks } from '../../../contexts/tasksContextUtils';
 import { useReminders } from '../../../contexts/remindersContextUtils';
 import { useTheme } from '../../../contexts/themeContextUtils';
-import { Activity } from '../../../api/services/activityService';
+import { Activity } from '../../../services/api/activities.service';
 
 export function RecentPage() {
   const { theme } = useTheme();
