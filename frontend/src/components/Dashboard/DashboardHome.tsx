@@ -65,7 +65,7 @@ export function DashboardHome() {
           tasks={tasks.map(task => ({
             ...task,
             status: task.status === 'Incomplete' ? 'Pending' : task.status,
-            dueDate: task.dueDate ?? undefined
+            dueDate: task.dueDate ?? null
           }))}
         />
       </div>

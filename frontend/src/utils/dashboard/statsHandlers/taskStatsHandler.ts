@@ -1,4 +1,4 @@
-import { Task } from '../../../api/types/task';
+import { Task } from '../../../types/task';
 import { StatValue } from '../../dashboardContextUtils';
 import { CheckSquare, Clock, Calendar, AlertTriangle } from 'lucide-react';
 import { createProgressionForValue, generateCumulativeData, isDataFlat, isDataBackLoaded } from '../utils/chartDataUtils';

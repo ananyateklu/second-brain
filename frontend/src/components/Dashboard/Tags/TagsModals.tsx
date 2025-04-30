@@ -3,8 +3,8 @@ import { EditReminderModal } from '../Reminders/EditReminderModal';
 import { EditNoteModal } from '../Notes/EditNoteModal';
 import { EditIdeaModal } from '../Ideas/EditIdeaModal';
 import { Note } from '../../../types/note';
-import { Task } from '../../../api/types/task';
-import { Reminder } from '../../../api/types/reminder';
+import { Task } from '../../../types/task';
+import { Reminder } from '../../../types/reminder';
 
 
 interface TagsModalsProps {

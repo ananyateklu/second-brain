@@ -5,6 +5,7 @@ interface LinkType {
   label: string;
   color: string;
   style: 'solid' | 'dashed' | 'dotted';
+  selected?: boolean;
 }
 
 interface LinkTypeSelectorProps {
@@ -13,6 +14,15 @@ interface LinkTypeSelectorProps {
 }
 
 export function LinkTypeSelector({ linkTypes, onLinkTypeChange }: LinkTypeSelectorProps) {
+  const toggleLinkType = (selectedType: LinkType) => {
+    const updatedTypes = linkTypes.map(type =>
+      type.id === selectedType.id
+        ? { ...type, selected: !type.selected }
+        : type
+    );
+    onLinkTypeChange(updatedTypes);
+  };
+
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -22,7 +32,12 @@ export function LinkTypeSelector({ linkTypes, onLinkTypeChange }: LinkTypeSelect
         {linkTypes.map(type => (
           <div
             key={type.id}
-            className="flex items-center gap-2 px-3 py-1.5 backdrop-blur-sm bg-white/30 dark:bg-gray-800/30 border border-gray-200/30 dark:border-gray-700/30 rounded-lg hover:bg-white/40 dark:hover:bg-gray-800/40 transition-colors"
+            onClick={() => toggleLinkType(type)}
+            className={`flex items-center gap-2 px-3 py-1.5 backdrop-blur-sm rounded-lg cursor-pointer transition-colors
+              ${type.selected
+                ? `bg-${type.color.replace('#', '')}/20 border border-${type.color}/30`
+                : 'bg-white/30 dark:bg-gray-800/30 border border-gray-200/30 dark:border-gray-700/30 hover:bg-white/40 dark:hover:bg-gray-800/40'
+              }`}
           >
             <Circle
               className="w-4 h-4"

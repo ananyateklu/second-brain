@@ -4,10 +4,11 @@ import { motion } from 'framer-motion';
 
 interface ImageModalProps {
   imageUrl: string;
+  revisedPrompt?: string;
   onClose: () => void;
 }
 
-export function ImageModal({ imageUrl, onClose }: ImageModalProps) {
+export function ImageModal({ imageUrl, revisedPrompt, onClose }: ImageModalProps) {
   // Add keyboard event listener for Escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -30,7 +31,7 @@ export function ImageModal({ imageUrl, onClose }: ImageModalProps) {
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
       onClick={onClose}
     >
@@ -65,6 +66,9 @@ export function ImageModal({ imageUrl, onClose }: ImageModalProps) {
         <div className="absolute bottom-0 left-0 right-0 p-6 
           bg-gradient-to-t from-black/70 via-black/50 to-transparent">
           <div className="max-w-3xl mx-auto space-y-4">
+            {revisedPrompt && (
+              <p className="text-white text-sm opacity-80">{revisedPrompt}</p>
+            )}
             <button
               onClick={handleDownload}
               className="flex items-center gap-2 px-4 py-2 

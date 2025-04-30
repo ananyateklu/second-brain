@@ -5,7 +5,7 @@ import { useTasks } from './tasksContextUtils';
 import { useReminders } from './remindersContextUtils';
 import { useActivities } from './activityContextUtils';
 import { DEFAULT_STATS, DashboardContext, isDashboardStat } from '../utils/dashboardContextUtils';
-import preferencesService from '../api/services/preferencesService';
+import preferencesService from '../services/api/preferences.service';
 import { getStatById } from '../utils/dashboard/statsRegistry';
 
 export function DashboardProvider({ children }: { children: React.ReactNode }) {

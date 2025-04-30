@@ -8,8 +8,12 @@ interface IdeaDetailsModalProps {
 }
 
 export function IdeaDetailsModal({ isOpen, onClose, ideaId }: IdeaDetailsModalProps) {
-  const { getNote } = useNotes();
-  const idea = ideaId ? getNote(ideaId) : null;
+  const { notes } = useNotes();
+  const idea = ideaId ? notes.find(note => note.id === ideaId) || null : null;
+
+  if (!idea) {
+    return null;
+  }
 
   return (
     <EditIdeaModal

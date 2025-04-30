@@ -1,35 +1,18 @@
-import { useState } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Suspense, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Sidebar } from './Dashboard/Sidebar';
 import { Header } from './Dashboard/Header';
 import { WelcomeBar } from './Dashboard/WelcomeBar';
-import { DashboardHome } from './Dashboard/DashboardHome';
-import { NotesPage } from './Dashboard/Notes/NotesPage';
-import { TagsPage } from './Dashboard/Tags/TagsPage';
-import { FavoritesPage } from './Dashboard/Favorites/FavoritesPage';
-import { SettingsPage } from './Dashboard/Settings/SettingsPage';
-import { LinkedNotesPage } from './Dashboard/LinkedNotes/LinkedNotesPage';
-import { IdeasPage } from './Dashboard/Ideas/IdeasPage';
-import { ArchivePage } from './Dashboard/Archive/ArchivePage';
-import { TrashPage } from './Dashboard/Trash/TrashPage';
-import { TasksPage } from './Dashboard/Tasks/TasksPage';
-import { RemindersPage } from './Dashboard/Reminders/RemindersPage';
-import { RecentPage } from './Dashboard/Recent/RecentPage';
-import { AIAgentsPage } from './Dashboard/AI/Agents/components/AIAgentsPage';
-import { AIAssistantPage } from './Dashboard/AI/AIAssistantPage';
-import { SearchPage } from './Dashboard/Search/SearchPage';
-import { PerplexityPage } from './Dashboard/Perplexity/PerplexityPage';
+import { DashboardRoutes } from '../routes/DashboardRoutes';
 import { LoadingScreen } from './shared/LoadingScreen';
 import { useNotes } from '../contexts/notesContextUtils';
 import { useTasks } from '../contexts/tasksContextUtils';
 import { useReminders } from '../contexts/remindersContextUtils';
-import { PersonalPage } from './Dashboard/Personal/PersonalPage';
-import { EditNoteModal } from './Dashboard/Notes/EditNoteModal';
-import { EditIdeaModal } from './Dashboard/Ideas/EditIdeaModal';
 import { useModal } from '../contexts/modalContextUtils';
 import { useTheme } from '../contexts/themeContextUtils';
 import { useReminderNotifications } from '../hooks/useReminderNotifications';
-import { TickTickCallback } from './Callback/TickTickCallback';
+import { EditNoteModal } from './Dashboard/Notes/EditNoteModal';
+import { EditIdeaModal } from './Dashboard/Ideas/EditIdeaModal';
 
 export function Dashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -79,26 +62,9 @@ export function Dashboard() {
         <main className="flex-1 overflow-y-auto overflow-x-hidden pt-20 relative">
           <div className={`max-w-[1920px] mx-auto transition-all duration-300 ${isSidebarOpen ? 'px-4 sm:px-6 lg:px-12' : 'px-6 sm:px-12 lg:px-16'} py-8`}>
             {!isProfilePage && <WelcomeBar />}
-            <Routes>
-              <Route index element={<DashboardHome />} />
-              <Route path="notes" element={<NotesPage />} />
-              <Route path="linked" element={<LinkedNotesPage />} />
-              <Route path="ideas" element={<IdeasPage />} />
-              <Route path="tags" element={<TagsPage />} />
-              <Route path="favorites" element={<FavoritesPage />} />
-              <Route path="archive" element={<ArchivePage />} />
-              <Route path="trash" element={<TrashPage />} />
-              <Route path="tasks" element={<TasksPage />} />
-              <Route path="reminders" element={<RemindersPage />} />
-              <Route path="recent" element={<RecentPage />} />
-              <Route path="agents" element={<AIAgentsPage />} />
-              <Route path="ai" element={<AIAssistantPage />} />
-              <Route path="profile" element={<PersonalPage />} />
-              <Route path="search" element={<SearchPage />} />
-              <Route path="perplexity" element={<PerplexityPage />} />
-              <Route path="settings" element={<SettingsPage />} />
-              <Route path="/callback/ticktick" element={<TickTickCallback />} />
-            </Routes>
+            <Suspense fallback={<div className="flex justify-center items-center h-64"><LoadingScreen message="Loading content..." /></div>}>
+              <DashboardRoutes />
+            </Suspense>
           </div>
         </main>
       </div>

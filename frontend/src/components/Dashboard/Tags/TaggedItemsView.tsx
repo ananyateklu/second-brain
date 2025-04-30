@@ -118,7 +118,8 @@ function renderItem(item: TaggedItem, viewMode: 'grid' | 'list', onEditItem: (it
               isDeleted: false,
               linkedNoteIds: [],
               linkedTasks: [],
-              linkedReminders: []
+              linkedReminders: [],
+              links: []
             }}
             viewMode={viewMode}
             onClick={() => onEditItem(item)}
@@ -143,7 +144,8 @@ function renderItem(item: TaggedItem, viewMode: 'grid' | 'list', onEditItem: (it
               isDeleted: false,
               linkedNoteIds: [],
               linkedTasks: [],
-              linkedReminders: []
+              linkedReminders: [],
+              links: []
             }}
             viewMode={viewMode}
             onClick={() => onEditItem(item)}

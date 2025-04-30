@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import type { Note } from '../../../../types/note';
 import { useNotes } from '../../../../contexts/notesContextUtils';
 import { useTasks } from '../../../../contexts/tasksContextUtils';
-import type { Task } from '../../../../api/types/task';
+import type { Task } from '../../../../types/task';
 import { Header } from './Header';
 import { MainContent } from './MainContent';
 import { LinkedNotesPanel } from './LinkedNotesPanel';

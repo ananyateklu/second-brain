@@ -248,8 +248,6 @@ export function LoginPage() {
                   placeholder="Enter your email"
                   error={errors.email}
                   disabled={isLoading}
-                  disableEnhancement={true}
-                  disableRecording={true}
                   className={`${getInputClasses()} transition-colors duration-200`}
                 />
 
@@ -264,8 +262,6 @@ export function LoginPage() {
                   placeholder="Enter your password"
                   error={errors.password}
                   disabled={isLoading}
-                  disableEnhancement={true}
-                  disableRecording={true}
                   className={`${getInputClasses()} transition-colors duration-200`}
                 />
               </div>

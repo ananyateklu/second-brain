@@ -6,7 +6,7 @@ import { Header } from './Header';
 import { MainContent } from './MainContent';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import { Save, X, Search, Lightbulb, Type, CheckCircle } from 'lucide-react';
-import { Task } from '../../../../api/types/task';
+import { Task } from '../../../../types/task';
 import { useTheme } from '../../../../contexts/themeContextUtils';
 
 interface EditTaskModalProps {

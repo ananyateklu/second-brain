@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Bell, BellRing } from 'lucide-react';
-import { notificationService } from '../../../services/notification/notificationService';
+import { notificationService } from '../../../services/notification/notification.service';
 import { useTheme } from '../../../contexts/themeContextUtils';
 
 export function NotificationSettingsSection() {

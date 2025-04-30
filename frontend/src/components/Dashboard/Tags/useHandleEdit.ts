@@ -28,7 +28,8 @@ export function useHandleEdit() {
           isDeleted: false,
           linkedNoteIds: [],
           linkedTasks: [],
-          linkedReminders: []
+          linkedReminders: [],
+          links: []
         });
         break;
       case 'idea':
@@ -46,7 +47,8 @@ export function useHandleEdit() {
           isDeleted: false,
           linkedNoteIds: [],
           linkedTasks: [],
-          linkedReminders: []
+          linkedReminders: [],
+          links: []
         });
         break;
       case 'task':

@@ -7,7 +7,7 @@ import { TaskFilters } from './TaskFilters';
 import { Input } from '../../shared/Input';
 import { TaskCard } from './TaskCard';
 import { EditTaskModal } from './EditTaskModal';
-import { Task, TaskPriority, TaskStatus } from '../../../api/types/task';
+import { Task, TaskPriority, TaskStatus } from '../../../types/task';
 import { TickTickTask } from '../../../types/integrations';
 import { TickTickTaskModal } from './TickTickTaskEditModal';
 import { cardGridStyles } from '../shared/cardStyles';

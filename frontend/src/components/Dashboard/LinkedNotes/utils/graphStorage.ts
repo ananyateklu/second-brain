@@ -1,5 +1,5 @@
 import { StoredNodePosition, GraphPositions } from '../types';
-import preferencesService, { SavePreferenceRequest } from '../../../../api/services/preferencesService';
+import preferencesService, { SavePreferenceRequest } from '../../../../services/api/preferences.service';
 
 const GRAPH_POSITIONS_KEY = 'graph_node_positions';
 const GRAPH_TOOLTIP_SEEN_KEY = 'graph_tooltip_seen';

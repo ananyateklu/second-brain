@@ -1,5 +1,5 @@
 import api from './api';
-import { Task, UpdateTaskDto } from '../../api/types/task';
+import { Task, UpdateTaskDto, TaskStatus } from '../../types/task';
 import { mapPriorityToNumber } from '../../utils/priorityMapping';
 
 export interface TaskLinkData {
@@ -17,8 +17,8 @@ export interface CreateTaskData {
   tags: string[];
 }
 
-function mapStatusToNumber(status: 'Incomplete' | 'Completed'): number {
-  return status === 'Completed' ? 1 : 0;
+function mapStatusToNumber(status: TaskStatus): number {
+  return status === 'Completed' ? 1 : 0; // All non-completed statuses map to 0
 }
 
 export const tasksService = {

@@ -1,7 +1,7 @@
 import { createContext, useContext } from 'react';
 import type { Note } from '../types/note';
-import type { Task } from '../api/types/task';
-import type { Reminder } from '../api/types/reminder';
+import type { Task } from '../types/task';
+import type { Reminder } from '../types/reminder';
 
 export interface ModalContextType {
   selectedNote: Note | null;

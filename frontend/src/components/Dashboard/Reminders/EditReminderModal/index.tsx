@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useReminders } from '../../../../contexts/remindersContextUtils';
 import { useNotes } from '../../../../contexts/notesContextUtils';
-import { Reminder } from '../../../../api/types/reminder';
-import { reminderService } from '../../../../api/services/reminderService';
+import { Reminder } from '../../../../types/reminder';
+import { reminderService } from '../../../../services/api/reminders.service';
 import { Save } from 'lucide-react';
 import { Header } from './Header';
 import { MainContent } from './MainContent';

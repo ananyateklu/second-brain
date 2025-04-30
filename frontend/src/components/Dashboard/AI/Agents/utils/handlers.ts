@@ -2,7 +2,7 @@ import { NavigateFunction } from 'react-router-dom';
 import { AIModel } from '../../../../../types/ai';
 import { AIMessage, AgentConversation, SendMessageParams } from '../types';
 import { agentService } from '../../../../../services/ai/agent';
-import { activityService } from '../../../../../api/services/activityService';
+import { activityService } from '../../../../../services/api/activities.service';
 
 export const handleMessageReaction = async (
     message: AIMessage,

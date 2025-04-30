@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import { Reminder as ApiReminder } from '../api/types/reminder';
+import { Reminder as ApiReminder } from '../types/reminder';
 
 export interface Reminder extends ApiReminder {
   tags: string[];

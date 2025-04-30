@@ -1,12 +1,10 @@
-import { useState, useMemo, useCallback, memo, Suspense, lazy } from 'react';
+import { useState, useMemo, useCallback, memo } from 'react';
 import { Calendar, Tag as TagIcon, Clock, Type, Lightbulb, Square, CheckSquare, Link2, Archive, Bell } from 'lucide-react';
-import { Task } from '../../../api/types/task';
+import { Task } from '../../../types/task';
 import { useTasks } from '../../../contexts/tasksContextUtils';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { formatTimeAgo } from '../Recent/utils';
-
-// Lazy load the WarningModal
-const WarningModal = lazy(() => import('../../shared/WarningModal').then(module => ({ default: module.WarningModal })));
+import { WarningModal } from '../../shared/WarningModal';
 
 interface TaskCardProps {
   task: Task;
@@ -322,17 +320,13 @@ export function TaskCard({
         )}
       </div>
 
-      <Suspense fallback={null}>
-        {showArchiveWarning && (
-          <WarningModal
-            isOpen={showArchiveWarning}
-            onClose={() => setShowArchiveWarning(false)}
-            onConfirm={handleArchiveConfirm}
-            type="archive"
-            title={task.title}
-          />
-        )}
-      </Suspense>
+      <WarningModal
+        isOpen={showArchiveWarning}
+        onClose={() => setShowArchiveWarning(false)}
+        onConfirm={handleArchiveConfirm}
+        type="archive"
+        title={task.title}
+      />
     </>
   );
 }

@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import { Activity } from '../api/services/activityService';
+import { Activity } from '../services/api/activities.service';
 
 export interface ActivityContextType {
   activities: Activity[];

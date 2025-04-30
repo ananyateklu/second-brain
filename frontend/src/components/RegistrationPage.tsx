@@ -255,7 +255,6 @@ export function RegistrationPage() {
                     placeholder="Enter your full name"
                     error={errors.fullName}
                     disabled={isLoading}
-                    disableRecording={true}
                     className={`${getInputClasses()} transition-colors duration-200`}
                   />
                 </motion.div>
@@ -277,8 +276,6 @@ export function RegistrationPage() {
                     placeholder="Enter your email"
                     error={errors.email}
                     disabled={isLoading}
-                    disableEnhancement={true}
-                    disableRecording={true}
                     className={`${getInputClasses()} transition-colors duration-200`}
                   />
                 </motion.div>
@@ -300,8 +297,6 @@ export function RegistrationPage() {
                     placeholder="Create a password"
                     error={errors.password}
                     disabled={isLoading}
-                    disableEnhancement={true}
-                    disableRecording={true}
                     className={`${getInputClasses()} transition-colors duration-200`}
                   />
                 </motion.div>
@@ -323,8 +318,6 @@ export function RegistrationPage() {
                     placeholder="Confirm your password"
                     error={errors.confirmPassword}
                     disabled={isLoading}
-                    disableEnhancement={true}
-                    disableRecording={true}
                     className={`${getInputClasses()} transition-colors duration-200`}
                   />
                 </motion.div>

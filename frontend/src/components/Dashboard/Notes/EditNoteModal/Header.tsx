@@ -4,7 +4,6 @@ import type { Note } from '../../../../types/note';
 import { useNotes } from '../../../../contexts/notesContextUtils';
 import { WarningModal } from '../../../shared/WarningModal';
 import { useTheme } from '../../../../contexts/themeContextUtils';
-import { useNavigate } from 'react-router-dom';
 
 export interface HeaderProps {
   note: Note;
@@ -16,7 +15,6 @@ export function Header({ note, onClose, onShowDeleteConfirm }: HeaderProps) {
   const { toggleFavoriteNote, archiveNote } = useNotes();
   const { theme } = useTheme();
   const [showArchiveWarning, setShowArchiveWarning] = useState(false);
-  const navigate = useNavigate();
 
   const getBorderStyle = () => {
     if (theme === 'midnight') return 'border-white/5';

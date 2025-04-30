@@ -1,6 +1,6 @@
 import { useTasks } from '../../../contexts/tasksContextUtils';
 import { TaskCard } from './TaskCard';
-import { Task } from '../../../api/types/task';
+import { Task } from '../../../types/task';
 import { LayoutGrid, List } from 'lucide-react';
 import { useState } from 'react';
 

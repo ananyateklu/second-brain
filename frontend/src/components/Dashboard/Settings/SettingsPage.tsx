@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Settings2, Palette, Bell, Lock, Cpu,
@@ -6,18 +6,20 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { motion } from 'framer-motion';
-import { AISettingsSection } from './AISettingsSection';
-import { AppearanceSettingsSection } from './AppearanceSettingsSection';
-import { NotificationSettingsSection } from './NotificationSettingsSection';
-import { SecuritySettingsSection } from './SecuritySettingsSection';
-import { DataManagementSettingsSection } from './DataManagementSettingsSection';
-import { AccountSettingsSection } from './AccountSettingsSection';
-import { IntegrationsSettingsSection } from './IntegrationsSettingsSection';
 import { AISettings } from '../../../types/ai';
 import { cardVariants } from '../../../utils/welcomeBarUtils';
 import { integrationsService, SyncResult } from '../../../services/api/integrations.service';
 import { useTasks } from '../../../contexts/tasksContextUtils';
-import { SyncResultModal } from './SyncResultModal';
+
+// Lazy load section components
+const AISettingsSection = lazy(() => import('./AISettingsSection').then(module => ({ default: module.AISettingsSection })));
+const AppearanceSettingsSection = lazy(() => import('./AppearanceSettingsSection').then(module => ({ default: module.AppearanceSettingsSection })));
+const NotificationSettingsSection = lazy(() => import('./NotificationSettingsSection').then(module => ({ default: module.NotificationSettingsSection })));
+const SecuritySettingsSection = lazy(() => import('./SecuritySettingsSection').then(module => ({ default: module.SecuritySettingsSection })));
+const DataManagementSettingsSection = lazy(() => import('./DataManagementSettingsSection').then(module => ({ default: module.DataManagementSettingsSection })));
+const AccountSettingsSection = lazy(() => import('./AccountSettingsSection').then(module => ({ default: module.AccountSettingsSection })));
+const IntegrationsSettingsSection = lazy(() => import('./IntegrationsSettingsSection').then(module => ({ default: module.IntegrationsSettingsSection })));
+const SyncResultModal = lazy(() => import('./SyncResultModal').then(module => ({ default: module.SyncResultModal })));
 
 const generateState = () => Math.random().toString(36).substring(2, 15);
 
@@ -236,28 +238,55 @@ export function SettingsPage() {
     transition-all duration-200
   `;
 
+  // Modify the tabContent definition to wrap each component with Suspense
   const tabContent = {
-    appearance: <AppearanceSettingsSection />,
-    notifications: <NotificationSettingsSection />,
-    security: <SecuritySettingsSection />,
-    aiconfig: <AISettingsSection onSave={handleSaveAISettings} />,
-    dataManagement: <DataManagementSettingsSection />,
-    account: <AccountSettingsSection />,
+    appearance: (
+      <Suspense fallback={<div className="p-4 text-center">Loading appearance settings...</div>}>
+        <AppearanceSettingsSection />
+      </Suspense>
+    ),
+    notifications: (
+      <Suspense fallback={<div className="p-4 text-center">Loading notification settings...</div>}>
+        <NotificationSettingsSection />
+      </Suspense>
+    ),
+    security: (
+      <Suspense fallback={<div className="p-4 text-center">Loading security settings...</div>}>
+        <SecuritySettingsSection />
+      </Suspense>
+    ),
+    aiconfig: (
+      <Suspense fallback={<div className="p-4 text-center">Loading AI settings...</div>}>
+        <AISettingsSection onSave={handleSaveAISettings} />
+      </Suspense>
+    ),
+    dataManagement: (
+      <Suspense fallback={<div className="p-4 text-center">Loading data management settings...</div>}>
+        <DataManagementSettingsSection />
+      </Suspense>
+    ),
+    account: (
+      <Suspense fallback={<div className="p-4 text-center">Loading account settings...</div>}>
+        <AccountSettingsSection />
+      </Suspense>
+    ),
     integrations: (
-      <IntegrationsSettingsSection
-        isTickTickConnectedUI={isTickTickConnectedUI}
-        handleConnectTickTick={handleConnectTickTick}
-        handleDisconnectTickTick={handleDisconnectTickTick}
-        syncWithTickTick={syncWithTickTick}
-        getSyncStatus={getSyncStatus}
-        resetSyncData={resetSyncData}
-        isSyncing={isSyncing}
-        tasksSyncError={tasksSyncError}
-        tickTickProjectId={tickTickProjectId}
-        onSyncComplete={handleSyncComplete}
-        onSyncError={handleSyncError}
-      />
-    )
+      <Suspense fallback={<div className="p-4 text-center">Loading integrations settings...</div>}>
+        <IntegrationsSettingsSection
+          isTickTickConnectedUI={isTickTickConnectedUI}
+          handleConnectTickTick={handleConnectTickTick}
+          handleDisconnectTickTick={handleDisconnectTickTick}
+          syncWithTickTick={syncWithTickTick}
+          getSyncStatus={getSyncStatus}
+          resetSyncData={resetSyncData}
+          isSyncing={isSyncing}
+          tasksSyncError={tasksSyncError}
+          tickTickProjectId={tickTickProjectId}
+          onSyncComplete={handleSyncComplete}
+          onSyncError={handleSyncError}
+        />
+      </Suspense>
+    ),
   };
 
   // Log the state value just before rendering
@@ -365,12 +394,16 @@ export function SettingsPage() {
       </div>
 
       {/* Render the SyncResultModal */}
-      <SyncResultModal
-        isOpen={showSyncResultModal}
-        onClose={() => setShowSyncResultModal(false)}
-        result={currentSyncResult}
-        key={currentSyncResult ? `sync-result-${currentSyncResult.lastSynced}` : 'sync-result-modal'}
-      />
+      {showSyncResultModal && currentSyncResult && (
+        <Suspense fallback={<div>Loading...</div>}>
+          <SyncResultModal
+            isOpen={showSyncResultModal}
+            onClose={() => setShowSyncResultModal(false)}
+            result={currentSyncResult}
+            key={currentSyncResult ? `sync-result-${currentSyncResult.lastSynced}` : 'sync-result-modal'}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }
