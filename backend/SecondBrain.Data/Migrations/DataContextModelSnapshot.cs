@@ -53,7 +53,7 @@ namespace SecondBrain.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Achievements");
+                    b.ToTable("Achievements", (string)null);
                 });
 
             modelBuilder.Entity("SecondBrain.Data.Entities.Activity", b =>
@@ -97,7 +97,7 @@ namespace SecondBrain.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Activities");
+                    b.ToTable("Activities", (string)null);
                 });
 
             modelBuilder.Entity("SecondBrain.Data.Entities.AgentChat", b =>
@@ -133,7 +133,7 @@ namespace SecondBrain.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("AgentChats");
+                    b.ToTable("AgentChats", (string)null);
                 });
 
             modelBuilder.Entity("SecondBrain.Data.Entities.AgentMessage", b =>
@@ -172,7 +172,7 @@ namespace SecondBrain.Data.Migrations
 
                     b.HasIndex("ChatId");
 
-                    b.ToTable("AgentMessages");
+                    b.ToTable("AgentMessages", (string)null);
                 });
 
             modelBuilder.Entity("SecondBrain.Data.Entities.Idea", b =>
@@ -217,7 +217,7 @@ namespace SecondBrain.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Ideas");
+                    b.ToTable("Ideas", (string)null);
                 });
 
             modelBuilder.Entity("SecondBrain.Data.Entities.IdeaLink", b =>
@@ -237,7 +237,7 @@ namespace SecondBrain.Data.Migrations
 
                     b.HasKey("IdeaId", "LinkedItemId");
 
-                    b.ToTable("IdeaLinks");
+                    b.ToTable("IdeaLinks", (string)null);
                 });
 
             modelBuilder.Entity("SecondBrain.Data.Entities.Note", b =>
@@ -293,7 +293,7 @@ namespace SecondBrain.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Notes");
+                    b.ToTable("Notes", (string)null);
                 });
 
             modelBuilder.Entity("SecondBrain.Data.Entities.NoteLink", b =>
@@ -335,7 +335,7 @@ namespace SecondBrain.Data.Migrations
 
                     b.HasIndex("NoteId");
 
-                    b.ToTable("NoteLinks");
+                    b.ToTable("NoteLinks", (string)null);
                 });
 
             modelBuilder.Entity("SecondBrain.Data.Entities.RefreshToken", b =>
@@ -364,7 +364,7 @@ namespace SecondBrain.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("RefreshTokens");
+                    b.ToTable("RefreshTokens", (string)null);
                 });
 
             modelBuilder.Entity("SecondBrain.Data.Entities.Reminder", b =>
@@ -426,7 +426,7 @@ namespace SecondBrain.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Reminders");
+                    b.ToTable("Reminders", (string)null);
                 });
 
             modelBuilder.Entity("SecondBrain.Data.Entities.ReminderLink", b =>
@@ -474,7 +474,7 @@ namespace SecondBrain.Data.Migrations
 
                     b.HasIndex("NoteId");
 
-                    b.ToTable("ReminderLinks");
+                    b.ToTable("ReminderLinks", (string)null);
                 });
 
             modelBuilder.Entity("SecondBrain.Data.Entities.TaskItem", b =>
@@ -525,7 +525,7 @@ namespace SecondBrain.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Tasks");
+                    b.ToTable("Tasks", (string)null);
                 });
 
             modelBuilder.Entity("SecondBrain.Data.Entities.TaskItemNote", b =>
@@ -542,7 +542,7 @@ namespace SecondBrain.Data.Migrations
 
                     b.HasIndex("NoteId");
 
-                    b.ToTable("TaskItemNotes");
+                    b.ToTable("TaskItemNotes", (string)null);
                 });
 
             modelBuilder.Entity("SecondBrain.Data.Entities.TaskLink", b =>
@@ -591,7 +591,7 @@ namespace SecondBrain.Data.Migrations
 
                     b.HasIndex("TaskId");
 
-                    b.ToTable("TaskLinks");
+                    b.ToTable("TaskLinks", (string)null);
                 });
 
             modelBuilder.Entity("SecondBrain.Data.Entities.TaskSyncMapping", b =>
@@ -634,7 +634,7 @@ namespace SecondBrain.Data.Migrations
                     b.HasIndex("TickTickTaskId", "Provider", "UserId")
                         .IsUnique();
 
-                    b.ToTable("TaskSyncMappings");
+                    b.ToTable("TaskSyncMappings", (string)null);
                 });
 
             modelBuilder.Entity("SecondBrain.Data.Entities.User", b =>
@@ -677,7 +677,7 @@ namespace SecondBrain.Data.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("SecondBrain.Data.Entities.UserAchievement", b =>
@@ -697,7 +697,7 @@ namespace SecondBrain.Data.Migrations
 
                     b.HasIndex("AchievementId");
 
-                    b.ToTable("UserAchievements");
+                    b.ToTable("UserAchievements", (string)null);
                 });
 
             modelBuilder.Entity("SecondBrain.Data.Entities.UserIntegrationCredential", b =>
@@ -767,7 +767,7 @@ namespace SecondBrain.Data.Migrations
                     b.HasIndex("UserId", "Provider")
                         .IsUnique();
 
-                    b.ToTable("UserIntegrationCredentials");
+                    b.ToTable("UserIntegrationCredentials", (string)null);
                 });
 
             modelBuilder.Entity("SecondBrain.Data.Entities.UserPreference", b =>
@@ -799,7 +799,7 @@ namespace SecondBrain.Data.Migrations
                     b.HasIndex("UserId", "PreferenceType")
                         .IsUnique();
 
-                    b.ToTable("UserPreferences");
+                    b.ToTable("UserPreferences", (string)null);
                 });
 
             modelBuilder.Entity("SecondBrain.Data.Entities.XPHistoryItem", b =>
@@ -835,7 +835,7 @@ namespace SecondBrain.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("XPHistory");
+                    b.ToTable("XPHistory", (string)null);
                 });
 
             modelBuilder.Entity("SecondBrain.Data.Entities.Activity", b =>
