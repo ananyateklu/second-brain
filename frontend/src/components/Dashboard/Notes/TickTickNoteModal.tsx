@@ -4,7 +4,6 @@ import { TickTickTask } from '../../../types/integrations';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { FileText, Loader2, Save, Edit, X, Trash2, AlertTriangle, StickyNote, AlignLeft, Type } from 'lucide-react';
 import { Input } from '../../shared/Input';
-import { TextArea } from '../../shared/TextArea';
 
 interface TickTickNoteModalProps {
     isOpen: boolean;
@@ -123,20 +122,210 @@ export function TickTickNoteModal({ isOpen, onClose, projectId, noteId }: TickTi
         return 'border-[var(--color-border)]';
     };
 
+    // Parse note content to extract sections, items, and their states
+    const parseNoteContent = (content: string | undefined) => {
+        if (!content) return [];
+
+        const lines = content.split('\n');
+        let currentSection = '';
+        const sections: {
+            title: string;
+            items: {
+                text: string;
+                checked: boolean;
+                isNumbered?: boolean;
+                number?: number;
+                isHorizontalDivider?: boolean;
+            }[]
+        }[] = [];
+        let currentItems: {
+            text: string;
+            checked: boolean;
+            isNumbered?: boolean;
+            number?: number;
+            isHorizontalDivider?: boolean;
+        }[] = [];
+
+        lines.forEach((line) => {
+            const trimmedLine = line.trim();
+
+            // Skip empty lines
+            if (!trimmedLine) return;
+
+            // Check for horizontal divider
+            if (trimmedLine === '---') {
+                currentItems.push({
+                    text: '',
+                    checked: false,
+                    isHorizontalDivider: true
+                });
+                return;
+            }
+
+            // Check for various section header formats:
+            // 1. Lines ending with colon
+            // 2. Lines starting with # 
+            // 3. Lines with **Header:** format (markdown-style)
+            if (
+                /^.*:$/.test(trimmedLine) ||
+                trimmedLine.startsWith('#') ||
+                /^\*\*.*:\*\*$/.test(trimmedLine)
+            ) {
+                // If we already have a section, save it before starting a new one
+                if (currentSection && currentItems.length > 0) {
+                    sections.push({
+                        title: currentSection,
+                        items: [...currentItems]
+                    });
+                    currentItems = [];
+                }
+
+                // Extract section title based on format
+                if (trimmedLine.startsWith('#')) {
+                    // Handle # Header format
+                    currentSection = trimmedLine.substring(1).trim();
+                } else if (/^\*\*.*:\*\*$/.test(trimmedLine)) {
+                    // Handle **Header:** format
+                    currentSection = trimmedLine.replace(/^\*\*|\*\*$/g, '');
+                } else {
+                    // Handle regular Header: format
+                    currentSection = trimmedLine;
+                }
+            }
+            // Check for numbered list items (1. Item format)
+            else if (/^\d+\.\s+/.test(trimmedLine)) {
+                const numberMatch = trimmedLine.match(/^(\d+)\.\s+(.*)/);
+                if (numberMatch) {
+                    const number = parseInt(numberMatch[1], 10);
+                    const text = numberMatch[2].trim();
+                    currentItems.push({
+                        text,
+                        checked: false,
+                        isNumbered: true,
+                        number
+                    });
+                }
+            }
+            // Check if this is a list item with a checkbox or bullet
+            else if (trimmedLine.startsWith('-') || trimmedLine.startsWith('*')) {
+                // Look for checkbox patterns in various formats
+                const hasCheckbox = trimmedLine.includes('[');
+
+                // Check if the item is checked
+                const isChecked = hasCheckbox && (
+                    trimmedLine.includes('[x]') ||
+                    trimmedLine.includes('[X]') ||
+                    trimmedLine.includes('[✓]') ||
+                    trimmedLine.includes('[✔]')
+                );
+
+                // Extract the item text based on the item format
+                let itemText = '';
+
+                if (hasCheckbox) {
+                    // Handle checkbox format
+                    itemText = trimmedLine
+                        .replace(/^-\s*\[\s*[xX✓✔]\s*\]\s*/, '')  // Remove checked box
+                        .replace(/^-\s*\[\s*\]\s*/, '')           // Remove unchecked box
+                        .trim();
+                } else {
+                    // Handle simple bullet format
+                    itemText = trimmedLine
+                        .replace(/^-\s*/, '')                     // Remove dash
+                        .replace(/^\*\s*/, '')                    // Remove asterisk
+                        .trim();
+                }
+
+                currentItems.push({ text: itemText, checked: isChecked });
+            }
+            // If we can't match any special format, treat as plain text item
+            else {
+                currentItems.push({ text: trimmedLine, checked: false });
+            }
+        });
+
+        // Add the last section if it exists
+        if (currentSection && currentItems.length > 0) {
+            sections.push({
+                title: currentSection,
+                items: [...currentItems]
+            });
+        } else if (currentItems.length > 0 && !currentSection) {
+            // Handle notes with no explicit section
+            sections.push({
+                title: 'Note',
+                items: [...currentItems]
+            });
+        }
+
+        return sections;
+    };
+
+    // Helper function to process text and format bold parts with *text** pattern
+    const formatTextWithBold = (text: string) => {
+        // Simple approach: replace the pattern directly with styled components
+        const boldRegex = /\*(.*?)\*\*/g;
+
+        // If no bold parts were found, return the original text
+        if (!boldRegex.test(text)) {
+            return <>{text}</>;
+        }
+
+        // Reset regex state
+        boldRegex.lastIndex = 0;
+
+        // Split the text into parts: regular text and bold text
+        const parts = [];
+        let lastIndex = 0;
+        let match;
+
+        while ((match = boldRegex.exec(text)) !== null) {
+            // Add text before the match
+            if (match.index > lastIndex) {
+                parts.push({
+                    type: 'regular',
+                    text: text.substring(lastIndex, match.index)
+                });
+            }
+
+            // Add the bold text
+            parts.push({
+                type: 'bold',
+                text: match[1] // The content inside the *...** pattern
+            });
+
+            lastIndex = match.index + match[0].length;
+        }
+
+        // Add any remaining text after the last match
+        if (lastIndex < text.length) {
+            parts.push({
+                type: 'regular',
+                text: text.substring(lastIndex)
+            });
+        }
+
+        // Render the parts
+        return (
+            <>
+                {parts.map((part, index) =>
+                    part.type === 'bold'
+                        ? <strong key={index} className="font-semibold">{part.text}</strong>
+                        : <span key={index}>{part.text}</span>
+                )}
+            </>
+        );
+    };
+
     const renderViewMode = () => {
         if (!note) return <div className="text-sm text-[var(--color-textSecondary)]">Note not found.</div>;
 
+        const parsedSections = parseNoteContent(note.content);
+
         return (
-            <div className="space-y-4 p-4 bg-[var(--color-surface)]">
+            <div className="space-y-6 p-4 bg-[var(--color-surface)]">
                 <div className="flex justify-between items-start">
-                    <div className="space-y-2">
-                        <h3 className="text-lg font-medium text-[var(--color-text)]">{note.title}</h3>
-                        {note.content && (
-                            <div className="text-[var(--color-textSecondary)] text-sm whitespace-pre-wrap">
-                                {note.content}
-                            </div>
-                        )}
-                    </div>
+                    <h3 className="text-xl font-medium text-[var(--color-text)]">{note.title}</h3>
                     <div className="flex gap-2">
                         <button
                             onClick={() => setIsEditing(true)}
@@ -154,7 +343,69 @@ export function TickTickNoteModal({ isOpen, onClose, projectId, noteId }: TickTi
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                {parsedSections.length > 0 ? (
+                    <div className="space-y-6">
+                        {parsedSections.map((section, sectionIndex) => (
+                            <div key={sectionIndex} className="space-y-2">
+                                <h4 className="text-md font-semibold text-[var(--color-text)]">
+                                    {section.title}
+                                </h4>
+                                <div className="space-y-2 pl-2 mt-1">
+                                    {section.items.map((item, itemIndex) => (
+                                        <div key={itemIndex} className={`flex items-start gap-2 ${item.isHorizontalDivider ? 'w-full' : ''}`}>
+                                            {item.isHorizontalDivider ? (
+                                                // Horizontal divider
+                                                <div className="w-full border-t border-[var(--color-border)] my-3"></div>
+                                            ) : item.isNumbered ? (
+                                                // Numbered list item
+                                                <div className="flex-shrink-0 pt-0.5 min-w-[24px] text-right pr-1">
+                                                    <span className="text-[var(--color-textSecondary)]">{item.number}.</span>
+                                                </div>
+                                            ) : (
+                                                // Checkbox or bullet item
+                                                <div className="flex-shrink-0 pt-0.5">
+                                                    <div className={`w-5 h-5 border ${item.checked ? 'bg-blue-500 border-blue-600' : 'bg-white border-gray-400 dark:bg-gray-800 dark:border-gray-600'} flex items-center justify-center rounded-sm`}>
+                                                        {item.checked && (
+                                                            <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                                            </svg>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {!item.isHorizontalDivider && (
+                                                <div className="flex items-center flex-1">
+                                                    <span className={`${item.checked ? 'line-through text-[var(--color-textSecondary)]' : 'text-[var(--color-text)]'}`}>
+                                                        {formatTextWithBold(item.text)}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : note.content ? (
+                    <div className="text-[var(--color-text)] whitespace-pre-wrap">
+                        {note.content}
+                    </div>
+                ) : null}
+
+                {note.tags && note.tags.length > 0 && (
+                    <div className="pt-2 border-t border-[var(--color-border)]">
+                        <span className="font-medium text-[var(--color-textSecondary)]">Tags:</span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                            {note.tags.map(tag => (
+                                <span key={tag} className="px-2 py-0.5 text-xs rounded-full bg-[var(--color-note)]/10 text-[var(--color-note)]">
+                                    {tag}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4 text-sm pt-2 border-t border-[var(--color-border)]">
                     {note.createdTime && (
                         <div className="flex items-center gap-2">
                             <span className="font-medium text-[var(--color-textSecondary)]">Created:</span>
@@ -168,19 +419,6 @@ export function TickTickNoteModal({ isOpen, onClose, projectId, noteId }: TickTi
                         </div>
                     )}
                 </div>
-
-                {note.tags && note.tags.length > 0 && (
-                    <div>
-                        <span className="font-medium text-[var(--color-textSecondary)]">Tags:</span>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                            {note.tags.map(tag => (
-                                <span key={tag} className="px-2 py-0.5 text-xs rounded-full bg-[var(--color-note)]/10 text-[var(--color-note)]">
-                                    {tag}
-                                </span>
-                            ))}
-                        </div>
-                    </div>
-                )}
             </div>
         );
     };
@@ -202,16 +440,32 @@ export function TickTickNoteModal({ isOpen, onClose, projectId, noteId }: TickTi
                 />
 
                 {/* Content */}
-                <TextArea
-                    label="Content"
-                    icon={AlignLeft}
-                    value={content || ''}
-                    onChange={(e) => setContent(e.target.value)}
-                    rows={6}
-                    className="focus:ring-[var(--color-note)]"
-                    placeholder="Add content to your note"
-                    disabled={loading}
-                />
+                <div className="space-y-1.5">
+                    <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-textSecondary)]">
+                        <AlignLeft className="w-4 h-4" />
+                        Content
+                    </label>
+                    <textarea
+                        value={content || ''}
+                        onChange={(e) => setContent(e.target.value)}
+                        rows={10}
+                        className={`w-full px-3 py-2 bg-[var(--color-surface-elevated)] border ${getBorderStyle()} rounded-lg focus:ring-2 focus:ring-[var(--color-note)] focus:border-transparent text-[var(--color-text)] disabled:opacity-50 transition-colors`}
+                        placeholder="Add content to your note"
+                        disabled={loading}
+                    />
+                    <div className="text-xs text-[var(--color-textSecondary)] mt-1">
+                        <p>Formatting tips:</p>
+                        <ul className="list-disc pl-4 mt-1 space-y-0.5">
+                            <li>Use <code className="bg-[var(--color-surface-elevated)] px-1 rounded">Category name:</code> or <code className="bg-[var(--color-surface-elevated)] px-1 rounded">**Category name:**</code> for section headers</li>
+                            <li>Use <code className="bg-[var(--color-surface-elevated)] px-1 rounded">- [ ] Item name</code> for unchecked items</li>
+                            <li>Use <code className="bg-[var(--color-surface-elevated)] px-1 rounded">- [x] Item name</code> for checked items</li>
+                            <li>Use <code className="bg-[var(--color-surface-elevated)] px-1 rounded">1. Step one</code> format for numbered instructions</li>
+                            <li>Use <code className="bg-[var(--color-surface-elevated)] px-1 rounded">---</code> on a line by itself to create a horizontal divider</li>
+                            <li>Use <code className="bg-[var(--color-surface-elevated)] px-1 rounded">*bold text**</code> to make text bold</li>
+                            <li>Add emoji at the end of items for visual icons</li>
+                        </ul>
+                    </div>
+                </div>
 
                 {/* Tags Input */}
                 <div className="space-y-1.5">
@@ -317,13 +571,8 @@ export function TickTickNoteModal({ isOpen, onClose, projectId, noteId }: TickTi
                     </div>
                     <div>
                         <h2 className="text-lg font-bold text-[var(--color-text)]">
-                            {isEditing ? "Edit TickTick Note" : "TickTick Note Details"}
+                            {isEditing ? "Edit Note" : note?.title || "TickTick Note"}
                         </h2>
-                        {note && note.modifiedTime && (
-                            <p className="text-xs text-[var(--color-textSecondary)]">
-                                Last updated {new Date(note.modifiedTime).toLocaleDateString()}
-                            </p>
-                        )}
                     </div>
                 </div>
                 <div className="flex items-center gap-1.5">
