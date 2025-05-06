@@ -212,26 +212,26 @@ export class SimilarContentService {
                             .filter(item =>
                                 typeof item.id === 'string' &&
                                 typeof item.similarity === 'number' &&
-                                item.similarity >= 0 && item.similarity <= 1
+                                item.similarity >= 0 && item.similarity <= 1 &&
+                                // Ensure type is one of the expected values
+                                ['note', 'idea', 'task', 'reminder'].includes(item.type)
                             )
+                            .map(item => {
+                                // Try to find the original candidate to get the full details if AI misses some
+                                const originalItem = candidates.find(c => c.id === item.id);
+                                return {
+                                    id: item.id,
+                                    title: item.title || originalItem?.title || 'Title missing', // Prioritize AI title, then candidate, then fallback
+                                    similarity: item.similarity,
+                                    type: item.type,
+                                    status: item.status || originalItem?.status,
+                                    dueDate: item.dueDate || originalItem?.dueDate
+                                };
+                            })
+                            .filter(item => item.title !== 'Title missing') // Remove items where title could not be found
                             .slice(0, maxResults);
 
-                        console.log("Valid results after filtering:", validResults);
-
-                        // Check for title field
-                        validResults.forEach((item, index) => {
-                            if (!item.title) {
-                                console.warn(`Missing title for item at index ${index}:`, item);
-
-                                // Try to find the original candidate to get the title
-                                const originalItem = candidates.find(c => c.id === item.id);
-                                if (originalItem) {
-                                    console.log("Found original item with title:", originalItem.title);
-                                    item.title = originalItem.title;
-                                }
-                            }
-                        });
-
+                        console.log("Valid results after filtering and mapping:", validResults);
                         return validResults;
                     }
                 } catch (jsonError) {
@@ -334,7 +334,7 @@ export class SimilarContentService {
 
 CURRENT NOTE:
 Title: ${currentNote.title}
-Content: ${currentNote.content.slice(0, 500)}${currentNote.content.length > 500 ? '...' : ''}
+Content: ${currentNote.content.slice(0, 1000)}${currentNote.content.length > 1000 ? '...' : ''}
 Tags: ${currentNote.tags.join(', ')}
 
 CANDIDATE ITEMS:
@@ -343,7 +343,7 @@ ${candidates.map((item, index) => `
 ID: ${item.id}
 Type: ${item.type}
 Title: ${item.title}
-Content: ${item.content.slice(0, 200)}${item.content.length > 200 ? '...' : ''}
+Content: ${item.content.slice(0, 400)}${item.content.length > 400 ? '...' : ''}
 Tags: ${item.tags.join(', ')}
 `).join('\n')}
 
@@ -354,17 +354,24 @@ For each candidate item, calculate a similarity score between 0 and 1 where:
 - 0.1-0.3 means weakly related
 - 0 means completely unrelated
 
-Return the top ${maxResults} most similar items in JSON format:
+Return the top ${maxResults} most similar items in JSON format. Each item in the JSON array MUST include "id", "title", "similarity", and "type".
+Example:
 [
   {
-    "id": "item_id",
-    "similarity": 0.XX,
-    "type": "note" or "idea" or "task" or "reminder"
+    "id": "item_id_1",
+    "title": "Example Note Title",
+    "similarity": 0.85,
+    "type": "note"
   },
-  ...
+  {
+    "id": "item_id_2",
+    "title": "Related Task Name",
+    "similarity": 0.72,
+    "type": "task"
+  }
 ]
 
-Only include items with meaningful similarity (score > 0.3). Format your response as a valid JSON array.`;
+Only include items with meaningful similarity (score > 0.3). Ensure your response is a valid JSON array. If a title is long, you can truncate it, but it must be present.`;
     }
 }
 
