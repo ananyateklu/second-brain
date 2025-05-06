@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace SecondBrain.Api.DTOs.Llama
+namespace SecondBrain.Api.DTOs.Ollama
 {
     public class NoteToolOperation
     {

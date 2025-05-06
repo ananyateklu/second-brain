@@ -8,15 +8,15 @@ using SecondBrain.Api.Exceptions;
 
 namespace SecondBrain.Api.Services
 {
-    public class LlamaService : ILlamaService
+    public class OllamaService : IOllamaService
     {
-        private readonly ILogger<LlamaService> _logger;
+        private readonly ILogger<OllamaService> _logger;
         private readonly OllamaApiClient _ollamaClient;
 
-        public LlamaService(IConfiguration configuration, ILogger<LlamaService> logger)
+        public OllamaService(IConfiguration configuration, ILogger<OllamaService> logger)
         {
             _logger = logger;
-            var ollamaUri = new Uri(configuration.GetValue<string>("Llama:OllamaUri") ?? throw new InvalidOperationException("Llama:OllamaUri configuration is required"));
+            var ollamaUri = new Uri(configuration.GetValue<string>("Ollama:OllamaUri") ?? throw new InvalidOperationException("Ollama:OllamaUri configuration is required"));
             _ollamaClient = new OllamaApiClient(ollamaUri);
         }
 
@@ -39,8 +39,8 @@ namespace SecondBrain.Api.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error generating text with Llama model {ModelName}.", modelName);
-                throw new LlamaException($"Failed to generate text with Llama model {modelName}", ex);
+                _logger.LogError(ex, "Error generating text with Ollama model {ModelName}.", modelName);
+                throw new OllamaException($"Failed to generate text with Ollama model {modelName}", ex);
             }
         }
     }

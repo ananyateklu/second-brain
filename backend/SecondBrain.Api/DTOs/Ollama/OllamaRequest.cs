@@ -1,6 +1,6 @@
-namespace SecondBrain.Api.DTOs.Llama
+namespace SecondBrain.Api.DTOs.Ollama
 {
-    public class LlamaRequest
+    public class OllamaRequest
     {
         public required string Prompt { get; set; }
         public required string ModelName { get; set; }

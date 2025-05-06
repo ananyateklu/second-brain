@@ -9,19 +9,19 @@ export class PromptEnhancementService {
 
   private get modelId(): string {
     const provider = this.provider;
-    if (provider === 'llama') {
+    if (provider === 'ollama') {
       return localStorage.getItem('prompt_enhancement_model') ?? 'llama3.1:8b';
     }
     return localStorage.getItem('prompt_enhancement_model') ?? 'gpt-4';
   }
 
-  private get provider(): 'openai' | 'anthropic' | 'gemini' | 'llama' {
+  private get provider(): 'openai' | 'anthropic' | 'gemini' | 'ollama' {
     return (
       (localStorage.getItem('prompt_enhancement_provider') as
         | 'openai'
         | 'anthropic'
         | 'gemini'
-        | 'llama') || 'openai'
+        | 'ollama') || 'openai'
     );
   }
 

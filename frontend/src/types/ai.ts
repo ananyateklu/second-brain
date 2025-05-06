@@ -11,7 +11,7 @@ export interface RateLimits {
 export interface AIModel {
   id: string;
   name: string;
-  provider: 'openai' | 'anthropic' | 'gemini' | 'llama' | 'grok' | 'perplexity';
+  provider: 'openai' | 'anthropic' | 'gemini' | 'ollama' | 'grok' | 'perplexity';
   category: 'chat' | 'completion' | 'embedding' | 'image' | 'audio' | 'function' | 'rag' | 'agent' | 'search' | 'research' | 'reasoning';
   description: string;
   isConfigured: boolean;
@@ -154,14 +154,14 @@ export interface AISettings {
     maxTokens: number;
   };
   contentSuggestions?: {
-    provider: 'openai' | 'anthropic' | 'gemini' | 'llama' | 'grok';
+    provider: 'openai' | 'anthropic' | 'gemini' | 'ollama' | 'grok';
     modelId: string;
     temperature?: number;
     maxTokens?: number;
     systemMessage?: string;
   };
   promptEnhancement?: {
-    provider: 'openai' | 'anthropic' | 'gemini' | 'llama' | 'grok';
+    provider: 'openai' | 'anthropic' | 'gemini' | 'ollama' | 'grok';
     modelId: string;
     temperature?: number;
     maxTokens?: number;

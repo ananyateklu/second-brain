@@ -15,7 +15,7 @@ import { useTheme } from '../../../contexts/themeContextUtils';
 export function AIAssistantPage() {
   const navigate = useNavigate();
   const { theme } = useTheme(); // Get current theme
-  const { isOpenAIConfigured, isGeminiConfigured, isAnthropicConfigured, isLlamaConfigured, availableModels, sendMessage } = useAI();
+  const { isOpenAIConfigured, isGeminiConfigured, isAnthropicConfigured, isOllamaConfigured, availableModels, sendMessage } = useAI();
   const [selectedCategory, setSelectedCategory] = useState<string>('chat');
   const [selectedModel, setSelectedModel] = useState<AIModel | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -178,7 +178,7 @@ export function AIAssistantPage() {
     }
   };
 
-  if (!isOpenAIConfigured && !isGeminiConfigured && !isAnthropicConfigured && !isLlamaConfigured) {
+  if (!isOpenAIConfigured && !isGeminiConfigured && !isAnthropicConfigured && !isOllamaConfigured) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-12rem)] gap-4">
         <Bot className="w-16 h-16 text-[var(--color-textSecondary)]" />

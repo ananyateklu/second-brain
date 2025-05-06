@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SecondBrain.Data;
-using SecondBrain.Api.DTOs.Llama;
+using SecondBrain.Api.DTOs.Ollama;
 using SecondBrain.Data.Entities;
 using SecondBrain.Api.Services;
 using SecondBrain.Api.Enums;

@@ -11,8 +11,8 @@ export const getBotIcon = (provider: string) => {
         return Glasses; // Claude: Intellectual and thoughtful
     } else if (providerLower.includes('gemini') || providerLower.includes('google')) {
         return Brain; // Google: Analytical and knowledge-focused
-    } else if (providerLower.includes('llama') || providerLower.includes('meta') || providerLower.includes('local')) {
-        return Atom; // Local/Meta/Llama: Scientific and experimental
+    } else if (providerLower.includes('ollama') || providerLower.includes('meta') || providerLower.includes('local')) {
+        return Atom; // Local/Meta/Ollama: Scientific and experimental
     } else if (providerLower.includes('grok') || providerLower.includes('x.ai')) {
         return Zap; // Grok: Quick-witted and playful
     }

@@ -4,7 +4,7 @@ import { modelService } from './modelService';
 import { OpenAIService } from './openai';
 import { AnthropicService } from './anthropic';
 import { GeminiService } from './gemini';
-import { LlamaService } from './llama';
+import { OllamaService } from './ollama';
 import { GrokService } from './grok';
 
 export type ContentType = 'note' | 'idea' | 'task' | 'reminder';
@@ -13,7 +13,7 @@ export class ContentSuggestionService {
   private readonly openai = new OpenAIService();
   private readonly anthropic = new AnthropicService();
   private readonly gemini = new GeminiService();
-  private readonly llama = new LlamaService();
+  private readonly ollama = new OllamaService();
   private readonly grok = new GrokService();
 
   // Use a getter to retrieve the modelId whenever needed - use core models only!
@@ -28,7 +28,7 @@ export class ContentSuggestionService {
 
     if (availableChatModels.length === 0) {
       // Fallback if no models available for this provider
-      return provider === 'llama' ? 'llama3.1:8b' :
+      return provider === 'ollama' ? 'llama3.1:8b' :
         provider === 'grok' ? 'grok-beta' : 'gpt-4';
     }
 
@@ -41,17 +41,17 @@ export class ContentSuggestionService {
 
     // Default to the first available model for the provider
     return availableChatModels[0]?.id ||
-      (provider === 'llama' ? 'llama3.1:8b' :
+      (provider === 'ollama' ? 'llama3.1:8b' :
         provider === 'grok' ? 'grok-beta' : 'gpt-4');
   }
 
-  private get provider(): 'openai' | 'anthropic' | 'gemini' | 'llama' | 'grok' {
+  private get provider(): 'openai' | 'anthropic' | 'gemini' | 'ollama' | 'grok' {
     return (
       (localStorage.getItem('content_suggestions_provider') as
         | 'openai'
         | 'anthropic'
         | 'gemini'
-        | 'llama'
+        | 'ollama'
         | 'grok') || 'openai'
     );
   }
@@ -68,8 +68,8 @@ export class ContentSuggestionService {
         return this.anthropic;
       case 'gemini':
         return this.gemini;
-      case 'llama':
-        return this.llama;
+      case 'ollama':
+        return this.ollama;
       case 'grok':
         return this.grok;
       default:

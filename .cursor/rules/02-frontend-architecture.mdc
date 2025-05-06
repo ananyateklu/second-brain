@@ -33,7 +33,7 @@ frontend/
 │   │   │   ├── anthropic.ts  # Anthropic/Claude implementation
 │   │   │   ├── gemini.ts     # Google Gemini implementation
 │   │   │   ├── grok.ts       # Grok implementation
-│   │   │   ├── llama.ts      # Local LLM implementation
+│   │   │   ├── ollama.ts      # Local LLM implementation
 │   │   │   └── messageService.ts # Message handling service
 │   │   └── notification/     # Notification services
 │   ├── theme/                # Theme configuration
@@ -305,8 +305,8 @@ export const sendMessage = async (
       return sendMessageToGemini(message, modelId, messageCallback);
     case 'grok':
       return sendMessageToGrok(message, modelId, messageCallback);
-    case 'llama':
-      return sendMessageToLlama(message, modelId, messageCallback);
+    case 'ollama':
+      return sendMessageToOllama(message, modelId, messageCallback);
     default:
       throw new Error(`Unsupported provider: ${model.provider}`);
   }

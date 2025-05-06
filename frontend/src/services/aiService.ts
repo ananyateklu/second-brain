@@ -1,7 +1,7 @@
 import { OpenAIService } from './ai/openai';
 import { AnthropicService } from './ai/anthropic';
 import { GeminiService } from './ai/gemini';
-import { LlamaService } from './ai/llama';
+import { OllamaService } from './ai/ollama';
 import { GrokService } from './ai/grok';
 import { AgentService } from './ai/agent';
 import { AIModel, AIResponse, GrokFunction } from '../types/ai';
@@ -18,7 +18,7 @@ export class AIService {
   private readonly openai: OpenAIService;
   private readonly anthropic: AnthropicService;
   private readonly gemini: GeminiService;
-  public readonly llama: LlamaService;
+  public readonly ollama: OllamaService;
   public readonly grokService: GrokService;
   private readonly agentService: AgentService;
 
@@ -26,7 +26,7 @@ export class AIService {
     this.openai = new OpenAIService();
     this.anthropic = new AnthropicService();
     this.gemini = new GeminiService();
-    this.llama = new LlamaService();
+    this.ollama = new OllamaService();
     this.grokService = new GrokService();
     this.agentService = new AgentService();
   }
@@ -56,8 +56,8 @@ export class AIService {
         return this.anthropic.sendMessage(message, modelId, options);
       case 'gemini':
         return this.gemini.sendMessage(message, modelId, options);
-      case 'llama':
-        return this.llama.sendMessage(message, modelId, options);
+      case 'ollama':
+        return this.ollama.sendMessage(message, modelId, options);
       case 'grok':
         return this.grokService.sendMessage(message, modelId, options);
       default:
@@ -80,11 +80,11 @@ export class AIService {
 
     // Then get all other models, excluding those that are already in agent models
     const otherModels = [
-      ...this.openai.getModels().filter(m => !agentModelIds.has(m.id) && m.category !== 'agent'),
-      ...this.anthropic.getModels().filter(m => !agentModelIds.has(m.id) && m.category !== 'agent'),
-      ...this.gemini.getModels().filter(m => !agentModelIds.has(m.id) && m.category !== 'agent'),
-      ...this.llama.getModels().filter(m => !agentModelIds.has(m.id) && m.category !== 'agent'),
-      ...this.grokService.getModels().filter(m => !agentModelIds.has(m.id) && m.category !== 'agent')
+      ...this.openai.getModels().filter((m: AIModel) => !agentModelIds.has(m.id) && m.category !== 'agent'),
+      ...this.anthropic.getModels().filter((m: AIModel) => !agentModelIds.has(m.id) && m.category !== 'agent'),
+      ...this.gemini.getModels().filter((m: AIModel) => !agentModelIds.has(m.id) && m.category !== 'agent'),
+      ...this.ollama.getModels().filter((m: AIModel) => !agentModelIds.has(m.id) && m.category !== 'agent'),
+      ...this.grokService.getModels().filter((m: AIModel) => !agentModelIds.has(m.id) && m.category !== 'agent')
     ];
 
     return [...agentModels, ...otherModels];
@@ -102,8 +102,8 @@ export class AIService {
     return this.gemini.isConfigured();
   }
 
-  isLlamaConfigured(): boolean {
-    return this.llama.isConfigured();
+  isOllamaConfigured(): boolean {
+    return this.ollama.isConfigured();
   }
 
   async isGrokConfigured(): Promise<boolean> {

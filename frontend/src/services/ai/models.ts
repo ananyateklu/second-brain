@@ -283,11 +283,11 @@ export const AI_MODELS: AIModel[] = [
     },
     size: '175B',
   },
-  // Llama Models (Colored Blue)
+  // Ollama Models (Colored Blue)
   {
     id: 'marco-o1',
     name: 'Marco O1',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'chat',
     description: "An open large reasoning model for real-world solutions by the Alibaba International Digital Commerce Group (AIDC-AI).",
     isConfigured: true,
@@ -305,7 +305,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'qwq',
     name: 'QwQ',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'chat',
     description: "QwQ is an experimental research model focused on advancing AI reasoning capabilities.",
     isConfigured: true,
@@ -323,7 +323,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'llama3.1:8b',
     name: 'Llama 3.1',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'chat',
     description: "Llama 3.1 - Meta's latest 8b parameter model",
     isConfigured: true,
@@ -341,7 +341,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'llama3.2',
     name: 'Llama 3.2',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'chat',
     description: "Llama 3.2 - Meta's latest 3b parameter model",
     isConfigured: true,
@@ -359,7 +359,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'deepseek-coder-v2',
     name: 'DeepSeek Coder V2',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'chat',
     description: 'An open-source Mixture-of-Experts code language model that achieves performance comparable to GPT4-Turbo in code-specific tasks.',
     isConfigured: true,
@@ -377,7 +377,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'nemotron-mini',
     name: 'Nemotron Mini',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'chat',
     description: 'A commercial-friendly small language model by NVIDIA optimized for roleplay, RAG QA, and function calling.',
     isConfigured: true,
@@ -394,7 +394,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'nemotron',
     name: 'Nemotron',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'chat',
     description: 'A commercial-friendly small language model by NVIDIA optimized for roleplay, RAG QA, and function calling.',
     isConfigured: true,
@@ -411,7 +411,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'Mistral-nemo',
     name: 'Mistral Nemo',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'chat',
     description: 'A state-of-the-art 12B model with 128k context length, built by Mistral AI in collaboration with NVIDIA.',
     isConfigured: true,
@@ -428,7 +428,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'orca2',
     name: 'Orca 2',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'chat',
     description: "Orca 2 is built by Microsoft research, and are a fine-tuned version of Meta's Llama 2 models. The model is designed to excel particularly in reasoning.",
     isConfigured: true,
@@ -445,7 +445,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'samantha-mistral',
     name: 'Samantha Mistral',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'chat',
     description: 'A companion assistant trained in philosophy, psychology, and personal relationships. Based on Mistral.',
     isConfigured: true,
@@ -460,11 +460,44 @@ export const AI_MODELS: AIModel[] = [
     },
   },
   {
+    id: 'granite3.3',
+    name: 'Granite 3.3',
+    provider: 'ollama',
+    category: 'chat',
+    description: 'The latest series of Granite models, with significant improvements in performance and speed.',
+    isConfigured: true,
+    isReasoner: false,
+    color: '#8B5CF6',
+    endpoint: 'chat',
+    rateLimits: {
+      tpm: 60000,
+      rpm: 35,
+      maxInputTokens: 16384,
+      maxOutputTokens: 4096,
+    },
+    size: '8.17B',
+  },
+  {
+    id: 'granite3.2-vision',
+    name: 'Granite 3.2 Vision',
+    provider: 'ollama',
+    category: 'image',
+    description: 'The latest series of Granite models, with significant improvements in performance and speed.',
+    isConfigured: true,
+    isReasoner: false,
+    color: '#8B5CF6',
+    endpoint: 'images',
+    rateLimits: {
+      tpm: 60000,
+      rpm: 35,
+    },
+  },
+  {
     id: 'granite3.1-dense:latest',
     name: 'Granite 3.1 Dense',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'chat',
-    description: 'The IBM Granite 2B and 8B models are text-only dense LLMs trained on over 12 trillion tokens of data, demonstrated significant improvements over their predecessors in performance and speed in IBM’s initial testing.',
+    description: 'The IBM Granite 2B and 8B models are text-only dense LLMs trained on over 12 trillion tokens of data, demonstrated significant improvements over their predecessors in performance and speed in IBMs initial testing.',
     isConfigured: true,
     isReasoner: false,
     color: '#8B5CF6',
@@ -480,7 +513,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'granite3-dense:8b',
     name: 'Granite 3 Dense',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'chat',
     description: 'The IBM Granite 2B and 8B models are designed to support tool-based use cases and support for retrieval augmented generation (RAG), streamlining code generation, translation and bug fixing.',
     isConfigured: true,
@@ -498,7 +531,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'granite3-moe',
     name: 'Granite 3 MOE',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'chat',
     description: 'The IBM Granite 1B and 3B models are the first mixture of experts (MoE) Granite models from IBM designed for low latency usage.',
     isConfigured: true,
@@ -513,9 +546,27 @@ export const AI_MODELS: AIModel[] = [
     },
   },
   {
+    id: 'qwen3',
+    name: 'Qwen 3',
+    provider: 'ollama',
+    category: 'chat',
+    description: 'The latest series of Qwen models, with significant improvements in performance and speed.',
+    isConfigured: true,
+    isReasoner: false,
+    color: '#8B5CF6',
+    endpoint: 'chat',
+    size: '8B',
+    rateLimits: {
+      tpm: 80000,
+      rpm: 45,
+      maxInputTokens: 16384,
+      maxOutputTokens: 4096,
+    },
+  },
+  {
     id: 'qwen2.5-coder:3b',
     name: 'Qwen 2.5 Coder 3b',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'chat',
     description: 'The latest series of Code-Specific Qwen models, with significant improvements in code generation, code reasoning, and code fixing.',
     isConfigured: true,
@@ -533,7 +584,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'qwen2.5-coder:14b',
     name: 'Qwen 2.5 Coder 14b',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'chat',
     description: 'The latest series of Code-Specific Qwen models, with significant improvements in code generation, code reasoning, and code fixing.',
     isConfigured: true,
@@ -551,7 +602,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'qwen2.5-coder:32b',
     name: 'Qwen 2.5 Coder 32b',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'chat',
     description: 'The latest series of Code-Specific Qwen models, with significant improvements in code generation, code reasoning, and code fixing.',
     isConfigured: true,
@@ -569,7 +620,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'gemma3:12b',
     name: 'Gemma 3 12b',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'chat',
     description: 'Gemma 3 12b is a 12B parameter model that is optimized for function calling tasks.',
     isConfigured: true,
@@ -586,7 +637,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'phi3.5',
     name: 'Phi 3.5',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'chat',
     description: 'A lightweight AI model with 3.8 billion parameters with performance overtaking similarly and larger sized models.',
     isConfigured: true,
@@ -604,7 +655,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'phi3:14b',
     name: 'Phi 3 14b',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'chat',
     description: 'Phi-3 is a family of lightweight 3B (Mini) and 14B (Medium) state-of-the-art open models by Microsoft.',
     isConfigured: true,
@@ -622,7 +673,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'vanilj/Phi-4',
     name: 'Phi 4 14b',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'chat',
     description: 'Phi-4 is a family of state-of-the-art open models by Microsoft.',
     isConfigured: true,
@@ -721,7 +772,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'codegemma',
     name: 'Code Gemma',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'chat',
     description: 'Local Code Gemma model (7b parameters) from Google via Ollama',
     isConfigured: true,
@@ -739,7 +790,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'gemma2:9b',
     name: 'Gemma 2',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'chat',
     description: "Gemma 2 - Google's latest 9b parameter model",
     isConfigured: true,
@@ -757,7 +808,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'gemma2:2b',
     name: 'Gemma 2 (2b)',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'chat',
     description: 'Local Gemma 2 model (2b parameters) from Google via Ollama',
     isConfigured: true,
@@ -775,7 +826,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'opencoder:8b',
     name: 'OpenCoder 8b',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'chat',
     description: 'OpenCoder is an open and reproducible code LLM family which includes 1.5B and 8B models, supporting both chat and fill-in-the-middle for English and Chinese languages.',
     isConfigured: true,
@@ -793,7 +844,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'opencoder:1.5b',
     name: 'OpenCoder 1.5b',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'chat',
     description: 'OpenCoder is an open and reproducible code LLM family which includes 1.5B and 8B models, supporting both chat and fill-in-the-middle for English and Chinese languages.',
     isConfigured: true,
@@ -811,7 +862,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'solar-pro',
     name: 'Solar Pro',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'chat',
     description: 'Solar Pro Preview: an advanced language model (LLM) with 22 billion parameters designed to fit into a single GPU.',
     isConfigured: true,
@@ -829,7 +880,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'athene-v2',
     name: 'Athene V2',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'chat',
     description: 'Athene-V2 is a 72B parameter model which excels at code completion, mathematics, and log extraction tasks.',
     isConfigured: true,
@@ -847,7 +898,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'yi-coder',
     name: 'Yi Coder',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'chat',
     description: 'Yi-Coder is a series of open-source code language models that delivers state-of-the-art coding performance with fewer than 10 billion parameters.',
     isConfigured: true,
@@ -865,7 +916,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'mxbai-embed-large',
     name: 'MXBai Embed Large',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'embedding',
     description: 'State-of-the-art large embedding model from mixedbread.ai',
     isConfigured: true,
@@ -984,7 +1035,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'llama3.1:8b-agent',
     name: 'Llama 3.1 (Agent)',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'agent',
     description: "Llama 3.1 - Meta's latest 8b parameter model optimized for agent tasks",
     isConfigured: true,
@@ -1002,7 +1053,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'marco-o1-agent',
     name: 'Marco O1 (Agent)',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'agent',
     description: "An open large reasoning model for real-world solutions by the Alibaba International Digital Commerce Group (AIDC-AI).",
     isConfigured: true,
@@ -1020,7 +1071,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'qwq-agent',
     name: 'QwQ (Agent)',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'agent',
     description: "QwQ is an experimental research model focused on advancing AI reasoning capabilities.",
     isConfigured: true,
@@ -1038,7 +1089,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'llama3.2-agent',
     name: 'Llama 3.2 (Agent)',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'agent',
     description: "Llama 3.2 - Meta's latest 3b parameter model",
     isConfigured: true,
@@ -1056,7 +1107,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'deepseek-coder-v2-agent',
     name: 'DeepSeek Coder V2 (Agent)',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'agent',
     description: 'An open-source Mixture-of-Experts code language model that achieves performance comparable to GPT4-Turbo in code-specific tasks.',
     isConfigured: true,
@@ -1074,7 +1125,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'nemotron-mini-agent',
     name: 'Nemotron Mini (Agent)',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'agent',
     description: 'A commercial-friendly small language model by NVIDIA optimized for roleplay, RAG QA, and function calling.',
     isConfigured: true,
@@ -1091,7 +1142,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'nemotron-agent',
     name: 'Nemotron (Agent)',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'agent',
     description: 'A commercial-friendly small language model by NVIDIA optimized for roleplay, RAG QA, and function calling.',
     isConfigured: true,
@@ -1108,7 +1159,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'Mistral-nemo-agent',
     name: 'Mistral Nemo (Agent)',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'agent',
     description: 'A state-of-the-art 12B model with 128k context length, built by Mistral AI in collaboration with NVIDIA.',
     isConfigured: true,
@@ -1125,7 +1176,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'orca2-agent',
     name: 'Orca 2 (Agent)',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'agent',
     description: "Orca 2 is built by Microsoft research, and are a fine-tuned version of Meta's Llama 2 models. The model is designed to excel particularly in reasoning.",
     isConfigured: true,
@@ -1142,9 +1193,9 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'granite3.1-dense:latest',
     name: 'Granite 3.1 Dense',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'agent',
-    description: 'The IBM Granite 2B and 8B models are text-only dense LLMs trained on over 12 trillion tokens of data, demonstrated significant improvements over their predecessors in performance and speed in IBM’s initial testing.',
+    description: 'The IBM Granite 2B and 8B models are text-only dense LLMs trained on over 12 trillion tokens of data, demonstrated significant improvements over their predecessors in performance and speed in IBMs initial testing.',
     isConfigured: true,
     isReasoner: false,
     color: '#8B5CF6',
@@ -1160,7 +1211,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'granite3-dense:8b-agent',
     name: 'Granite 3 Dense (Agent)',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'agent',
     description: 'The IBM Granite 2B and 8B models are designed to support tool-based use cases and support for retrieval augmented generation (RAG), streamlining code generation, translation and bug fixing.',
     isConfigured: true,
@@ -1178,7 +1229,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'granite3-moe-agent',
     name: 'Granite 3 MOE (Agent)',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'agent',
     description: 'The IBM Granite 1B and 3B models are the first mixture of experts (MoE) Granite models from IBM designed for low latency usage.',
     isConfigured: true,
@@ -1195,7 +1246,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'qwen2.5-coder:3b-agent',
     name: 'Qwen 2.5 Coder 3b (Agent)',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'agent',
     description: 'The latest series of Code-Specific Qwen models, with significant improvements in code generation, code reasoning, and code fixing.',
     isConfigured: true,
@@ -1213,7 +1264,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'qwen2.5-coder:14b-agent',
     name: 'Qwen 2.5 Coder 14b (Agent)',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'agent',
     description: 'The latest series of Code-Specific Qwen models, with significant improvements in code generation, code reasoning, and code fixing.',
     isConfigured: true,
@@ -1231,7 +1282,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'qwen2.5-coder:32b-agent',
     name: 'Qwen 2.5 Coder 32b (Agent)',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'agent',
     description: 'The latest series of Code-Specific Qwen models, with significant improvements in code generation, code reasoning, and code fixing.',
     isConfigured: true,
@@ -1249,7 +1300,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'phi3.5-agent',
     name: 'Phi 3.5 (Agent)',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'agent',
     description: 'A lightweight AI model with 3.8 billion parameters with performance overtaking similarly and larger sized models.',
     isConfigured: true,
@@ -1267,7 +1318,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'phi3:14b-agent',
     name: 'Phi 3 14b (Agent)',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'agent',
     description: 'Phi-3 is a family of lightweight 3B (Mini) and 14B (Medium) state-of-the-art open models by Microsoft.',
     isConfigured: true,
@@ -1285,7 +1336,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'codegemma-agent',
     name: 'Code Gemma (Agent)',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'agent',
     description: 'Local Code Gemma model (7b parameters) from Google via Ollama',
     isConfigured: true,
@@ -1303,7 +1354,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'gemma2:9b-agent',
     name: 'Gemma 2 (Agent)',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'agent',
     description: "Gemma 2 - Google's latest 9b parameter model",
     isConfigured: true,
@@ -1321,7 +1372,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'gemma2:2b-agent',
     name: 'Gemma 2 2b (Agent)',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'agent',
     description: 'Local Gemma 2 model (2b parameters) from Google via Ollama',
     isConfigured: true,
@@ -1339,7 +1390,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'opencoder:8b-agent',
     name: 'OpenCoder 8b (Agent)',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'agent',
     description: 'OpenCoder is an open and reproducible code LLM family which includes 1.5B and 8B models, supporting both chat and fill-in-the-middle for English and Chinese languages.',
     isConfigured: true,
@@ -1357,7 +1408,7 @@ export const AI_MODELS: AIModel[] = [
   {
     id: 'opencoder:1.5b-agent',
     name: 'OpenCoder 1.5b (Agent)',
-    provider: 'llama',
+    provider: 'ollama',
     category: 'agent',
     description: 'OpenCoder is an open and reproducible code LLM family which includes 1.5B and 8B models, supporting both chat and fill-in-the-middle for English and Chinese languages.',
     isConfigured: true,

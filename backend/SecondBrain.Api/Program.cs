@@ -149,8 +149,8 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Register your LlamaService here
-builder.Services.AddScoped<ILlamaService, LlamaService>();
+// Register your OllamaService here
+builder.Services.AddScoped<IOllamaService, OllamaService>();
 
 // Add these before building the app
 builder.Services.AddScoped<IXPService, XPService>();

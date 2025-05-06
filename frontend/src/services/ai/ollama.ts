@@ -2,7 +2,7 @@ import { AIModel, AIResponse } from '../../types/ai';
 import api from '../api/api';
 import { AI_MODELS } from './models';
 
-export class LlamaService {
+export class OllamaService {
   private readonly isEnabled = true;
 
   async sendMessage(
@@ -31,7 +31,7 @@ export class LlamaService {
       });
 
       const eventSource = new EventSource(
-        `${api.defaults.baseURL}/api/llama/stream?${queryParams.toString()}`
+        `${api.defaults.baseURL}/api/ollama/stream?${queryParams.toString()}`
       );
 
       return new Promise((resolve, reject) => {
@@ -86,8 +86,8 @@ export class LlamaService {
       });
 
     } catch (error) {
-      console.error('[LlamaService] Error:', error);
-      throw new Error('Failed to get response from Llama model');
+      console.error('[OllamaService] Error:', error);
+      throw new Error('Failed to get response from Ollama model');
     }
   }
 
@@ -96,15 +96,15 @@ export class LlamaService {
   }
 
   getModels(): AIModel[] {
-    // Filter models from AI_MODELS that are from the 'llama' provider
+    // Filter models from AI_MODELS that are from the 'ollama' provider
     const seenIds = new Set<string>();
     return AI_MODELS
       .filter(model => {
         // Only include models that:
-        // 1. Are from llama provider
+        // 1. Are from ollama provider
         // 2. Are chat/function/embedding models (not agent)
         // 3. Haven't been seen before (avoid duplicates)
-        if (model.provider === 'llama' &&
+        if (model.provider === 'ollama' &&
           (model.category === 'chat' || model.category === 'function' || model.category === 'embedding') &&
           !seenIds.has(model.id)) {
           seenIds.add(model.id);

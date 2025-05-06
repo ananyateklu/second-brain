@@ -7,7 +7,7 @@ import { AISettings } from '../../../types/ai';
 import { cardVariants } from '../../../utils/welcomeBarUtils';
 import { modelService } from '../../../services/ai/modelService';
 
-type AIProvider = 'openai' | 'anthropic' | 'gemini' | 'llama' | 'grok';
+type AIProvider = 'openai' | 'anthropic' | 'gemini' | 'ollama' | 'grok';
 
 interface TestResult {
   success: boolean;
@@ -23,7 +23,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
     isOpenAIConfigured,
     isAnthropicConfigured,
     isGeminiConfigured,
-    isLlamaConfigured,
+    isOllamaConfigured,
     isGrokConfigured,
     checkConfigurations
   } = useAI();
@@ -59,7 +59,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
     { name: 'OpenAI', isConfigured: isOpenAIConfigured },
     { name: 'Anthropic', isConfigured: isAnthropicConfigured },
     { name: 'Gemini', isConfigured: isGeminiConfigured },
-    { name: 'Llama', isConfigured: isLlamaConfigured },
+    { name: 'Ollama', isConfigured: isOllamaConfigured },
     { name: 'Grok', isConfigured: isGrokConfigured }
   ];
 

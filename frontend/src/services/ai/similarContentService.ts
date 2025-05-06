@@ -1,7 +1,7 @@
 import { OpenAIService } from './openai';
 import { AnthropicService } from './anthropic';
 import { GeminiService } from './gemini';
-import { LlamaService } from './llama';
+import { OllamaService } from './ollama';
 import { GrokService } from './grok';
 import { modelService } from './modelService';
 import { Note } from '../../types/note';
@@ -21,7 +21,7 @@ export class SimilarContentService {
     private readonly openai = new OpenAIService();
     private readonly anthropic = new AnthropicService();
     private readonly gemini = new GeminiService();
-    private readonly llama = new LlamaService();
+    private readonly ollama = new OllamaService();
     private readonly grok = new GrokService();
 
     // Use the same model configuration as contentSuggestionService
@@ -33,7 +33,7 @@ export class SimilarContentService {
             .filter(model => model.provider === provider && model.category === 'chat');
 
         if (availableChatModels.length === 0) {
-            return provider === 'llama' ? 'llama3.1:8b' :
+            return provider === 'ollama' ? 'llama3.1:8b' :
                 provider === 'grok' ? 'grok-beta' : 'gpt-4';
         }
 
@@ -43,17 +43,17 @@ export class SimilarContentService {
         }
 
         return availableChatModels[0]?.id ||
-            (provider === 'llama' ? 'llama3.1:8b' :
+            (provider === 'ollama' ? 'llama3.1:8b' :
                 provider === 'grok' ? 'grok-beta' : 'gpt-4');
     }
 
-    private get provider(): 'openai' | 'anthropic' | 'gemini' | 'llama' | 'grok' {
+    private get provider(): 'openai' | 'anthropic' | 'gemini' | 'ollama' | 'grok' {
         return (
             (localStorage.getItem('content_suggestions_provider') as
                 | 'openai'
                 | 'anthropic'
                 | 'gemini'
-                | 'llama'
+                | 'ollama'
                 | 'grok') || 'openai'
         );
     }
@@ -67,8 +67,8 @@ export class SimilarContentService {
                 return this.anthropic;
             case 'gemini':
                 return this.gemini;
-            case 'llama':
-                return this.llama;
+            case 'ollama':
+                return this.ollama;
             case 'grok':
                 return this.grok;
             default:

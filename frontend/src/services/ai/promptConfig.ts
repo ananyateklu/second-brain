@@ -42,8 +42,8 @@ export const PROMPT_CONFIG = {
     {context}
     
     Return only the title with no formatting:`,
-                  llama: `Generate a concise, descriptive title for this note. The title should:
-    - Be clear and under 60 characters
+                  ollama: `Generate a concise, descriptive title for this note. The title should:
+    - Be clear and under 20 characters
     - Capture the main topic or purpose
     - Use natural language
     - Be specific but not verbose
@@ -115,7 +115,7 @@ export const PROMPT_CONFIG = {
     {context}
     
     Return only the title with no formatting:`,
-                  llama: `Create a captivating, memorable title for this idea. The title should:
+                  ollama: `Create a captivating, memorable title for this idea. The title should:
     - Be creative but clear, under 60 characters
     - Capture the innovative aspect
     - Be engaging and memorable
@@ -188,7 +188,7 @@ export const PROMPT_CONFIG = {
     {context}
     
     Return only the title with no formatting:`,
-                  llama: `Generate a clear, action-oriented title for this task. The title should:
+                  ollama: `Generate a clear, action-oriented title for this task. The title should:
     - Be specific and under 60 characters
     - Start with a verb when possible
     - Clearly state the objective
@@ -261,7 +261,7 @@ export const PROMPT_CONFIG = {
     {context}
     
     Return only the title with no formatting:`,
-                  llama: `Create a clear, time-relevant title for this reminder. The title should:
+                  ollama: `Create a clear, time-relevant title for this reminder. The title should:
     - Be specific and under 60 characters
     - Include relevant timing context
     - Be action-oriented
@@ -336,7 +336,7 @@ export const PROMPT_CONFIG = {
     Tags (if available): {context}
     
     Content:`,
-                  llama: `Generate detailed, well-structured content for this note. The content should:
+                  ollama: `Generate detailed, well-structured content for this note. The content should:
     - Expand on the title's topic
     - Be informative and clear
     - Include relevant details
@@ -408,7 +408,7 @@ export const PROMPT_CONFIG = {
     Tags (if available): {context}
     
     Content:`,
-                  llama: `Develop this idea with compelling content. The description should:
+                  ollama: `Develop this idea with compelling content. The description should:
     - Explain the core concept clearly and thoroughly
     - Highlight potential benefits and impact
     - Address key considerations and challenges
@@ -483,7 +483,7 @@ export const PROMPT_CONFIG = {
     Tags (if available): {context}
     
     Content:`,
-                  llama: `Create a clear task description template. The content should:
+                  ollama: `Create a clear task description template. The content should:
     - Detail the specific requirements and objectives
     - Include important steps in a logical sequence
     - Mention relevant dependencies and prerequisites
@@ -560,7 +560,7 @@ export const PROMPT_CONFIG = {
     Tags (if available): {context}
     
     Content:`,
-                  llama: `Write a helpful reminder description template. The content should:
+                  ollama: `Write a helpful reminder description template. The content should:
     - Specify what needs to be done in clear terms
     - Include important details and context
     - Mention any prerequisites or required materials
@@ -637,7 +637,7 @@ export const PROMPT_CONFIG = {
     patient reporting, local save, cloud sync, #12345
     
     Tags:`,
-                  llama: `Generate relevant tags for this note. The tags should:
+                  ollama: `Generate relevant tags for this note. The tags should:
     - Be concise and specific (1-3 words each)
     - Cover key themes and categories
     - Reflect the main topic, subtopics, and notable elements
@@ -708,7 +708,7 @@ export const PROMPT_CONFIG = {
     innovation, product design, automation, #12345
     
     Tags:`,
-                  llama: `Generate relevant tags for this idea. The tags should:
+                  ollama: `Generate relevant tags for this idea. The tags should:
     - Be concise and specific (1-3 words each)
     - Cover key themes and innovation areas
     - Reflect the concept, potential applications, and impact
@@ -779,7 +779,7 @@ export const PROMPT_CONFIG = {
     development, bug fix, high priority, #12345
     
     Tags:`,
-                  llama: `Generate relevant tags for this task. The tags should:
+                  ollama: `Generate relevant tags for this task. The tags should:
     - Be concise and specific (1-3 words each)
     - Cover the task's category, priority, and domain
     - Reflect project affiliations and relevant skills
@@ -850,7 +850,7 @@ export const PROMPT_CONFIG = {
     meeting, weekly, project update, #12345
     
     Tags:`,
-                  llama: `Generate relevant tags for this reminder. The tags should:
+                  ollama: `Generate relevant tags for this reminder. The tags should:
     - Be concise and specific (1-3 words each)
     - Cover timeframe, frequency, and category
     - Reflect the importance, context, and related areas

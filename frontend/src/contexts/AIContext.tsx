@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef, useLayoutEffect } from 'react';
 import { AIModel, AIResponse, ExecutionStep } from '../types/ai';
 import { Message } from '../types/message';
-import { LlamaService } from '../services/ai/llama';
+import { OllamaService } from '../services/ai/ollama';
 import { signalRService } from '../services/signalR';
 import { agentService } from '../services/ai/agent';
 import { modelService } from '../services/ai/modelService';
@@ -11,13 +11,13 @@ interface AIContextType {
   isOpenAIConfigured: boolean;
   isAnthropicConfigured: boolean;
   isGeminiConfigured: boolean;
-  isLlamaConfigured: boolean;
+  isOllamaConfigured: boolean;
   isGrokConfigured: boolean;
   error: string | null;
   sendMessage: (input: string, modelId: string) => Promise<AIResponse>;
   configureGemini: (apiKey: string) => Promise<void>;
   availableModels: AIModel[];
-  llamaService: LlamaService;
+  ollamaService: OllamaService;
   executionSteps: Record<string, ExecutionStep[]>;
   handleExecutionStep: (step: ExecutionStep) => void;
   transcribeAudio: (audioFile: File) => Promise<AIResponse>;
@@ -31,7 +31,7 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
   const [isOpenAIConfigured, setIsOpenAIConfigured] = useState<boolean>(false);
   const [isAnthropicConfigured, setIsAnthropicConfigured] = useState<boolean>(false);
   const [isGeminiConfigured, setIsGeminiConfigured] = useState<boolean>(false);
-  const [isLlamaConfigured, setIsLlamaConfigured] = useState<boolean>(false);
+  const [isOllamaConfigured, setIsOllamaConfigured] = useState<boolean>(false);
   const [isGrokConfigured, setIsGrokConfigured] = useState<boolean>(false);
   const [availableModels] = useState<AIModel[]>(modelService.getAllModels());
   const [messages, setMessages] = useState<Message[]>([]);
@@ -53,7 +53,7 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
       setIsAnthropicConfigured(configs.anthropic);
       setIsGrokConfigured(configs.grok);
       setIsGeminiConfigured(configs.gemini);
-      setIsLlamaConfigured(configs.llama);
+      setIsOllamaConfigured(configs.ollama);
 
 
     } catch (error) {
@@ -202,18 +202,18 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
     isOpenAIConfigured,
     isAnthropicConfigured,
     isGeminiConfigured,
-    isLlamaConfigured,
+    isOllamaConfigured,
     isGrokConfigured,
     error,
     sendMessage,
     configureGemini,
     availableModels,
-    llamaService: agentService.llama,
+    ollamaService: agentService.ollama,
     executionSteps,
     handleExecutionStep,
     transcribeAudio,
     checkConfigurations
-  }), [isOpenAIConfigured, isAnthropicConfigured, isGeminiConfigured, isLlamaConfigured, isGrokConfigured, error, sendMessage, configureGemini, availableModels, executionSteps, handleExecutionStep, transcribeAudio, checkConfigurations]);
+  }), [isOpenAIConfigured, isAnthropicConfigured, isGeminiConfigured, isOllamaConfigured, isGrokConfigured, error, sendMessage, configureGemini, availableModels, executionSteps, handleExecutionStep, transcribeAudio, checkConfigurations]);
 
   return <AIContext.Provider value={value}>{children}</AIContext.Provider>;
 }

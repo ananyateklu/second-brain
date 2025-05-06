@@ -108,7 +108,7 @@ export class MessageService {
                 };
             }
 
-            case 'llama': {
+            case 'ollama': {
                 response = await api.get(`/api/${endpoint}/stream`, {
                     params: {
                         prompt: message,
@@ -283,8 +283,8 @@ export class MessageService {
                 return 'claude';
             case 'gemini':
                 return 'gemini';
-            case 'llama':
-                return 'llama';
+            case 'ollama':
+                return 'ollama';
             case 'grok':
                 return 'grok';
             default:

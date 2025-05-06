@@ -1,7 +1,7 @@
 import { AIModel, AIResponse } from '../../types/ai';
 import api from '../api/api';
 import { AgentChat, AgentMessage } from '../../types/agent';
-import { LlamaService } from './llama';
+import { OllamaService } from './ollama';
 import { GrokService } from './grok';
 import { modelService } from './modelService';
 
@@ -25,14 +25,14 @@ interface HealthCheckResponse {
     openai?: { isConfigured: boolean };
     anthropic?: { isConfigured: boolean };
     gemini?: { isConfigured: boolean };
-    llama?: { isConfigured: boolean };
+    ollama?: { isConfigured: boolean };
     grok?: { isConfigured: boolean };
   };
 }
 
 export class AgentService {
   private isEnabled = true;
-  public llama = new LlamaService();
+  public ollama = new OllamaService();
   public grokService = new GrokService();
   private healthCheckCache: { data: HealthCheckResponse; timestamp: number } | null = null;
   private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
@@ -61,7 +61,7 @@ export class AgentService {
     openai: boolean;
     anthropic: boolean;
     gemini: boolean;
-    llama: boolean;
+    ollama: boolean;
     grok: boolean;
   }> {
     const healthData = await this.getHealthCheck(forceRefresh);
@@ -69,7 +69,7 @@ export class AgentService {
       openai: healthData.providers?.openai?.isConfigured ?? false,
       anthropic: healthData.providers?.anthropic?.isConfigured ?? false,
       gemini: healthData.providers?.gemini?.isConfigured ?? false,
-      llama: healthData.providers?.llama?.isConfigured ?? true,
+      ollama: healthData.providers?.ollama?.isConfigured ?? true,
       grok: healthData.providers?.grok?.isConfigured ?? false
     };
   }
@@ -104,9 +104,9 @@ export class AgentService {
     return configs.gemini;
   }
 
-  async isLlamaConfigured(forceRefresh = false): Promise<boolean> {
+  async isOllamaConfigured(forceRefresh = false): Promise<boolean> {
     const configs = await this.getProviderConfigurations(forceRefresh);
-    return configs.llama;
+    return configs.ollama;
   }
 
   async isGrokConfigured(forceRefresh = false): Promise<boolean> {

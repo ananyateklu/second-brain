@@ -1,5 +1,5 @@
 using SecondBrain.Data.Entities;
-using SecondBrain.Api.DTOs.Llama;
+using SecondBrain.Api.DTOs.Ollama;
 
 namespace SecondBrain.Api.Services
 {

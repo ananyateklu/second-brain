@@ -9,16 +9,16 @@ namespace SecondBrain.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class LlamaController : ControllerBase
+    public class OllamaController : ControllerBase
     {
-        private readonly ILlamaService _llamaService;
-        private readonly ILogger<LlamaController> _logger;
+        private readonly IOllamaService _ollamaService;
+        private readonly ILogger<OllamaController> _logger;
 
-        public LlamaController(
-            ILlamaService llamaService,
-            ILogger<LlamaController> logger)
+        public OllamaController(
+            IOllamaService ollamaService,
+            ILogger<OllamaController> logger)
         {
-            _llamaService = llamaService;
+            _ollamaService = ollamaService;
             _logger = logger;
         }
 
@@ -32,7 +32,7 @@ namespace SecondBrain.Api.Controllers
             try
             {
                 // Direct model response for local models
-                var response = await _llamaService.GenerateTextAsync(prompt, modelId, 2048);
+                var response = await _ollamaService.GenerateTextAsync(prompt, modelId, 2048);
                 var update = new
                 {
                     Type = "content",

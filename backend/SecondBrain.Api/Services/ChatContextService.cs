@@ -70,7 +70,7 @@ namespace SecondBrain.Api.Services
                     break;
 
                 case "grok":
-                case "llama":
+                case "ollama":
                     // Format for text completion style models
                     formattedContext["conversation"] = string.Join("\n", messages.Select(m =>
                         $"{(m.Role == "user" ? "User" : "Assistant")}: {m.Content}"));

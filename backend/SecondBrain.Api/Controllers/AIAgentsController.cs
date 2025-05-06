@@ -62,10 +62,10 @@ namespace SecondBrain.Api.Controllers
                     var anthropicConfigured = !string.IsNullOrEmpty(_configuration["Anthropic:ApiKey"]);
                     var geminiConfigured = !string.IsNullOrEmpty(_configuration["Gemini:ApiKey"]);
                     var grokConfigured = !string.IsNullOrEmpty(_configuration["Grok:ApiKey"]);
-                    var llamaConfigured = !string.IsNullOrEmpty(_configuration["Llama:OllamaUri"]);
+                    var ollamaConfigured = !string.IsNullOrEmpty(_configuration["Ollama:OllamaUri"]);
 
-                    _logger.LogInformation("Provider configuration status - OpenAI: {OpenAI}, Anthropic: {Anthropic}, Gemini: {Gemini}, Grok: {Grok}, Llama: {Llama}",
-                        openAiConfigured, anthropicConfigured, geminiConfigured, grokConfigured, llamaConfigured);
+                    _logger.LogInformation("Provider configuration status - OpenAI: {OpenAI}, Anthropic: {Anthropic}, Gemini: {Gemini}, Grok: {Grok}, Ollama: {Ollama}",
+                        openAiConfigured, anthropicConfigured, geminiConfigured, grokConfigured, ollamaConfigured);
 
                     return Ok(new
                     {
@@ -77,7 +77,7 @@ namespace SecondBrain.Api.Controllers
                             anthropic = new { isConfigured = anthropicConfigured },
                             gemini = new { isConfigured = geminiConfigured },
                             grok = new { isConfigured = grokConfigured },
-                            llama = new { isConfigured = llamaConfigured }
+                            ollama = new { isConfigured = ollamaConfigured }
                         }
                     });
                 }
@@ -265,7 +265,7 @@ namespace SecondBrain.Api.Controllers
             if (modelId.StartsWith("claude-")) return "anthropic";
             if (modelId.StartsWith("gemini-")) return "gemini";
             if (modelId.StartsWith("grok-")) return "grok";
-            return "llama"; // Default to llama for other cases
+            return "ollama"; // Default to ollama for other cases
         }
     }
 }
