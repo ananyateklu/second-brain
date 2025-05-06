@@ -1,33 +1,80 @@
 // ContentSuggestionService.ts
-import { AIService } from '../aiService';
 import { PROMPT_CONFIG } from './promptConfig';
+import { modelService } from './modelService';
+import { OpenAIService } from './openai';
+import { AnthropicService } from './anthropic';
+import { GeminiService } from './gemini';
+import { LlamaService } from './llama';
+import { GrokService } from './grok';
 
 export type ContentType = 'note' | 'idea' | 'task' | 'reminder';
 
 export class ContentSuggestionService {
-  private readonly aiService: AIService;
+  private readonly openai = new OpenAIService();
+  private readonly anthropic = new AnthropicService();
+  private readonly gemini = new GeminiService();
+  private readonly llama = new LlamaService();
+  private readonly grok = new GrokService();
 
-  constructor() {
-    this.aiService = new AIService();
-  }
-
-  // Use a getter to retrieve the modelId whenever needed
+  // Use a getter to retrieve the modelId whenever needed - use core models only!
   private get modelId(): string {
     const provider = this.provider;
-    if (provider === 'llama') {
-      return localStorage.getItem('content_suggestions_model') ?? 'llama3.1:8b';
+    // Get the selected model from local storage
+    const selectedModelId = localStorage.getItem('content_suggestions_model');
+
+    // Get all chat models (non-agent models)
+    const availableChatModels = modelService.getChatModels()
+      .filter(model => model.provider === provider && model.category === 'chat');
+
+    if (availableChatModels.length === 0) {
+      // Fallback if no models available for this provider
+      return provider === 'llama' ? 'llama3.1:8b' :
+        provider === 'grok' ? 'grok-beta' : 'gpt-4';
     }
-    return localStorage.getItem('content_suggestions_model') ?? 'gpt-4';
+
+    // Check if the selected model is valid and belongs to the right provider and is a chat model
+    const isValidModel = availableChatModels.some(model => model.id === selectedModelId);
+
+    if (selectedModelId && isValidModel) {
+      return selectedModelId;
+    }
+
+    // Default to the first available model for the provider
+    return availableChatModels[0]?.id ||
+      (provider === 'llama' ? 'llama3.1:8b' :
+        provider === 'grok' ? 'grok-beta' : 'gpt-4');
   }
 
-  private get provider(): 'openai' | 'anthropic' | 'gemini' | 'llama' {
+  private get provider(): 'openai' | 'anthropic' | 'gemini' | 'llama' | 'grok' {
     return (
       (localStorage.getItem('content_suggestions_provider') as
         | 'openai'
         | 'anthropic'
         | 'gemini'
-        | 'llama') || 'openai'
+        | 'llama'
+        | 'grok') || 'openai'
     );
+  }
+
+  /**
+   * Get the appropriate service instance based on the selected provider
+   */
+  private getServiceForProvider() {
+    const provider = this.provider;
+    switch (provider) {
+      case 'openai':
+        return this.openai;
+      case 'anthropic':
+        return this.anthropic;
+      case 'gemini':
+        return this.gemini;
+      case 'llama':
+        return this.llama;
+      case 'grok':
+        return this.grok;
+      default:
+        return this.openai; // Default fallback
+    }
   }
 
   /**
@@ -91,9 +138,14 @@ export class ContentSuggestionService {
     maxLength?: number
   ): Promise<string> {
     try {
-      const response = await this.aiService.sendMessage(
+      const modelId = this.modelId;
+      console.log(`Using model ${modelId} for content suggestion with provider ${this.provider}`);
+
+      // Use the appropriate service directly
+      const service = this.getServiceForProvider();
+      const response = await service.sendMessage(
         prompt,
-        this.modelId
+        modelId
       );
 
       let suggestion = response.content.trim();
@@ -130,10 +182,22 @@ export class ContentSuggestionService {
     prompt: string,
     replacements: Record<string, string>
   ): string {
+    // Check if prompt is undefined, if so use a fallback prompt for the provider
+    if (!prompt) {
+      console.warn(`Prompt template is undefined for provider ${this.provider}. Using fallback prompt.`);
+
+      // Use a fallback prompt that works for any provider
+      return `Please help with the following request based on this information:
+${Object.entries(replacements)
+          .map(([key, value]) => `${key.toUpperCase()}: ${value}`)
+          .join('\n')}`;
+    }
+
+    // Normal replacement logic for defined prompts
     let updatedPrompt = prompt;
     for (const [key, value] of Object.entries(replacements)) {
       const placeholder = `{${key}}`;
-      updatedPrompt = updatedPrompt.split(placeholder).join(value);
+      updatedPrompt = updatedPrompt.split(placeholder).join(value || '');
     }
     return updatedPrompt;
   }
@@ -151,7 +215,12 @@ export class ContentSuggestionService {
       priority?: string;
     }
   ): string {
-    const promptTemplate = PROMPT_CONFIG.title[type][this.provider];
+    // Get the prompt template, or use a fallback for providers not explicitly configured
+    const providerConfig = PROMPT_CONFIG.title[type];
+    const promptTemplate = providerConfig?.[this.provider] ||
+      providerConfig?.openai || // Fallback to OpenAI if specific provider not found
+      `Generate a clear, concise title (under 60 characters) for this ${type}:\n\n{content}`;
+
     const contextInfo = context ? this.buildContext(context) : '';
     const replacements: Record<string, string> = {
       content,
@@ -173,7 +242,12 @@ export class ContentSuggestionService {
       priority?: string;
     }
   ): string {
-    const promptTemplate = PROMPT_CONFIG.content[type][this.provider];
+    // Get the prompt template, or use a fallback for providers not explicitly configured
+    const providerConfig = PROMPT_CONFIG.content[type];
+    const promptTemplate = providerConfig?.[this.provider] ||
+      providerConfig?.openai || // Fallback to OpenAI if specific provider not found
+      `Generate detailed content for this ${type} titled "{title}"{context}`;
+
     const contextInfo = context ? this.buildContext(context) : '';
     const replacements: Record<string, string> = {
       title,
@@ -192,8 +266,11 @@ export class ContentSuggestionService {
       currentTags?: string[];
     }
   ): string {
-    const promptTemplate =
-      PROMPT_CONFIG.tags[type][this.provider];
+    // Get the prompt template, or use a fallback for providers not explicitly configured
+    const providerConfig = PROMPT_CONFIG.tags[type];
+    const promptTemplate = providerConfig?.[this.provider] ||
+      providerConfig?.openai || // Fallback to OpenAI if specific provider not found
+      `Generate 3-5 relevant tags for this ${type}, as a comma-separated list:\n\n{titleSection}{contentSection}{currentTagsSection}`;
 
     const titleSection = input.title
       ? `Title: ${input.title}\n`

@@ -5,8 +5,9 @@ import { useAI } from '../../../contexts/AIContext';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { AISettings } from '../../../types/ai';
 import { cardVariants } from '../../../utils/welcomeBarUtils';
+import { modelService } from '../../../services/ai/modelService';
 
-type AIProvider = 'openai' | 'anthropic' | 'gemini' | 'llama';
+type AIProvider = 'openai' | 'anthropic' | 'gemini' | 'llama' | 'grok';
 
 interface TestResult {
   success: boolean;
@@ -18,17 +19,16 @@ interface AISettingsSectionProps {
 }
 
 export function AISettingsSection({ onSave }: AISettingsSectionProps) {
-  const { 
-    availableModels, 
-    isOpenAIConfigured, 
+  const {
+    isOpenAIConfigured,
     isAnthropicConfigured,
-    isGeminiConfigured, 
+    isGeminiConfigured,
     isLlamaConfigured,
     isGrokConfigured,
-    checkConfigurations 
+    checkConfigurations
   } = useAI();
   const { theme } = useTheme();
-  
+
   const [settings, setSettings] = useState<AISettings>({
     contentSuggestions: {
       provider: (localStorage.getItem('content_suggestions_provider') as AIProvider) || 'openai',
@@ -63,31 +63,40 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
     { name: 'Grok', isConfigured: isGrokConfigured }
   ];
 
-  const contentGenerationModels = availableModels.filter(model =>
-    model.category === 'chat'
-  );
+  // Use only chat models for content generation (exclude agent models)
+  const contentGenerationModels = modelService.getChatModels();
 
   const getActiveSettings = () => {
     return activeMode === 'content' ? settings.contentSuggestions : settings.promptEnhancement;
   };
 
   const handleProviderChange = (provider: AIProvider) => {
-    const firstModelForProvider = contentGenerationModels.find(m => m.provider === provider)?.id;
+    // Find a valid chat model for this provider
+    const availableModelsForProvider = contentGenerationModels.filter(m => m.provider === provider);
+    const firstModelForProvider = availableModelsForProvider.length > 0 ?
+      availableModelsForProvider[0].id : undefined;
+
     const type = activeMode === 'content' ? 'contentSuggestions' : 'promptEnhancement';
-    
+
     setSettings(prev => ({
       ...prev,
       [type]: {
+        ...prev[type]!,
         provider,
         modelId: firstModelForProvider ?? prev[type]?.modelId ?? '',
       },
     }));
+
     localStorage.setItem(`${type === 'contentSuggestions' ? 'content_suggestions' : 'prompt_enhancement'}_provider`, provider);
+
+    if (firstModelForProvider) {
+      localStorage.setItem(`${type === 'contentSuggestions' ? 'content_suggestions' : 'prompt_enhancement'}_model`, firstModelForProvider);
+    }
   };
 
   const handleModelChange = (modelId: string) => {
     const type = activeMode === 'content' ? 'contentSuggestions' : 'promptEnhancement';
-    
+
     setSettings(prev => ({
       ...prev,
       [type]: {
@@ -109,7 +118,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to save settings.';
       setSaveResult({ success: false, message: errorMessage });
     } finally {
-      setIsSaving(false);     
+      setIsSaving(false);
     }
   };
 
@@ -119,15 +128,15 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
     return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]';
   };
 
-  const ProviderButton = ({ 
-    provider, 
-    isSelected, 
-    onClick, 
-    isConfigured 
-  }: { 
-    provider: string; 
-    isSelected: boolean; 
-    onClick: () => void; 
+  const ProviderButton = ({
+    provider,
+    isSelected,
+    onClick,
+    isConfigured
+  }: {
+    provider: string;
+    isSelected: boolean;
+    onClick: () => void;
     isConfigured: boolean;
   }) => (
     <button
@@ -135,8 +144,8 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
       disabled={!isConfigured}
       className={`
         relative px-3 py-2 rounded-lg transition-all duration-200
-        ${isSelected 
-          ? 'bg-[var(--color-accent)] text-white' 
+        ${isSelected
+          ? 'bg-[var(--color-accent)] text-white'
           : `${getContainerBackground()} text-[var(--color-text)]`
         }
         ${!isConfigured ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-[var(--color-accent)]/10'}
@@ -155,11 +164,11 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
     </button>
   );
 
-  const ModelSelect = ({ 
+  const ModelSelect = ({
     models,
     selectedId,
     onSelect
-  }: { 
+  }: {
     models: { id: string; name: string; provider: string }[];
     selectedId: string;
     onSelect: (id: string) => void;
@@ -172,7 +181,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
     useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
         if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
-            buttonRef.current && !buttonRef.current.contains(event.target as Node)) {
+          buttonRef.current && !buttonRef.current.contains(event.target as Node)) {
           setIsOpen(false);
         }
       };
@@ -231,7 +240,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
           <span className="font-medium text-sm truncate">
             {selectedModel?.name || 'Select a model'}
           </span>
-          <ChevronDown 
+          <ChevronDown
             className={`
               w-4 h-4 shrink-0 transition-transform duration-200 text-[var(--color-textSecondary)]
               ${isOpen ? 'transform rotate-180' : ''}
@@ -254,15 +263,15 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
             `}
             style={{
               width: '100%',
-              ...(position.placement === 'bottom' 
-                ? { 
-                    top: '100%',
-                    marginTop: '4px'
-                  }
+              ...(position.placement === 'bottom'
+                ? {
+                  top: '100%',
+                  marginTop: '4px'
+                }
                 : {
-                    bottom: '100%',
-                    marginBottom: '4px'
-                  }
+                  bottom: '100%',
+                  marginBottom: '4px'
+                }
               )
             }}
           >
@@ -282,8 +291,8 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
                       w-full px-3 py-2 text-left
                       flex items-center justify-between gap-2
                       transition-all duration-200
-                      ${selectedId === model.id 
-                        ? 'bg-[var(--color-accent)]/10 text-[var(--color-accent)]' 
+                      ${selectedId === model.id
+                        ? 'bg-[var(--color-accent)]/10 text-[var(--color-accent)]'
                         : 'text-[var(--color-text)] hover:bg-[var(--color-surfaceHover)]'
                       }
                     `}
@@ -356,11 +365,10 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
               </div>
               <div className="min-w-0">
                 <p className="font-medium text-xs text-[var(--color-text)] truncate">{name}</p>
-                <p className={`text-xs ${
-                  isConfigured 
-                    ? 'text-[var(--color-accent)]' 
-                    : 'text-red-500'
-                }`}>
+                <p className={`text-xs ${isConfigured
+                  ? 'text-[var(--color-accent)]'
+                  : 'text-red-500'
+                  }`}>
                   {isConfigured ? 'Configured' : 'Not Configured'}
                 </p>
               </div>
@@ -378,8 +386,8 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
               onClick={() => setActiveMode('content')}
               className={`
                 px-3 py-1 rounded-md text-xs font-medium transition-all duration-200
-                ${activeMode === 'content' 
-                  ? 'bg-[var(--color-accent)] text-white' 
+                ${activeMode === 'content'
+                  ? 'bg-[var(--color-accent)] text-white'
                   : 'text-[var(--color-textSecondary)] hover:text-[var(--color-text)]'
                 }
               `}
@@ -390,8 +398,8 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
               onClick={() => setActiveMode('prompt')}
               className={`
                 px-3 py-1 rounded-md text-xs font-medium transition-all duration-200
-                ${activeMode === 'prompt' 
-                  ? 'bg-[var(--color-accent)] text-white' 
+                ${activeMode === 'prompt'
+                  ? 'bg-[var(--color-accent)] text-white'
                   : 'text-[var(--color-textSecondary)] hover:text-[var(--color-text)]'
                 }
               `}
@@ -400,10 +408,24 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
             </button>
           </div>
         </div>
-        <motion.div 
+        <motion.div
           variants={cardVariants}
           className={`space-y-6 p-6 min-h-[400px] ${getContainerBackground()} rounded-lg border-[0.5px] border-white/10`}
         >
+          <div className="p-3 rounded-lg bg-[var(--color-accent)]/10 border-[0.5px] border-[var(--color-accent)]/20">
+            <div className="flex items-start gap-2">
+              <MessageSquare className="w-4 h-4 text-[var(--color-accent)] mt-0.5 shrink-0" />
+              <div>
+                <p className="text-xs text-[var(--color-text)]">
+                  <span className="font-medium">Direct Provider Integration:</span> Content suggestions use provider-specific API calls rather than the agent system to ensure reliability and proper endpoint routing.
+                </p>
+                <p className="text-xs text-[var(--color-textSecondary)] mt-1">
+                  When you select a provider below, only compatible chat models for that provider will be available for selection.
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-4">
             <label className="block text-xs font-medium text-[var(--color-text)]">
               AI Provider
@@ -566,7 +588,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
               <div className="flex items-center gap-2">
                 <Bot className="w-3 h-3 text-[var(--color-accent)]" />
                 <span>
-                  {activeMode === 'content' 
+                  {activeMode === 'content'
                     ? 'These settings will be used for generating titles, content, and tags.'
                     : 'These settings will be used for enhancing input prompts across the application.'
                   }
@@ -615,11 +637,10 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
                   ) : (
                     <AlertCircle className="w-3 h-3 text-red-500" />
                   )}
-                  <p className={`text-xs ${
-                    saveResult.success 
-                      ? 'text-[var(--color-accent)]' 
-                      : 'text-red-500'
-                  }`}>
+                  <p className={`text-xs ${saveResult.success
+                    ? 'text-[var(--color-accent)]'
+                    : 'text-red-500'
+                    }`}>
                     {saveResult.message}
                   </p>
                 </div>

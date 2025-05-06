@@ -154,14 +154,14 @@ export interface AISettings {
     maxTokens: number;
   };
   contentSuggestions?: {
-    provider: 'openai' | 'anthropic' | 'gemini' | 'llama';
+    provider: 'openai' | 'anthropic' | 'gemini' | 'llama' | 'grok';
     modelId: string;
     temperature?: number;
     maxTokens?: number;
     systemMessage?: string;
   };
   promptEnhancement?: {
-    provider: 'openai' | 'anthropic' | 'gemini' | 'llama';
+    provider: 'openai' | 'anthropic' | 'gemini' | 'llama' | 'grok';
     modelId: string;
     temperature?: number;
     maxTokens?: number;
