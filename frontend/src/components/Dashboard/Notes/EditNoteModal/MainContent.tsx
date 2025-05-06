@@ -1,5 +1,5 @@
 import { Type, Tag as TagIcon, X, Bell, Plus, AlignLeft } from 'lucide-react';
-import { LinkedReminder } from '../../../../types/note';
+import { LinkedReminder, Note } from '../../../../types/note';
 import { LinkedRemindersPanel } from './LinkedRemindersPanel';
 import { Input } from '../../../../components/shared/Input';
 import { TextArea } from '../../../../components/shared/TextArea';
@@ -20,6 +20,8 @@ interface MainContentProps {
   onRemoveTag: (tag: string) => void;
   onShowAddReminder: () => void;
   onUnlinkReminder: (reminderId: string) => void;
+  onLinkReminder?: (reminderId: string) => Promise<void>;
+  currentNote?: Note;
   setError: (error: string) => void;
 }
 
@@ -38,6 +40,8 @@ export function MainContent({
   onRemoveTag,
   onShowAddReminder,
   onUnlinkReminder,
+  onLinkReminder,
+  currentNote
 }: MainContentProps) {
   const { theme } = useTheme();
 
@@ -108,6 +112,8 @@ export function MainContent({
             <LinkedRemindersPanel
               reminders={linkedReminders}
               onUnlink={onUnlinkReminder}
+              onLink={onLinkReminder}
+              currentNote={currentNote}
             />
           </div>
         </div>

@@ -1,12 +1,13 @@
 import { Link2, Plus, Type, Lightbulb, CheckSquare, X, Calendar } from 'lucide-react';
 import type { Note } from '../../../../types/note';
 import { useNotes } from '../../../../contexts/notesContextUtils';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { EditNoteModal } from '../EditNoteModal';
 import { EditTaskModal } from '../../Tasks/EditTaskModal';
 import { useTasks } from '../../../../contexts/tasksContextUtils';
 import type { Task } from '../../../../types/task';
 import { useTheme } from '../../../../contexts/themeContextUtils';
+import { SuggestedLinksSection } from './SuggestedLinksSection';
 
 interface LinkedNotesPanelProps {
   linkedNotes: Note[];
@@ -21,6 +22,20 @@ interface LinkedNotesPanelProps {
   onShowAddTask: () => void;
   currentNoteId: string;
   onUnlinkTask: (taskId: string) => void;
+  currentNote: Note;
+  linkedReminders?: Array<{
+    id: string;
+    title: string;
+    description: string;
+    dueDateTime: string;
+    isCompleted: boolean;
+    isSnoozed: boolean;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+  onLinkNote?: (noteId: string) => Promise<void>;
+  onLinkTask?: (taskId: string) => Promise<void>;
+  onLinkReminder?: (reminderId: string) => Promise<void>;
 }
 
 export function LinkedNotesPanel({
@@ -29,7 +44,10 @@ export function LinkedNotesPanel({
   onShowAddLink,
   onShowAddTask,
   currentNoteId,
-  onUnlinkTask
+  onUnlinkTask,
+  currentNote,
+  onLinkNote = async () => { },
+  onLinkTask = async () => { },
 }: LinkedNotesPanelProps) {
   const { removeLink } = useNotes();
   const { tasks } = useTasks();
@@ -81,6 +99,32 @@ export function LinkedNotesPanel({
   };
 
   const hasLinkedItems = linkedNotes.length > 0 || linkedTasks.length > 0;
+
+  // Compute IDs of linked items
+  const linkedNoteIds = linkedNotes.map(note => note.id);
+  const linkedTaskIds = linkedTasks.map(task => task.id);
+
+  useEffect(() => {
+    // When no linked items exist, only show empty state if suggestions are also empty
+    if (!hasLinkedItems) {
+      const checkSuggestions = setTimeout(() => {
+        const suggestedSection = document.querySelector('[data-testid="suggested-links-section"]');
+        const emptyState = document.getElementById('empty-state');
+
+        if (emptyState) {
+          if (suggestedSection && suggestedSection.querySelectorAll('.group').length > 0) {
+            // Suggestions exist, hide the empty state
+            emptyState.style.display = 'none';
+          } else {
+            // No suggestions, show the empty state
+            emptyState.style.display = 'flex';
+          }
+        }
+      }, 100);
+
+      return () => clearTimeout(checkSuggestions);
+    }
+  }, [hasLinkedItems]);
 
   return (
     <>
@@ -213,18 +257,43 @@ export function LinkedNotesPanel({
                   </div>
                 </div>
               )}
+
+              {/* Show suggestions below linked items */}
+              {(linkedNotes.length > 0 || linkedTasks.length > 0) && (
+                <div className="border-t border-[var(--color-border)]/10 dark:border-white/5 midnight:border-white/5 pt-3 mt-1">
+                  <SuggestedLinksSection
+                    currentNote={currentNote}
+                    linkedNoteIds={linkedNoteIds}
+                    linkedTaskIds={linkedTaskIds}
+                    onLinkNote={onLinkNote}
+                    onLinkTask={onLinkTask}
+                  />
+                </div>
+              )}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-full py-8 text-center px-6">
-              <div className={`p-3 ${getEmptyStateBackground()} rounded-full mb-3 ${getBorderStyle()}`}>
-                <Link2 className="w-5 h-5 text-[var(--color-note)]" />
+            <div className="flex flex-col h-full">
+              {/* When no linked items, show suggestions */}
+              <SuggestedLinksSection
+                currentNote={currentNote}
+                linkedNoteIds={linkedNoteIds}
+                linkedTaskIds={linkedTaskIds}
+                onLinkNote={onLinkNote}
+                onLinkTask={onLinkTask}
+              />
+
+              {/* Empty state - shown only when there are no suggestions */}
+              <div id="empty-state" className="flex-1 flex flex-col items-center justify-center py-8 text-center px-6">
+                <div className={`p-3 ${getEmptyStateBackground()} rounded-full mb-3 ${getBorderStyle()}`}>
+                  <Link2 className="w-5 h-5 text-[var(--color-note)]" />
+                </div>
+                <p className="text-sm font-medium text-[var(--color-text)] mb-1">
+                  No linked items yet
+                </p>
+                <p className="text-xs text-[var(--color-textSecondary)] max-w-[220px]">
+                  Connect this note with other notes, ideas, or tasks to build your knowledge network
+                </p>
               </div>
-              <p className="text-sm font-medium text-[var(--color-text)] mb-1">
-                No linked items yet
-              </p>
-              <p className="text-xs text-[var(--color-textSecondary)] max-w-[220px]">
-                Connect this note with other notes, ideas, or tasks to build your knowledge network
-              </p>
             </div>
           )}
         </div>

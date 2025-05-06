@@ -21,8 +21,8 @@ interface EditNoteModalProps {
 
 export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
   const navigate = useNavigate();
-  const { notes, updateNote, deleteNote, linkReminder, unlinkReminder } = useNotes();
-  const { tasks, removeTaskLink } = useTasks();
+  const { notes, updateNote, deleteNote, linkReminder, unlinkReminder, addLink } = useNotes();
+  const { tasks, removeTaskLink, addTaskLink } = useTasks();
   const { theme } = useTheme();
 
   const [title, setTitle] = useState('');
@@ -145,6 +145,12 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
     }
   };
 
+  // Add this wrapper function right after handleLinkReminder
+  const handleLinkReminderWrapper = async (reminderId: string): Promise<void> => {
+    await handleLinkReminder(reminderId);
+    // No return value makes this Promise<void>
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -225,16 +231,65 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
               onRemoveTag={(tag) => setTags(tags.filter(t => t !== tag))}
               onShowAddReminder={() => setShowAddReminderModal(true)}
               onUnlinkReminder={handleUnlinkReminder}
+              onLinkReminder={handleLinkReminderWrapper}
+              currentNote={currentNote}
               setError={setError}
             />
 
             <LinkedNotesPanel
               linkedNotes={linkedNotes}
               linkedTasks={formattedTasks}
+              linkedReminders={linkedReminders}
               onShowAddLink={() => setShowAddLinkModal(true)}
               onShowAddTask={() => setShowAddTaskModal(true)}
               onUnlinkTask={handleUnlinkTask}
               currentNoteId={currentNote.id}
+              currentNote={currentNote}
+              onLinkNote={async (noteId: string) => {
+                try {
+                  await addLink(currentNote.id, noteId);
+                  // The linked notes will update automatically through the effects
+                  return Promise.resolve();
+                } catch (error) {
+                  console.error('Failed to link note:', error);
+                  setError('Failed to link note. Please try again.');
+                  return Promise.reject(error);
+                }
+              }}
+              onLinkTask={async (taskId: string) => {
+                try {
+                  // Make sure we have the tasks service function
+                  if (!addTaskLink) {
+                    console.error('Task linking function not available');
+                    setError('Task linking is not available');
+                    return Promise.reject(new Error('Task linking not available'));
+                  }
+
+                  await addTaskLink({
+                    taskId,
+                    linkedItemId: currentNote.id,
+                    itemType: 'note'
+                  });
+                  return Promise.resolve();
+                } catch (error) {
+                  console.error('Failed to link task:', error);
+                  setError('Failed to link task. Please try again.');
+                  return Promise.reject(error);
+                }
+              }}
+              onLinkReminder={async (reminderId: string) => {
+                try {
+                  const success = await handleLinkReminder(reminderId);
+                  if (!success) {
+                    return Promise.reject(new Error('Failed to link reminder'));
+                  }
+                  return Promise.resolve();
+                } catch (error) {
+                  console.error('Failed to link reminder:', error);
+                  setError('Failed to link reminder. Please try again.');
+                  return Promise.reject(error);
+                }
+              }}
             />
           </div>
 
@@ -292,7 +347,7 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
         <AddReminderLinkModal
           isOpen={showAddReminderModal}
           onClose={() => setShowAddReminderModal(false)}
-          onSelect={handleLinkReminder}
+          onSelect={handleLinkReminderWrapper}
           currentLinkedReminderIds={linkedReminders.map(r => r.id)}
         />
       </div>
