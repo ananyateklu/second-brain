@@ -191,7 +191,17 @@ export class AnthropicService {
     try {
       const isContentSuggestion = this.isContentSuggestionContext();
       const accumulatedContext = { title: '', content: '', tags: [] as string[] };
-      const tools = isContentSuggestion ? this.getContentSuggestionTools() : [];
+
+      // Check if this is a simple generation request by looking at the prompt content
+      const isSimpleTitleGeneration = message.includes("title for") && !message.includes("tool");
+      const isSimpleTagGeneration = message.includes("tags for") && !message.includes("tool");
+
+      // Only add tools for complex scenarios, not for simple title/tag generation
+      const shouldUseTools = isContentSuggestion && !isSimpleTitleGeneration && !isSimpleTagGeneration;
+      const tools = shouldUseTools ? this.getContentSuggestionTools() : [];
+
+      console.log(`Claude request: ${modelId}, using tools: ${shouldUseTools}`);
+
       const request = this.createInitialRequest(message, modelId, parameters, tools);
 
       const response = await api.post<AnthropicResponse>('/api/Claude/send', request);
@@ -203,7 +213,7 @@ export class AnthropicService {
         for (const block of response.data.content) {
           const { content, toolResult } = await this.processContentBlock(
             block,
-            isContentSuggestion,
+            shouldUseTools,
             accumulatedContext,
             request
           );
@@ -221,8 +231,8 @@ export class AnthropicService {
         metadata: {
           model: modelId,
           usage: response.data.usage,
-          toolResults: isContentSuggestion ? toolResults : undefined,
-          context: isContentSuggestion ? accumulatedContext : undefined
+          toolResults: shouldUseTools ? toolResults : undefined,
+          context: shouldUseTools ? accumulatedContext : undefined
         },
       };
     } catch (error) {
