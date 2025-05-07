@@ -388,8 +388,8 @@ export const OLLAMA_MODELS: AIModel[] = [
         },
     },
     {
-        id: 'vanilj/Phi-4',
-        name: 'Phi 4 14b',
+        id: 'phi4:latest',
+        name: 'Phi 4',
         provider: 'ollama',
         category: 'chat',
         description: 'Phi-4 is a family of state-of-the-art open models by Microsoft.',

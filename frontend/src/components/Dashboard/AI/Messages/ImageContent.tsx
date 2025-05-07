@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Message } from '../../../../types/message';
-import { ImageGenerationLoading } from '../ImageGenerationLoading';
+import { ImageGenerationLoading } from './ImageGenerationLoading';
 import { motion } from 'framer-motion';
 import { ImageModal } from './ImageModal';
 

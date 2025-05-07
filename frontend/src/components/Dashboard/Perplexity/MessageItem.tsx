@@ -2,7 +2,7 @@ import { Bot, User, Search, ExternalLink, Link2, BookOpen, Clock, ChevronDown, C
 import { formatDistanceToNow } from 'date-fns';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { CodeBlock } from '../AI/CodeBlock';
+import { CodeBlock } from '../AI/Messages/CodeBlock';
 import { type ComponentPropsWithoutRef } from 'react';
 import { AgentMessage } from '../../../types/agent';
 import { useState, useMemo, useEffect } from 'react';

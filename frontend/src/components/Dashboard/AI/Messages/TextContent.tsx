@@ -1,6 +1,6 @@
 import { Message } from '../../../../types/message';
 import ReactMarkdown from 'react-markdown';
-import { CodeBlock } from '../CodeBlock';
+import { CodeBlock } from './CodeBlock';
 import remarkGfm from 'remark-gfm';
 import { type ComponentPropsWithoutRef } from 'react';
 import { useTheme } from '../../../../contexts/themeContextUtils';

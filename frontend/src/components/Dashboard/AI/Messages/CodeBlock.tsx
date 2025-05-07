@@ -20,7 +20,7 @@ import 'prismjs/components/prism-kotlin';
 import 'prismjs/components/prism-scala';
 import 'prismjs/components/prism-r';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useTheme } from '../../../contexts/themeContextUtils';
+import { useTheme } from '../../../../contexts/themeContextUtils';
 
 interface CodeBlockProps {
   code: string;

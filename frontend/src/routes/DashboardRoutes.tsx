@@ -14,8 +14,7 @@ const TasksPage = lazy(() => import('../components/Dashboard/Tasks/TasksPage').t
 const RemindersPage = lazy(() => import('../components/Dashboard/Reminders/RemindersPage').then(module => ({ default: module.RemindersPage })));
 const RecentPage = lazy(() => import('../components/Dashboard/Recent/RecentPage').then(module => ({ default: module.RecentPage })));
 const AIAgentsPage = lazy(() => import('../components/Dashboard/AI/Agents/components/AIAgentsPage').then(module => ({ default: module.AIAgentsPage })));
-const AIAssistantPage = lazy(() => import('../components/Dashboard/AI/AIAssistantPage').then(module => ({ default: module.AIAssistantPage })));
-const EnhancedChatPage = lazy(() => import('../components/Dashboard/AI/ChatV2/EnhancedChatPage').then(module => ({ default: module.EnhancedChatPage })));
+const EnhancedChatPage = lazy(() => import('../components/Dashboard/AI/Chat/EnhancedChatPage').then(module => ({ default: module.EnhancedChatPage })));
 const PersonalPage = lazy(() => import('../components/Dashboard/Personal/PersonalPage').then(module => ({ default: module.PersonalPage })));
 const SearchPage = lazy(() => import('../components/Dashboard/Search/SearchPage').then(module => ({ default: module.SearchPage })));
 const PerplexityPage = lazy(() => import('../components/Dashboard/Perplexity/PerplexityPage').then(module => ({ default: module.PerplexityPage })));
@@ -37,7 +36,6 @@ export function DashboardRoutes() {
             <Route path="reminders" element={<RemindersPage />} />
             <Route path="recent" element={<RecentPage />} />
             <Route path="agents" element={<AIAgentsPage />} />
-            <Route path="ai" element={<AIAssistantPage />} />
             <Route path="chat" element={<EnhancedChatPage />} />
             <Route path="profile" element={<PersonalPage />} />
             <Route path="search" element={<SearchPage />} />

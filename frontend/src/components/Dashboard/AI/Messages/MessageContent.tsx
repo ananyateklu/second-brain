@@ -2,17 +2,15 @@ import { Message } from '../../../../types/message';
 import { TextContent } from './TextContent';
 import { ImageContent } from './ImageContent';
 import { AudioContent } from './AudioContent';
-import { FunctionContent } from './FunctionContent';
 import { EmbeddingContent } from './EmbeddingContent';
 import { LoadingContent } from './LoadingContent';
 
 interface MessageContentProps {
     message: Message;
     themeColor: string;
-    isStreaming?: boolean;
 }
 
-export function MessageContent({ message, themeColor, isStreaming }: MessageContentProps) {
+export function MessageContent({ message, themeColor }: MessageContentProps) {
     if (message.type === 'audio' && message.role === 'user') {
         return <AudioContent message={message} />;
     }
@@ -21,8 +19,6 @@ export function MessageContent({ message, themeColor, isStreaming }: MessageCont
         switch (message.type) {
             case 'image':
                 return <ImageContent message={message} />;
-            case 'function':
-                return <FunctionContent message={message} isStreaming={isStreaming} themeColor={themeColor} />;
             case 'embedding':
                 return <LoadingContent type="embedding" themeColor={themeColor} />;
             case 'audio':
@@ -38,8 +34,6 @@ export function MessageContent({ message, themeColor, isStreaming }: MessageCont
             return <ImageContent message={message} />;
         case 'audio':
             return <AudioContent message={message} />;
-        case 'function':
-            return <FunctionContent message={message} isStreaming={isStreaming} themeColor={themeColor} />;
         case 'embedding':
             return <EmbeddingContent message={message} />;
         case 'text':

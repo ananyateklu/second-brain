@@ -2,13 +2,8 @@ import { AnimatePresence } from 'framer-motion';
 import { MessageHeader } from '../Messages/MessageHeader';
 import { MessageContent } from '../Messages/MessageContent';
 import { CopyButton } from '../Messages/CopyButton';
-import { ThoughtProcess } from '../ThoughtProcess';
-import { useAI } from '../../../../contexts/AIContext';
 import { Message } from '../../../../types/message';
 import { AudioContent } from '../Messages/AudioContent';
-import { ToolExecution } from '../ToolExecution';
-import { AgentTool } from '../../../../services/ai/agent';
-import { Wrench } from 'lucide-react';
 import React from 'react';
 import { useTheme } from '../../../../contexts/themeContextUtils';
 
@@ -41,52 +36,14 @@ interface AIMessageProps {
     isLastInGroup?: boolean;
 }
 
-interface ToolExecutionState {
-    tool: AgentTool;
-    status: 'pending' | 'success' | 'error';
-    result?: string;
-    error?: string;
-    execution_time?: number;
-}
-
 export function AIMessage({
     message,
     themeColor,
-    isStreaming,
     isFirstInGroup,
     isLastInGroup
 }: AIMessageProps) {
     const isUser = message.role === 'user';
-    const { executionSteps } = useAI();
     const { theme } = useTheme();
-    const messageSteps = message.executionSteps || executionSteps[message.id] || [];
-
-    // Extract tool executions from metadata
-    const toolExecutions: ToolExecutionState[] = React.useMemo(() => {
-        if (!message.metadata?.tools_used) return [];
-
-        return message.metadata.tools_used.map((tool: ToolMetadata['tools_used'][0]) => ({
-            tool: {
-                name: tool.name,
-                type: tool.type,
-                description: tool.description,
-                parameters: tool.parameters,
-                required_permissions: tool.required_permissions
-            },
-            status: (tool.status ?? 'success') as 'pending' | 'success' | 'error',
-            result: tool.result,
-            error: tool.error,
-            execution_time: tool.execution_time
-        }));
-    }, [message.metadata?.tools_used]);
-
-    const shouldShowThoughtProcess = !isUser &&
-        message.model?.category === 'function' &&
-        messageSteps.length > 0;
-
-    const shouldShowToolExecutions = !isUser &&
-        message.model?.category === 'agent' &&
-        toolExecutions.length > 0;
 
     const shouldShowCopyButton = message.content &&
         typeof message.content === 'string' &&
@@ -109,39 +66,6 @@ export function AIMessage({
             // return 'bg-[var(--color-surface)] text-[var(--color-text)] border-[var(--color-border)]';
         }
         return 'bg-gradient-to-br from-white/70 to-white/40 dark:from-gray-800/70 dark:to-gray-800/40 text-gray-900 dark:text-gray-100';
-    };
-
-    const renderToolExecutions = () => {
-        if (!shouldShowToolExecutions) return null;
-
-        return (
-            <div className="mt-4 space-y-3 max-w-full md:max-w-3xl lg:max-w-4xl">
-                <div className="flex items-center gap-2 mb-2">
-                    <Wrench className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Tool Executions
-                    </span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                        ({toolExecutions.length})
-                    </span>
-                </div>
-                {toolExecutions.map((execution, index) => (
-                    <ToolExecution
-                        key={`${execution.tool.name}-${index}`}
-                        tool={execution.tool}
-                        status={execution.status}
-                        result={execution.result}
-                        error={execution.error}
-                        themeColor={themeColor}
-                    />
-                ))}
-                {message.metadata?.execution_time && (
-                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                        Total execution time: {message.metadata.execution_time.toFixed(2)}s
-                    </div>
-                )}
-            </div>
-        );
     };
 
     const renderExecutionStatus = () => {
@@ -218,7 +142,7 @@ export function AIMessage({
                 } : undefined}
             >
                 <div className="overflow-x-auto custom-scrollbar">
-                    <MessageContent message={message} themeColor={themeColor} isStreaming={isStreaming} />
+                    <MessageContent message={message} themeColor={themeColor} />
                 </div>
             </div>
             {
@@ -247,7 +171,6 @@ export function AIMessage({
                         <ThoughtProcessBubble thoughtSteps={thoughtSteps} content={content} />
                     ) : renderMessageBubble()}
 
-                    {renderToolExecutions()}
                     {renderExecutionStatus()}
 
                     {isLastInGroup && (
@@ -256,16 +179,6 @@ export function AIMessage({
                         </span>
                     )}
                 </div>
-
-                {shouldShowThoughtProcess && (
-                    <div className="ml-4 flex-1 max-w-full md:max-w-3xl lg:max-w-4xl">
-                        <ThoughtProcess
-                            steps={messageSteps}
-                            isComplete={!isStreaming}
-                            themeColor={themeColor}
-                        />
-                    </div>
-                )}
             </div>
         );
     };
