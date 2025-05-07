@@ -23,6 +23,36 @@ namespace SecondBrain.Api.Controllers
             _logger = logger;
         }
 
+        [HttpPut("{id}")]
+        public async Task<ActionResult<AgentChatResponse>> UpdateChat(string id, [FromBody] UpdateChatRequest request)
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId == null)
+            {
+                return Unauthorized();
+            }
+
+            var chat = await _context.AgentChats
+                .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId && !c.IsDeleted);
+
+            if (chat == null)
+                return NotFound($"Chat with ID {id} not found");
+
+            // Update chat properties
+            if (!string.IsNullOrEmpty(request.Title))
+            {
+                chat.Title = request.Title;
+            }
+
+            // Additional properties can be updated here if needed
+            chat.LastUpdated = DateTime.UtcNow;
+
+            _context.AgentChats.Update(chat);
+            await _context.SaveChangesAsync();
+
+            return Ok(MapToResponse(chat));
+        }
+
         [HttpGet]
         public async Task<ActionResult<List<AgentChatResponse>>> GetChats()
         {
@@ -170,6 +200,11 @@ namespace SecondBrain.Api.Controllers
         public required string ModelId { get; set; }
         public string? Title { get; set; }
         public string? ChatSource { get; set; }
+    }
+
+    public class UpdateChatRequest
+    {
+        public string? Title { get; set; }
     }
 
     public class AddMessageRequest

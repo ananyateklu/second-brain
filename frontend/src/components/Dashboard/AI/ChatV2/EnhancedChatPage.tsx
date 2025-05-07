@@ -4,110 +4,14 @@ import { AIModel } from '../../../../types/ai';
 import { useAI } from '../../../../contexts/AIContext';
 import { useTheme } from '../../../../contexts/themeContextUtils';
 import { ModernMessageList } from './ModernMessageList';
-import { Settings, Bot, MessageSquare, Trash2, Plus } from 'lucide-react';
+import { Settings, Bot, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { UnifiedInputBar } from './UnifiedInputBar';
 import api from '../../../../services/api/api';
+import { ChatHistorySidebar, AgentChat, AgentMessage } from './ChatHistorySidebar';
 
-// Define interface for chat and message from backend
-interface AgentChat {
-    id: string;
-    modelId: string;
-    title: string;
-    lastUpdated: string;
-    isActive: boolean;
-    messages: AgentMessage[];
-    chatSource: string;
-}
-
-interface AgentMessage {
-    id: string;
-    role: string;
-    content: string;
-    timestamp: string;
-    status: string;
-    reactions: string[];
-    metadata: Record<string, unknown>;
-}
-
-// Chat history sidebar component
-const ChatHistorySidebar: React.FC<{
-    chats: AgentChat[];
-    currentChatId: string | null;
-    onSelectChat: (chatId: string) => void;
-    onNewChat: () => void;
-    onDeleteChat: (chatId: string) => void;
-    isLoading: boolean;
-}> = ({ chats, currentChatId, onSelectChat, onNewChat, onDeleteChat, isLoading }) => {
-    const { theme } = useTheme();
-
-    const getBackground = () => {
-        if (theme === 'dark') return 'bg-gray-800';
-        if (theme === 'midnight') return 'bg-gray-900';
-        if (theme === 'full-dark') return 'bg-zinc-900';
-        return 'bg-gray-100';
-    };
-
-    return (
-        <div className={`w-64 flex-shrink-0 border-r ${theme === 'dark' || theme === 'midnight' || theme === 'full-dark' ? 'border-gray-700' : 'border-gray-200'} ${getBackground()} h-full overflow-y-auto custom-scrollbar`}>
-            <div className="p-3">
-                <button
-                    onClick={onNewChat}
-                    className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg mb-3
-                        ${theme === 'dark' || theme === 'midnight' || theme === 'full-dark'
-                            ? 'bg-blue-600 hover:bg-blue-700'
-                            : 'bg-blue-500 hover:bg-blue-600'} 
-                        text-white transition-colors`}
-                >
-                    <Plus size={16} />
-                    <span>New Chat</span>
-                </button>
-
-                <div className="space-y-1">
-                    {isLoading ? (
-                        <div className="text-center py-3 text-sm text-gray-500">Loading chats...</div>
-                    ) : chats.length === 0 ? (
-                        <div className="text-center py-3 text-sm text-gray-500">No chats yet</div>
-                    ) : (
-                        chats.map(chat => (
-                            <div
-                                key={chat.id}
-                                className={`group relative flex items-center px-3 py-2 rounded-lg cursor-pointer transition-colors
-                                    ${currentChatId === chat.id
-                                        ? (theme === 'dark' || theme === 'midnight' || theme === 'full-dark'
-                                            ? 'bg-gray-700'
-                                            : 'bg-gray-200')
-                                        : (theme === 'dark' || theme === 'midnight' || theme === 'full-dark'
-                                            ? 'hover:bg-gray-700/70'
-                                            : 'hover:bg-gray-200/70')
-                                    }
-                                `}
-                                onClick={() => onSelectChat(chat.id)}
-                            >
-                                <MessageSquare size={16} className="flex-shrink-0 mr-2 text-gray-500" />
-                                <div className="flex-1 truncate text-sm">
-                                    {chat.title}
-                                </div>
-                                <button
-                                    className={`opacity-0 group-hover:opacity-100 p-1 rounded transition-opacity
-                                        ${theme === 'dark' || theme === 'midnight' || theme === 'full-dark'
-                                            ? 'hover:bg-gray-600 text-gray-400 hover:text-gray-200'
-                                            : 'hover:bg-gray-300 text-gray-500 hover:text-gray-700'}`}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onDeleteChat(chat.id);
-                                    }}
-                                >
-                                    <Trash2 size={14} />
-                                </button>
-                            </div>
-                        ))
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-};
+// Local storage key for the selected model
+const SELECTED_MODEL_KEY = 'enhanced_chat_selected_model';
 
 export function EnhancedChatPage() {
     const navigate = useNavigate();
@@ -123,6 +27,16 @@ export function EnhancedChatPage() {
 
     const initialModel = useMemo(() => {
         const nonAgentModels = availableModels.filter((m: AIModel) => m.category !== 'agent');
+
+        // Try to get the saved model ID from localStorage
+        const savedModelId = localStorage.getItem(SELECTED_MODEL_KEY);
+        if (savedModelId) {
+            // Find the model with the saved ID
+            const savedModel = nonAgentModels.find(m => m.id === savedModelId);
+            if (savedModel) return savedModel;
+        }
+
+        // Fall back to the first available model
         return nonAgentModels.length > 0 ? nonAgentModels[0] : null;
     }, [availableModels]);
 
@@ -138,13 +52,15 @@ export function EnhancedChatPage() {
     const [isLoadingChats, setIsLoadingChats] = useState(false);
     const [showSidebar, setShowSidebar] = useState(true);
 
-    // Fetch chats on component mount
+    // Save selected model to localStorage when it changes
     useEffect(() => {
-        fetchChats();
-    }, []);
+        if (selectedModel) {
+            localStorage.setItem(SELECTED_MODEL_KEY, selectedModel.id);
+        }
+    }, [selectedModel]);
 
-    // Fetch all chats from the backend
-    const fetchChats = async () => {
+    // Fetch chats on component mount
+    const fetchChats = useCallback(async () => {
         try {
             setIsLoadingChats(true);
             const response = await api.get('/api/AgentChats');
@@ -152,31 +68,27 @@ export function EnhancedChatPage() {
             const filteredChats = response.data.filter(
                 (chat: AgentChat) => chat.chatSource === 'enhanced' || !chat.chatSource
             );
-            setChats(filteredChats);
+
+            // Map the chats to include model color
+            const chatsWithModelColor = filteredChats.map((chat: AgentChat) => {
+                const model = availableModels.find(m => m.id === chat.modelId);
+                return {
+                    ...chat,
+                    modelColor: model?.color || '#888888'
+                };
+            });
+
+            setChats(chatsWithModelColor);
         } catch (err) {
             console.error('Failed to fetch chats:', err);
         } finally {
             setIsLoadingChats(false);
         }
-    };
+    }, [availableModels]);
 
-    // Create a new chat
-    const createChat = async (modelId: string) => {
-        try {
-            const response = await api.post('/api/AgentChats', {
-                modelId,
-                title: 'New Chat', // We can update this later with first message content
-                chatSource: 'enhanced' // Set the chat source
-            });
-            const newChat = response.data;
-            setCurrentChatId(newChat.id);
-            setChats(prev => [newChat, ...prev]);
-            return newChat.id;
-        } catch (err) {
-            console.error('Failed to create chat:', err);
-            throw err;
-        }
-    };
+    useEffect(() => {
+        fetchChats();
+    }, [fetchChats]);
 
     // Save a message to the current chat
     const saveMessage = async (chatId: string, role: string, content: string, metadata?: Record<string, unknown>) => {
@@ -206,6 +118,15 @@ export function EnhancedChatPage() {
             const model = availableModels.find(m => m.id === chat.modelId);
             if (model) {
                 setSelectedModel(model);
+            } else if (initialModel) {
+                // If model not found but we have initialModel, use that with the chat's color
+                const fallbackModel = {
+                    ...initialModel,
+                    id: chat.modelId,
+                    name: 'Unknown Model',
+                    color: chat.modelColor || '#888888'
+                };
+                setSelectedModel(fallbackModel);
             }
 
             // Convert backend messages to our frontend Message format
@@ -245,28 +166,7 @@ export function EnhancedChatPage() {
         }
     };
 
-    // Update chat title based on first message
-    const updateChatTitle = async (chatId: string | null, title: string) => {
-        if (!chatId) return; // Early return if chatId is null
-
-        try {
-            // Note: Your API doesn't seem to have an endpoint to update chat title
-            // You might need to add this endpoint to your backend
-            // For now, we just update the local state
-            setChats(prev =>
-                prev.map(chat =>
-                    chat.id === chatId
-                        ? { ...chat, title: title.substring(0, 50) }
-                        : chat
-                )
-            );
-        } catch (error) {
-            console.error('Failed to update chat title:', error);
-        }
-    };
-
     const handleNewChat = () => {
-        setSelectedModel(initialModel);
         setMessages([]);
         setCurrentChatId(null);
         setError(null);
@@ -281,7 +181,7 @@ export function EnhancedChatPage() {
 
     const getContainerBackground = useCallback(() => {
         if (theme === 'dark') return 'bg-gray-900/50';
-        if (theme === 'midnight') return 'bg-black/30';
+        if (theme === 'midnight') return 'bg-gray-900';
         if (theme === 'full-dark') return 'bg-black/50';
         return 'bg-white/50';
     }, [theme]);
@@ -293,6 +193,33 @@ export function EnhancedChatPage() {
         return 'border-gray-300/70';
     }, [theme]);
 
+    // Create a chat title from the first message
+    const generateTitleFromMessage = (message: string): string => {
+        // Truncate to first 50 characters, but try to break at the end of a sentence
+        // or at a word boundary if possible
+        const maxLength = 50;
+
+        if (message.length <= maxLength) {
+            return message;
+        }
+
+        // Try to find a sentence ending within the first maxLength characters
+        const sentenceEnd = message.substring(0, maxLength).lastIndexOf('.');
+        if (sentenceEnd > 10) { // At least 10 chars to ensure we get a decent title
+            return message.substring(0, sentenceEnd + 1);
+        }
+
+        // If no sentence end, try to break at a word boundary
+        const wordBreak = message.substring(0, maxLength).lastIndexOf(' ');
+        if (wordBreak > 0) {
+            return message.substring(0, wordBreak) + '...';
+        }
+
+        // Last resort: just truncate
+        return message.substring(0, maxLength) + '...';
+    };
+
+    // Handle user input
     const handleUserInput = async (input: string) => {
         if (!selectedModel) {
             setError('Please select a model first.');
@@ -305,10 +232,29 @@ export function EnhancedChatPage() {
         let chatId = currentChatId;
         if (!chatId) {
             try {
-                chatId = await createChat(selectedModel.id);
-                // At this point, chatId is guaranteed to be a string from createChat
-                // If this is the first message, use it to update the chat title
-                await updateChatTitle(chatId, input);
+                // Generate a title from the first message
+                const title = generateTitleFromMessage(input);
+
+                // Create chat with a meaningful title right away
+                const response = await api.post('/api/AgentChats', {
+                    modelId: selectedModel.id,
+                    title: title,
+                    chatSource: 'enhanced'
+                });
+
+                chatId = response.data.id;
+
+                // Add the new chat to the chat list with model color
+                setChats(prev => [
+                    {
+                        ...response.data,
+                        modelColor: selectedModel.color || '#888888',
+                        messages: []
+                    },
+                    ...prev
+                ]);
+
+                setCurrentChatId(chatId);
             } catch (e) {
                 console.error('Failed to create a new chat:', e);
                 setError('Failed to create a new chat');
@@ -450,17 +396,21 @@ export function EnhancedChatPage() {
     );
 
     return (
-        <div className={`w-full h-[calc(100vh-10rem)] flex rounded-xl ${getContainerBackground()} border ${getBorderColor()} shadow-lg overflow-hidden`}>
+        <div className={`w-full h-[calc(100vh-10rem)] flex rounded-xl ${getContainerBackground()} border ${getBorderColor()} shadow-lg overflow-hidden relative`}>
             {/* Chat Sidebar */}
             {showSidebar && (
-                <ChatHistorySidebar
-                    chats={chats}
-                    currentChatId={currentChatId}
-                    onSelectChat={loadChat}
-                    onNewChat={handleNewChat}
-                    onDeleteChat={deleteChat}
-                    isLoading={isLoadingChats}
-                />
+                <div className={`w-64 flex-shrink-0 border-r ${getBorderColor()} ${getContainerBackground()}`}>
+                    <ChatHistorySidebar
+                        chats={chats}
+                        currentChatId={currentChatId}
+                        onSelectChat={loadChat}
+                        onNewChat={handleNewChat}
+                        onDeleteChat={deleteChat}
+                        onClose={() => setShowSidebar(false)}
+                        isLoading={isLoadingChats}
+                        selectedModel={selectedModel}
+                    />
+                </div>
             )}
 
             {/* Main Content */}
@@ -468,15 +418,34 @@ export function EnhancedChatPage() {
                 {mainContent}
             </div>
 
-            {/* Toggle sidebar button */}
+            {/* Enhanced toggle sidebar button with hover animations */}
             <button
                 onClick={() => setShowSidebar(prev => !prev)}
-                className={`absolute left-2 top-2 p-2 rounded-full transition-colors duration-150 
+                className={`absolute ${showSidebar ? '-left-16' : 'left-3'} top-3 
+                    ${showSidebar ? 'p-2 rounded-full' : 'px-4 py-2 rounded-lg flex items-center gap-2'} 
+                    transition-all duration-300 shadow-sm hover:shadow-md
+                    transform hover:scale-105 hover:-translate-y-0.5 group
                     ${theme === 'dark' || theme === 'midnight' || theme === 'full-dark'
-                        ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-700'
-                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-300'}`}
+                        ? 'bg-gray-800/90 hover:bg-gray-800 text-gray-200'
+                        : 'bg-white/90 hover:bg-white text-gray-700'}`}
+                style={selectedModel ? {
+                    border: showSidebar ? 'none' : `1px solid ${selectedModel.color}4D`,
+                    color: !showSidebar ? `${selectedModel.color}99` : 'white',
+                    background: showSidebar ? `${selectedModel.color}80` : 'transparent',
+                    boxShadow: !showSidebar ? `0 2px 8px -2px ${selectedModel.color}40` : 'none',
+                    transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
+                } : {
+                    transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
+                }}
+                aria-label={showSidebar ? "Close sidebar" : "Open sidebar"}
             >
-                <MessageSquare size={18} />
+                {showSidebar ?
+                    <PanelLeftClose className="transform transition-transform duration-300 hover:scale-110" size={20} /> :
+                    <>
+                        <PanelLeftOpen className="transform transition-transform group-hover:rotate-[-5deg] duration-300" size={20} />
+                        <span className="text-sm font-medium group-hover:tracking-wide transition-all duration-300">Conversations</span>
+                    </>
+                }
             </button>
         </div>
     );
