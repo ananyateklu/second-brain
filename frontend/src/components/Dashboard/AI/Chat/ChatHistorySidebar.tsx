@@ -76,10 +76,10 @@ export const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({
         const baseColor = selectedModel?.color || '#3b82f6';
 
         return {
-            backgroundColor: `${baseColor}80`, // 50% opacity
+            backgroundColor: `${baseColor}60`,
             color: 'white',
-            border: `1px solid ${baseColor}99`, // 60% opacity
-            boxShadow: `0 2px 8px -2px ${baseColor}40`, // 25% opacity
+            border: `1px solid ${baseColor}80`,
+            boxShadow: `0 1px 4px -2px ${baseColor}30`,
             transition: 'all 0.2s ease'
         } as React.CSSProperties;
     };
@@ -102,12 +102,12 @@ export const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({
 
                 <button
                     onClick={onNewChat}
-                    className="flex items-center justify-center gap-2 w-full px-3 py-2.5 rounded-lg 
-                        text-white transition-all duration-200 hover:shadow-md font-medium
-                        transform hover:scale-105 hover:-translate-y-0.5"
+                    className="flex items-center justify-center gap-1.5 w-full px-2.5 py-1.5 rounded-lg 
+                        text-white transition-all duration-200 hover:shadow-sm text-sm
+                        transform hover:scale-102 hover:-translate-y-0.5"
                     style={getNewChatButtonStyle()}
                 >
-                    <Plus size={16} />
+                    <Plus size={14} />
                     <span>New Chat</span>
                 </button>
 
