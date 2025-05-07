@@ -24,7 +24,8 @@ export function PerplexityPage() {
         try {
             const newChat = await perplexityService.createChat(
                 selectedModel.id,
-                `Perplexity ${selectedModel.name} Chat`
+                `Perplexity ${selectedModel.name} Chat`,
+                'perplexity'
             );
 
             setConversations(prev => [

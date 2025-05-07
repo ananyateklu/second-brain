@@ -114,6 +114,9 @@ export const CompactModelSelector: React.FC<CompactModelSelectorProps> = ({
     };
 
     // Toggle reasoning models
+    // This filter shows only models that have the "isReasoner" capability
+    // Reasoning models can show their thought process when generating responses
+    // They're useful for complex questions requiring step-by-step thinking
     const toggleReasoningFilter = () => {
         setShowReasoningOnly(prev => !prev);
     };

@@ -7,7 +7,7 @@ import { AIModel } from '../../../../../types/ai';
 import { useAgentState } from '../hooks/useAgentState';
 import { AgentSelection } from './AgentSelection';
 import { ChatInterface } from './ChatInterface';
-import { handleAgentSelect, handleNewConversation, getCurrentConversation, handleSendMessage, handleDeleteConversation } from '../utils/handlers';
+import { handleAgentSelect, getCurrentConversation, handleSendMessage, handleDeleteConversation } from '../utils/handlers';
 import { getBotIcon } from '../utils/iconUtils';
 import { LoadingContent } from '../../Messages/LoadingContent';
 
@@ -31,7 +31,8 @@ export function AIAgentsPage() {
         setConversations,
         groupedModels,
         filteredAgents,
-        navigate
+        navigate,
+        handleNewConversation
     } = useAgentState(availableModels);
 
     const handleAgentSelectWrapper = async (model: AIModel) => {
@@ -43,7 +44,9 @@ export function AIAgentsPage() {
     };
 
     const handleNewConversationWrapper = () => {
-        handleNewConversation(selectedAgent, setConversations);
+        if (selectedAgent) {
+            handleNewConversation(selectedAgent);
+        }
     };
 
     const getCurrentConversationWrapper = () => {
@@ -60,9 +63,9 @@ export function AIAgentsPage() {
             setCurrentMessage,
             setIsSending,
             setConversations,
-            sendMessage,
             isSending,
-            conversations
+            conversations,
+            sendMessage
         });
     };
 

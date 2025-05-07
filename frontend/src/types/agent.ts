@@ -5,6 +5,7 @@ export interface AgentChat {
     lastUpdated: string;
     isActive: boolean;
     messages: AgentMessage[];
+    chatSource?: string;
 }
 
 export interface AgentMessage {

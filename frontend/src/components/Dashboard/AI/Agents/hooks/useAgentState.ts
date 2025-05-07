@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AIModel } from '../../../../../types/ai';
 import { AgentConversation } from '../types';
@@ -102,8 +102,12 @@ export const useAgentState = (availableModels: AIModel[]) => {
                 setIsLoading(true);
                 const chats = await agentService.loadChats();
 
+                // Filter chats to only include those created from Agents page or those without chatSource (for backward compatibility)
+                const filteredChats = chats.filter(chat =>
+                    chat.chatSource === 'agents' || !chat.chatSource);
+
                 // Map database chats to AgentConversation type
-                const conversations = chats.map(chat => ({
+                const conversations = filteredChats.map(chat => ({
                     id: chat.id,
                     messages: chat.messages.map(msg => ({
                         ...msg,
@@ -112,7 +116,8 @@ export const useAgentState = (availableModels: AIModel[]) => {
                     model: availableModels.find(m => m.id === chat.modelId)!,
                     isActive: chat.isActive,
                     lastUpdated: new Date(chat.lastUpdated),
-                    title: chat.title
+                    title: chat.title,
+                    chatSource: chat.chatSource
                 }));
 
                 setConversations(conversations);
@@ -125,6 +130,74 @@ export const useAgentState = (availableModels: AIModel[]) => {
 
         loadChats();
     }, [availableModels]);
+
+    // Create a welcome message to add to new agent conversations
+    const handleWelcomeMessage = async (chatId: string, agent: AIModel) => {
+        try {
+            // Create a welcome message based on the agent
+            const welcomeMessage = {
+                role: 'assistant' as const,
+                content: `Hello! I'm ${agent.name}. How can I assist you today?`,
+                status: 'sent' as const
+            };
+
+            // Add the message to the conversation
+            const addedMessage = await agentService.addMessage(chatId, welcomeMessage);
+
+            // Update the conversation in state
+            setConversations(prevConversations =>
+                prevConversations.map(conv => {
+                    if (conv.id === chatId) {
+                        return {
+                            ...conv,
+                            messages: [...conv.messages, {
+                                ...addedMessage,
+                                timestamp: new Date(addedMessage.timestamp)
+                            }]
+                        };
+                    }
+                    return conv;
+                })
+            );
+        } catch (error) {
+            console.error('Error adding welcome message:', error);
+        }
+    };
+
+    const handleNewConversation = useCallback(async (selectedAgent: AIModel) => {
+        try {
+            const isAgentCategory = selectedAgent.category === 'agent';
+            const title = `${selectedAgent.name} Chat`;
+
+            const newChat = await agentService.createChat(
+                selectedAgent.id,
+                title,
+                'agents' // Set the chat source to 'agents'
+            );
+
+            const newConversation: AgentConversation = {
+                id: newChat.id,
+                messages: [],
+                model: selectedAgent,
+                isActive: true,
+                lastUpdated: new Date(),
+                title,
+                chatSource: 'agents'
+            };
+
+            setConversations(prevConversations => [
+                newConversation,
+                ...prevConversations.map(conv => ({ ...conv, isActive: false }))
+            ]);
+
+            // If agent type, send a welcome message
+            if (isAgentCategory) {
+                await handleWelcomeMessage(newChat.id, selectedAgent);
+            }
+        } catch (error) {
+            console.error('Error creating new conversation:', error);
+        }
+    }, []);
 
     return {
         isLoading,
@@ -143,6 +216,7 @@ export const useAgentState = (availableModels: AIModel[]) => {
         setConversations,
         groupedModels,
         filteredAgents,
-        navigate
+        navigate,
+        handleNewConversation
     };
 }; 

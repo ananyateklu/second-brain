@@ -68,7 +68,8 @@ namespace SecondBrain.Api.Controllers
                 Title = request.Title ?? "New Chat",
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow,
-                LastUpdated = DateTime.UtcNow
+                LastUpdated = DateTime.UtcNow,
+                ChatSource = request.ChatSource
             };
 
             _context.AgentChats.Add(chat);
@@ -137,6 +138,7 @@ namespace SecondBrain.Api.Controllers
                 Title = chat.Title,
                 LastUpdated = chat.LastUpdated,
                 IsActive = chat.IsActive,
+                ChatSource = chat.ChatSource,
                 Messages = chat.Messages
                     .OrderBy(m => m.Timestamp)
                     .Select(MapMessageToResponse)
@@ -167,6 +169,7 @@ namespace SecondBrain.Api.Controllers
     {
         public required string ModelId { get; set; }
         public string? Title { get; set; }
+        public string? ChatSource { get; set; }
     }
 
     public class AddMessageRequest

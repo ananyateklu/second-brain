@@ -122,8 +122,9 @@ class PerplexityService {
             const response = await api.get('/api/AgentChats');
             // Filter to only include Perplexity model chats
             return response.data.filter((chat: AgentChat) =>
+            (chat.chatSource === 'perplexity' ||
                 chat.modelId.startsWith('sonar') ||
-                chat.modelId.includes('reasoning')
+                chat.modelId.includes('reasoning'))
             );
         } catch (error) {
             console.error('Error loading Perplexity chats:', error);
@@ -131,12 +132,13 @@ class PerplexityService {
         }
     }
 
-    async createChat(modelId: string, title?: string): Promise<AgentChat> {
+    async createChat(modelId: string, title?: string, chatSource: string = 'perplexity'): Promise<AgentChat> {
         try {
             // Use the general agent chat endpoint to create a chat
             const response = await api.post('/api/AgentChats', {
                 modelId,
-                title: title || `Perplexity ${modelId} Chat`
+                title: title || `Perplexity ${modelId} Chat`,
+                chatSource
             });
             return response.data;
         } catch (error) {

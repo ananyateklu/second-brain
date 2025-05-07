@@ -16,6 +16,7 @@ export interface AgentConversation {
     isActive: boolean;
     lastUpdated: Date;
     title?: string;
+    chatSource?: string;
 }
 
 export interface StoredConversation extends Omit<AgentConversation, 'lastUpdated' | 'messages'> {

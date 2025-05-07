@@ -170,11 +170,12 @@ export class AgentService {
     }
   }
 
-  async createChat(modelId: string, title?: string): Promise<AgentChat> {
+  async createChat(modelId: string, title?: string, chatSource?: string): Promise<AgentChat> {
     try {
       const response = await api.post('/api/AgentChats', {
         modelId,
-        title
+        title,
+        chatSource
       });
       return response.data;
     } catch (error) {

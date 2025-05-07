@@ -7,6 +7,7 @@ CREATE TABLE [dbo].[AgentChats] (
     [LastUpdated] DATETIME2 (7)  NOT NULL,
     [IsActive]    BIT            NOT NULL,
     [IsDeleted]   BIT            NOT NULL,
+    [ChatSource]  NVARCHAR (50)  NULL,
     CONSTRAINT [PK_AgentChats] PRIMARY KEY CLUSTERED ([Id] ASC),
     CONSTRAINT [FK_AgentChats_Users_UserId] FOREIGN KEY ([UserId]) REFERENCES [dbo].[Users] ([Id]) ON DELETE CASCADE
 );

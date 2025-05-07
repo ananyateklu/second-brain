@@ -24,6 +24,8 @@ namespace SecondBrain.Data.Entities
         public bool IsActive { get; set; } = true;
         public bool IsDeleted { get; set; } = false;
 
+        public string? ChatSource { get; set; }
+
         public virtual ICollection<AgentMessage> Messages { get; set; } = new List<AgentMessage>();
     }
 }

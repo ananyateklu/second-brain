@@ -7,6 +7,7 @@ namespace SecondBrain.Api.DTOs.Agent
         public required string Title { get; set; }
         public DateTime LastUpdated { get; set; }
         public bool IsActive { get; set; }
+        public string? ChatSource { get; set; }
         public List<AgentMessageResponse> Messages { get; set; } = new();
     }
 

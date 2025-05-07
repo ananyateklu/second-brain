@@ -82,55 +82,9 @@ export const handleAgentSelect = async (
                 : { ...conv, isActive: false }
         ));
     } else {
-        // If no conversations exist for this model, create a new one
-        try {
-            await handleNewConversation(model, setConversations);
-        } catch (error) {
-            console.error('Error creating new conversation:', error);
-        }
-    }
-};
-
-export const handleNewConversation = async (
-    selectedAgent: AIModel | null,
-    setConversations: React.Dispatch<React.SetStateAction<AgentConversation[]>>,
-) => {
-    if (!selectedAgent) return;
-
-    try {
-        // Create chat in database
-        const newChat = await agentService.createChat(selectedAgent.id, "New Chat");
-
-        // Log activity for new chat creation
-        await activityService.createActivity({
-            actionType: 'AI_CHAT_CREATE',
-            itemType: 'AI_CHAT',
-            itemId: newChat.id,
-            itemTitle: `Chat with ${selectedAgent.name}`,
-            description: `Started new conversation with ${selectedAgent.name}`,
-            metadata: {
-                agentId: selectedAgent.id,
-                agentName: selectedAgent.name,
-                agentProvider: selectedAgent.provider,
-                agentColor: selectedAgent.color
-            }
-        });
-
-        // Add to local state
-        const conversation: AgentConversation = {
-            id: newChat.id,
-            messages: [],
-            model: selectedAgent,
-            isActive: true,
-            lastUpdated: new Date(newChat.lastUpdated),
-            title: newChat.title
-        };
-
-        setConversations(prev => prev.map(c => ({ ...c, isActive: false })).concat(conversation));
-        return conversation;
-    } catch (error) {
-        console.error('Error creating new conversation:', error);
-        throw error;
+        // If no conversations exist for this model, we'll not create one automatically
+        // The user can use the "New Chat" button which will call the handleNewConversation 
+        // in useAgentState
     }
 };
 
@@ -161,9 +115,37 @@ export const handleSendMessage = async ({
         setIsSending(true);
 
         // Get active conversation
-        const activeConversation = getCurrentConversation(selectedAgent.id, conversations);
+        let activeConversation = getCurrentConversation(selectedAgent.id, conversations);
+
+        // If no active conversation, create one
         if (!activeConversation) {
-            throw new Error('No active conversation');
+            const title = `${selectedAgent.name} Chat`;
+            const newChat = await agentService.createChat(
+                selectedAgent.id,
+                title,
+                'agents' // Set the chat source to 'agents'
+            );
+
+            const newConversation: AgentConversation = {
+                id: newChat.id,
+                messages: [],
+                model: selectedAgent,
+                isActive: true,
+                lastUpdated: new Date(),
+                title,
+                chatSource: 'agents'
+            };
+
+            // Update state with the new conversation
+            setConversations(prevConversations => [
+                newConversation,
+                ...prevConversations.map(conv => ({ ...conv, isActive: false }))
+            ]);
+
+            activeConversation = newConversation;
+
+            // Wait a moment for state to update
+            await new Promise(resolve => setTimeout(resolve, 100));
         }
 
         // Add user message to database
