@@ -2,6 +2,112 @@ import { AIModel, AIResponse } from '../../types/ai';
 import api from '../api/api';
 import { AI_MODELS } from './models';
 
+// EventSource polyfill with POST support
+class PostEventSource {
+  private eventSource: EventSource | null = null;
+  private url: string;
+  private data: object;
+  private events: Record<string, ((event: MessageEvent) => void)[]> = {};
+
+  constructor(url: string, data: object) {
+    this.url = url;
+    this.data = data;
+    this.connect();
+  }
+
+  private async connect() {
+    try {
+      // Make a POST request to the server
+      const response = await fetch(this.url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'text/event-stream',
+        },
+        body: JSON.stringify(this.data),
+      });
+
+      // Create a new reader from the response body
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('Failed to get reader from response');
+
+      // Process the stream
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      const processStream = async () => {
+        const { done, value } = await reader.read();
+        if (done) return;
+
+        // Append the new data to our buffer
+        buffer += decoder.decode(value, { stream: true });
+
+        // Process complete lines
+        const lines = buffer.split('\n\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.trim()) continue;
+
+          // Parse the event data
+          const eventLines = line.split('\n');
+          let eventName = 'message';
+          let data = '';
+
+          for (const eventLine of eventLines) {
+            if (eventLine.startsWith('event:')) {
+              eventName = eventLine.slice(6).trim();
+            } else if (eventLine.startsWith('data:')) {
+              data = eventLine.slice(5).trim();
+            }
+          }
+
+          // Dispatch the event
+          const eventHandlers = this.events[eventName] || [];
+          for (const handler of eventHandlers) {
+            handler(new MessageEvent(eventName, { data }));
+          }
+
+          // Also dispatch to onmessage if it's a message event
+          if (eventName === 'message' && this.onmessage) {
+            this.onmessage(new MessageEvent('message', { data }));
+          }
+        }
+
+        // Continue reading
+        processStream();
+      };
+
+      processStream();
+    } catch (error) {
+      console.error('PostEventSource error:', error);
+      if (this.onerror) this.onerror(new Event('error'));
+    }
+  }
+
+  addEventListener(event: string, callback: (event: MessageEvent) => void) {
+    if (!this.events[event]) {
+      this.events[event] = [];
+    }
+    this.events[event].push(callback);
+  }
+
+  removeEventListener(event: string, callback: (event: MessageEvent) => void) {
+    if (this.events[event]) {
+      this.events[event] = this.events[event].filter(cb => cb !== callback);
+    }
+  }
+
+  close() {
+    this.eventSource?.close();
+    this.events = {};
+  }
+
+  // Standard EventSource properties
+  onmessage: ((event: MessageEvent) => void) | null = null;
+  onerror: ((event: Event) => void) | null = null;
+}
+
 export class OllamaService {
   private readonly isEnabled = true;
 
@@ -19,19 +125,18 @@ export class OllamaService {
     try {
       let finalContent = '';
 
-      // Build query parameters including the model parameters
-      const queryParams = new URLSearchParams({
-        prompt: message,
-        modelId: modelId,
-        ...(parameters?.max_tokens && { max_tokens: parameters.max_tokens.toString() }),
-        ...(parameters?.temperature !== undefined && { temperature: parameters.temperature.toString() }),
-        ...(parameters?.top_p !== undefined && { top_p: parameters.top_p.toString() }),
-        ...(parameters?.frequency_penalty !== undefined && { frequency_penalty: parameters.frequency_penalty.toString() }),
-        ...(parameters?.presence_penalty !== undefined && { presence_penalty: parameters.presence_penalty.toString() })
-      });
-
-      const eventSource = new EventSource(
-        `${api.defaults.baseURL}/api/ollama/stream?${queryParams.toString()}`
+      // Use POST for large prompts to avoid URI length limitations
+      const eventSource = new PostEventSource(
+        `${api.defaults.baseURL}/api/ollama/stream`,
+        {
+          prompt: message,
+          modelId: modelId,
+          maxTokens: parameters?.max_tokens,
+          temperature: parameters?.temperature,
+          topP: parameters?.top_p,
+          frequencyPenalty: parameters?.frequency_penalty,
+          presencePenalty: parameters?.presence_penalty
+        }
       );
 
       return new Promise((resolve, reject) => {
@@ -64,7 +169,7 @@ export class OllamaService {
               type: 'text',
               metadata: {
                 model: modelId,
-                parameters: parameters // Include the parameters in metadata
+                parameters: parameters
               }
             });
           } else {
@@ -79,7 +184,7 @@ export class OllamaService {
             type: 'text',
             metadata: {
               model: modelId,
-              parameters: parameters // Include the parameters in metadata
+              parameters: parameters
             }
           });
         });
