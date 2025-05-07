@@ -33,9 +33,9 @@ export function TextContent({ message, themeColor }: TextContentProps) {
           <div className="space-y-2">
             {thoughtSteps.map((step, index) => (
               <div key={index} className="flex gap-3 items-start">
-                <div className={`flex-shrink-0 w-6 h-6 rounded-full 
-                  flex items-center justify-center text-xs font-medium 
-                  ${theme === 'midnight'
+                <div className={`flex-shrink-0 w-6 h-6 rounded-full
+                  flex items-center justify-center text-xs font-medium
+                  ${theme === 'midnight' || theme === 'full-dark'
                     ? 'bg-gray-800 text-gray-300'
                     : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'}`}>
                   {index + 1}
@@ -43,7 +43,9 @@ export function TextContent({ message, themeColor }: TextContentProps) {
                 <div className="flex-1">
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
-                    className={`${theme === 'midnight' ? 'text-gray-300' : 'text-gray-700 dark:text-gray-300'}`}
+                    className={`${theme === 'midnight' || theme === 'full-dark'
+                      ? 'text-gray-300'
+                      : 'text-gray-700 dark:text-gray-300'}`}
                   >
                     {step}
                   </ReactMarkdown>

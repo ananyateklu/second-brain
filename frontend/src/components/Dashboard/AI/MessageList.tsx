@@ -135,9 +135,11 @@ export function MessageList(props: MessageListProps) {
                 {showDateDivider && (
                   <div className="flex items-center justify-center my-1">
                     <div className={`px-3 py-0.5 rounded-full text-xs font-medium 
-                      ${theme === 'midnight' ? 'bg-gray-900/50' : 'bg-gray-100/50 dark:bg-gray-800/50'} 
+                      ${theme === 'midnight' ? 'bg-gray-900/50' :
+                        theme === 'full-dark' ? 'bg-zinc-900/50 text-zinc-400' :
+                          'bg-gray-100/50 dark:bg-gray-800/50'} 
                       text-[var(--color-textSecondary)]
-                      backdrop-blur-sm ${theme === 'midnight' ? '' : 'border border-gray-200/30 dark:border-gray-700/30'}`}>
+                      backdrop-blur-sm ${theme === 'midnight' || theme === 'full-dark' ? 'border-zinc-800/50' : 'border border-gray-200/30 dark:border-gray-700/30'}`}>
                       {formatDate(date)}
                     </div>
                   </div>

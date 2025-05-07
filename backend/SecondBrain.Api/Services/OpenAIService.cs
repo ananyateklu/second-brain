@@ -46,6 +46,13 @@ namespace SecondBrain.Api.Services
                     "gpt-3.5-turbo" => 4096,
                     "gpt-4o" => 16384,
                     "gpt-4o-mini" => 16384,
+                    "gpt-4.1" => 32000,
+                    "gpt-4.1-mini" => 32000,
+                    "gpt-4.1-nano" => 32000,
+                    "o4-mini" => 100000,
+                    "o3-mini" => 100000,
+                    "o1" => 100000,
+                    "o1-pro" => 100000,
                     _ => 2048 // default fallback
                 };
 
@@ -54,22 +61,46 @@ namespace SecondBrain.Api.Services
                     PropertyNamingPolicy = JsonNamingPolicy.CamelCase
                 };
 
-                var apiRequest = new
-                {
-                    model = request.Model,
-                    messages = request.Messages,
-                    max_tokens = maxOutputTokens,
-                    temperature = request.Temperature ?? 0.7,
-                    top_p = request.TopP ?? 1.0,
-                    frequency_penalty = request.FrequencyPenalty ?? 0.0,
-                    presence_penalty = request.PresencePenalty ?? 0.0
-                };
+                bool useMaxCompletionTokens = request.Model.StartsWith("o");
 
-                var json = JsonSerializer.Serialize(apiRequest, jsonOptions);
+                // Determine if the model requires max_completion_tokens and has temperature restrictions
+                bool isRestrictedModel = request.Model.StartsWith("o");
+
+                object apiRequestPayload;
+                double effectiveTemperature = isRestrictedModel ? 1.0 : (request.Temperature ?? 0.7);
+
+                if (useMaxCompletionTokens)
+                {
+                    apiRequestPayload = new
+                    {
+                        model = request.Model,
+                        messages = request.Messages,
+                        max_completion_tokens = maxOutputTokens,
+                        temperature = effectiveTemperature,
+                        top_p = request.TopP ?? 1.0,
+                        frequency_penalty = request.FrequencyPenalty ?? 0.0,
+                        presence_penalty = request.PresencePenalty ?? 0.0
+                    };
+                }
+                else
+                {
+                    apiRequestPayload = new
+                    {
+                        model = request.Model,
+                        messages = request.Messages,
+                        max_tokens = maxOutputTokens,
+                        temperature = effectiveTemperature,
+                        top_p = request.TopP ?? 1.0,
+                        frequency_penalty = request.FrequencyPenalty ?? 0.0,
+                        presence_penalty = request.PresencePenalty ?? 0.0
+                    };
+                }
+
+                var json = JsonSerializer.Serialize(apiRequestPayload, jsonOptions);
                 var content = new StringContent(json, Encoding.UTF8, JsonMediaType);
 
-                _logger.LogInformation("Sending message to OpenAI. Model: {ModelId}, MaxTokens: {MaxTokens}", 
-                    request.Model, maxOutputTokens);
+                _logger.LogInformation("Sending message to OpenAI. Model: {ModelId}, MaxOutputTokens: {MaxOutputTokens}, UsingMaxCompletionTokens: {UseMaxCompletionTokens}", 
+                    request.Model, maxOutputTokens, useMaxCompletionTokens);
                 _logger.LogDebug("Request Payload: {RequestPayload}", json);
 
                 var response = await _httpClient.PostAsync($"{ApiEndpoint}/chat/completions", content);

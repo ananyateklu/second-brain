@@ -11,6 +11,7 @@ export interface SyncConfig {
     resolutionStrategy: string;
     includeTags: boolean;
     projectId: string;
+    syncType?: 'tasks' | 'notes';
 }
 
 export interface SyncResult {
@@ -198,11 +199,10 @@ export const integrationsService = {
 
     /**
      * Synchronize tasks between Second Brain and TickTick
-     * @param config Synchronization configuration (direction is ignored, always syncs from TickTick)
+     * @param config Synchronization configuration
      */
-    async syncTickTickTasks(config: Omit<SyncConfig, 'direction'>): Promise<SyncResult> {
+    async syncTickTickTasks(config: SyncConfig): Promise<SyncResult> {
         try {
-            // Backend now handles direction implicitly as 'from-ticktick'
             const response = await api.post<SyncResult>('/api/integrations/ticktick/sync', config);
             return response.data;
         } catch (error) {
@@ -215,22 +215,37 @@ export const integrationsService = {
                 }
             }
 
-            throw new Error('Failed to synchronize tasks with TickTick');
+            throw new Error('Failed to synchronize with TickTick');
         }
     },
 
     /**
      * Get sync status and statistics
+     * @param projectId Optional project ID to get status for
+     * @param syncType Optional sync type ('tasks' or 'notes')
      */
-    async getTickTickSyncStatus(projectId?: string): Promise<{
+    async getTickTickSyncStatus(projectId?: string, syncType?: 'tasks' | 'notes'): Promise<{
         lastSynced: string | null;
         taskCount: { local: number; tickTick: number; mapped: number };
     }> {
         try {
-            // Construct endpoint with projectId if provided
-            const endpoint = projectId
-                ? `/api/integrations/ticktick/sync/status?projectId=${projectId}`
-                : '/api/integrations/ticktick/sync/status';
+            // Start with base endpoint
+            let endpoint = '/api/integrations/ticktick/sync/status';
+            const params = new URLSearchParams();
+
+            // Add parameters if provided
+            if (projectId) {
+                params.append('projectId', projectId);
+            }
+
+            if (syncType) {
+                params.append('syncType', syncType);
+            }
+
+            // Append params if any exist
+            if (params.toString()) {
+                endpoint += `?${params.toString()}`;
+            }
 
             const response = await api.get<{
                 lastSynced: string | null;

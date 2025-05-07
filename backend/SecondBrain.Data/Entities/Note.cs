@@ -27,6 +27,7 @@ namespace SecondBrain.Data.Entities
         public DateTime UpdatedAt { get; set; }
         public DateTime? ArchivedAt { get; set; }
         public bool IsIdea { get; set; }
+        public string? Metadata { get; set; }
 
         // Foreign Key
         [Required]

@@ -269,7 +269,7 @@ export const OLLAMA_MODELS: AIModel[] = [
         category: 'chat',
         description: 'The latest series of Qwen models, with significant improvements in performance and speed.',
         isConfigured: true,
-        isReasoner: false,
+        isReasoner: true,
         color: '#8B5CF6',
         endpoint: 'chat',
         size: '8B',

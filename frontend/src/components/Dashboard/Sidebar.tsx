@@ -17,7 +17,8 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  Search
+  Search,
+  MessageSquare
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../contexts/themeContextUtils';
@@ -84,6 +85,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
       items: [
         { name: 'AI Agents', icon: Bot, to: '/dashboard/agents' },
         { name: 'AI Assistant', icon: Bot, to: '/dashboard/ai' },
+        { name: 'Enhanced Chat', icon: MessageSquare, to: '/dashboard/chat' },
         { name: 'Perplexity Search', icon: Search, to: '/dashboard/perplexity' },
       ]
     }

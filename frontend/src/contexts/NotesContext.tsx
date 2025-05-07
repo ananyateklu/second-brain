@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { NotesContext, useNotes } from './notesContextUtils';
 import { useActivities } from './activityContextUtils';
 import { notesService, type UpdateNoteData } from '../services/api/notes.service';
-import { integrationsService } from '../services/api/integrations.service';
+import { integrationsService, SyncConfig, SyncResult } from '../services/api/integrations.service';
 import { useTrash } from './trashContextUtils';
 import { useAuth } from '../hooks/useAuth';
 import { sortNotes } from '../utils/noteUtils';
@@ -291,7 +291,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     hasLoadedArchived.current = false;
   }, []);
 
-  const addNote = useCallback(async (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'linkedNoteIds' | 'linkedNotes' | 'linkedTasks' | 'linkedReminders' | 'links'>) => {
+  const addNote = useCallback(async (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'linkedNoteIds' | 'linkedNotes' | 'linkedTasks' | 'linkedReminders' | 'links'>): Promise<void> => {
     try {
       const noteWithSafeTags = {
         ...note,
@@ -939,6 +939,101 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     updateTickTickNote,
     deleteTickTickNote,
     createTickTickNote,
+    // Add the following sync methods
+    syncWithTickTick: async (config: SyncConfig): Promise<SyncResult> => {
+      if (!user) {
+        throw new Error("User must be authenticated to sync notes");
+      }
+
+      if (!isTickTickConnected) {
+        throw new Error("TickTick must be connected to sync notes");
+      }
+
+      // Ensure we have a project ID to sync with
+      if (!config.projectId) {
+        throw new Error("No TickTick project selected for synchronization");
+      }
+
+      setIsTickTickLoading(true);
+      setTickTickError(null);
+
+      try {
+        // Add syncType to the config
+        const syncConfig = {
+          ...config,
+          syncType: 'notes' as const // Explicitly set syncType for notes synchronization
+        };
+
+        console.log("Starting notes sync with config:", JSON.stringify(syncConfig));
+        const result = await integrationsService.syncTickTickTasks(syncConfig);
+        console.log("Notes sync completed with result:", JSON.stringify(result));
+
+        // After successful sync, refresh both local and TickTick notes
+        await fetchNotes();
+        if (config.projectId) {
+          await fetchTickTickNotes();
+        }
+
+        return result;
+      } catch (error) {
+        console.error("Error syncing notes with TickTick:", error);
+        let errorMessage = "Unknown error during sync";
+
+        if (error instanceof Error) {
+          errorMessage = error.message;
+          console.error("Error details:", error.message);
+        }
+
+        setTickTickError(errorMessage);
+        throw new Error(errorMessage);
+      } finally {
+        setIsTickTickLoading(false);
+      }
+    },
+
+    getSyncStatus: async (projectId?: string): Promise<{
+      lastSynced: string | null;
+      taskCount: { local: number; tickTick: number; mapped: number };
+    }> => {
+      if (!user || !isTickTickConnected) {
+        return {
+          lastSynced: null,
+          taskCount: { local: 0, tickTick: 0, mapped: 0 }
+        };
+      }
+
+      try {
+        const effectiveProjectId = projectId || tickTickProjectId;
+        return await integrationsService.getTickTickSyncStatus(effectiveProjectId, 'notes');
+      } catch (error) {
+        console.error("Error getting sync status:", error);
+        return {
+          lastSynced: null,
+          // Use local state as fallback
+          taskCount: {
+            local: notes.length,
+            tickTick: tickTickNotes.length,
+            mapped: 0
+          }
+        };
+      }
+    },
+
+    resetSyncData: async (): Promise<boolean> => {
+      if (!user || !isTickTickConnected) {
+        return false;
+      }
+
+      try {
+        return await integrationsService.resetSyncData();
+      } catch (error) {
+        console.error("Error resetting sync data:", error);
+        return false;
+      }
+    },
+
+    isSyncing: isTickTickLoading,
+    syncError: tickTickError,
     // Original methods
     addNote,
     updateNote,
@@ -977,6 +1072,8 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     updateTickTickNote,
     deleteTickTickNote,
     createTickTickNote,
+    user, // Add user to dependencies
+    fetchNotes, // Add fetchNotes to dependencies
     // Original dependencies
     addNote,
     updateNote,
@@ -993,7 +1090,6 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     clearArchivedNotes,
     restoreMultipleNotes,
     restoreNote,
-    fetchNotes,
     addReminderToNote,
     removeReminderFromNote,
     duplicateNote,

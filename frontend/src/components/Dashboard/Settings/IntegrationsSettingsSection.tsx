@@ -1,21 +1,28 @@
 import { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, AlertCircle } from 'lucide-react';
+import { RefreshCw, AlertCircle, NotebookPen, CheckSquare } from 'lucide-react';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { SyncResult } from '../../../services/api/integrations.service'; // Assuming type exists
+import { useNotes } from '../../../contexts/notesContextUtils';
 
 interface IntegrationsSettingsSectionProps {
     isTickTickConnectedUI: boolean;
     handleConnectTickTick: () => void;
     handleDisconnectTickTick: () => Promise<void>;
     syncWithTickTick: (config: { resolutionStrategy: string; includeTags: boolean; projectId: string }) => Promise<SyncResult>;
-    getSyncStatus: () => Promise<{ lastSynced: string | null; taskCount: { local: number; tickTick: number; mapped: number } }>;
+    getSyncStatus: (projectId?: string) => Promise<{ lastSynced: string | null; taskCount: { local: number; tickTick: number; mapped: number } }>;
     resetSyncData: () => Promise<void | boolean>;
     isSyncing: boolean;
     tasksSyncError: string | null;
     tickTickProjectId: string;
+    tickTickNotesProjectId?: string;
     onSyncComplete: (result: SyncResult) => void;
     onSyncError: (error: Error) => void;
+    updateTickTickProjectId?: (projectId: string) => Promise<void>;
+    updateTickTickNotesProjectId?: (projectId: string) => Promise<void>;
+    getNoteSyncStatus: (projectId?: string) => Promise<{ lastSynced: string | null; taskCount: { local: number; tickTick: number; mapped: number } }>;
 }
+
+type SyncType = 'tasks' | 'notes';
 
 export function IntegrationsSettingsSection({
     isTickTickConnectedUI,
@@ -27,10 +34,21 @@ export function IntegrationsSettingsSection({
     isSyncing,
     tasksSyncError,
     tickTickProjectId,
+    tickTickNotesProjectId = "",
     onSyncComplete,
     onSyncError,
+    updateTickTickProjectId,
+    updateTickTickNotesProjectId,
+    getNoteSyncStatus,
 }: IntegrationsSettingsSectionProps) {
     const { theme } = useTheme();
+    const [syncType, setSyncType] = useState<SyncType>(() => {
+        const stored = localStorage.getItem('ticktick_sync_type');
+        return (stored === 'notes' ? 'notes' : 'tasks') as SyncType;
+    });
+
+    // Get notesContext methods for note-specific operations
+    const { resetSyncData: resetNoteSyncData, syncWithTickTick: syncNotesWithTickTick } = useNotes();
 
     // State moved from SettingsPage
     const [syncFrequency, setSyncFrequency] = useState<string>('manual');
@@ -43,6 +61,17 @@ export function IntegrationsSettingsSection({
         tickTick: 0,
         mapped: 0
     });
+    const [projectId, setProjectId] = useState<string>(tickTickProjectId);
+
+    // Update local project ID when sync type changes
+    useEffect(() => {
+        setProjectId(syncType === 'tasks' ? tickTickProjectId : tickTickNotesProjectId);
+    }, [syncType, tickTickProjectId, tickTickNotesProjectId]);
+
+    // Save sync type to localStorage when it changes
+    useEffect(() => {
+        localStorage.setItem('ticktick_sync_type', syncType);
+    }, [syncType]);
 
     // Use the sync error from context/props if available
     useEffect(() => {
@@ -55,49 +84,61 @@ export function IntegrationsSettingsSection({
 
     // Load sync settings from localStorage
     useEffect(() => {
-        const storedFrequency = localStorage.getItem('ticktick_sync_frequency');
+        const prefix = syncType === 'tasks' ? 'ticktick_' : 'ticktick_notes_';
+
+        const storedFrequency = localStorage.getItem(`${prefix}sync_frequency`);
         if (storedFrequency) setSyncFrequency(storedFrequency);
 
-        const storedResolution = localStorage.getItem('ticktick_conflict_resolution');
+        const storedResolution = localStorage.getItem(`${prefix}conflict_resolution`);
         if (storedResolution) setConflictResolution(storedResolution);
 
-        const storedSyncTags = localStorage.getItem('ticktick_sync_tags');
+        const storedSyncTags = localStorage.getItem(`${prefix}sync_tags`);
         if (storedSyncTags !== null) setSyncTags(storedSyncTags === 'true');
 
-        const storedLastSynced = localStorage.getItem('ticktick_last_synced');
+        const storedLastSynced = localStorage.getItem(`${prefix}last_synced`);
         if (storedLastSynced) setLastSynced(storedLastSynced);
-    }, []);
+    }, [syncType]);
 
     // Save sync settings to localStorage when they change
     useEffect(() => {
         if (isTickTickConnectedUI) {
-            localStorage.setItem('ticktick_sync_frequency', syncFrequency);
-            localStorage.setItem('ticktick_conflict_resolution', conflictResolution);
-            localStorage.setItem('ticktick_sync_tags', String(syncTags));
+            const prefix = syncType === 'tasks' ? 'ticktick_' : 'ticktick_notes_';
+
+            localStorage.setItem(`${prefix}sync_frequency`, syncFrequency);
+            localStorage.setItem(`${prefix}conflict_resolution`, conflictResolution);
+            localStorage.setItem(`${prefix}sync_tags`, String(syncTags));
         }
-    }, [isTickTickConnectedUI, syncFrequency, conflictResolution, syncTags]);
+    }, [isTickTickConnectedUI, syncFrequency, conflictResolution, syncTags, syncType]);
 
     // Load sync status from backend
     const loadSyncStatus = useCallback(async () => {
         if (!isTickTickConnectedUI) return;
         try {
-            const status = await getSyncStatus();
+            // Call the appropriate sync status method based on selected type
+            const status = syncType === 'tasks'
+                ? await getSyncStatus(projectId)
+                : await getNoteSyncStatus(projectId);
+
             if (status.lastSynced) {
                 setLastSynced(status.lastSynced);
-                localStorage.setItem('ticktick_last_synced', status.lastSynced);
+                // Use the correct localStorage key based on type
+                const prefix = syncType === 'tasks' ? 'ticktick_' : 'ticktick_notes_';
+                localStorage.setItem(`${prefix}last_synced`, status.lastSynced);
             }
             setSyncStats(status.taskCount);
         } catch (error) {
-            console.error("Error loading sync status:", error);
-            const storedLastSynced = localStorage.getItem('ticktick_last_synced');
+            console.error(`Error loading ${syncType} sync status:`, error);
+            // Use the correct localStorage key for fallback
+            const prefix = syncType === 'tasks' ? 'ticktick_' : 'ticktick_notes_';
+            const storedLastSynced = localStorage.getItem(`${prefix}last_synced`);
             if (storedLastSynced) setLastSynced(storedLastSynced);
         }
-    }, [isTickTickConnectedUI, getSyncStatus]);
+    }, [isTickTickConnectedUI, getSyncStatus, getNoteSyncStatus, syncType, projectId]);
 
-    // Load sync status when component mounts or connection changes
+    // Load sync status when component mounts, connection changes, or sync type changes
     useEffect(() => {
         loadSyncStatus();
-    }, [isTickTickConnectedUI, loadSyncStatus]);
+    }, [isTickTickConnectedUI, loadSyncStatus, syncType]);
 
     const formatLastSynced = () => {
         if (!lastSynced) return 'Never';
@@ -127,20 +168,33 @@ export function IntegrationsSettingsSection({
         if (isSyncing) return;
         setSyncError(null);
         try {
-            console.log(`Starting sync (from TickTick) with resolutionStrategy: ${conflictResolution}, includeTags: ${syncTags}, projectId: ${tickTickProjectId}`);
-            const result = await syncWithTickTick({
-                resolutionStrategy: conflictResolution,
-                includeTags: syncTags,
-                projectId: tickTickProjectId
-            });
-            console.log("Sync completed successfully:", result);
+            console.log(`Starting ${syncType} sync with resolutionStrategy: ${conflictResolution}, includeTags: ${syncTags}, projectId: ${projectId}`);
+
+            // Use the appropriate sync method based on selected type
+            const result = syncType === 'tasks'
+                ? await syncWithTickTick({
+                    resolutionStrategy: conflictResolution,
+                    includeTags: syncTags,
+                    projectId: projectId
+                })
+                : await syncNotesWithTickTick({
+                    resolutionStrategy: conflictResolution,
+                    includeTags: syncTags,
+                    projectId: projectId
+                });
+
+            console.log(`${syncType} sync completed successfully:`, result);
             setLastSynced(result.lastSynced);
-            localStorage.setItem('ticktick_last_synced', result.lastSynced);
+
+            // Use type-specific localStorage key
+            const prefix = syncType === 'tasks' ? 'ticktick_' : 'ticktick_notes_';
+            localStorage.setItem(`${prefix}last_synced`, result.lastSynced);
+
             await loadSyncStatus(); // Refresh counts
             onSyncComplete(result);
         } catch (error) {
-            console.error("Error syncing tasks:", error);
-            const errorMessage = error instanceof Error ? error.message : "Failed to sync tasks. Please try again.";
+            console.error(`Error syncing ${syncType}:`, error);
+            const errorMessage = error instanceof Error ? error.message : `Failed to sync ${syncType}. Please try again.`;
             setSyncError(errorMessage);
             if (error instanceof Error) {
                 onSyncError(error);
@@ -151,19 +205,41 @@ export function IntegrationsSettingsSection({
     };
 
     const handleResetSync = async () => {
-        if (confirm("Are you sure you want to reset all sync data? This will not delete any tasks but will remove all mappings between Second Brain and TickTick.")) {
+        if (confirm(`Are you sure you want to reset all ${syncType} sync data? This will not delete any ${syncType} but will remove all mappings between Second Brain and TickTick.`)) {
             try {
-                await resetSyncData();
+                // Use the appropriate reset method based on selected type
+                await (syncType === 'tasks'
+                    ? resetSyncData()
+                    : resetNoteSyncData());
+
                 setSyncStats({ local: syncStats.local, tickTick: 0, mapped: 0 });
                 setLastSynced(null);
-                localStorage.removeItem('ticktick_last_synced');
-                alert("Sync data reset successfully.");
+
+                // Use type-specific localStorage keys for removal
+                const prefix = syncType === 'tasks' ? 'ticktick_' : 'ticktick_notes_';
+                localStorage.removeItem(`${prefix}last_synced`);
+
+                alert(`${syncType.charAt(0).toUpperCase() + syncType.slice(1)} sync data reset successfully.`);
             } catch (error) {
-                console.error("Error resetting sync data:", error);
+                console.error(`Error resetting ${syncType} sync data:`, error);
                 alert("Failed to reset sync data.");
             }
         }
     };
+
+    const handleProjectIdChange = async (newProjectId: string) => {
+        setProjectId(newProjectId);
+        if (syncType === 'tasks' && updateTickTickProjectId) {
+            await updateTickTickProjectId(newProjectId);
+        } else if (syncType === 'notes' && updateTickTickNotesProjectId) {
+            await updateTickTickNotesProjectId(newProjectId);
+        }
+    };
+
+    // When sync type changes, update project ID and refresh sync status
+    useEffect(() => {
+        loadSyncStatus();
+    }, [syncType, loadSyncStatus]);
 
     // --- Style Definitions (Copied from SettingsPage) --- 
     const getContainerBackground = () => {
@@ -210,6 +286,23 @@ export function IntegrationsSettingsSection({
     text-sm font-medium
     border-[0.5px] border-white/10
   `;
+
+    const segmentedButtonClasses = `
+    flex divide-x divide-white/10 rounded-lg overflow-hidden
+    ${getContainerBackground()}
+    border-[0.5px] border-white/10
+    text-[var(--color-textSecondary)]
+    font-medium
+    `;
+
+    const segmentedButtonItemClasses = (isActive: boolean) => `
+    flex items-center gap-2 px-4 py-2
+    ${isActive
+            ? 'bg-[var(--color-accent)]/10 text-[var(--color-accent)]'
+            : 'hover:bg-[var(--color-surfaceHover)]'
+        }
+    transition-all duration-200
+    `;
     // --- End Style Definitions --- 
 
     return (
@@ -228,7 +321,7 @@ export function IntegrationsSettingsSection({
                         <div>
                             <p className="font-medium text-[var(--color-text)]">TickTick</p>
                             <p className="text-xs text-[var(--color-textSecondary)]">
-                                {isTickTickConnectedUI ? "Connected" : "Sync tasks with your TickTick account"}
+                                {isTickTickConnectedUI ? "Connected" : "Sync tasks and notes with your TickTick account"}
                             </p>
                         </div>
                     </div>
@@ -263,22 +356,55 @@ export function IntegrationsSettingsSection({
                             )}
                         </div>
 
+                        <div className="mb-4">
+                            <label className="text-xs font-medium text-[var(--color-textSecondary)] mb-2 block">
+                                Sync Type
+                            </label>
+                            <div className={segmentedButtonClasses}>
+                                <button
+                                    className={segmentedButtonItemClasses(syncType === 'tasks')}
+                                    onClick={() => setSyncType('tasks')}
+                                >
+                                    <CheckSquare className="w-4 h-4" />
+                                    Tasks
+                                </button>
+                                <button
+                                    className={segmentedButtonItemClasses(syncType === 'notes')}
+                                    onClick={() => setSyncType('notes')}
+                                >
+                                    <NotebookPen className="w-4 h-4" />
+                                    Notes
+                                </button>
+                            </div>
+                        </div>
+
                         <div className="mb-4 grid grid-cols-3 gap-3">
                             <div className="p-2 bg-[var(--color-surface)]/50 rounded-lg border border-[var(--color-border)]">
-                                <div className="text-[10px] text-[var(--color-textSecondary)]">Local Tasks</div>
+                                <div className="text-[10px] text-[var(--color-textSecondary)]">Local {syncType}</div>
                                 <div className="text-lg font-semibold text-[var(--color-text)]">{syncStats.local}</div>
                             </div>
                             <div className="p-2 bg-[var(--color-surface)]/50 rounded-lg border border-[var(--color-border)]">
-                                <div className="text-sm text-[var(--color-textSecondary)]">TickTick Tasks</div>
+                                <div className="text-[10px] text-[var(--color-textSecondary)]">TickTick {syncType}</div>
                                 <div className="text-lg font-semibold text-[var(--color-text)]">{syncStats.tickTick}</div>
                             </div>
                             <div className="p-2 bg-[var(--color-surface)]/50 rounded-lg border border-[var(--color-border)]">
-                                <div className="text-[10px] text-[var(--color-textSecondary)]">Synced Tasks</div>
+                                <div className="text-[10px] text-[var(--color-textSecondary)]">Synced {syncType}</div>
                                 <div className="text-lg font-semibold text-[var(--color-text)]">{syncStats.mapped}</div>
                             </div>
                         </div>
 
                         <div className="space-y-4">
+                            <div className="flex flex-col gap-2">
+                                <label className="text-xs font-medium text-[var(--color-textSecondary)]">Project ID</label>
+                                <input
+                                    type="text"
+                                    value={projectId}
+                                    onChange={(e) => handleProjectIdChange(e.target.value)}
+                                    placeholder={`Enter TickTick ${syncType} project ID`}
+                                    className={`px-3 py-2 rounded-lg text-sm ${getContainerBackground()} border-[0.5px] border-white/10 text-[var(--color-text)] hover:bg-[var(--color-surfaceHover)] transition-all duration-200`}
+                                />
+                            </div>
+
                             <div className="flex flex-col gap-2">
                                 <label className="text-xs font-medium text-[var(--color-textSecondary)]">Sync Frequency</label>
                                 <select
@@ -334,7 +460,7 @@ export function IntegrationsSettingsSection({
                             <div className="pt-4 flex justify-between items-center border-t border-white/10">
                                 <div>
                                     <p className="text-xs font-medium text-[var(--color-text)]">Last synced: {formatLastSynced()}</p>
-                                    <p className="text-xs text-[var(--color-textSecondary)]">Sync to update tasks between platforms</p>
+                                    <p className="text-xs text-[var(--color-textSecondary)]">Sync to update {syncType} between platforms</p>
                                 </div>
                                 <button
                                     type="button"

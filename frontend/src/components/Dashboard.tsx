@@ -29,8 +29,8 @@ export function Dashboard() {
 
   const isLoading = notesLoading || tasksLoading || remindersLoading;
 
-  // Check if current path is profile to hide WelcomeBar
-  const isProfilePage = location.pathname.includes('/profile');
+  // Check if current path is profile or chat to hide WelcomeBar
+  const shouldHideWelcomeBar = location.pathname.includes('/profile') || location.pathname.includes('/chat');
 
   if (isLoading) {
     return <LoadingScreen />;
@@ -61,7 +61,7 @@ export function Dashboard() {
         {/* Scrollable Content */}
         <main className="flex-1 overflow-y-auto overflow-x-hidden pt-20 relative">
           <div className={`max-w-[1920px] mx-auto transition-all duration-300 ${isSidebarOpen ? 'px-4 sm:px-6 lg:px-12' : 'px-6 sm:px-12 lg:px-16'} py-8`}>
-            {!isProfilePage && <WelcomeBar />}
+            {!shouldHideWelcomeBar && <WelcomeBar />}
             <Suspense fallback={<div className="flex justify-center items-center h-64"><LoadingScreen message="Loading content..." /></div>}>
               <DashboardRoutes />
             </Suspense>

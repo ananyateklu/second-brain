@@ -397,7 +397,8 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
       // The backend will handle the 'from-ticktick' logic implicitly.
       const syncConfig = {
         ...config,
-        projectId: tickTickProjectId
+        projectId: tickTickProjectId,
+        syncType: 'tasks' as const // Explicitly set syncType with const assertion
       };
 
       console.log("Starting sync with config:", JSON.stringify(syncConfig));
@@ -440,7 +441,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
   }, [user, isTickTickConnected, tickTickProjectId, fetchTasks, fetchTickTickTasks]);
 
   // Get sync status
-  const getSyncStatus = useCallback(async () => {
+  const getSyncStatus = useCallback(async (projectId?: string) => {
     if (!user || !isTickTickConnected) {
       return {
         lastSynced: null,
@@ -449,8 +450,9 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      // Pass the current tickTickProjectId to the service call
-      return await integrationsService.getTickTickSyncStatus(tickTickProjectId);
+      // Pass the current tickTickProjectId to the service call and sync type
+      const effectiveProjectId = projectId || tickTickProjectId;
+      return await integrationsService.getTickTickSyncStatus(effectiveProjectId, 'tasks' as const);
     } catch (error) {
       console.error("Error getting sync status:", error);
       return {

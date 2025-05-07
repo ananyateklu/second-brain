@@ -42,12 +42,18 @@ export function CopyButton({ content, isUser }: CopyButtonProps) {
     if (theme === 'midnight') {
       return 'bg-gray-900/60 hover:bg-gray-900/80';
     }
-    return 'bg-white/50 dark:bg-gray-800/50 hover:bg-white/70 dark:hover:bg-gray-800/70';
+    if (theme === 'full-dark') {
+      return 'bg-zinc-900/60 hover:bg-zinc-800/80 text-zinc-200';
+    }
+    return 'bg-white/50 dark:bg-gray-800/50 hover:bg-white/70 dark:hover:bg-gray-800/70 text-gray-700 dark:text-gray-300';
   };
 
   const getButtonBorder = () => {
     if (theme === 'midnight') {
       return 'border-gray-800/30';
+    }
+    if (theme === 'full-dark') {
+      return 'border-zinc-700/50';
     }
     return 'border-gray-200/30 dark:border-gray-700/30';
   };

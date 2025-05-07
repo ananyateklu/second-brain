@@ -10,6 +10,7 @@ import { AISettings } from '../../../types/ai';
 import { cardVariants } from '../../../utils/welcomeBarUtils';
 import { integrationsService, SyncResult } from '../../../services/api/integrations.service';
 import { useTasks } from '../../../contexts/tasksContextUtils';
+import { useNotes } from '../../../contexts/notesContextUtils';
 
 // Lazy load section components
 const AISettingsSection = lazy(() => import('./AISettingsSection').then(module => ({ default: module.AISettingsSection })));
@@ -36,8 +37,17 @@ export function SettingsPage() {
     getSyncStatus,
     resetSyncData,
     isSyncing,
-    syncError: tasksSyncError
+    syncError: tasksSyncError,
+    tickTickProjectId,
+    updateTickTickProjectId
   } = useTasks();
+
+  const {
+    isTickTickConnected: notesTickTickConnected,
+    tickTickProjectId: tickTickNotesProjectId,
+    updateTickTickProjectId: updateTickTickNotesProjectId,
+    getSyncStatus: getNoteSyncStatus
+  } = useNotes();
 
   const [activeTab, setActiveTab] = useState<SettingsTabs>(() => {
     const savedTab = localStorage.getItem('settings_active_tab') as SettingsTabs | null;
@@ -59,9 +69,6 @@ export function SettingsPage() {
   useEffect(() => {
     setIsTickTickConnectedUI(isTickTickConnected);
   }, [isTickTickConnected]);
-
-  // Define a constant for the TickTick project ID
-  const tickTickProjectId = '680d480e99b2d107415feee4'; // 'Second Brain' project ID
 
   // State for the sync result modal
   const [showSyncResultModal, setShowSyncResultModal] = useState(false);
@@ -282,15 +289,19 @@ export function SettingsPage() {
           isSyncing={isSyncing}
           tasksSyncError={tasksSyncError}
           tickTickProjectId={tickTickProjectId}
+          tickTickNotesProjectId={tickTickNotesProjectId}
           onSyncComplete={handleSyncComplete}
           onSyncError={handleSyncError}
+          updateTickTickProjectId={updateTickTickProjectId}
+          updateTickTickNotesProjectId={updateTickTickNotesProjectId}
+          getNoteSyncStatus={getNoteSyncStatus}
         />
       </Suspense>
     ),
   };
 
   // Log the state value just before rendering
-  console.log('[SettingsPage Render] isTickTickConnectedUI:', isTickTickConnectedUI, 'Context:', isTickTickConnected);
+  console.log('[SettingsPage Render] isTickTickConnectedUI:', isTickTickConnectedUI, 'Context:', isTickTickConnected, 'Notes Connected:', notesTickTickConnected);
 
   return (
     <div className="min-h-screen overflow-visible bg-fixed">
