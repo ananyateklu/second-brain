@@ -177,7 +177,7 @@ export function DataManagementSettingsSection() {
                         // Add page number for better organization
                         fullText += `Page ${i}:\n${pageText}\n\n`;
                     } catch (pageError) {
-                        console.error(`Error processing page ${i}:`, pageError);
+                        console.error("Error processing page %s:", i, pageError);
                         // Continue with next page if one fails
                         fullText += `[Error reading page ${i}]\n\n`;
                     }
