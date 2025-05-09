@@ -21,6 +21,7 @@ import 'prismjs/components/prism-scala';
 import 'prismjs/components/prism-r';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../../../../contexts/themeContextUtils';
+import DOMPurify from 'dompurify';
 
 interface CodeBlockProps {
   code: string;
@@ -53,6 +54,8 @@ export function CodeBlock({ code, language, themeColor }: CodeBlockProps) {
     Prism.languages[language] || Prism.languages.text,
     language
   );
+
+  const cleanHighlightedCode = DOMPurify.sanitize(highlightedCode, { USE_PROFILES: { html: true } });
 
   // Check if theme is midnight or full-dark for border styling
   const isMinimalistTheme = theme === 'midnight' || theme === 'full-dark';
@@ -137,7 +140,7 @@ export function CodeBlock({ code, language, themeColor }: CodeBlockProps) {
                 : 'bg-gray-900/50'}`}>
           <code
             className={`language-${language} font-mono`}
-            dangerouslySetInnerHTML={{ __html: highlightedCode }}
+            dangerouslySetInnerHTML={{ __html: cleanHighlightedCode }}
           />
         </pre>
       </div>

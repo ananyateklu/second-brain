@@ -55,7 +55,7 @@ class OllamaAgent(BaseAgent):
             
         # Try host.docker.internal for Docker environments
         try:
-            docker_url = "http://host.docker.internal:11434"
+            docker_url = "https://host.docker.internal:11434"
             response = requests.get(f"{docker_url}/api/version", timeout=2)
             if response.status_code == 200:
                 logger.info("Found Ollama running on Docker host")
@@ -81,7 +81,6 @@ class OllamaAgent(BaseAgent):
         
         # Create adapter with retry strategy
         adapter = HTTPAdapter(max_retries=retries)
-        session.mount("http://", adapter)
         session.mount("https://", adapter)
         
         return session

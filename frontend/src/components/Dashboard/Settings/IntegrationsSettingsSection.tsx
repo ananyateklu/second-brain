@@ -127,7 +127,7 @@ export function IntegrationsSettingsSection({
             }
             setSyncStats(status.taskCount);
         } catch (error) {
-            console.error(`Error loading ${syncType} sync status:`, error);
+            console.error("Error loading %s sync status:", syncType, error);
             // Use the correct localStorage key for fallback
             const prefix = syncType === 'tasks' ? 'ticktick_' : 'ticktick_notes_';
             const storedLastSynced = localStorage.getItem(`${prefix}last_synced`);
@@ -183,7 +183,7 @@ export function IntegrationsSettingsSection({
                     projectId: projectId
                 });
 
-            console.log(`${syncType} sync completed successfully:`, result);
+            console.log("%s sync completed successfully:", syncType, result);
             setLastSynced(result.lastSynced);
 
             // Use type-specific localStorage key
@@ -193,7 +193,7 @@ export function IntegrationsSettingsSection({
             await loadSyncStatus(); // Refresh counts
             onSyncComplete(result);
         } catch (error) {
-            console.error(`Error syncing ${syncType}:`, error);
+            console.error("Error syncing %s:", syncType, error);
             const errorMessage = error instanceof Error ? error.message : `Failed to sync ${syncType}. Please try again.`;
             setSyncError(errorMessage);
             if (error instanceof Error) {
@@ -221,7 +221,7 @@ export function IntegrationsSettingsSection({
 
                 alert(`${syncType.charAt(0).toUpperCase() + syncType.slice(1)} sync data reset successfully.`);
             } catch (error) {
-                console.error(`Error resetting ${syncType} sync data:`, error);
+                console.error("Error resetting %s sync data:", syncType, error);
                 alert("Failed to reset sync data.");
             }
         }
