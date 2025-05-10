@@ -13,6 +13,7 @@ CREATE TABLE [dbo].[Notes] (
     [IsIdea]     BIT            DEFAULT ((0)) NOT NULL,
     [IsDeleted]  BIT            DEFAULT ((0)) NOT NULL,
     [DeletedAt]  DATETIME2 (7)  NULL,
+    [Metadata]   NVARCHAR (MAX) NULL,
     CONSTRAINT [PK_Notes] PRIMARY KEY CLUSTERED ([Id] ASC),
     CONSTRAINT [FK_Notes_Users_UserId] FOREIGN KEY ([UserId]) REFERENCES [dbo].[Users] ([Id]) ON DELETE CASCADE
 );

@@ -7,6 +7,7 @@ CREATE TABLE [dbo].[ReminderLinks] (
     [Description]  NVARCHAR (MAX) NULL,
     [IsDeleted]    BIT            DEFAULT ((0)) NOT NULL,
     [DeletedAt]    DATETIME2 (7)  NULL,
+    [NoteId]       NVARCHAR (36)  NULL,
     
     CONSTRAINT [PK_ReminderLinks] PRIMARY KEY CLUSTERED ([ReminderId] ASC, [LinkedItemId] ASC),
     CONSTRAINT [FK_ReminderLinks_Reminders] FOREIGN KEY ([ReminderId]) REFERENCES [dbo].[Reminders] ([Id]) ON DELETE CASCADE,
