@@ -41,7 +41,6 @@ namespace SecondBrain.Api.DTOs.Notes
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public DateTime? ArchivedAt { get; set; }
-        public bool IsIdea { get; set; }
         public List<string> LinkedNoteIds { get; set; } = new List<string>();
         public List<NoteLinkDto> Links { get; set; } = new List<NoteLinkDto>();
         public List<LinkedTaskDto> LinkedTasks { get; set; } = new List<LinkedTaskDto>();
@@ -72,7 +71,6 @@ namespace SecondBrain.Api.DTOs.Notes
                 CreatedAt = note.CreatedAt,
                 UpdatedAt = note.UpdatedAt,
                 ArchivedAt = note.ArchivedAt,
-                IsIdea = note.IsIdea,
                 LinkedNoteIds = note.NoteLinks
                     .Where(nl => !nl.IsDeleted)
                     .Select(nl => nl.LinkedNoteId)

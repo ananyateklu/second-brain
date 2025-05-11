@@ -103,7 +103,6 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
           ...note,
           isArchived: false,
           isDeleted: false,
-          isIdea: note.isIdea || false,
           linkedNoteIds: note.linkedNoteIds || [],
           linkedNotes: note.linkedNotes || [],
           linkedTasks: note.linkedTasks || [],
@@ -249,7 +248,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
   });
 
   const logActivityError = (error: unknown, context: string) => {
-    console.error(`Failed to add activity: ${context}`, error);
+    console.error('Failed to add activity:', context, error);
   };
 
   const createNoteActivity = useCallback(async (note: Note) => {
@@ -258,10 +257,10 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     try {
       await createActivity({
         actionType: 'create',
-        itemType: note.isIdea ? 'idea' : 'note',
+        itemType: 'note',
         itemId: note.id,
         itemTitle: note.title,
-        description: `Created ${note.isIdea ? 'idea' : 'note'}: ${note.title}`,
+        description: `Created note: ${note.title}`,
         metadata: { tags: note.tags }
       });
     } catch (error) {
@@ -275,10 +274,10 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     try {
       await createActivity({
         actionType: 'edit',
-        itemType: note.isIdea ? 'idea' : 'note',
+        itemType: 'note',
         itemId: note.id,
         itemTitle: note.title,
-        description: `Updated ${note.isIdea ? 'idea' : 'note'}: ${note.title}`,
+        description: `Updated note: ${note.title}`,
         metadata: { ...updates }
       });
     } catch (error) {
@@ -373,7 +372,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
       // Move to trash
       await moveToTrash({
         id: noteToDelete.id,
-        type: noteToDelete.tags.includes('idea') ? 'idea' : 'note',
+        type: 'note',
         title: noteToDelete.title,
         content: noteToDelete.content,
         metadata: {
@@ -385,10 +384,10 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
 
       createActivity({
         actionType: 'delete',
-        itemType: noteToDelete.tags.includes('idea') ? 'idea' : 'note',
+        itemType: 'note',
         itemId: id,
         itemTitle: noteToDelete.title,
-        description: `Moved ${noteToDelete.tags.includes('idea') ? 'idea' : 'note'} to trash: ${noteToDelete.title}`,
+        description: `Moved note to trash: ${noteToDelete.title}`,
         metadata: {
           noteId: id,
           noteTitle: noteToDelete.title,
@@ -422,10 +421,10 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
 
       createActivity({
         actionType: 'update',
-        itemType: note.isIdea ? 'idea' : 'note',
+        itemType: 'note',
         itemId: id,
         itemTitle: note.title,
-        description: `${note.isPinned ? 'Unpinned' : 'Pinned'} ${note.isIdea ? 'idea' : 'note'}: ${note.title}`,
+        description: `${note.isPinned ? 'Unpinned' : 'Pinned'} note: ${note.title}`,
         metadata: {
           isPinned: !note.isPinned
         }
@@ -450,7 +449,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
 
       createActivity({
         actionType: 'update',
-        itemType: note.isIdea ? 'idea' : 'note',
+        itemType: 'note',
         itemId: id,
         itemTitle: note.title,
         description: `${note.isFavorite ? 'Removed from' : 'Added to'} favorites: ${note.title}`,
@@ -479,10 +478,10 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
 
       createActivity({
         actionType: 'archive',
-        itemType: noteToArchive.tags.includes('idea') ? 'idea' : 'note',
+        itemType: 'note',
         itemId: id,
         itemTitle: noteToArchive.title,
-        description: `Archived ${noteToArchive.tags.includes('idea') ? 'idea' : 'note'}: ${noteToArchive.title}`,
+        description: `Archived note: ${noteToArchive.title}`,
         metadata: {
           isArchived: true,
           archivedAt: new Date().toISOString()
@@ -506,7 +505,6 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
         ...noteToUnarchive,
         ...updatedNote,
         isArchived: false,
-        isIdea: noteToUnarchive.isIdea || false
       };
 
       // Update both states atomically
@@ -516,10 +514,10 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
       // Add activity logging for unarchiving
       createActivity({
         actionType: 'restore',
-        itemType: restoredNote.tags.includes('idea') ? 'idea' : 'note',
+        itemType: 'note',
         itemId: restoredNote.id,
         itemTitle: restoredNote.title,
-        description: `Restored ${restoredNote.tags.includes('idea') ? 'idea' : 'note'} from archive: ${restoredNote.title}`,
+        description: `Restored note from archive: ${restoredNote.title}`,
         metadata: {
           tags: restoredNote.tags,
           restoredAt: new Date().toISOString()
@@ -546,7 +544,6 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
             return {
               ...note,
               ...sourceNote,
-              isIdea: sourceNote.isIdea,
               linkedNoteIds: sourceNote.linkedNoteIds,
               links: sourceNote.links || [],
               linkedNotes: sourceNote.linkedNotes || []
@@ -557,7 +554,6 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
             return {
               ...note,
               ...targetNote,
-              isIdea: targetNote.isIdea,
               linkedNoteIds: targetNote.linkedNoteIds,
               links: targetNote.links || [],
               linkedNotes: targetNote.linkedNotes || []
@@ -604,7 +600,6 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
             return {
               ...note,
               ...sourceNote,
-              isIdea: sourceNote.isIdea,
               linkedNoteIds: sourceNote.linkedNoteIds,
               links: sourceNote.links || [],
               linkedNotes: sourceNote.linkedNotes || []
@@ -615,7 +610,6 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
             return {
               ...note,
               ...targetNote,
-              isIdea: targetNote.isIdea,
               linkedNoteIds: targetNote.linkedNoteIds,
               links: targetNote.links || [],
               linkedNotes: targetNote.linkedNotes || []
@@ -705,39 +699,14 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
   }, [fetchNotes, notes]);
 
   const createBulkRestoreActivity = useCallback((restoredNotes: Note[], totalResults: number) => {
-    const getRestoreDescription = (noteCount: number, ideaCount: number) => {
-      if (noteCount > 0 && ideaCount > 0) {
-        return `Restored ${noteCount} note${noteCount > 1 ? 's' : ''} and ${ideaCount} idea${ideaCount > 1 ? 's' : ''} from archive`;
-      }
-      if (noteCount > 0) {
-        return `Restored ${noteCount} note${noteCount > 1 ? 's' : ''} from archive`;
-      }
-      return `Restored ${ideaCount} idea${ideaCount > 1 ? 's' : ''} from archive`;
-    };
-
-    const getRestoreTitle = (noteCount: number, ideaCount: number) => {
-      if (noteCount > 0 && ideaCount > 0) {
-        return `${noteCount} notes and ${ideaCount} ideas`;
-      }
-      if (noteCount > 0) {
-        return `${noteCount} notes`;
-      }
-      return `${ideaCount} ideas`;
-    };
-
-    const noteCount = restoredNotes.filter(note => !note.tags.includes('idea')).length;
-    const ideaCount = restoredNotes.filter(note => note.tags.includes('idea')).length;
-
     createActivity({
       actionType: 'restore_multiple',
       itemType: 'notes',
       itemId: 'bulk',
-      itemTitle: getRestoreTitle(noteCount, ideaCount),
-      description: getRestoreDescription(noteCount, ideaCount),
+      itemTitle: `${restoredNotes.length} notes`,
+      description: `Restored ${restoredNotes.length} notes from archive`,
       metadata: {
         totalNotes: totalResults,
-        noteCount,
-        ideaCount,
         successfulRestores: restoredNotes.length,
         failedRestores: totalResults - restoredNotes.length,
         restoredNoteIds: restoredNotes.map(note => note.id),
@@ -875,10 +844,10 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
       // Create activity
       createActivity({
         actionType: 'create',
-        itemType: duplicatedNote.isIdea ? 'idea' : 'note',
+        itemType: 'note',
         itemId: duplicatedNote.id,
         itemTitle: duplicatedNote.title,
-        description: `Duplicated ${duplicatedNote.isIdea ? 'idea' : 'note'}: ${duplicatedNote.title}`,
+        description: `Duplicated note: ${duplicatedNote.title}`,
         metadata: { tags: duplicatedNote.tags }
       });
 
@@ -904,10 +873,10 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
       for (const note of duplicatedNotes) {
         createActivity({
           actionType: 'create',
-          itemType: note.isIdea ? 'idea' : 'note',
+          itemType: 'note',
           itemId: note.id,
           itemTitle: note.title,
-          description: `Duplicated ${note.isIdea ? 'idea' : 'note'}: ${note.title}`,
+          description: `Duplicated note: ${note.title}`,
           metadata: { tags: note.tags }
         });
       }

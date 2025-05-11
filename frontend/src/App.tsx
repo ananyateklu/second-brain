@@ -3,6 +3,7 @@ import { lazy, Suspense } from 'react';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { NotesWithRemindersProvider } from './contexts/NotesContext';
+import { IdeasProvider } from './contexts/IdeasContext';
 import { TasksProvider } from './contexts/TasksContext';
 import { RemindersProvider } from './contexts/RemindersContext';
 import { ActivityProvider } from './contexts/ActivityContext';
@@ -56,9 +57,11 @@ const FeatureProviders = ({ children }: { children: React.ReactNode }) => (
               <RemindersProvider>
                 <NotesWithRemindersProvider>
                   <TasksProvider>
-                    <DashboardProvider>
-                      {children}
-                    </DashboardProvider>
+                    <IdeasProvider>
+                      <DashboardProvider>
+                        {children}
+                      </DashboardProvider>
+                    </IdeasProvider>
                   </TasksProvider>
                 </NotesWithRemindersProvider>
               </RemindersProvider>

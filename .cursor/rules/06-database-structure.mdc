@@ -1,11 +1,11 @@
 ---
 description: Guidelines and patterns for the database structure and entity relationships
-globs: **/*.cs, **/*Context*.cs, **/*Entity*.cs, **/Entities/**/*.cs, **/Migrations/**/*.cs, **/Models/**/*.cs
+globs: **/*.cs, **/*Context*.cs, **/*Entity*.cs, **/Entities/**/*.cs, **/Migrations/**/*.cs, **/Models/**/*.cs,*.sql
+alwaysApply: false
 ---
-
 # Database Structure
 
-Second Brain uses Entity Framework Core with SQL Server as its database backend. The database schema is defined using code-first approach with entity configurations and migrations managed by EF Core.
+Second Brain uses Entity Framework Core with SQL Server as its database backend. The database schema is defined using code-first approach with entity configurations and migrations managed by EF Core, and is also maintained as SQL scripts in the database project.
 
 ## Database Context
 
@@ -16,22 +16,26 @@ public class DataContext : DbContext
 {
     public DataContext(DbContextOptions<DataContext> options) : base(options) { }
     
-    public DbSet<User> Users { get; set; }
-    public DbSet<Note> Notes { get; set; }
-    public DbSet<Idea> Ideas { get; set; }
-    public DbSet<TaskItem> Tasks { get; set; }
-    public DbSet<Reminder> Reminders { get; set; }
-    public DbSet<Tag> Tags { get; set; }
-    public DbSet<NoteLink> NoteLinks { get; set; }
-    public DbSet<TaskLink> TaskLinks { get; set; }
-    public DbSet<ReminderLink> ReminderLinks { get; set; }
-    public DbSet<Activity> Activities { get; set; }
-    public DbSet<Achievement> Achievements { get; set; }
-    public DbSet<UserAchievement> UserAchievements { get; set; }
-    public DbSet<RefreshToken> RefreshTokens { get; set; }
-    public DbSet<AgentChat> AgentChats { get; set; }
-    public DbSet<AgentMessage> AgentMessages { get; set; }
-    public DbSet<NexusStorage> NexusStorage { get; set; }
+    public DbSet<User> Users { get; set; } = null!;
+    public DbSet<Note> Notes { get; set; } = null!;
+    public DbSet<TaskItem> Tasks { get; set; } = null!;
+    public DbSet<TaskLink> TaskLinks { get; set; } = null!;
+    public DbSet<Reminder> Reminders { get; set; } = null!;
+    public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
+    public DbSet<TaskItemNote> TaskItemNotes { get; set; } = null!;
+    public DbSet<Activity> Activities { get; set; } = null!;
+    public DbSet<NoteLink> NoteLinks { get; set; } = null!;
+    public DbSet<Idea> Ideas { get; set; } = null!;
+    public DbSet<IdeaLink> IdeaLinks { get; set; } = null!;
+    public DbSet<Achievement> Achievements { get; set; } = null!;
+    public DbSet<UserAchievement> UserAchievements { get; set; } = null!;
+    public DbSet<ReminderLink> ReminderLinks { get; set; } = null!;
+    public DbSet<AgentChat> AgentChats { get; set; } = null!;
+    public DbSet<AgentMessage> AgentMessages { get; set; } = null!;
+    public DbSet<UserPreference> UserPreferences { get; set; } = null!;
+    public DbSet<XPHistoryItem> XPHistory { get; set; } = null!;
+    public DbSet<UserIntegrationCredential> UserIntegrationCredentials { get; set; } = null!;
+    public DbSet<TaskSyncMapping> TaskSyncMappings { get; set; } = null!;
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -52,15 +56,17 @@ The main entity relationships are structured as follows:
 User
  ├── Notes
  ├── Ideas
- ├── TaskItems
+ ├── Tasks
  ├── Reminders
  ├── Activities
  ├── UserAchievements
- └── RefreshTokens
+ ├── RefreshTokens
+ ├── UserPreferences
+ └── UserIntegrationCredentials
 
 Note
  ├── NoteLinks (bidirectional)
- ├── Tags
+ ├── Tags (stored as string)
  └── TaskItemNotes
 
 Idea
@@ -68,132 +74,115 @@ Idea
 
 TaskItem
  ├── TaskLinks
- ├── TaskItemNotes
- └── TaskItemTags
-
+ └── TaskItemNotes
+ 
 Reminder
  └── ReminderLinks
 
 Achievement
  └── UserAchievements
+
+AgentChat
+ └── AgentMessages
 ```
 
 ## Key Entity Definitions
 
 ### User
 
-```csharp
-public class User
-{
-    public string Id { get; set; } = Guid.NewGuid().ToString();
-    public string Email { get; set; } = string.Empty;
-    public string Username { get; set; } = string.Empty;
-    public string PasswordHash { get; set; } = string.Empty;
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime? UpdatedAt { get; set; }
-    public string? AvatarUrl { get; set; }
-    public int ExperiencePoints { get; set; } = 0;
-    public int Level { get; set; } = 1;
-
-    // Navigation properties
-    public List<RefreshToken> RefreshTokens { get; set; } = new();
-    public List<UserAchievement> UserAchievements { get; set; } = new();
-}
+```sql
+CREATE TABLE [dbo].[Users] (
+    [Id]               NVARCHAR (450) NOT NULL,
+    [Email]            NVARCHAR (450) NOT NULL,
+    [Name]             NVARCHAR (MAX) NOT NULL,
+    [PasswordHash]     NVARCHAR (MAX) NOT NULL,
+    [CreatedAt]        DATETIME2 (7)  NOT NULL,
+    [ExperiencePoints] INT            DEFAULT ((0)) NOT NULL,
+    [Level]            INT            DEFAULT ((1)) NOT NULL,
+    [Avatar]           NVARCHAR (MAX) NULL,
+    CONSTRAINT [PK_Users] PRIMARY KEY CLUSTERED ([Id] ASC)
+);
 ```
 
 ### Note
 
-```csharp
-public class Note
-{
-    public string Id { get; set; } = Guid.NewGuid().ToString();
-    public string Title { get; set; } = string.Empty;
-    public string Content { get; set; } = string.Empty;
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime? UpdatedAt { get; set; }
-    public bool IsPinned { get; set; }
-    public bool IsFavorite { get; set; }
-    public bool IsArchived { get; set; }
-    public bool IsDeleted { get; set; }
-    public DateTime? DeletedAt { get; set; }
-    public string UserId { get; set; } = string.Empty;
-    public User User { get; set; } = null!;
-
-    // Navigation properties
-    public List<NoteLink> SourceLinks { get; set; } = new();
-    public List<NoteLink> TargetLinks { get; set; } = new();
-    public List<Tag> Tags { get; set; } = new();
-    public List<TaskItemNote> TaskNotes { get; set; } = new();
-}
+```sql
+CREATE TABLE [dbo].[Notes] (
+    [Id]         NVARCHAR (36)  NOT NULL,
+    [Title]      NVARCHAR (MAX) NOT NULL,
+    [Content]    NVARCHAR (MAX) NOT NULL,
+    [IsPinned]   BIT            NOT NULL,
+    [IsFavorite] BIT            NOT NULL,
+    [IsArchived] BIT            NOT NULL,
+    [ArchivedAt] DATETIME2 (7)  NULL,
+    [CreatedAt]  DATETIME2 (7)  NOT NULL,
+    [UpdatedAt]  DATETIME2 (7)  NOT NULL,
+    [UserId]     NVARCHAR (450) NOT NULL,
+    [Tags]       NVARCHAR (255) NULL,
+    [IsIdea]     BIT            DEFAULT ((0)) NOT NULL,
+    [IsDeleted]  BIT            DEFAULT ((0)) NOT NULL,
+    [DeletedAt]  DATETIME2 (7)  NULL,
+    [Metadata]   NVARCHAR (MAX) NULL,
+);
 ```
 
 ### TaskItem
 
-```csharp
-public class TaskItem
-{
-    public string Id { get; set; } = Guid.NewGuid().ToString();
-    public string Title { get; set; } = string.Empty;
-    public string? Description { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime? UpdatedAt { get; set; }
-    public DateTime? DueDate { get; set; }
-    public DateTime? CompletedAt { get; set; }
-    public string UserId { get; set; } = string.Empty;
-    public User User { get; set; } = null!;
-    public TaskPriority Priority { get; set; } = TaskPriority.Medium;
-    public TaskStatus Status { get; set; } = TaskStatus.NotStarted;
-    public bool IsDeleted { get; set; }
-    public DateTime? DeletedAt { get; set; }
-
-    // Navigation properties
-    public List<TaskLink> SourceLinks { get; set; } = new();
-    public List<TaskLink> TargetLinks { get; set; } = new();
-    public List<TaskItemNote> TaskNotes { get; set; } = new();
-    public List<TaskItemTag> TaskTags { get; set; } = new();
-}
+```sql
+CREATE TABLE [dbo].[Tasks] (
+    [Id]          NVARCHAR (36)  NOT NULL,
+    [Title]       NVARCHAR (MAX) NOT NULL,
+    [Description] NVARCHAR (MAX) NOT NULL,
+    [Status]      INT            NOT NULL,
+    [Priority]    INT            NOT NULL,
+    [DueDate]     DATETIME2 (7)  NULL,
+    [CreatedAt]   DATETIME2 (7)  NOT NULL,
+    [UpdatedAt]   DATETIME2 (7)  NOT NULL,
+    [UserId]      NVARCHAR (450) NOT NULL,
+    [Tags]        NVARCHAR (MAX) NULL,
+    [IsDeleted]   BIT            DEFAULT ((0)) NOT NULL,
+    [DeletedAt]   DATETIME2 (7)  NULL,
+);
 ```
 
 ### Reminder
 
-```csharp
-public class Reminder
-{
-    public string Id { get; set; } = Guid.NewGuid().ToString();
-    public string Title { get; set; } = string.Empty;
-    public string? Description { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime? UpdatedAt { get; set; }
-    public DateTime ReminderDate { get; set; }
-    public bool IsCompleted { get; set; }
-    public DateTime? CompletedAt { get; set; }
-    public ReminderPriority Priority { get; set; } = ReminderPriority.Medium;
-    public ReminderRepeatType RepeatType { get; set; } = ReminderRepeatType.None;
-    public string UserId { get; set; } = string.Empty;
-    public User User { get; set; } = null!;
-    public bool IsDeleted { get; set; }
-    public DateTime? DeletedAt { get; set; }
-
-    // Navigation properties
-    public List<ReminderLink> Links { get; set; } = new();
-}
+```sql
+CREATE TABLE [dbo].[Reminders] (
+    [Id]                  NVARCHAR (450) NOT NULL,
+    [Title]               NVARCHAR (MAX) NOT NULL,
+    [Description]         NVARCHAR (MAX) NOT NULL,
+    [DueDateTime]         DATETIME2 (7)  NOT NULL,
+    [RepeatInterval]      INT            NULL,
+    [CustomRepeatPattern] NVARCHAR (MAX) NULL,
+    [IsSnoozed]           BIT            NOT NULL,
+    [SnoozeUntil]         DATETIME2 (7)  NULL,
+    [IsCompleted]         BIT            NOT NULL,
+    [CompletedAt]         DATETIME2 (7)  NULL,
+    [CreatedAt]           DATETIME2 (7)  NOT NULL,
+    [UpdatedAt]           DATETIME2 (7)  NOT NULL,
+    [UserId]              NVARCHAR (450) NOT NULL,
+    [Tags]                VARCHAR (255)  NULL,
+    [IsDeleted]           BIT            DEFAULT ((0)) NOT NULL,
+    [DeletedAt]           DATETIME2 (7)  NULL,
+);
 ```
 
 ## Bidirectional Linking
 
 The application implements bidirectional linking between entities (especially Notes) using redundant storage:
 
-```csharp
-// NoteLink entity
-public class NoteLink
-{
-    public string Id { get; set; } = Guid.NewGuid().ToString();
-    public string SourceNoteId { get; set; } = string.Empty;
-    public Note SourceNote { get; set; } = null!;
-    public string TargetNoteId { get; set; } = string.Empty;
-    public Note TargetNote { get; set; } = null!;
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-}
+```sql
+CREATE TABLE [dbo].[NoteLinks] (
+    [NoteId]       NVARCHAR (36) NOT NULL,
+    [LinkedNoteId] NVARCHAR (36) NOT NULL,
+    [IsDeleted]    BIT           DEFAULT ((0)) NOT NULL,
+    [CreatedAt]    DATETIME2 (7)  NOT NULL DEFAULT (sysutcdatetime()),
+    [CreatedBy]    NVARCHAR (450) NULL,
+    [DeletedAt]    DATETIME2 (7)  NULL,
+    [LinkType]     NVARCHAR (50)  NULL,
+    PRIMARY KEY CLUSTERED ([NoteId] ASC, [LinkedNoteId] ASC),
+);
 ```
 
 When two notes are linked, both directions are stored:
@@ -219,47 +208,81 @@ _context.NoteLinks.RemoveRange(links);
 await _context.SaveChangesAsync();
 ```
 
+## TaskLinks Implementation
+
+Task links can connect tasks to other items like notes and ideas:
+
+```sql
+CREATE TABLE [dbo].[TaskLinks] (
+    [TaskId]       NVARCHAR (36)  NOT NULL,
+    [LinkedItemId] NVARCHAR (36)  NOT NULL,
+    [CreatedAt]    DATETIME2 (7)  NOT NULL,
+    [CreatedBy]    NVARCHAR (450) NOT NULL,
+    [LinkType]     NVARCHAR (50)  NOT NULL,  -- 'note' or 'idea'
+    [Description]  NVARCHAR (MAX) NULL,
+    [IsDeleted]    BIT            DEFAULT ((0)) NOT NULL,
+    [DeletedAt]    DATETIME2 (7)  NULL,
+    
+    CONSTRAINT [PK_TaskLinks] PRIMARY KEY CLUSTERED ([TaskId] ASC, [LinkedItemId] ASC),
+);
+```
+
 ## Entity Configurations
 
 Entity configurations are defined in the `DataContext.OnModelCreating` method:
 
 ```csharp
+// Configure User entity
+modelBuilder.Entity<User>(entity =>
+{
+    entity.HasKey(u => u.Id);
+
+    // Configure Level with a default value of 1
+    entity.Property(u => u.Level)
+        .HasDefaultValue(1)
+        .ValueGeneratedOnAddOrUpdate()
+        .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
+
+    entity.Property(u => u.ExperiencePoints)
+        .HasDefaultValue(0)
+        .IsConcurrencyToken();
+
+    entity.HasIndex(u => u.Email)
+        .IsUnique();
+});
+
 // Note entity configuration
 modelBuilder.Entity<Note>(entity =>
 {
-    entity.HasKey(e => e.Id);
-    
-    entity.Property(e => e.Title)
-        .IsRequired()
-        .HasMaxLength(200);
-    
-    entity.Property(e => e.Content)
-        .IsRequired();
-    
-    entity.HasOne(e => e.User)
-        .WithMany()
-        .HasForeignKey(e => e.UserId)
-        .OnDelete(DeleteBehavior.Cascade);
-    
-    // Tag relationships
-    entity.HasMany(e => e.Tags)
-        .WithMany(e => e.Notes)
-        .UsingEntity(j => j.ToTable("NoteTags"));
-    
-    // Soft delete filter
-    entity.HasQueryFilter(e => !e.IsDeleted);
+    entity.Property(e => e.Id)
+        .HasMaxLength(36);  // Ensure consistent length
 });
+
+// Configure composite key for NoteLink
+modelBuilder.Entity<NoteLink>()
+    .HasKey(nl => new { nl.NoteId, nl.LinkedNoteId });
+
+// Configure relationships for NoteId
+modelBuilder.Entity<NoteLink>()
+    .HasOne(nl => nl.Note)
+    .WithMany(n => n.NoteLinks)
+    .HasForeignKey(nl => nl.NoteId)
+    .OnDelete(DeleteBehavior.Restrict);
 ```
 
 ## Soft Delete Pattern
 
 Many entities implement a soft delete pattern:
 
-```csharp
-// Entity with soft delete
-public bool IsDeleted { get; set; }
-public DateTime? DeletedAt { get; set; }
+```sql
+-- Field added to entities for soft delete
+[IsDeleted]  BIT            DEFAULT ((0)) NOT NULL,
+[DeletedAt]  DATETIME2 (7)  NULL,
+```
 
+The soft delete pattern is used in Entity Framework with query filters:
+
+```csharp
 // Query filter in DataContext
 modelBuilder.Entity<Note>().HasQueryFilter(e => !e.IsDeleted);
 ```
@@ -282,19 +305,87 @@ note.DeletedAt = null;
 await _context.SaveChangesAsync();
 ```
 
+## Recent Additions to the Schema
+
+### Integration Credentials
+
+User integration credentials for third-party services:
+
+```sql
+CREATE TABLE [dbo].[UserIntegrationCredentials] (
+    [Id]               NVARCHAR (450) NOT NULL,
+    [UserId]           NVARCHAR (450) NOT NULL,
+    [ProviderName]     NVARCHAR (50)  NOT NULL,
+    [CredentialType]   NVARCHAR (50)  NOT NULL,
+    [CredentialKey]    NVARCHAR (MAX) NOT NULL,
+    [CredentialValue]  NVARCHAR (MAX) NOT NULL,
+    [IsEnabled]        BIT            NOT NULL DEFAULT ((1)),
+    [CreatedAt]        DATETIME2 (7)  NOT NULL DEFAULT (SYSUTCDATETIME()),
+    [UpdatedAt]        DATETIME2 (7)  NOT NULL DEFAULT (SYSUTCDATETIME()),
+    [ExpiresAt]        DATETIME2 (7)  NULL,
+    [IsDeleted]        BIT            NOT NULL DEFAULT ((0)),
+    [DeletedAt]        DATETIME2 (7)  NULL,
+    CONSTRAINT [PK_UserIntegrationCredentials] PRIMARY KEY CLUSTERED ([Id] ASC),
+    CONSTRAINT [FK_UserIntegrationCredentials_Users] FOREIGN KEY ([UserId]) REFERENCES [dbo].[Users] ([Id])
+);
+```
+
+### Task Sync Mappings
+
+Maps tasks in the system to tasks in external providers like TickTick:
+
+```sql
+CREATE TABLE [dbo].[TaskSyncMappings] (
+    [Id]               NVARCHAR (450) NOT NULL,
+    [TaskId]           NVARCHAR (36)  NOT NULL,
+    [ExternalId]       NVARCHAR (450) NOT NULL,
+    [ProviderName]     NVARCHAR (50)  NOT NULL,
+    [UserId]           NVARCHAR (450) NOT NULL,
+    [LastSyncedAt]     DATETIME2 (7)  NOT NULL,
+    [LastUpdatedAt]    DATETIME2 (7)  NOT NULL,
+    [SyncStatus]       INT            NOT NULL DEFAULT ((0)),
+    [SyncDirection]    INT            NOT NULL DEFAULT ((0)),
+    [IsDeleted]        BIT            NOT NULL DEFAULT ((0)),
+    [DeletedAt]        DATETIME2 (7)  NULL,
+    
+    CONSTRAINT [PK_TaskSyncMappings] PRIMARY KEY CLUSTERED ([Id] ASC),
+    CONSTRAINT [FK_TaskSyncMappings_Tasks] FOREIGN KEY ([TaskId]) REFERENCES [dbo].[Tasks] ([Id]),
+    CONSTRAINT [FK_TaskSyncMappings_Users] FOREIGN KEY ([UserId]) REFERENCES [dbo].[Users] ([Id])
+);
+```
+
+### XP History
+
+Tracks user experience points history:
+
+```sql
+CREATE TABLE [dbo].[XPHistory] (
+    [Id]               NVARCHAR (450) NOT NULL,
+    [UserId]           NVARCHAR (450) NOT NULL,
+    [Amount]           INT            NOT NULL,
+    [Reason]           NVARCHAR (MAX) NOT NULL,
+    [SourceType]       NVARCHAR (50)  NOT NULL,
+    [SourceId]         NVARCHAR (450) NULL,
+    [CreatedAt]        DATETIME2 (7)  NOT NULL DEFAULT (SYSUTCDATETIME()),
+    
+    CONSTRAINT [PK_XPHistory] PRIMARY KEY CLUSTERED ([Id] ASC),
+    CONSTRAINT [FK_XPHistory_Users] FOREIGN KEY ([UserId]) REFERENCES [dbo].[Users] ([Id]) ON DELETE CASCADE
+);
+```
+
 ## Important Database Quirks
 
-1. **Inconsistent Soft Delete**: Not all entities implement soft delete
-   ```csharp
-   // Note entity has soft delete
-   public bool IsDeleted { get; set; }
-   public DateTime? DeletedAt { get; set; }
-   
-   // But Idea entity doesn't
-   // No IsDeleted property
+1. **Tags as Strings**: Many entities store tags as comma-separated strings rather than in relational tables
+   ```sql
+   [Tags] NVARCHAR (255) NULL,
    ```
 
-2. **Query Filter Bypassing**: Some queries may bypass the query filter
+2. **Inconsistent Soft Delete**: Not all entities implement soft delete
+   ```csharp
+   // Some entities lack IsDeleted properties in their model
+   ```
+
+3. **Query Filter Bypassing**: Some queries may bypass the query filter
    ```csharp
    // Correctly applies filter
    var notes = await _context.Notes.ToListAsync();
@@ -304,7 +395,7 @@ await _context.SaveChangesAsync();
    await _context.Entry(note).Collection(n => n.Tags).LoadAsync();
    ```
 
-3. **Relationship Challenges**: Soft-deleted entities may still be referenced
+4. **Relationship Challenges**: Soft-deleted entities may still be referenced
    ```csharp
    // No check for deleted status in link query
    var links = await _context.NoteLinks
@@ -312,29 +403,24 @@ await _context.SaveChangesAsync();
        .ToListAsync();
    ```
 
-4. **Controller-Level Logic**: Much of the soft delete logic is implemented at the controller level rather than in the data layer
-   ```csharp
-   // Controller-level soft delete
-   note.IsDeleted = true;
-   note.DeletedAt = DateTime.UtcNow;
-   await _context.SaveChangesAsync();
+5. **ID Length Inconsistencies**: Some IDs use different formats/lengths
+   ```sql
+   -- User IDs
+   [Id] NVARCHAR (450) NOT NULL,
+   
+   -- Note/Task IDs
+   [Id] NVARCHAR (36) NOT NULL,
    ```
 
-5. **Missing Concurrency Tokens**: Most entities do not have explicit concurrency tokens
-   ```csharp
-   // No concurrency token properties
-   public class Note
-   {
-       // Properties without ConcurrencyCheck or Timestamp attribute
-   }
-   ```
-
-6. **Transaction Inconsistencies**: Not all multi-entity operations use explicit transactions
-   ```csharp
-   // No explicit transaction for multiple operations
-   _context.Notes.Update(note);
-   _context.NoteLinks.AddRange(links);
-   await _context.SaveChangesAsync();
+6. **Mixed DateTime Format**: The database uses both dedicated fields and metadata for timestamps
+   ```sql
+   -- Separate timestamp fields
+   [CreatedAt]  DATETIME2 (7)  NOT NULL,
+   [UpdatedAt]  DATETIME2 (7)  NOT NULL,
+   [DeletedAt]  DATETIME2 (7)  NULL,
+   
+   -- JSON metadata may also contain timestamps
+   [Metadata]   NVARCHAR (MAX) NULL,
    ```
 
 ## Common Database Patterns
@@ -342,11 +428,9 @@ await _context.SaveChangesAsync();
 ### Entity Fetching with Eager Loading
 
 ```csharp
-// Fetching notes with tags and links
+// Fetching notes with links
 var notes = await _context.Notes
-    .Include(n => n.Tags)
-    .Include(n => n.SourceLinks)
-        .ThenInclude(nl => nl.TargetNote)
+    .Include(n => n.NoteLinks)
     .Where(n => n.UserId == userId && !n.IsArchived)
     .OrderByDescending(n => n.UpdatedAt ?? n.CreatedAt)
     .ToListAsync();
@@ -372,7 +456,6 @@ var filteredNotes = await _context.Notes
     .Where(n => n.UserId == userId)
     .WhereIf(!string.IsNullOrEmpty(searchTerm), n => 
         n.Title.Contains(searchTerm) || n.Content.Contains(searchTerm))
-    .WhereIf(tagIds.Any(), n => n.Tags.Any(t => tagIds.Contains(t.Id)))
     .WhereIf(isPinned.HasValue, n => n.IsPinned == isPinned.Value)
     .ToListAsync();
 ```
@@ -405,5 +488,23 @@ var newNote = new Note
 };
 
 _context.Notes.Add(newNote);
+await _context.SaveChangesAsync();
+```
+
+### Bulk Operations
+
+```csharp
+// Bulk update pattern
+foreach (var taskId in taskIds)
+{
+    var task = await _context.Tasks.FindAsync(taskId);
+    if (task != null && task.UserId == userId)
+    {
+        task.Status = TaskStatus.Completed;
+        task.CompletedAt = DateTime.UtcNow;
+        task.UpdatedAt = DateTime.UtcNow;
+    }
+}
+
 await _context.SaveChangesAsync();
 ``` 

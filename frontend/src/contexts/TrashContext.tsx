@@ -209,7 +209,7 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
             break;
         }
       } catch (error) {
-        console.error(`Failed to restore ${item.type}:`, error);
+        console.error('Failed to restore:', item.type, error);
         setTrashedItems(prev => [...prev, item]);
         throw error;
       }
@@ -222,7 +222,7 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
     const taskLinkedItems = item.metadata?.linkedItems || [];
     for (const linkedItem of taskLinkedItems) {
       await tasksService.removeTaskLink(item.id, linkedItem).catch(error =>
-        console.warn(`Failed to unlink item ${linkedItem} from task ${item.id}`, error)
+        console.warn('Failed to unlink item from task:', linkedItem, item.id, error)
       );
     }
     await tasksService.deleteTaskPermanently(item.id);
@@ -248,13 +248,13 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
     const noteLinkedItems = item.metadata?.linkedItems || [];
     for (const linkedNoteId of noteLinkedItems) {
       await notesService.removeLink(item.id, linkedNoteId).catch(error =>
-        console.warn(`Failed to unlink note ${linkedNoteId} from note ${item.id}`, error)
+        console.warn('Failed to unlink note from note:', linkedNoteId, item.id, error)
       );
     }
 
     for (const linkedItemId of noteLinkedItems) {
       await notesService.removeReminderFromNote(item.id, linkedItemId).catch(error =>
-        console.warn(`Failed to unlink item ${linkedItemId} from note ${item.id}`, error)
+        console.warn('Failed to unlink item from note:', linkedItemId, item.id, error)
       );
     }
 
@@ -280,7 +280,7 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
     const reminderLinkedItems = item.metadata?.linkedItems || [];
     for (const linkedItem of reminderLinkedItems) {
       await reminderService.removeReminderLink(item.id, linkedItem).catch(error =>
-        console.warn(`Failed to unlink item ${linkedItem} from reminder ${item.id}`, error)
+        console.warn('Failed to unlink item from reminder:', linkedItem, item.id, error)
       );
     }
     await reminderService.deleteReminderPermanently(item.id);

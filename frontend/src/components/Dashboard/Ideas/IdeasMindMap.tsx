@@ -20,17 +20,17 @@ import dagre from 'dagre';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { GraphControls } from '../LinkedNotes/GraphControls';
 import clsx from 'clsx';
-import type { Note } from '../../../types/note';
+import type { Idea } from '../../../types/idea';
 import { IdeaCard } from './IdeaCard';
 
 interface IdeasMindMapProps {
-  ideas: Note[];
+  ideas: Idea[];
   onIdeaClick: (ideaId: string) => void;
   selectedIdeaId?: string | null;
 }
 
 interface NodeData {
-  idea: Note;
+  idea: Idea;
   selected: boolean;
   isFavorite: boolean;
 }
@@ -87,11 +87,13 @@ const nodeTypes = {
   custom: CustomNode,
 };
 
-const prepareEdges = (ideas: Note[]): FlowEdge[] => {
+const prepareEdges = (ideas: Idea[]): FlowEdge[] => {
   const processedPairs = new Set<string>();
 
   return ideas.flatMap(idea =>
-    (idea.linkedNoteIds || [])
+    (idea.linkedItems || [])
+      .filter(item => item.type === 'Idea' || item.type === 'Note')
+      .map(linkedItem => linkedItem.id)
       .filter(targetId => {
         const pairId = [idea.id, targetId].sort((a, b) => a.localeCompare(b)).join('-');
         if (processedPairs.has(pairId)) return false;

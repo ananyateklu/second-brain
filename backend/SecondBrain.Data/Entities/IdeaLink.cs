@@ -7,5 +7,6 @@ namespace SecondBrain.Data.Entities
         public required string LinkedItemId { get; set; }
         public required string LinkedItemType { get; set; } // "Idea" or "Note"
         public bool IsDeleted { get; set; } = false;
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 } 

@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Lightbulb, Plus, Search, SlidersHorizontal, Grid, List, Network, Copy } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useNotes } from '../../../contexts/notesContextUtils';
+import { useIdeas } from '../../../contexts/IdeasContext';
 import { IdeasMindMap } from './IdeasMindMap';
 import { NewIdeaModal } from './NewIdeaModal';
 import { FilterDropdown } from '../Notes/FilterDropdown';
@@ -36,7 +36,8 @@ const defaultFilters: Filters = {
 };
 
 export function IdeasPage() {
-  const { notes, duplicateNotes } = useNotes();
+  const { state: { ideas } } = useIdeas();
+  // TODO: ModalContext needs to be updated for setSelectedIdea to correctly accept an Idea type or be generic.
   const { setSelectedIdea } = useModal();
   const { theme } = useTheme();
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -47,8 +48,8 @@ export function IdeasPage() {
 
   // Get all ideas and their tags
   const allIdeas = useMemo(() => {
-    return notes.filter(note => note.isIdea === true && !note.isArchived);
-  }, [notes]);
+    return ideas.filter(idea => !idea.isArchived);
+  }, [ideas]);
 
   const allTags = useMemo(() => {
     return Array.from(new Set(allIdeas.flatMap(idea => idea.tags)));
@@ -116,7 +117,7 @@ export function IdeasPage() {
   };
 
   const handleIdeaClick = (ideaId: string) => {
-    const idea = notes.find(note => note.id === ideaId);
+    const idea = ideas.find(i => i.id === ideaId);
     if (idea) {
       setSelectedIdea(idea);
     }
@@ -124,7 +125,8 @@ export function IdeasPage() {
 
   const handleDuplicateIdeas = async (selectedIds: string[]) => {
     try {
-      await duplicateNotes(selectedIds);
+      // TODO: Implement idea duplication
+      console.log('Duplicating ideas:', selectedIds);
     } catch (error) {
       console.error('Failed to duplicate ideas:', error);
     }
