@@ -1,12 +1,18 @@
 import { Type, Tag as TagIcon, X, Bell, Plus, AlignLeft } from 'lucide-react';
 import { Input } from '../../../../components/shared/Input';
 import { TextArea } from '../../../../components/shared/TextArea';
-import { useTheme } from '../../../../contexts/themeContextUtils';
+import { LinkedRemindersPanel } from './LinkedRemindersPanel';
+import { Idea } from '../../../../types/idea';
 
 // Simple reminder type for ideas
 interface IdeaReminderLink {
   id: string;
   title: string;
+  dueDateTime: string;
+  isCompleted: boolean;
+  isSnoozed?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface MainContentProps {
@@ -17,6 +23,7 @@ interface MainContentProps {
   error: string;
   isLoading: boolean;
   linkedReminders: IdeaReminderLink[];
+  currentIdea?: Idea;
   onTitleChange: (value: string) => void;
   onContentChange: (value: string) => void;
   onTagInputChange: (value: string | string[]) => void;
@@ -24,6 +31,7 @@ interface MainContentProps {
   onRemoveTag: (tag: string) => void;
   onShowAddReminder: () => void;
   onUnlinkReminder: (reminderId: string) => void;
+  onLinkReminder: (reminderId: string) => Promise<boolean | void>;
 }
 
 export function MainContent({
@@ -34,6 +42,7 @@ export function MainContent({
   error,
   isLoading,
   linkedReminders,
+  currentIdea,
   onTitleChange,
   onContentChange,
   onTagInputChange,
@@ -41,21 +50,8 @@ export function MainContent({
   onRemoveTag,
   onShowAddReminder,
   onUnlinkReminder,
+  onLinkReminder,
 }: MainContentProps) {
-  const { theme } = useTheme();
-
-  const getBorderStyle = () => {
-    if (theme === 'midnight') return 'border-white/5';
-    if (theme === 'dark') return 'border-gray-700/30';
-    return 'border-[var(--color-border)]';
-  };
-
-  const getBackgroundColor = () => {
-    if (theme === 'dark') return 'bg-[#111827]';
-    if (theme === 'midnight') return 'bg-[#1e293b]';
-    return 'bg-[var(--color-surface)]';
-  };
-
   return (
     <div className="flex-1 overflow-y-auto bg-[var(--color-surface)]">
       <div className="p-4 space-y-4">
@@ -88,7 +84,7 @@ export function MainContent({
           disabled={isLoading}
         />
 
-        {/* Linked Reminders */}
+        {/* Linked Reminders - Replaced with new panel */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-textSecondary)]">
@@ -107,27 +103,12 @@ export function MainContent({
               Add Reminder
             </button>
           </div>
-          <div className={`${getBackgroundColor()} border ${getBorderStyle()} rounded-lg overflow-hidden max-h-[120px] overflow-y-auto p-2`}>
-            {linkedReminders.length === 0 ? (
-              <div className="flex items-center justify-center py-3 text-sm text-[var(--color-textSecondary)]">
-                No reminders linked
-              </div>
-            ) : (
-              <ul className="space-y-1">
-                {linkedReminders.map(reminder => (
-                  <li key={reminder.id} className="flex items-center justify-between px-2 py-1 rounded-md hover:bg-[var(--color-idea)]/5">
-                    <span className="text-sm text-[var(--color-text)] truncate">{reminder.title}</span>
-                    <button
-                      onClick={() => onUnlinkReminder(reminder.id)}
-                      className="p-1 text-[var(--color-textSecondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-surfaceHover)] rounded-md transition-colors"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+          <LinkedRemindersPanel
+            reminders={linkedReminders}
+            onUnlink={onUnlinkReminder}
+            onLink={onLinkReminder}
+            currentIdea={currentIdea}
+          />
         </div>
 
         {/* Tags */}

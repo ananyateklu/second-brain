@@ -9,6 +9,7 @@ import { Trash2, RotateCcw } from 'lucide-react';
 import type { Note } from '../../../types/note';
 import type { Task, TaskStatus, TaskPriority } from '../../../types/task';
 import type { Reminder } from '../../../contexts/remindersContextUtils';
+import type { Idea } from '../../../types/idea';
 
 interface TrashListProps {
   trashedItems: TrashedItem[];
@@ -136,7 +137,7 @@ export function TrashList({
           // Convert TrashedItem to the appropriate type
           switch (item.type) {
             case 'note': {
-              const note: Note = {
+              const note = {
                 id: item.id,
                 title: item.title,
                 content: item.content ?? '',
@@ -152,7 +153,7 @@ export function TrashList({
                 isDeleted: true,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
-              };
+              } as Note;
               return (
                 <NoteCard
                   key={item.id}
@@ -192,22 +193,23 @@ export function TrashList({
               );
             }
             case 'idea': {
-              const idea: Note = {
+              const idea: Idea = {
                 id: item.id,
                 title: item.title,
                 content: item.content ?? '',
                 tags: item.metadata?.tags || [],
                 isFavorite: item.metadata?.isFavorite || false,
                 isPinned: false,
-                isIdea: true,
-                linkedNoteIds: item.metadata?.linkedItems || [],
-                linkedTasks: [],
-                linkedReminders: [],
-                links: [],
                 isArchived: false,
-                isDeleted: true,
+                linkedItems: (item.metadata?.linkedItems || []).map(id => ({
+                  id,
+                  title: '', // We don't have the title here, but IdeaCard can handle this
+                  type: 'Note' // Default to Note type
+                })),
                 createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
+                updatedAt: new Date().toISOString(),
+                isDeleted: true,
+                deletedAt: item.deletedAt
               };
               return (
                 <IdeaCard
@@ -216,6 +218,10 @@ export function TrashList({
                   isSelected={selectedItems.includes(item.id)}
                   onSelect={() => handleItemClick(item.id)}
                   context="trash"
+                  contextData={{
+                    deletedAt: item.deletedAt,
+                    expiresAt: item.expiresAt
+                  }}
                 />
               );
             }

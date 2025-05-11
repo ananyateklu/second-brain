@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { X, Star, Trash2, Archive, Clock } from 'lucide-react';
 import type { Idea } from '../../../../types/idea';
-import { useIdeas } from '../../../../contexts/IdeasContext';
+import { useIdeas } from '../../../../contexts/ideasContextUtils';
 import { WarningModal } from '../../../shared/WarningModal';
 import { useTheme } from '../../../../contexts/themeContextUtils';
 

@@ -1,7 +1,9 @@
-import React, { createContext, useReducer, useContext, useEffect, useCallback } from 'react';
+import React, { useReducer, useEffect, useCallback } from 'react';
 import { ideasService } from '../services/api/ideas.service';
 import { Idea } from '../types/idea';
 import { useAuth } from '../hooks/useAuth';
+import { AxiosError } from 'axios';
+import { IdeasContext, IdeasContextType } from './ideasContextUtils';
 
 // Define the state interface
 interface IdeasState {
@@ -24,23 +26,6 @@ type IdeasAction =
   | { type: 'ADD_LINK_SUCCESS'; payload: Idea }
   | { type: 'REMOVE_LINK_SUCCESS'; payload: Idea }
   | { type: 'CLEAR_IDEAS' };
-
-// Define the context interface
-interface IdeasContextType {
-  state: IdeasState;
-  fetchIdeas: () => Promise<void>;
-  createIdea: (title: string, content: string, tags?: string[], isFavorite?: boolean) => Promise<Idea>;
-  updateIdea: (id: string, data: Partial<Idea>) => Promise<Idea>;
-  deleteIdea: (id: string) => Promise<void>;
-  toggleFavorite: (id: string) => Promise<Idea>;
-  togglePin: (id: string) => Promise<Idea>;
-  toggleArchive: (id: string) => Promise<Idea>;
-  addLink: (ideaId: string, linkedItemId: string, linkedItemType: string) => Promise<Idea>;
-  removeLink: (ideaId: string, linkedItemId: string, linkedItemType: string) => Promise<Idea>;
-}
-
-// Create the context with a default value
-const IdeasContext = createContext<IdeasContextType | undefined>(undefined);
 
 // Initial state
 const initialState: IdeasState = {
@@ -92,6 +77,31 @@ export const IdeasProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const auth = useAuth();
   // We'll implement our own notification handling
 
+  // Define actions
+  const fetchIdeas = useCallback(async () => {
+    console.log('fetchIdeas called - auth state:', auth.user);
+    if (!auth.user) return;
+
+    dispatch({ type: 'FETCH_IDEAS_START' });
+    try {
+      console.log('Calling ideasService.getAllIdeas()...');
+      const ideas = await ideasService.getAllIdeas();
+
+      // Ensure all required properties are set for each idea
+      const ideasWithDefaults = ideas.map(idea => ({
+        ...idea,
+        isDeleted: idea.isDeleted || false,
+        isArchived: idea.isArchived || false,
+      }));
+
+      console.log('Ideas received in IdeasContext:', ideasWithDefaults);
+      dispatch({ type: 'FETCH_IDEAS_SUCCESS', payload: ideasWithDefaults });
+    } catch (error) {
+      console.error('Error in fetchIdeas:', error);
+      dispatch({ type: 'FETCH_IDEAS_FAILURE', payload: 'Failed to fetch ideas' });
+    }
+  }, [auth.user]);
+
   // Fetch ideas on mount if authenticated
   useEffect(() => {
     console.log('IdeasContext useEffect - auth state changed:', auth.user);
@@ -102,24 +112,7 @@ export const IdeasProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       console.log('Not authenticated, clearing ideas...');
       dispatch({ type: 'CLEAR_IDEAS' });
     }
-  }, [auth.user]);
-
-  // Define actions
-  const fetchIdeas = useCallback(async () => {
-    console.log('fetchIdeas called - auth state:', auth.user);
-    if (!auth.user) return;
-
-    dispatch({ type: 'FETCH_IDEAS_START' });
-    try {
-      console.log('Calling ideasService.getAllIdeas()...');
-      const ideas = await ideasService.getAllIdeas();
-      console.log('Ideas received in IdeasContext:', ideas);
-      dispatch({ type: 'FETCH_IDEAS_SUCCESS', payload: ideas });
-    } catch (error) {
-      console.error('Error in fetchIdeas:', error);
-      dispatch({ type: 'FETCH_IDEAS_FAILURE', payload: 'Failed to fetch ideas' });
-    }
-  }, [auth.user]);
+  }, [auth.user, fetchIdeas]);
 
   const createIdea = useCallback(
     async (title: string, content: string, tags: string[] = [], isFavorite = false) => {
@@ -130,8 +123,16 @@ export const IdeasProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           tags,
           isFavorite,
         });
-        dispatch({ type: 'CREATE_IDEA_SUCCESS', payload: newIdea });
-        return newIdea;
+
+        // Ensure all required properties are set
+        const ideaWithDefaults = {
+          ...newIdea,
+          isDeleted: newIdea.isDeleted || false,
+          isArchived: newIdea.isArchived || false,
+        };
+
+        dispatch({ type: 'CREATE_IDEA_SUCCESS', payload: ideaWithDefaults });
+        return ideaWithDefaults;
       } catch (error) {
         dispatch({ type: 'FETCH_IDEAS_FAILURE', payload: 'Failed to create idea' });
         throw error;
@@ -211,9 +212,13 @@ export const IdeasProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       });
       dispatch({ type: 'ADD_LINK_SUCCESS', payload: updatedIdea });
       return updatedIdea;
-    } catch (error) {
-      dispatch({ type: 'FETCH_IDEAS_FAILURE', payload: 'Failed to add link' });
-      throw error;
+    } catch (err) {
+      // Log more detailed error information
+      const specificError = err as AxiosError<{ error?: string }>;
+      const backendError = specificError.response?.data?.error || specificError.message;
+      console.error(`Failed to add link (Idea: ${ideaId}, Target: ${linkedItemId}, Type: ${linkedItemType}). Backend error: ${backendError}`, specificError.response?.data || specificError);
+      dispatch({ type: 'FETCH_IDEAS_FAILURE', payload: backendError });
+      throw err;
     }
   }, []);
 
@@ -222,14 +227,17 @@ export const IdeasProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const updatedIdea = await ideasService.removeLink(ideaId, linkedItemId, linkedItemType);
       dispatch({ type: 'REMOVE_LINK_SUCCESS', payload: updatedIdea });
       return updatedIdea;
-    } catch (error) {
-      dispatch({ type: 'FETCH_IDEAS_FAILURE', payload: 'Failed to remove link' });
-      throw error;
+    } catch (err) {
+      const specificError = err as AxiosError<{ error?: string }>;
+      const backendError = specificError.response?.data?.error || specificError.message;
+      console.error(`Failed to remove link (Idea: ${ideaId}, Target: ${linkedItemId}, Type: ${linkedItemType}). Backend error: ${backendError}`, specificError.response?.data || specificError);
+      dispatch({ type: 'FETCH_IDEAS_FAILURE', payload: backendError });
+      throw err;
     }
   }, []);
 
   // Context value
-  const value = {
+  const value: IdeasContextType = {
     state,
     fetchIdeas,
     createIdea,
@@ -243,13 +251,4 @@ export const IdeasProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   return <IdeasContext.Provider value={value}>{children}</IdeasContext.Provider>;
-};
-
-// Hook for accessing the context
-export const useIdeas = () => {
-  const context = useContext(IdeasContext);
-  if (context === undefined) {
-    throw new Error('useIdeas must be used within an IdeasProvider');
-  }
-  return context;
 };

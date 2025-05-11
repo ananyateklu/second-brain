@@ -1,8 +1,8 @@
 import { useState, useMemo, useCallback, memo } from 'react';
-import { Star, Link2, Tag as TagIcon, Lightbulb, Archive, Pin, CheckSquare, Clock } from 'lucide-react';
+import { Star, Link2, Tag as TagIcon, Lightbulb, Archive, Pin, Clock } from 'lucide-react';
 import type { Idea } from '../../../types/idea';
 import { formatDate } from '../../../utils/dateUtils';
-import { useIdeas } from '../../../contexts/IdeasContext';
+import { useIdeas } from '../../../contexts/ideasContextUtils';
 import { formatTimeAgo } from '../Recent/utils';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { getIconBg } from '../../../utils/dashboardUtils';

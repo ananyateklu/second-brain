@@ -1,5 +1,5 @@
 import { EditIdeaModal } from './EditIdeaModal/index';
-import { useIdeas } from '../../../contexts/IdeasContext';
+import { useIdeas } from '../../../contexts/ideasContextUtils';
 
 interface IdeaDetailsModalProps {
   isOpen: boolean;

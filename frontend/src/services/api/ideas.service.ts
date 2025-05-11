@@ -17,6 +17,8 @@ export interface IdeaResponse {
     type: string;
     title: string;
   }>;
+  isDeleted?: boolean;
+  deletedAt?: string;
 }
 
 export interface CreateIdeaData {
@@ -47,7 +49,7 @@ const processIdeaResponse = (idea: IdeaResponse): Idea => ({
   tags: Array.isArray(idea.tags) ? idea.tags : idea.tags ? idea.tags.split(',').map(tag => tag.trim()) : [],
   isFavorite: idea.isFavorite,
   isPinned: idea.isPinned,
-  isArchived: idea.isArchived,
+  isArchived: idea.isArchived || false,
   archivedAt: idea.archivedAt,
   createdAt: idea.createdAt,
   updatedAt: idea.updatedAt,
@@ -56,6 +58,8 @@ const processIdeaResponse = (idea: IdeaResponse): Idea => ({
     title: item.title,
     type: item.type as 'Note' | 'Idea' | 'Task' | 'Reminder'
   })),
+  isDeleted: idea.isDeleted || false,
+  deletedAt: idea.deletedAt,
 });
 
 export const ideasService = {
@@ -83,6 +87,20 @@ export const ideasService = {
     await api.delete(`/api/Ideas/${id}`);
   },
 
+  async deleteIdeaPermanently(id: string): Promise<void> {
+    await api.delete(`/api/Ideas/${id}/permanent`);
+  },
+
+  async getDeletedIdeas(): Promise<Idea[]> {
+    try {
+      const response = await api.get<IdeaResponse[]>('/api/Ideas/deleted');
+      return response.data.map(processIdeaResponse);
+    } catch (error) {
+      console.error('Failed to fetch deleted ideas:', error);
+      return []; // Return empty array instead of throwing error
+    }
+  },
+
   async toggleFavorite(id: string): Promise<Idea> {
     const response = await api.put<IdeaResponse>(`/api/Ideas/${id}/favorite`, {});
     return processIdeaResponse(response.data);
@@ -95,6 +113,11 @@ export const ideasService = {
 
   async toggleArchive(id: string): Promise<Idea> {
     const response = await api.put<IdeaResponse>(`/api/Ideas/${id}/archive`, {});
+    return processIdeaResponse(response.data);
+  },
+
+  async restoreIdea(id: string): Promise<Idea> {
+    const response = await api.put<IdeaResponse>(`/api/Ideas/${id}/restore`, {});
     return processIdeaResponse(response.data);
   },
 

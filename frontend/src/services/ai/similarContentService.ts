@@ -7,6 +7,7 @@ import { modelService } from './modelService';
 import { Note } from '../../types/note';
 import { Task } from '../../types/task';
 import { Reminder } from '../../types/reminder';
+import { Idea } from '../../types/idea';
 
 interface SimilarityResult {
     id: string;
@@ -80,6 +81,7 @@ export class SimilarContentService {
      * Find similar items to the current note
      * @param currentNoteContent The content/context to find similar items for
      * @param availableNotes All notes in the system
+     * @param availableIdeas All ideas in the system
      * @param availableTasks All tasks in the system
      * @param availableReminders All reminders in the system
      * @param excludeIds IDs to exclude from results (like already linked items)
@@ -87,31 +89,41 @@ export class SimilarContentService {
      * @returns List of similar items with similarity scores
      */
     async findSimilarContent(
-        currentNoteContent: {
+        currentItemContent: {
             id: string;
             title: string;
             content: string;
             tags: string[];
         },
         availableNotes: Note[],
+        availableIdeas: Idea[],
         availableTasks: Task[],
         availableReminders: Reminder[] = [],
         excludeIds: string[] = [],
         maxResults: number = 5
     ): Promise<SimilarityResult[]> {
         try {
-            console.log("findSimilarContent called with current note:", currentNoteContent.title);
+            console.log("findSimilarContent called with current item:", currentItemContent.title);
 
             // Combine all items that aren't already linked
             const allItems = [
                 ...availableNotes
-                    .filter(note => note.id !== currentNoteContent.id && !excludeIds.includes(note.id))
+                    .filter(note => note.id !== currentItemContent.id && !excludeIds.includes(note.id))
                     .map(note => ({
                         id: note.id,
                         title: note.title,
                         content: note.content,
                         tags: note.tags,
-                        type: note.isIdea ? 'idea' as const : 'note' as const
+                        type: 'note' as const
+                    })),
+                ...availableIdeas
+                    .filter(idea => idea.id !== currentItemContent.id && !excludeIds.includes(idea.id))
+                    .map(idea => ({
+                        id: idea.id,
+                        title: idea.title,
+                        content: idea.content,
+                        tags: idea.tags,
+                        type: 'idea' as const
                     })),
                 ...availableTasks
                     .filter(task => !excludeIds.includes(task.id))
@@ -144,7 +156,7 @@ export class SimilarContentService {
             }
 
             // If there are many items, use a more efficient approach with AI
-            const results = await this.findSimilarItemsViaAI(currentNoteContent, allItems, maxResults);
+            const results = await this.findSimilarItemsViaAI(currentItemContent, allItems, maxResults);
             console.log("Results from AI:", results);
 
             return results.map(item => ({
