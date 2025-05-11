@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, memo } from 'react';
-import { Calendar, Tag as TagIcon, Clock, Type, Lightbulb, Square, CheckSquare, Link2, Archive, Bell } from 'lucide-react';
+import { Calendar, Tag as TagIcon, Clock, Type, Lightbulb, Square, CheckSquare, Archive } from 'lucide-react';
 import { Task } from '../../../types/task';
 import { useTasks } from '../../../contexts/tasksContextUtils';
 import { useTheme } from '../../../contexts/themeContextUtils';
@@ -56,11 +56,6 @@ interface DateDisplayProps {
   dueDate: string | null | undefined;
 }
 
-interface MetadataProps {
-  task: Task;
-  isMidnight?: boolean;
-}
-
 interface ContextInfoProps {
   context: TaskCardProps['context'];
   contextData?: TaskCardProps['contextData'];
@@ -109,7 +104,6 @@ export function TaskCard({
   const [isSafari] = useState(() => /^((?!chrome|android).)*safari/i.test(navigator.userAgent));
 
   const isDark = useMemo(() => theme === 'dark' || theme === 'midnight' || theme === 'full-dark', [theme]);
-  const isMidnight = useMemo(() => theme === 'midnight', [theme]);
 
   const getBackgroundClass = useMemo(() => {
     if (theme === 'dark') return 'bg-gray-900/30';
@@ -230,13 +224,6 @@ export function TaskCard({
     />
   ), [task.dueDate]);
 
-  const metadataMemo = useMemo(() => (
-    <Metadata
-      task={task}
-      isMidnight={isMidnight}
-    />
-  ), [task, isMidnight]);
-
   const titleClasses = useMemo(() =>
     `text-xs font-medium text-[var(--color-text)] truncate ${task.status.toLowerCase() === 'completed' ? 'line-through text-[var(--color-textSecondary)]' : ''
     }`,
@@ -254,7 +241,6 @@ export function TaskCard({
   if (viewMode === 'mindMap') {
     return (
       <div
-        onClick={handleClick}
         className={`${containerClasses} w-[160px] min-h-[70px] max-h-[70px]`}
       >
         <div className="p-2 h-full flex flex-col gap-1.5 relative">
@@ -463,105 +449,6 @@ const DateDisplay = memo(function DateDisplay({ dueDate }: DateDisplayProps) {
           dateStyle: 'short'
         })}
       </span>
-    </div>
-  );
-});
-
-const Metadata = memo(function Metadata({ task, isMidnight }: MetadataProps) {
-  // Maximum number of linked items to display
-  const MAX_LINKED_ITEMS = 2;
-
-  if (!task.linkedItems || task.linkedItems.length === 0) return null;
-
-  // Function to determine icon based on item type
-  const getItemIcon = (type: string) => {
-    switch (type?.toLowerCase()) {
-      case 'note':
-        return <Type className="w-2 h-2 flex-shrink-0" />;
-      case 'idea':
-        return <Lightbulb className="w-2 h-2 flex-shrink-0" />;
-      case 'reminder':
-        return <Bell className="w-2 h-2 flex-shrink-0" />;
-      default:
-        return <Link2 className="w-2 h-2 flex-shrink-0" />;
-    }
-  };
-
-  // Function to determine background color based on item type
-  const getItemBgClass = (type: string) => {
-    const itemType = type?.toLowerCase();
-    if (isMidnight) {
-      switch (itemType) {
-        case 'note':
-          return 'bg-blue-900/40 border border-blue-700/50';
-        case 'idea':
-          return 'bg-amber-900/40 border border-amber-700/50';
-        case 'reminder':
-          return 'bg-purple-900/40 border border-purple-700/50';
-        default:
-          return 'bg-green-900/40 border border-green-700/50';
-      }
-    }
-
-    switch (itemType) {
-      case 'note':
-        return 'bg-blue-100/20 dark:bg-blue-950/30 border border-blue-200/30 dark:border-blue-800/30';
-      case 'idea':
-        return 'bg-amber-100/20 dark:bg-amber-900/20 border border-amber-200/30 dark:border-amber-800/30';
-      case 'reminder':
-        return 'bg-purple-100/15 dark:bg-purple-900/15 border border-purple-200/30 dark:border-purple-800/30';
-      default:
-        return 'bg-green-100/15 dark:bg-green-900/15 border border-green-200/30 dark:border-green-800/30';
-    }
-  };
-
-  // Function to determine text color based on item type
-  const getItemTextClass = (type: string) => {
-    const itemType = type?.toLowerCase();
-    if (isMidnight) {
-      switch (itemType) {
-        case 'note':
-          return 'text-blue-200';
-        case 'idea':
-          return 'text-amber-200';
-        case 'reminder':
-          return 'text-purple-200';
-        default:
-          return 'text-green-200';
-      }
-    }
-
-    switch (itemType) {
-      case 'note':
-        return 'text-blue-800 dark:text-blue-400';
-      case 'idea':
-        return 'text-amber-800 dark:text-amber-400';
-      case 'reminder':
-        return 'text-purple-800 dark:text-purple-400';
-      default:
-        return 'text-green-800 dark:text-green-400';
-    }
-  };
-
-  const linkedItems = task.linkedItems.slice(0, MAX_LINKED_ITEMS);
-  const hasMoreItems = task.linkedItems.length > MAX_LINKED_ITEMS;
-
-  return (
-    <div className="flex flex-wrap gap-1">
-      {linkedItems.map(item => (
-        <span
-          key={item.id}
-          className={`inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[8px] ${getItemBgClass(item.type)} ${getItemTextClass(item.type)}`}
-        >
-          {getItemIcon(item.type)}
-          <span className="truncate">{item.title}</span>
-        </span>
-      ))}
-      {hasMoreItems && (
-        <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[8px] bg-gray-100/30 dark:bg-gray-800/30 text-gray-500 dark:text-gray-400 border border-gray-200/30 dark:border-gray-700/30">
-          +{task.linkedItems.length - MAX_LINKED_ITEMS} more
-        </span>
-      )}
     </div>
   );
 });

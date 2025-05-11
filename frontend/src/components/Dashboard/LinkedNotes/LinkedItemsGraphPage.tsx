@@ -1,14 +1,16 @@
 import { useState, useMemo } from 'react';
 import { GraphView } from './GraphView';
 import { NoteDetailsPanel } from './NoteDetailsPanel';
+import { TaskDetailsPanel } from './TaskDetailsPanel';
 import { ListView } from './ListView';
-import { List, Network, Link2, Type, Lightbulb, GitBranch, Info, CheckSquare } from 'lucide-react';
+import { List, Network, Link2, Type, Lightbulb, GitBranch, Info, CheckSquare, Bell } from 'lucide-react';
 import type { Note } from '../../../types/note';
 import { useNotes } from '../../../contexts/notesContextUtils';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { shouldShowTooltip, markTooltipAsSeen } from './utils/graphStorage';
 import { useIdeas } from '../../../contexts/ideasContextUtils';
 import { useTasks } from '../../../contexts/tasksContextUtils';
+import { useReminders } from '../../../contexts/remindersContextUtils';
 import { Idea } from '../../../types/idea';
 import { Task } from '../../../types/task';
 
@@ -34,11 +36,11 @@ const renderContent = (
   notes: Note[],
   ideas: Idea[],
   tasks: Task[],
-  handleNodeSelect: (noteId: string) => void,
-  selectedNoteId: string | null
+  handleNodeSelect: (itemId: string, itemType: 'note' | 'idea' | 'task') => void,
+  selectedItemId: string | null
 ) => {
   if (viewMode !== 'graph') {
-    return <ListView onNoteSelect={handleNodeSelect} />;
+    return <ListView onItemSelect={handleNodeSelect} />;
   }
 
   const hasItems = notes.length > 0 || ideas.length > 0 || tasks.length > 0;
@@ -57,7 +59,7 @@ const renderContent = (
   return (
     <GraphView
       onNodeSelect={handleNodeSelect}
-      selectedNoteId={selectedNoteId}
+      selectedItemId={selectedItemId}
     />
   );
 };
@@ -197,21 +199,26 @@ export function LinkedNotesPage() {
   const { notes } = useNotes();
   const { state: { ideas } } = useIdeas();
   const { tasks } = useTasks();
+  const { reminders } = useReminders();
   const { theme } = useTheme();
-  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [selectedItemType, setSelectedItemType] = useState<'note' | 'idea' | 'task' | null>(null);
   const [viewMode, setViewMode] = useState<'graph' | 'list'>('graph');
   const [showTooltip, setShowTooltip] = useState(shouldShowTooltip());
 
-  const handleNodeSelect = (noteId: string) => {
-    setSelectedNoteId(noteId);
+  const handleNodeSelect = (itemId: string, itemType: 'note' | 'idea' | 'task') => {
+    console.log('[LinkedItemsGraphPage] handleNodeSelect called with:', itemId, itemType);
+    setSelectedItemId(itemId);
+    setSelectedItemType(itemType);
   };
 
   // Calculate stats including most connected note and idea
   const stats = useMemo(() => {
-    // Count notes, ideas, and tasks
+    // Count notes, ideas, tasks, and reminders
     const notesCount = notes.length;
     const ideasCount = ideas.length;
     const tasksCount = tasks.length;
+    const remindersCount = reminders.length;
 
     // Calculate total connections
     // Use a Set to track unique connections between items
@@ -221,6 +228,12 @@ export function LinkedNotesPage() {
     notes.forEach(note => {
       (note.linkedNoteIds || []).forEach(targetId => {
         const pairId = [note.id, targetId].sort().join('-');
+        connectionSet.add(pairId);
+      });
+
+      // Count note-to-reminder connections
+      (note.linkedReminders || []).forEach(reminder => {
+        const pairId = [note.id, reminder.id].sort().join('-');
         connectionSet.add(pairId);
       });
     });
@@ -241,11 +254,20 @@ export function LinkedNotesPage() {
       });
     });
 
+    // Count reminder connections (reminders can be linked to notes and ideas)
+    reminders.forEach(reminder => {
+      (reminder.linkedItems || []).forEach(linkedItem => {
+        const pairId = [reminder.id, linkedItem.id].sort().join('-');
+        connectionSet.add(pairId);
+      });
+    });
+
     const totalConnections = connectionSet.size;
 
-    // Count isolated notes, ideas, and tasks (those without connections)
+    // Count isolated notes, ideas, tasks and reminders (those without connections)
     const isolatedNotes = notes.filter(note =>
-      !note.linkedNoteIds || note.linkedNoteIds.length === 0
+      (!note.linkedNoteIds || note.linkedNoteIds.length === 0) &&
+      (!note.linkedReminders || note.linkedReminders.length === 0)
     ).length;
 
     const isolatedIdeas = ideas.filter(idea =>
@@ -254,6 +276,10 @@ export function LinkedNotesPage() {
 
     const isolatedTasks = tasks.filter(task =>
       !task.linkedItems || task.linkedItems.length === 0
+    ).length;
+
+    const isolatedReminders = reminders.filter(reminder =>
+      !reminder.linkedItems || reminder.linkedItems.length === 0
     ).length;
 
     // Calculate recent connections
@@ -311,16 +337,18 @@ export function LinkedNotesPage() {
       totalNotes: notesCount,
       totalIdeas: ideasCount,
       totalTasks: tasksCount,
+      totalReminders: remindersCount,
       totalConnections,
       isolatedNotes,
       isolatedIdeas,
       isolatedTasks,
+      isolatedReminders,
       connectionDensity,
       clusterCount,
       recentConnectionsWeek,
       recentConnectionsMonth
     };
-  }, [notes, ideas, tasks]);
+  }, [notes, ideas, tasks, reminders]);
 
   const handleDismissTooltip = () => {
     setShowTooltip(false);
@@ -405,7 +433,7 @@ export function LinkedNotesPage() {
             )}
 
             {/* Stats Bar - no borders, just a subtle background change */}
-            <div className="flex px-4 py-2 gap-8">
+            <div className="flex px-4 py-2 gap-5 flex-wrap">
               <div className="flex items-center gap-2">
                 <div className="p-1 flex items-center justify-center rounded-md bg-blue-500/10 backdrop-blur-xl shadow-sm ring-1 ring-black/5 dark:ring-white/10 bg-[var(--color-surface)]/10">
                   <Type className="w-3.5 h-3.5 text-[var(--color-note)]" />
@@ -437,6 +465,16 @@ export function LinkedNotesPage() {
               </div>
 
               <div className="flex items-center gap-2">
+                <div className="p-1 flex items-center justify-center rounded-md bg-purple-500/10 backdrop-blur-xl shadow-sm ring-1 ring-black/5 dark:ring-white/10 bg-[var(--color-surface)]/10">
+                  <Bell className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-medium text-purple-600 dark:text-purple-400">{stats.totalReminders}</span>
+                  <span className="text-xs text-[var(--color-textSecondary)]">Reminders</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
                 <div className="p-1 flex items-center justify-center rounded-md bg-blue-500/10 backdrop-blur-xl shadow-sm ring-1 ring-black/5 dark:ring-white/10 bg-[var(--color-surface)]/10">
                   <Network className="w-3.5 h-3.5 text-[var(--color-note)]" />
                 </div>
@@ -462,16 +500,42 @@ export function LinkedNotesPage() {
           <div className="transition-all duration-300 h-[calc(100%-80px)]">
             <div className="flex h-full overflow-auto">
               <div className="flex-1">
-                {renderContent(viewMode, notes, ideas, tasks, handleNodeSelect, selectedNoteId)}
+                {renderContent(viewMode, notes, ideas, tasks, handleNodeSelect, selectedItemId)}
               </div>
-              {selectedNoteId && (
-                <div className="w-96 h-full overflow-hidden border-l border-gray-200/10 dark:border-gray-700/20">
-                  <NoteDetailsPanel
-                    selectedNoteId={selectedNoteId}
-                    onClose={() => setSelectedNoteId(null)}
-                  />
-                </div>
-              )}
+              {((): JSX.Element | null => {
+                console.log('[LinkedItemsGraphPage] Checking panel render. Selected ID:', selectedItemId, 'Type:', selectedItemType);
+                if (selectedItemId) {
+                  if (selectedItemType === 'note' || selectedItemType === 'idea') {
+                    return (
+                      <div className="w-96 h-full overflow-hidden border-l border-gray-200/10 dark:border-gray-700/20">
+                        <NoteDetailsPanel
+                          selectedNoteId={selectedItemId}
+                          onClose={() => {
+                            setSelectedItemId(null);
+                            setSelectedItemType(null);
+                          }}
+                        />
+                      </div>
+                    );
+                  }
+                  if (selectedItemType === 'task') {
+                    return (
+                      <div className="w-96 h-full overflow-hidden border-l border-gray-200/10 dark:border-gray-700/20">
+                        <TaskDetailsPanel
+                          selectedTaskId={selectedItemId}
+                          onClose={() => {
+                            setSelectedItemId(null);
+                            setSelectedItemType(null);
+                          }}
+                        />
+                      </div>
+                    );
+                  }
+                  console.warn('[LinkedItemsGraphPage] selectedItemId is set, but selectedItemType is unexpected:', selectedItemType);
+                  return null; // Or some fallback UI if type is wrong but ID is set
+                }
+                return null;
+              })()}
             </div>
           </div>
         </div>
