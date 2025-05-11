@@ -2,18 +2,20 @@ import { useState } from 'react';
 import { X, Search, Type, Lightbulb, AlertCircle, Tag } from 'lucide-react';
 import { useNotes } from '../../../contexts/notesContextUtils';
 import { useIdeas } from '../../../contexts/ideasContextUtils';
+import { useTasks } from '../../../contexts/tasksContextUtils';
 
 interface AddLinkModalProps {
     isOpen: boolean;
     onClose: () => void;
     sourceId: string;
     onLinkAdded: () => void;
-    sourceType: 'note' | 'idea';
+    sourceType: 'note' | 'idea' | 'task';
 }
 
 export function AddLinkModal({ isOpen, onClose, sourceId, onLinkAdded, sourceType }: AddLinkModalProps) {
     const { notes, addLink } = useNotes();
     const { state: { ideas }, addLink: addIdeaLink } = useIdeas();
+    const { addTaskLink } = useTasks();
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
@@ -66,6 +68,14 @@ export function AddLinkModal({ isOpen, onClose, sourceId, onLinkAdded, sourceTyp
                     // Link note to idea
                     await addIdeaLink(targetId, sourceId, 'Note', linkType);
                 }
+            } else if (sourceType === 'task') {
+                // Link task to note or idea
+                await addTaskLink({
+                    taskId: sourceId,
+                    linkedItemId: targetId,
+                    itemType: targetType,
+                    description: ''
+                });
             } else {
                 // Source is an idea
                 if (targetType === 'note') {

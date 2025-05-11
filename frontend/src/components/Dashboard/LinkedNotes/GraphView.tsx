@@ -35,8 +35,8 @@ import { StoredNodePosition } from './types';
 import { saveNodePositions, loadNodePositions, clearNodePositions } from './utils/graphStorage';
 
 interface GraphViewProps {
-  onNodeSelect: (noteId: string) => void;
-  selectedNoteId: string | null;
+  onNodeSelect: (itemId: string, itemType: 'note' | 'idea' | 'task') => void;
+  selectedItemId: string | null;
 }
 
 type CustomNodeType = {
@@ -294,15 +294,15 @@ const Legend = memo(({ theme }: { theme: string }) => (
 
 Legend.displayName = 'Legend';
 
-export function GraphView({ onNodeSelect, selectedNoteId }: GraphViewProps) {
+export function GraphView({ onNodeSelect, selectedItemId }: GraphViewProps) {
   return (
     <ReactFlowProvider>
-      <GraphViewContent onNodeSelect={onNodeSelect} selectedNoteId={selectedNoteId} />
+      <GraphViewContent onNodeSelect={onNodeSelect} selectedItemId={selectedItemId} />
     </ReactFlowProvider>
   );
 }
 
-function GraphViewContent({ onNodeSelect, selectedNoteId }: GraphViewProps) {
+function GraphViewContent({ onNodeSelect, selectedItemId }: GraphViewProps) {
   const { notes } = useNotes();
   const { state: { ideas } } = useIdeas();
   const { tasks } = useTasks();
@@ -363,9 +363,9 @@ function GraphViewContent({ onNodeSelect, selectedNoteId }: GraphViewProps) {
       data: {
         item: note,
         itemType: 'note' as const,
-        selected: note.id === selectedNoteId,
+        selected: note.id === selectedItemId,
       },
-      selected: note.id === selectedNoteId,
+      selected: note.id === selectedItemId,
     }));
 
     // Create nodes for ideas
@@ -376,9 +376,9 @@ function GraphViewContent({ onNodeSelect, selectedNoteId }: GraphViewProps) {
       data: {
         item: idea,
         itemType: 'idea' as const,
-        selected: idea.id === selectedNoteId,
+        selected: idea.id === selectedItemId,
       },
-      selected: idea.id === selectedNoteId,
+      selected: idea.id === selectedItemId,
     }));
 
     // Create nodes for tasks
@@ -389,9 +389,9 @@ function GraphViewContent({ onNodeSelect, selectedNoteId }: GraphViewProps) {
       data: {
         item: task,
         itemType: 'task' as const,
-        selected: task.id === selectedNoteId,
+        selected: task.id === selectedItemId,
       },
-      selected: task.id === selectedNoteId,
+      selected: task.id === selectedItemId,
     }));
 
     // Combine all nodes
@@ -405,7 +405,7 @@ function GraphViewContent({ onNodeSelect, selectedNoteId }: GraphViewProps) {
 
     setNodes(layoutedNodes);
     setEdges(layoutedEdges as Edge[]);
-  }, [notesWithLinks, ideasWithLinks, tasksWithLinks, selectedNoteId, setNodes, setEdges, savedPositions, isLoading]);
+  }, [notesWithLinks, ideasWithLinks, tasksWithLinks, selectedItemId, setNodes, setEdges, savedPositions, isLoading]);
 
   // Handle node drag end to save positions
   const onNodeDragStop: NodeDragHandler = useCallback(() => {
@@ -448,8 +448,14 @@ function GraphViewContent({ onNodeSelect, selectedNoteId }: GraphViewProps) {
     return () => clearTimeout(timer);
   }, [nodes.length, fitView, isInitialLoad, isLoading]);
 
-  const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
-    onNodeSelect(node.id);
+  const onNodeClick = useCallback((_event: React.MouseEvent, node: Node<CustomNodeType['data']>) => {
+    console.log('[GraphView] Node clicked:', node.id, 'Type from data:', node.data?.itemType);
+    if (node.data && node.data.itemType) {
+      onNodeSelect(node.id, node.data.itemType);
+    } else {
+      console.warn('[GraphView] Node clicked without itemType in data:', node);
+      onNodeSelect(node.id, 'note'); // Fallback
+    }
   }, [onNodeSelect]);
 
   // Update selected node
@@ -459,12 +465,12 @@ function GraphViewContent({ onNodeSelect, selectedNoteId }: GraphViewProps) {
         ...node,
         data: {
           ...node.data,
-          selected: node.id === selectedNoteId,
+          selected: node.id === selectedItemId,
         },
-        selected: node.id === selectedNoteId,
+        selected: node.id === selectedItemId,
       }))
     );
-  }, [selectedNoteId, setNodes]);
+  }, [selectedItemId, setNodes]);
 
   // Handle resetting node positions to default layout
   const handleResetPositions = useCallback(async () => {
@@ -480,9 +486,9 @@ function GraphViewContent({ onNodeSelect, selectedNoteId }: GraphViewProps) {
       data: {
         item: note,
         itemType: 'note' as const,
-        selected: note.id === selectedNoteId,
+        selected: note.id === selectedItemId,
       },
-      selected: note.id === selectedNoteId,
+      selected: note.id === selectedItemId,
     }));
 
     // Create nodes for ideas
@@ -493,9 +499,9 @@ function GraphViewContent({ onNodeSelect, selectedNoteId }: GraphViewProps) {
       data: {
         item: idea,
         itemType: 'idea' as const,
-        selected: idea.id === selectedNoteId,
+        selected: idea.id === selectedItemId,
       },
-      selected: idea.id === selectedNoteId,
+      selected: idea.id === selectedItemId,
     }));
 
     // Create nodes for tasks
@@ -506,9 +512,9 @@ function GraphViewContent({ onNodeSelect, selectedNoteId }: GraphViewProps) {
       data: {
         item: task,
         itemType: 'task' as const,
-        selected: task.id === selectedNoteId,
+        selected: task.id === selectedItemId,
       },
-      selected: task.id === selectedNoteId,
+      selected: task.id === selectedItemId,
     }));
 
     // Combine all nodes
@@ -531,7 +537,7 @@ function GraphViewContent({ onNodeSelect, selectedNoteId }: GraphViewProps) {
         maxZoom: 1.5
       });
     }, 50);
-  }, [notesWithLinks, ideasWithLinks, tasksWithLinks, selectedNoteId, setNodes, setEdges, fitView]);
+  }, [notesWithLinks, ideasWithLinks, tasksWithLinks, selectedItemId, setNodes, setEdges, fitView]);
 
   if (isLoading) {
     return (
@@ -604,7 +610,7 @@ function GraphViewContent({ onNodeSelect, selectedNoteId }: GraphViewProps) {
           onZoomOut={zoomOut}
           onFit={() => fitView({ padding: 0.2, duration: 800 })}
           onCenter={() => {
-            const selectedNode = nodes.find(node => node.id === selectedNoteId);
+            const selectedNode = nodes.find(node => node.id === selectedItemId);
             if (selectedNode) {
               setCenter(selectedNode.position.x + 140, selectedNode.position.y + 60, { duration: 800 });
             }
