@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link2, PlusCircle, Type, Lightbulb, CheckSquare, Loader } from 'lucide-react';
 import { useNotes } from '../../../../contexts/notesContextUtils';
 import { useTasks } from '../../../../contexts/tasksContextUtils';
+import { useIdeas } from '../../../../contexts/ideasContextUtils';
 import { Note } from '../../../../types/note';
 import { similarContentService } from '../../../../services/ai/similarContentService';
 import { useTheme } from '../../../../contexts/themeContextUtils';
@@ -11,19 +12,24 @@ interface SuggestedLinksSectionProps {
     currentNote: Note;
     linkedNoteIds: string[];
     linkedTaskIds: string[];
+    linkedIdeaIds?: string[];
     onLinkNote: (noteId: string) => Promise<void>;
     onLinkTask: (taskId: string) => Promise<void>;
+    onLinkIdea?: (ideaId: string) => Promise<void>;
 }
 
 export function SuggestedLinksSection({
     currentNote,
     linkedNoteIds,
     linkedTaskIds,
+    linkedIdeaIds = [],
     onLinkNote,
-    onLinkTask
+    onLinkTask,
+    onLinkIdea = async () => { }
 }: SuggestedLinksSectionProps) {
     const { notes } = useNotes();
     const { tasks } = useTasks();
+    const { state: { ideas = [] } } = useIdeas();
     const { theme } = useTheme();
 
     const [isLoading, setIsLoading] = useState(false);
@@ -41,14 +47,14 @@ export function SuggestedLinksSection({
     // Load suggestions when the component mounts or when dependencies change
     useEffect(() => {
         const loadSuggestions = async () => {
-            if (!currentNote || !notes.length) return;
+            if (!currentNote || (!notes.length && !ideas.length && !tasks.length)) return;
 
             setIsLoading(true);
             setError('');
 
             try {
                 // Get recommendations from AI
-                const excludeIds = [...linkedNoteIds, ...linkedTaskIds, currentNote.id];
+                const excludeIds = [...linkedNoteIds, ...linkedTaskIds, ...linkedIdeaIds, currentNote.id];
                 const allSuggestions = await similarContentService.findSimilarContent(
                     {
                         id: currentNote.id,
@@ -57,8 +63,9 @@ export function SuggestedLinksSection({
                         tags: currentNote.tags
                     },
                     notes,
+                    ideas, // Include ideas for suggestions
                     tasks,
-                    [], // Empty reminders array - we don't want reminder suggestions here
+                    [], // Empty reminders array
                     excludeIds,
                     5 // Max number of suggestions
                 );
@@ -80,7 +87,7 @@ export function SuggestedLinksSection({
         };
 
         loadSuggestions();
-    }, [currentNote, notes, tasks, linkedNoteIds, linkedTaskIds]);
+    }, [currentNote, notes, ideas, tasks, linkedNoteIds, linkedTaskIds, linkedIdeaIds]);
 
     const handleLinkItem = async (item: typeof suggestions[0]) => {
         // Update local state to show linking in progress
@@ -90,8 +97,10 @@ export function SuggestedLinksSection({
 
         try {
             // Different actions based on item type
-            if (item.type === 'note' || item.type === 'idea') {
+            if (item.type === 'note') {
                 await onLinkNote(item.id);
+            } else if (item.type === 'idea') {
+                await onLinkIdea(item.id);
             } else if (item.type === 'task') {
                 await onLinkTask(item.id);
             }
@@ -138,7 +147,7 @@ export function SuggestedLinksSection({
     };
 
     return (
-        <div className="mt-4 px-3" data-testid="suggested-links-section">
+        <div data-testid="suggested-links-section">
             <div className="flex items-center gap-2 mb-3">
                 <Link2 className="w-3.5 h-3.5 text-[var(--color-textSecondary)]" />
                 <h6 className="text-xs font-medium text-[var(--color-textSecondary)]">
@@ -165,7 +174,7 @@ export function SuggestedLinksSection({
                             onClick={() => !item.isLinking && handleLinkItem(item)}
                             className={`
                 group flex items-start gap-2.5 p-2 rounded-lg cursor-pointer
-                ${getItemBackground()} ${getItemHoverBackground()} ${getBorderStyle()}
+                ${getItemBackground()} ${getItemHoverBackground()} border ${getBorderStyle()}
                 transition-all duration-200 opacity-65 hover:opacity-100 relative
                 ${item.isLinking ? 'pointer-events-none' : 'cursor-pointer'}
               `}

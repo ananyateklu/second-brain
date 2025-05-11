@@ -176,6 +176,7 @@ export function LinkedRemindersPanel({
           },
           [], // No notes needed
           [], // No tasks needed
+          [], // No ideas needed
           allReminders,
           linkedReminderIds,
           3 // Show max 3 suggestions

@@ -1,13 +1,15 @@
-import { Link2, Plus, Type, Lightbulb, CheckSquare, X, Calendar } from 'lucide-react';
+import { Link2, Plus, Type, CheckSquare, X, Calendar, Lightbulb } from 'lucide-react';
 import type { Note } from '../../../../types/note';
 import { useNotes } from '../../../../contexts/notesContextUtils';
 import { useState, useEffect } from 'react';
 import { EditNoteModal } from '../EditNoteModal';
 import { EditTaskModal } from '../../Tasks/EditTaskModal';
 import { useTasks } from '../../../../contexts/tasksContextUtils';
+import { useIdeas } from '../../../../contexts/ideasContextUtils';
 import type { Task } from '../../../../types/task';
+import type { Idea } from '../../../../types/idea';
 import { useTheme } from '../../../../contexts/themeContextUtils';
-import { SuggestedLinksSection } from './SuggestedLinksSection';
+import { EditIdeaModal } from '../../Ideas/EditIdeaModal';
 
 interface LinkedNotesPanelProps {
   linkedNotes: Note[];
@@ -18,10 +20,12 @@ interface LinkedNotesPanelProps {
     priority: string;
     dueDate: string | null | undefined;
   }>;
+  linkedIdeas?: Idea[];
   onShowAddLink: () => void;
   onShowAddTask: () => void;
   currentNoteId: string;
   onUnlinkTask: (taskId: string) => void;
+  onUnlinkIdea?: (ideaId: string) => void;
   currentNote: Note;
   linkedReminders?: Array<{
     id: string;
@@ -35,25 +39,27 @@ interface LinkedNotesPanelProps {
   }>;
   onLinkNote?: (noteId: string) => Promise<void>;
   onLinkTask?: (taskId: string) => Promise<void>;
+  onLinkIdea?: (ideaId: string) => Promise<void>;
   onLinkReminder?: (reminderId: string) => Promise<void>;
 }
 
 export function LinkedNotesPanel({
   linkedNotes,
   linkedTasks = [],
+  linkedIdeas = [],
   onShowAddLink,
   onShowAddTask,
   currentNoteId,
   onUnlinkTask,
-  currentNote,
-  onLinkNote = async () => { },
-  onLinkTask = async () => { },
+  onUnlinkIdea = async () => { },
 }: LinkedNotesPanelProps) {
   const { removeLink } = useNotes();
   const { tasks } = useTasks();
+  const { state: { ideas: allIdeasContext } } = useIdeas();
   const { theme } = useTheme();
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [selectedIdea, setSelectedIdea] = useState<Idea | null>(null);
 
   const handleUnlinkNote = async (linkedNoteId: string) => {
     if (!currentNoteId) {
@@ -71,6 +77,13 @@ export function LinkedNotesPanel({
     const fullTask = tasks.find(t => t.id === taskId);
     if (fullTask) {
       setSelectedTask(fullTask);
+    }
+  };
+
+  const handleIdeaClick = (ideaId: string) => {
+    const idea = linkedIdeas.find(i => i.id === ideaId) || allIdeasContext.find(i => i.id === ideaId);
+    if (idea) {
+      setSelectedIdea(idea);
     }
   };
 
@@ -98,11 +111,13 @@ export function LinkedNotesPanel({
     return 'border border-[var(--color-border)]';
   };
 
-  const hasLinkedItems = linkedNotes.length > 0 || linkedTasks.length > 0;
+  const hasLinkedItems = linkedNotes.length > 0 || linkedTasks.length > 0 || linkedIdeas.length > 0;
 
-  // Compute IDs of linked items
-  const linkedNoteIds = linkedNotes.map(note => note.id);
-  const linkedTaskIds = linkedTasks.map(task => task.id);
+  // Combine notes and ideas for rendering under one section
+  const combinedNotesAndIdeas = [
+    ...linkedNotes.map(note => ({ ...note, itemType: 'note' as const })),
+    ...linkedIdeas.map(idea => ({ ...idea, itemType: 'idea' as const }))
+  ];
 
   useEffect(() => {
     // When no linked items exist, only show empty state if suggestions are also empty
@@ -154,33 +169,31 @@ export function LinkedNotesPanel({
               className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[var(--color-note)] bg-[var(--color-note)]/10 hover:bg-[var(--color-note)]/15 rounded-md transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
-              Note
+              Note/Idea
             </button>
           </div>
         </div>
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
-          {hasLinkedItems ? (
-            <div className="p-3 space-y-4">
-              {/* Notes Section */}
-              {linkedNotes.length > 0 && (
+          {/* Display linked items below suggestions */}
+          {hasLinkedItems && (
+            <div className="p-3 space-y-4 border-t border-[var(--color-border)]/10 dark:border-white/5 midnight:border-white/5">
+              {/* Notes & Ideas Section */}
+              {combinedNotesAndIdeas.length > 0 && (
                 <div>
                   <h6 className="text-xs font-medium text-[var(--color-note)] uppercase tracking-wider px-1 mb-2">
                     Notes & Ideas
                   </h6>
                   <div className="space-y-2">
-                    {linkedNotes.map(linkedNote => (
+                    {combinedNotesAndIdeas.map(item => (
                       <div
-                        key={linkedNote.id}
-                        onClick={() => setSelectedNote(linkedNote)}
+                        key={item.id}
+                        onClick={() => item.itemType === 'idea' ? handleIdeaClick(item.id) : setSelectedNote(item as Note)}
                         className={`group flex items-start gap-2.5 p-2 rounded-lg ${getItemBackground()} ${getItemHoverBackground()} ${getBorderStyle()} transition-colors cursor-pointer relative`}
                       >
-                        <div className={`shrink-0 p-1.5 rounded-lg ${linkedNote.isIdea
-                          ? 'bg-[var(--color-idea)]/15'
-                          : 'bg-[var(--color-note)]/15'
-                          }`}>
-                          {linkedNote.isIdea ? (
+                        <div className={`shrink-0 p-1.5 rounded-lg ${item.itemType === 'idea' ? 'bg-[var(--color-idea)]/15' : 'bg-[var(--color-note)]/15'}`}>
+                          {item.itemType === 'idea' ? (
                             <Lightbulb className="w-3.5 h-3.5 text-[var(--color-idea)]" />
                           ) : (
                             <Type className="w-3.5 h-3.5 text-[var(--color-note)]" />
@@ -188,17 +201,21 @@ export function LinkedNotesPanel({
                         </div>
                         <div className="flex-1 min-w-0 pr-8">
                           <h6 className="text-sm font-medium text-[var(--color-text)] truncate">
-                            {linkedNote.title}
+                            {item.title}
                           </h6>
                           <p className="text-xs text-[var(--color-textSecondary)]">
-                            {linkedNote.isIdea ? 'Idea' : 'Note'}
+                            {item.itemType === 'idea' ? 'Idea' : 'Note'}
                           </p>
                         </div>
                         <button
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            handleUnlinkNote(linkedNote.id);
+                            if (item.itemType === 'idea') {
+                              onUnlinkIdea(item.id);
+                            } else {
+                              handleUnlinkNote(item.id);
+                            }
                           }}
                           className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-1 text-[var(--color-textSecondary)] hover:text-red-400 hover:bg-red-900/20 rounded transition-all z-10"
                         >
@@ -257,43 +274,21 @@ export function LinkedNotesPanel({
                   </div>
                 </div>
               )}
-
-              {/* Show suggestions below linked items */}
-              {(linkedNotes.length > 0 || linkedTasks.length > 0) && (
-                <div className="border-t border-[var(--color-border)]/10 dark:border-white/5 midnight:border-white/5 pt-3 mt-1">
-                  <SuggestedLinksSection
-                    currentNote={currentNote}
-                    linkedNoteIds={linkedNoteIds}
-                    linkedTaskIds={linkedTaskIds}
-                    onLinkNote={onLinkNote}
-                    onLinkTask={onLinkTask}
-                  />
-                </div>
-              )}
             </div>
-          ) : (
-            <div className="flex flex-col h-full">
-              {/* When no linked items, show suggestions */}
-              <SuggestedLinksSection
-                currentNote={currentNote}
-                linkedNoteIds={linkedNoteIds}
-                linkedTaskIds={linkedTaskIds}
-                onLinkNote={onLinkNote}
-                onLinkTask={onLinkTask}
-              />
+          )}
 
-              {/* Empty state - shown only when there are no suggestions */}
-              <div id="empty-state" className="flex-1 flex flex-col items-center justify-center py-8 text-center px-6">
-                <div className={`p-3 ${getEmptyStateBackground()} rounded-full mb-3 ${getBorderStyle()}`}>
-                  <Link2 className="w-5 h-5 text-[var(--color-note)]" />
-                </div>
-                <p className="text-sm font-medium text-[var(--color-text)] mb-1">
-                  No linked items yet
-                </p>
-                <p className="text-xs text-[var(--color-textSecondary)] max-w-[220px]">
-                  Connect this note with other notes, ideas, or tasks to build your knowledge network
-                </p>
+          {/* Empty state - shown only when there are no linked items */}
+          {!hasLinkedItems && (
+            <div id="empty-state" className="flex flex-col items-center justify-center py-8 text-center px-6 mt-4">
+              <div className={`p-3 ${getEmptyStateBackground()} rounded-full mb-3 ${getBorderStyle()}`}>
+                <Link2 className="w-5 h-5 text-[var(--color-note)]" />
               </div>
+              <p className="text-sm font-medium text-[var(--color-text)] mb-1">
+                No linked items yet
+              </p>
+              <p className="text-xs text-[var(--color-textSecondary)] max-w-[220px]">
+                Connect this note with other notes, ideas, or tasks to build your knowledge network
+              </p>
             </div>
           )}
         </div>
@@ -312,6 +307,14 @@ export function LinkedNotesPanel({
           task={selectedTask}
           isOpen={true}
           onClose={() => setSelectedTask(null)}
+        />
+      )}
+
+      {selectedIdea && (
+        <EditIdeaModal
+          idea={selectedIdea}
+          isOpen={true}
+          onClose={() => setSelectedIdea(null)}
         />
       )}
     </>
