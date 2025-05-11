@@ -239,7 +239,7 @@ namespace SecondBrain.Api.Controllers
 
                 // Seed XP for notes
                 var notes = await _context.Notes
-                    .Where(n => n.UserId == userId && !n.IsDeleted && !n.IsIdea)
+                    .Where(n => n.UserId == userId && !n.IsDeleted)
                     .ToListAsync();
 
                 foreach (var note in notes)
@@ -256,9 +256,9 @@ namespace SecondBrain.Api.Controllers
                     });
                 }
 
-                // Seed XP for ideas
-                var ideas = await _context.Notes
-                    .Where(n => n.UserId == userId && !n.IsDeleted && n.IsIdea)
+                // Seed XP for ideas from the dedicated Ideas table
+                var ideas = await _context.Ideas
+                    .Where(i => i.UserId == userId && !i.IsDeleted)
                     .ToListAsync();
 
                 foreach (var idea in ideas)

@@ -7,6 +7,8 @@ import type { Note } from '../../../types/note';
 import { useNotes } from '../../../contexts/notesContextUtils';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { shouldShowTooltip, markTooltipAsSeen } from './utils/graphStorage';
+import { useIdeas } from '../../../contexts/ideasContextUtils';
+import { Idea } from '../../../types/idea';
 
 interface NoteConnection {
   noteId: string;
@@ -17,9 +19,14 @@ interface NoteWithConnections extends Note {
   connections?: NoteConnection[];
 }
 
+interface IdeaWithConnections extends Idea {
+  connections?: NoteConnection[];
+}
+
 const renderContent = (
   viewMode: 'graph' | 'list',
   notes: Note[],
+  ideas: Idea[],
   handleNodeSelect: (noteId: string) => void,
   selectedNoteId: string | null
 ) => {
@@ -27,12 +34,14 @@ const renderContent = (
     return <ListView onNoteSelect={handleNodeSelect} />;
   }
 
-  if (!notes.length) {
+  const hasItems = notes.length > 0 || ideas.length > 0;
+
+  if (!hasItems) {
     return (
       <div className="h-full flex flex-col items-center justify-center gap-3">
         <Link2 className="w-8 h-8 text-gray-600 dark:text-gray-400" />
         <p className="text-gray-600 dark:text-gray-400">
-          No connected notes to display
+          No connected items to display
         </p>
       </div>
     );
@@ -62,10 +71,25 @@ const processNoteConnections = (note: NoteWithConnections, oneWeekAgo: Date, one
   return { recentWeek, recentMonth };
 };
 
-const findClusters = (notes: Note[]) => {
+const processIdeaConnections = (idea: IdeaWithConnections, oneWeekAgo: Date, oneMonthAgo: Date) => {
+  let recentWeek = 0;
+  let recentMonth = 0;
+
+  const linkedItemsCount = idea.linkedItems?.length || 0;
+  for (let i = 0; i < linkedItemsCount; i++) {
+    const connectionDate = new Date(idea.createdAt); // Using idea creation date as link creation date
+    if (connectionDate > oneWeekAgo) recentWeek++;
+    if (connectionDate > oneMonthAgo) recentMonth++;
+  }
+
+  return { recentWeek, recentMonth };
+};
+
+const findClusters = (notes: Note[], ideas: Idea[]) => {
   const visited = new Set<string>();
   const clusters = new Set<string>();
 
+  // Process notes
   notes.forEach(note => {
     if (!visited.has(note.id)) {
       clusters.add(note.id);
@@ -79,6 +103,26 @@ const findClusters = (notes: Note[]) => {
         currentNote?.linkedNoteIds?.forEach(linkedId => {
           if (!visited.has(linkedId)) {
             stack.push(linkedId);
+          }
+        });
+      }
+    }
+  });
+
+  // Process ideas
+  ideas.forEach(idea => {
+    if (!visited.has(idea.id)) {
+      clusters.add(idea.id);
+      const stack = [idea.id];
+
+      while (stack.length > 0) {
+        const currentId = stack.pop()!;
+        visited.add(currentId);
+
+        const currentIdea = ideas.find(i => i.id === currentId);
+        currentIdea?.linkedItems?.forEach(item => {
+          if (!visited.has(item.id)) {
+            stack.push(item.id);
           }
         });
       }
@@ -110,6 +154,7 @@ const getButtonBackground = (isActive: boolean, theme: string) => {
 
 export function LinkedNotesPage() {
   const { notes } = useNotes();
+  const { state: { ideas } } = useIdeas();
   const { theme } = useTheme();
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'graph' | 'list'>('graph');
@@ -121,20 +166,22 @@ export function LinkedNotesPage() {
 
   // Calculate stats including most connected note and idea
   const stats = useMemo(() => {
-    // Count unique notes and ideas
-    const notesCount = notes.filter(note => !note.isIdea).length;
-    const ideasCount = notes.filter(note => note.isIdea).length;
+    // Count notes and ideas
+    const notesCount = notes.length;
+    const ideasCount = ideas.length;
 
     // Calculate total connections
-    const totalConnections = notes.reduce((sum, note) => sum + (note.linkedNoteIds?.length || 0), 0) / 2;
+    const noteConnections = notes.reduce((sum, note) => sum + (note.linkedNoteIds?.length || 0), 0);
+    const ideaConnections = ideas.reduce((sum, idea) => sum + (idea.linkedItems?.length || 0), 0);
+    const totalConnections = (noteConnections + ideaConnections) / 2; // Divide by 2 since connections are counted twice
 
     // Count isolated notes and ideas (those without connections)
     const isolatedNotes = notes.filter(note =>
-      !note.isIdea && (!note.linkedNoteIds || note.linkedNoteIds.length === 0)
+      !note.linkedNoteIds || note.linkedNoteIds.length === 0
     ).length;
 
-    const isolatedIdeas = notes.filter(note =>
-      note.isIdea && (!note.linkedNoteIds || note.linkedNoteIds.length === 0)
+    const isolatedIdeas = ideas.filter(idea =>
+      !idea.linkedItems || idea.linkedItems.length === 0
     ).length;
 
     // Calculate recent connections
@@ -155,6 +202,17 @@ export function LinkedNotesPage() {
       recentConnectionsMonth += recentMonth;
     });
 
+    ideas.forEach(idea => {
+      const { recentWeek, recentMonth } = processIdeaConnections(
+        idea as IdeaWithConnections,
+        oneWeekAgo,
+        oneMonthAgo
+      );
+
+      recentConnectionsWeek += recentWeek;
+      recentConnectionsMonth += recentMonth;
+    });
+
     // Calculate connection density
     const totalPossibleConnections = (notesCount + ideasCount) * (notesCount + ideasCount - 1) / 2;
     const connectionDensity = totalPossibleConnections > 0
@@ -162,7 +220,7 @@ export function LinkedNotesPage() {
       : 0;
 
     // Calculate clusters
-    const clusterCount = findClusters(notes);
+    const clusterCount = findClusters(notes, ideas);
 
     return {
       totalNotes: notesCount,
@@ -175,7 +233,7 @@ export function LinkedNotesPage() {
       recentConnectionsWeek,
       recentConnectionsMonth
     };
-  }, [notes]);
+  }, [notes, ideas]);
 
   const handleDismissTooltip = () => {
     setShowTooltip(false);
@@ -213,7 +271,7 @@ export function LinkedNotesPage() {
                   <div className="p-1.5 flex items-center justify-center rounded-md bg-blue-500/10 backdrop-blur-xl shadow-sm ring-1 ring-black/5 dark:ring-white/10 bg-[var(--color-surface)]/10 group-hover:scale-110 transition-transform duration-300">
                     <Link2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                   </div>
-                  <h1 className="text-xl font-semibold text-[var(--color-text)] ml-2">Linked Notes</h1>
+                  <h1 className="text-xl font-semibold text-[var(--color-text)] ml-2">Linked Items</h1>
                 </div>
                 <div className="text-xs text-[var(--color-textSecondary)] ml-2 bg-white/5 dark:bg-black/10 px-2 py-0.5 rounded-full">
                   {stats.totalConnections} connections • {stats.connectionDensity}% density
@@ -307,7 +365,7 @@ export function LinkedNotesPage() {
           <div className="transition-all duration-300 h-[calc(100%-80px)]">
             <div className="flex h-full overflow-auto">
               <div className="flex-1">
-                {renderContent(viewMode, notes, handleNodeSelect, selectedNoteId)}
+                {renderContent(viewMode, notes, ideas, handleNodeSelect, selectedNoteId)}
               </div>
               {selectedNoteId && (
                 <div className="w-96 h-full overflow-hidden border-l border-gray-200/10 dark:border-gray-700/20">

@@ -1,16 +1,25 @@
 import { Note } from '../../../types/note';
+import { Idea } from '../../../types/idea';
 import { FileText, Network } from 'lucide-react';
 
-export const calculateConnectionStats = (notes: Note[]) => {
+export const calculateConnectionStats = (notes: Note[], ideas: Idea[] = []) => {
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
 
-    const totalConnections = notes.reduce((acc, note) => {
+    // Calculate note-related connections
+    const noteConnections = notes.reduce((acc, note) => {
         const linkedNoteCount = note.linkedNoteIds?.length || 0;
         const linkedTaskCount = note.linkedTasks?.length ?? 0;
         const linkedReminderCount = note.linkedReminders?.length || 0;
         return acc + linkedNoteCount + linkedTaskCount + linkedReminderCount;
     }, 0);
+
+    // Calculate idea-related connections
+    const ideaConnections = ideas.reduce((acc, idea) => {
+        return acc + (idea.linkedItems?.length || 0);
+    }, 0);
+
+    const totalConnections = noteConnections + ideaConnections;
 
     const notesWithConnections = notes.filter(note => {
         const hasLinkedNotes = (note.linkedNoteIds?.length || 0) > 0;
@@ -19,45 +28,77 @@ export const calculateConnectionStats = (notes: Note[]) => {
         return hasLinkedNotes || hasLinkedTasks || hasLinkedReminders;
     }).length;
 
+    const ideasWithConnections = ideas.filter(idea =>
+        (idea.linkedItems?.length || 0) > 0
+    ).length;
+
+    const totalItemsWithConnections = notesWithConnections + ideasWithConnections;
+
     const recentConnections = notes.reduce((acc, note) => {
         const recentLinks = note.linkedNoteIds?.filter(id => {
             const linkedNote = notes.find(n => n.id === id);
             return linkedNote && new Date(linkedNote.updatedAt) >= weekAgo;
         }).length || 0;
         return acc + recentLinks;
+    }, 0) + ideas.reduce((acc, idea) => {
+        // For ideas, we check if the idea itself was updated recently
+        if (new Date(idea.updatedAt) >= weekAgo) {
+            return acc + (idea.linkedItems?.length || 0);
+        }
+        return acc;
     }, 0);
 
-    const mostConnected = notes.reduce((max, note) => {
+    // Find most connected item (note or idea)
+    const mostConnectedNote = notes.reduce((max, note) => {
         const connections = (note.linkedNoteIds?.length || 0) +
             (note.linkedTasks?.length ?? 0) +
             (note.linkedReminders?.length || 0);
-        return connections > max.connections ? { note, connections } : max;
-    }, { note: null as Note | null, connections: 0 });
+        return connections > max.connections ? { item: note, connections, type: 'note' } : max;
+    }, { item: null as Note | null, connections: 0, type: 'note' });
 
-    return { totalConnections, notesWithConnections, recentConnections, mostConnected };
+    const mostConnectedIdea = ideas.reduce((max, idea) => {
+        const connections = (idea.linkedItems?.length || 0);
+        return connections > max.connections ? { item: idea, connections, type: 'idea' } : max;
+    }, { item: null as Idea | null, connections: 0, type: 'idea' });
+
+    const mostConnected = mostConnectedNote.connections >= (mostConnectedIdea.connections || 0)
+        ? mostConnectedNote
+        : mostConnectedIdea;
+
+    return {
+        totalConnections,
+        notesWithConnections: totalItemsWithConnections,
+        recentConnections,
+        mostConnected
+    };
 };
 
-export const calculateConnectionTypeStats = (notes: Note[]) => {
+export const calculateConnectionTypeStats = (notes: Note[], ideas: Idea[] = []) => {
     // Initialize counters for each connection type
     let noteToNoteConnections = 0;
     let noteToTaskConnections = 0;
     let noteToReminderConnections = 0;
     let noteToIdeaConnections = 0;
+    let ideaToNoteConnections = 0;
+    let ideaToTaskConnections = 0;
+    let ideaToReminderConnections = 0;
+    let ideaToIdeaConnections = 0;
 
     // Count notes with each connection type
     let notesWithNoteConnections = 0;
     let notesWithTaskConnections = 0;
     let notesWithReminderConnections = 0;
     let notesWithIdeaConnections = 0;
+    let ideasWithNoteConnections = 0;
+    let ideasWithTaskConnections = 0;
+    let ideasWithReminderConnections = 0;
+    let ideasWithIdeaConnections = 0;
 
     // For visualization data
     const connectionTypeCounts = [0, 0, 0, 0]; // [notes, tasks, reminders, ideas]
 
     // Analyze each note
     notes.forEach(note => {
-        // Check if this note is an idea
-        const isIdea = note.isIdea || false;
-
         // Track if this note has each connection type
         let hasNoteConnections = false;
         let hasTaskConnections = false;
@@ -69,16 +110,10 @@ export const calculateConnectionTypeStats = (notes: Note[]) => {
             noteToNoteConnections += note.linkedNoteIds.length;
             hasNoteConnections = true;
 
-            // Count connections to ideas specifically
-            if (!isIdea) { // Only count if the current note is not an idea itself
-                const linkedIdeas = note.linkedNoteIds.filter(id => {
-                    const linkedNote = notes.find(n => n.id === id);
-                    return linkedNote && linkedNote.isIdea;
-                }).length;
-
-                noteToIdeaConnections += linkedIdeas;
-                if (linkedIdeas > 0) hasIdeaConnections = true;
-            }
+            // Count connections to ideas using link type
+            const linkedIdeas = note.links?.filter(link => link.type === 'idea').length || 0;
+            noteToIdeaConnections += linkedIdeas;
+            if (linkedIdeas > 0) hasIdeaConnections = true;
         }
 
         // Count note-to-task connections
@@ -100,18 +135,56 @@ export const calculateConnectionTypeStats = (notes: Note[]) => {
         if (hasIdeaConnections) notesWithIdeaConnections++;
     });
 
+    // Analyze each idea
+    ideas.forEach(idea => {
+        let hasNoteConnections = false;
+        let hasTaskConnections = false;
+        let hasReminderConnections = false;
+        let hasIdeaConnections = false;
+
+        // Count idea connections by type
+        if (idea.linkedItems && idea.linkedItems.length > 0) {
+            idea.linkedItems.forEach(item => {
+                switch (item.type) {
+                    case 'Note':
+                        ideaToNoteConnections++;
+                        hasNoteConnections = true;
+                        break;
+                    case 'Task':
+                        ideaToTaskConnections++;
+                        hasTaskConnections = true;
+                        break;
+                    case 'Reminder':
+                        ideaToReminderConnections++;
+                        hasReminderConnections = true;
+                        break;
+                    case 'Idea':
+                        ideaToIdeaConnections++;
+                        hasIdeaConnections = true;
+                        break;
+                }
+            });
+        }
+
+        // Increment counters for ideas with each connection type
+        if (hasNoteConnections) ideasWithNoteConnections++;
+        if (hasTaskConnections) ideasWithTaskConnections++;
+        if (hasReminderConnections) ideasWithReminderConnections++;
+        if (hasIdeaConnections) ideasWithIdeaConnections++;
+    });
+
     // Update connection type counts for visualization
-    connectionTypeCounts[0] = noteToNoteConnections;
-    connectionTypeCounts[1] = noteToTaskConnections;
-    connectionTypeCounts[2] = noteToReminderConnections;
-    connectionTypeCounts[3] = noteToIdeaConnections;
+    connectionTypeCounts[0] = noteToNoteConnections + ideaToNoteConnections;
+    connectionTypeCounts[1] = noteToTaskConnections + ideaToTaskConnections;
+    connectionTypeCounts[2] = noteToReminderConnections + ideaToReminderConnections;
+    connectionTypeCounts[3] = noteToIdeaConnections + ideaToIdeaConnections;
 
     return {
         byType: {
-            notes: noteToNoteConnections,
-            tasks: noteToTaskConnections,
-            reminders: noteToReminderConnections,
-            ideas: noteToIdeaConnections
+            notes: noteToNoteConnections + ideaToNoteConnections,
+            tasks: noteToTaskConnections + ideaToTaskConnections,
+            reminders: noteToReminderConnections + ideaToReminderConnections,
+            ideas: noteToIdeaConnections + ideaToIdeaConnections
         },
         notesWith: {
             notes: notesWithNoteConnections,
@@ -119,8 +192,16 @@ export const calculateConnectionTypeStats = (notes: Note[]) => {
             reminders: notesWithReminderConnections,
             ideas: notesWithIdeaConnections
         },
+        ideasWith: {
+            notes: ideasWithNoteConnections,
+            tasks: ideasWithTaskConnections,
+            reminders: ideasWithReminderConnections,
+            ideas: ideasWithIdeaConnections
+        },
         connectionTypeCounts,
-        totalConnections: noteToNoteConnections + noteToTaskConnections + noteToReminderConnections + noteToIdeaConnections
+        totalConnections:
+            noteToNoteConnections + noteToTaskConnections + noteToReminderConnections + noteToIdeaConnections +
+            ideaToNoteConnections + ideaToTaskConnections + ideaToReminderConnections + ideaToIdeaConnections
     };
 };
 
@@ -178,11 +259,11 @@ export const getConnectionAdditionalInfo = (stats: ReturnType<typeof calculateCo
     const additionalInfo = [
         {
             icon: FileText,
-            value: `${stats.notesWithConnections} connected notes`
+            value: `${stats.notesWithConnections} connected items`
         }
     ];
 
-    if (stats.mostConnected.note) {
+    if (stats.mostConnected.item) {
         additionalInfo.push({
             icon: Network,
             value: `${stats.mostConnected.connections} max links`

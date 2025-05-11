@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { Search, X, Lightbulb, Type, CheckCircle } from 'lucide-react';
-import { useNotes } from '../../../../contexts/notesContextUtils';
+import { useNotes } from '../../../../hooks/useNotes';
 import { useTasks } from '../../../../contexts/tasksContextUtils';
+import { useIdeas } from '../../../../contexts/ideasContextUtils';
+import { Note } from '../../../../types/note';
+import { Idea } from '../../../../types/idea';
 
 interface AddLinkModalProps {
   isOpen: boolean;
@@ -12,6 +15,7 @@ interface AddLinkModalProps {
 
 export function AddLinkModal({ isOpen, onClose, currentTaskId, onLinkAdded }: AddLinkModalProps) {
   const { notes } = useNotes();
+  const { state: { ideas } } = useIdeas();
   const { tasks, addTaskLink } = useTasks();
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -25,22 +29,30 @@ export function AddLinkModal({ isOpen, onClose, currentTaskId, onLinkAdded }: Ad
 
   const alreadyLinkedIds = currentTask.linkedItems.map(item => item.id);
 
-  const filteredItems = notes.filter(note =>
-    !alreadyLinkedIds.includes(note.id) && // Don't show already linked items
+  // Create a combined list of filterable items with a type indicator
+  const notesWithType = notes.map((note: Note) => ({ ...note, itemType: 'note' }));
+  const ideasWithType = ideas.map((idea: Idea) => ({ ...idea, itemType: 'idea' }));
+  const allItems = [...notesWithType, ...ideasWithType];
+
+  const filteredItems = allItems.filter(item =>
+    !alreadyLinkedIds.includes(item.id) && // Don't show already linked items
     (selectedType === 'all' ||
-      (selectedType === 'ideas' && note.isIdea) ||
-      (selectedType === 'notes' && !note.isIdea)) &&
-    (note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      note.content.toLowerCase().includes(searchQuery.toLowerCase()))
+      (selectedType === 'ideas' && item.itemType === 'idea') ||
+      (selectedType === 'notes' && item.itemType === 'note')) &&
+    (item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.content.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  const handleAddLink = async (linkedItemId: string) => {
+  const handleAddLink = async (linkedItemId: string, itemType: 'note' | 'idea') => {
     try {
       setIsLoading(true);
       setSuccessMessage(null);
 
-      const itemTitle = notes.find(n => n.id === linkedItemId)?.title || 'Item';
-      const itemType = notes.find(n => n.id === linkedItemId)?.isIdea ? 'idea' : 'note';
+      const item = itemType === 'note'
+        ? notes.find(n => n.id === linkedItemId)
+        : ideas.find(i => i.id === linkedItemId);
+
+      const itemTitle = item?.title || 'Item';
 
       if (onLinkAdded) {
         // If parent component provided a callback, use it
@@ -119,15 +131,15 @@ export function AddLinkModal({ isOpen, onClose, currentTaskId, onLinkAdded }: Ad
               {filteredItems.map(item => (
                 <button
                   key={item.id}
-                  onClick={() => handleAddLink(item.id)}
+                  onClick={() => handleAddLink(item.id, item.itemType as 'note' | 'idea')}
                   disabled={isLoading}
                   className="w-full flex items-center gap-3 p-3 bg-white dark:bg-[#1C1C1E] hover:bg-gray-50 dark:hover:bg-[#2C2C2E] rounded-lg transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed border border-gray-200/50 dark:border-[#2C2C2E] mb-2"
                 >
-                  <div className={`p-1.5 rounded-lg ${item.isIdea
+                  <div className={`p-1.5 rounded-lg ${item.itemType === 'idea'
                     ? 'bg-amber-100 dark:bg-amber-900/30'
                     : 'bg-blue-100 dark:bg-blue-900/30'
                     }`}>
-                    {item.isIdea ? (
+                    {item.itemType === 'idea' ? (
                       <Lightbulb className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                     ) : (
                       <Type className="w-4 h-4 text-blue-600 dark:text-blue-400" />

@@ -108,7 +108,6 @@ namespace SecondBrain.Api.Controllers
                     IsPinned = request.IsPinned,
                     IsFavorite = request.IsFavorite,
                     IsArchived = false,
-                    IsIdea = false, // No longer support storing ideas in Notes table
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow,
                     UserId = userId

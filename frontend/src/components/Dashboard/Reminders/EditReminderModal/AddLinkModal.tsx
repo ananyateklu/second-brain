@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X, Search, Type, Lightbulb } from 'lucide-react';
 import { useNotes } from '../../../../contexts/notesContextUtils';
+import { useIdeas } from '../../../../contexts/ideasContextUtils';
 
 interface AddLinkModalProps {
   isOpen: boolean;
@@ -16,28 +17,36 @@ export function AddLinkModal({
   existingLinkedItemIds
 }: AddLinkModalProps) {
   const { notes } = useNotes();
+  const { state: { ideas } } = useIdeas();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTab, setSelectedTab] = useState<'notes' | 'ideas'>('notes');
 
   if (!isOpen) return null;
 
-  const filteredItems = selectedTab === 'notes'
+  // Filter notes (showing only non-deleted notes)
+  const filteredNotes = selectedTab === 'notes'
     ? notes
-        .filter(note => 
-          !note.isDeleted &&
-          !note.isIdea &&
-          (note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-           note.content.toLowerCase().includes(searchQuery.toLowerCase())) &&
-          !existingLinkedItemIds.includes(note.id)
-        )
-    : notes
-        .filter(note =>
-          !note.isDeleted &&
-          note.isIdea &&
-          (note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-           note.content.toLowerCase().includes(searchQuery.toLowerCase())) &&
-          !existingLinkedItemIds.includes(note.id)
-        );
+      .filter(note =>
+        !note.isDeleted &&
+        (note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          note.content.toLowerCase().includes(searchQuery.toLowerCase())) &&
+        !existingLinkedItemIds.includes(note.id)
+      )
+    : [];
+
+  // Filter ideas (showing only non-deleted ideas)
+  const filteredIdeas = selectedTab === 'ideas'
+    ? ideas
+      .filter(idea =>
+        !idea.isDeleted &&
+        (idea.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          idea.content.toLowerCase().includes(searchQuery.toLowerCase())) &&
+        !existingLinkedItemIds.includes(idea.id)
+      )
+    : [];
+
+  // Combine filtered items based on the selected tab
+  const filteredItems = selectedTab === 'notes' ? filteredNotes : filteredIdeas;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -76,22 +85,20 @@ export function AddLinkModal({
             <div className="flex gap-2">
               <button
                 onClick={() => setSelectedTab('notes')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
-                  selectedTab === 'notes'
-                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#1C1C1E]'
-                }`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg ${selectedTab === 'notes'
+                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#1C1C1E]'
+                  }`}
               >
                 <Type className="w-4 h-4" />
                 Notes
               </button>
               <button
                 onClick={() => setSelectedTab('ideas')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
-                  selectedTab === 'ideas'
-                    ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#1C1C1E]'
-                }`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg ${selectedTab === 'ideas'
+                  ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#1C1C1E]'
+                  }`}
               >
                 <Lightbulb className="w-4 h-4" />
                 Ideas

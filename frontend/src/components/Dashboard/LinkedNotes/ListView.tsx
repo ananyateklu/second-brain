@@ -1,16 +1,20 @@
 import { useNotes } from '../../../contexts/notesContextUtils';
+import { useIdeas } from '../../../contexts/ideasContextUtils';
 import { formatDate } from '../../../utils/dateUtils';
 import { Link2, Type, Lightbulb, Calendar, Hash } from 'lucide-react';
 import { Note } from '../../../types/note';
+import { Idea } from '../../../types/idea';
 
 interface ListViewProps {
   onNoteSelect: (noteId: string) => void;
 }
 
-const NoteCard = ({ note, onClick }: { note: Note; onClick: () => void }) => {
-  const isIdea = note.isIdea;
+const NoteCard = ({ note, onClick }: { note: Note | Idea; onClick: () => void }) => {
+  // Check if note is an Idea by checking if it has linkedItems which only exists on Idea type
+  const isIdea = 'linkedItems' in note;
   const tags = note.tags || [];
-  const connectionCount = note.linkedNoteIds?.length || 0;
+  const connectionCount = 'linkedNoteIds' in note ? note.linkedNoteIds.length :
+    'linkedItems' in note ? note.linkedItems.length : 0;
 
   return (
     <div
@@ -67,8 +71,12 @@ const NoteCard = ({ note, onClick }: { note: Note; onClick: () => void }) => {
 
 export function ListView({ onNoteSelect }: ListViewProps) {
   const { notes } = useNotes();
+  const { state: { ideas } } = useIdeas();
 
-  const sortedNotes = [...notes].sort((a, b) => {
+  // Combine notes and ideas for display
+  const allItems = [...notes, ...ideas];
+
+  const sortedItems = [...allItems].sort((a, b) => {
     const dateA = a.updatedAt || a.createdAt;
     const dateB = b.updatedAt || b.createdAt;
     return new Date(dateB).getTime() - new Date(dateA).getTime();
@@ -77,16 +85,16 @@ export function ListView({ onNoteSelect }: ListViewProps) {
   return (
     <div className="h-full overflow-auto p-4">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-        {sortedNotes.map((note) => (
+        {sortedItems.map((item) => (
           <NoteCard
-            key={note.id}
-            note={note}
-            onClick={() => onNoteSelect(note.id)}
+            key={item.id}
+            note={item}
+            onClick={() => onNoteSelect(item.id)}
           />
         ))}
       </div>
 
-      {notes.length === 0 && (
+      {allItems.length === 0 && (
         <div className="flex items-center justify-center h-full">
           <div className="text-center">
             <Link2 className="w-8 h-8 text-gray-400 mx-auto mb-2" />

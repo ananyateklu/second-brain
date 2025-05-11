@@ -5,14 +5,14 @@ import { useTheme } from '../../../contexts/themeContextUtils';
 import { cardVariants } from '../../../utils/welcomeBarUtils';
 import { useNotes } from '../../../contexts/notesContextUtils';
 import { CustomDropdown } from '../../shared/CustomDropdown';
+import { Note } from '../../../types/note';
 
-interface Note {
+interface ImportedNote {
     title: string;
     content: string;
     tags: string[];
     isFavorite: boolean;
     isPinned: boolean;
-    isIdea: boolean;
     isArchived: boolean;
     isDeleted: boolean;
     createdAt: string | Date;
@@ -327,7 +327,6 @@ export function DataManagementSettingsSection() {
                             tags: ['imported', file.type.split('/')[1] || 'unknown', `imported-${new Date().toISOString().split('T')[0]}`],
                             isFavorite: false,
                             isPinned: false,
-                            isIdea: false,
                             isArchived: false,
                             isDeleted: false
                         });
@@ -367,9 +366,21 @@ export function DataManagementSettingsSection() {
     };
 
     const generateExportContent = (notes: Note[], format: ExportOptions['format']): string => {
+        // Convert app Notes to ImportedNotes for export
+        const exportNotes: ImportedNote[] = notes.map(note => ({
+            title: note.title,
+            content: note.content,
+            tags: note.tags,
+            isFavorite: note.isFavorite,
+            isPinned: note.isPinned,
+            isArchived: note.isArchived,
+            isDeleted: note.isDeleted || false,
+            createdAt: note.createdAt
+        }));
+
         switch (format) {
             case 'markdown':
-                return notes.map(note => `# ${note.title}\n\n${note.content}`).join('\n\n---\n\n');
+                return exportNotes.map(note => `# ${note.title}\n\n${note.content}`).join('\n\n---\n\n');
             case 'html':
                 return `
           <!DOCTYPE html>
@@ -384,7 +395,7 @@ export function DataManagementSettingsSection() {
             </style>
           </head>
           <body>
-            ${notes.map(note => `
+            ${exportNotes.map(note => `
               <div class="note">
                 <h1>${note.title}</h1>
                 <div class="content">${note.content.split('\n').join('<br>')}</div>
@@ -395,7 +406,7 @@ export function DataManagementSettingsSection() {
           </html>
         `;
             default:
-                return notes.map(note => `${note.title}\n\n${note.content}`).join('\n\n==========\n\n');
+                return exportNotes.map(note => `${note.title}\n\n${note.content}`).join('\n\n==========\n\n');
         }
     };
 

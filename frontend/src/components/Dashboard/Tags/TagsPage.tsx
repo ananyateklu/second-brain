@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNotes } from '../../../contexts/notesContextUtils';
+import { useIdeas } from '../../../contexts/ideasContextUtils';
 import { useTasks } from '../../../contexts/tasksContextUtils';
 import { useReminders } from '../../../contexts/remindersContextUtils';
 import { useModal } from '../../../contexts/modalContextUtils';
@@ -9,9 +10,12 @@ import { TagsHeader } from './TagsHeader';
 import { TagsList } from './TagsList';
 import { TaggedItemsView } from './TaggedItemsView';
 import { TagsModals } from './TagsModals';
+import { LinkedItem as IdeaLinkedItem } from '../../../types/idea';
+import { Note } from '../../../types/note';
 
 export function TagsPage() {
   const { notes } = useNotes();
+  const { state: { ideas } } = useIdeas();
   const { tasks } = useTasks();
   const { reminders } = useReminders();
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
@@ -30,60 +34,46 @@ export function TagsPage() {
   // Combine all tagged items
   const allItems = useMemo(() => {
     const items: TaggedItem[] = [
-      // Regular notes (excluding ideas)
-      ...notes
-        .filter(note => !note.isIdea)
-        .map(note => ({
-          id: note.id,
-          title: note.title,
-          content: note.content,
-          tags: note.tags,
-          type: 'note' as const,
-          updatedAt: note.updatedAt,
-          createdAt: note.createdAt,
-          isIdea: note.isIdea,
-          linkedItems: [
-            ...(note.linkedTasks?.map(task => ({
-              id: task.id,
-              title: task.title,
-              type: 'task' as const,
-              createdAt: task.createdAt
-            })) || []),
-            ...(note.linkedReminders?.map(reminder => ({
-              id: reminder.id,
-              title: reminder.title,
-              type: 'reminder' as const,
-              createdAt: reminder.createdAt
-            })) || [])
-          ]
-        })),
-      // Ideas (notes with isIdea=true)
-      ...notes
-        .filter(note => note.isIdea)
-        .map(note => ({
-          id: note.id,
-          title: note.title,
-          content: note.content,
-          tags: note.tags,
-          type: 'idea' as const,
-          updatedAt: note.updatedAt,
-          createdAt: note.createdAt,
-          isIdea: note.isIdea,
-          linkedItems: [
-            ...(note.linkedTasks?.map(task => ({
-              id: task.id,
-              title: task.title,
-              type: 'task' as const,
-              createdAt: task.createdAt
-            })) || []),
-            ...(note.linkedReminders?.map(reminder => ({
-              id: reminder.id,
-              title: reminder.title,
-              type: 'reminder' as const,
-              createdAt: reminder.createdAt
-            })) || [])
-          ]
-        })),
+      // Regular notes
+      ...notes.map(note => ({
+        id: note.id,
+        title: note.title,
+        content: note.content,
+        tags: note.tags,
+        type: 'note' as const,
+        updatedAt: note.updatedAt,
+        createdAt: note.createdAt,
+        linkedItems: [
+          ...(note.linkedTasks?.map(task => ({
+            id: task.id,
+            title: task.title,
+            type: 'task' as const,
+            createdAt: task.createdAt
+          })) || []),
+          ...(note.linkedReminders?.map(reminder => ({
+            id: reminder.id,
+            title: reminder.title,
+            type: 'reminder' as const,
+            createdAt: reminder.createdAt
+          })) || [])
+        ]
+      })),
+      // Ideas (from ideas context)
+      ...ideas.map(idea => ({
+        id: idea.id,
+        title: idea.title,
+        content: idea.content,
+        tags: idea.tags,
+        type: 'idea' as const,
+        updatedAt: idea.updatedAt,
+        createdAt: idea.createdAt,
+        linkedItems: idea.linkedItems?.map(item => ({
+          id: item.id,
+          title: item.title,
+          type: item.type.toLowerCase() as 'note' | 'task' | 'reminder' | 'idea',
+          createdAt: new Date().toISOString() // Default value for createdAt
+        })) || []
+      })),
       // Tasks
       ...tasks.map(task => ({
         id: task.id,
@@ -129,7 +119,7 @@ export function TagsPage() {
     ];
 
     return items;
-  }, [notes, tasks, reminders]);
+  }, [notes, ideas, tasks, reminders]);
 
   // Use the custom hook for tag filtering
   const tagStats = useTagFiltering(allItems, searchQuery, filters);
@@ -153,7 +143,16 @@ export function TagsPage() {
     });
   }, [selectedTag, allItems, filters.types]);
 
-  // Update the handleEditNote function with proper types
+  // Convert TaggedItem LinkedItems to IdeaLinkedItem format
+  const convertToIdeaLinkedItems = (items: TaggedItem['linkedItems'] = []): IdeaLinkedItem[] => {
+    return items.map(item => ({
+      id: item.id,
+      title: item.title,
+      type: item.type.charAt(0).toUpperCase() + item.type.slice(1) as 'Note' | 'Idea' | 'Task' | 'Reminder'
+    }));
+  };
+
+  // Update the handleEditItem function with proper types
   const handleEditItem = (item: TaggedItem) => {
     switch (item.type) {
       case 'note':
@@ -164,7 +163,6 @@ export function TagsPage() {
           tags: item.tags,
           updatedAt: item.updatedAt,
           createdAt: item.createdAt,
-          isIdea: false,
           isFavorite: false,
           isPinned: false,
           isArchived: false,
@@ -183,15 +181,11 @@ export function TagsPage() {
           tags: item.tags,
           updatedAt: item.updatedAt,
           createdAt: item.createdAt,
-          isIdea: true,
           isFavorite: false,
           isPinned: false,
           isArchived: false,
           isDeleted: false,
-          linkedNoteIds: [],
-          linkedTasks: [],
-          linkedReminders: [],
-          links: []
+          linkedItems: convertToIdeaLinkedItems(item.linkedItems)
         });
         break;
       case 'reminder':
@@ -277,9 +271,10 @@ export function TagsPage() {
         </div>
       </div>
 
+      {/* Use TagsModals with type assertion for selectedIdea */}
       <TagsModals
         selectedNote={selectedNote}
-        selectedIdea={selectedIdea}
+        selectedIdea={selectedIdea as unknown as Note | null}
         selectedTask={selectedTask}
         selectedReminder={selectedReminder}
         onNoteClose={() => setSelectedNote(null)}

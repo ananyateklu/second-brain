@@ -138,7 +138,6 @@ function mapTickTickToLocalNote(tickTickNote: TickTickTask): NoteWithSource {
     tags: tickTickNote.tags || [],
     isFavorite: false,
     isPinned: false,
-    isIdea: false,
     isArchived: false,
     isDeleted: false,
     createdAt: tickTickNote.createdTime || new Date().toISOString(),
@@ -196,7 +195,7 @@ export function NotesPage() {
   }, [noteSourceFilter]);
 
   const regularNotes = useMemo(() => {
-    return notes.filter(note => !note.isIdea);
+    return notes; // No need to filter by isIdea since ideas are now in a separate collection
   }, [notes]);
 
   const mappedTickTickNotes: NoteWithSource[] = useMemo(() =>
@@ -259,7 +258,6 @@ export function NotesPage() {
       // Fetch the list only if not already fetched OR we just connected
       if (!hasFetchedProjects) {
         try {
-          console.log(`[NotesPage] Fetching TickTick project list.`);
           projectsToUse = await integrationsService.getTickTickProjects("NOTE");
           setTickTickProjectsList(projectsToUse);
           setHasFetchedProjects(true);
@@ -329,7 +327,6 @@ export function NotesPage() {
       // Convert the note to a full Note object that setSelectedNote expects
       const fullNote: Note = {
         ...note,
-        isIdea: note.isIdea || false,
         linkedNoteIds: note.linkedNoteIds || []
       };
       setSelectedNote(fullNote);
@@ -803,7 +800,7 @@ export function NotesPage() {
         <DuplicateItemsModal
           isOpen={showDuplicateModal}
           onClose={() => setShowDuplicateModal(false)}
-          items={notes.filter(note => !note.isIdea)}
+          items={notes}
           onDuplicate={handleDuplicateNotes}
           itemType="note"
         />

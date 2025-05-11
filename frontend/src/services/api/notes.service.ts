@@ -260,11 +260,8 @@ export const notesService = {
       const response = await api.get<NoteResponse>(`/api/Notes/${noteId}`);
       const originalNote = response.data;
 
-      // Create the tags array and add isIdea tag if needed
+      // Create the tags array
       const tags = Array.isArray(originalNote.tags) ? [...originalNote.tags] : [];
-      if (originalNote.isIdea && !tags.includes('idea')) {
-        tags.push('idea');
-      }
 
       // Create a new note with the same content but new ID
       const newNoteData: CreateNoteData = {
@@ -272,8 +269,7 @@ export const notesService = {
         content: originalNote.content,
         tags: tags,
         isPinned: originalNote.isPinned,
-        isFavorite: originalNote.isFavorite,
-        isIdea: originalNote.isIdea // Ensure isIdea property is copied
+        isFavorite: originalNote.isFavorite
       };
 
       // Create the duplicate

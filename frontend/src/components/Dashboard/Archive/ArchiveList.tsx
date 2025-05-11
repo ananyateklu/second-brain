@@ -4,6 +4,7 @@ import { NoteCard } from '../NoteCard';
 import { IdeaCard } from '../Ideas/IdeaCard';
 import { RotateCcw } from 'lucide-react';
 import { RestoreWarningModal } from '../../shared/RestoreWarningModal';
+import { Idea } from '../../../types/idea';
 
 interface ArchiveListProps {
   filters: {
@@ -117,7 +118,7 @@ export function ArchiveList({
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 px-1">
         {filteredNotes.map(note => {
-          const isIdea = note.isIdea || note.tags.includes('idea');
+          const isIdea = 'linkedItems' in note;
           return (
             <div
               key={note.id}
@@ -125,14 +126,14 @@ export function ArchiveList({
               className="cursor-pointer w-full"
             >
               {isIdea ? (
-                <IdeaCard 
-                  idea={{ ...note, isIdea: true }}
+                <IdeaCard
+                  idea={note as unknown as Idea}
                   viewMode="grid"
                   isSelected={selectedItems.includes(note.id)}
                   isArchiveView
                 />
               ) : (
-                <NoteCard 
+                <NoteCard
                   note={note}
                   viewMode="grid"
                   isSelected={selectedItems.includes(note.id)}

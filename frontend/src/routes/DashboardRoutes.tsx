@@ -4,7 +4,7 @@ import { Route, Routes } from 'react-router-dom';
 // Lazy load dashboard components
 const DashboardHome = lazy(() => import('../components/Dashboard/DashboardHome').then(module => ({ default: module.DashboardHome })));
 const NotesPage = lazy(() => import('../components/Dashboard/Notes/NotesPage').then(module => ({ default: module.NotesPage })));
-const LinkedNotesPage = lazy(() => import('../components/Dashboard/LinkedNotes/LinkedNotesPage').then(module => ({ default: module.LinkedNotesPage })));
+const LinkedNotesPage = lazy(() => import('../components/Dashboard/LinkedNotes/LinkedItemsGraphPage').then(module => ({ default: module.LinkedNotesPage })));
 const IdeasPage = lazy(() => import('../components/Dashboard/Ideas/IdeasPage').then(module => ({ default: module.IdeasPage })));
 const TagsPage = lazy(() => import('../components/Dashboard/Tags/TagsPage').then(module => ({ default: module.TagsPage })));
 const FavoritesPage = lazy(() => import('../components/Dashboard/Favorites/FavoritesPage').then(module => ({ default: module.FavoritesPage })));

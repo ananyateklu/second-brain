@@ -1,41 +1,87 @@
 import { useState } from 'react';
 import { X, Search, Type, Lightbulb, AlertCircle, Tag } from 'lucide-react';
 import { useNotes } from '../../../contexts/notesContextUtils';
+import { useIdeas } from '../../../contexts/ideasContextUtils';
 
 interface AddLinkModalProps {
     isOpen: boolean;
     onClose: () => void;
-    sourceNoteId: string;
+    sourceId: string;
     onLinkAdded: () => void;
+    sourceType: 'note' | 'idea';
 }
 
-export function AddLinkModal({ isOpen, onClose, sourceNoteId, onLinkAdded }: AddLinkModalProps) {
+export function AddLinkModal({ isOpen, onClose, sourceId, onLinkAdded, sourceType }: AddLinkModalProps) {
     const { notes, addLink } = useNotes();
+    const { state: { ideas }, addLink: addIdeaLink } = useIdeas();
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [linkType, setLinkType] = useState('default');
+    const [selectedItemType, setSelectedItemType] = useState<'note' | 'idea'>('note');
 
     if (!isOpen) return null;
 
     const filteredNotes = notes
-        .filter(note => note.id !== sourceNoteId && !note.linkedNoteIds?.includes(sourceNoteId))
+        .filter(note => {
+            if (sourceType === 'note') {
+                return note.id !== sourceId && !note.linkedNoteIds?.includes(sourceId);
+            }
+            return true;
+        })
         .filter(note =>
             note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             note.content.toLowerCase().includes(searchQuery.toLowerCase())
         );
 
-    const handleLinkNote = async (targetNoteId: string) => {
+    const filteredIdeas = ideas
+        .filter(idea => {
+            if (sourceType === 'idea') {
+                // Don't show the current idea in the list
+                if (idea.id === sourceId) return false;
+
+                // Don't show ideas that are already linked
+                const alreadyLinkedIdeas = idea.linkedItems
+                    .filter(link => link.type === 'Idea')
+                    .map(link => link.id);
+                return !alreadyLinkedIdeas.includes(sourceId);
+            }
+            return true;
+        })
+        .filter(idea =>
+            idea.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            idea.content.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+
+    const handleLinkItem = async (targetId: string, targetType: 'note' | 'idea') => {
         setIsLoading(true);
         setError('');
 
         try {
-            await addLink(sourceNoteId, targetNoteId, linkType);
+            if (sourceType === 'note') {
+                if (targetType === 'note') {
+                    // Link note to note
+                    await addLink(sourceId, targetId, linkType);
+                } else {
+                    // Link note to idea
+                    await addIdeaLink(targetId, sourceId, 'Note', linkType);
+                }
+            } else {
+                // Source is an idea
+                if (targetType === 'note') {
+                    // Link idea to note
+                    await addIdeaLink(sourceId, targetId, 'Note', linkType);
+                } else {
+                    // Link idea to idea
+                    await addIdeaLink(sourceId, targetId, 'Idea', linkType);
+                }
+            }
+
             onLinkAdded();
             onClose();
         } catch (err) {
-            console.error('Failed to link note:', err);
-            setError('Failed to link note. Please try again.');
+            console.error('Failed to link items:', err);
+            setError('Failed to link. Please try again.');
         } finally {
             setIsLoading(false);
         }
@@ -82,6 +128,30 @@ export function AddLinkModal({ isOpen, onClose, sourceNoteId, onLinkAdded }: Add
                             />
                         </div>
 
+                        {/* Item Type Toggle */}
+                        <div className="flex gap-2 mb-2">
+                            <button
+                                className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-2 ${selectedItemType === 'note'
+                                    ? 'bg-[var(--color-note)]/10 text-[var(--color-note)] border border-[var(--color-note)]/30'
+                                    : 'bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-textSecondary)] hover:bg-[var(--color-surfaceHover)]'
+                                    } transition-colors`}
+                                onClick={() => setSelectedItemType('note')}
+                            >
+                                <Type className="w-4 h-4" />
+                                Notes
+                            </button>
+                            <button
+                                className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-2 ${selectedItemType === 'idea'
+                                    ? 'bg-[var(--color-idea)]/10 text-[var(--color-idea)] border border-[var(--color-idea)]/30'
+                                    : 'bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-textSecondary)] hover:bg-[var(--color-surfaceHover)]'
+                                    } transition-colors`}
+                                onClick={() => setSelectedItemType('idea')}
+                            >
+                                <Lightbulb className="w-4 h-4" />
+                                Ideas
+                            </button>
+                        </div>
+
                         {/* Link Type Selector */}
                         <div className="space-y-2">
                             <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-text)]">
@@ -112,45 +182,72 @@ export function AddLinkModal({ isOpen, onClose, sourceNoteId, onLinkAdded }: Add
                             </div>
                         )}
 
-                        {/* Notes List */}
+                        {/* Items List */}
                         <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                            {filteredNotes.length > 0 ? (
-                                filteredNotes.map(note => (
-                                    <div
-                                        key={note.id}
-                                        className="group relative p-3 rounded-lg bg-[var(--color-surface)] hover:bg-[var(--color-surface)]/80 transition-colors cursor-pointer border border-[var(--color-border)]"
-                                        onClick={() => handleLinkNote(note.id)}
-                                    >
-                                        <div className="flex items-start gap-3">
-                                            <div className={`p-1.5 rounded-lg ${note.isIdea
-                                                ? 'bg-[var(--color-idea)]/10'
-                                                : 'bg-[var(--color-note)]/10'}`}
-                                            >
-                                                {note.isIdea ? (
-                                                    <Lightbulb className="w-4 h-4 text-[var(--color-idea)]" />
-                                                ) : (
+                            {selectedItemType === 'note' ? (
+                                filteredNotes.length > 0 ? (
+                                    filteredNotes.map(note => (
+                                        <div
+                                            key={note.id}
+                                            className="group relative p-3 rounded-lg bg-[var(--color-surface)] hover:bg-[var(--color-surface)]/80 transition-colors cursor-pointer border border-[var(--color-border)]"
+                                            onClick={() => handleLinkItem(note.id, 'note')}
+                                        >
+                                            <div className="flex items-start gap-3">
+                                                <div className="p-1.5 rounded-lg bg-[var(--color-note)]/10">
                                                     <Type className="w-4 h-4 text-[var(--color-note)]" />
-                                                )}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <h6 className="font-medium text-[var(--color-text)] truncate">
-                                                    {note.title}
-                                                </h6>
-                                                <p className="text-sm text-[var(--color-textSecondary)] line-clamp-2 mt-0.5">
-                                                    {note.content}
-                                                </p>
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <h6 className="font-medium text-[var(--color-text)] truncate">
+                                                        {note.title}
+                                                    </h6>
+                                                    <p className="text-sm text-[var(--color-textSecondary)] line-clamp-2 mt-0.5">
+                                                        {note.content}
+                                                    </p>
+                                                </div>
                                             </div>
                                         </div>
+                                    ))
+                                ) : (
+                                    <div className="text-center py-8">
+                                        <p className="text-[var(--color-textSecondary)]">
+                                            {searchQuery
+                                                ? 'No matching notes found'
+                                                : 'No notes available to link'}
+                                        </p>
                                     </div>
-                                ))
+                                )
                             ) : (
-                                <div className="text-center py-8">
-                                    <p className="text-[var(--color-textSecondary)]">
-                                        {searchQuery
-                                            ? 'No matching notes found'
-                                            : 'No notes available to link'}
-                                    </p>
-                                </div>
+                                filteredIdeas.length > 0 ? (
+                                    filteredIdeas.map(idea => (
+                                        <div
+                                            key={idea.id}
+                                            className="group relative p-3 rounded-lg bg-[var(--color-surface)] hover:bg-[var(--color-surface)]/80 transition-colors cursor-pointer border border-[var(--color-border)]"
+                                            onClick={() => handleLinkItem(idea.id, 'idea')}
+                                        >
+                                            <div className="flex items-start gap-3">
+                                                <div className="p-1.5 rounded-lg bg-[var(--color-idea)]/10">
+                                                    <Lightbulb className="w-4 h-4 text-[var(--color-idea)]" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <h6 className="font-medium text-[var(--color-text)] truncate">
+                                                        {idea.title}
+                                                    </h6>
+                                                    <p className="text-sm text-[var(--color-textSecondary)] line-clamp-2 mt-0.5">
+                                                        {idea.content}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="text-center py-8">
+                                        <p className="text-[var(--color-textSecondary)]">
+                                            {searchQuery
+                                                ? 'No matching ideas found'
+                                                : 'No ideas available to link'}
+                                        </p>
+                                    </div>
+                                )
                             )}
                         </div>
                     </div>

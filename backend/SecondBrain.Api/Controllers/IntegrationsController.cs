@@ -1475,7 +1475,7 @@ namespace SecondBrain.Api.Controllers
                 var newNote = new Note
                 {
                     Id = Guid.NewGuid().ToString(),
-                    Title = tickTickNote.Title ?? string.Empty,
+                    Title = tickTickNote.Title ?? "Untitled TickTick Note",
                     Content = tickTickNote.Content ?? tickTickNote.Description ?? string.Empty,
                     UserId = userId,
                     CreatedAt = DateTime.UtcNow,
@@ -1483,8 +1483,7 @@ namespace SecondBrain.Api.Controllers
                     IsPinned = false,
                     IsFavorite = false,
                     IsArchived = false,
-                    IsDeleted = false,
-                    IsIdea = false
+                    IsDeleted = false
                 };
                 
                 // Add tags if available and requested

@@ -18,7 +18,7 @@ export interface IdeasContextType {
     toggleFavorite: (id: string) => Promise<Idea>;
     togglePin: (id: string) => Promise<Idea>;
     toggleArchive: (id: string) => Promise<Idea>;
-    addLink: (ideaId: string, linkedItemId: string, linkedItemType: string) => Promise<Idea>;
+    addLink: (ideaId: string, linkedItemId: string, linkedItemType: string, linkType?: string) => Promise<Idea>;
     removeLink: (ideaId: string, linkedItemId: string, linkedItemType: string) => Promise<Idea>;
 }
 

@@ -40,6 +40,7 @@ export interface UpdateIdeaData {
 export interface AddLinkData {
   linkedItemId: string;
   linkedItemType: string;
+  linkType?: string;
 }
 
 const processIdeaResponse = (idea: IdeaResponse): Idea => ({
