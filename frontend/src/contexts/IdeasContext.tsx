@@ -8,6 +8,7 @@ import { IdeasContext, IdeasContextType } from './ideasContextUtils';
 // Define the state interface
 interface IdeasState {
   ideas: Idea[];
+  archivedIdeas: Idea[];
   loading: boolean;
   error: string | null;
 }
@@ -17,6 +18,7 @@ type IdeasAction =
   | { type: 'FETCH_IDEAS_START' }
   | { type: 'FETCH_IDEAS_SUCCESS'; payload: Idea[] }
   | { type: 'FETCH_IDEAS_FAILURE'; payload: string }
+  | { type: 'FETCH_ARCHIVED_IDEAS_SUCCESS'; payload: Idea[] }
   | { type: 'CREATE_IDEA_SUCCESS'; payload: Idea }
   | { type: 'UPDATE_IDEA_SUCCESS'; payload: Idea }
   | { type: 'DELETE_IDEA_SUCCESS'; payload: string }
@@ -30,6 +32,7 @@ type IdeasAction =
 // Initial state
 const initialState: IdeasState = {
   ideas: [],
+  archivedIdeas: [],
   loading: false,
   error: null,
 };
@@ -43,6 +46,8 @@ const ideasReducer = (state: IdeasState, action: IdeasAction): IdeasState => {
       return { ...state, ideas: action.payload, loading: false };
     case 'FETCH_IDEAS_FAILURE':
       return { ...state, loading: false, error: action.payload };
+    case 'FETCH_ARCHIVED_IDEAS_SUCCESS':
+      return { ...state, archivedIdeas: action.payload, loading: false };
     case 'CREATE_IDEA_SUCCESS':
       return { ...state, ideas: [...state.ideas, action.payload] };
     case 'UPDATE_IDEA_SUCCESS':
@@ -96,6 +101,27 @@ export const IdeasProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } catch (error) {
       console.error('Error in fetchIdeas:', error);
       dispatch({ type: 'FETCH_IDEAS_FAILURE', payload: 'Failed to fetch ideas' });
+    }
+  }, [auth.user]);
+
+  const fetchArchivedIdeas = useCallback(async () => {
+    if (!auth.user) return;
+
+    dispatch({ type: 'FETCH_IDEAS_START' });
+    try {
+      const archivedIdeas = await ideasService.getArchivedIdeas();
+
+      // Ensure all required properties are set for each idea
+      const ideasWithDefaults = archivedIdeas.map(idea => ({
+        ...idea,
+        isDeleted: idea.isDeleted || false,
+        isArchived: true, // These should always be archived
+      }));
+
+      dispatch({ type: 'FETCH_ARCHIVED_IDEAS_SUCCESS', payload: ideasWithDefaults });
+    } catch (error) {
+      console.error('Error in fetchArchivedIdeas:', error);
+      dispatch({ type: 'FETCH_IDEAS_FAILURE', payload: 'Failed to fetch archived ideas' });
     }
   }, [auth.user]);
 
@@ -233,6 +259,7 @@ export const IdeasProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const value: IdeasContextType = {
     state,
     fetchIdeas,
+    fetchArchivedIdeas,
     createIdea,
     updateIdea,
     deleteIdea,

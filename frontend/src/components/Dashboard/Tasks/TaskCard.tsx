@@ -270,7 +270,18 @@ export function TaskCard({
             </div>
           </div>
           <div className="mt-auto flex items-center gap-2 text-[8px] text-gray-400 dark:text-gray-500 border-t border-gray-100/5 dark:border-gray-800/50 pt-1.5">
-            {metadataMemo}
+            {task.priority && (
+              <span className="flex items-center gap-0.5">
+                <Clock className="w-2 h-2" />
+                {task.priority}
+              </span>
+            )}
+            {task.dueDate && (
+              <span className="flex items-center gap-0.5">
+                <Calendar className="w-2 h-2" />
+                {new Date(task.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+              </span>
+            )}
           </div>
         </div>
       </div>

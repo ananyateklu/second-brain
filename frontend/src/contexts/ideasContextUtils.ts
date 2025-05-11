@@ -4,6 +4,7 @@ import { Idea } from '../types/idea';
 // Define the state interface
 interface IdeasState {
     ideas: Idea[];
+    archivedIdeas: Idea[];
     loading: boolean;
     error: string | null;
 }
@@ -12,6 +13,7 @@ interface IdeasState {
 export interface IdeasContextType {
     state: IdeasState;
     fetchIdeas: () => Promise<void>;
+    fetchArchivedIdeas: () => Promise<void>;
     createIdea: (title: string, content: string, tags?: string[], isFavorite?: boolean) => Promise<Idea>;
     updateIdea: (id: string, data: Partial<Idea>) => Promise<Idea>;
     deleteIdea: (id: string) => Promise<void>;

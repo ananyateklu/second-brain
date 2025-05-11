@@ -22,11 +22,14 @@ import dagre from 'dagre';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { useNotes } from '../../../contexts/notesContextUtils';
 import { useIdeas } from '../../../contexts/ideasContextUtils';
+import { useTasks } from '../../../contexts/tasksContextUtils';
 import clsx from 'clsx';
 import { NoteCard } from '../NoteCard';
 import { IdeaCard } from '../Ideas/IdeaCard';
+import { TaskCard } from '../Tasks/TaskCard';
 import type { Note } from '../../../types/note';
 import type { Idea } from '../../../types/idea';
+import type { Task } from '../../../types/task';
 import { GraphControls } from './GraphControls';
 import { StoredNodePosition } from './types';
 import { saveNodePositions, loadNodePositions, clearNodePositions } from './utils/graphStorage';
@@ -41,14 +44,14 @@ type CustomNodeType = {
   type: string;
   position: { x: number; y: number };
   data: {
-    item: Note | Idea;
-    itemType: 'note' | 'idea';
+    item: Note | Idea | Task;
+    itemType: 'note' | 'idea' | 'task';
     selected: boolean;
   };
   selected: boolean;
 };
 
-const prepareEdges = (notes: Note[], ideas: Idea[]): Edge[] => {
+const prepareEdges = (notes: Note[], ideas: Idea[], tasks: Task[]): Edge[] => {
   const edges: Edge[] = [];
   const processedPairs = new Set<string>();
 
@@ -75,7 +78,9 @@ const prepareEdges = (notes: Note[], ideas: Idea[]): Edge[] => {
   ideas.forEach(idea => {
     (idea.linkedItems || []).forEach(linkedItem => {
       const targetId = linkedItem.id;
-      const targetType = linkedItem.type === 'Note' ? 'note' : 'idea';
+      const targetType = linkedItem.type === 'Note' ? 'note' :
+        linkedItem.type === 'Idea' ? 'idea' :
+          linkedItem.type === 'Task' ? 'task' : 'unknown';
 
       const pairId = [idea.id, targetId].sort().join('-');
       if (!processedPairs.has(pairId)) {
@@ -93,6 +98,30 @@ const prepareEdges = (notes: Note[], ideas: Idea[]): Edge[] => {
     });
   });
 
+  // Create edges from tasks to any linked item
+  tasks.forEach(task => {
+    (task.linkedItems || []).forEach(linkedItem => {
+      const targetId = linkedItem.id;
+      const targetType = linkedItem.type === 'Note' ? 'note' :
+        linkedItem.type === 'Idea' ? 'idea' :
+          linkedItem.type === 'Task' ? 'task' : 'unknown';
+
+      const pairId = [task.id, targetId].sort().join('-');
+      if (!processedPairs.has(pairId)) {
+        processedPairs.add(pairId);
+        edges.push({
+          id: `${task.id}-${targetId}`,
+          source: task.id,
+          target: targetId,
+          data: {
+            sourceType: 'task',
+            targetType: targetType.toLowerCase()
+          }
+        });
+      }
+    });
+  });
+
   return edges;
 };
 
@@ -103,6 +132,7 @@ const CustomNode = memo(({ data }: NodeProps) => {
   const getBorderColor = useCallback(() => {
     if (data.selected) return theme === 'dark' ? '#64AB6F' : '#059669';
     if (data.itemType === 'idea') return theme === 'dark' ? '#FCD34D' : '#F59E0B';
+    if (data.itemType === 'task') return theme === 'dark' ? '#22C55E' : '#16A34A';
     return theme === 'dark' ? 'rgb(59, 130, 246)' : 'rgb(37, 99, 235)';
   }, [data.selected, data.itemType, theme]);
 
@@ -128,6 +158,12 @@ const CustomNode = memo(({ data }: NodeProps) => {
         {data.itemType === 'idea' ? (
           <IdeaCard
             idea={data.item as Idea}
+            viewMode="mindMap"
+            isSelected={data.selected}
+          />
+        ) : data.itemType === 'task' ? (
+          <TaskCard
+            task={data.item as Task}
             viewMode="mindMap"
             isSelected={data.selected}
           />
@@ -242,6 +278,12 @@ const Legend = memo(({ theme }: { theme: string }) => (
       </div>
       <div className="flex items-center gap-2">
         <div className="w-3 h-3 border-2 rounded bg-white/10 dark:bg-white/5 transition-colors"
+          style={{ borderColor: theme === 'dark' ? '#22C55E' : '#16A34A' }}>
+        </div>
+        <span className="text-xs text-[var(--color-text)]">Tasks</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="w-3 h-3 border-2 rounded bg-white/10 dark:bg-white/5 transition-colors"
           style={{ borderColor: theme === 'dark' ? '#64AB6F' : '#059669' }}>
         </div>
         <span className="text-xs text-[var(--color-text)]">Selected</span>
@@ -263,6 +305,7 @@ export function GraphView({ onNodeSelect, selectedNoteId }: GraphViewProps) {
 function GraphViewContent({ onNodeSelect, selectedNoteId }: GraphViewProps) {
   const { notes } = useNotes();
   const { state: { ideas } } = useIdeas();
+  const { tasks } = useTasks();
   const { theme } = useTheme();
   const { fitView, zoomIn, zoomOut, setCenter } = useReactFlow();
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -283,6 +326,10 @@ function GraphViewContent({ onNodeSelect, selectedNoteId }: GraphViewProps) {
   const ideasWithLinks = useMemo(() => ideas.filter(idea =>
     (idea.linkedItems?.length ?? 0) > 0
   ), [ideas]);
+
+  const tasksWithLinks = useMemo(() => tasks.filter(task =>
+    (task.linkedItems?.length ?? 0) > 0
+  ), [tasks]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges] = useEdgesState<Edge>([]);
@@ -334,18 +381,31 @@ function GraphViewContent({ onNodeSelect, selectedNoteId }: GraphViewProps) {
       selected: idea.id === selectedNoteId,
     }));
 
-    // Combine all nodes
-    const initialNodes = [...noteNodes, ...ideaNodes];
+    // Create nodes for tasks
+    const taskNodes = tasksWithLinks.map((task) => ({
+      id: task.id,
+      type: 'custom',
+      position: { x: 0, y: 0 },
+      data: {
+        item: task,
+        itemType: 'task' as const,
+        selected: task.id === selectedNoteId,
+      },
+      selected: task.id === selectedNoteId,
+    }));
 
-    // Prepare edges between notes and ideas
-    const initialEdges = prepareEdges(notesWithLinks, ideasWithLinks);
+    // Combine all nodes
+    const initialNodes = [...noteNodes, ...ideaNodes, ...taskNodes];
+
+    // Prepare edges between all items
+    const initialEdges = prepareEdges(notesWithLinks, ideasWithLinks, tasksWithLinks);
 
     // Calculate layout
     const { nodes: layoutedNodes, edges: layoutedEdges } = getDagreLayout(initialNodes, initialEdges, savedPositions);
 
     setNodes(layoutedNodes);
     setEdges(layoutedEdges as Edge[]);
-  }, [notesWithLinks, ideasWithLinks, selectedNoteId, setNodes, setEdges, savedPositions, isLoading]);
+  }, [notesWithLinks, ideasWithLinks, tasksWithLinks, selectedNoteId, setNodes, setEdges, savedPositions, isLoading]);
 
   // Handle node drag end to save positions
   const onNodeDragStop: NodeDragHandler = useCallback(() => {
@@ -438,11 +498,24 @@ function GraphViewContent({ onNodeSelect, selectedNoteId }: GraphViewProps) {
       selected: idea.id === selectedNoteId,
     }));
 
-    // Combine all nodes
-    const initialNodes = [...noteNodes, ...ideaNodes];
+    // Create nodes for tasks
+    const taskNodes = tasksWithLinks.map((task) => ({
+      id: task.id,
+      type: 'custom',
+      position: { x: 0, y: 0 },
+      data: {
+        item: task,
+        itemType: 'task' as const,
+        selected: task.id === selectedNoteId,
+      },
+      selected: task.id === selectedNoteId,
+    }));
 
-    // Prepare edges between notes and ideas
-    const initialEdges = prepareEdges(notesWithLinks, ideasWithLinks);
+    // Combine all nodes
+    const initialNodes = [...noteNodes, ...ideaNodes, ...taskNodes];
+
+    // Prepare edges between all items
+    const initialEdges = prepareEdges(notesWithLinks, ideasWithLinks, tasksWithLinks);
 
     // Re-calculate layout without saved positions
     const { nodes: layoutedNodes, edges: layoutedEdges } = getDagreLayout(initialNodes, initialEdges);
@@ -458,7 +531,7 @@ function GraphViewContent({ onNodeSelect, selectedNoteId }: GraphViewProps) {
         maxZoom: 1.5
       });
     }, 50);
-  }, [notesWithLinks, ideasWithLinks, selectedNoteId, setNodes, setEdges, fitView]);
+  }, [notesWithLinks, ideasWithLinks, tasksWithLinks, selectedNoteId, setNodes, setEdges, fitView]);
 
   if (isLoading) {
     return (

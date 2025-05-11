@@ -102,6 +102,16 @@ export const ideasService = {
     }
   },
 
+  async getArchivedIdeas(): Promise<Idea[]> {
+    try {
+      const response = await api.get<IdeaResponse[]>('/api/Ideas/archived');
+      return response.data.map(processIdeaResponse);
+    } catch (error) {
+      console.error('Failed to fetch archived ideas:', error);
+      return []; // Return empty array instead of throwing error
+    }
+  },
+
   async toggleFavorite(id: string): Promise<Idea> {
     const response = await api.put<IdeaResponse>(`/api/Ideas/${id}/favorite`, {});
     return processIdeaResponse(response.data);

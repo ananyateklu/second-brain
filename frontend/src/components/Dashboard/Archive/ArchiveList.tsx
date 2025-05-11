@@ -1,12 +1,12 @@
 import React from 'react';
-import { useNotes } from '../../../contexts/notesContextUtils';
 import { NoteCard } from '../NoteCard';
 import { IdeaCard } from '../Ideas/IdeaCard';
 import { RotateCcw } from 'lucide-react';
-import { RestoreWarningModal } from '../../shared/RestoreWarningModal';
+import { Note } from '../../../types/note';
 import { Idea } from '../../../types/idea';
 
 interface ArchiveListProps {
+  archivedItems: Array<Note | Idea>;
   filters: {
     sortBy: 'archivedAt' | 'updatedAt' | 'title';
     sortOrder: 'asc' | 'desc';
@@ -16,42 +16,42 @@ interface ArchiveListProps {
   searchQuery: string;
   selectedItems: string[];
   onSelectItem: (id: string) => void;
-  onRestoreSelected: () => void;
+  onRestoreSingleItem: (id: string) => Promise<void>;
 }
 
 export function ArchiveList({
+  archivedItems,
   filters,
   searchQuery,
   selectedItems,
   onSelectItem,
-  onRestoreSelected
+  onRestoreSingleItem
 }: ArchiveListProps) {
-  const { archivedNotes } = useNotes();
-  const [showRestoreModal, setShowRestoreModal] = React.useState(false);
-
-  const filteredNotes = React.useMemo(() => {
-    let filtered = [...archivedNotes];
+  const filteredItems = React.useMemo(() => {
+    let filtered = [...archivedItems];
 
     // Apply search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(note =>
-        note.title.toLowerCase().includes(query) ||
-        note.content.toLowerCase().includes(query)
+      filtered = filtered.filter(item =>
+        item.title.toLowerCase().includes(query) ||
+        item.content.toLowerCase().includes(query)
       );
     }
 
     // Apply tag filter
     if (filters.tags.length > 0) {
-      filtered = filtered.filter(note =>
-        filters.tags.some(tag => note.tags.includes(tag))
+      filtered = filtered.filter(item =>
+        filters.tags.some(tag => item.tags.includes(tag))
       );
     }
 
     // Apply links filter
     if (filters.hasLinks) {
-      filtered = filtered.filter(note =>
-        note.linkedNoteIds && note.linkedNoteIds.length > 0
+      filtered = filtered.filter(item =>
+        (item as Note).linkedNoteIds ?
+          (item as Note).linkedNoteIds?.length > 0 :
+          (item as Idea).linkedItems?.length > 0
       );
     }
 
@@ -81,13 +81,9 @@ export function ArchiveList({
       if (valueA > valueB) return 1 * sortOrder;
       return 0;
     });
-  }, [archivedNotes, searchQuery, filters]);
+  }, [archivedItems, searchQuery, filters]);
 
-  const handleRestoreClick = () => {
-    setShowRestoreModal(true);
-  };
-
-  if (filteredNotes.length === 0) {
+  if (filteredItems.length === 0) {
     return (
       <div className="text-center py-12">
         <p className="text-gray-500 dark:text-gray-400">
@@ -101,59 +97,49 @@ export function ArchiveList({
 
   return (
     <div className="space-y-4">
-      {selectedItems.length > 0 && (
-        <div className="flex items-center justify-between p-4 backdrop-blur-sm bg-[#1C1C1E] dark:bg-[#1C1C1E] rounded-lg border border-[#2C2C2E] dark:border-[#2C2C2E]">
-          <span className="text-sm text-gray-400 dark:text-gray-400">
-            {selectedItems.length} items selected
-          </span>
-          <button
-            onClick={handleRestoreClick}
-            className="flex items-center gap-2 px-4 py-2 text-sm bg-[#64ab6f] hover:bg-[#64ab6f]/90 text-white rounded-lg transition-colors"
-          >
-            <RotateCcw className="w-4 h-4" />
-            <span>Restore Selected</span>
-          </button>
-        </div>
-      )}
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 px-1">
-        {filteredNotes.map(note => {
-          const isIdea = 'linkedItems' in note;
+        {filteredItems.map(item => {
+          const isIdea = 'linkedItems' in item;
           return (
             <div
-              key={note.id}
-              onClick={() => onSelectItem(note.id)}
-              className="cursor-pointer w-full"
+              key={item.id}
+              className="cursor-pointer w-full relative group"
             >
-              {isIdea ? (
-                <IdeaCard
-                  idea={note as unknown as Idea}
-                  viewMode="grid"
-                  isSelected={selectedItems.includes(note.id)}
-                  isArchiveView
-                />
-              ) : (
-                <NoteCard
-                  note={note}
-                  viewMode="grid"
-                  isSelected={selectedItems.includes(note.id)}
-                  isArchiveView
-                />
-              )}
+              <div onClick={() => onSelectItem(item.id)}>
+                {isIdea ? (
+                  <IdeaCard
+                    idea={item as Idea}
+                    viewMode="grid"
+                    isSelected={selectedItems.includes(item.id)}
+                    isArchiveView
+                  />
+                ) : (
+                  <NoteCard
+                    note={item as Note}
+                    viewMode="grid"
+                    isSelected={selectedItems.includes(item.id)}
+                    isArchiveView
+                  />
+                )}
+              </div>
+
+              {/* Restore button overlay */}
+              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRestoreSingleItem(item.id);
+                  }}
+                  className="p-2 bg-[#64ab6f] hover:bg-[#64ab6f]/90 text-white rounded-full shadow-md"
+                  title="Restore item"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           );
         })}
       </div>
-
-      <RestoreWarningModal
-        isOpen={showRestoreModal}
-        onClose={() => setShowRestoreModal(false)}
-        onConfirm={() => {
-          setShowRestoreModal(false);
-          onRestoreSelected();
-        }}
-        count={selectedItems.length}
-      />
     </div>
   );
 }

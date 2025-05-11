@@ -2,13 +2,15 @@ import { useState, useMemo } from 'react';
 import { GraphView } from './GraphView';
 import { NoteDetailsPanel } from './NoteDetailsPanel';
 import { ListView } from './ListView';
-import { List, Network, Link2, Type, Lightbulb, GitBranch, Info } from 'lucide-react';
+import { List, Network, Link2, Type, Lightbulb, GitBranch, Info, CheckSquare } from 'lucide-react';
 import type { Note } from '../../../types/note';
 import { useNotes } from '../../../contexts/notesContextUtils';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { shouldShowTooltip, markTooltipAsSeen } from './utils/graphStorage';
 import { useIdeas } from '../../../contexts/ideasContextUtils';
+import { useTasks } from '../../../contexts/tasksContextUtils';
 import { Idea } from '../../../types/idea';
+import { Task } from '../../../types/task';
 
 interface NoteConnection {
   noteId: string;
@@ -23,10 +25,15 @@ interface IdeaWithConnections extends Idea {
   connections?: NoteConnection[];
 }
 
+interface TaskWithConnections extends Task {
+  connections?: NoteConnection[];
+}
+
 const renderContent = (
   viewMode: 'graph' | 'list',
   notes: Note[],
   ideas: Idea[],
+  tasks: Task[],
   handleNodeSelect: (noteId: string) => void,
   selectedNoteId: string | null
 ) => {
@@ -34,7 +41,7 @@ const renderContent = (
     return <ListView onNoteSelect={handleNodeSelect} />;
   }
 
-  const hasItems = notes.length > 0 || ideas.length > 0;
+  const hasItems = notes.length > 0 || ideas.length > 0 || tasks.length > 0;
 
   if (!hasItems) {
     return (
@@ -85,7 +92,21 @@ const processIdeaConnections = (idea: IdeaWithConnections, oneWeekAgo: Date, one
   return { recentWeek, recentMonth };
 };
 
-const findClusters = (notes: Note[], ideas: Idea[]) => {
+const processTaskConnections = (task: TaskWithConnections, oneWeekAgo: Date, oneMonthAgo: Date) => {
+  let recentWeek = 0;
+  let recentMonth = 0;
+
+  const linkedItemsCount = task.linkedItems?.length || 0;
+  for (let i = 0; i < linkedItemsCount; i++) {
+    const connectionDate = new Date(task.createdAt); // Using task creation date as link creation date
+    if (connectionDate > oneWeekAgo) recentWeek++;
+    if (connectionDate > oneMonthAgo) recentMonth++;
+  }
+
+  return { recentWeek, recentMonth };
+};
+
+const findClusters = (notes: Note[], ideas: Idea[], tasks: Task[]) => {
   const visited = new Set<string>();
   const clusters = new Set<string>();
 
@@ -129,6 +150,26 @@ const findClusters = (notes: Note[], ideas: Idea[]) => {
     }
   });
 
+  // Process tasks
+  tasks.forEach(task => {
+    if (!visited.has(task.id)) {
+      clusters.add(task.id);
+      const stack = [task.id];
+
+      while (stack.length > 0) {
+        const currentId = stack.pop()!;
+        visited.add(currentId);
+
+        const currentTask = tasks.find(t => t.id === currentId);
+        currentTask?.linkedItems?.forEach(item => {
+          if (!visited.has(item.id)) {
+            stack.push(item.id);
+          }
+        });
+      }
+    }
+  });
+
   return clusters.size;
 };
 
@@ -155,6 +196,7 @@ const getButtonBackground = (isActive: boolean, theme: string) => {
 export function LinkedNotesPage() {
   const { notes } = useNotes();
   const { state: { ideas } } = useIdeas();
+  const { tasks } = useTasks();
   const { theme } = useTheme();
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'graph' | 'list'>('graph');
@@ -166,22 +208,52 @@ export function LinkedNotesPage() {
 
   // Calculate stats including most connected note and idea
   const stats = useMemo(() => {
-    // Count notes and ideas
+    // Count notes, ideas, and tasks
     const notesCount = notes.length;
     const ideasCount = ideas.length;
+    const tasksCount = tasks.length;
 
     // Calculate total connections
-    const noteConnections = notes.reduce((sum, note) => sum + (note.linkedNoteIds?.length || 0), 0);
-    const ideaConnections = ideas.reduce((sum, idea) => sum + (idea.linkedItems?.length || 0), 0);
-    const totalConnections = (noteConnections + ideaConnections) / 2; // Divide by 2 since connections are counted twice
+    // Use a Set to track unique connections between items
+    const connectionSet = new Set<string>();
 
-    // Count isolated notes and ideas (those without connections)
+    // Count note-to-note connections
+    notes.forEach(note => {
+      (note.linkedNoteIds || []).forEach(targetId => {
+        const pairId = [note.id, targetId].sort().join('-');
+        connectionSet.add(pairId);
+      });
+    });
+
+    // Count idea connections
+    ideas.forEach(idea => {
+      (idea.linkedItems || []).forEach(linkedItem => {
+        const pairId = [idea.id, linkedItem.id].sort().join('-');
+        connectionSet.add(pairId);
+      });
+    });
+
+    // Count task connections
+    tasks.forEach(task => {
+      (task.linkedItems || []).forEach(linkedItem => {
+        const pairId = [task.id, linkedItem.id].sort().join('-');
+        connectionSet.add(pairId);
+      });
+    });
+
+    const totalConnections = connectionSet.size;
+
+    // Count isolated notes, ideas, and tasks (those without connections)
     const isolatedNotes = notes.filter(note =>
       !note.linkedNoteIds || note.linkedNoteIds.length === 0
     ).length;
 
     const isolatedIdeas = ideas.filter(idea =>
       !idea.linkedItems || idea.linkedItems.length === 0
+    ).length;
+
+    const isolatedTasks = tasks.filter(task =>
+      !task.linkedItems || task.linkedItems.length === 0
     ).length;
 
     // Calculate recent connections
@@ -213,27 +285,42 @@ export function LinkedNotesPage() {
       recentConnectionsMonth += recentMonth;
     });
 
+    tasks.forEach(task => {
+      const { recentWeek, recentMonth } = processTaskConnections(
+        task as TaskWithConnections,
+        oneWeekAgo,
+        oneMonthAgo
+      );
+
+      recentConnectionsWeek += recentWeek;
+      recentConnectionsMonth += recentMonth;
+    });
+
     // Calculate connection density
-    const totalPossibleConnections = (notesCount + ideasCount) * (notesCount + ideasCount - 1) / 2;
+    const totalItems = notesCount + ideasCount + tasksCount;
+    // Total possible connections in a complete graph = n(n-1)/2
+    const totalPossibleConnections = totalItems > 1 ? (totalItems * (totalItems - 1)) / 2 : 0;
     const connectionDensity = totalPossibleConnections > 0
       ? Math.round((totalConnections / totalPossibleConnections) * 100)
       : 0;
 
     // Calculate clusters
-    const clusterCount = findClusters(notes, ideas);
+    const clusterCount = findClusters(notes, ideas, tasks);
 
     return {
       totalNotes: notesCount,
       totalIdeas: ideasCount,
+      totalTasks: tasksCount,
       totalConnections,
       isolatedNotes,
       isolatedIdeas,
+      isolatedTasks,
       connectionDensity,
       clusterCount,
       recentConnectionsWeek,
       recentConnectionsMonth
     };
-  }, [notes, ideas]);
+  }, [notes, ideas, tasks]);
 
   const handleDismissTooltip = () => {
     setShowTooltip(false);
@@ -340,6 +427,16 @@ export function LinkedNotesPage() {
               </div>
 
               <div className="flex items-center gap-2">
+                <div className="p-1 flex items-center justify-center rounded-md bg-green-500/10 backdrop-blur-xl shadow-sm ring-1 ring-black/5 dark:ring-white/10 bg-[var(--color-surface)]/10">
+                  <CheckSquare className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-medium text-green-600 dark:text-green-400">{stats.totalTasks}</span>
+                  <span className="text-xs text-[var(--color-textSecondary)]">Tasks</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
                 <div className="p-1 flex items-center justify-center rounded-md bg-blue-500/10 backdrop-blur-xl shadow-sm ring-1 ring-black/5 dark:ring-white/10 bg-[var(--color-surface)]/10">
                   <Network className="w-3.5 h-3.5 text-[var(--color-note)]" />
                 </div>
@@ -365,7 +462,7 @@ export function LinkedNotesPage() {
           <div className="transition-all duration-300 h-[calc(100%-80px)]">
             <div className="flex h-full overflow-auto">
               <div className="flex-1">
-                {renderContent(viewMode, notes, ideas, handleNodeSelect, selectedNoteId)}
+                {renderContent(viewMode, notes, ideas, tasks, handleNodeSelect, selectedNoteId)}
               </div>
               {selectedNoteId && (
                 <div className="w-96 h-full overflow-hidden border-l border-gray-200/10 dark:border-gray-700/20">
