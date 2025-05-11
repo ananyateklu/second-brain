@@ -6,5 +6,6 @@ namespace SecondBrain.Api.DTOs.Ideas
         public required string Content { get; set; }
         public List<string> Tags { get; set; } = new List<string>();
         public bool IsFavorite { get; set; }
+        public bool IsPinned { get; set; }
     }
 } 

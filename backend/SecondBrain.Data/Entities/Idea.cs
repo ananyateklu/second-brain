@@ -14,6 +14,8 @@ namespace SecondBrain.Data.Entities
         public required DateTime CreatedAt { get; set; }
         public required DateTime UpdatedAt { get; set; }
         public string? Tags { get; set; }
+        public bool IsDeleted { get; set; }
+        public DateTime? DeletedAt { get; set; }
         public ICollection<IdeaLink> IdeaLinks { get; set; } = new List<IdeaLink>();
     }
 }
