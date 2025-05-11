@@ -52,7 +52,7 @@ export function IdeaCard({
 
     const base = `
       relative group w-full
-      ${isSelected ? 'ring-2 ring-[var(--color-accent)]' : ''}
+      ${isSelected ? 'ring-2 ring-[var(--color-idea)]' : ''}
       ${getBackgroundColor()}
       backdrop-blur-xl 
       border border-[color:var(--color-border)]

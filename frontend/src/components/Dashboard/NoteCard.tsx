@@ -51,7 +51,7 @@ export function NoteCard({
 
     const base = `
       relative group w-full
-      ${isSelected ? 'ring-2 ring-[var(--color-accent)] rounded-lg' : ''}
+      ${isSelected ? 'ring-2 ring-[var(--color-note)] rounded-lg' : ''}
       ${getBackgroundColor()} 
       backdrop-blur-xl 
       border border-[color:var(--color-border)]
