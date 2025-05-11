@@ -166,8 +166,8 @@ export class ContentSuggestionService {
       return suggestion;
     } catch (error) {
       console.error(
-        `Failed to generate suggestion for model ${this.modelId}:`,
-        error
+        'Failed to generate suggestion:',
+        { modelId: this.modelId, error }
       );
       throw new Error(
         `Failed to generate suggestion for the selected AI model (${this.modelId}). Please try again later.`

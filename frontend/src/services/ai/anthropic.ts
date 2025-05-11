@@ -285,7 +285,7 @@ export class AnthropicService {
         content
       };
     } catch (error) {
-      console.error(`Error executing tool ${name}:`, error);
+      console.error('Error executing tool:', { name, error });
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       return {
         type: "tool_result",

@@ -132,7 +132,7 @@ export const integrationsService = {
             const response = await api.get<TickTickTask>(endpoint);
             return response.data;
         } catch (error) {
-            console.error(`Error fetching TickTick item ${taskId} from project ${projectId}:`, error);
+            console.error('Error fetching TickTick item:', { taskId, projectId, error });
             throw error;
         }
     },
@@ -147,7 +147,7 @@ export const integrationsService = {
             const response = await api.post<TickTickTask>(`/api/integrations/ticktick/tasks/${taskId}`, task);
             return response.data;
         } catch (error) {
-            console.error(`Error updating TickTick item ${taskId}:`, error);
+            console.error('Error updating TickTick item:', { taskId, error });
             throw error;
         }
     },
@@ -162,7 +162,7 @@ export const integrationsService = {
             await api.post(`/api/integrations/ticktick/tasks/${projectId}/${taskId}/complete`);
             return true;
         } catch (error) {
-            console.error(`Error completing TickTick task ${taskId}:`, error);
+            console.error('Error completing TickTick task:', { taskId, error });
             throw error;
         }
     },
@@ -177,7 +177,7 @@ export const integrationsService = {
             await api.delete(`/api/integrations/ticktick/tasks/${projectId}/${taskId}`);
             return true;
         } catch (error) {
-            console.error(`Error deleting TickTick item ${taskId}:`, error);
+            console.error('Error deleting TickTick item:', { taskId, error });
             throw error;
         }
     },
