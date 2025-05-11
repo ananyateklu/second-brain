@@ -41,7 +41,7 @@ namespace SecondBrain.Api.Services
                     IsPinned = request.IsPinned,
                     IsFavorite = request.IsFavorite,
                     IsArchived = request.IsArchived,
-                    IsIdea = request.IsIdea,
+                    // IsIdea property removed - ideas are now separate entities
                     Tags = request.Tags ?? string.Empty,
                     UserId = request.UserId,
                     CreatedAt = DateTime.UtcNow,
@@ -55,17 +55,17 @@ namespace SecondBrain.Api.Services
                 await _activityLogger.LogActivityAsync(
                     request.UserId,
                     "CREATE",
-                    request.IsIdea ? "IDEA" : "NOTE",
+                    "NOTE",
                     note.Id,
                     note.Title,
-                    $"Created new {(request.IsIdea ? "idea" : "note")}: {note.Title}",
+                    $"Created new note: {note.Title}",
                     new { Tags = note.Tags, IsPinned = note.IsPinned }
                 );
 
                 return new NoteToolResponse
                 {
                     Success = true,
-                    Message = $"Successfully created {(request.IsIdea ? "idea" : "note")}",
+                    Message = "Successfully created note",
                     Data = note
                 };
             }
@@ -101,9 +101,6 @@ namespace SecondBrain.Api.Services
 
                 if (criteria.IsArchived.HasValue)
                     query = query.Where(n => n.IsArchived == criteria.IsArchived.Value);
-
-                if (criteria.IsIdea.HasValue)
-                    query = query.Where(n => n.IsIdea == criteria.IsIdea.Value);
 
                 if (!string.IsNullOrEmpty(criteria.Query))
                 {
@@ -261,10 +258,10 @@ namespace SecondBrain.Api.Services
                 await _activityLogger.LogActivityAsync(
                     request.UserId,
                     ActivityActionType.UPDATE.ToString(),
-                    note.IsIdea ? ActivityItemType.IDEA.ToString() : ActivityItemType.NOTE.ToString(),
+                    ActivityItemType.NOTE.ToString(),
                     note.Id,
                     note.Title,
-                    $"Updated {(note.IsIdea ? "idea" : "note")}: {note.Title}",
+                    $"Updated note: {note.Title}",
                     new { Changes = changes }
                 );
 
@@ -370,18 +367,17 @@ namespace SecondBrain.Api.Services
                 await _activityLogger.LogActivityAsync(
                     userId,
                     ActivityActionType.ARCHIVE.ToString(),
-                    note.IsIdea ? ActivityItemType.IDEA.ToString() : ActivityItemType.NOTE.ToString(),
+                    ActivityItemType.NOTE.ToString(),
                     note.Id,
                     note.Title,
-                    $"Archived {(note.IsIdea ? "idea" : "note")}: {note.Title}",
+                    $"Archived note: {note.Title}",
                     new { ArchivedAt = note.ArchivedAt }
                 );
 
-                // Award XP for archiving note or idea
-                string actionType = note.IsIdea ? "archiveidea" : "archivenote";
+                // Award XP for archiving note
                 await _xpService.AwardXPAsync(
                     userId,
-                    actionType,
+                    "archivenote",
                     null,
                     note.Id,
                     note.Title
@@ -431,10 +427,10 @@ namespace SecondBrain.Api.Services
                 await _activityLogger.LogActivityAsync(
                     userId,
                     ActivityActionType.DELETE.ToString(),
-                    note.IsIdea ? ActivityItemType.IDEA.ToString() : ActivityItemType.NOTE.ToString(),
+                    ActivityItemType.NOTE.ToString(),
                     note.Id,
                     note.Title,
-                    $"Deleted {(note.IsIdea ? "idea" : "note")}: {note.Title}",
+                    $"Deleted note: {note.Title}",
                     new { DeletedAt = note.DeletedAt }
                 );
 

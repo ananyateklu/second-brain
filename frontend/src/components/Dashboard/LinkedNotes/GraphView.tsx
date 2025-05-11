@@ -21,10 +21,12 @@ import 'reactflow/dist/style.css';
 import dagre from 'dagre';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { useNotes } from '../../../contexts/notesContextUtils';
+import { useIdeas } from '../../../contexts/ideasContextUtils';
 import clsx from 'clsx';
 import { NoteCard } from '../NoteCard';
 import { IdeaCard } from '../Ideas/IdeaCard';
 import type { Note } from '../../../types/note';
+import type { Idea } from '../../../types/idea';
 import { GraphControls } from './GraphControls';
 import { StoredNodePosition } from './types';
 import { saveNodePositions, loadNodePositions, clearNodePositions } from './utils/graphStorage';
@@ -39,17 +41,59 @@ type CustomNodeType = {
   type: string;
   position: { x: number; y: number };
   data: {
-    note: Note;
+    item: Note | Idea;
+    itemType: 'note' | 'idea';
     selected: boolean;
   };
   selected: boolean;
 };
 
-// Define edge type
-type CustomEdge = Edge & {
-  data?: {
-    animated: boolean;
-  };
+const prepareEdges = (notes: Note[], ideas: Idea[]): Edge[] => {
+  const edges: Edge[] = [];
+  const processedPairs = new Set<string>();
+
+  // Create edges from notes to notes
+  notes.forEach(note => {
+    (note.linkedNoteIds || []).forEach(targetId => {
+      const pairId = [note.id, targetId].sort().join('-');
+      if (!processedPairs.has(pairId)) {
+        processedPairs.add(pairId);
+        edges.push({
+          id: `${note.id}-${targetId}`,
+          source: note.id,
+          target: targetId,
+          data: {
+            sourceType: 'note',
+            targetType: 'note'
+          }
+        });
+      }
+    });
+  });
+
+  // Create edges from ideas to any linked item
+  ideas.forEach(idea => {
+    (idea.linkedItems || []).forEach(linkedItem => {
+      const targetId = linkedItem.id;
+      const targetType = linkedItem.type === 'Note' ? 'note' : 'idea';
+
+      const pairId = [idea.id, targetId].sort().join('-');
+      if (!processedPairs.has(pairId)) {
+        processedPairs.add(pairId);
+        edges.push({
+          id: `${idea.id}-${targetId}`,
+          source: idea.id,
+          target: targetId,
+          data: {
+            sourceType: 'idea',
+            targetType: targetType.toLowerCase()
+          }
+        });
+      }
+    });
+  });
+
+  return edges;
 };
 
 // Memoize the CustomNode component to prevent unnecessary re-renders
@@ -58,8 +102,9 @@ const CustomNode = memo(({ data }: NodeProps) => {
 
   const getBorderColor = useCallback(() => {
     if (data.selected) return theme === 'dark' ? '#64AB6F' : '#059669';
+    if (data.itemType === 'idea') return theme === 'dark' ? '#FCD34D' : '#F59E0B';
     return theme === 'dark' ? 'rgb(59, 130, 246)' : 'rgb(37, 99, 235)';
-  }, [data.selected, theme]);
+  }, [data.selected, data.itemType, theme]);
 
   const borderColor = getBorderColor();
 
@@ -80,15 +125,15 @@ const CustomNode = memo(({ data }: NodeProps) => {
         'transition-all duration-300',
         data.selected && 'ring-2 ring-[#64AB6F] dark:ring-[#059669] rounded-lg'
       )}>
-        {data.note.isIdea ? (
+        {data.itemType === 'idea' ? (
           <IdeaCard
-            idea={data.note}
+            idea={data.item as Idea}
             viewMode="mindMap"
             isSelected={data.selected}
           />
         ) : (
           <NoteCard
-            note={data.note}
+            note={data.item as Note}
             viewMode="mindMap"
             isSelected={data.selected}
           />
@@ -115,59 +160,8 @@ const nodeTypes = {
   custom: CustomNode,
 };
 
-// Update edge preparation with proper typing
-const prepareEdges = (notes: Note[]): CustomEdge[] => {
-  const processedPairs = new Set<string>();
-
-  // Process note-to-note links
-  const noteToNoteEdges = notes.flatMap(note =>
-    (note.linkedNoteIds || [])
-      .filter(targetId => {
-        const pairId = [note.id, targetId].sort().join('-');
-        if (processedPairs.has(pairId)) return false;
-        processedPairs.add(pairId);
-        return notes.some(n => n.id === targetId);
-      })
-      .map(targetId => ({
-        id: `${note.id}-${targetId}`,
-        source: note.id,
-        target: targetId,
-        type: 'default',
-        animated: false,
-        style: {
-          strokeWidth: 1.5,
-          stroke: 'var(--color-border)',
-          strokeLinecap: "round" as const,
-          strokeLinejoin: "round" as const
-        },
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-          width: 15,
-          height: 15
-        }
-      } as CustomEdge))
-  );
-
-  return noteToNoteEdges.reduce<CustomEdge[]>((acc, edge) => {
-    const parallel = acc.find(e =>
-      (e.source === edge.target && e.target === edge.source) ||
-      (e.source === edge.source && e.target === edge.target)
-    );
-
-    if (parallel) {
-      parallel.style = {
-        ...parallel.style,
-        strokeWidth: 2
-      };
-      return acc;
-    }
-
-    return [...acc, edge];
-  }, []);
-};
-
 // Optimize layout calculation with configurable parameters
-const getDagreLayout = (nodes: CustomNodeType[], edges: CustomEdge[], savedPositions: StoredNodePosition[] = []) => {
+const getDagreLayout = (nodes: CustomNodeType[], edges: Edge[], savedPositions: StoredNodePosition[] = []) => {
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
 
@@ -268,6 +262,7 @@ export function GraphView({ onNodeSelect, selectedNoteId }: GraphViewProps) {
 
 function GraphViewContent({ onNodeSelect, selectedNoteId }: GraphViewProps) {
   const { notes } = useNotes();
+  const { state: { ideas } } = useIdeas();
   const { theme } = useTheme();
   const { fitView, zoomIn, zoomOut, setCenter } = useReactFlow();
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -285,8 +280,12 @@ function GraphViewContent({ onNodeSelect, selectedNoteId }: GraphViewProps) {
     (note.linkedReminders?.length ?? 0) > 0
   ), [notes]);
 
+  const ideasWithLinks = useMemo(() => ideas.filter(idea =>
+    (idea.linkedItems?.length ?? 0) > 0
+  ), [ideas]);
+
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges] = useEdgesState<CustomEdge>([]);
+  const [edges, setEdges] = useEdgesState<Edge>([]);
 
   // Load saved positions from database
   useEffect(() => {
@@ -309,23 +308,44 @@ function GraphViewContent({ onNodeSelect, selectedNoteId }: GraphViewProps) {
   useEffect(() => {
     if (isLoading) return; // Wait until positions are loaded
 
-    const initialNodes = notesWithLinks.map((note) => ({
+    // Create nodes for notes
+    const noteNodes = notesWithLinks.map((note) => ({
       id: note.id,
       type: 'custom',
       position: { x: 0, y: 0 },
       data: {
-        note,
+        item: note,
+        itemType: 'note' as const,
         selected: note.id === selectedNoteId,
       },
       selected: note.id === selectedNoteId,
     }));
 
-    const initialEdges = prepareEdges(notesWithLinks);
+    // Create nodes for ideas
+    const ideaNodes = ideasWithLinks.map((idea) => ({
+      id: idea.id,
+      type: 'custom',
+      position: { x: 0, y: 0 },
+      data: {
+        item: idea,
+        itemType: 'idea' as const,
+        selected: idea.id === selectedNoteId,
+      },
+      selected: idea.id === selectedNoteId,
+    }));
+
+    // Combine all nodes
+    const initialNodes = [...noteNodes, ...ideaNodes];
+
+    // Prepare edges between notes and ideas
+    const initialEdges = prepareEdges(notesWithLinks, ideasWithLinks);
+
+    // Calculate layout
     const { nodes: layoutedNodes, edges: layoutedEdges } = getDagreLayout(initialNodes, initialEdges, savedPositions);
 
     setNodes(layoutedNodes);
     setEdges(layoutedEdges as Edge[]);
-  }, [notesWithLinks, selectedNoteId, setNodes, setEdges, savedPositions, isLoading]);
+  }, [notesWithLinks, ideasWithLinks, selectedNoteId, setNodes, setEdges, savedPositions, isLoading]);
 
   // Handle node drag end to save positions
   const onNodeDragStop: NodeDragHandler = useCallback(() => {
@@ -392,19 +412,39 @@ function GraphViewContent({ onNodeSelect, selectedNoteId }: GraphViewProps) {
     await clearNodePositions();
     setSavedPositions([]);
 
-    // Re-calculate layout without saved positions
-    const initialNodes = notesWithLinks.map((note) => ({
+    // Create nodes for notes
+    const noteNodes = notesWithLinks.map((note) => ({
       id: note.id,
       type: 'custom',
       position: { x: 0, y: 0 },
       data: {
-        note,
+        item: note,
+        itemType: 'note' as const,
         selected: note.id === selectedNoteId,
       },
       selected: note.id === selectedNoteId,
     }));
 
-    const initialEdges = prepareEdges(notesWithLinks);
+    // Create nodes for ideas
+    const ideaNodes = ideasWithLinks.map((idea) => ({
+      id: idea.id,
+      type: 'custom',
+      position: { x: 0, y: 0 },
+      data: {
+        item: idea,
+        itemType: 'idea' as const,
+        selected: idea.id === selectedNoteId,
+      },
+      selected: idea.id === selectedNoteId,
+    }));
+
+    // Combine all nodes
+    const initialNodes = [...noteNodes, ...ideaNodes];
+
+    // Prepare edges between notes and ideas
+    const initialEdges = prepareEdges(notesWithLinks, ideasWithLinks);
+
+    // Re-calculate layout without saved positions
     const { nodes: layoutedNodes, edges: layoutedEdges } = getDagreLayout(initialNodes, initialEdges);
 
     setNodes(layoutedNodes);
@@ -418,7 +458,7 @@ function GraphViewContent({ onNodeSelect, selectedNoteId }: GraphViewProps) {
         maxZoom: 1.5
       });
     }, 50);
-  }, [notesWithLinks, selectedNoteId, setNodes, setEdges, fitView]);
+  }, [notesWithLinks, ideasWithLinks, selectedNoteId, setNodes, setEdges, fitView]);
 
   if (isLoading) {
     return (

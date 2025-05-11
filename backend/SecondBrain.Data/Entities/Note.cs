@@ -26,7 +26,10 @@ namespace SecondBrain.Data.Entities
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public DateTime? ArchivedAt { get; set; }
+        
+        [Obsolete("This property is deprecated. Use the Idea entity instead of filtering notes with IsIdea=true.")]
         public bool IsIdea { get; set; }
+        
         public string? Metadata { get; set; }
 
         // Foreign Key

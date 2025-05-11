@@ -5,6 +5,7 @@ import { ReminderCard } from '../Reminders/ReminderCard';
 import { IdeaCard } from '../Ideas/IdeaCard';
 import { TaggedItem } from './TagsTypes';
 import { cardGridStyles } from '../shared/cardStyles';
+import { Idea } from '../../../types/idea';
 
 interface TaggedItemsViewProps {
   selectedTag: string | null;
@@ -57,6 +58,28 @@ function renderItem(item: TaggedItem, viewMode: 'grid' | 'list', onEditItem: (it
 
   const wrapperClasses = "cursor-pointer w-full transition-transform duration-200 hover:-translate-y-0.5";
 
+  // Create an Idea object for IdeaCard component if needed
+  let ideaItem: Idea | null = null;
+  if (item.type === 'idea') {
+    ideaItem = {
+      id: item.id,
+      title: item.title,
+      content: item.content,
+      tags: item.tags,
+      updatedAt: item.updatedAt,
+      createdAt: item.createdAt,
+      isFavorite: false,
+      isPinned: false,
+      isArchived: false,
+      isDeleted: false,
+      linkedItems: item.linkedItems?.map(linkedItem => ({
+        id: linkedItem.id,
+        title: linkedItem.title,
+        type: linkedItem.type.charAt(0).toUpperCase() + linkedItem.type.slice(1) as 'Note' | 'Idea' | 'Task' | 'Reminder'
+      })) || []
+    };
+  }
+
   switch (item.type) {
     case 'task':
       return (
@@ -104,23 +127,7 @@ function renderItem(item: TaggedItem, viewMode: 'grid' | 'list', onEditItem: (it
       return (
         <div key={item.id} onClick={handleClick} className={wrapperClasses}>
           <IdeaCard
-            idea={{
-              id: item.id,
-              title: item.title,
-              content: item.content,
-              tags: item.tags,
-              updatedAt: item.updatedAt,
-              createdAt: item.createdAt,
-              isIdea: true,
-              isFavorite: false,
-              isPinned: false,
-              isArchived: false,
-              isDeleted: false,
-              linkedNoteIds: [],
-              linkedTasks: [],
-              linkedReminders: [],
-              links: []
-            }}
+            idea={ideaItem!}
             viewMode={viewMode}
             onClick={() => onEditItem(item)}
           />
@@ -137,7 +144,6 @@ function renderItem(item: TaggedItem, viewMode: 'grid' | 'list', onEditItem: (it
               tags: item.tags,
               updatedAt: item.updatedAt,
               createdAt: item.createdAt,
-              isIdea: false,
               isFavorite: false,
               isPinned: false,
               isArchived: false,

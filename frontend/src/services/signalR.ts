@@ -60,7 +60,7 @@ export class SignalRService {
       .withUrl('http://localhost:5127/toolHub', {
         skipNegotiation: true,
         transport: signalR.HttpTransportType.WebSockets,
-        logger: signalR.LogLevel.Information,
+        // Removed logger to prevent token logging
         withCredentials: false,
         accessTokenFactory: () => accessToken
       })

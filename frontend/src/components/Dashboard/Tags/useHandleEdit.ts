@@ -1,5 +1,7 @@
 import { TaggedItem } from './types';
 import { useModal } from '../../../contexts/modalContextUtils';
+import { Note } from '../../../types/note';
+import { Idea } from '../../../types/idea';
 
 export function useHandleEdit() {
   const { setSelectedNote, setSelectedIdea, setSelectedTask, setSelectedReminder } = useModal();
@@ -21,7 +23,6 @@ export function useHandleEdit() {
           tags: item.tags,
           updatedAt: item.updatedAt,
           createdAt: item.createdAt,
-          isIdea: false,
           isFavorite: false,
           isPinned: false,
           isArchived: false,
@@ -30,7 +31,7 @@ export function useHandleEdit() {
           linkedTasks: [],
           linkedReminders: [],
           links: []
-        });
+        } as Note);
         break;
       case 'idea':
         setSelectedIdea({
@@ -40,16 +41,12 @@ export function useHandleEdit() {
           tags: item.tags,
           updatedAt: item.updatedAt,
           createdAt: item.createdAt,
-          isIdea: true,
           isFavorite: false,
           isPinned: false,
           isArchived: false,
           isDeleted: false,
-          linkedNoteIds: [],
-          linkedTasks: [],
-          linkedReminders: [],
-          links: []
-        });
+          linkedItems: []
+        } as Idea);
         break;
       case 'task':
         setSelectedTask({

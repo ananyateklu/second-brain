@@ -7,8 +7,8 @@ import { Clock, FileText, RefreshCw } from 'lucide-react';
  * Shows how recently notes have been updated and the overall freshness of the content
  */
 export function getContentFreshnessStatValue(notes: Note[]): StatValue {
-    // Filter out ideas and deleted notes
-    const regularNotes = notes.filter(note => !note.isIdea && !note.isDeleted);
+    // Filter out deleted notes only (ideas are now in a separate table)
+    const regularNotes = notes.filter(note => !note.isDeleted);
 
     if (regularNotes.length === 0) {
         return {

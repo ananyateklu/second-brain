@@ -41,6 +41,7 @@ export function SuggestedLinksSection({
         dueDate?: string | null;
         similarity: number;
         isLinking?: boolean;
+        error?: string;
     }>>([]);
     const [error, setError] = useState('');
 
@@ -92,7 +93,7 @@ export function SuggestedLinksSection({
     const handleLinkItem = async (item: typeof suggestions[0]) => {
         // Update local state to show linking in progress
         setSuggestions(prev => prev.map(s =>
-            s.id === item.id ? { ...s, isLinking: true } : s
+            s.id === item.id ? { ...s, isLinking: true, error: undefined } : s
         ));
 
         try {
@@ -100,20 +101,33 @@ export function SuggestedLinksSection({
             if (item.type === 'note') {
                 await onLinkNote(item.id);
             } else if (item.type === 'idea') {
-                await onLinkIdea(item.id);
+                if (onLinkIdea) {
+                    await onLinkIdea(item.id);
+                } else {
+                    throw new Error('Linking to ideas is not supported');
+                }
             } else if (item.type === 'task') {
                 await onLinkTask(item.id);
             }
 
             // Remove the suggestion after successful linking
             setSuggestions(prev => prev.filter(s => s.id !== item.id));
+
         } catch (error) {
             console.error('Failed to link item:', error);
 
-            // Reset linking state on error
+            // Show the error on the specific suggestion
+            const errorMessage = error instanceof Error ? error.message : 'Failed to link item';
             setSuggestions(prev => prev.map(s =>
-                s.id === item.id ? { ...s, isLinking: false } : s
+                s.id === item.id ? { ...s, isLinking: false, error: errorMessage } : s
             ));
+
+            // Wait a moment before clearing the error
+            setTimeout(() => {
+                setSuggestions(prev => prev.map(s =>
+                    s.id === item.id ? { ...s, error: undefined } : s
+                ));
+            }, 3000);
         }
     };
 
@@ -177,6 +191,7 @@ export function SuggestedLinksSection({
                 ${getItemBackground()} ${getItemHoverBackground()} border ${getBorderStyle()}
                 transition-all duration-200 opacity-65 hover:opacity-100 relative
                 ${item.isLinking ? 'pointer-events-none' : 'cursor-pointer'}
+                ${item.error ? 'border-red-500/50' : ''}
               `}
                         >
                             {/* Icon based on item type */}
@@ -203,24 +218,29 @@ export function SuggestedLinksSection({
                                         <Loader className="w-3 h-3 ml-1 inline animate-spin text-[var(--color-accent)]" />
                                     )}
                                 </h6>
-                                <div className="flex items-center gap-2">
-                                    <p className="text-xs text-[var(--color-textSecondary)]">
-                                        {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
-                                    </p>
-                                    {item.status && (
+
+                                {item.error ? (
+                                    <p className="text-xs text-red-500 mt-0.5">{item.error}</p>
+                                ) : (
+                                    <div className="flex items-center gap-2">
                                         <p className="text-xs text-[var(--color-textSecondary)]">
-                                            {item.status}
+                                            {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
                                         </p>
-                                    )}
-                                    {item.dueDate && (
-                                        <p className="text-xs text-[var(--color-textSecondary)]">
-                                            {new Date(item.dueDate).toLocaleDateString()}
+                                        {item.status && (
+                                            <p className="text-xs text-[var(--color-textSecondary)]">
+                                                {item.status}
+                                            </p>
+                                        )}
+                                        {item.dueDate && (
+                                            <p className="text-xs text-[var(--color-textSecondary)]">
+                                                {new Date(item.dueDate).toLocaleDateString()}
+                                            </p>
+                                        )}
+                                        <p className="text-xs text-[var(--color-accent)]">
+                                            Match: {formatScore(item.similarity)}
                                         </p>
-                                    )}
-                                    <p className="text-xs text-[var(--color-accent)]">
-                                        Match: {formatScore(item.similarity)}
-                                    </p>
-                                </div>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Add icon */}

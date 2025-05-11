@@ -11,18 +11,17 @@ interface Reminder {
  * Handler for category (tag) statistics
  */
 export function getCategoriesStatValue(notes: Note[], tasks: Task[], reminders: Reminder[]): StatValue {
-    // Filter regular notes (excluding ideas)
-    const regularNotes = notes.filter(note => !note.isIdea);
+    // No need to filter ideas anymore as they're in a separate table
 
     // Collect all tags
     const allTags = [
-        ...regularNotes.flatMap(note => note.tags),
+        ...notes.flatMap(note => note.tags),
         ...tasks.flatMap(task => task.tags),
         ...reminders.flatMap(reminder => reminder.tags)
     ];
 
     const uniqueTags = new Set(allTags);
-    const notesWithTags = regularNotes.filter(note => note.tags.length > 0).length;
+    const notesWithTags = notes.filter(note => note.tags.length > 0).length;
     const tasksWithTags = tasks.filter(task => task.tags.length > 0).length;
 
     // Create bar chart data: count of tags per item type (notes, tasks, reminders)
@@ -63,4 +62,5 @@ export function getCategoriesStatValue(notes: Note[], tasks: Task[], reminders: 
             ...(hasTagData && { activityData: tagData })
         }
     };
-} 
+}
+

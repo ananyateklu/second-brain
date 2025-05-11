@@ -14,6 +14,8 @@ import { useTasks } from '../../../contexts/tasksContextUtils';
 import { useReminders } from '../../../contexts/remindersContextUtils';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { Activity } from '../../../services/api/activities.service';
+import { useIdeas } from '../../../contexts/ideasContextUtils';
+import { Idea } from '../../../types/idea';
 
 export function RecentPage() {
   const { theme } = useTheme();
@@ -21,6 +23,7 @@ export function RecentPage() {
   const { notes } = useNotes();
   const { tasks } = useTasks();
   const { reminders } = useReminders();
+  const { state: { ideas } } = useIdeas();
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
@@ -33,8 +36,8 @@ export function RecentPage() {
   const [selectedReminderId, setSelectedReminderId] = useState<string | null>(null);
   const [selectedIdeaId, setSelectedIdeaId] = useState<string | null>(null);
 
-  const selectedNote = selectedNoteId ? notes.find(n => n.id === selectedNoteId && !n.isIdea) : null;
-  const selectedIdea = selectedIdeaId ? notes.find(n => n.id === selectedIdeaId && n.isIdea) : null;
+  const selectedNote = selectedNoteId ? notes.find(n => n.id === selectedNoteId) : null;
+  const selectedIdea = selectedIdeaId ? ideas.find((i: Idea) => i.id === selectedIdeaId) : null;
   const selectedTask = selectedTaskId ? tasks.find(t => t.id === selectedTaskId) : null;
   const selectedReminder = selectedReminderId ? reminders.find(r => r.id === selectedReminderId) : null;
 

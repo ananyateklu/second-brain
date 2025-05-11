@@ -79,12 +79,10 @@ export const IdeasProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Define actions
   const fetchIdeas = useCallback(async () => {
-    console.log('fetchIdeas called - auth state:', auth.user);
     if (!auth.user) return;
 
     dispatch({ type: 'FETCH_IDEAS_START' });
     try {
-      console.log('Calling ideasService.getAllIdeas()...');
       const ideas = await ideasService.getAllIdeas();
 
       // Ensure all required properties are set for each idea
@@ -94,7 +92,6 @@ export const IdeasProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         isArchived: idea.isArchived || false,
       }));
 
-      console.log('Ideas received in IdeasContext:', ideasWithDefaults);
       dispatch({ type: 'FETCH_IDEAS_SUCCESS', payload: ideasWithDefaults });
     } catch (error) {
       console.error('Error in fetchIdeas:', error);
@@ -104,12 +101,9 @@ export const IdeasProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Fetch ideas on mount if authenticated
   useEffect(() => {
-    console.log('IdeasContext useEffect - auth state changed:', auth.user);
     if (auth.user) {
-      console.log('Authenticated, fetching ideas...');
       fetchIdeas();
     } else {
-      console.log('Not authenticated, clearing ideas...');
       dispatch({ type: 'CLEAR_IDEAS' });
     }
   }, [auth.user, fetchIdeas]);
@@ -163,8 +157,6 @@ export const IdeasProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       await ideasService.deleteIdea(id);
       dispatch({ type: 'DELETE_IDEA_SUCCESS', payload: id });
-      // We can implement a notification system later
-      console.log('Idea deleted:', id);
     } catch (error) {
       dispatch({ type: 'FETCH_IDEAS_FAILURE', payload: 'Failed to delete idea' });
       throw error;
@@ -204,11 +196,12 @@ export const IdeasProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, []);
 
-  const addLink = useCallback(async (ideaId: string, linkedItemId: string, linkedItemType: string) => {
+  const addLink = useCallback(async (ideaId: string, linkedItemId: string, linkedItemType: string, linkType?: string) => {
     try {
       const updatedIdea = await ideasService.addLink(ideaId, {
         linkedItemId,
         linkedItemType,
+        linkType
       });
       dispatch({ type: 'ADD_LINK_SUCCESS', payload: updatedIdea });
       return updatedIdea;
@@ -216,7 +209,7 @@ export const IdeasProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       // Log more detailed error information
       const specificError = err as AxiosError<{ error?: string }>;
       const backendError = specificError.response?.data?.error || specificError.message;
-      console.error('Failed to add link:', { ideaId, linkedItemId, linkedItemType, backendError }, specificError.response?.data || specificError);
+      console.error('Failed to add link:', { ideaId, linkedItemId, linkedItemType, linkType, backendError }, specificError.response?.data || specificError);
       dispatch({ type: 'FETCH_IDEAS_FAILURE', payload: backendError });
       throw err;
     }

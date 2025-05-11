@@ -687,7 +687,7 @@ namespace SecondBrain.Api.Controllers
 
                 // Validate target item based on type
                 bool targetExists = false;
-                string targetItemUserId = null;
+                string targetItemUserId = string.Empty; // Initialize with empty string instead of null
 
                 switch (request.LinkedItemType)
                 {

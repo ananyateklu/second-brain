@@ -404,7 +404,8 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
         <AddLinkModal
           isOpen={showAddLinkModal}
           onClose={() => setShowAddLinkModal(false)}
-          sourceNoteId={currentNote.id}
+          sourceId={currentNote.id}
+          sourceType="note"
           onLinkAdded={() => {
             // Force refresh linked notes by re-triggering the effect
             setShowAddLinkModal(false);

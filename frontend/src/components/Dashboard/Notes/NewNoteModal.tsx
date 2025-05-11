@@ -73,15 +73,14 @@ export function NewNoteModal({ isOpen, onClose }: NewNoteModalProps) {
         await createTickTickNote(tickTickProjectId, tickTickNoteData);
       } else {
         // Create local note
-        addNote({
-          title: title.trim(),
-          content: content.trim(),
+        await addNote({
+          title,
+          content,
           tags,
-          isPinned: false,
           isFavorite: false,
+          isPinned: false,
           isArchived: false,
-          isDeleted: false,
-          isIdea: false
+          isDeleted: false
         });
       }
 

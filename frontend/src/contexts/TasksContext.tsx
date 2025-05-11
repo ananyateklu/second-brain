@@ -50,7 +50,6 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
 
       // Only update the state if it's different from current state or we're forcing a check
       if (status.isConnected !== isTickTickConnected || forceCheck) {
-        console.log(`TickTick connection status changed: ${isTickTickConnected} → ${status.isConnected}`);
         setIsTickTickConnected(status.isConnected);
       }
     } catch (error) {
@@ -112,7 +111,6 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
 
       // Subscribe to SignalR reconnection events to revalidate TickTick connection
       const handleReconnect = () => {
-        console.log("SignalR reconnected - validating TickTick connection status");
         // Delay check slightly to ensure backend services are fully available
         setTimeout(() => checkTickTickStatus(true), 1000);
       };
@@ -401,12 +399,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         syncType: 'tasks' as const // Explicitly set syncType with const assertion
       };
 
-      console.log("Starting sync with config:", JSON.stringify(syncConfig));
-
       const result = await integrationsService.syncTickTickTasks(syncConfig);
-
-      console.log("Sync completed with result:", JSON.stringify(result));
-
       // After successful sync, refresh both local and TickTick tasks
       await fetchTasks();
       if (tickTickProjectId) {

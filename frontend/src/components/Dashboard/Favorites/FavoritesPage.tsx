@@ -3,7 +3,9 @@ import { motion } from 'framer-motion';
 import { NoteCard } from '../NoteCard';
 import { IdeaCard } from '../Ideas/IdeaCard';
 import type { Note } from '../../../types/note';
+import type { Idea } from '../../../types/idea';
 import { useNotes } from '../../../contexts/notesContextUtils';
+import { useIdeas } from '../../../contexts/ideasContextUtils';
 import { useModal } from '../../../contexts/modalContextUtils';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { cardVariants } from '../../../utils/welcomeBarUtils';
@@ -11,20 +13,21 @@ import { cardGridStyles } from '../shared/cardStyles';
 
 export function FavoritesPage() {
   const { notes } = useNotes();
+  const { state: { ideas } } = useIdeas();
   const { setSelectedNote, setSelectedIdea } = useModal();
   const { theme } = useTheme();
-  const favoriteNotes = notes.filter(note => note.isFavorite);
 
-  const handleEditNote = (note: Note) => {
-    const fullNote: Note = {
-      ...note,
-      isIdea: note.isIdea || false,
-      linkedNotes: note.linkedNotes || []
-    };
-    if (note.isIdea) {
-      setSelectedIdea(fullNote);
+  const favoriteNotes = notes.filter(note => note.isFavorite);
+  const favoriteIdeas = ideas.filter(idea => idea.isFavorite);
+  const allFavorites = [...favoriteNotes, ...favoriteIdeas];
+
+  const handleEditNote = (item: Note | Idea) => {
+    if ('linkedItems' in item) {
+      // It's an Idea
+      setSelectedIdea(item as Idea);
     } else {
-      setSelectedNote(fullNote);
+      // It's a Note
+      setSelectedNote(item as Note);
     }
   };
 
@@ -72,7 +75,7 @@ export function FavoritesPage() {
             <div className="space-y-1">
               <h1 className="text-2xl font-bold text-[var(--color-text)]">Favorites</h1>
               <p className="text-sm text-[var(--color-textSecondary)]">
-                {favoriteNotes.length} items in your favorites
+                {allFavorites.length} items in your favorites
               </p>
             </div>
           </motion.div>
@@ -98,22 +101,22 @@ export function FavoritesPage() {
             p-6
           `}
         >
-          {favoriteNotes.length > 0 ? (
+          {allFavorites.length > 0 ? (
             <div className={cardGridStyles}>
-              {favoriteNotes.map(note => (
-                note.isIdea ? (
+              {allFavorites.map(item => (
+                'linkedItems' in item ? (
                   <IdeaCard
-                    key={note.id}
-                    idea={note}
+                    key={item.id}
+                    idea={item as Idea}
                     viewMode="grid"
-                    onClick={() => handleEditNote(note)}
+                    onClick={() => handleEditNote(item)}
                   />
                 ) : (
                   <NoteCard
-                    key={note.id}
-                    note={note}
+                    key={item.id}
+                    note={item as Note}
                     viewMode="grid"
-                    onClick={() => handleEditNote(note)}
+                    onClick={() => handleEditNote(item)}
                   />
                 )
               ))}

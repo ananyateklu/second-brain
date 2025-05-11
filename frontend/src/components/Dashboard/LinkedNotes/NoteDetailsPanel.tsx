@@ -1,9 +1,11 @@
 import { useState, useMemo } from 'react';
 import { X, Link2, Tag, Plus, Type, Lightbulb, CheckSquare, Clock } from 'lucide-react';
 import { useNotes } from '../../../contexts/notesContextUtils';
+import { useIdeas } from '../../../contexts/ideasContextUtils';
 import { formatDistanceToNow } from 'date-fns';
 import { AddLinkModal } from './AddLinkModal';
 import { Note, LinkedTask } from '../../../types/note';
+import { Idea } from '../../../types/idea';
 import { useTheme } from '../../../contexts/themeContextUtils';
 
 interface NoteDetailsPanelProps {
@@ -16,10 +18,19 @@ type IconType = 'notes' | 'idea' | 'task' | 'reminder';
 export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelProps) {
   const { colors, theme } = useTheme();
   const { notes, removeLink } = useNotes();
+  const { state: { ideas }, removeLink: removeIdeaLink } = useIdeas();
   const [showAddLinkModal, setShowAddLinkModal] = useState(false);
 
+  // First check if the selected ID is a note
   const note = notes.find(n => n.id === selectedNoteId);
-  const isIdea = note?.isIdea;
+  // If not a note, check if it's an idea
+  const idea = !note ? ideas.find(i => i.id === selectedNoteId) : null;
+
+  // Determine if we're showing an idea or a note
+  const isIdea = Boolean(idea);
+
+  // Get the item to display (either a note or an idea)
+  const item = note || idea;
 
   const getIconBg = (type: IconType) => {
     if (theme === 'light') {
@@ -65,46 +76,94 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
   };
 
   const linkedItems = useMemo(() => {
-    if (!note) return { notes: [], tasks: [], reminders: [] };
+    if (!item) return { notes: [], ideas: [], tasks: [], reminders: [] };
 
-    const linkedNotes = (note.linkedNoteIds || [])
-      .map(id => {
-        const linkedNote = notes.find(n => n.id === id);
-        if (!linkedNote) return null;
-        return {
-          ...linkedNote,
-          type: 'note' as const
-        };
-      })
-      .filter((n): n is (Note & { type: 'note' }) => n !== null);
+    if (isIdea) {
+      // For ideas, we use the linkedItems property
+      const ideaItem = item as Idea;
 
-    const tasks = (note.linkedTasks || []).map((task: LinkedTask) => ({
-      ...task,
-      type: 'task' as const
-    }));
+      const linkedNotes = ideaItem.linkedItems
+        .filter(linkedItem => linkedItem.type === 'Note')
+        .map(linkedItem => {
+          const foundNote = notes.find(n => n.id === linkedItem.id);
+          if (!foundNote) return null;
+          return {
+            ...foundNote,
+            type: 'note' as const
+          };
+        })
+        .filter((n): n is (Note & { type: 'note' }) => n !== null);
 
-    const reminders = (note.linkedReminders || []).map((reminder) => ({
-      ...reminder,
-      type: 'reminder' as const
-    }));
+      const linkedIdeas = ideaItem.linkedItems
+        .filter(linkedItem => linkedItem.type === 'Idea')
+        .map(linkedItem => {
+          const foundIdea = ideas.find(i => i.id === linkedItem.id);
+          if (!foundIdea) return null;
+          return {
+            ...foundIdea,
+            type: 'idea' as const
+          };
+        })
+        .filter((i): i is (Idea & { type: 'idea' }) => i !== null);
 
-    return {
-      notes: linkedNotes,
-      tasks,
-      reminders
-    };
-  }, [note, notes]);
+      // Ideas don't have tasks and reminders in the current data structure
+      return {
+        notes: linkedNotes,
+        ideas: linkedIdeas,
+        tasks: [],
+        reminders: []
+      };
+    } else {
+      // For notes, we use the existing logic
+      const noteItem = item as Note;
 
-  const handleUnlink = async (itemId: string) => {
+      const linkedNotes = (noteItem.linkedNoteIds || [])
+        .map(id => {
+          const linkedNote = notes.find(n => n.id === id);
+          if (!linkedNote) return null;
+          return {
+            ...linkedNote,
+            type: 'note' as const
+          };
+        })
+        .filter((n): n is (Note & { type: 'note' }) => n !== null);
+
+      const tasks = (noteItem.linkedTasks || []).map((task: LinkedTask) => ({
+        ...task,
+        type: 'task' as const
+      }));
+
+      const reminders = (noteItem.linkedReminders || []).map((reminder) => ({
+        ...reminder,
+        type: 'reminder' as const
+      }));
+
+      return {
+        notes: linkedNotes,
+        ideas: [],
+        tasks,
+        reminders
+      };
+    }
+  }, [item, isIdea, notes, ideas]);
+
+  const handleUnlink = async (itemId: string, itemType: string) => {
     try {
       if (!selectedNoteId) return;
-      await removeLink(selectedNoteId, itemId);
+
+      if (isIdea) {
+        // Use idea unlinking method
+        await removeIdeaLink(selectedNoteId, itemId, itemType);
+      } else {
+        // Use note unlinking method
+        await removeLink(selectedNoteId, itemId);
+      }
     } catch (error) {
       console.error('Failed to unlink item:', error);
     }
   };
 
-  if (!note) return null;
+  if (!item) return null;
 
   return (
     <div className={`
@@ -173,15 +232,15 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
           shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05)] dark:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.3)]
         `}>
           <h2 className="text-xl font-semibold text-[var(--color-text)] mb-2">
-            {note.title}
+            {item.title}
           </h2>
           <p className="text-[var(--color-textSecondary)]">
-            {note.content}
+            {item.content}
           </p>
         </div>
 
         {/* Tags */}
-        {note.tags && note.tags.length > 0 && (
+        {item.tags && item.tags.length > 0 && (
           <div className={`
             p-4 rounded-lg shadow-sm
             ${theme === 'light'
@@ -197,7 +256,7 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
               Tags
             </h4>
             <div className="flex flex-wrap gap-2">
-              {note.tags.map(tag => (
+              {item.tags.map(tag => (
                 <span
                   key={tag}
                   className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium max-w-full"
@@ -228,7 +287,7 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-sm font-medium text-[var(--color-text)] flex items-center gap-2">
               <Link2 className="w-4 h-4 text-[var(--color-textSecondary)]" />
-              Connected Items ({linkedItems.notes.length + linkedItems.tasks.length + linkedItems.reminders.length})
+              Connected Items ({linkedItems.notes.length + linkedItems.ideas.length + linkedItems.tasks.length + linkedItems.reminders.length})
             </h4>
             <button
               onClick={() => setShowAddLinkModal(true)}
@@ -261,29 +320,88 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
                       `}
                     >
                       <div className="flex items-start gap-3">
-                        <div className={`p-1.5 rounded-lg ${linkedNote.isIdea
-                          ? getIconBg('idea')
-                          : getIconBg('notes')
-                          }`}>
-                          {linkedNote.isIdea ? (
-                            <Lightbulb className="w-4 h-4" style={{ color: colors.idea }} />
-                          ) : (
-                            <Type className="w-4 h-4" style={{ color: colors.note }} />
-                          )}
+                        <div className={`p-1.5 rounded-lg ${getIconBg('notes')}`}>
+                          <Type className="w-4 h-4" style={{ color: colors.note }} />
                         </div>
                         <div className="flex-1 min-w-0">
                           <h6 className="font-medium text-[var(--color-text)] truncate">
                             {linkedNote.title}
                           </h6>
-                          <p className="text-sm text-[var(--color-textSecondary)] line-clamp-2">
-                            {linkedNote.content}
-                          </p>
+                          {linkedNote.content && (
+                            <p className="text-sm text-[var(--color-textSecondary)] line-clamp-2">
+                              {linkedNote.content}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-3 mt-1">
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--color-accent)]/10 text-[var(--color-accent)]">
+                              Note
+                            </span>
+                          </div>
                         </div>
+
                         <button
-                          onClick={() => handleUnlink(linkedNote.id)}
-                          className="opacity-0 group-hover:opacity-100 p-1.5 text-[var(--color-textSecondary)] hover:text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 rounded-lg transition-all"
+                          onClick={() => handleUnlink(linkedNote.id, 'Note')}
+                          className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-500/20 text-red-500 transition-all absolute right-2 top-2"
+                          title="Unlink note"
                         >
-                          <X className="w-4 h-4" />
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Ideas Section */}
+            {linkedItems.ideas.length > 0 && (
+              <div>
+                <h5 className="text-xs font-medium text-[var(--color-textSecondary)] mb-2">Ideas</h5>
+                <div className="space-y-2">
+                  {linkedItems.ideas.map(linkedIdea => (
+                    <div
+                      key={linkedIdea.id}
+                      className={`
+                        group relative p-3 rounded-lg transition-all
+                        ${theme === 'light'
+                          ? 'bg-[var(--color-surface)]/30 border border-[var(--color-border)]/30'
+                          : theme === 'midnight'
+                            ? 'bg-[#0f172a]/20 border border-white/[0.02]'
+                            : 'bg-[var(--color-surface)]/10 border border-white/[0.02]'
+                        }
+                        hover:border-[var(--color-accent)]/50
+                        shadow-[0_1px_4px_-2px_rgba(0,0,0,0.05)] dark:shadow-[0_1px_4px_-2px_rgba(0,0,0,0.2)]
+                      `}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`p-1.5 rounded-lg ${getIconBg('idea')}`}>
+                          <Lightbulb className="w-4 h-4" style={{ color: colors.idea }} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h6 className="font-medium text-[var(--color-text)] truncate">
+                            {linkedIdea.title}
+                          </h6>
+                          {linkedIdea.content && (
+                            <p className="text-sm text-[var(--color-textSecondary)] line-clamp-2">
+                              {linkedIdea.content}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-3 mt-1">
+                            <span className="text-xs px-2 py-0.5 rounded-full" style={{
+                              backgroundColor: `${colors.idea}10`,
+                              color: colors.idea
+                            }}>
+                              Idea
+                            </span>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => handleUnlink(linkedIdea.id, 'Idea')}
+                          className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-500/20 text-red-500 transition-all absolute right-2 top-2"
+                          title="Unlink idea"
+                        >
+                          <X className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
@@ -314,15 +432,20 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
                     >
                       <div className="flex items-start gap-3">
                         <div className={`p-1.5 rounded-lg ${getIconBg('task')}`}>
-                          <CheckSquare className="w-4 h-4" style={{ color: colors.task }} />
+                          <CheckSquare className="w-4 h-4" style={{ color: colors.task || '#10b981' }} />
                         </div>
                         <div className="flex-1 min-w-0">
                           <h6 className="font-medium text-[var(--color-text)] truncate">
                             {task.title}
                           </h6>
+                          {task.description && (
+                            <p className="text-sm text-[var(--color-textSecondary)] line-clamp-2">
+                              {task.description}
+                            </p>
+                          )}
                           <div className="flex items-center gap-3 mt-1">
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--color-accent)]/10 text-[var(--color-accent)]">
-                              {task.status}
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500">
+                              {task.status === 'completed' ? 'Completed' : 'Active'}
                             </span>
                             {task.dueDate && (
                               <span className="flex items-center gap-1 text-xs text-[var(--color-textSecondary)]">
@@ -332,11 +455,13 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
                             )}
                           </div>
                         </div>
+
                         <button
-                          onClick={() => handleUnlink(task.id)}
-                          className="opacity-0 group-hover:opacity-100 p-1.5 text-[var(--color-textSecondary)] hover:text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 rounded-lg transition-all"
+                          onClick={() => handleUnlink(task.id, 'Task')}
+                          className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-500/20 text-red-500 transition-all absolute right-2 top-2"
+                          title="Unlink task"
                         >
-                          <X className="w-4 h-4" />
+                          <X className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
@@ -395,11 +520,13 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
                             )}
                           </div>
                         </div>
+
                         <button
-                          onClick={() => handleUnlink(reminder.id)}
-                          className="opacity-0 group-hover:opacity-100 p-1.5 text-[var(--color-textSecondary)] hover:text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 rounded-lg transition-all"
+                          onClick={() => handleUnlink(reminder.id, 'Reminder')}
+                          className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-500/20 text-red-500 transition-all absolute right-2 top-2"
+                          title="Unlink reminder"
                         >
-                          <X className="w-4 h-4" />
+                          <X className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
@@ -408,38 +535,27 @@ export function NoteDetailsPanel({ selectedNoteId, onClose }: NoteDetailsPanelPr
               </div>
             )}
 
-            {linkedItems.notes.length === 0 && linkedItems.tasks.length === 0 && linkedItems.reminders.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <div className={`
-                  p-2 rounded-lg mb-3
-                  ${theme === 'light'
-                    ? 'bg-[var(--color-surface)]/30'
-                    : theme === 'midnight'
-                      ? 'bg-[#0f172a]/20'
-                      : 'bg-[var(--color-surface)]/10'
-                  }
-                  shadow-[0_1px_4px_-2px_rgba(0,0,0,0.05)] dark:shadow-[0_1px_4px_-2px_rgba(0,0,0,0.2)]
-                `}>
-                  <Link2 className="w-6 h-6 text-[var(--color-textSecondary)]" />
-                </div>
-                <p className="text-sm text-[var(--color-textSecondary)]">
-                  No connected items yet
-                </p>
-                <p className="text-xs text-[var(--color-textSecondary)] mt-1">
-                  Click "Add Link" to connect with notes, ideas, or tasks
+            {/* No items message */}
+            {linkedItems.notes.length === 0 && linkedItems.ideas.length === 0 && linkedItems.tasks.length === 0 && linkedItems.reminders.length === 0 && (
+              <div className="text-center py-4">
+                <p className="text-[var(--color-textSecondary)]">No connected items yet</p>
+                <p className="text-sm text-[var(--color-textTertiary)] mt-1">
+                  Click "Add Link" to connect this {isIdea ? 'idea' : 'note'} with other items
                 </p>
               </div>
             )}
           </div>
         </div>
-      </div>
 
-      <AddLinkModal
-        isOpen={showAddLinkModal}
-        onClose={() => setShowAddLinkModal(false)}
-        sourceNoteId={selectedNoteId}
-        onLinkAdded={() => setShowAddLinkModal(false)}
-      />
+        {/* Add Link Modal */}
+        <AddLinkModal
+          isOpen={showAddLinkModal}
+          onClose={() => setShowAddLinkModal(false)}
+          sourceId={selectedNoteId}
+          onLinkAdded={() => setShowAddLinkModal(false)}
+          sourceType={isIdea ? 'idea' : 'note'}
+        />
+      </div>
     </div>
   );
 }

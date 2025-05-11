@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTasks } from '../../../../contexts/tasksContextUtils';
 import { useNotes } from '../../../../contexts/notesContextUtils';
+import { useIdeas } from '../../../../contexts/ideasContextUtils';
 import { LinkedItemsPanel } from './LinkedItemsPanel';
 import { Header } from './Header';
 import { MainContent } from './MainContent';
@@ -18,6 +19,7 @@ interface EditTaskModalProps {
 export function EditTaskModal({ isOpen, onClose, task: initialTask }: EditTaskModalProps) {
     const { tasks, updateTask, removeTaskLink, deleteTask, addTaskLink } = useTasks();
     const { notes } = useNotes();
+    const { state: { ideas } } = useIdeas();
     const { theme } = useTheme();
     const [showAddLinkModal, setShowAddLinkModal] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -56,21 +58,48 @@ export function EditTaskModal({ isOpen, onClose, task: initialTask }: EditTaskMo
         }
     }, [isOpen, initialTask, tasks, task]);
 
-    // Update filtered items when search query, selected type, or notes change
+    // Update filtered items when search query, selected type, or notes/ideas change
     useEffect(() => {
         if (task) {
             const alreadyLinkedIds = task.linkedItems.map(item => item.id);
-            const filtered = notes.filter(note =>
-                !alreadyLinkedIds.includes(note.id) && // Don't show already linked items
-                (selectedType === 'all' ||
-                    (selectedType === 'ideas' && note.isIdea) ||
-                    (selectedType === 'notes' && !note.isIdea)) &&
-                (note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    note.content.toLowerCase().includes(searchQuery.toLowerCase()))
-            );
-            setFilteredItems(filtered);
+
+            let filteredResults: { id: string; title: string; content: string; isIdea: boolean }[] = [];
+
+            // Filter notes if showing all or notes specifically
+            if (selectedType === 'all' || selectedType === 'notes') {
+                const filteredNotes = notes.filter(note =>
+                    !alreadyLinkedIds.includes(note.id) &&
+                    (note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        note.content.toLowerCase().includes(searchQuery.toLowerCase()))
+                ).map(note => ({
+                    id: note.id,
+                    title: note.title,
+                    content: note.content,
+                    isIdea: false
+                }));
+
+                filteredResults = [...filteredResults, ...filteredNotes];
+            }
+
+            // Filter ideas if showing all or ideas specifically
+            if (selectedType === 'all' || selectedType === 'ideas') {
+                const filteredIdeas = ideas.filter(idea =>
+                    !alreadyLinkedIds.includes(idea.id) &&
+                    (idea.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        idea.content.toLowerCase().includes(searchQuery.toLowerCase()))
+                ).map(idea => ({
+                    id: idea.id,
+                    title: idea.title,
+                    content: idea.content,
+                    isIdea: true
+                }));
+
+                filteredResults = [...filteredResults, ...filteredIdeas];
+            }
+
+            setFilteredItems(filteredResults);
         }
-    }, [searchQuery, selectedType, notes, task]);
+    }, [searchQuery, selectedType, notes, ideas, task]);
 
     // Update form data when task changes
     useEffect(() => {
@@ -181,7 +210,15 @@ export function EditTaskModal({ isOpen, onClose, task: initialTask }: EditTaskMo
             });
 
             // Find the note/idea to get its title
-            const linkedNote = notes.find(n => n.id === linkedItemId);
+            let linkedTitle = '';
+
+            if (itemType === 'note') {
+                const linkedNote = notes.find(n => n.id === linkedItemId);
+                linkedTitle = linkedNote?.title || 'Linked Note';
+            } else {
+                const linkedIdea = ideas.find(i => i.id === linkedItemId);
+                linkedTitle = linkedIdea?.title || 'Linked Idea';
+            }
 
             // Update our local state with the new linked item
             setTask(prev => {
@@ -193,7 +230,7 @@ export function EditTaskModal({ isOpen, onClose, task: initialTask }: EditTaskMo
                         {
                             id: linkedItemId,
                             type: itemType,
-                            title: linkedNote?.title || 'Linked Item',
+                            title: linkedTitle,
                             createdAt: new Date().toISOString()
                         }
                     ]

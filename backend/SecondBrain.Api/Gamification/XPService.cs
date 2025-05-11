@@ -225,16 +225,16 @@ namespace SecondBrain.Api.Gamification
         {
             // Get counts for different content types
             var noteCount = await _context.Notes
-                .CountAsync(n => n.UserId == userId && !n.IsDeleted && !n.IsIdea);
+                .CountAsync(n => n.UserId == userId && !n.IsDeleted);
             
-            var ideaCount = await _context.Notes
-                .CountAsync(n => n.UserId == userId && !n.IsDeleted && n.IsIdea);
+            var ideaCount = await _context.Ideas
+                .CountAsync(i => i.UserId == userId && !i.IsDeleted);
                 
             var archivedNoteCount = await _context.Notes
-                .CountAsync(n => n.UserId == userId && !n.IsDeleted && !n.IsIdea && n.IsArchived);
+                .CountAsync(n => n.UserId == userId && !n.IsDeleted && n.IsArchived);
                 
-            var archivedIdeaCount = await _context.Notes
-                .CountAsync(n => n.UserId == userId && !n.IsDeleted && n.IsIdea && n.IsArchived);
+            var archivedIdeaCount = await _context.Ideas
+                .CountAsync(i => i.UserId == userId && !i.IsDeleted && i.IsArchived);
             
             var taskCount = await _context.Tasks
                 .CountAsync(t => t.UserId == userId && !t.IsDeleted);

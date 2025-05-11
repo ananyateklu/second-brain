@@ -49,7 +49,7 @@ namespace SecondBrain.Api.DTOs.Tasks
                     {
                         Id = tl.LinkedItemId,
                         Title = tl.LinkedItem.Title,
-                        Type = tl.LinkedItem.IsIdea ? "idea" : "note",
+                        Type = tl.LinkType,
                         CreatedAt = tl.CreatedAt
                     })
                     .ToList(),

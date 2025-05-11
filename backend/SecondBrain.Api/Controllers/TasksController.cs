@@ -313,7 +313,7 @@ namespace SecondBrain.Api.Controllers
             link.DeletedAt = null;
             link.Description = description;
             link.CreatedAt = DateTime.UtcNow;
-            link.LinkType = linkedItem.IsIdea ? "idea" : "note";
+            link.LinkType = "note"; // Hard-code as "note" since this is a Note, not an Idea
             await _context.SaveChangesAsync();
         }
 
@@ -323,7 +323,7 @@ namespace SecondBrain.Api.Controllers
             {
                 TaskId = task.Id,
                 LinkedItemId = linkedItem.Id,
-                LinkType = linkedItem.IsIdea ? "idea" : "note",
+                LinkType = "note", // Hard-code as "note" since this is a Note, not an Idea
                 Description = description,
                 CreatedAt = DateTime.UtcNow,
                 CreatedBy = userId,

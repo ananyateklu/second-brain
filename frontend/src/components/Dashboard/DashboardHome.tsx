@@ -12,11 +12,14 @@ import { useModal } from '../../contexts/modalContextUtils';
 import { Note } from '../../types/note';
 import { WelcomeBar } from './WelcomeBar';
 import { IdeaCard } from './Ideas/IdeaCard';
+import { useIdeas } from '../../contexts/ideasContextUtils';
+import { Idea } from '../../types/idea';
 
 export function DashboardHome() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { notes } = useNotes();
+  const { state: { ideas } } = useIdeas();
   const { tasks } = useTasks();
   const { setSelectedNote, setSelectedIdea } = useModal();
 
@@ -28,8 +31,8 @@ export function DashboardHome() {
       weekAgo.setDate(weekAgo.getDate() - 7);
       return noteDate > weekAgo;
     }).length,
-    pinnedNotes: notes.filter(note => note.isPinned && !note.isIdea),
-    pinnedIdeas: notes.filter(note => note.isPinned && note.isIdea),
+    pinnedNotes: notes.filter(note => note.isPinned),
+    pinnedIdeas: ideas.filter(idea => idea.isPinned),
     lastUpdated: notes.length > 0
       ? new Date(Math.max(...notes.map(note => new Date(note.updatedAt).getTime())))
       : null,
@@ -41,7 +44,7 @@ export function DashboardHome() {
     setSelectedNote(note);
   };
 
-  const handleEditIdea = (idea: Note) => {
+  const handleEditIdea = (idea: Idea) => {
     setSelectedIdea(idea);
   };
 
