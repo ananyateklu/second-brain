@@ -4,6 +4,7 @@ import { useActivities } from './activityContextUtils';
 import { tasksService } from '../services/api/tasks.service';
 import { notesService } from '../services/api/notes.service';
 import { reminderService } from '../services/api/reminders.service';
+import { ideasService } from '../services/api/ideas.service';
 import type { TaskStatus } from '../types/task';
 
 const getMappedPriority = (priority: number | string | undefined): 'low' | 'medium' | 'high' => {
@@ -55,9 +56,10 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
   useEffect(() => {
     const fetchDeletedItems = async () => {
       try {
-        const [deletedTasks, deletedNotes] = await Promise.all([
+        const [deletedTasks, deletedNotes, deletedIdeas] = await Promise.all([
           tasksService.getDeletedTasks(),
-          notesService.getDeletedNotes()
+          notesService.getDeletedNotes(),
+          ideasService.getDeletedIdeas()
         ]);
 
         const taskItems: TrashedItem[] = deletedTasks.map(task => ({
@@ -78,7 +80,7 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
 
         const noteItems: TrashedItem[] = deletedNotes.map(note => ({
           id: note.id,
-          type: note.tags?.includes('idea') ? 'idea' : 'note',
+          type: 'note',
           title: note.title,
           content: note.content,
           metadata: {
@@ -90,8 +92,22 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
           expiresAt: new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()
         }));
 
+        const ideaItems: TrashedItem[] = deletedIdeas.map(idea => ({
+          id: idea.id,
+          type: 'idea',
+          title: idea.title,
+          content: idea.content,
+          metadata: {
+            tags: idea.tags,
+            linkedItems: idea.linkedItems?.map(item => item.id) || [],
+            isFavorite: idea.isFavorite
+          },
+          deletedAt: idea.deletedAt ?? new Date().toISOString(),
+          expiresAt: new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        }));
+
         // Set all items at once instead of accumulating
-        setTrashedItems([...taskItems, ...noteItems]);
+        setTrashedItems([...taskItems, ...noteItems, ...ideaItems]);
       } catch (error) {
         console.error('Failed to fetch deleted items:', error);
       }
@@ -164,10 +180,16 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
 
   const restoreNoteOrIdea = useCallback(async (item: TrashedItem) => {
     setTrashedItems(prev => prev.filter(i => i.id !== item.id));
-    const restoredNote = await notesService.restoreNote(item.id);
-    if (onRestoreNote) {
-      await onRestoreNote(restoredNote);
+
+    if (item.type === 'note') {
+      const restoredNote = await notesService.restoreNote(item.id);
+      if (onRestoreNote) {
+        await onRestoreNote(restoredNote);
+      }
+    } else if (item.type === 'idea') {
+      await ideasService.restoreIdea(item.id);
     }
+
     await logRestoreActivity(item.type as 'note' | 'idea', item, {
       tags: item.metadata?.tags,
       linkedItems: item.metadata?.linkedItems,
@@ -244,7 +266,7 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
     });
   }, [createActivity]);
 
-  const handleNoteOrIdeaDeletion = useCallback(async (item: TrashedItem) => {
+  const handleNoteDeletion = useCallback(async (item: TrashedItem) => {
     const noteLinkedItems = item.metadata?.linkedItems || [];
     for (const linkedNoteId of noteLinkedItems) {
       await notesService.removeLink(item.id, linkedNoteId).catch(error =>
@@ -261,15 +283,41 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
     await notesService.deleteNotePermanently(item.id);
     await createActivity({
       actionType: 'delete',
-      itemType: item.type,
+      itemType: 'note',
       itemId: item.id,
       itemTitle: item.title,
-      description: `Permanently deleted ${item.type}: ${item.title}`,
+      description: `Permanently deleted note: ${item.title}`,
       metadata: {
         noteId: item.id,
         noteTitle: item.title,
         noteTags: item.metadata?.tags,
         noteLinkedItems: item.metadata?.linkedItems,
+        isFavorite: item.metadata?.isFavorite,
+        deletedAt: new Date().toISOString()
+      }
+    });
+  }, [createActivity]);
+
+  const handleIdeaDeletion = useCallback(async (item: TrashedItem) => {
+    const ideaLinkedItems = item.metadata?.linkedItems || [];
+    for (const linkedItemId of ideaLinkedItems) {
+      await ideasService.removeLink(item.id, linkedItemId, 'Note').catch(error =>
+        console.warn('Failed to unlink item from idea:', linkedItemId, item.id, error)
+      );
+    }
+
+    await ideasService.deleteIdeaPermanently(item.id);
+    await createActivity({
+      actionType: 'delete',
+      itemType: 'idea',
+      itemId: item.id,
+      itemTitle: item.title,
+      description: `Permanently deleted idea: ${item.title}`,
+      metadata: {
+        ideaId: item.id,
+        ideaTitle: item.title,
+        ideaTags: item.metadata?.tags,
+        ideaLinkedItems: item.metadata?.linkedItems,
         isFavorite: item.metadata?.isFavorite,
         deletedAt: new Date().toISOString()
       }
@@ -315,8 +363,10 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
             await handleTaskDeletion(item);
             break;
           case 'note':
+            await handleNoteDeletion(item);
+            break;
           case 'idea':
-            await handleNoteOrIdeaDeletion(item);
+            await handleIdeaDeletion(item);
             break;
           case 'reminder':
             await handleReminderDeletion(item);
@@ -341,7 +391,7 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
           .join('\n')}`
       );
     }
-  }, [trashedItems, handleTaskDeletion, handleNoteOrIdeaDeletion, handleReminderDeletion]);
+  }, [trashedItems, handleTaskDeletion, handleNoteDeletion, handleIdeaDeletion, handleReminderDeletion]);
 
   const emptyTrash = useCallback(async () => {
     try {
@@ -355,10 +405,11 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
 
   const refreshTrashItems = useCallback(async () => {
     try {
-      const [deletedTasks, deletedNotes, deletedReminders] = await Promise.all([
+      const [deletedTasks, deletedNotes, deletedReminders, deletedIdeas] = await Promise.all([
         tasksService.getDeletedTasks(),
         notesService.getDeletedNotes(),
-        reminderService.getDeletedReminders()
+        reminderService.getDeletedReminders(),
+        ideasService.getDeletedIdeas()
       ]);
 
       const taskItems: TrashedItem[] = deletedTasks.map(task => ({
@@ -379,7 +430,7 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
 
       const noteItems: TrashedItem[] = deletedNotes.map(note => ({
         id: note.id,
-        type: note.tags?.includes('idea') ? 'idea' : 'note',
+        type: 'note',
         title: note.title,
         content: note.content,
         metadata: {
@@ -408,7 +459,21 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
         expiresAt: new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()
       }));
 
-      setTrashedItems([...taskItems, ...noteItems, ...reminderItems]);
+      const ideaItems: TrashedItem[] = deletedIdeas.map(idea => ({
+        id: idea.id,
+        type: 'idea',
+        title: idea.title,
+        content: idea.content,
+        metadata: {
+          tags: idea.tags,
+          linkedItems: idea.linkedItems?.map(item => item.id) || [],
+          isFavorite: idea.isFavorite
+        },
+        deletedAt: idea.deletedAt ?? new Date().toISOString(),
+        expiresAt: new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()
+      }));
+
+      setTrashedItems([...taskItems, ...noteItems, ...reminderItems, ...ideaItems]);
     } catch (error) {
       console.error('Failed to refresh trash items:', error);
     }

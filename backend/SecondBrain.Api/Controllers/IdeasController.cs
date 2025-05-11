@@ -17,7 +17,7 @@ namespace SecondBrain.Api.Controllers
     [Route("api/[controller]")]
     public class IdeasController : ControllerBase
     {
-        private const string IdeaNotFoundError = "Idea not found.";
+        private const string IdeaNotFoundError = "Source idea not found, or it is deleted/archived.";
         private readonly DataContext _context;
         private readonly IXPService _xpService;
         private readonly IAchievementService _achievementService;
@@ -378,15 +378,166 @@ namespace SecondBrain.Api.Controllers
                     return NotFound(new { error = IdeaNotFoundError });
                 }
 
-                _context.Ideas.Remove(idea);
+                // Change to soft delete instead of removing from DB
+                idea.IsDeleted = true;
+                idea.DeletedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
 
-                return Ok(new { message = "Idea deleted successfully." });
+                return Ok(new { message = "Idea moved to trash successfully." });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting idea {IdeaId}", id);
                 return StatusCode(500, new { error = "An error occurred while deleting the idea." });
+            }
+        }
+
+        [HttpDelete("{id}/permanent")]
+        public async Task<IActionResult> DeleteIdeaPermanently(string id)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var idea = await _context.Ideas.FindAsync(id);
+
+                if (idea == null || idea.UserId != userId)
+                {
+                    return NotFound(new { error = IdeaNotFoundError });
+                }
+
+                // First remove all links
+                var ideaLinks = await _context.IdeaLinks
+                    .Where(il => il.IdeaId == id)
+                    .ToListAsync();
+                    
+                _context.IdeaLinks.RemoveRange(ideaLinks);
+                
+                // Then remove the idea itself
+                _context.Ideas.Remove(idea);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Idea permanently deleted successfully." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error permanently deleting idea {IdeaId}", id);
+                return StatusCode(500, new { error = "An error occurred while permanently deleting the idea." });
+            }
+        }
+
+        [HttpGet("deleted")]
+        public async Task<ActionResult<IEnumerable<IdeaResponse>>> GetDeletedIdeas()
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized(new { error = "User ID not found in token." });
+                }
+
+                var ideas = await _context.Ideas
+                    .Include(i => i.IdeaLinks.Where(link => !link.IsDeleted))
+                    .Where(i => i.UserId == userId && i.IsDeleted)
+                    .ToListAsync();
+                
+                // Get linked items info for deleted ideas
+                var linkedItemIds = ideas
+                    .SelectMany(i => i.IdeaLinks)
+                    .Select(link => link.LinkedItemId)
+                    .Distinct()
+                    .ToList();
+
+                var linkedNotes = await _context.Notes
+                    .Where(n => linkedItemIds.Contains(n.Id) && n.UserId == userId)
+                    .Select(n => new { n.Id, n.Title, Type = "Note" })
+                    .ToListAsync();
+
+                var linkedIdeas = await _context.Ideas
+                    .Where(i => linkedItemIds.Contains(i.Id) && i.UserId == userId)
+                    .Select(i => new { i.Id, i.Title, Type = "Idea" })
+                    .ToListAsync();
+                
+                var linkedTasks = await _context.Tasks
+                    .Where(t => linkedItemIds.Contains(t.Id) && t.UserId == userId)
+                    .Select(t => new { t.Id, t.Title, Type = "Task" })
+                    .ToListAsync();
+
+                var linkedReminders = await _context.Reminders
+                    .Where(r => linkedItemIds.Contains(r.Id) && r.UserId == userId)
+                    .Select(r => new { r.Id, r.Title, Type = "Reminder" })
+                    .ToListAsync();
+
+                var linkedItemsLookup = linkedNotes
+                    .Concat(linkedIdeas)
+                    .Concat(linkedTasks)
+                    .Concat(linkedReminders)
+                    .ToDictionary(item => item.Id, item => new { item.Type, item.Title });
+
+                var responses = ideas.Select(idea => new IdeaResponse
+                {
+                    Id = idea.Id,
+                    Title = idea.Title,
+                    Content = idea.Content,
+                    Tags = string.IsNullOrEmpty(idea.Tags) ? new List<string>() : idea.Tags.Split(',').ToList(),
+                    IsFavorite = idea.IsFavorite,
+                    IsPinned = idea.IsPinned,
+                    IsArchived = idea.IsArchived,
+                    ArchivedAt = idea.ArchivedAt,
+                    IsDeleted = idea.IsDeleted,
+                    DeletedAt = idea.DeletedAt,
+                    CreatedAt = idea.CreatedAt,
+                    UpdatedAt = idea.UpdatedAt,
+                    LinkedItems = idea.IdeaLinks
+                        .Where(link => !link.IsDeleted && linkedItemsLookup.ContainsKey(link.LinkedItemId))
+                        .Select(link => new LinkedItemResponse
+                        {
+                            Id = link.LinkedItemId,
+                            Type = linkedItemsLookup[link.LinkedItemId].Type,
+                            Title = linkedItemsLookup[link.LinkedItemId].Title
+                        })
+                        .ToList()
+                });
+
+                return Ok(responses);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting deleted ideas");
+                return StatusCode(500, new { error = "An error occurred while retrieving deleted ideas." });
+            }
+        }
+
+        [HttpPut("{id}/restore")]
+        public async Task<ActionResult<IdeaResponse>> RestoreIdea(string id)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var idea = await _context.Ideas.FindAsync(id);
+
+                if (idea == null || idea.UserId != userId)
+                {
+                    return NotFound(new { error = IdeaNotFoundError });
+                }
+
+                if (!idea.IsDeleted)
+                {
+                    return BadRequest(new { error = "The idea is not in trash." });
+                }
+
+                idea.IsDeleted = false;
+                idea.DeletedAt = null;
+                idea.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+
+                return await GetIdea(id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error restoring idea {IdeaId}", id);
+                return StatusCode(500, new { error = "An error occurred while restoring the idea." });
             }
         }
 
@@ -527,7 +678,7 @@ namespace SecondBrain.Api.Controllers
 
                 var idea = await _context.Ideas
                     .Include(i => i.IdeaLinks.Where(l => !l.IsDeleted))
-                    .FirstOrDefaultAsync(i => i.Id == ideaId && i.UserId == userId && !i.IsDeleted);
+                    .FirstOrDefaultAsync(i => i.Id == ideaId && i.UserId == userId && !i.IsDeleted && !i.IsArchived);
 
                 if (idea == null)
                 {
@@ -536,19 +687,37 @@ namespace SecondBrain.Api.Controllers
 
                 // Validate target item based on type
                 bool targetExists = false;
+                string targetItemUserId = null;
+
                 switch (request.LinkedItemType)
                 {
                     case "Note":
-                        targetExists = await _context.Notes.AnyAsync(n => n.Id == request.LinkedItemId && n.UserId == userId && !n.IsDeleted);
+                        var note = await _context.Notes.FirstOrDefaultAsync(n => n.Id == request.LinkedItemId && !n.IsDeleted && !n.IsArchived);
+                        if (note != null) {
+                            targetExists = true;
+                            targetItemUserId = note.UserId;
+                        }
                         break;
                     case "Idea":
-                        targetExists = await _context.Ideas.AnyAsync(i => i.Id == request.LinkedItemId && i.UserId == userId && !i.IsDeleted);
+                        var linkedIdeaEntity = await _context.Ideas.FirstOrDefaultAsync(i => i.Id == request.LinkedItemId && !i.IsDeleted && !i.IsArchived);
+                         if (linkedIdeaEntity != null) {
+                            targetExists = true;
+                            targetItemUserId = linkedIdeaEntity.UserId;
+                        }
                         break;
                     case "Task":
-                        targetExists = await _context.Tasks.AnyAsync(t => t.Id == request.LinkedItemId && t.UserId == userId && !t.IsDeleted);
+                        var task = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == request.LinkedItemId && !t.IsDeleted);
+                        if (task != null) {
+                            targetExists = true;
+                            targetItemUserId = task.UserId;
+                        }
                         break;
                     case "Reminder":
-                        targetExists = await _context.Reminders.AnyAsync(r => r.Id == request.LinkedItemId && r.UserId == userId && !r.IsDeleted);
+                         var reminder = await _context.Reminders.FirstOrDefaultAsync(r => r.Id == request.LinkedItemId && !r.IsDeleted);
+                        if (reminder != null) {
+                            targetExists = true;
+                            targetItemUserId = reminder.UserId;
+                        }
                         break;
                     default:
                         return BadRequest(new { error = "Invalid linked item type." });
@@ -556,7 +725,12 @@ namespace SecondBrain.Api.Controllers
 
                 if (!targetExists)
                 {
-                    return NotFound(new { error = $"Linked {request.LinkedItemType.ToLower()} not found or access denied." });
+                    return NotFound(new { error = $"Linked {request.LinkedItemType.ToLower()} with ID '{request.LinkedItemId}' not found, or it is deleted/archived." });
+                }
+
+                if (targetItemUserId != userId)
+                {
+                    return NotFound(new { error = $"Access to linked {request.LinkedItemType.ToLower()} denied or item not found." });
                 }
 
                 // Check if link already exists (active links only)

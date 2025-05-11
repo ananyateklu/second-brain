@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Lightbulb, Plus, Search, SlidersHorizontal, Grid, List, Network, Copy } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useIdeas } from '../../../contexts/IdeasContext';
+import { useIdeas } from '../../../contexts/ideasContextUtils';
 import { IdeasMindMap } from './IdeasMindMap';
 import { NewIdeaModal } from './NewIdeaModal';
 import { FilterDropdown } from '../Notes/FilterDropdown';

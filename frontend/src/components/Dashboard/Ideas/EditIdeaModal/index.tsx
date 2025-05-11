@@ -1,19 +1,21 @@
 import { useState, useEffect } from 'react';
+import { useIdeas } from '../../../../contexts/ideasContextUtils';
 import { Idea } from '../../../../types/idea';
 import { useNotes } from '../../../../contexts/notesContextUtils';
 import { useTasks } from '../../../../contexts/tasksContextUtils';
-import { useIdeas } from '../../../../contexts/IdeasContext';
+import { useReminders } from '../../../../contexts/remindersContextUtils';
 import type { Task } from '../../../../types/task';
 import type { Note } from '../../../../types/note';
 import { Header } from './Header';
 import { MainContent } from './MainContent';
 import { LinkedNotesPanel } from './LinkedNotesPanel';
-import { AddLinkModal } from '../../LinkedNotes/AddLinkModal';
-import { AddTaskLinkModal } from '../../Notes/EditNoteModal/AddTaskLinkModal';
+import { IdeaAddLinkModal } from './IdeaAddLinkModal';
+import { IdeaAddTaskLinkModal } from './IdeaAddTaskLinkModal';
 import { AddReminderLinkModal } from '../../Notes/EditNoteModal/AddReminderLinkModal';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../../../contexts/themeContextUtils';
+import { SuggestedLinksSection } from './SuggestedLinksSection';
 
 interface EditIdeaModalProps {
   idea: Idea;
@@ -21,11 +23,22 @@ interface EditIdeaModalProps {
   onClose: () => void;
 }
 
+interface IdeaReminderLink {
+  id: string;
+  title: string;
+  dueDateTime: string;
+  isCompleted: boolean;
+  isSnoozed?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaModalProps) {
   const navigate = useNavigate();
   const { notes } = useNotes();
-  const { tasks, removeTaskLink } = useTasks();
-  const { updateIdea, deleteIdea, addLink, removeLink } = useIdeas();
+  const { tasks } = useTasks();
+  const { updateIdea, deleteIdea, addLink, removeLink, state: ideasState } = useIdeas();
+  const { reminders: allReminders } = useReminders();
   const { theme } = useTheme();
 
   const [title, setTitle] = useState('');
@@ -34,13 +47,15 @@ export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaMo
   const [tags, setTags] = useState<string[]>([]);
   const [linkedNotes, setLinkedNotes] = useState<Note[]>([]);
   const [linkedTasks, setLinkedTasks] = useState<Task[]>([]);
-  const [linkedReminders, setLinkedReminders] = useState<Array<{ id: string; title: string }>>([]);
+  const [linkedIdeas, setLinkedIdeas] = useState<Idea[]>([]);
+  const [linkedReminders, setLinkedReminders] = useState<IdeaReminderLink[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showAddLinkModal, setShowAddLinkModal] = useState(false);
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
   const [showAddReminderModal, setShowAddReminderModal] = useState(false);
+  const [refreshSuggestions, setRefreshSuggestions] = useState(0);
 
   // Reset states when modal opens/closes
   useEffect(() => {
@@ -51,8 +66,7 @@ export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaMo
   }, [isOpen]);
 
   // Get current idea from context to ensure we have latest data
-  const { state: { ideas } } = useIdeas();
-  const currentIdea = ideas.find(i => i.id === initialIdea?.id);
+  const currentIdea = ideasState.ideas.find(i => i.id === initialIdea?.id);
 
   useEffect(() => {
     if (currentIdea) {
@@ -72,6 +86,12 @@ export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaMo
       );
       setLinkedNotes(linkedNotesList);
 
+      // Filter linked ideas
+      const linkedIdeasList = ideasState.ideas.filter(i =>
+        currentIdea.linkedItems?.some(item => item.id === i.id && item.type === 'Idea')
+      );
+      setLinkedIdeas(linkedIdeasList);
+
       // Filter linked tasks
       const linkedTasksList = tasks.filter(t =>
         currentIdea.linkedItems?.some(item => item.id === t.id && item.type === 'Task')
@@ -81,10 +101,23 @@ export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaMo
       // Filter linked reminders and format them
       const linkedRemindersList = currentIdea.linkedItems
         ?.filter(item => item.type === 'Reminder')
-        .map(item => ({ id: item.id, title: item.title })) || [];
+        .map(item => {
+          const fullReminder = allReminders.find(r => r.id === item.id);
+          if (!fullReminder) return null;
+          return {
+            id: fullReminder.id,
+            title: fullReminder.title,
+            dueDateTime: fullReminder.dueDateTime,
+            isCompleted: fullReminder.isCompleted,
+            isSnoozed: fullReminder.isSnoozed,
+            createdAt: fullReminder.createdAt,
+            updatedAt: fullReminder.updatedAt,
+          };
+        })
+        .filter(Boolean) as IdeaReminderLink[] || [];
       setLinkedReminders(linkedRemindersList);
     }
-  }, [currentIdea, currentIdea?.linkedItems, notes, tasks]);
+  }, [currentIdea, currentIdea?.linkedItems, notes, tasks, ideasState.ideas, allReminders]);
 
   if (!isOpen || !currentIdea) return null;
 
@@ -105,7 +138,8 @@ export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaMo
 
   const handleUnlinkTask = async (taskId: string) => {
     try {
-      await removeTaskLink(taskId, currentIdea.id);
+      await removeLink(currentIdea.id, taskId, 'Task');
+      triggerRefreshSuggestions();
     } catch (err) {
       console.error('Failed to unlink task:', err);
       setError('Failed to unlink task. Please try again.');
@@ -116,6 +150,7 @@ export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaMo
     try {
       setIsLoading(true);
       await removeLink(currentIdea.id, reminderId, 'Reminder');
+      triggerRefreshSuggestions();
     } catch (err) {
       console.error('Failed to unlink reminder:', err);
       setError('Failed to unlink reminder. Please try again.');
@@ -129,6 +164,7 @@ export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaMo
       setIsLoading(true);
       setError('');
       await addLink(currentIdea.id, reminderId, 'Reminder');
+      triggerRefreshSuggestions();
       return true;
     } catch (error) {
       console.error('Failed to link reminder:', error);
@@ -178,11 +214,12 @@ export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaMo
     dueDate: task.dueDate === undefined ? null : task.dueDate
   }));
 
-  const handleUnlinkNote = async (linkedNoteId: string) => {
+  const handleUnlinkItem = async (itemId: string, itemType: 'Note' | 'Idea') => {
     try {
-      await removeLink(currentIdea.id, linkedNoteId, 'Note');
+      await removeLink(currentIdea.id, itemId, itemType);
+      triggerRefreshSuggestions();
     } catch (error) {
-      console.error('Failed to unlink note:', error);
+      console.error(`Failed to unlink ${itemType.toLowerCase()}:`, error);
     }
   };
 
@@ -190,6 +227,11 @@ export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaMo
     if (theme === 'midnight') return 'border-white/5';
     if (theme === 'dark') return 'border-gray-700/30';
     return 'border-[var(--color-border)]';
+  };
+
+  // Add this function to refresh suggestions
+  const triggerRefreshSuggestions = () => {
+    setRefreshSuggestions(prev => prev + 1);
   };
 
   return (
@@ -226,17 +268,53 @@ export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaMo
               onRemoveTag={(tag) => setTags(tags.filter(t => t !== tag))}
               onShowAddReminder={() => setShowAddReminderModal(true)}
               onUnlinkReminder={handleUnlinkReminder}
+              currentIdea={currentIdea}
+              onLinkReminder={handleLinkReminder}
             />
-
-            <LinkedNotesPanel
-              linkedNotes={linkedNotes}
-              linkedTasks={formattedTasks}
-              onShowAddLink={() => setShowAddLinkModal(true)}
-              onShowAddTask={() => setShowAddTaskModal(true)}
-              onUnlinkTask={handleUnlinkTask}
-              onUnlinkNote={handleUnlinkNote}
-              currentNoteId={currentIdea.id}
-            />
+            <div className={`flex flex-col overflow-y-auto border-l ${theme === 'midnight' ? 'border-white/5' : theme === 'dark' ? 'border-gray-700/30' : 'border-[var(--color-border)]'} bg-[var(--color-surface)]`}>
+              <SuggestedLinksSection
+                currentIdea={currentIdea}
+                linkedNoteIds={currentIdea.linkedItems?.filter(item => item.type === 'Note').map(item => item.id) || []}
+                linkedIdeaIds={currentIdea.linkedItems?.filter(item => item.type === 'Idea').map(item => item.id) || []}
+                linkedTaskIds={currentIdea.linkedItems?.filter(item => item.type === 'Task').map(item => item.id) || []}
+                refreshTrigger={refreshSuggestions}
+                onLinkNote={async (noteId) => {
+                  try {
+                    await addLink(currentIdea.id, noteId, 'Note');
+                    triggerRefreshSuggestions();
+                  } catch (error) {
+                    console.error('Failed to link note:', error);
+                  }
+                }}
+                onLinkIdea={async (ideaId) => {
+                  try {
+                    await addLink(currentIdea.id, ideaId, 'Idea');
+                    triggerRefreshSuggestions();
+                  } catch (error) {
+                    console.error('Failed to link idea:', error);
+                  }
+                }}
+                onLinkTask={async (taskId) => {
+                  try {
+                    await addLink(currentIdea.id, taskId, 'Task');
+                    triggerRefreshSuggestions();
+                  } catch (error) {
+                    console.error('Failed to link task:', error);
+                  }
+                }}
+              />
+              <LinkedNotesPanel
+                linkedNotes={linkedNotes}
+                linkedTasks={formattedTasks}
+                linkedIdeas={linkedIdeas}
+                onShowAddLink={() => setShowAddLinkModal(true)}
+                onShowAddTask={() => setShowAddTaskModal(true)}
+                onUnlinkTask={handleUnlinkTask}
+                currentNoteId={currentIdea.id}
+                onUnlinkNote={(noteId) => handleUnlinkItem(noteId, 'Note')}
+                onUnlinkIdea={(ideaId) => handleUnlinkItem(ideaId, 'Idea')}
+              />
+            </div>
           </div>
 
           <div className={`shrink-0 flex justify-end gap-3 px-6 py-4 border-t ${getBorderStyle()} bg-[var(--color-surface)]`}>
@@ -270,30 +348,25 @@ export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaMo
         />
 
         {showAddLinkModal && (
-          <AddLinkModal
+          <IdeaAddLinkModal
             isOpen={showAddLinkModal}
             onClose={() => setShowAddLinkModal(false)}
-            sourceNoteId={currentIdea.id}
+            ideaId={currentIdea.id}
             onLinkAdded={() => {
-              // We don't need to do anything here as the linked items will be updated via the context
+              setShowAddLinkModal(false);
+              triggerRefreshSuggestions();
             }}
           />
         )}
 
         {showAddTaskModal && (
-          <AddTaskLinkModal
+          <IdeaAddTaskLinkModal
             isOpen={showAddTaskModal}
             onClose={() => setShowAddTaskModal(false)}
-            noteId={currentIdea.id}
+            ideaId={currentIdea.id}
             onLinkAdded={() => {
-              // Refresh linked notes by updating the state
-              const updatedCurrentIdea = ideas.find(i => i.id === currentIdea.id);
-              if (updatedCurrentIdea) {
-                const updatedTasks = tasks.filter(t =>
-                  updatedCurrentIdea.linkedItems?.some(item => item.id === t.id && item.type === 'Task')
-                );
-                setLinkedTasks(updatedTasks);
-              }
+              setShowAddTaskModal(false);
+              triggerRefreshSuggestions();
             }}
           />
         )}
