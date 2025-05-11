@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import type { Note } from '../../../../types/note';
 import { useNotes } from '../../../../contexts/notesContextUtils';
 import { useTasks } from '../../../../contexts/tasksContextUtils';
+import { useIdeas } from '../../../../contexts/ideasContextUtils';
 import type { Task } from '../../../../types/task';
+import type { Idea } from '../../../../types/idea';
 import { Header } from './Header';
 import { MainContent } from './MainContent';
 import { LinkedNotesPanel } from './LinkedNotesPanel';
@@ -12,6 +14,7 @@ import { AddLinkModal } from '../../LinkedNotes/AddLinkModal';
 import { AddTaskLinkModal } from './AddTaskLinkModal';
 import { AddReminderLinkModal } from './AddReminderLinkModal';
 import { useTheme } from '../../../../contexts/themeContextUtils';
+import { SuggestedLinksSection } from './SuggestedLinksSection';
 
 interface EditNoteModalProps {
   isOpen: boolean;
@@ -23,6 +26,7 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
   const navigate = useNavigate();
   const { notes, updateNote, deleteNote, linkReminder, unlinkReminder, addLink } = useNotes();
   const { tasks, removeTaskLink, addTaskLink } = useTasks();
+  const { state: { ideas }, addLink: addIdeaLink, removeLink: removeIdeaLink } = useIdeas();
   const { theme } = useTheme();
 
   const [title, setTitle] = useState('');
@@ -31,6 +35,7 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
   const [tags, setTags] = useState<string[]>([]);
   const [linkedNotes, setLinkedNotes] = useState<Note[]>([]);
   const [linkedTasks, setLinkedTasks] = useState<Task[]>([]);
+  const [linkedIdeas, setLinkedIdeas] = useState<Idea[]>([]);
   const [linkedReminders, setLinkedReminders] = useState<Note['linkedReminders']>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -59,13 +64,19 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
     }
   }, [currentNote]);
 
-  // Update linked notes and reminders whenever they change
+  // Update linked notes, ideas, tasks and reminders whenever they change
   useEffect(() => {
     if (currentNote) {
       const linkedNotesList = notes.filter(n =>
         currentNote.linkedNoteIds?.includes(n.id)
       );
       setLinkedNotes(linkedNotesList);
+
+      // Update linked ideas
+      const linkedIdeasList = ideas.filter(idea =>
+        idea.linkedItems?.some(item => item.id === currentNote.id && item.type === 'Note')
+      );
+      setLinkedIdeas(linkedIdeasList);
 
       // Update linked tasks
       const linkedTasksList = tasks.filter(t =>
@@ -76,7 +87,7 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
       // Update linked reminders
       setLinkedReminders(currentNote.linkedReminders || []);
     }
-  }, [currentNote, currentNote?.linkedNoteIds, currentNote?.linkedReminders, notes, tasks]);
+  }, [currentNote, currentNote?.linkedNoteIds, currentNote?.linkedReminders, notes, tasks, ideas]);
 
   if (!isOpen || !currentNote) return null;
 
@@ -197,6 +208,16 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
     return 'border-[var(--color-border)]';
   };
 
+  const handleUnlinkIdea = async (ideaId: string) => {
+    try {
+      await removeIdeaLink(ideaId, currentNote.id, 'Note');
+      // The linked ideas will update through the effect
+    } catch (err) {
+      console.error('Failed to unlink idea:', err);
+      setError('Failed to unlink idea. Please try again.');
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
@@ -236,61 +257,122 @@ export function EditNoteModal({ isOpen, onClose, note }: EditNoteModalProps) {
               setError={setError}
             />
 
-            <LinkedNotesPanel
-              linkedNotes={linkedNotes}
-              linkedTasks={formattedTasks}
-              linkedReminders={linkedReminders}
-              onShowAddLink={() => setShowAddLinkModal(true)}
-              onShowAddTask={() => setShowAddTaskModal(true)}
-              onUnlinkTask={handleUnlinkTask}
-              currentNoteId={currentNote.id}
-              currentNote={currentNote}
-              onLinkNote={async (noteId: string) => {
-                try {
-                  await addLink(currentNote.id, noteId);
-                  // The linked notes will update automatically through the effects
-                  return Promise.resolve();
-                } catch (error) {
-                  console.error('Failed to link note:', error);
-                  setError('Failed to link note. Please try again.');
-                  return Promise.reject(error);
-                }
-              }}
-              onLinkTask={async (taskId: string) => {
-                try {
-                  // Make sure we have the tasks service function
-                  if (!addTaskLink) {
-                    console.error('Task linking function not available');
-                    setError('Task linking is not available');
-                    return Promise.reject(new Error('Task linking not available'));
+            <div className={`flex flex-col overflow-y-auto border-l ${getBorderStyle()} bg-[var(--color-surface)]`}>
+              <div className="p-4">
+                <SuggestedLinksSection
+                  currentNote={currentNote}
+                  linkedNoteIds={currentNote.linkedNoteIds || []}
+                  linkedTaskIds={linkedTasks.map(t => t.id)}
+                  linkedIdeaIds={linkedIdeas.map(i => i.id)}
+                  onLinkNote={async (noteId: string) => {
+                    try {
+                      await addLink(currentNote.id, noteId);
+                      return Promise.resolve();
+                    } catch (error) {
+                      console.error('Failed to link note:', error);
+                      setError('Failed to link note. Please try again.');
+                      return Promise.reject(error);
+                    }
+                  }}
+                  onLinkIdea={async (ideaId: string) => {
+                    try {
+                      await addIdeaLink(ideaId, currentNote.id, 'Note');
+                      return Promise.resolve();
+                    } catch (error) {
+                      console.error('Failed to link idea:', error);
+                      setError('Failed to link idea. Please try again.');
+                      return Promise.reject(error);
+                    }
+                  }}
+                  onLinkTask={async (taskId: string) => {
+                    try {
+                      if (!addTaskLink) {
+                        console.error('Task linking function not available');
+                        setError('Task linking is not available');
+                        return Promise.reject(new Error('Task linking not available'));
+                      }
+                      await addTaskLink({
+                        taskId,
+                        linkedItemId: currentNote.id,
+                        itemType: 'note'
+                      });
+                      return Promise.resolve();
+                    } catch (error) {
+                      console.error('Failed to link task:', error);
+                      setError('Failed to link task. Please try again.');
+                      return Promise.reject(error);
+                    }
+                  }}
+                />
+              </div>
+              <LinkedNotesPanel
+                linkedNotes={linkedNotes}
+                linkedTasks={formattedTasks}
+                linkedIdeas={linkedIdeas}
+                linkedReminders={linkedReminders}
+                onShowAddLink={() => setShowAddLinkModal(true)}
+                onShowAddTask={() => setShowAddTaskModal(true)}
+                onUnlinkTask={handleUnlinkTask}
+                onUnlinkIdea={handleUnlinkIdea}
+                currentNoteId={currentNote.id}
+                currentNote={currentNote}
+                onLinkNote={async (noteId: string) => {
+                  try {
+                    await addLink(currentNote.id, noteId);
+                    // The linked notes will update automatically through the effects
+                    return Promise.resolve();
+                  } catch (error) {
+                    console.error('Failed to link note:', error);
+                    setError('Failed to link note. Please try again.');
+                    return Promise.reject(error);
                   }
+                }}
+                onLinkIdea={async (ideaId: string) => {
+                  try {
+                    await addIdeaLink(ideaId, currentNote.id, 'Note');
+                    return Promise.resolve();
+                  } catch (error) {
+                    console.error('Failed to link idea:', error);
+                    setError('Failed to link idea. Please try again.');
+                    return Promise.reject(error);
+                  }
+                }}
+                onLinkTask={async (taskId: string) => {
+                  try {
+                    // Make sure we have the tasks service function
+                    if (!addTaskLink) {
+                      console.error('Task linking function not available');
+                      setError('Task linking is not available');
+                      return Promise.reject(new Error('Task linking not available'));
+                    }
 
-                  await addTaskLink({
-                    taskId,
-                    linkedItemId: currentNote.id,
-                    itemType: 'note'
-                  });
-                  return Promise.resolve();
-                } catch (error) {
-                  console.error('Failed to link task:', error);
-                  setError('Failed to link task. Please try again.');
-                  return Promise.reject(error);
-                }
-              }}
-              onLinkReminder={async (reminderId: string) => {
-                try {
-                  const success = await handleLinkReminder(reminderId);
-                  if (!success) {
-                    return Promise.reject(new Error('Failed to link reminder'));
+                    await addTaskLink({
+                      taskId,
+                      linkedItemId: currentNote.id,
+                      itemType: 'note'
+                    });
+                    return Promise.resolve();
+                  } catch (error) {
+                    console.error('Failed to link task:', error);
+                    setError('Failed to link task. Please try again.');
+                    return Promise.reject(error);
                   }
-                  return Promise.resolve();
-                } catch (error) {
-                  console.error('Failed to link reminder:', error);
-                  setError('Failed to link reminder. Please try again.');
-                  return Promise.reject(error);
-                }
-              }}
-            />
+                }}
+                onLinkReminder={async (reminderId: string) => {
+                  try {
+                    const success = await handleLinkReminder(reminderId);
+                    if (!success) {
+                      return Promise.reject(new Error('Failed to link reminder'));
+                    }
+                    return Promise.resolve();
+                  } catch (error) {
+                    console.error('Failed to link reminder:', error);
+                    setError('Failed to link reminder. Please try again.');
+                    return Promise.reject(error);
+                  }
+                }}
+              />
+            </div>
           </div>
 
           <div className={`shrink-0 flex justify-end gap-3 px-6 py-4 border-t ${getBorderStyle()} bg-[var(--color-surface)]`}>

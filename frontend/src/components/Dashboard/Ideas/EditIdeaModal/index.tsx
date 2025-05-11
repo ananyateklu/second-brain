@@ -219,7 +219,7 @@ export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaMo
       await removeLink(currentIdea.id, itemId, itemType);
       triggerRefreshSuggestions();
     } catch (error) {
-      console.error(`Failed to unlink ${itemType.toLowerCase()}:`, error);
+      console.error('Failed to unlink item:', { type: itemType.toLowerCase(), error });
     }
   };
 
@@ -272,37 +272,39 @@ export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaMo
               onLinkReminder={handleLinkReminder}
             />
             <div className={`flex flex-col overflow-y-auto border-l ${theme === 'midnight' ? 'border-white/5' : theme === 'dark' ? 'border-gray-700/30' : 'border-[var(--color-border)]'} bg-[var(--color-surface)]`}>
-              <SuggestedLinksSection
-                currentIdea={currentIdea}
-                linkedNoteIds={currentIdea.linkedItems?.filter(item => item.type === 'Note').map(item => item.id) || []}
-                linkedIdeaIds={currentIdea.linkedItems?.filter(item => item.type === 'Idea').map(item => item.id) || []}
-                linkedTaskIds={currentIdea.linkedItems?.filter(item => item.type === 'Task').map(item => item.id) || []}
-                refreshTrigger={refreshSuggestions}
-                onLinkNote={async (noteId) => {
-                  try {
-                    await addLink(currentIdea.id, noteId, 'Note');
-                    triggerRefreshSuggestions();
-                  } catch (error) {
-                    console.error('Failed to link note:', error);
-                  }
-                }}
-                onLinkIdea={async (ideaId) => {
-                  try {
-                    await addLink(currentIdea.id, ideaId, 'Idea');
-                    triggerRefreshSuggestions();
-                  } catch (error) {
-                    console.error('Failed to link idea:', error);
-                  }
-                }}
-                onLinkTask={async (taskId) => {
-                  try {
-                    await addLink(currentIdea.id, taskId, 'Task');
-                    triggerRefreshSuggestions();
-                  } catch (error) {
-                    console.error('Failed to link task:', error);
-                  }
-                }}
-              />
+              <div className="p-4 space-y-4">
+                <SuggestedLinksSection
+                  currentIdea={currentIdea}
+                  linkedNoteIds={currentIdea.linkedItems?.filter(item => item.type === 'Note').map(item => item.id) || []}
+                  linkedIdeaIds={currentIdea.linkedItems?.filter(item => item.type === 'Idea').map(item => item.id) || []}
+                  linkedTaskIds={currentIdea.linkedItems?.filter(item => item.type === 'Task').map(item => item.id) || []}
+                  refreshTrigger={refreshSuggestions}
+                  onLinkNote={async (noteId) => {
+                    try {
+                      await addLink(currentIdea.id, noteId, 'Note');
+                      triggerRefreshSuggestions();
+                    } catch (error) {
+                      console.error('Failed to link note:', error);
+                    }
+                  }}
+                  onLinkIdea={async (ideaId) => {
+                    try {
+                      await addLink(currentIdea.id, ideaId, 'Idea');
+                      triggerRefreshSuggestions();
+                    } catch (error) {
+                      console.error('Failed to link idea:', error);
+                    }
+                  }}
+                  onLinkTask={async (taskId) => {
+                    try {
+                      await addLink(currentIdea.id, taskId, 'Task');
+                      triggerRefreshSuggestions();
+                    } catch (error) {
+                      console.error('Failed to link task:', error);
+                    }
+                  }}
+                />
+              </div>
               <LinkedNotesPanel
                 linkedNotes={linkedNotes}
                 linkedTasks={formattedTasks}

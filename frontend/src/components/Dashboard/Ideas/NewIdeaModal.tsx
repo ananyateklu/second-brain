@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Type, Tag as TagIcon, Loader } from 'lucide-react';
 import { Input } from '../../shared/Input';
-import { useNotes } from '../../../contexts/notesContextUtils';
+import { useIdeas } from '../../../contexts/ideasContextUtils';
 import { SuggestionButton } from '../../shared/SuggestionButton';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { TextArea } from '../../shared/TextArea';
@@ -14,7 +14,7 @@ interface NewIdeaModalProps {
 
 export function NewIdeaModal({ isOpen, onClose }: NewIdeaModalProps) {
   const { colors } = useTheme();
-  const { addNote } = useNotes();
+  const { createIdea } = useIdeas();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [tagInput, setTagInput] = useState('');
@@ -50,16 +50,12 @@ export function NewIdeaModal({ isOpen, onClose }: NewIdeaModalProps) {
     setError('');
 
     try {
-      addNote({
-        title: title.trim(),
-        content: content.trim(),
+      await createIdea(
+        title.trim(),
+        content.trim(),
         tags,
-        isIdea: true,
-        isPinned: false,
-        isFavorite: false,
-        isArchived: false,
-        isDeleted: false
-      });
+        false // isFavorite set to false initially
+      );
 
       onClose();
     } catch (error) {

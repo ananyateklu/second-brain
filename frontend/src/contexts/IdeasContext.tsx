@@ -216,7 +216,7 @@ export const IdeasProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       // Log more detailed error information
       const specificError = err as AxiosError<{ error?: string }>;
       const backendError = specificError.response?.data?.error || specificError.message;
-      console.error(`Failed to add link (Idea: ${ideaId}, Target: ${linkedItemId}, Type: ${linkedItemType}). Backend error: ${backendError}`, specificError.response?.data || specificError);
+      console.error('Failed to add link:', { ideaId, linkedItemId, linkedItemType, backendError }, specificError.response?.data || specificError);
       dispatch({ type: 'FETCH_IDEAS_FAILURE', payload: backendError });
       throw err;
     }
@@ -230,7 +230,7 @@ export const IdeasProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } catch (err) {
       const specificError = err as AxiosError<{ error?: string }>;
       const backendError = specificError.response?.data?.error || specificError.message;
-      console.error(`Failed to remove link (Idea: ${ideaId}, Target: ${linkedItemId}, Type: ${linkedItemType}). Backend error: ${backendError}`, specificError.response?.data || specificError);
+      console.error('Failed to remove link:', { ideaId, linkedItemId, linkedItemType, backendError }, specificError.response?.data || specificError);
       dispatch({ type: 'FETCH_IDEAS_FAILURE', payload: backendError });
       throw err;
     }

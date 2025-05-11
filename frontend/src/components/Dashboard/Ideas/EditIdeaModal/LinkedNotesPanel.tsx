@@ -101,7 +101,7 @@ export function LinkedNotesPanel({
   return (
     <>
       {/* Header */}
-      <div className={`shrink-0 px-4 py-3 border-b ${theme === 'midnight' ? 'border-white/5' : theme === 'dark' ? 'border-gray-700/30' : 'border-[var(--color-border)]'} bg-[var(--color-surface)]`}>
+      <div className={`shrink-0 px-4 py-3 border-t ${theme === 'midnight' ? 'border-white/5' : theme === 'dark' ? 'border-gray-700/30' : 'border-[var(--color-border)]'} bg-[var(--color-surface)]`}>
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <Link2 className="w-4 h-4 text-[var(--color-idea)]" />
@@ -131,9 +131,9 @@ export function LinkedNotesPanel({
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto px-4 pb-4">
         {hasLinkedItems ? (
-          <div className="p-3 space-y-4">
+          <div className="space-y-4">
             {/* Notes & Ideas Section */}
             {combinedNotesAndIdeas.length > 0 && (
               <div>
