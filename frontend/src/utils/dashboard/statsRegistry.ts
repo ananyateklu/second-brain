@@ -1,5 +1,6 @@
 import { Note } from '../../types/note';
 import { Task } from '../../types/task';
+import { Idea } from '../../types/idea';
 import { Activity } from '../../services/api/activities.service';
 import { StatValue } from '../dashboardContextUtils';
 import {
@@ -45,6 +46,7 @@ interface Reminder {
 // Define the input data type for stat handlers
 interface StatHandlerData {
     notes: Note[];
+    ideas: Idea[];
     tasks: Task[];
     reminders: Reminder[]; // Now using the Reminder interface
     activities: Activity[];
@@ -65,8 +67,9 @@ const statsRegistry: Record<string, StatHandler> = {
     'new-notes': ({ notes }) => getNewNotesStatValue(notes),
     'last-update': ({ notes }) => getLastUpdateStatValue(notes),
     'word-count': ({ notes }) => getWordCountStatValue(notes),
-    'notes-stats': ({ notes }) => getNotesStatsValue(notes),
-    'ideas-count': ({ notes }) => getIdeasCountStatValue(notes),
+    'notes-overview': ({ notes }) => getNotesStatsValue(notes),
+    'ideas': ({ ideas }) => getIdeasCountStatValue(ideas),
+    'ideas-count': ({ ideas }) => getIdeasCountStatValue(ideas), // Alias for 'ideas'
     'active-tasks': ({ tasks }) => getActiveTasksStatValue(tasks),
     'completed-tasks': ({ tasks }) => getCompletedTasksStatValue(tasks),
     'completed': ({ tasks }) => getCompletedTasksStatValue(tasks), // Alias for backwards compatibility
@@ -105,7 +108,7 @@ export function getStatById(statId: string, data: StatHandlerData): StatValue {
     try {
         return handler(data);
     } catch (error) {
-        console.error(`Error calculating stat "${statId}":`, error);
+        console.error('Error calculating stat:', statId, error);
         return {
             value: 'Error',
             timeframe: 'Calculation failed',
@@ -130,4 +133,6 @@ export function registerStatHandler(statId: string, handler: StatHandler): void 
  */
 export function hasStatHandler(statId: string): boolean {
     return statId in statsRegistry;
-} 
+}
+
+export default statsRegistry; 

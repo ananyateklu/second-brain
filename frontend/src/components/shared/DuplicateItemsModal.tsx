@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Copy, X, Type, Lightbulb, Bell, CheckSquare } from 'lucide-react';
 import type { Note } from '../../types/note';
+import type { Idea } from '../../types/idea';
 import { Reminder } from '../../contexts/remindersContextUtils';
 import { Task } from '../../types/task';
 import { useTheme } from '../../contexts/themeContextUtils';
@@ -10,7 +11,7 @@ import { ReminderCard } from '../Dashboard/Reminders/ReminderCard';
 import { TaskCard } from '../Dashboard/Tasks/TaskCard';
 
 // Define a union type for all the items that can be duplicated
-type DuplicateItem = Note | Reminder | Task;
+type DuplicateItem = Note | Idea | Reminder | Task;
 
 interface DuplicateItemsModalProps {
     isOpen: boolean;
@@ -153,7 +154,7 @@ export function DuplicateItemsModal({
             case 'idea':
                 return (
                     <IdeaCard
-                        idea={item as Note}
+                        idea={item as Idea}
                         viewMode="grid"
                         isSelected={selectedIds.includes(item.id)}
                         context="duplicate"
@@ -191,10 +192,10 @@ export function DuplicateItemsModal({
                     />
                 );
             default:
-                if ('isIdea' in item && item.isIdea) {
+                if ('isIdea' in item) {
                     return (
-                        <IdeaCard
-                            idea={item as Note}
+                        <NoteCard
+                            note={item as Note}
                             viewMode="grid"
                             isSelected={selectedIds.includes(item.id)}
                             context="duplicate"

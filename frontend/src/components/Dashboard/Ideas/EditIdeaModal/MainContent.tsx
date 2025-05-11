@@ -1,9 +1,13 @@
 import { Type, Tag as TagIcon, X, Bell, Plus, AlignLeft } from 'lucide-react';
-import { LinkedRemindersPanel } from '../../Notes/EditNoteModal/LinkedRemindersPanel';
-import type { LinkedReminder } from '../../../../types/note';
 import { Input } from '../../../../components/shared/Input';
 import { TextArea } from '../../../../components/shared/TextArea';
 import { useTheme } from '../../../../contexts/themeContextUtils';
+
+// Simple reminder type for ideas
+interface IdeaReminderLink {
+  id: string;
+  title: string;
+}
 
 interface MainContentProps {
   title: string;
@@ -12,7 +16,7 @@ interface MainContentProps {
   tagInput: string;
   error: string;
   isLoading: boolean;
-  linkedReminders: LinkedReminder[];
+  linkedReminders: IdeaReminderLink[];
   onTitleChange: (value: string) => void;
   onContentChange: (value: string) => void;
   onTagInputChange: (value: string | string[]) => void;
@@ -103,11 +107,26 @@ export function MainContent({
               Add Reminder
             </button>
           </div>
-          <div className={`${getBackgroundColor()} border ${getBorderStyle()} rounded-lg overflow-hidden max-h-[120px] overflow-y-auto`}>
-            <LinkedRemindersPanel
-              reminders={linkedReminders}
-              onUnlink={onUnlinkReminder}
-            />
+          <div className={`${getBackgroundColor()} border ${getBorderStyle()} rounded-lg overflow-hidden max-h-[120px] overflow-y-auto p-2`}>
+            {linkedReminders.length === 0 ? (
+              <div className="flex items-center justify-center py-3 text-sm text-[var(--color-textSecondary)]">
+                No reminders linked
+              </div>
+            ) : (
+              <ul className="space-y-1">
+                {linkedReminders.map(reminder => (
+                  <li key={reminder.id} className="flex items-center justify-between px-2 py-1 rounded-md hover:bg-[var(--color-idea)]/5">
+                    <span className="text-sm text-[var(--color-text)] truncate">{reminder.title}</span>
+                    <button
+                      onClick={() => onUnlinkReminder(reminder.id)}
+                      className="p-1 text-[var(--color-textSecondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-surfaceHover)] rounded-md transition-colors"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
 

@@ -148,6 +148,24 @@ namespace SecondBrain.Data
                 .WithMany(i => i.IdeaLinks)
                 .HasForeignKey(il => il.IdeaId)
                 .OnDelete(DeleteBehavior.Restrict);
+                
+            // Set default value for CreatedAt
+            modelBuilder.Entity<IdeaLink>()
+                .Property(il => il.CreatedAt)
+                .HasDefaultValueSql("GETUTCDATE()");
+                
+            // Set default value for IsDeleted
+            modelBuilder.Entity<IdeaLink>()
+                .Property(il => il.IsDeleted)
+                .HasDefaultValue(false);
+
+            // Configure indexes for IdeaLink
+            modelBuilder.Entity<IdeaLink>()
+                .HasIndex(il => il.IdeaId);
+            modelBuilder.Entity<IdeaLink>()
+                .HasIndex(il => il.LinkedItemId);
+            modelBuilder.Entity<IdeaLink>()
+                .HasIndex(il => il.IsDeleted);
 
             // Configure Achievement entity
             modelBuilder.Entity<Achievement>(entity =>

@@ -6,8 +6,11 @@ namespace SecondBrain.Api.DTOs.Ideas
         public required string Title { get; set; }
         public required string Content { get; set; }
         public bool IsFavorite { get; set; }
+        public bool IsPinned { get; set; }
         public bool IsArchived { get; set; }
         public DateTime? ArchivedAt { get; set; }
+        public bool IsDeleted { get; set; }
+        public DateTime? DeletedAt { get; set; }
         public required DateTime CreatedAt { get; set; }
         public required DateTime UpdatedAt { get; set; }
         public required List<string> Tags { get; set; }

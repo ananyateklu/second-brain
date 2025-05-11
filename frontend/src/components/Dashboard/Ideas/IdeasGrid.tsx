@@ -1,8 +1,8 @@
 import { IdeaCard } from './IdeaCard';
-import type { Note } from '../../../types/note';
+import type { Idea } from '../../../types/idea';
 
 interface IdeasGridProps {
-  ideas: Note[];
+  ideas: Idea[];
   onIdeaClick: (ideaId: string) => void;
 }
 
@@ -15,9 +15,9 @@ export function IdeasGrid({ ideas, onIdeaClick }: IdeasGridProps) {
           onClick={() => onIdeaClick(idea.id)}
           className="cursor-pointer w-full"
         >
-          <IdeaCard 
-            key={idea.id} 
-            idea={idea} 
+          <IdeaCard
+            key={idea.id}
+            idea={idea}
             viewMode="grid"
           />
         </div>

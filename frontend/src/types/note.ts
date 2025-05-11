@@ -5,7 +5,6 @@ export interface Note {
   tags: string[];
   isFavorite: boolean;
   isPinned: boolean;
-  isIdea: boolean;
   isArchived: boolean;
   isDeleted: boolean;
   deletedAt?: string;

@@ -1,15 +1,15 @@
 import { useState, useMemo, useCallback, memo } from 'react';
 import { Star, Link2, Tag as TagIcon, Lightbulb, Archive, Pin, CheckSquare, Clock } from 'lucide-react';
-import type { Note } from '../../../types/note';
+import type { Idea } from '../../../types/idea';
 import { formatDate } from '../../../utils/dateUtils';
-import { useNotes } from '../../../contexts/notesContextUtils';
+import { useIdeas } from '../../../contexts/IdeasContext';
 import { formatTimeAgo } from '../Recent/utils';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { getIconBg } from '../../../utils/dashboardUtils';
 import { WarningModal } from '../../shared/WarningModal';
 
 interface IdeaCardProps {
-  idea: Note;
+  idea: Idea;
   viewMode?: 'grid' | 'list' | 'mindMap';
   isSelected?: boolean;
   context?: 'default' | 'trash' | 'archive' | 'favorites' | 'duplicate';
@@ -33,7 +33,7 @@ export function IdeaCard({
   isArchiveView,
   contextData
 }: IdeaCardProps) {
-  const { toggleFavoriteNote, togglePinNote, archiveNote } = useNotes();
+  const { toggleFavorite, togglePin, toggleArchive } = useIdeas();
   const { theme } = useTheme();
   const [showArchiveWarning, setShowArchiveWarning] = useState(false);
   const [isSafari] = useState(() => /^((?!chrome|android).)*safari/i.test(navigator.userAgent));
@@ -72,13 +72,13 @@ export function IdeaCard({
   // Event handlers with useCallback
   const handleFavorite = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    toggleFavoriteNote(idea.id);
-  }, [toggleFavoriteNote, idea.id]);
+    toggleFavorite(idea.id);
+  }, [toggleFavorite, idea.id]);
 
   const handlePin = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    togglePinNote(idea.id);
-  }, [togglePinNote, idea.id]);
+    togglePin(idea.id);
+  }, [togglePin, idea.id]);
 
   const handleArchiveClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -86,9 +86,9 @@ export function IdeaCard({
   }, []);
 
   const handleArchiveConfirm = useCallback(() => {
-    archiveNote(idea.id);
+    toggleArchive(idea.id);
     setShowArchiveWarning(false);
-  }, [archiveNote, idea.id]);
+  }, [toggleArchive, idea.id]);
 
   const handleCardClick = useCallback((e: React.MouseEvent) => {
     if (onSelect) {
@@ -366,29 +366,17 @@ function ContextInfo({ context, contextData, getDaysUntilExpiration }: {
 
 const MemoizedContextInfo = memo(ContextInfo);
 
-function Metadata({ idea }: { idea: Note }) {
+function Metadata({ idea }: { idea: Idea }) {
   return (
     <div className="flex items-center gap-2 text-[11px] text-[var(--color-textSecondary)]">
       <div className="flex items-center gap-1">
         <Clock className="w-3 h-3" />
         <span>{formatDate(idea.updatedAt)}</span>
       </div>
-      {idea.linkedNoteIds && idea.linkedNoteIds.length > 0 && (
+      {idea.linkedItems && idea.linkedItems.length > 0 && (
         <div className="flex items-center gap-1">
           <Link2 className="w-3 h-3" />
-          <span>{idea.linkedNoteIds.length} linked</span>
-        </div>
-      )}
-      {idea.linkedTasks && idea.linkedTasks.length > 0 && (
-        <div className="flex items-center gap-1">
-          <CheckSquare className="w-3 h-3" />
-          <span>{idea.linkedTasks.length} tasks</span>
-        </div>
-      )}
-      {idea.linkedReminders && idea.linkedReminders.length > 0 && (
-        <div className="flex items-center gap-1">
-          <Clock className="w-3 h-3" />
-          <span>{idea.linkedReminders.length} reminders</span>
+          <span>{idea.linkedItems.length} linked</span>
         </div>
       )}
     </div>
@@ -403,7 +391,7 @@ interface ActionsProps {
   handleArchiveClick: (e: React.MouseEvent) => void;
   pinButtonClasses: string;
   favoriteButtonClasses: string;
-  idea: Note;
+  idea: Idea;
   isArchiveView?: boolean;
 }
 
@@ -445,25 +433,13 @@ const Actions = memo(function Actions({
   );
 });
 
-function SmallMetadata({ idea }: { idea: Note }) {
+function SmallMetadata({ idea }: { idea: Idea }) {
   return (
     <>
-      {(idea.linkedNoteIds?.length ?? 0) > 0 && (
+      {(idea.linkedItems?.length ?? 0) > 0 && (
         <div className="flex items-center gap-1">
           <Link2 className="w-2.5 h-2.5" />
-          <span>{idea.linkedNoteIds.length}</span>
-        </div>
-      )}
-      {(idea.linkedTasks?.length ?? 0) > 0 && (
-        <div className="flex items-center gap-1">
-          <CheckSquare className="w-2.5 h-2.5" />
-          <span>{idea.linkedTasks?.length}</span>
-        </div>
-      )}
-      {(idea.linkedReminders?.length ?? 0) > 0 && (
-        <div className="flex items-center gap-1">
-          <Clock className="w-2.5 h-2.5" />
-          <span>{idea.linkedReminders.length}</span>
+          <span>{idea.linkedItems.length}</span>
         </div>
       )}
     </>

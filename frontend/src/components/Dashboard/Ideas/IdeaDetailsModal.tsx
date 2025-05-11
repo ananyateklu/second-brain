@@ -1,5 +1,5 @@
-import { EditIdeaModal } from './EditIdeaModal';
-import { useNotes } from '../../../hooks/useNotes';
+import { EditIdeaModal } from './EditIdeaModal/index';
+import { useIdeas } from '../../../contexts/IdeasContext';
 
 interface IdeaDetailsModalProps {
   isOpen: boolean;
@@ -8,13 +8,15 @@ interface IdeaDetailsModalProps {
 }
 
 export function IdeaDetailsModal({ isOpen, onClose, ideaId }: IdeaDetailsModalProps) {
-  const { notes } = useNotes();
-  const idea = ideaId ? notes.find(note => note.id === ideaId) || null : null;
+  const { state: { ideas } } = useIdeas();
+  const idea = ideaId ? ideas.find(i => i.id === ideaId) || null : null;
 
   if (!idea) {
     return null;
   }
 
+  // TODO: Ensure EditIdeaModal is adapted or created to accept an Idea prop
+  // and use useIdeas context for its operations.
   return (
     <EditIdeaModal
       isOpen={isOpen}

@@ -9,7 +9,6 @@ export interface NoteResponse {
   tags: string[] | string;
   isFavorite: boolean;
   isPinned: boolean;
-  isIdea: boolean;
   isArchived: boolean;
   isDeleted: boolean;
   deletedAt?: string;
@@ -50,7 +49,6 @@ export interface CreateNoteData {
   isArchived?: boolean;
   isDeleted?: boolean;
   deletedAt?: string;
-  isIdea?: boolean;
 }
 
 export interface LinkResponse {
@@ -101,7 +99,6 @@ const processNoteResponse = (note: NoteResponse): Note => ({
   createdAt: note.createdAt,
   updatedAt: note.updatedAt,
   archivedAt: note.archivedAt,
-  isIdea: note.isIdea || false,
   linkedNoteIds: note.linkedNoteIds || [],
   links: note.links || [],
   linkedTasks: note.linkedTasks?.map(task => ({

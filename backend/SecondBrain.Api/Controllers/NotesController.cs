@@ -8,6 +8,7 @@ using System.Security.Claims;
 using SecondBrain.Api.Gamification;
 using System.Text.Json;
 using SecondBrain.Api.Enums;
+using SecondBrain.Services.Gamification;
 
 namespace SecondBrain.Api.Controllers
 {
@@ -107,7 +108,7 @@ namespace SecondBrain.Api.Controllers
                     IsPinned = request.IsPinned,
                     IsFavorite = request.IsFavorite,
                     IsArchived = false,
-                    IsIdea = request.IsIdea,
+                    IsIdea = false, // No longer support storing ideas in Notes table
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow,
                     UserId = userId
@@ -138,7 +139,6 @@ namespace SecondBrain.Api.Controllers
                     IsPinned = note.IsPinned,
                     IsFavorite = note.IsFavorite,
                     IsArchived = note.IsArchived,
-                    IsIdea = note.IsIdea,
                     ArchivedAt = note.ArchivedAt,
                     CreatedAt = note.CreatedAt,
                     UpdatedAt = note.UpdatedAt,
@@ -246,7 +246,6 @@ namespace SecondBrain.Api.Controllers
                 ArchivedAt = n.ArchivedAt,
                 CreatedAt = n.CreatedAt,
                 UpdatedAt = n.UpdatedAt,
-                IsIdea = n.IsIdea,
                 LinkedNoteIds = n.NoteLinks
                     .Where(nl => !nl.IsDeleted)
                     .Select(nl => nl.LinkedNoteId)
@@ -271,7 +270,7 @@ namespace SecondBrain.Api.Controllers
         }
 
         [HttpPost("{id}/links")]
-        public async Task<IActionResult> AddLink(string id, [FromBody] AddLinkRequest request)
+        public async Task<IActionResult> AddLink(string id, [FromBody] SecondBrain.Api.DTOs.Notes.AddLinkRequest request)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -371,7 +370,6 @@ namespace SecondBrain.Api.Controllers
                 ArchivedAt = n.ArchivedAt,
                 CreatedAt = n.CreatedAt,
                 UpdatedAt = n.UpdatedAt,
-                IsIdea = n.IsIdea,
                 LinkedNoteIds = n.NoteLinks
                     .Where(nl => !nl.IsDeleted)
                     .Select(nl => nl.LinkedNoteId)
@@ -631,7 +629,7 @@ namespace SecondBrain.Api.Controllers
             // Award XP if note is being archived
             if (isArchiving)
             {
-                string actionType = note.IsIdea ? "archiveidea" : "archivenote";
+                string actionType = "archivenote";
                 await _xpService.AwardXPAsync(
                     userId,
                     actionType,
@@ -682,7 +680,6 @@ namespace SecondBrain.Api.Controllers
                 ArchivedAt = n.ArchivedAt,
                 CreatedAt = n.CreatedAt,
                 UpdatedAt = n.UpdatedAt,
-                IsIdea = n.IsIdea,
                 LinkedNoteIds = n.NoteLinks
                     .Where(nl => !nl.IsDeleted)
                     .Select(nl => nl.LinkedNoteId)
@@ -769,7 +766,7 @@ namespace SecondBrain.Api.Controllers
                         LinkedItemId = id,
                         CreatedAt = DateTime.UtcNow,
                         CreatedBy = userId,
-                        LinkType = note.IsIdea ? "idea" : "note"
+                        LinkType = "note"
                     };
                     _context.ReminderLinks.Add(reminderLink);
                 }

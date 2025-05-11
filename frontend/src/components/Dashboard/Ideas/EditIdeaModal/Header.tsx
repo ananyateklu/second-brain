@@ -1,18 +1,18 @@
 import { useState } from 'react';
 import { X, Star, Trash2, Archive, Clock } from 'lucide-react';
-import type { Note } from '../../../../types/note';
-import { useNotes } from '../../../../contexts/notesContextUtils';
+import type { Idea } from '../../../../types/idea';
+import { useIdeas } from '../../../../contexts/IdeasContext';
 import { WarningModal } from '../../../shared/WarningModal';
 import { useTheme } from '../../../../contexts/themeContextUtils';
 
 export interface HeaderProps {
-  idea: Note;
+  idea: Idea;
   onClose: () => void;
   onShowDeleteConfirm: () => void;
 }
 
 export function Header({ idea, onClose, onShowDeleteConfirm }: HeaderProps) {
-  const { toggleFavoriteNote, archiveNote } = useNotes();
+  const { toggleFavorite, toggleArchive } = useIdeas();
   const { theme } = useTheme();
   const [showArchiveWarning, setShowArchiveWarning] = useState(false);
 
@@ -25,7 +25,7 @@ export function Header({ idea, onClose, onShowDeleteConfirm }: HeaderProps) {
   const handleFavorite = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    toggleFavoriteNote(idea.id);
+    toggleFavorite(idea.id);
   };
 
   const handleArchiveClick = (e: React.MouseEvent) => {
@@ -43,7 +43,7 @@ export function Header({ idea, onClose, onShowDeleteConfirm }: HeaderProps) {
   const handleArchiveConfirm = async () => {
     try {
       setShowArchiveWarning(false);
-      await archiveNote(idea.id);
+      await toggleArchive(idea.id);
       onClose();
     } catch (error) {
       console.error('Failed to archive idea:', error);

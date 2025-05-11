@@ -1,4 +1,4 @@
-import { Link2, Plus, Type, Lightbulb, CheckSquare, X, Calendar } from 'lucide-react';
+import { Link2, Plus, Type, CheckSquare, X, Calendar } from 'lucide-react';
 import type { Note } from '../../../../types/note';
 import { useState } from 'react';
 import { EditNoteModal } from '../../Notes/EditNoteModal';
@@ -119,22 +119,15 @@ export function LinkedNotesPanel({
                         onClick={() => setSelectedNote(linkedNote)}
                         className={`group flex items-start gap-2.5 p-2 rounded-lg ${getItemBackground()} ${getItemHoverBackground()} ${getBorderStyle()} transition-colors cursor-pointer relative`}
                       >
-                        <div className={`shrink-0 p-1.5 rounded-lg ${linkedNote.isIdea
-                          ? 'bg-[var(--color-idea)]/15'
-                          : 'bg-[var(--color-note)]/15'
-                          }`}>
-                          {linkedNote.isIdea ? (
-                            <Lightbulb className="w-3.5 h-3.5 text-[var(--color-idea)]" />
-                          ) : (
-                            <Type className="w-3.5 h-3.5 text-[var(--color-note)]" />
-                          )}
+                        <div className="shrink-0 p-1.5 rounded-lg bg-[var(--color-note)]/15">
+                          <Type className="w-3.5 h-3.5 text-[var(--color-note)]" />
                         </div>
                         <div className="flex-1 min-w-0 pr-8">
                           <h6 className="text-sm font-medium text-[var(--color-text)] truncate">
                             {linkedNote.title}
                           </h6>
                           <p className="text-xs text-[var(--color-textSecondary)]">
-                            {linkedNote.isIdea ? 'Idea' : 'Note'}
+                            Note
                           </p>
                         </div>
                         <button

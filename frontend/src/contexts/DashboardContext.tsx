@@ -4,6 +4,7 @@ import { useNotes } from './notesContextUtils';
 import { useTasks } from './tasksContextUtils';
 import { useReminders } from './remindersContextUtils';
 import { useActivities } from './activityContextUtils';
+import { useIdeas } from './IdeasContext';
 import { DEFAULT_STATS, DashboardContext, isDashboardStat } from '../utils/dashboardContextUtils';
 import preferencesService from '../services/api/preferences.service';
 import { getStatById } from '../utils/dashboard/statsRegistry';
@@ -13,6 +14,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const { tasks } = useTasks();
   const { reminders } = useReminders();
   const { activities } = useActivities();
+  const { state: { ideas } } = useIdeas();
   const [isLoading, setIsLoading] = useState(true);
 
   // Define stats state
@@ -49,10 +51,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
   // Update loading state when both notes and tasks are ready
   useEffect(() => {
-    if (!notesLoading && (notes.length > 0 || tasks.length > 0)) {
+    if (!notesLoading && (notes.length > 0 || tasks.length > 0 || ideas.length > 0)) {
       setIsLoading(false);
     }
-  }, [notes, tasks, notesLoading]);
+  }, [notes, tasks, ideas, notesLoading]);
 
   const getStatValue = useCallback((statId: string) => {
     return getStatById(statId, {
@@ -60,9 +62,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       tasks,
       reminders,
       activities,
+      ideas,
       isLoading
     });
-  }, [notes, tasks, reminders, activities, isLoading]);
+  }, [notes, tasks, reminders, activities, ideas, isLoading]);
 
   const toggleStat = useCallback((statId: string) => {
     setStats(prevStats => {

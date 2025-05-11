@@ -4,14 +4,16 @@ interface DeleteConfirmDialogProps {
   isOpen: boolean;
   isLoading: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onDelete: () => void;
+  itemName?: string;
 }
 
 export function DeleteConfirmDialog({
   isOpen,
   isLoading,
   onClose,
-  onConfirm
+  onDelete,
+  itemName = 'this idea'
 }: DeleteConfirmDialogProps) {
   if (!isOpen) return null;
 
@@ -30,7 +32,7 @@ export function DeleteConfirmDialog({
               Delete Idea
             </h3>
             <p className="text-[var(--color-textSecondary)]">
-              Are you sure you want to delete this idea? This action cannot be undone.
+              Are you sure you want to delete "{itemName}"? This action cannot be undone.
             </p>
           </div>
 
@@ -42,7 +44,7 @@ export function DeleteConfirmDialog({
               Cancel
             </button>
             <button
-              onClick={onConfirm}
+              onClick={onDelete}
               disabled={isLoading}
               className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >

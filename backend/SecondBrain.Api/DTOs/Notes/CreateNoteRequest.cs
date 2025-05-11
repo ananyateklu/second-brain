@@ -7,6 +7,5 @@ namespace SecondBrain.Api.DTOs.Notes
         public List<string>? Tags { get; set; }
         public bool IsPinned { get; set; }
         public bool IsFavorite { get; set; }
-        public bool IsIdea { get; set; }
     }
 }

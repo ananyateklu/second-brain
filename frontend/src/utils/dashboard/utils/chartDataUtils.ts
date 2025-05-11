@@ -5,9 +5,13 @@
  * @returns Array with counts for each of the past 7 days
  */
 export const generateDailyBreakdown = <T>(
-    items: T[],
+    items: T[] = [],
     dateSelector: (item: T) => Date | string
 ): number[] => {
+    if (!items || items.length === 0) {
+        return Array(7).fill(0);
+    }
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -19,9 +23,14 @@ export const generateDailyBreakdown = <T>(
         date.setHours(0, 0, 0, 0);
 
         return items.filter(item => {
-            const itemDate = new Date(dateSelector(item));
-            itemDate.setHours(0, 0, 0, 0);
-            return itemDate.getTime() === date.getTime();
+            try {
+                const itemDate = new Date(dateSelector(item));
+                itemDate.setHours(0, 0, 0, 0);
+                return itemDate.getTime() === date.getTime();
+            } catch (error) {
+                console.warn('Error processing item date:', error);
+                return false;
+            }
         }).length;
     });
 };
