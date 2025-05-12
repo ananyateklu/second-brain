@@ -43,13 +43,15 @@ const FilterButton: React.FC<{
     label: string;
     isActive: boolean;
     onClick: () => void;
-}> = ({ label, isActive, onClick }) => {
+    isConfigured?: boolean;
+}> = ({ label, isActive, onClick, isConfigured = true }) => {
     const { theme } = useTheme();
 
     return (
         <button
             onClick={onClick}
-            className={`px-2.5 py-1 text-xs rounded-full transition-colors duration-150
+            disabled={!isConfigured}
+            className={`px-2.5 py-1 text-xs rounded-full transition-colors duration-150 relative
                 ${isActive
                     ? (theme === 'dark' || theme === 'midnight' || theme === 'full-dark'
                         ? 'bg-[#4c9959]/90 text-white'
@@ -58,9 +60,13 @@ const FilterButton: React.FC<{
                         ? 'bg-gray-700/50 text-gray-300 hover:bg-gray-700/80'
                         : 'bg-gray-200/70 text-gray-700 hover:bg-gray-200')
                 }
+                ${!isConfigured && 'opacity-50 cursor-not-allowed'}
             `}
         >
             {label}
+            {!isConfigured && (
+                <span className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-red-500 rounded-full border border-white dark:border-gray-800"></span>
+            )}
         </button>
     );
 };
@@ -72,6 +78,13 @@ interface CompactModelSelectorProps {
     onClose: () => void;
     isLoading?: boolean;
     onRefresh?: () => void;
+    providerStatus?: {
+        openai: boolean;
+        anthropic: boolean;
+        gemini: boolean;
+        ollama: boolean;
+        grok: boolean;
+    };
 }
 
 export const CompactModelSelector: React.FC<CompactModelSelectorProps> = ({
@@ -80,7 +93,14 @@ export const CompactModelSelector: React.FC<CompactModelSelectorProps> = ({
     onModelSelected,
     onClose,
     isLoading = false,
-    onRefresh
+    onRefresh,
+    providerStatus = {
+        openai: true,
+        anthropic: true,
+        gemini: true,
+        ollama: true,
+        grok: true
+    }
 }) => {
     const { theme } = useTheme();
     const [modelFilterInput, setModelFilterInput] = useState('');
@@ -95,6 +115,12 @@ export const CompactModelSelector: React.FC<CompactModelSelectorProps> = ({
         const providers = availableModels.map(model => model.provider);
         return [...new Set(providers)].map(p => p.charAt(0).toUpperCase() + p.slice(1));
     }, [availableModels]);
+
+    // Check if provider is configured
+    const isProviderConfigured = (provider: string): boolean => {
+        const lowerProvider = provider.toLowerCase();
+        return providerStatus[lowerProvider as keyof typeof providerStatus] ?? true;
+    };
 
     // Define model types (these would ideally come from your data model)
     const modelTypes = ["Chat", "Image", "Audio", "Embedding"];
@@ -292,6 +318,7 @@ export const CompactModelSelector: React.FC<CompactModelSelectorProps> = ({
                             label={provider}
                             isActive={activeProviders.includes(provider)}
                             onClick={() => toggleProviderFilter(provider)}
+                            isConfigured={isProviderConfigured(provider)}
                         />
                     ))}
                 </div>

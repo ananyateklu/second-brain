@@ -37,6 +37,27 @@ namespace SecondBrain.Api.Controllers
             }
         }
 
+        [HttpGet("test-connection")]
+        [AllowAnonymous] // Or use [Authorize] if authentication is required for this check
+        public async Task<IActionResult> TestConnection()
+        {
+            try
+            {
+                _logger.LogInformation("Testing Gemini API connection.");
+                // Use a simple prompt and a potentially cheaper/faster model for testing
+                var testResponse = await _geminiService.ChatAsync("Hello", "gemini-1.5-flash"); 
+                bool isConnected = !string.IsNullOrEmpty(testResponse?.Content?.ToString());
+                
+                _logger.LogInformation("Gemini API connection test result: {IsConnected}", isConnected);
+                return Ok(new { isConnected = isConnected });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error testing Gemini connection");
+                return Ok(new { isConnected = false, error = ex.Message });
+            }
+        }
+
         [HttpPost("generate")]
         public async Task<IActionResult> Generate([FromBody] GeminiRequest request)
         {
