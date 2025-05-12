@@ -7,6 +7,16 @@ import { AIModel, AISettings } from '../../../types/ai';
 import { cardVariants } from '../../../utils/welcomeBarUtils';
 import { modelService } from '../../../services/ai/modelService';
 
+// Import provider logos
+import OpenAILightLogo from '../../../assets/openai-light.svg';
+import OpenAIDarkLogo from '../../../assets/openai-dark.svg';
+import AnthropicLightLogo from '../../../assets/anthropic-light.svg';
+import AnthropicDarkLogo from '../../../assets/anthropic-dark.svg';
+import GoogleLogo from '../../../assets/google.svg';
+import XAILightLogo from '../../../assets/xai-light.svg';
+import XAIDarkLogo from '../../../assets/xai-dark.svg';
+import OllamaLogo from '../../../assets/ollama.png';
+
 type AIProviderName = 'OpenAI' | 'Anthropic' | 'Gemini' | 'Ollama' | 'Grok';
 type AIProviderKey = 'openai' | 'anthropic' | 'gemini' | 'ollama' | 'grok';
 
@@ -200,6 +210,26 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
     return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))] ';
   };
 
+  // Get provider logo based on name and theme
+  const getProviderLogo = (name: AIProviderName) => {
+    const isDarkTheme = theme === 'dark' || theme === 'midnight' || theme === 'full-dark';
+
+    switch (name) {
+      case 'OpenAI':
+        return isDarkTheme ? OpenAILightLogo : OpenAIDarkLogo;
+      case 'Anthropic':
+        return isDarkTheme ? AnthropicLightLogo : AnthropicDarkLogo;
+      case 'Gemini':
+        return GoogleLogo;
+      case 'Grok':
+        return isDarkTheme ? XAILightLogo : XAIDarkLogo;
+      case 'Ollama':
+        return OllamaLogo;
+      default:
+        return null;
+    }
+  };
+
   const ProviderButton = ({
     providerName,
     isSelected,
@@ -222,7 +252,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
         onClick={onClick}
         disabled={isDisabled}
         className={`
-          relative px-3 py-2 rounded-lg transition-all duration-200
+          relative px-2 py-1.5 rounded-lg transition-all duration-200
           ${isSelected
             ? 'bg-[var(--color-accent)] text-white'
             : `${getContainerBackground()} text-[var(--color-text)]`
@@ -233,26 +263,26 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
           group w-full
         `}
       >
-        <div className="flex items-center gap-2">
-          <span className="font-medium text-sm">{providerName}</span>
+        <div className="flex items-center gap-1.5">
+          <span className="font-medium text-xs truncate">{providerName}</span>
 
           {/* Chat Status Indicator - only show if not selected */}
           {!isSelected && (
             <div className={`
-              flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px]
+              flex items-center gap-0.5 px-1 py-0.5 rounded-full text-[8px]
               ${isChatConfigured
                 ? 'bg-[var(--color-accent)]/10 text-[var(--color-accent)]'
                 : 'bg-gray-500/10 text-gray-500'
               }
             `}>
               <MessageSquare className="w-2 h-2 mr-0.5" />
-              <span>{isChatConfigured ? 'Configured' : 'Not Configured'}</span>
+              <span className="truncate">{isChatConfigured ? 'Ready' : 'Not Set'}</span>
             </div>
           )}
         </div>
 
         {/* Selected Indicator */}
-        {isSelected && <CheckCircle className="w-4 h-4 shrink-0" />}
+        {isSelected && <CheckCircle className="w-3 h-3 shrink-0" />}
       </button>
     );
   };
@@ -290,7 +320,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
         const viewportHeight = window.innerHeight;
         const spaceBelow = viewportHeight - buttonRect.bottom;
         const spaceAbove = buttonRect.top;
-        const dropdownHeight = Math.min(300, models.length * 36 + 8); // Approximate height of dropdown
+        const dropdownHeight = Math.min(250, models.length * 32 + 8); // Smaller dropdown height
 
         // Determine if dropdown should appear above or below
         const placement = spaceBelow >= dropdownHeight || spaceBelow >= spaceAbove ? 'bottom' : 'top';
@@ -322,7 +352,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
           ref={buttonRef}
           onClick={() => setIsOpen(!isOpen)}
           className={`
-            w-full px-3 py-2 rounded-lg transition-all duration-200
+            w-full px-2 py-1.5 rounded-lg transition-all duration-200
             ${getContainerBackground()}
             border-[0.5px] border-white/10
             flex items-center justify-between
@@ -331,12 +361,12 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
             ${isOpen ? 'ring-1 ring-[var(--color-accent)]/20' : ''}
           `}
         >
-          <span className="font-medium text-sm truncate">
+          <span className="font-medium text-xs truncate">
             {selectedModel?.name || 'Select a model'}
           </span>
           <ChevronDown
             className={`
-              w-4 h-4 shrink-0 transition-transform duration-200 text-[var(--color-textSecondary)]
+              w-3.5 h-3.5 shrink-0 transition-transform duration-200 text-[var(--color-textSecondary)]
               ${isOpen ? 'transform rotate-180' : ''}
             `}
           />
@@ -351,7 +381,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
               border-[0.5px] border-white/10
               shadow-lg
               backdrop-blur-xl
-              max-h-[300px] overflow-y-auto
+              max-h-[250px] overflow-y-auto
               scrollbar-thin scrollbar-thumb-[var(--color-accent)]/10
               scrollbar-track-transparent
             `}
@@ -371,7 +401,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
           >
             {Object.entries(groupedModels).map(([provider, providerModels], index) => (
               <div key={provider} className={index !== 0 ? 'border-t border-white/5' : ''}>
-                <div className="px-3 py-1.5 text-xs font-medium text-[var(--color-textSecondary)] bg-[var(--color-surface)]/50">
+                <div className="px-2 py-1 text-[10px] font-medium text-[var(--color-textSecondary)] bg-[var(--color-surface)]/50">
                   {provider}
                 </div>
                 {providerModels.map(model => (
@@ -382,18 +412,18 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
                       setIsOpen(false);
                     }}
                     className={`
-                      w-full px-3 py-2 text-left
-                      flex items-center justify-between gap-2
-                      transition-all duration-200
+                      w-full px-2 py-1.5 text-left
+                      flex items-center justify-between gap-1.5
+                      transition-all duration-200 text-xs
                       ${selectedId === model.id
                         ? 'bg-[var(--color-accent)]/10 text-[var(--color-accent)]'
                         : 'text-[var(--color-text)] hover:bg-[var(--color-surfaceHover)]'
                       }
                     `}
                   >
-                    <span className="font-medium text-sm truncate">{model.name}</span>
+                    <span className="font-medium truncate">{model.name}</span>
                     {selectedId === model.id && (
-                      <CheckCircle className="w-4 h-4 shrink-0" />
+                      <CheckCircle className="w-3 h-3 shrink-0" />
                     )}
                   </button>
                 ))}
@@ -406,15 +436,15 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Configuration Status */}
-      <div className="space-y-3">
+    <div className="space-y-4">
+      {/* Configuration Status - Redesigned as a more compact horizontal layout */}
+      <div className="space-y-2">
         <div className="flex items-center justify-between">
           <h4 className="text-sm font-medium text-[var(--color-text)]">Provider Status</h4>
           <button
-            onClick={() => checkConfigurations(true)} // Force refresh on click
+            onClick={() => checkConfigurations(true)}
             className={`
-              flex items-center gap-2 px-3 py-1.5 rounded-lg
+              flex items-center gap-1.5 px-2 py-1 rounded-lg
               ${getContainerBackground()}
               border-[0.5px] border-white/10
               text-[var(--color-text)] text-xs font-medium
@@ -422,7 +452,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
               hover:bg-[var(--color-surfaceHover)]
               disabled:opacity-50 disabled:cursor-not-allowed
             `}
-            disabled={isLoadingConfigurations} // Use loading state
+            disabled={isLoadingConfigurations}
           >
             <div className={`w-3 h-3 ${isLoadingConfigurations ? 'animate-spin' : ''}`}>
               {isLoadingConfigurations ? <Loader className="w-3 h-3" /> : <Settings2 className="w-3 h-3" />}
@@ -431,27 +461,13 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
           </button>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+        {/* Compact Provider Status Cards */}
+        <div className="grid grid-cols-5 gap-2">
           {(Object.entries(configurationStatus) as [AIProviderName, { agent: boolean; chat: boolean }][]).map(([name, { agent, chat }]) => {
-            const isFullyConfigured = agent && chat;
-            const isPartiallyConfigured = (agent || chat) && !isFullyConfigured;
             const isNotConfigured = !agent && !chat;
 
-            // Set colors and icon based on status
-            let statusColorClass = 'text-red-500';
-            let bgColorClass = 'bg-red-500/10';
-            let IconComponent = AlertCircle;
-
-            if (isFullyConfigured) {
-              statusColorClass = 'text-[var(--color-accent)]';
-              bgColorClass = 'bg-[var(--color-accent)]/10';
-              IconComponent = CheckCircle;
-            } else if (isPartiallyConfigured) {
-              statusColorClass = 'text-yellow-500';
-              bgColorClass = 'bg-yellow-500/10';
-              // Use a more appropriate icon for partial status
-              IconComponent = agent ? Bot : MessageSquare;
-            }
+            // Get the provider logo
+            const logoSrc = getProviderLogo(name);
 
             return (
               <motion.div
@@ -460,55 +476,54 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
                 className={`
                   ${getContainerBackground()}
                   border-[0.5px] border-white/10
-                  backdrop-blur-xl rounded-lg p-3
-                  flex flex-col gap-3
-                  group relative
+                  rounded-lg p-2
+                  flex flex-col
                   ${isNotConfigured ? 'opacity-70' : ''}
                 `}
               >
-                {/* Provider Header */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className={`
-                      flex items-center justify-center w-6 h-6 rounded-md 
-                      ${bgColorClass}
-                      backdrop-blur-sm border-[0.5px] border-white/10
-                      shrink-0
-                    `}>
-                      <IconComponent className={`w-3 h-3 ${statusColorClass}`} />
-                    </div>
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-1.5">
+                    {/* Provider logo */}
+                    {logoSrc ? (
+                      <div className="w-5 h-5 rounded-md flex items-center justify-center overflow-hidden bg-white/5">
+                        <img
+                          src={logoSrc}
+                          alt={`${name} logo`}
+                          className={`w-4 h-4 object-contain ${name === 'Ollama' ? 'scale-125' : ''}`}
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-5 h-5 rounded-md bg-gray-500/50 flex items-center justify-center overflow-hidden text-white">
+                        <span className="text-xs font-semibold">{name.charAt(0)}</span>
+                      </div>
+                    )}
                     <p className="font-medium text-xs text-[var(--color-text)]">{name}</p>
                   </div>
-                  {isFullyConfigured && (
-                    <span className="text-[10px] bg-[var(--color-accent)]/10 text-[var(--color-accent)] rounded-sm px-1.5 py-0.5 flex items-center gap-1">
-                      <CheckCircle className="w-2.5 h-2.5" />
-                      <span>Configured</span>
-                    </span>
-                  )}
                 </div>
-
-                {/* Status Indicators */}
-                <div className="grid grid-cols-2 gap-1.5 text-[10px]">
-                  {/* Agent Status */}
+                <div className="grid grid-cols-2 gap-1 text-[9px]">
                   <div className={`
-                    rounded px-1 py-1 flex items-center gap-1.5
+                    rounded px-1 py-0.5 flex items-center justify-center gap-1
                     ${agent
-                      ? "border-[var(--color-accent)]/20 bg-[var(--color-accent)]/5 text-[var(--color-accent)]"
-                      : "border-gray-500/10 bg-gray-500/5 text-gray-500/70"}
+                      ? "bg-[var(--color-accent)]/5 text-[var(--color-accent)]"
+                      : "bg-red-500/10 text-red-500"}
+                    h-5 min-w-0 relative
                   `}>
-                    <Bot className="w-3 h-3 shrink-0" />
-                    <span className="truncate">{agent ? "Agent" : "No Agent"}</span>
+                    <Bot className="w-2 h-2 shrink-0" />
+                    <span className="truncate">{agent ? "Agent" : "None"}</span>
+                    {agent && <CheckCircle className="w-2 h-2 absolute right-1" />}
+                    {!agent && <AlertCircle className="w-2 h-2 absolute right-1 text-red-500" />}
                   </div>
-
-                  {/* Chat Status */}
                   <div className={`
-                    rounded px-1 py-1 flex items-center gap-1.5
+                    rounded px-1 py-0.5 flex items-center justify-center gap-1
                     ${chat
-                      ? "border-[var(--color-accent)]/20 bg-[var(--color-accent)]/5 text-[var(--color-accent)]"
-                      : "border-gray-500/10 bg-gray-500/5 text-gray-500/70"}
+                      ? "bg-[var(--color-accent)]/5 text-[var(--color-accent)]"
+                      : "bg-red-500/10 text-red-500"}
+                    h-5 min-w-0 relative
                   `}>
-                    <MessageSquare className="w-3 h-3 shrink-0" />
-                    <span className="truncate">{chat ? "Chat" : "No Chat"}</span>
+                    <MessageSquare className="w-2 h-2 shrink-0" />
+                    <span className="truncate">{chat ? "Chat" : "None"}</span>
+                    {chat && <CheckCircle className="w-2 h-2 absolute right-1" />}
+                    {!chat && <AlertCircle className="w-2 h-2 absolute right-1 text-red-500" />}
                   </div>
                 </div>
               </motion.div>
@@ -517,16 +532,15 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
         </div>
       </div>
 
-
-      {/* AI Model Configuration */}
-      <div className="space-y-3">
+      {/* AI Model Configuration - More compact layout */}
+      <div className="space-y-2">
         <div className="flex items-center justify-between">
           <h4 className="text-sm font-medium text-[var(--color-text)]">AI Model Configuration</h4>
           <div className="flex items-center gap-1 p-0.5 rounded-lg bg-[var(--color-surface)]/50 border-[0.5px] border-white/10">
             <button
               onClick={() => setActiveMode('content')}
               className={`
-                px-3 py-1 rounded-md text-xs font-medium transition-all duration-200
+                px-2 py-1 rounded-md text-xs font-medium transition-all duration-200
                 ${activeMode === 'content'
                   ? 'bg-[var(--color-accent)] text-white'
                   : 'text-[var(--color-textSecondary)] hover:text-[var(--color-text)]'
@@ -538,7 +552,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
             <button
               onClick={() => setActiveMode('prompt')}
               className={`
-                px-3 py-1 rounded-md text-xs font-medium transition-all duration-200
+                px-2 py-1 rounded-md text-xs font-medium transition-all duration-200
                 ${activeMode === 'prompt'
                   ? 'bg-[var(--color-accent)] text-white'
                   : 'text-[var(--color-textSecondary)] hover:text-[var(--color-text)]'
@@ -549,158 +563,161 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
             </button>
           </div>
         </div>
+
         <motion.div
           variants={cardVariants}
-          className={`space-y-6 p-6 min-h-[400px] ${getContainerBackground()} rounded-lg border-[0.5px] border-white/10`}
+          className={`space-y-4 p-4 ${getContainerBackground()} rounded-lg border-[0.5px] border-white/10`}
         >
-          <div className="flex items-start gap-2">
-            <MessageSquare className="w-4 h-4 text-[var(--color-accent)] mt-0.5 shrink-0" />
-            <div>
-              <p className="text-xs text-[var(--color-text)]">
-                Content suggestions use provider-specific API calls rather than the agent system to ensure reliability and proper endpoint routing.
-              </p>
-              <p className="text-xs text-[var(--color-textSecondary)] mt-1">
-                When you select a provider below, only compatible chat models for that provider will be available for selection.
-              </p>
-            </div>
+          {/* Info Message - More compact */}
+          <div className="flex items-start gap-2 mb-2">
+            <MessageSquare className="w-3 h-3 text-[var(--color-accent)] mt-0.5 shrink-0" />
+            <p className="text-xs text-[var(--color-textSecondary)]">
+              Content suggestions use provider-specific API calls rather than the agent system to ensure reliability and proper endpoint routing.
+            </p>
           </div>
 
-          <div className="space-y-4">
-            <label className="block text-xs font-medium text-[var(--color-text)]">
-              AI Provider
-            </label>
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-              {(Object.entries(configurationStatus) as [AIProviderName, { agent: boolean; chat: boolean }][]).map(([name, { agent, chat }]) => {
-                const providerKey = name.toLowerCase() as AIProviderKey;
-                return (
-                  <ProviderButton
-                    key={name}
-                    providerName={name}
-                    isSelected={getActiveSettings()?.provider === providerKey}
-                    onClick={() => handleProviderChange(providerKey)}
-                    isAgentConfigured={agent}
-                    isChatConfigured={chat}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Column 1: Provider & Model Selection */}
+            <div className="space-y-3">
+              <label className="block text-xs font-medium text-[var(--color-text)]">
+                AI Provider
+              </label>
+              <div className="grid grid-cols-5 lg:grid-cols-1 gap-1.5">
+                {(Object.entries(configurationStatus) as [AIProviderName, { agent: boolean; chat: boolean }][]).map(([name, { agent, chat }]) => {
+                  const providerKey = name.toLowerCase() as AIProviderKey;
+                  return (
+                    <ProviderButton
+                      key={name}
+                      providerName={name}
+                      isSelected={getActiveSettings()?.provider === providerKey}
+                      onClick={() => handleProviderChange(providerKey)}
+                      isAgentConfigured={agent}
+                      isChatConfigured={chat}
+                    />
+                  );
+                })}
+              </div>
+
+              <div className="space-y-2 mt-4">
+                <label className="block text-xs font-medium text-[var(--color-text)] flex items-center justify-between">
+                  <span>Model</span>
+                  {isLoadingModels && (
+                    <span className="text-xs flex items-center gap-1 text-[var(--color-textSecondary)]">
+                      <Loader className="w-3 h-3 animate-spin" />
+                      Loading...
+                    </span>
+                  )}
+                </label>
+                <ModelSelect
+                  models={chatModels.filter(
+                    model => model.provider.toLowerCase() === getActiveSettings()?.provider.toLowerCase()
+                  )}
+                  selectedId={getActiveSettings()?.modelId || ''}
+                  onSelect={handleModelChange}
+                />
+              </div>
+            </div>
+
+            {/* Column 2: Temperature & Max Length */}
+            <div className="space-y-3">
+              {/* Temperature */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5">
+                  <Sliders className="w-3 h-3 text-[var(--color-accent)]" />
+                  <label className="block text-xs font-medium text-[var(--color-text)]">
+                    Temperature (Creativity)
+                  </label>
+                </div>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={((getActiveSettings()?.temperature || 0.7) * 100)}
+                    onChange={(e) => {
+                      const type = activeMode === 'content' ? 'contentSuggestions' : 'promptEnhancement';
+                      const newTemperature = Number(e.target.value) / 100;
+                      setSettings(prev => ({
+                        ...prev,
+                        [type]: {
+                          ...prev[type]!,
+                          temperature: newTemperature
+                        }
+                      }));
+                      localStorage.setItem(`${type === 'contentSuggestions' ? 'content_suggestions' : 'prompt_enhancement'}_temperature`, String(newTemperature));
+                    }}
+                    className="
+                      w-full h-1.5 rounded-lg appearance-none cursor-pointer
+                      bg-[var(--color-surface)]
+                      [&::-webkit-slider-thumb]:appearance-none
+                      [&::-webkit-slider-thumb]:w-3
+                      [&::-webkit-slider-thumb]:h-3
+                      [&::-webkit-slider-thumb]:rounded-full
+                      [&::-webkit-slider-thumb]:bg-[var(--color-accent)]
+                      [&::-webkit-slider-thumb]:cursor-pointer
+                    "
                   />
-                );
-              })}
-            </div>
-          </div>
-
-
-          <div className="space-y-4">
-            <label className="block text-xs font-medium text-[var(--color-text)] flex items-center justify-between">
-              <span>Model</span>
-              {isLoadingModels &&
-                <span className="text-xs flex items-center gap-1 text-[var(--color-textSecondary)]">
-                  <Loader className="w-3 h-3 animate-spin" />
-                  Loading models...
-                </span>
-              }
-            </label>
-            <ModelSelect
-              models={chatModels.filter(
-                model => model.provider.toLowerCase() === getActiveSettings()?.provider.toLowerCase()
-              )}
-              selectedId={getActiveSettings()?.modelId || ''}
-              onSelect={handleModelChange}
-            />
-          </div>
-
-          <div className="space-y-6 border-t border-white/10 pt-6">
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Sliders className="w-4 h-4 text-[var(--color-accent)]" />
-                <label className="block text-xs font-medium text-[var(--color-text)]">
-                  Temperature (Creativity)
-                </label>
+                  <span className="text-xs font-medium text-[var(--color-textSecondary)] w-8 text-right">
+                    {((getActiveSettings()?.temperature || 0.7) * 100).toFixed(0)}%
+                  </span>
+                </div>
+                <p className="text-[9px] text-[var(--color-textSecondary)]">
+                  Higher values make the output more creative but less predictable
+                </p>
               </div>
-              <div className="flex items-center gap-4">
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={((getActiveSettings()?.temperature || 0.7) * 100)}
-                  onChange={(e) => {
-                    const type = activeMode === 'content' ? 'contentSuggestions' : 'promptEnhancement';
-                    const newTemperature = Number(e.target.value) / 100;
-                    setSettings(prev => ({
-                      ...prev,
-                      [type]: {
-                        ...prev[type]!,
-                        temperature: newTemperature
-                      }
-                    }));
-                    localStorage.setItem(`${type === 'contentSuggestions' ? 'content_suggestions' : 'prompt_enhancement'}_temperature`, String(newTemperature));
-                  }}
-                  className="
-                    w-full h-1.5 rounded-lg appearance-none cursor-pointer
-                    bg-[var(--color-surface)]
-                    [&::-webkit-slider-thumb]:appearance-none
-                    [&::-webkit-slider-thumb]:w-4
-                    [&::-webkit-slider-thumb]:h-4
-                    [&::-webkit-slider-thumb]:rounded-full
-                    [&::-webkit-slider-thumb]:bg-[var(--color-accent)]
-                    [&::-webkit-slider-thumb]:cursor-pointer
-                  "
-                />
-                <span className="text-xs font-medium text-[var(--color-textSecondary)] w-12">
-                  {((getActiveSettings()?.temperature || 0.7) * 100).toFixed(0)}%
-                </span>
+
+              {/* Maximum Length */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5">
+                  <Zap className="w-3 h-3 text-[var(--color-accent)]" />
+                  <label className="block text-xs font-medium text-[var(--color-text)]">
+                    Maximum Length
+                  </label>
+                </div>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="range"
+                    min="100"
+                    max="4000"
+                    step="100"
+                    value={getActiveSettings()?.maxTokens || 2000}
+                    onChange={(e) => {
+                      const type = activeMode === 'content' ? 'contentSuggestions' : 'promptEnhancement';
+                      const newMaxTokens = Number(e.target.value);
+                      setSettings(prev => ({
+                        ...prev,
+                        [type]: {
+                          ...prev[type]!,
+                          maxTokens: newMaxTokens
+                        }
+                      }));
+                      localStorage.setItem(`${type === 'contentSuggestions' ? 'content_suggestions' : 'prompt_enhancement'}_max_tokens`, String(newMaxTokens));
+                    }}
+                    className="
+                      w-full h-1.5 rounded-lg appearance-none cursor-pointer
+                      bg-[var(--color-surface)]
+                      [&::-webkit-slider-thumb]:appearance-none
+                      [&::-webkit-slider-thumb]:w-3
+                      [&::-webkit-slider-thumb]:h-3
+                      [&::-webkit-slider-thumb]:rounded-full
+                      [&::-webkit-slider-thumb]:bg-[var(--color-accent)]
+                      [&::-webkit-slider-thumb]:cursor-pointer
+                    "
+                  />
+                  <span className="text-xs font-medium text-[var(--color-textSecondary)] w-12 text-right">
+                    {getActiveSettings()?.maxTokens || 2000}
+                  </span>
+                </div>
+                <p className="text-[9px] text-[var(--color-textSecondary)]">
+                  Maximum number of tokens in the response
+                </p>
               </div>
-              <p className="text-xs text-[var(--color-textSecondary)]">
-                Higher values make the output more creative but less predictable
-              </p>
             </div>
 
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Zap className="w-4 h-4 text-[var(--color-accent)]" />
-                <label className="block text-xs font-medium text-[var(--color-text)]">
-                  Maximum Length
-                </label>
-              </div>
-              <div className="flex items-center gap-4">
-                <input
-                  type="range"
-                  min="100"
-                  max="4000"
-                  step="100"
-                  value={getActiveSettings()?.maxTokens || 2000}
-                  onChange={(e) => {
-                    const type = activeMode === 'content' ? 'contentSuggestions' : 'promptEnhancement';
-                    const newMaxTokens = Number(e.target.value);
-                    setSettings(prev => ({
-                      ...prev,
-                      [type]: {
-                        ...prev[type]!,
-                        maxTokens: newMaxTokens
-                      }
-                    }));
-                    localStorage.setItem(`${type === 'contentSuggestions' ? 'content_suggestions' : 'prompt_enhancement'}_max_tokens`, String(newMaxTokens));
-                  }}
-                  className="
-                    w-full h-1.5 rounded-lg appearance-none cursor-pointer
-                    bg-[var(--color-surface)]
-                    [&::-webkit-slider-thumb]:appearance-none
-                    [&::-webkit-slider-thumb]:w-4
-                    [&::-webkit-slider-thumb]:h-4
-                    [&::-webkit-slider-thumb]:rounded-full
-                    [&::-webkit-slider-thumb]:bg-[var(--color-accent)]
-                    [&::-webkit-slider-thumb]:cursor-pointer
-                  "
-                />
-                <span className="text-xs font-medium text-[var(--color-textSecondary)] w-16">
-                  {getActiveSettings()?.maxTokens || 2000}
-                </span>
-              </div>
-              <p className="text-xs text-[var(--color-textSecondary)]">
-                Maximum number of tokens in the response
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-[var(--color-accent)]" />
+            {/* Column 3: System Message */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5">
+                <MessageSquare className="w-3 h-3 text-[var(--color-accent)]" />
                 <label className="block text-xs font-medium text-[var(--color-text)]">
                   System Message
                 </label>
@@ -719,84 +736,85 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
                 }}
                 placeholder="Enter a system message to guide the AI's behavior..."
                 className={`
-                  w-full px-3 py-2 rounded-lg
+                  w-full px-2 py-1.5 rounded-lg
                   ${getContainerBackground()}
                   border-[0.5px] border-white/10
-                  text-sm text-[var(--color-text)]
+                  text-xs text-[var(--color-text)]
                   placeholder:text-[var(--color-textSecondary)]
                   focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]/20
-                  min-h-[80px]
+                  min-h-[100px]
                   resize-none
                 `}
               />
-              <p className="text-xs text-[var(--color-textSecondary)]">
+              <p className="text-[9px] text-[var(--color-textSecondary)]">
                 Set the AI's behavior and context for this mode
               </p>
             </div>
+          </div>
 
-            <div className="flex items-center justify-between gap-4 text-xs text-[var(--color-textSecondary)] mt-auto pt-4">
-              <div className="flex items-center gap-2">
-                <Bot className="w-3 h-3 text-[var(--color-accent)]" />
-                <span>
-                  {activeMode === 'content'
-                    ? 'These settings will be used for generating titles, content, and tags.'
-                    : 'These settings will be used for enhancing input prompts across the application.'
-                  }
-                </span>
-              </div>
-
-              <button
-                onClick={handleSave}
-                disabled={isSaving}
-                className={`
-                  flex items-center gap-2 px-4 py-2 shrink-0
-                  ${theme === 'midnight' ? 'bg-[var(--color-accent)]/80 hover:bg-[var(--color-accent)]/70' : 'bg-[var(--color-accent)] hover:bg-[var(--color-accent)]/90'}
-                  text-white rounded-lg transition-all duration-200 
-                  hover:scale-105 hover:-translate-y-0.5 
-                  shadow-sm hover:shadow-md
-                  disabled:opacity-50 disabled:cursor-not-allowed
-                  disabled:hover:scale-100 disabled:hover:translate-y-0
-                  text-xs font-medium
-                `}
-              >
-                {isSaving ? (
-                  <Loader className="w-3 h-3 animate-spin" />
-                ) : (
-                  <Save className="w-3 h-3" />
-                )}
-                <span>
-                  {isSaving ? 'Saving...' : 'Save Changes'}
-                </span>
-              </button>
+          {/* Footer: Info Text & Save Button */}
+          <div className="flex items-center justify-between border-t border-white/10 pt-3 mt-2">
+            <div className="flex items-center gap-1.5">
+              <Bot className="w-3 h-3 text-[var(--color-accent)]" />
+              <span className="text-xs text-[var(--color-textSecondary)]">
+                {activeMode === 'content'
+                  ? 'These settings will be used for generating titles, content, and tags.'
+                  : 'These settings will be used for enhancing input prompts across the application.'
+                }
+              </span>
             </div>
 
-            {/* Save Result Message */}
-            {saveResult && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`
-                  p-3 rounded-lg mt-4
-                  ${saveResult.success ? 'bg-[var(--color-accent)]/10' : 'bg-red-500/10'}
-                  border-[0.5px] border-white/10
-                `}
-              >
-                <div className="flex items-center gap-2">
-                  {saveResult.success ? (
-                    <CheckCircle className="w-3 h-3 text-[var(--color-accent)]" />
-                  ) : (
-                    <AlertCircle className="w-3 h-3 text-red-500" />
-                  )}
-                  <p className={`text-xs ${saveResult.success
-                    ? 'text-[var(--color-accent)]'
-                    : 'text-red-500'
-                    }`}>
-                    {saveResult.message}
-                  </p>
-                </div>
-              </motion.div>
-            )}
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className={`
+                flex items-center gap-1.5 px-3 py-1.5 shrink-0
+                ${theme === 'midnight' ? 'bg-[var(--color-accent)]/80 hover:bg-[var(--color-accent)]/70' : 'bg-[var(--color-accent)] hover:bg-[var(--color-accent)]/90'}
+                text-white rounded-lg transition-all duration-200 
+                hover:scale-105
+                shadow-sm
+                disabled:opacity-50 disabled:cursor-not-allowed
+                disabled:hover:scale-100
+                text-xs font-medium
+              `}
+            >
+              {isSaving ? (
+                <Loader className="w-3 h-3 animate-spin" />
+              ) : (
+                <Save className="w-3 h-3" />
+              )}
+              <span>
+                {isSaving ? 'Saving...' : 'Save Changes'}
+              </span>
+            </button>
           </div>
+
+          {/* Save Result Message */}
+          {saveResult && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`
+                p-2 rounded-lg
+                ${saveResult.success ? 'bg-[var(--color-accent)]/10' : 'bg-red-500/10'}
+                border-[0.5px] border-white/10
+              `}
+            >
+              <div className="flex items-center gap-1.5">
+                {saveResult.success ? (
+                  <CheckCircle className="w-3 h-3 text-[var(--color-accent)]" />
+                ) : (
+                  <AlertCircle className="w-3 h-3 text-red-500" />
+                )}
+                <p className={`text-xs ${saveResult.success
+                  ? 'text-[var(--color-accent)]'
+                  : 'text-red-500'
+                  }`}>
+                  {saveResult.message}
+                </p>
+              </div>
+            </motion.div>
+          )}
         </motion.div>
       </div>
     </div>
