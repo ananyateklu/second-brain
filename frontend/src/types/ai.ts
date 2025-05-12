@@ -49,9 +49,19 @@ export interface ToolExecution {
   execution_time?: number;
 }
 
+export interface TokenUsage {
+  input_tokens: number;
+  output_tokens: number;
+}
+
+export interface FunctionCallMetadata {
+  name: string;
+  arguments: Record<string, unknown>;
+}
+
 export interface AIResponse {
-  content: string;
-  type: 'text' | 'image' | 'audio' | 'embedding';
+  content: string | unknown;
+  type: 'text' | 'image' | 'audio' | 'function_call' | 'step' | 'error';
   inputText?: string;
   contentBlocks?: ContentBlock[];
   executionSteps?: ExecutionStep[];
@@ -64,13 +74,20 @@ export interface AIResponse {
     parameters?: Record<string, unknown>;
     toolCalls?: Record<string, unknown>[];
     toolResults?: AnthropicToolResult[];
-    usage?: {
-      input_tokens: number;
-      output_tokens: number;
-    };
+    usage?: TokenUsage;
     execution_time?: number;
     request_id?: string;
+    functionCall?: FunctionCallMetadata;
+    stats?: {
+      tokenCount: number;
+      totalTimeSeconds: number;
+      tokensPerSecond: string;
+      startTime: number;
+      endTime: number;
+    };
+    [key: string]: unknown;
   };
+  streaming?: boolean;
 }
 
 interface ContentBlock {

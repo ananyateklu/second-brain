@@ -1,4 +1,3 @@
-import { format } from 'date-fns';
 import { Clock, CheckCircle, AlertCircle, Copy, ThumbsUp, Bot, User, Check, Loader2 } from 'lucide-react';
 import { AIMessage } from '../types';
 import { useAuth } from '../../../../../hooks/useAuth';
@@ -277,7 +276,14 @@ export function MessageBubble({ message, onReact, onCopy, agentName, agentColor 
                             <div className="flex items-center gap-3 text-[11px] text-[var(--color-textSecondary)]">
                                 {/* Timestamp and status */}
                                 <div className="flex items-center gap-1.5">
-                                    <span className="opacity-80">{format(message.timestamp, 'h:mm a')}</span>
+                                    <span className="opacity-80">{
+                                        /* Ensure correct timezone formatting */
+                                        message.timestamp.toLocaleString(undefined, {
+                                            timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                                            hour: 'numeric',
+                                            minute: '2-digit'
+                                        })}
+                                    </span>
                                     {message.status === 'sending' && (
                                         <Clock className="w-3 h-3 animate-pulse" />
                                     )}

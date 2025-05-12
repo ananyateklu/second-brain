@@ -6,6 +6,7 @@ namespace SecondBrain.Api.Enums
         UPDATE,
         DELETE,
         ARCHIVE,
+        UNARCHIVE,
         LINK,
         UNLINK,
         SEARCH,
@@ -21,7 +22,9 @@ namespace SecondBrain.Api.Enums
         CONNECT,
         DISCONNECT,
         SYNC,
-        COMPLETE
+        COMPLETE,
+        RESTORE,
+        PERMANENT_DELETE
     }
 
     public enum ActivityItemType
@@ -33,6 +36,8 @@ namespace SecondBrain.Api.Enums
         AI_MESSAGE,
         INTEGRATION,
         TICKTICK_TASK,
-        TICKTICK_INTEGRATION
+        TICKTICK_INTEGRATION,
+        TASK,
+        REMINDER
     }
 }

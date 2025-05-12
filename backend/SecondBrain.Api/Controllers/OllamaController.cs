@@ -5,6 +5,9 @@ using Microsoft.Extensions.Logging;
 using SecondBrain.Api.Services;
 using System.Text.Json;
 using SecondBrain.Api.DTOs.Ollama;
+using System.Net.Mime;
+using System.Text;
+using Microsoft.AspNetCore.Http;
 
 namespace SecondBrain.Api.Controllers
 {
@@ -23,68 +26,104 @@ namespace SecondBrain.Api.Controllers
             _logger = logger;
         }
 
-        [HttpGet("stream")]
-        public async Task StreamResponse([FromQuery] string prompt, [FromQuery] string modelId)
+        [HttpGet("models")]
+        [ProducesResponseType(typeof(OllamaModelsResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetModels()
         {
-            Response.Headers.Append("Content-Type", "text/event-stream");
-            Response.Headers.Append("Cache-Control", "no-cache");
-            Response.Headers.Append("Connection", "keep-alive");
-
             try
             {
-                // Direct model response for local models
-                var response = await _ollamaService.GenerateTextAsync(prompt, modelId, 2048);
-                var update = new
-                {
-                    Type = "content",
-                    Content = response,
-                    Timestamp = DateTime.UtcNow
-                };
-                
-                var json = JsonSerializer.Serialize(update);
-                await Response.WriteAsync($"data: {json}\n\n");
-                await Response.Body.FlushAsync();
-
-                await Response.WriteAsync($"event: complete\ndata: {{}}\n\n");
-                await Response.Body.FlushAsync();
+                var models = await _ollamaService.GetAvailableModelsAsync();
+                return Ok(models);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing stream request");
-                throw new InvalidOperationException("Failed to process LLM stream request", ex);
+                _logger.LogError(ex, "Error fetching Ollama models: {Message}", ex.Message);
+                return StatusCode(StatusCodes.Status500InternalServerError, new { error = ex.Message });
             }
         }
 
-        // New POST endpoint for handling large prompts
-        [HttpPost("stream")]
-        public async Task StreamResponsePost([FromBody] OllamaRequest request)
+        [HttpGet("stream")]
+        public async Task StreamText([FromQuery] string prompt, [FromQuery] string modelId, [FromQuery] int numPredict = 2048)
         {
-            Response.Headers.Append("Content-Type", "text/event-stream");
+            Response.ContentType = "text/event-stream";
             Response.Headers.Append("Cache-Control", "no-cache");
             Response.Headers.Append("Connection", "keep-alive");
 
             try
             {
-                // Direct model response for local models
-                var response = await _ollamaService.GenerateTextAsync(request.Prompt, request.ModelId, request.NumPredict);
-                var update = new
+                await _ollamaService.StreamGenerateTextAsync(prompt, modelId, async (token) =>
                 {
-                    Type = "content",
-                    Content = response,
-                    Timestamp = DateTime.UtcNow
-                };
-                
-                var json = JsonSerializer.Serialize(update);
-                await Response.WriteAsync($"data: {json}\n\n");
-                await Response.Body.FlushAsync();
+                    var response = new
+                    {
+                        Type = "content",
+                        Content = token
+                    };
 
-                await Response.WriteAsync($"event: complete\ndata: {{}}\n\n");
+                    string jsonResponse = JsonSerializer.Serialize(response);
+                    await Response.WriteAsync($"data: {jsonResponse}\n\n", Encoding.UTF8);
+                    await Response.Body.FlushAsync();
+                }, numPredict);
+
+                // Send completion event
+                await Response.WriteAsync($"event: complete\ndata: {{}}\n\n", Encoding.UTF8);
                 await Response.Body.FlushAsync();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing stream request");
-                throw new InvalidOperationException("Failed to process LLM stream request", ex);
+                _logger.LogError(ex, "Error streaming response from Ollama: {Message}", ex.Message);
+                
+                var errorResponse = new
+                {
+                    Type = "error",
+                    Content = $"Error: {ex.Message}"
+                };
+
+                string jsonErrorResponse = JsonSerializer.Serialize(errorResponse);
+                await Response.WriteAsync($"data: {jsonErrorResponse}\n\n", Encoding.UTF8);
+                await Response.Body.FlushAsync();
+            }
+        }
+
+        [HttpPost("stream")]
+        public async Task StreamText([FromBody] OllamaRequest request)
+        {
+            Response.ContentType = "text/event-stream";
+            Response.Headers.Append("Cache-Control", "no-cache");
+            Response.Headers.Append("Connection", "keep-alive");
+
+            try
+            {
+                await _ollamaService.StreamGenerateTextAsync(request.Prompt, request.ModelId, async (token) =>
+                {
+                    var response = new
+                    {
+                        Type = "content",
+                        Content = token
+                    };
+
+                    string jsonResponse = JsonSerializer.Serialize(response);
+                    await Response.WriteAsync($"data: {jsonResponse}\n\n", Encoding.UTF8);
+                    await Response.Body.FlushAsync();
+                }, request.NumPredict);
+
+                // Send completion event
+                await Response.WriteAsync($"event: complete\ndata: {{}}\n\n", Encoding.UTF8);
+                await Response.Body.FlushAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error streaming response from Ollama: {Message}", ex.Message);
+                
+                var errorResponse = new
+                {
+                    Type = "error",
+                    Content = $"Error: {ex.Message}"
+                };
+
+                string jsonErrorResponse = JsonSerializer.Serialize(errorResponse);
+                await Response.WriteAsync($"data: {jsonErrorResponse}\n\n", Encoding.UTF8);
+                await Response.Body.FlushAsync();
             }
         }
     }

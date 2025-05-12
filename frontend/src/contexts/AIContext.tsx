@@ -14,14 +14,29 @@ interface AIContextType {
   isOllamaConfigured: boolean;
   isGrokConfigured: boolean;
   error: string | null;
-  sendMessage: (input: string, modelId: string) => Promise<AIResponse>;
-  configureGemini: (apiKey: string) => Promise<void>;
+  sendMessage: (
+    input: string,
+    modelId: string,
+    options?: {
+      onStreamUpdate?: (
+        content: string,
+        stats?: {
+          tokenCount: number,
+          tokensPerSecond: string,
+          elapsedSeconds: number
+        }
+      ) => void;
+    }
+  ) => Promise<AIResponse>;
+  configureGemini: () => Promise<void>;
   availableModels: AIModel[];
   ollamaService: OllamaService;
   executionSteps: Record<string, ExecutionStep[]>;
   handleExecutionStep: (step: ExecutionStep) => void;
   transcribeAudio: (audioFile: File) => Promise<AIResponse>;
   checkConfigurations: (forceRefresh?: boolean) => Promise<void>;
+  refreshModels: () => Promise<void>;
+  isLoadingModels: boolean;
 }
 
 const AIContext = createContext<AIContextType | null>(null);
@@ -33,12 +48,31 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
   const [isGeminiConfigured, setIsGeminiConfigured] = useState<boolean>(false);
   const [isOllamaConfigured, setIsOllamaConfigured] = useState<boolean>(false);
   const [isGrokConfigured, setIsGrokConfigured] = useState<boolean>(false);
-  const [availableModels] = useState<AIModel[]>(modelService.getAllModels());
+  const [availableModels, setAvailableModels] = useState<AIModel[]>([]);
+  const [isLoadingModels, setIsLoadingModels] = useState<boolean>(true);
   const [messages, setMessages] = useState<Message[]>([]);
   const [executionSteps, setExecutionSteps] = useState<Record<string, ExecutionStep[]>>({});
   const latestMessageIdRef = useRef<string | null>(null);
   const initialCheckDoneRef = useRef<boolean>(false);
   const isCheckingRef = useRef<boolean>(false);
+
+  // Function to fetch available models
+  const refreshModels = useCallback(async () => {
+    try {
+      setIsLoadingModels(true);
+      // Use the new async method to get models
+      const models = await modelService.getAvailableModels();
+      setAvailableModels(models);
+    } catch (error) {
+      console.error('Error fetching models:', error);
+      // If we have no models, populate with static models as fallback
+      if (availableModels.length === 0) {
+        setAvailableModels(modelService.getAllModels());
+      }
+    } finally {
+      setIsLoadingModels(false);
+    }
+  }, [availableModels.length]);
 
   // Add new function to check configurations
   const checkConfigurations = useCallback(async (forceRefresh = false) => {
@@ -55,7 +89,8 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
       setIsGeminiConfigured(configs.gemini);
       setIsOllamaConfigured(configs.ollama);
 
-
+      // After checking configurations, refresh the models list
+      await refreshModels();
     } catch (error) {
       console.error('❌ Error checking configurations:', error);
       console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace available');
@@ -63,7 +98,7 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
       isCheckingRef.current = false;
       console.groupEnd();
     }
-  }, []); // Empty dependency array since we're using refs
+  }, [refreshModels]); // Add refreshModels to dependencies
 
   // Use layout effect for initialization
   useLayoutEffect(() => {
@@ -138,7 +173,20 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const sendMessage = useCallback(async (input: string, modelId: string): Promise<AIResponse> => {
+  const sendMessage = useCallback(async (
+    input: string,
+    modelId: string,
+    options?: {
+      onStreamUpdate?: (
+        content: string,
+        stats?: {
+          tokenCount: number,
+          tokensPerSecond: string,
+          elapsedSeconds: number
+        }
+      ) => void;
+    }
+  ): Promise<AIResponse> => {
     try {
       const model = availableModels.find(m => m.id === modelId);
       if (!model) {
@@ -147,6 +195,11 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
 
       if (model.category === 'agent') {
         return await agentService.sendMessage(input, modelId);
+      }
+
+      // Special handling for streaming
+      if (model.provider === 'ollama' && options?.onStreamUpdate) {
+        return await agentService.ollama.sendMessage(input, modelId, options);
       }
 
       return await messageService.sendMessage(input, model);
@@ -212,8 +265,10 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
     executionSteps,
     handleExecutionStep,
     transcribeAudio,
-    checkConfigurations
-  }), [isOpenAIConfigured, isAnthropicConfigured, isGeminiConfigured, isOllamaConfigured, isGrokConfigured, error, sendMessage, configureGemini, availableModels, executionSteps, handleExecutionStep, transcribeAudio, checkConfigurations]);
+    checkConfigurations,
+    refreshModels,
+    isLoadingModels
+  }), [isOpenAIConfigured, isAnthropicConfigured, isGeminiConfigured, isOllamaConfigured, isGrokConfigured, error, sendMessage, configureGemini, availableModels, executionSteps, handleExecutionStep, transcribeAudio, checkConfigurations, refreshModels, isLoadingModels]);
 
   return <AIContext.Provider value={value}>{children}</AIContext.Provider>;
 }

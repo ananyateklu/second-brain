@@ -283,7 +283,6 @@ export const notesService = {
 
   async duplicateNotes(noteIds: string[]): Promise<Note[]> {
     try {
-      // Duplicate each note in sequence
       const duplicatedNotes: Note[] = [];
 
       for (const noteId of noteIds) {
