@@ -14,6 +14,13 @@ interface UnifiedInputBarProps {
     themeColor?: string;
     isLoadingModels?: boolean;
     onRefreshModels?: () => void;
+    providerStatus?: {
+        openai: boolean;
+        anthropic: boolean;
+        gemini: boolean;
+        ollama: boolean;
+        grok: boolean;
+    };
 }
 
 export const UnifiedInputBar: React.FC<UnifiedInputBarProps> = ({
@@ -23,7 +30,8 @@ export const UnifiedInputBar: React.FC<UnifiedInputBarProps> = ({
     onUserInput,
     isLoading,
     isLoadingModels = false,
-    onRefreshModels
+    onRefreshModels,
+    providerStatus
 }) => {
     const [input, setInput] = useState('');
     const [isExpanded, setIsExpanded] = useState(false);
@@ -92,6 +100,7 @@ export const UnifiedInputBar: React.FC<UnifiedInputBarProps> = ({
                         onClose={toggleExpanded}
                         isLoading={isLoadingModels}
                         onRefresh={onRefreshModels}
+                        providerStatus={providerStatus}
                     />
                 ) : (
                     <motion.form

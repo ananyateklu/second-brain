@@ -401,6 +401,7 @@ export class OllamaService {
 
       // No longer falling back to static models
       // Instead, throw the error to indicate an issue with the Ollama endpoint
+      this.cachedModels = [];
       throw error;
     }
   }

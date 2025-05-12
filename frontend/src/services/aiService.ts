@@ -111,23 +111,42 @@ export class AIService {
       const agentModels = this.agentService.getAvailableModels();
       const agentModelIds = new Set(agentModels.map((m: AIModel) => m.id));
 
-      // Fetch Ollama models asynchronously
-      const ollamaModels = await this.ollama.getModels();
+      // Fetch models from providers that are configured
+      const models: AIModel[] = [];
 
-      // Then get all other models, excluding those that are already in agent models
-      const otherModels = [
-        ...this.openai.getModels().filter((m: AIModel) => !agentModelIds.has(m.id) && m.category !== 'agent'),
-        ...this.anthropic.getModels().filter((m: AIModel) => !agentModelIds.has(m.id) && m.category !== 'agent'),
-        ...this.gemini.getModels().filter((m: AIModel) => !agentModelIds.has(m.id) && m.category !== 'agent'),
-        ...ollamaModels.filter((m: AIModel) => !agentModelIds.has(m.id) && m.category !== 'agent'),
-        ...this.grokService.getModels().filter((m: AIModel) => !agentModelIds.has(m.id) && m.category !== 'agent')
-      ];
+      // Add agent models
+      models.push(...agentModels);
+
+      // Add OpenAI models
+      models.push(...this.openai.getModels().filter((m: AIModel) => !agentModelIds.has(m.id) && m.category !== 'agent'));
+
+      // Add Anthropic models
+      models.push(...this.anthropic.getModels().filter((m: AIModel) => !agentModelIds.has(m.id) && m.category !== 'agent'));
+
+      // Add Gemini models
+      models.push(...this.gemini.getModels().filter((m: AIModel) => !agentModelIds.has(m.id) && m.category !== 'agent'));
+
+      // Add Grok models
+      models.push(...this.grokService.getModels().filter((m: AIModel) => !agentModelIds.has(m.id) && m.category !== 'agent'));
+
+      // Fetch Ollama models only if configured
+      let ollamaModels: AIModel[] = [];
+      if (this.ollama.isConfigured()) {
+        try {
+          ollamaModels = await this.ollama.getModels();
+          // Only add Ollama models if they were successfully fetched
+          models.push(...ollamaModels.filter((m: AIModel) => !agentModelIds.has(m.id) && m.category !== 'agent'));
+        } catch (error) {
+          console.error('Error fetching Ollama models, skipping:', error);
+          // Don't add Ollama models if there was an error
+        }
+      }
 
       // Cache the result
-      this.cachedModels = [...agentModels, ...otherModels];
+      this.cachedModels = models;
       this.modelsLastFetched = now;
 
-      return this.cachedModels;
+      return models;
     } catch (error) {
       console.error('Error fetching available models:', error);
       // If we have cached models, return them even if they're expired

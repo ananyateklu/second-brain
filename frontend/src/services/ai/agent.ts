@@ -5,7 +5,7 @@ import { OllamaService } from './ollama';
 import { GrokService } from './grok';
 import { modelService } from './modelService';
 
-interface AgentRequestParameters {
+export interface AgentRequestParameters {
   max_tokens?: number;
   temperature?: number;
   tools?: AgentTool[];

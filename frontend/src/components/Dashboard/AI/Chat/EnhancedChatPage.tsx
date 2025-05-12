@@ -22,6 +22,7 @@ export function EnhancedChatPage() {
         isGeminiConfigured,
         isAnthropicConfigured,
         isOllamaConfigured,
+        isGrokConfigured,
         availableModels,
         isLoadingModels,
         refreshModels,
@@ -408,7 +409,14 @@ export function EnhancedChatPage() {
         onUserInput: handleUserInput,
         isLoading: isLoading,
         isLoadingModels: isLoadingModels,
-        onRefreshModels: refreshModels
+        onRefreshModels: refreshModels,
+        providerStatus: {
+            openai: isOpenAIConfigured,
+            anthropic: isAnthropicConfigured,
+            gemini: isGeminiConfigured,
+            ollama: isOllamaConfigured,
+            grok: isGrokConfigured
+        }
     };
 
     if (!isOpenAIConfigured && !isGeminiConfigured && !isAnthropicConfigured && !isOllamaConfigured) {
@@ -502,10 +510,10 @@ export function EnhancedChatPage() {
             <button
                 onClick={() => setShowSidebar(prev => !prev)}
                 className={`absolute ${showSidebar ? '-left-16' : 'left-3'} top-3 
-                    ${showSidebar ? 'p-2 rounded-full' : 'px-4 py-2 rounded-lg flex items-center gap-2'} 
-                    transition-all duration-300 shadow-sm hover:shadow-md
-                    transform hover:scale-105 hover:-translate-y-0.5 group
-                    ${theme === 'dark' || theme === 'midnight' || theme === 'full-dark'
+                        ${showSidebar ? 'p-2 rounded-full' : 'px-4 py-2 rounded-lg flex items-center gap-2'} 
+                        transition-all duration-300 shadow-sm hover:shadow-md
+                        transform hover:scale-105 hover:-translate-y-0.5 group
+                        ${theme === 'dark' || theme === 'midnight' || theme === 'full-dark'
                         ? 'bg-gray-800/90 hover:bg-gray-800 text-gray-200'
                         : 'bg-white/90 hover:bg-white text-gray-700'}`}
                 style={selectedModel ? {

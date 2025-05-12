@@ -3,11 +3,12 @@ import { Bot, Settings2, AlertCircle, CheckCircle, Loader, Save, ChevronDown, Sl
 import { motion } from 'framer-motion';
 import { useAI } from '../../../contexts/AIContext';
 import { useTheme } from '../../../contexts/themeContextUtils';
-import { AISettings } from '../../../types/ai';
+import { AIModel, AISettings } from '../../../types/ai';
 import { cardVariants } from '../../../utils/welcomeBarUtils';
 import { modelService } from '../../../services/ai/modelService';
 
-type AIProvider = 'openai' | 'anthropic' | 'gemini' | 'ollama' | 'grok';
+type AIProviderName = 'OpenAI' | 'Anthropic' | 'Gemini' | 'Ollama' | 'Grok';
+type AIProviderKey = 'openai' | 'anthropic' | 'gemini' | 'ollama' | 'grok';
 
 interface TestResult {
   success: boolean;
@@ -20,24 +21,32 @@ interface AISettingsSectionProps {
 
 export function AISettingsSection({ onSave }: AISettingsSectionProps) {
   const {
+    // Agent statuses
     isOpenAIConfigured,
     isAnthropicConfigured,
     isGeminiConfigured,
     isOllamaConfigured,
     isGrokConfigured,
-    checkConfigurations
+    // Chat statuses
+    isChatOpenAIConfigured,
+    isChatAnthropicConfigured,
+    isChatGeminiConfigured,
+    isChatOllamaConfigured,
+    isChatGrokConfigured,
+    checkConfigurations,
+    isLoadingConfigurations // Use loading state
   } = useAI();
   const { theme } = useTheme();
 
   const [settings, setSettings] = useState<AISettings>({
     contentSuggestions: {
-      provider: (localStorage.getItem('content_suggestions_provider') as AIProvider) || 'openai',
+      provider: (localStorage.getItem('content_suggestions_provider') as AIProviderKey) || 'openai',
       modelId: localStorage.getItem('content_suggestions_model') ?? 'gpt-4',
       temperature: Number(localStorage.getItem('content_suggestions_temperature')) || 0.7,
       maxTokens: Number(localStorage.getItem('content_suggestions_max_tokens')) || 2000,
     },
     promptEnhancement: {
-      provider: (localStorage.getItem('prompt_enhancement_provider') as AIProvider) || 'openai',
+      provider: (localStorage.getItem('prompt_enhancement_provider') as AIProviderKey) || 'openai',
       modelId: localStorage.getItem('prompt_enhancement_model') ?? 'gpt-4',
       temperature: Number(localStorage.getItem('prompt_enhancement_temperature')) || 0.7,
       maxTokens: Number(localStorage.getItem('prompt_enhancement_max_tokens')) || 2000,
@@ -46,33 +55,96 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveResult, setSaveResult] = useState<TestResult | null>(null);
-  const [isChecking, setIsChecking] = useState(false);
   const [activeMode, setActiveMode] = useState<'content' | 'prompt'>('content');
+  const [chatModels, setChatModels] = useState<AIModel[]>([]);
+  const [isLoadingModels, setIsLoadingModels] = useState(false);
 
+  // Fetch chat models when the component mounts
   useEffect(() => {
-    setIsChecking(true);
-    checkConfigurations()
-      .finally(() => setIsChecking(false));
-  }, [checkConfigurations]);
+    const fetchChatModels = async () => {
+      setIsLoadingModels(true);
+      try {
+        const models = await modelService.getChatModelsAsync();
+        setChatModels(models);
+      } catch (error) {
+        console.error('Failed to fetch chat models:', error);
+        // Fallback to the synchronous method if async fails
+        setChatModels(modelService.getChatModels());
+      } finally {
+        setIsLoadingModels(false);
+      }
+    };
 
-  const configurationStatus = [
-    { name: 'OpenAI', isConfigured: isOpenAIConfigured },
-    { name: 'Anthropic', isConfigured: isAnthropicConfigured },
-    { name: 'Gemini', isConfigured: isGeminiConfigured },
-    { name: 'Ollama', isConfigured: isOllamaConfigured },
-    { name: 'Grok', isConfigured: isGrokConfigured }
-  ];
+    fetchChatModels();
+  }, []);
 
-  // Use only chat models for content generation (exclude agent models)
-  const contentGenerationModels = modelService.getChatModels();
+  // Re-fetch models when provider changes to ensure Ollama models are loaded
+  useEffect(() => {
+    const activeProvider = activeMode === 'content'
+      ? settings.contentSuggestions?.provider
+      : settings.promptEnhancement?.provider;
+
+    if (activeProvider === 'ollama') {
+      const fetchOllamaModels = async () => {
+        setIsLoadingModels(true);
+        try {
+          const models = await modelService.getChatModelsAsync();
+          setChatModels(models);
+        } catch (error) {
+          console.error('Failed to fetch Ollama models:', error);
+        } finally {
+          setIsLoadingModels(false);
+        }
+      };
+
+      fetchOllamaModels();
+    }
+  }, [activeMode,
+    settings.contentSuggestions?.provider,
+    settings.promptEnhancement?.provider]);
+
+  // Map provider names to their configuration statuses
+  const configurationStatus: Record<AIProviderName, { agent: boolean; chat: boolean }> = {
+    'OpenAI': { agent: isOpenAIConfigured, chat: isChatOpenAIConfigured },
+    'Anthropic': { agent: isAnthropicConfigured, chat: isChatAnthropicConfigured },
+    'Gemini': { agent: isGeminiConfigured, chat: isChatGeminiConfigured },
+    'Ollama': { agent: isOllamaConfigured, chat: isChatOllamaConfigured },
+    'Grok': { agent: isGrokConfigured, chat: isChatGrokConfigured }
+  };
 
   const getActiveSettings = () => {
     return activeMode === 'content' ? settings.contentSuggestions : settings.promptEnhancement;
   };
 
-  const handleProviderChange = (provider: AIProvider) => {
+  const handleProviderChange = (providerKey: AIProviderKey) => {
+    // More accurate conversion from provider key to provider name with special cases
+    let providerName: AIProviderName;
+
+    // Handle special cases for provider names
+    if (providerKey === 'openai') {
+      providerName = 'OpenAI';
+    } else if (providerKey === 'anthropic') {
+      providerName = 'Anthropic';
+    } else if (providerKey === 'gemini') {
+      providerName = 'Gemini';
+    } else if (providerKey === 'ollama') {
+      providerName = 'Ollama';
+    } else if (providerKey === 'grok') {
+      providerName = 'Grok';
+    } else {
+      // If we get here, it means we have an unknown provider key
+      // Since we've handled all known cases, this is just a fallback
+      providerName = 'OpenAI'; // Default to OpenAI if unknown
+      console.warn(`Unknown provider key: ${providerKey}`);
+    }
+
+    const providerStatuses = configurationStatus[providerName];
+
+    // For content generation, we only need chat to be configured
+    if (!providerStatuses.chat) return;
+
     // Find a valid chat model for this provider
-    const availableModelsForProvider = contentGenerationModels.filter(m => m.provider === provider);
+    const availableModelsForProvider = chatModels.filter(m => m.provider === providerKey);
     const firstModelForProvider = availableModelsForProvider.length > 0 ?
       availableModelsForProvider[0].id : undefined;
 
@@ -82,12 +154,12 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
       ...prev,
       [type]: {
         ...prev[type]!,
-        provider,
+        provider: providerKey,
         modelId: firstModelForProvider ?? prev[type]?.modelId ?? '',
       },
     }));
 
-    localStorage.setItem(`${type === 'contentSuggestions' ? 'content_suggestions' : 'prompt_enhancement'}_provider`, provider);
+    localStorage.setItem(`${type === 'contentSuggestions' ? 'content_suggestions' : 'prompt_enhancement'}_provider`, providerKey);
 
     if (firstModelForProvider) {
       localStorage.setItem(`${type === 'contentSuggestions' ? 'content_suggestions' : 'prompt_enhancement'}_model`, firstModelForProvider);
@@ -125,44 +197,66 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
   const getContainerBackground = () => {
     if (theme === 'dark') return 'bg-gray-900/30';
     if (theme === 'midnight') return 'bg-[#1e293b]/30';
-    return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))]';
+    return 'bg-[color-mix(in_srgb,var(--color-background)_80%,var(--color-surface))] ';
   };
 
   const ProviderButton = ({
-    provider,
+    providerName,
     isSelected,
     onClick,
-    isConfigured
+    // isAgentConfigured is not used since we're focusing on chat models
+    isChatConfigured
   }: {
-    provider: string;
+    providerName: AIProviderName;
     isSelected: boolean;
     onClick: () => void;
-    isConfigured: boolean;
-  }) => (
-    <button
-      onClick={onClick}
-      disabled={!isConfigured}
-      className={`
-        relative px-3 py-2 rounded-lg transition-all duration-200
-        ${isSelected
-          ? 'bg-[var(--color-accent)] text-white'
-          : `${getContainerBackground()} text-[var(--color-text)]`
-        }
-        ${!isConfigured ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-[var(--color-accent)]/10'}
-        border-[0.5px] border-white/10
-        flex items-center justify-between gap-2
-        group w-full
-      `}
-    >
-      <span className="font-medium text-sm">{provider}</span>
-      {isSelected && <CheckCircle className="w-4 h-4 shrink-0" />}
-      {!isConfigured && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
-          <span className="text-sm text-white">Not Configured</span>
+    isAgentConfigured: boolean;
+    isChatConfigured: boolean;
+  }) => {
+    // For content generation, we only care if chat is configured
+    // Chat model is required for content generation
+    const isDisabled = !isChatConfigured;
+
+    return (
+      <button
+        onClick={onClick}
+        disabled={isDisabled}
+        className={`
+          relative px-3 py-2 rounded-lg transition-all duration-200
+          ${isSelected
+            ? 'bg-[var(--color-accent)] text-white'
+            : `${getContainerBackground()} text-[var(--color-text)]`
+          }
+          ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-[var(--color-accent)]/10'}
+          border-[0.5px] border-white/10
+          flex items-center justify-between
+          group w-full
+        `}
+      >
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-sm">{providerName}</span>
+
+          {/* Chat Status Indicator - only show if not selected */}
+          {!isSelected && (
+            <div className={`
+              flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px]
+              ${isChatConfigured
+                ? 'bg-[var(--color-accent)]/10 text-[var(--color-accent)]'
+                : 'bg-gray-500/10 text-gray-500'
+              }
+            `}>
+              <MessageSquare className="w-2 h-2 mr-0.5" />
+              <span>{isChatConfigured ? 'Configured' : 'Not Configured'}</span>
+            </div>
+          )}
         </div>
-      )}
-    </button>
-  );
+
+        {/* Selected Indicator */}
+        {isSelected && <CheckCircle className="w-4 h-4 shrink-0" />}
+      </button>
+    );
+  };
+
 
   const ModelSelect = ({
     models,
@@ -318,64 +412,111 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
         <div className="flex items-center justify-between">
           <h4 className="text-sm font-medium text-[var(--color-text)]">Provider Status</h4>
           <button
-            onClick={() => {
-              setIsChecking(true);
-              checkConfigurations().finally(() => setIsChecking(false));
-            }}
+            onClick={() => checkConfigurations(true)} // Force refresh on click
             className={`
-              flex items-center gap-2 px-3 py-1.5 rounded-lg 
+              flex items-center gap-2 px-3 py-1.5 rounded-lg
               ${getContainerBackground()}
               border-[0.5px] border-white/10
-              text-[var(--color-text)] text-xs font-medium 
-              transition-all duration-200 
+              text-[var(--color-text)] text-xs font-medium
+              transition-all duration-200
               hover:bg-[var(--color-surfaceHover)]
               disabled:opacity-50 disabled:cursor-not-allowed
             `}
-            disabled={isChecking}
+            disabled={isLoadingConfigurations} // Use loading state
           >
-            <div className={`w-3 h-3 ${isChecking ? 'animate-spin' : ''}`}>
-              {isChecking ? <Loader className="w-3 h-3" /> : <Settings2 className="w-3 h-3" />}
+            <div className={`w-3 h-3 ${isLoadingConfigurations ? 'animate-spin' : ''}`}>
+              {isLoadingConfigurations ? <Loader className="w-3 h-3" /> : <Settings2 className="w-3 h-3" />}
             </div>
-            {isChecking ? 'Checking...' : 'Refresh Status'}
+            {isLoadingConfigurations ? 'Checking...' : 'Refresh Status'}
           </button>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
-          {configurationStatus.map(({ name, isConfigured }) => (
-            <motion.div
-              key={name}
-              variants={cardVariants}
-              className={`
-                ${getContainerBackground()}
-                border-[0.5px] border-white/10
-                backdrop-blur-xl rounded-lg p-2
-                flex items-center gap-2
-              `}
-            >
-              <div className={`
-                flex items-center justify-center w-6 h-6 rounded-md 
-                ${isConfigured ? 'bg-[var(--color-accent)]/10' : 'bg-red-500/10'}
-                backdrop-blur-sm border-[0.5px] border-white/10
-              `}>
-                {isConfigured ? (
-                  <CheckCircle className="w-3 h-3 text-[var(--color-accent)]" />
-                ) : (
-                  <AlertCircle className="w-3 h-3 text-red-500" />
-                )}
-              </div>
-              <div className="min-w-0">
-                <p className="font-medium text-xs text-[var(--color-text)] truncate">{name}</p>
-                <p className={`text-xs ${isConfigured
-                  ? 'text-[var(--color-accent)]'
-                  : 'text-red-500'
-                  }`}>
-                  {isConfigured ? 'Configured' : 'Not Configured'}
-                </p>
-              </div>
-            </motion.div>
-          ))}
+          {(Object.entries(configurationStatus) as [AIProviderName, { agent: boolean; chat: boolean }][]).map(([name, { agent, chat }]) => {
+            const isFullyConfigured = agent && chat;
+            const isPartiallyConfigured = (agent || chat) && !isFullyConfigured;
+            const isNotConfigured = !agent && !chat;
+
+            // Set colors and icon based on status
+            let statusColorClass = 'text-red-500';
+            let bgColorClass = 'bg-red-500/10';
+            let IconComponent = AlertCircle;
+
+            if (isFullyConfigured) {
+              statusColorClass = 'text-[var(--color-accent)]';
+              bgColorClass = 'bg-[var(--color-accent)]/10';
+              IconComponent = CheckCircle;
+            } else if (isPartiallyConfigured) {
+              statusColorClass = 'text-yellow-500';
+              bgColorClass = 'bg-yellow-500/10';
+              // Use a more appropriate icon for partial status
+              IconComponent = agent ? Bot : MessageSquare;
+            }
+
+            return (
+              <motion.div
+                key={name}
+                variants={cardVariants}
+                className={`
+                  ${getContainerBackground()}
+                  border-[0.5px] border-white/10
+                  backdrop-blur-xl rounded-lg p-3
+                  flex flex-col gap-3
+                  group relative
+                  ${isNotConfigured ? 'opacity-70' : ''}
+                `}
+              >
+                {/* Provider Header */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className={`
+                      flex items-center justify-center w-6 h-6 rounded-md 
+                      ${bgColorClass}
+                      backdrop-blur-sm border-[0.5px] border-white/10
+                      shrink-0
+                    `}>
+                      <IconComponent className={`w-3 h-3 ${statusColorClass}`} />
+                    </div>
+                    <p className="font-medium text-xs text-[var(--color-text)]">{name}</p>
+                  </div>
+                  {isFullyConfigured && (
+                    <span className="text-[10px] bg-[var(--color-accent)]/10 text-[var(--color-accent)] rounded-sm px-1.5 py-0.5 flex items-center gap-1">
+                      <CheckCircle className="w-2.5 h-2.5" />
+                      <span>Configured</span>
+                    </span>
+                  )}
+                </div>
+
+                {/* Status Indicators */}
+                <div className="grid grid-cols-2 gap-1.5 text-[10px]">
+                  {/* Agent Status */}
+                  <div className={`
+                    rounded px-1 py-1 flex items-center gap-1.5
+                    ${agent
+                      ? "border-[var(--color-accent)]/20 bg-[var(--color-accent)]/5 text-[var(--color-accent)]"
+                      : "border-gray-500/10 bg-gray-500/5 text-gray-500/70"}
+                  `}>
+                    <Bot className="w-3 h-3 shrink-0" />
+                    <span className="truncate">{agent ? "Agent" : "No Agent"}</span>
+                  </div>
+
+                  {/* Chat Status */}
+                  <div className={`
+                    rounded px-1 py-1 flex items-center gap-1.5
+                    ${chat
+                      ? "border-[var(--color-accent)]/20 bg-[var(--color-accent)]/5 text-[var(--color-accent)]"
+                      : "border-gray-500/10 bg-gray-500/5 text-gray-500/70"}
+                  `}>
+                    <MessageSquare className="w-3 h-3 shrink-0" />
+                    <span className="truncate">{chat ? "Chat" : "No Chat"}</span>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
       </div>
+
 
       {/* AI Model Configuration */}
       <div className="space-y-3">
@@ -412,17 +553,15 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
           variants={cardVariants}
           className={`space-y-6 p-6 min-h-[400px] ${getContainerBackground()} rounded-lg border-[0.5px] border-white/10`}
         >
-          <div className="p-3 rounded-lg bg-[var(--color-accent)]/10 border-[0.5px] border-[var(--color-accent)]/20">
-            <div className="flex items-start gap-2">
-              <MessageSquare className="w-4 h-4 text-[var(--color-accent)] mt-0.5 shrink-0" />
-              <div>
-                <p className="text-xs text-[var(--color-text)]">
-                  <span className="font-medium">Direct Provider Integration:</span> Content suggestions use provider-specific API calls rather than the agent system to ensure reliability and proper endpoint routing.
-                </p>
-                <p className="text-xs text-[var(--color-textSecondary)] mt-1">
-                  When you select a provider below, only compatible chat models for that provider will be available for selection.
-                </p>
-              </div>
+          <div className="flex items-start gap-2">
+            <MessageSquare className="w-4 h-4 text-[var(--color-accent)] mt-0.5 shrink-0" />
+            <div>
+              <p className="text-xs text-[var(--color-text)]">
+                Content suggestions use provider-specific API calls rather than the agent system to ensure reliability and proper endpoint routing.
+              </p>
+              <p className="text-xs text-[var(--color-textSecondary)] mt-1">
+                When you select a provider below, only compatible chat models for that provider will be available for selection.
+              </p>
             </div>
           </div>
 
@@ -431,24 +570,35 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
               AI Provider
             </label>
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-              {configurationStatus.map(({ name, isConfigured }) => (
-                <ProviderButton
-                  key={name}
-                  provider={name}
-                  isSelected={getActiveSettings()?.provider.toLowerCase() === name.toLowerCase()}
-                  onClick={() => handleProviderChange(name.toLowerCase() as AIProvider)}
-                  isConfigured={isConfigured}
-                />
-              ))}
+              {(Object.entries(configurationStatus) as [AIProviderName, { agent: boolean; chat: boolean }][]).map(([name, { agent, chat }]) => {
+                const providerKey = name.toLowerCase() as AIProviderKey;
+                return (
+                  <ProviderButton
+                    key={name}
+                    providerName={name}
+                    isSelected={getActiveSettings()?.provider === providerKey}
+                    onClick={() => handleProviderChange(providerKey)}
+                    isAgentConfigured={agent}
+                    isChatConfigured={chat}
+                  />
+                );
+              })}
             </div>
           </div>
 
+
           <div className="space-y-4">
-            <label className="block text-xs font-medium text-[var(--color-text)]">
-              Model
+            <label className="block text-xs font-medium text-[var(--color-text)] flex items-center justify-between">
+              <span>Model</span>
+              {isLoadingModels &&
+                <span className="text-xs flex items-center gap-1 text-[var(--color-textSecondary)]">
+                  <Loader className="w-3 h-3 animate-spin" />
+                  Loading models...
+                </span>
+              }
             </label>
             <ModelSelect
-              models={contentGenerationModels.filter(
+              models={chatModels.filter(
                 model => model.provider.toLowerCase() === getActiveSettings()?.provider.toLowerCase()
               )}
               selectedId={getActiveSettings()?.modelId || ''}
