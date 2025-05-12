@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { History, X, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { format } from 'date-fns';
 import { AIModel } from '../../../../../types/ai';
 import { AgentConversation } from '../types';
 
@@ -99,9 +98,18 @@ export const ConversationHistory = ({
                                                     </span>
                                                 </div>
                                                 <div className="flex items-center gap-2 text-xs text-[var(--color-textSecondary)]">
-                                                    <span>{format(conv.lastUpdated, 'MMM d, yyyy')}</span>
+                                                    <span>{conv.lastUpdated.toLocaleDateString(undefined, {
+                                                        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                                                        month: 'short',
+                                                        day: 'numeric',
+                                                        year: 'numeric'
+                                                    })}</span>
                                                     <span>•</span>
-                                                    <span>{format(conv.lastUpdated, 'h:mm a')}</span>
+                                                    <span>{conv.lastUpdated.toLocaleTimeString(undefined, {
+                                                        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                                                        hour: 'numeric',
+                                                        minute: '2-digit'
+                                                    })}</span>
                                                 </div>
                                             </div>
                                         </button>

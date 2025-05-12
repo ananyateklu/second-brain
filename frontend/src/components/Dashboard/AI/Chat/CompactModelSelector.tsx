@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { AIModel } from '../../../../types/ai';
 import { useTheme } from '../../../../contexts/themeContextUtils';
-import { ArrowUp } from 'lucide-react';
+import { ArrowUp, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 // Model option component for the expanded selector
@@ -70,6 +70,8 @@ interface CompactModelSelectorProps {
     selectedModel: AIModel | null;
     onModelSelected: (model: AIModel) => void;
     onClose: () => void;
+    isLoading?: boolean;
+    onRefresh?: () => void;
 }
 
 export const CompactModelSelector: React.FC<CompactModelSelectorProps> = ({
@@ -77,6 +79,8 @@ export const CompactModelSelector: React.FC<CompactModelSelectorProps> = ({
     selectedModel,
     onModelSelected,
     onClose,
+    isLoading = false,
+    onRefresh
 }) => {
     const { theme } = useTheme();
     const [modelFilterInput, setModelFilterInput] = useState('');
@@ -232,15 +236,43 @@ export const CompactModelSelector: React.FC<CompactModelSelectorProps> = ({
             className={`absolute bottom-0 left-0 right-0 ${expandedBgColor} rounded-xl shadow-lg p-4 border ${theme === 'dark' || theme === 'midnight' || theme === 'full-dark' ? 'border-gray-700' : 'border-gray-300'} z-10`}
         >
             <div className="flex justify-between items-center mb-4">
-                <h3 className={`text-base font-medium ${theme === 'dark' || theme === 'midnight' || theme === 'full-dark' ? 'text-white' : 'text-gray-900'}`}>
-                    Select a model
-                </h3>
-                <button
-                    onClick={onClose}
-                    className={`p-2 rounded-full ${theme === 'dark' || theme === 'midnight' || theme === 'full-dark' ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-200 text-gray-500'}`}
-                >
-                    <ArrowUp size={18} />
-                </button>
+                <div className="flex items-center">
+                    <h3 className={`text-base font-medium ${theme === 'dark' || theme === 'midnight' || theme === 'full-dark' ? 'text-white' : 'text-gray-900'}`}>
+                        Select a model
+                    </h3>
+                    {isLoading && (
+                        <div className="ml-2 flex items-center">
+                            <motion.div
+                                animate={{ rotate: 360 }}
+                                transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                                className="w-4 h-4"
+                            >
+                                <RefreshCw size={16} className={`${theme === 'dark' || theme === 'midnight' || theme === 'full-dark' ? 'text-gray-400' : 'text-gray-500'}`} />
+                            </motion.div>
+                            <span className={`ml-1 text-xs ${theme === 'dark' || theme === 'midnight' || theme === 'full-dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                                Loading...
+                            </span>
+                        </div>
+                    )}
+                </div>
+                <div className="flex items-center">
+                    {onRefresh && (
+                        <button
+                            onClick={onRefresh}
+                            disabled={isLoading}
+                            className={`p-2 rounded-full mr-2 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''} ${theme === 'dark' || theme === 'midnight' || theme === 'full-dark' ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-200 text-gray-500'}`}
+                            title="Refresh models"
+                        >
+                            <RefreshCw size={18} />
+                        </button>
+                    )}
+                    <button
+                        onClick={onClose}
+                        className={`p-2 rounded-full ${theme === 'dark' || theme === 'midnight' || theme === 'full-dark' ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-200 text-gray-500'}`}
+                    >
+                        <ArrowUp size={18} />
+                    </button>
+                </div>
             </div>
 
             {/* Filter buttons section */}

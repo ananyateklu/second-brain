@@ -26,6 +26,13 @@ interface ToolMetadata {
         topic: string;
         tools_used: string[];
     };
+    stats?: {
+        tokenCount: number;
+        totalTimeSeconds: number;
+        tokensPerSecond: string;
+        startTime: number;
+        endTime: number;
+    };
 }
 
 interface AIMessageProps {
@@ -39,9 +46,18 @@ interface AIMessageProps {
 export function AIMessage({
     message,
     themeColor,
+    isStreaming = false,
     isFirstInGroup,
     isLastInGroup
 }: AIMessageProps) {
+    // Debug output
+    if (isStreaming) {
+        console.log('Streaming message:', {
+            id: message.id,
+            isOllama: message.model?.provider === 'ollama',
+            contentLength: typeof message.content === 'string' ? message.content.length : 'non-string'
+        });
+    }
     const isUser = message.role === 'user';
     const { theme } = useTheme();
 
@@ -134,6 +150,7 @@ export function AIMessage({
                 }
         ${!isLastInGroup && isUser ? 'rounded-br-md rounded-bl-2xl' : ''}
         ${!isLastInGroup && !isUser ? 'rounded-bl-md rounded-br-2xl' : ''}
+        ${isStreaming ? 'border-[var(--color-accent)] animate-pulse' : ''}
         hover:shadow-xl transition-shadow duration-200
         text-sm
         max-w-full md:max-w-3xl lg:max-w-4xl overflow-hidden`}
@@ -143,6 +160,15 @@ export function AIMessage({
             >
                 <div className="overflow-x-auto custom-scrollbar">
                     <MessageContent message={message} themeColor={themeColor} />
+                    {isStreaming && (
+                        <span className="inline-block ml-1 animate-pulse text-[var(--color-accent)]" style={{ fontWeight: 'bold' }}>▋</span>
+                    )}
+                    {message.isLoading && !isStreaming && (
+                        <div className="mt-2 flex items-center gap-2">
+                            <div className="w-3 h-3 relative animate-spin rounded-full border-2 border-current border-t-transparent text-[var(--color-accent)]"></div>
+                            <span className="text-[var(--color-textSecondary)] text-xs">Loading...</span>
+                        </div>
+                    )}
                 </div>
             </div>
             {
@@ -174,9 +200,36 @@ export function AIMessage({
                     {renderExecutionStatus()}
 
                     {isLastInGroup && (
-                        <span className="mt-1 text-xs text-gray-500 dark:text-gray-400 text-[var(--color-textSecondary)]">
-                            {new Date(message.timestamp).toLocaleTimeString()}
-                        </span>
+                        <div className="mt-1 text-xs flex items-center gap-3 text-[var(--color-textSecondary)]">
+                            <span className="flex items-center">
+                                <svg className="w-3 h-3 mr-1 opacity-70" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                                {/* Ensure the timestamp string is treated as UTC */}
+                                {new Date(message.timestamp.endsWith('Z') ? message.timestamp : message.timestamp + 'Z')
+                                    .toLocaleString(undefined, {
+                                        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                                        hour: 'numeric',
+                                        minute: 'numeric'
+                                    })}
+                            </span>
+
+                            {/* Display token statistics for Ollama models */}
+                            {!isUser && message.model?.provider === 'ollama' && message.metadata?.stats && (
+                                <span className="flex items-center font-medium text-[var(--color-accent)]">
+                                    <svg className="w-3 h-3 mr-1 opacity-70" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"></path>
+                                        <line x1="16" y1="8" x2="2" y2="22"></line>
+                                        <line x1="17.5" y1="15" x2="9" y2="15"></line>
+                                    </svg>
+                                    {message.metadata.stats.tokenCount} tokens
+                                    (<span className={isStreaming ? "animate-pulse" : ""}>
+                                        {message.metadata.stats.tokensPerSecond}/sec
+                                    </span>)
+                                </span>
+                            )}
+                        </div>
                     )}
                 </div>
             </div>

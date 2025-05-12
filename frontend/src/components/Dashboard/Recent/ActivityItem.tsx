@@ -313,7 +313,8 @@ export function ActivityItem({ activity, onClick }: ActivityItemProps) {
           )}
 
           <div className="mt-2 text-xs text-[var(--color-textSecondary)]">
-            {new Date(activity.timestamp).toLocaleString()}
+            {new Date(activity.timestamp.endsWith('Z') ? activity.timestamp : activity.timestamp + 'Z')
+              .toLocaleString(undefined, { timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone })}
           </div>
         </div>
       </div>

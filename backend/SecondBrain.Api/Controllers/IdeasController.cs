@@ -9,6 +9,7 @@ using SecondBrain.Api.Gamification;
 using SecondBrain.Api.Enums;
 using SecondBrain.Services.Gamification;
 using System.Linq;
+using SecondBrain.Api.Services;
 
 namespace SecondBrain.Api.Controllers
 {
@@ -22,13 +23,15 @@ namespace SecondBrain.Api.Controllers
         private readonly IXPService _xpService;
         private readonly IAchievementService _achievementService;
         private readonly ILogger<IdeasController> _logger;
+        private readonly IActivityLogger _activityLogger;
 
-        public IdeasController(DataContext context, IXPService xpService, IAchievementService achievementService, ILogger<IdeasController> logger)
+        public IdeasController(DataContext context, IXPService xpService, IAchievementService achievementService, ILogger<IdeasController> logger, IActivityLogger activityLogger)
         {
             _context = context;
             _xpService = xpService;
             _achievementService = achievementService;
             _logger = logger;
+            _activityLogger = activityLogger;
         }
 
         [HttpGet]
@@ -277,6 +280,16 @@ namespace SecondBrain.Api.Controllers
                 // Check if any achievements should be unlocked
                 var unlockedAchievements = await _achievementService.CheckAndUnlockAchievementsAsync(userId, "createidea");
 
+                // Log activity
+                await _activityLogger.LogActivityAsync(
+                    userId,
+                    ActivityActionType.CREATE.ToString(),
+                    ActivityItemType.IDEA.ToString(),
+                    idea.Id,
+                    idea.Title,
+                    $"Created idea '{idea.Title}'"
+                );
+
                 var response = new IdeaResponse
                 {
                     Id = idea.Id,
@@ -339,6 +352,16 @@ namespace SecondBrain.Api.Controllers
 
                 await _context.SaveChangesAsync();
 
+                // Log activity for generic update
+                await _activityLogger.LogActivityAsync(
+                    userId,
+                    ActivityActionType.UPDATE.ToString(), // Using UPDATE for generic changes
+                    ActivityItemType.IDEA.ToString(),
+                    idea.Id,
+                    idea.Title,
+                    $"Updated idea '{idea.Title}'"
+                );
+
                 var response = new IdeaResponse
                 {
                     Id = idea.Id,
@@ -378,10 +401,19 @@ namespace SecondBrain.Api.Controllers
                     return NotFound(new { error = IdeaNotFoundError });
                 }
 
-                // Change to soft delete instead of removing from DB
                 idea.IsDeleted = true;
                 idea.DeletedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
+
+                // Log activity
+                await _activityLogger.LogActivityAsync(
+                    userId,
+                    ActivityActionType.DELETE.ToString(),
+                    ActivityItemType.IDEA.ToString(),
+                    idea.Id,
+                    idea.Title,
+                    $"Moved idea '{idea.Title}' to trash"
+                );
 
                 return Ok(new { message = "Idea moved to trash successfully." });
             }
@@ -415,6 +447,16 @@ namespace SecondBrain.Api.Controllers
                 // Then remove the idea itself
                 _context.Ideas.Remove(idea);
                 await _context.SaveChangesAsync();
+
+                // Log activity before returning OK
+                await _activityLogger.LogActivityAsync(
+                    userId,
+                    ActivityActionType.PERMANENT_DELETE.ToString(),
+                    ActivityItemType.IDEA.ToString(),
+                    id, // Use id here as 'idea' is removed
+                    idea.Title, // Can still use idea.Title
+                    $"Permanently deleted idea '{idea.Title}'"
+                );
 
                 return Ok(new { message = "Idea permanently deleted successfully." });
             }
@@ -532,6 +574,16 @@ namespace SecondBrain.Api.Controllers
 
                 await _context.SaveChangesAsync();
 
+                // Log activity
+                await _activityLogger.LogActivityAsync(
+                    userId,
+                    ActivityActionType.RESTORE.ToString(),
+                    ActivityItemType.IDEA.ToString(),
+                    idea.Id,
+                    idea.Title,
+                    $"Restored idea '{idea.Title}' from trash"
+                );
+
                 return await GetIdea(id);
             }
             catch (Exception ex)
@@ -558,6 +610,16 @@ namespace SecondBrain.Api.Controllers
                 idea.UpdatedAt = DateTime.UtcNow;
 
                 await _context.SaveChangesAsync();
+
+                // Log activity
+                await _activityLogger.LogActivityAsync(
+                    userId,
+                    idea.IsFavorite ? ActivityActionType.FAVORITE.ToString() : ActivityActionType.UNFAVORITE.ToString(),
+                    ActivityItemType.IDEA.ToString(),
+                    idea.Id,
+                    idea.Title,
+                    idea.IsFavorite ? $"Marked idea '{idea.Title}' as favorite" : $"Removed idea '{idea.Title}' from favorites"
+                );
 
                 var response = new IdeaResponse
                 {
@@ -600,6 +662,16 @@ namespace SecondBrain.Api.Controllers
 
                 await _context.SaveChangesAsync();
 
+                // Log activity
+                await _activityLogger.LogActivityAsync(
+                    userId,
+                    idea.IsPinned ? ActivityActionType.PIN.ToString() : ActivityActionType.UNPIN.ToString(),
+                    ActivityItemType.IDEA.ToString(),
+                    idea.Id,
+                    idea.Title,
+                    idea.IsPinned ? $"Pinned idea '{idea.Title}'" : $"Unpinned idea '{idea.Title}'"
+                );
+
                 var response = new IdeaResponse
                 {
                     Id = idea.Id,
@@ -641,6 +713,16 @@ namespace SecondBrain.Api.Controllers
                 idea.UpdatedAt = DateTime.UtcNow;
 
                 await _context.SaveChangesAsync();
+
+                // Log activity
+                await _activityLogger.LogActivityAsync(
+                    userId,
+                    idea.IsArchived ? ActivityActionType.ARCHIVE.ToString() : ActivityActionType.UNARCHIVE.ToString(),
+                    ActivityItemType.IDEA.ToString(),
+                    idea.Id,
+                    idea.Title,
+                    idea.IsArchived ? $"Archived idea '{idea.Title}'" : $"Unarchived idea '{idea.Title}'"
+                );
 
                 var response = new IdeaResponse
                 {
@@ -762,6 +844,37 @@ namespace SecondBrain.Api.Controllers
 
                 await _context.SaveChangesAsync();
 
+                // Log activity
+                // Need to fetch the target item title for a better description
+                string targetItemTitle = "Linked Item"; // Default
+                switch(request.LinkedItemType)
+                {
+                    case "Note":
+                        var linkedNote = await _context.Notes.FindAsync(request.LinkedItemId);
+                        if (linkedNote != null) targetItemTitle = linkedNote.Title;
+                        break;
+                    case "Idea":
+                        var linkedIdea = await _context.Ideas.FindAsync(request.LinkedItemId);
+                        if (linkedIdea != null) targetItemTitle = linkedIdea.Title;
+                        break;
+                    case "Task":
+                        var linkedTask = await _context.Tasks.FindAsync(request.LinkedItemId);
+                        if (linkedTask != null) targetItemTitle = linkedTask.Title;
+                        break;
+                    case "Reminder":
+                        var linkedReminder = await _context.Reminders.FindAsync(request.LinkedItemId);
+                        if (linkedReminder != null) targetItemTitle = linkedReminder.Title;
+                        break;
+                }
+                await _activityLogger.LogActivityAsync(
+                    userId,
+                    ActivityActionType.LINK.ToString(),
+                    ActivityItemType.IDEA.ToString(),
+                    idea.Id,
+                    idea.Title,
+                    $"Linked idea '{idea.Title}' to {request.LinkedItemType} '{targetItemTitle}'"
+                );
+
                 return await GetIdea(ideaId);
             }
             catch (Exception ex)
@@ -802,6 +915,37 @@ namespace SecondBrain.Api.Controllers
                 ideaLink.IsDeleted = true;
 
                 await _context.SaveChangesAsync();
+
+                // Log activity
+                // Need to fetch the target item title for a better description
+                string targetItemTitle = "Linked Item"; // Default
+                switch(linkedItemType)
+                {
+                    case "Note":
+                        var linkedNote = await _context.Notes.FindAsync(linkedItemId);
+                        if (linkedNote != null) targetItemTitle = linkedNote.Title;
+                        break;
+                    case "Idea":
+                        var linkedIdea = await _context.Ideas.FindAsync(linkedItemId);
+                        if (linkedIdea != null) targetItemTitle = linkedIdea.Title;
+                        break;
+                    case "Task":
+                        var linkedTask = await _context.Tasks.FindAsync(linkedItemId);
+                        if (linkedTask != null) targetItemTitle = linkedTask.Title;
+                        break;
+                    case "Reminder":
+                        var linkedReminder = await _context.Reminders.FindAsync(linkedItemId);
+                        if (linkedReminder != null) targetItemTitle = linkedReminder.Title;
+                        break;
+                }
+                await _activityLogger.LogActivityAsync(
+                    userId,
+                    ActivityActionType.UNLINK.ToString(),
+                    ActivityItemType.IDEA.ToString(),
+                    idea.Id,
+                    idea.Title,
+                    $"Unlinked idea '{idea.Title}' from {linkedItemType} '{targetItemTitle}'"
+                );
 
                 return await GetIdea(ideaId);
             }

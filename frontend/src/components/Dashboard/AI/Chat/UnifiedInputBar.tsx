@@ -12,6 +12,8 @@ interface UnifiedInputBarProps {
     onUserInput: (input: string) => void;
     isLoading: boolean;
     themeColor?: string;
+    isLoadingModels?: boolean;
+    onRefreshModels?: () => void;
 }
 
 export const UnifiedInputBar: React.FC<UnifiedInputBarProps> = ({
@@ -20,6 +22,8 @@ export const UnifiedInputBar: React.FC<UnifiedInputBarProps> = ({
     onModelSelected,
     onUserInput,
     isLoading,
+    isLoadingModels = false,
+    onRefreshModels
 }) => {
     const [input, setInput] = useState('');
     const [isExpanded, setIsExpanded] = useState(false);
@@ -86,6 +90,8 @@ export const UnifiedInputBar: React.FC<UnifiedInputBarProps> = ({
                         selectedModel={selectedModel}
                         onModelSelected={onModelSelected}
                         onClose={toggleExpanded}
+                        isLoading={isLoadingModels}
+                        onRefresh={onRefreshModels}
                     />
                 ) : (
                     <motion.form
@@ -193,14 +199,14 @@ export const UnifiedInputBar: React.FC<UnifiedInputBarProps> = ({
                                         style={{ backgroundColor: modelColor ? `${modelColor}4D` : '#8888884D' }}
                                     />
                                     <span className={`text-sm font-medium truncate ${theme === 'dark' || theme === 'midnight' || theme === 'full-dark' ? 'text-gray-300' : 'text-gray-700'}`}>
-                                        {modelDisplayName}
+                                        {isLoadingModels ? "Loading models..." : modelDisplayName}
                                     </span>
                                     <ChevronDown size={16} className={`ml-1 flex-shrink-0 ${theme === 'dark' || theme === 'midnight' || theme === 'full-dark' ? 'text-gray-400' : 'text-gray-500'} ${isExpanded ? 'rotate-180' : ''} transition-transform`} />
                                 </button>
 
                                 <div className="flex-1 flex justify-center">
                                     <span className={`text-sm ${theme === 'dark' || theme === 'midnight' || theme === 'full-dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                                        Select a model to start chatting
+                                        {isLoadingModels ? "Loading available models..." : "Select a model to start chatting"}
                                     </span>
                                 </div>
                             </>

@@ -43,6 +43,21 @@ export function ModernMessageList(props: ModernMessageListProps) { // Renamed co
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const { theme } = useTheme();
 
+    // Log props.messages when they change to help debug streaming
+    useEffect(() => {
+        // Log only the last message if it exists
+        if (props.messages.length > 0) {
+            const lastMessage = props.messages[props.messages.length - 1];
+            console.log('Latest message update:', {
+                id: lastMessage.id,
+                role: lastMessage.role,
+                contentLength: lastMessage.content?.toString().length || 0,
+                isLoading: lastMessage.isLoading,
+                content: lastMessage.content?.toString().substring(0, 100) + (lastMessage.content?.toString().length > 100 ? '...' : '')
+            });
+        }
+    }, [props.messages]);
+
     // Handle scroll events
     const handleScroll = () => {
         if (!props.isLoading) {
@@ -54,7 +69,7 @@ export function ModernMessageList(props: ModernMessageListProps) { // Renamed co
         }
     };
 
-    // Auto-scroll effect
+    // Auto-scroll effect - improved for streaming
     useEffect(() => {
         const container = scrollContainerRef.current;
         if (!container) return;
@@ -65,9 +80,9 @@ export function ModernMessageList(props: ModernMessageListProps) { // Renamed co
             const timer = setTimeout(() => {
                 container.scrollTo({
                     top: container.scrollHeight,
-                    behavior: 'smooth'
+                    behavior: props.isLoading ? 'auto' : 'smooth' // Use instant scrolling during streaming
                 });
-            }, 150);
+            }, 10); // Even faster delay for more responsive streaming updates
 
             return () => clearTimeout(timer);
         }
@@ -143,7 +158,7 @@ export function ModernMessageList(props: ModernMessageListProps) { // Renamed co
                                             key={`${message.id}-${index}`}
                                             message={message as EnhancedMessage}
                                             themeColor={props.themeColor}
-                                            isStreaming={props.isLoading && message.role === 'assistant'}
+                                            isStreaming={message.isLoading || (props.isLoading && message.role === 'assistant' && index === group.length - 1)}
                                             isFirstInGroup={index === 0}
                                             isLastInGroup={index === group.length - 1}
                                         />

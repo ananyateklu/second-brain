@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { UnifiedInputBar } from './UnifiedInputBar';
 import api from '../../../../services/api/api';
 import { ChatHistorySidebar, AgentChat, AgentMessage } from './ChatHistorySidebar';
+import { CompactModelSelector } from './CompactModelSelector';
 
 // Local storage key for the selected model
 const SELECTED_MODEL_KEY = 'enhanced_chat_selected_model';
@@ -22,6 +23,8 @@ export function EnhancedChatPage() {
         isAnthropicConfigured,
         isOllamaConfigured,
         availableModels,
+        isLoadingModels,
+        refreshModels,
         sendMessage
     } = useAI();
 
@@ -51,6 +54,9 @@ export function EnhancedChatPage() {
     const [chats, setChats] = useState<AgentChat[]>([]);
     const [isLoadingChats, setIsLoadingChats] = useState(false);
     const [showSidebar, setShowSidebar] = useState(true);
+
+    // New state for model selector
+    const [isModelSelectorExpanded, setIsModelSelectorExpanded] = useState(false);
 
     // Save selected model to localStorage when it changes
     useEffect(() => {
@@ -277,10 +283,12 @@ export function EnhancedChatPage() {
         };
 
         const assistantMessageId = `assistant-${Date.now()}`;
+        // Make sure we're passing the correct model info including provider
         const assistantMessage: Message = {
             id: assistantMessageId,
             role: 'assistant',
-            content: '',
+            // For Ollama models, start with a non-empty content to avoid showing the loading animation
+            content: selectedModel.provider === 'ollama' ? ' ' : '',
             type: 'text',
             timestamp: new Date().toISOString(),
             model: selectedModel,
@@ -293,23 +301,93 @@ export function EnhancedChatPage() {
             // Save user message to backend
             await saveMessage(validChatId, 'user', input);
 
-            // Get AI response
-            const aiResponse = await sendMessage(input, selectedModel.id);
+            // Different handling for Ollama models (streaming) vs other models
+            if (selectedModel.provider === 'ollama') {
+                // For Ollama models, use streaming - we don't need a loading indicator
+                // because we'll show content as it streams
+                let streamedContent = '';
 
-            // Update assistant message in UI
-            setMessages(prev => prev.map(msg =>
-                msg.id === assistantMessageId
-                    ? { ...msg, ...aiResponse, isLoading: false }
-                    : msg
-            ));
+                const aiResponse = await sendMessage(input, selectedModel.id, {
+                    // Update UI in real-time as content streams in
+                    onStreamUpdate: (content: string, stats?: { tokenCount: number, tokensPerSecond: string, elapsedSeconds: number }) => {
+                        if (content) {
+                            streamedContent = content;
 
-            // Save assistant response to backend
-            await saveMessage(
-                validChatId,
-                'assistant',
-                typeof aiResponse.content === 'string' ? aiResponse.content : JSON.stringify(aiResponse.content),
-                aiResponse.metadata
-            );
+                            // Update the message with streaming content and real-time token stats
+                            setMessages(prev => {
+                                const updatedMessages = prev.map(msg =>
+                                    msg.id === assistantMessageId
+                                        ? {
+                                            ...msg,
+                                            content: streamedContent,
+                                            // Keep isLoading true while streaming for the cursor animation
+                                            isLoading: true,
+                                            // Add real-time stats to metadata
+                                            metadata: stats ? {
+                                                stats: {
+                                                    tokenCount: stats.tokenCount,
+                                                    tokensPerSecond: stats.tokensPerSecond,
+                                                    elapsedSeconds: stats.elapsedSeconds
+                                                }
+                                            } : undefined
+                                        }
+                                        : msg
+                                );
+                                return updatedMessages;
+                            });
+                        }
+                    }
+                });
+
+                // Once streaming is complete, update final state with token stats
+                setMessages(prev => prev.map(msg =>
+                    msg.id === assistantMessageId
+                        ? {
+                            ...msg,
+                            content: typeof aiResponse.content === 'string'
+                                ? aiResponse.content
+                                : JSON.stringify(aiResponse.content),
+                            type: aiResponse.type as 'text' | 'image' | 'audio' | 'embedding' | 'code' | 'function',
+                            isLoading: false,
+                            // Include metadata with token statistics
+                            metadata: aiResponse.metadata
+                        }
+                        : msg
+                ));
+
+                // Save assistant response to backend
+                await saveMessage(
+                    validChatId,
+                    'assistant',
+                    typeof aiResponse.content === 'string' ? aiResponse.content : JSON.stringify(aiResponse.content),
+                    aiResponse.metadata
+                );
+            } else {
+                // For non-Ollama models, use the original approach with no streaming options
+                const aiResponse = await sendMessage(input, selectedModel.id, {});
+
+                // Update assistant message in UI
+                setMessages(prev => prev.map(msg =>
+                    msg.id === assistantMessageId
+                        ? {
+                            ...msg,
+                            content: typeof aiResponse.content === 'string'
+                                ? aiResponse.content
+                                : JSON.stringify(aiResponse.content),
+                            type: aiResponse.type as 'text' | 'image' | 'audio' | 'embedding' | 'code' | 'function',
+                            isLoading: false
+                        }
+                        : msg
+                ));
+
+                // Save assistant response to backend
+                await saveMessage(
+                    validChatId,
+                    'assistant',
+                    typeof aiResponse.content === 'string' ? aiResponse.content : JSON.stringify(aiResponse.content),
+                    aiResponse.metadata
+                );
+            }
         } catch (err) {
             const error = err as Error;
             setError(error.message || 'Failed to get response from AI.');
@@ -329,6 +407,8 @@ export function EnhancedChatPage() {
         onModelSelected: handleModelSelect,
         onUserInput: handleUserInput,
         isLoading: isLoading,
+        isLoadingModels: isLoadingModels,
+        onRefreshModels: refreshModels
     };
 
     if (!isOpenAIConfigured && !isGeminiConfigured && !isAnthropicConfigured && !isOllamaConfigured) {
@@ -396,7 +476,7 @@ export function EnhancedChatPage() {
     );
 
     return (
-        <div className={`w-full h-[calc(100vh-10rem)] flex rounded-xl ${getContainerBackground()} border ${getBorderColor()} shadow-lg overflow-hidden relative`}>
+        <div className="flex h-screen overflow-hidden">
             {/* Chat Sidebar */}
             {showSidebar && (
                 <div className={`w-64 flex-shrink-0 border-r ${getBorderColor()} ${getContainerBackground()}`}>
@@ -447,6 +527,18 @@ export function EnhancedChatPage() {
                     </>
                 }
             </button>
+
+            {/* Update the model selector to include loading and refresh */}
+            {isModelSelectorExpanded && (
+                <CompactModelSelector
+                    availableModels={availableModels.filter(m => m.category !== 'agent')}
+                    selectedModel={selectedModel}
+                    onModelSelected={handleModelSelect}
+                    onClose={() => setIsModelSelectorExpanded(false)}
+                    isLoading={isLoadingModels}
+                    onRefresh={refreshModels}
+                />
+            )}
         </div>
     );
 } 

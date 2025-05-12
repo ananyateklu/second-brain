@@ -20,7 +20,10 @@ export class AIService {
   private readonly gemini: GeminiService;
   public readonly ollama: OllamaService;
   public readonly grokService: GrokService;
-  private readonly agentService: AgentService;
+  private _agentService: AgentService | null = null;
+  private cachedModels: AIModel[] | null = null;
+  private modelsLastFetched: number = 0;
+  private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
   constructor() {
     this.openai = new OpenAIService();
@@ -28,11 +31,34 @@ export class AIService {
     this.gemini = new GeminiService();
     this.ollama = new OllamaService();
     this.grokService = new GrokService();
-    this.agentService = new AgentService();
   }
 
-  async sendMessage(message: string, modelId: string, options?: ModelOptions): Promise<AIResponse> {
-    const model = this.getAvailableModels().find(m => m.id === modelId);
+  // Lazy initialization for agentService to avoid circular dependency
+  private get agentService(): AgentService {
+    if (!this._agentService) {
+      this._agentService = new AgentService();
+    }
+    return this._agentService;
+  }
+
+  async sendMessage(
+    message: string,
+    modelId: string,
+    options?: ModelOptions & {
+      onStreamUpdate?: (
+        content: string,
+        stats?: {
+          tokenCount: number,
+          tokensPerSecond: string,
+          elapsedSeconds: number
+        }
+      ) => void
+    }
+  ): Promise<AIResponse> {
+    // Get models asynchronously
+    const models = await this.getAvailableModels();
+    const model = models.find(m => m.id === modelId);
+
     if (!model) {
       throw new Error('Invalid model selected');
     }
@@ -73,21 +99,44 @@ export class AIService {
     return this.openai.textToSpeech(text);
   }
 
-  getAvailableModels(): AIModel[] {
-    // First get all agent models
-    const agentModels = this.agentService.getAvailableModels();
-    const agentModelIds = new Set(agentModels.map((m: AIModel) => m.id));
+  async getAvailableModels(): Promise<AIModel[]> {
+    // Check if we have cached models that are still valid
+    const now = Date.now();
+    if (this.cachedModels && (now - this.modelsLastFetched < this.CACHE_DURATION)) {
+      return this.cachedModels;
+    }
 
-    // Then get all other models, excluding those that are already in agent models
-    const otherModels = [
-      ...this.openai.getModels().filter((m: AIModel) => !agentModelIds.has(m.id) && m.category !== 'agent'),
-      ...this.anthropic.getModels().filter((m: AIModel) => !agentModelIds.has(m.id) && m.category !== 'agent'),
-      ...this.gemini.getModels().filter((m: AIModel) => !agentModelIds.has(m.id) && m.category !== 'agent'),
-      ...this.ollama.getModels().filter((m: AIModel) => !agentModelIds.has(m.id) && m.category !== 'agent'),
-      ...this.grokService.getModels().filter((m: AIModel) => !agentModelIds.has(m.id) && m.category !== 'agent')
-    ];
+    try {
+      // First get all agent models
+      const agentModels = this.agentService.getAvailableModels();
+      const agentModelIds = new Set(agentModels.map((m: AIModel) => m.id));
 
-    return [...agentModels, ...otherModels];
+      // Fetch Ollama models asynchronously
+      const ollamaModels = await this.ollama.getModels();
+
+      // Then get all other models, excluding those that are already in agent models
+      const otherModels = [
+        ...this.openai.getModels().filter((m: AIModel) => !agentModelIds.has(m.id) && m.category !== 'agent'),
+        ...this.anthropic.getModels().filter((m: AIModel) => !agentModelIds.has(m.id) && m.category !== 'agent'),
+        ...this.gemini.getModels().filter((m: AIModel) => !agentModelIds.has(m.id) && m.category !== 'agent'),
+        ...ollamaModels.filter((m: AIModel) => !agentModelIds.has(m.id) && m.category !== 'agent'),
+        ...this.grokService.getModels().filter((m: AIModel) => !agentModelIds.has(m.id) && m.category !== 'agent')
+      ];
+
+      // Cache the result
+      this.cachedModels = [...agentModels, ...otherModels];
+      this.modelsLastFetched = now;
+
+      return this.cachedModels;
+    } catch (error) {
+      console.error('Error fetching available models:', error);
+      // If we have cached models, return them even if they're expired
+      if (this.cachedModels) {
+        return this.cachedModels;
+      }
+      // Otherwise throw the error
+      throw error;
+    }
   }
 
   isOpenAIConfigured(): Promise<boolean> {

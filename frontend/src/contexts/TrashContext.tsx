@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import { TrashedItem, TrashProviderProps, TrashContext } from './trashContextUtils';
-import { useActivities } from './activityContextUtils';
 import { tasksService } from '../services/api/tasks.service';
 import { notesService } from '../services/api/notes.service';
 import { reminderService } from '../services/api/reminders.service';
@@ -21,36 +20,8 @@ const getMappedPriority = (priority: number | string | undefined): 'low' | 'medi
 
 export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
   const [trashedItems, setTrashedItems] = useState<TrashedItem[]>([]);
-  const { createActivity } = useActivities();
 
-  const logRestoreActivity = useCallback(async (
-    itemType: 'task' | 'reminder' | 'note' | 'idea',
-    item: TrashedItem,
-    updateData?: Record<string, unknown>
-  ) => {
-    const baseMetadata = {
-      itemId: item.id,
-      itemTitle: item.title,
-      restoredAt: new Date().toISOString()
-    };
 
-    const metadata = itemType === 'task' ? {
-      ...baseMetadata,
-      taskDueDate: item.metadata?.dueDate,
-      taskTags: item.metadata?.tags,
-      taskPriority: updateData?.priority,
-      taskStatus: updateData?.status,
-    } : baseMetadata;
-
-    await createActivity({
-      actionType: 'restore',
-      itemType,
-      itemId: item.id,
-      itemTitle: item.title,
-      description: `Restored ${itemType} from trash: ${item.title}`,
-      metadata
-    });
-  }, [createActivity]);
 
   // Fetch deleted items
   useEffect(() => {
@@ -175,8 +146,7 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
     };
 
     await tasksService.updateTask(item.id, updateData);
-    await logRestoreActivity('task', item, updateData);
-  }, [logRestoreActivity]);
+  }, []);
 
   const restoreNoteOrIdea = useCallback(async (item: TrashedItem) => {
     setTrashedItems(prev => prev.filter(i => i.id !== item.id));
@@ -190,12 +160,7 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
       await ideasService.restoreIdea(item.id);
     }
 
-    await logRestoreActivity(item.type as 'note' | 'idea', item, {
-      tags: item.metadata?.tags,
-      linkedItems: item.metadata?.linkedItems,
-      isFavorite: item.metadata?.isFavorite
-    });
-  }, [onRestoreNote, logRestoreActivity]);
+  }, [onRestoreNote]);
 
   const restoreReminder = useCallback(async (item: TrashedItem) => {
     setTrashedItems(prev => prev.filter(i => i.id !== item.id));
@@ -210,8 +175,7 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
       isSnoozed: item.metadata?.isSnoozed || false,
       snoozeUntil: item.metadata?.snoozeUntil
     });
-    await logRestoreActivity('reminder', item);
-  }, [logRestoreActivity]);
+  }, []);
 
   const restoreItems = useCallback(async (itemIds: string[]) => {
     const itemsToRestore = trashedItems.filter(item => itemIds.includes(item.id));
@@ -248,23 +212,7 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
       );
     }
     await tasksService.deleteTaskPermanently(item.id);
-    await createActivity({
-      actionType: 'delete',
-      itemType: 'task',
-      itemId: item.id,
-      itemTitle: item.title,
-      description: `Permanently deleted task: ${item.title}`,
-      metadata: {
-        taskId: item.id,
-        taskTitle: item.title,
-        taskTags: item.metadata?.tags,
-        taskDueDate: item.metadata?.dueDate,
-        taskPriority: item.metadata?.priority,
-        taskStatus: item.metadata?.status,
-        deletedAt: new Date().toISOString()
-      }
-    });
-  }, [createActivity]);
+  }, []);
 
   const handleNoteDeletion = useCallback(async (item: TrashedItem) => {
     const noteLinkedItems = item.metadata?.linkedItems || [];
@@ -281,22 +229,7 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
     }
 
     await notesService.deleteNotePermanently(item.id);
-    await createActivity({
-      actionType: 'delete',
-      itemType: 'note',
-      itemId: item.id,
-      itemTitle: item.title,
-      description: `Permanently deleted note: ${item.title}`,
-      metadata: {
-        noteId: item.id,
-        noteTitle: item.title,
-        noteTags: item.metadata?.tags,
-        noteLinkedItems: item.metadata?.linkedItems,
-        isFavorite: item.metadata?.isFavorite,
-        deletedAt: new Date().toISOString()
-      }
-    });
-  }, [createActivity]);
+  }, []);
 
   const handleIdeaDeletion = useCallback(async (item: TrashedItem) => {
     const ideaLinkedItems = item.metadata?.linkedItems || [];
@@ -307,22 +240,7 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
     }
 
     await ideasService.deleteIdeaPermanently(item.id);
-    await createActivity({
-      actionType: 'delete',
-      itemType: 'idea',
-      itemId: item.id,
-      itemTitle: item.title,
-      description: `Permanently deleted idea: ${item.title}`,
-      metadata: {
-        ideaId: item.id,
-        ideaTitle: item.title,
-        ideaTags: item.metadata?.tags,
-        ideaLinkedItems: item.metadata?.linkedItems,
-        isFavorite: item.metadata?.isFavorite,
-        deletedAt: new Date().toISOString()
-      }
-    });
-  }, [createActivity]);
+  }, []);
 
   const handleReminderDeletion = useCallback(async (item: TrashedItem) => {
     const reminderLinkedItems = item.metadata?.linkedItems || [];
@@ -332,24 +250,7 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
       );
     }
     await reminderService.deleteReminderPermanently(item.id);
-    await createActivity({
-      actionType: 'delete',
-      itemType: 'reminder',
-      itemId: item.id,
-      itemTitle: item.title,
-      description: `Permanently deleted reminder: ${item.title}`,
-      metadata: {
-        reminderId: item.id,
-        reminderTitle: item.title,
-        reminderTags: item.metadata?.tags,
-        reminderDueDate: item.metadata?.dueDate,
-        isCompleted: item.metadata?.isCompleted,
-        isSnoozed: item.metadata?.isSnoozed,
-        snoozeUntil: item.metadata?.snoozeUntil,
-        deletedAt: new Date().toISOString()
-      }
-    });
-  }, [createActivity]);
+  }, []);
 
   // Remove createActivity from deleteItemsPermanently dependencies
   const deleteItemsPermanently = useCallback(async (itemIds: string[]) => {
