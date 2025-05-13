@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link2, PlusCircle, Type, Lightbulb, CheckSquare, Loader } from 'lucide-react';
 import { useNotes } from '../../../../contexts/notesContextUtils';
 import { useTasks } from '../../../../contexts/tasksContextUtils';
@@ -8,219 +8,176 @@ import { similarContentService } from '../../../../services/ai/similarContentSer
 import { useTheme } from '../../../../contexts/themeContextUtils';
 import { motion } from 'framer-motion';
 import aiSettingsService from '../../../../services/api/aiSettings.service';
+import { useAI } from '../../../../contexts/AIContext';
 
 interface SuggestedLinksSectionProps {
     currentIdea: Idea;
     linkedNoteIds: string[];
     linkedIdeaIds: string[];
     linkedTaskIds: string[];
-    refreshTrigger?: number;
     onLinkNote: (noteId: string) => Promise<void>;
     onLinkIdea: (ideaId: string) => Promise<void>;
     onLinkTask: (taskId: string) => Promise<void>;
 }
 
 export function SuggestedLinksSection({
-    currentIdea, // Changed
+    currentIdea,
     linkedNoteIds,
-    linkedIdeaIds, // Added
+    linkedIdeaIds,
     linkedTaskIds,
-    refreshTrigger = 0, // Add default value
     onLinkNote,
-    onLinkIdea, // Added
+    onLinkIdea,
     onLinkTask
 }: SuggestedLinksSectionProps) {
-    const { notes: allNotes } = useNotes(); // Renamed for clarity
-    const { tasks: allTasks } = useTasks(); // Renamed for clarity
-    const { state: { ideas: allIdeas } } = useIdeas(); // Get all ideas
+    const { notes: allNotes } = useNotes();
+    const { tasks: allTasks } = useTasks();
+    const { state: { ideas: allIdeas } } = useIdeas();
     const { theme } = useTheme();
+    const { settingsVersion } = useAI(); // Get the settings version from AIContext
 
+    // Use a ref to track loading state internally
+    const isLoadingRef = useRef(false);
+    // State for UI purposes (rendering loading indicator)
     const [isLoading, setIsLoading] = useState(false);
     const [suggestions, setSuggestions] = useState<Array<{
         id: string;
         title: string;
-        type: 'note' | 'idea' | 'task';
+        similarity: number;
+        type: 'note' | 'idea' | 'task' | 'reminder';
         status?: string;
         dueDate?: string | null;
-        similarity: number;
         isLinking?: boolean;
         validItem?: boolean;
         displayKey?: string;
     }>>([]);
     const [error, setError] = useState('');
-    const [areSuggestionsEnabled, setAreSuggestionsEnabled] = useState<boolean>(true);
+    const [isEnabled, setIsEnabled] = useState<boolean>(true);
+    const hasSuggestionsLoaded = useRef(false);
 
-    // Check if content suggestions are enabled in AI settings
-    useEffect(() => {
-        const checkAISettings = async () => {
-            try {
-                const settings = await aiSettingsService.getAISettings();
-                if (settings && settings.contentSuggestions) {
-                    // If enabled flag exists and is explicitly false, disable suggestions
-                    if (settings.contentSuggestions.enabled === false) {
-                        console.log("Content suggestions are disabled in user preferences");
-                        setAreSuggestionsEnabled(false);
-                    } else {
-                        setAreSuggestionsEnabled(true);
-                    }
-                } else {
-                    // No settings found, assume enabled for backward compatibility
-                    console.log("No AI settings found, assuming content suggestions are enabled");
-                    setAreSuggestionsEnabled(true);
-                }
-            } catch (error) {
-                console.warn("Error checking AI settings:", error);
-                // Default to enabled if there's an error
-                setAreSuggestionsEnabled(true);
+    // Function to load suggestions - memoized to prevent unnecessary re-renders
+    const loadSuggestions = useCallback(async () => {
+        // Skip loading if suggestions are disabled in settings
+        if (!isEnabled || !currentIdea || !allNotes.length || !allIdeas.length) {
+            if (!isEnabled) {
+                console.log("Skipping suggestions loading because they are disabled");
             }
-        };
+            return;
+        }
 
-        checkAISettings();
-    }, []);
+        // Don't reload if already loading - use ref instead of state
+        if (isLoadingRef.current) {
+            console.log("Already loading suggestions, skipping");
+            return;
+        }
 
-    useEffect(() => {
-        const loadSuggestions = async () => {
-            // Skip loading if suggestions are disabled in settings
-            if (!areSuggestionsEnabled || !currentIdea || !allNotes.length || !allIdeas.length) {
-                if (!areSuggestionsEnabled) {
-                    console.log("Skipping suggestions loading because they are disabled");
-                }
-                return;
-            }
-
+        try {
+            isLoadingRef.current = true;
             setIsLoading(true);
             setError('');
 
-            try {
-                console.log("Loading suggestions with data:", {
-                    currentIdeaId: currentIdea.id,
-                    notesCount: allNotes.length,
-                    ideasCount: allIdeas.length,
-                    tasksCount: allTasks.length,
-                    linkedNoteIds,
-                    linkedIdeaIds,
-                    linkedTaskIds
-                });
+            console.log("Finding similar content for:", currentIdea.title);
 
-                const excludeIds = [
-                    ...linkedNoteIds,
-                    ...linkedIdeaIds,
-                    ...linkedTaskIds,
-                    currentIdea.id
-                ];
+            // Gather item counts for debugging
+            console.log("Available items for suggestions:", {
+                notes: allNotes.length,
+                ideas: allIdeas.length - 1, // Minus current idea
+                tasks: allTasks.length,
+                alreadyLinked: [...linkedNoteIds, ...linkedIdeaIds, ...linkedTaskIds].length
+            });
 
-                console.log("Excluded IDs:", excludeIds);
-
-                // Filter out deleted and archived items before finding similar content
-                const validNotes = allNotes.filter(note => !note.isDeleted && !note.isArchived);
-                const validIdeas = allIdeas.filter(idea => !idea.isDeleted && !idea.isArchived);
-                const validTasks = allTasks.filter(task => !task.isDeleted);
-
-                console.log("Valid items after filtering:", {
-                    notesCount: validNotes.length,
-                    ideasCount: validIdeas.length,
-                    tasksCount: validTasks.length
-                });
-
-                const currentItemDetails = {
+            const results = await similarContentService.findSimilarContent(
+                {
                     id: currentIdea.id,
                     title: currentIdea.title,
-                    content: currentIdea.content,
-                    tags: currentIdea.tags
-                };
+                    content: currentIdea.content || '',
+                    tags: currentIdea.tags || []
+                },
+                allNotes,
+                allIdeas.filter(idea => idea.id !== currentIdea.id), // Filter out current idea
+                allTasks,
+                [], // No reminders
+                [...linkedNoteIds, ...linkedIdeaIds, ...linkedTaskIds], // Exclude already linked items
+                8 // Get 8 results max
+            );
 
-                const allSuggestions = await similarContentService.findSimilarContent(
-                    currentItemDetails,
-                    validNotes,
-                    validIdeas,
-                    validTasks,
-                    [],
-                    excludeIds,
-                    5
-                );
+            console.log("Successfully received suggestions:", results.length);
 
-                console.log("Received suggestions:", allSuggestions);
+            // Map results to component state
+            setSuggestions(results.map((result, index) => ({
+                ...result,
+                displayKey: `${result.type}-${result.id}-${index}`
+            })));
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+            console.error("Error finding similar content:", err);
+            console.error("Error details:", { message: errorMessage, idea: currentIdea?.id });
+            setError('Failed to load suggestions: ' + errorMessage);
 
-                // Pre-validate suggestions
-                const validatedSuggestions = allSuggestions
-                    .filter(s => s.type !== 'reminder')
-                    .filter(s => s.similarity > 0.3)
-                    .map((suggestion, index) => {
-                        // For each suggestion, check if it exists in our real data
-                        const { id, title, type } = suggestion;
-                        let realId = id;
-                        let validItem = false;
+            // Clear suggestions when error occurs
+            setSuggestions([]);
+        } finally {
+            isLoadingRef.current = false;
+            setIsLoading(false);
+        }
+    }, [currentIdea, allNotes, allIdeas, allTasks, linkedNoteIds, linkedIdeaIds, linkedTaskIds, isEnabled]);
 
-                        // Try to find real IDs for suggested items when numeric IDs are detected
-                        if (/^\d+$/.test(id)) {
-                            console.log(`Suggestion has numeric ID: ${id}, trying to find by title`);
+    // Load AI settings to check if content suggestions are enabled
+    // This effect now re-runs when settingsVersion changes
+    useEffect(() => {
+        let isMounted = true;
 
-                            // For ideas, match by title
-                            if (type === 'idea') {
-                                const matchingIdea = validIdeas.find(i => i.title === title);
-                                if (matchingIdea) {
-                                    console.log(`Matched idea by title: ${title} -> ID ${matchingIdea.id}`);
-                                    realId = matchingIdea.id;
-                                    validItem = true;
+        const loadSettings = async () => {
+            try {
+                const settings = await aiSettingsService.getAISettings();
+                if (isMounted) {
+                    // Clear similarContentService cache to force refresh 
+                    // with new settings
+                    similarContentService.clearCache();
+
+                    // Set enabled state based on settings or default to true if not specified
+                    const newEnabledState = settings?.contentSuggestions?.enabled !== false;
+
+                    // Get current values directly from state instead of closure
+                    setIsEnabled(prevIsEnabled => {
+                        // Only refresh if enabled state changed
+                        if (newEnabledState !== prevIsEnabled &&
+                            newEnabledState &&
+                            hasSuggestionsLoaded.current) {
+                            // Check suggestions length inside this callback
+                            setSuggestions(prevSuggestions => {
+                                if (prevSuggestions.length > 0) {
+                                    // Schedule loadSuggestions after state updates
+                                    setTimeout(loadSuggestions, 0);
                                 }
-                            }
-                            // For notes, match by title
-                            else if (type === 'note') {
-                                const matchingNote = validNotes.find(n => n.title === title);
-                                if (matchingNote) {
-                                    console.log(`Matched note by title: ${title} -> ID ${matchingNote.id}`);
-                                    realId = matchingNote.id;
-                                    validItem = true;
-                                }
-                            }
-                            // For tasks, match by title
-                            else if (type === 'task') {
-                                const matchingTask = validTasks.find(t => t.title === title);
-                                if (matchingTask) {
-                                    console.log(`Matched task by title: ${title} -> ID ${matchingTask.id}`);
-                                    realId = matchingTask.id;
-                                    validItem = true;
-                                }
-                            }
-                        } else {
-                            // Check if the ID matches a real item directly
-                            if (type === 'idea' && validIdeas.some(i => i.id === id)) {
-                                validItem = true;
-                            } else if (type === 'note' && validNotes.some(n => n.id === id)) {
-                                validItem = true;
-                            } else if (type === 'task' && validTasks.some(t => t.id === id)) {
-                                validItem = true;
-                            }
+                                return prevSuggestions;
+                            });
                         }
-
-                        return {
-                            ...suggestion,
-                            id: realId,
-                            // Add a unique displayKey for React rendering
-                            displayKey: `${realId}-${index}`,
-                            validItem
-                        };
-                    })
-                    .filter(s => s.validItem)  // Only keep suggestions we verified exist
-                    // Filter to keep only unique items by ID (keeping only the first occurrence)
-                    .filter((item, index, self) =>
-                        index === self.findIndex(t => t.id === item.id)
-                    )
-                    .sort((a, b) => b.similarity - a.similarity);
-
-                console.log("Validated suggestions:", validatedSuggestions);
-
-                setSuggestions(validatedSuggestions as Array<typeof suggestions[0]>);
-            } catch (err) {
-                console.error('Failed to get suggestions:', err);
-                setError('Could not load suggestions. Please try again later.');
-            } finally {
-                setIsLoading(false);
+                        return newEnabledState;
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading AI settings:', error);
+                if (isMounted) {
+                    // Default to enabled if settings can't be loaded
+                    setIsEnabled(true);
+                }
             }
         };
 
-        loadSuggestions();
-    }, [currentIdea, allNotes, allIdeas, allTasks, linkedNoteIds, linkedIdeaIds, linkedTaskIds, refreshTrigger, areSuggestionsEnabled]);
+        loadSettings();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [settingsVersion, loadSuggestions]);
+
+    // Load suggestions when component data changes - only on initial render
+    useEffect(() => {
+        if (!hasSuggestionsLoaded.current) {
+            loadSuggestions();
+            hasSuggestionsLoaded.current = true;
+        }
+    }, [loadSuggestions]);
 
     const handleLinkItem = async (item: typeof suggestions[0]) => {
         setSuggestions(prev => prev.map(s =>
@@ -380,9 +337,9 @@ export function SuggestedLinksSection({
                 </div>
             ) : (
                 <div className="space-y-2">
-                    {suggestions.map(item => (
+                    {suggestions.map((item, index) => (
                         <motion.div
-                            key={item.displayKey}
+                            key={item.displayKey || `${item.type}-${item.id}-${index}`}
                             initial={{ opacity: 0, y: 5 }}
                             animate={{ opacity: 0.65, y: 0 }}
                             whileHover={{ opacity: 1 }}

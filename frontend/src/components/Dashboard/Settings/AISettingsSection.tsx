@@ -458,17 +458,19 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
         }
       }
 
-      // Call the parent component's onSave function
-      await onSave(settings);
-
-      // Refresh AI configuration to apply new settings
+      // Refresh AI configuration to apply changes immediately
       await refreshConfiguration();
 
+      // Set success state
       setSaveResult({ success: true, message: 'Settings saved successfully!' });
-    } catch (error: unknown) {
-      console.error('Failed to save settings:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to save settings.';
-      setSaveResult({ success: false, message: errorMessage });
+
+      // Call external onSave if provided
+      if (onSave) {
+        onSave(settings);
+      }
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      setSaveResult({ success: false, message: 'Error saving settings. Please try again.' });
     } finally {
       setIsSaving(false);
     }

@@ -50,6 +50,7 @@ interface AIContextType {
   isLoadingModels: boolean;
   isLoadingConfigurations: boolean;
   refreshConfiguration: () => Promise<void>;
+  settingsVersion: number;
 }
 
 const AIContext = createContext<AIContextType | null>(null);
@@ -78,6 +79,10 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
   const latestMessageIdRef = useRef<string | null>(null);
   const initialCheckDoneRef = useRef<boolean>(false);
   const isCheckingRef = useRef<boolean>(false);
+
+  // Add settings version counter that components can watch 
+  // to know when settings have changed
+  const [settingsVersion, setSettingsVersion] = useState<number>(0);
 
   // Function to fetch available models
   const refreshModels = useCallback(async () => {
@@ -406,33 +411,28 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  // Add a way to refresh configuration when settings change
+  // Add debugging for refresh configuration
   const refreshConfiguration = useCallback(async () => {
+    console.log("Refreshing AI configuration...");
+    setIsLoadingConfigurations(true);
+
     try {
-      // Try to load AI settings from user preferences
-      const settings = await aiSettingsService.getAISettings();
-      if (settings) {
-        console.log('Loaded AI settings from user preferences:', settings);
+      // First clear settings cache from aiSettingsService
+      await aiSettingsService.clearCache();
 
-        // Apply any necessary configuration updates based on the settings
-        // This will vary depending on how the settings are used
-        if (settings.contentSuggestions) {
-          // Update any configuration based on content suggestions settings
-          console.log('Applying content suggestion settings');
-        }
+      // Then check AI configurations
+      await checkConfigurations();
 
-        if (settings.promptEnhancement) {
-          // Update any configuration based on prompt enhancement settings
-          console.log('Applying prompt enhancement settings');
-        }
+      // Increment settings version to notify components that settings have changed
+      setSettingsVersion(prev => prev + 1);
 
-        // Refresh models with possibly new configuration
-        await refreshModels();
-      }
+      console.log("AI configuration refreshed successfully");
     } catch (error) {
-      console.error('Error loading AI settings from preferences:', error);
+      console.error("Error refreshing AI configuration:", error);
+    } finally {
+      setIsLoadingConfigurations(false);
     }
-  }, [refreshModels]);
+  }, [checkConfigurations]);
 
   // UseEffect to load settings on init
   useEffect(() => {
@@ -465,12 +465,13 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
     refreshModels,
     isLoadingModels,
     isLoadingConfigurations,
-    refreshConfiguration
+    refreshConfiguration,
+    settingsVersion
   }), [
     isOpenAIConfigured, isAnthropicConfigured, isGeminiConfigured, isOllamaConfigured, isGrokConfigured,
     isChatOpenAIConfigured, isChatAnthropicConfigured, isChatGeminiConfigured, isChatOllamaConfigured, isChatGrokConfigured,
     error, sendMessage, configureGemini, availableModels, executionSteps, handleExecutionStep, transcribeAudio,
-    checkConfigurations, refreshModels, isLoadingModels, isLoadingConfigurations, refreshConfiguration
+    checkConfigurations, refreshModels, isLoadingModels, isLoadingConfigurations, refreshConfiguration, settingsVersion
   ]);
 
   return <AIContext.Provider value={value}>{children}</AIContext.Provider>;
