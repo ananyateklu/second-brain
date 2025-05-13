@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { Bot, Settings2, AlertCircle, CheckCircle, Loader, Save, ChevronDown, Sliders, MessageSquare, Zap } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Bot, Settings2, AlertCircle, CheckCircle, Loader, Save, ChevronDown, Sliders, MessageSquare, Zap, Info, Star, UserCheck, Lightbulb, HelpCircle, Sparkles, Code, Eye } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAI } from '../../../contexts/AIContext';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { AIModel, AISettings } from '../../../types/ai';
 import { cardVariants } from '../../../utils/welcomeBarUtils';
 import { modelService } from '../../../services/ai/modelService';
+import aiSettingsService from '../../../services/api/aiSettings.service';
 
 // Import provider logos
 import OpenAILightLogo from '../../../assets/openai-light.svg';
@@ -16,6 +17,70 @@ import GoogleLogo from '../../../assets/google.svg';
 import XAILightLogo from '../../../assets/xai-light.svg';
 import XAIDarkLogo from '../../../assets/xai-dark.svg';
 import OllamaLogo from '../../../assets/ollama.png';
+
+// Helper functions for system message effectiveness
+const getEffectivenessPercent = (message: string): number => {
+  if (!message || message.length === 0) return 0;
+  if (message.length < 20) return 20;
+  if (message.length < 50) return 40;
+  if (message.length < 100) return 60;
+  if (message.length < 200) return 80;
+  return 100;
+};
+
+const getEffectivenessColor = (message: string): string => {
+  const percent = getEffectivenessPercent(message);
+  if (percent <= 20) return 'bg-[var(--color-accent)]/20';
+  if (percent <= 40) return 'bg-[var(--color-accent)]/40';
+  if (percent <= 60) return 'bg-[var(--color-accent)]/60';
+  if (percent <= 80) return 'bg-[var(--color-accent)]/80';
+  return 'bg-[var(--color-accent)]';
+};
+
+const getEffectivenessLabel = (message: string): string => {
+  const percent = getEffectivenessPercent(message);
+  if (percent <= 20) return 'Basic';
+  if (percent <= 40) return 'Fair';
+  if (percent <= 60) return 'Good';
+  if (percent <= 80) return 'Very Good';
+  return 'Excellent';
+};
+
+// Simple tooltip component for informational enhancements
+const Tooltip = ({ content, children }: { content: string; children: React.ReactNode }) => {
+  const [show, setShow] = useState(false);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+
+  return (
+    <div className="relative inline-block">
+      <div
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}
+        className="inline-flex"
+      >
+        {children}
+      </div>
+      <AnimatePresence>
+        {show && (
+          <motion.div
+            ref={tooltipRef}
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 5 }}
+            className="absolute z-50 w-48 p-2 text-xs rounded-md shadow-lg bg-[color-mix(in_srgb,var(--color-surface)_70%,black)] border border-white/10 text-white"
+            style={{ bottom: '100%', left: '50%', transform: 'translateX(-50%) translateY(-5px)' }}
+          >
+            {content}
+            <div
+              className="absolute w-2 h-2 rotate-45 bg-[color-mix(in_srgb,var(--color-surface)_70%,black)] border-r border-b border-white/10"
+              style={{ bottom: '-5px', left: '50%', transform: 'translateX(-50%)' }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
 
 type AIProviderName = 'OpenAI' | 'Anthropic' | 'Gemini' | 'Ollama' | 'Grok';
 type AIProviderKey = 'openai' | 'anthropic' | 'gemini' | 'ollama' | 'grok';
@@ -28,6 +93,102 @@ interface TestResult {
 interface AISettingsSectionProps {
   onSave: (settings: AISettings) => Promise<void>;
 }
+
+// Provider-specific gradient backgrounds
+const providerGradients: Record<AIProviderName, string> = {
+  'OpenAI': 'bg-gradient-to-br from-[var(--color-accent)]/5 to-[var(--color-accent)]/10',
+  'Anthropic': 'bg-gradient-to-br from-[var(--color-accent)]/5 to-[var(--color-accent)]/10',
+  'Gemini': 'bg-gradient-to-br from-[var(--color-accent)]/5 to-[var(--color-accent)]/10',
+  'Ollama': 'bg-gradient-to-br from-[var(--color-accent)]/5 to-[var(--color-accent)]/10',
+  'Grok': 'bg-gradient-to-br from-[var(--color-accent)]/5 to-[var(--color-accent)]/10'
+};
+
+// Provider capability descriptions
+const providerCapabilities: Record<AIProviderName, { strengths: string, modelInfo: string }> = {
+  'OpenAI': {
+    strengths: 'Excels at general knowledge, coding, and reasoning tasks.',
+    modelInfo: 'GPT models are known for robust general capabilities across many domains.'
+  },
+  'Anthropic': {
+    strengths: 'Strong at nuanced reasoning and safety-aligned responses.',
+    modelInfo: 'Claude models prioritize helpful, harmless, and honest interactions.'
+  },
+  'Gemini': {
+    strengths: 'Great for multimodal tasks and integrated Google services.',
+    modelInfo: 'Gemini models combine text with other data types like images and code.'
+  },
+  'Ollama': {
+    strengths: 'Runs locally with no data sent to external services.',
+    modelInfo: 'Local models offer privacy and work without internet connection.'
+  },
+  'Grok': {
+    strengths: 'Designed for creative responses and real-time information.',
+    modelInfo: 'Grok models aim to be more conversational and witty in responses.'
+  }
+};
+
+// Predefined configuration profiles for quick setup
+const configurationProfiles = [
+  {
+    id: 'general',
+    name: 'General Purpose',
+    icon: <Bot className="w-3 h-3" />,
+    contentSettings: {
+      provider: 'openai' as AIProviderKey,
+      modelId: 'gpt-4',
+      temperature: 0.7,
+      maxTokens: 2000,
+      systemMessage: 'You are a helpful content generation assistant. Generate engaging, well-structured content that helps users organize their thoughts.'
+    },
+    promptSettings: {
+      provider: 'openai' as AIProviderKey,
+      modelId: 'gpt-4',
+      temperature: 0.6,
+      maxTokens: 1500,
+      systemMessage: 'You are a helpful prompt enhancement assistant. Your goal is to improve user prompts by adding clarity and structure.'
+    }
+  },
+  {
+    id: 'creative',
+    name: 'Creative Writing',
+    icon: <Sparkles className="w-3 h-3" />,
+    contentSettings: {
+      provider: 'anthropic' as AIProviderKey,
+      modelId: 'claude-3-sonnet-20240229',
+      temperature: 0.85,
+      maxTokens: 3000,
+      systemMessage: 'You are a creative assistant with a flair for expressive, engaging writing. Generate content that\'s captivating and memorable.'
+    },
+    promptSettings: {
+      provider: 'anthropic' as AIProviderKey,
+      modelId: 'claude-3-sonnet-20240229',
+      temperature: 0.8,
+      maxTokens: 2000,
+      systemMessage: 'You are a creative prompt enhancement assistant. Transform basic prompts into rich, detailed directions that inspire imagination.'
+    }
+  },
+  {
+    id: 'technical',
+    name: 'Technical Documentation',
+    icon: <Code className="w-3 h-3" />,
+    contentSettings: {
+      provider: 'openai' as AIProviderKey,
+      modelId: 'gpt-4',
+      temperature: 0.2,
+      maxTokens: 2500,
+      systemMessage: 'You are a technical documentation assistant. Generate clear, precise content with accurate terminology and well-structured explanations.'
+    },
+    promptSettings: {
+      provider: 'openai' as AIProviderKey,
+      modelId: 'gpt-4',
+      temperature: 0.3,
+      maxTokens: 1500,
+      systemMessage: 'You are a technical prompt enhancement assistant. Add precise specifications, requirements, and technical details to prompts while maintaining clarity.'
+    }
+  }
+];
+
+type ActiveModeType = 'content' | 'prompt';
 
 export function AISettingsSection({ onSave }: AISettingsSectionProps) {
   const {
@@ -44,30 +205,89 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
     isChatOllamaConfigured,
     isChatGrokConfigured,
     checkConfigurations,
-    isLoadingConfigurations // Use loading state
+    isLoadingConfigurations, // Use loading state
+    refreshConfiguration
   } = useAI();
   const { theme } = useTheme();
 
   const [settings, setSettings] = useState<AISettings>({
     contentSuggestions: {
-      provider: (localStorage.getItem('content_suggestions_provider') as AIProviderKey) || 'openai',
-      modelId: localStorage.getItem('content_suggestions_model') ?? 'gpt-4',
-      temperature: Number(localStorage.getItem('content_suggestions_temperature')) || 0.7,
-      maxTokens: Number(localStorage.getItem('content_suggestions_max_tokens')) || 2000,
+      provider: 'openai',
+      modelId: 'gpt-4',
+      temperature: 0.7,
+      maxTokens: 2000,
+      systemMessage: '',
     },
     promptEnhancement: {
-      provider: (localStorage.getItem('prompt_enhancement_provider') as AIProviderKey) || 'openai',
-      modelId: localStorage.getItem('prompt_enhancement_model') ?? 'gpt-4',
-      temperature: Number(localStorage.getItem('prompt_enhancement_temperature')) || 0.7,
-      maxTokens: Number(localStorage.getItem('prompt_enhancement_max_tokens')) || 2000,
+      provider: 'openai',
+      modelId: 'gpt-4',
+      temperature: 0.7,
+      maxTokens: 2000,
+      systemMessage: '',
     },
   });
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveResult, setSaveResult] = useState<TestResult | null>(null);
-  const [activeMode, setActiveMode] = useState<'content' | 'prompt'>('content');
+  const [activeMode, setActiveMode] = useState<ActiveModeType>('content');
   const [chatModels, setChatModels] = useState<AIModel[]>([]);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [isLoadingSettings, setIsLoadingSettings] = useState(true);
+
+  // Load settings from preferences when component mounts
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        setIsLoadingSettings(true);
+
+        // Try to get settings from user preferences
+        const savedSettings = await aiSettingsService.getAISettings();
+
+        if (savedSettings) {
+          // If settings exist in user preferences, use them
+          setSettings(savedSettings);
+        } else {
+          // If no settings in preferences, try to load from localStorage as fallback
+          const contentProvider = localStorage.getItem('content_suggestions_provider') as AIProviderKey;
+          const contentModel = localStorage.getItem('content_suggestions_model');
+          const contentTemp = localStorage.getItem('content_suggestions_temperature');
+          const contentTokens = localStorage.getItem('content_suggestions_max_tokens');
+          const contentSystemMsg = localStorage.getItem('content_suggestions_system_message');
+
+          const promptProvider = localStorage.getItem('prompt_enhancement_provider') as AIProviderKey;
+          const promptModel = localStorage.getItem('prompt_enhancement_model');
+          const promptTemp = localStorage.getItem('prompt_enhancement_temperature');
+          const promptTokens = localStorage.getItem('prompt_enhancement_max_tokens');
+          const promptSystemMsg = localStorage.getItem('prompt_enhancement_system_message');
+
+          // Set state with localStorage values if they exist
+          setSettings({
+            contentSuggestions: {
+              provider: contentProvider || 'openai',
+              modelId: contentModel || 'gpt-4',
+              temperature: contentTemp ? Number(contentTemp) : 0.7,
+              maxTokens: contentTokens ? Number(contentTokens) : 2000,
+              systemMessage: contentSystemMsg || '',
+            },
+            promptEnhancement: {
+              provider: promptProvider || 'openai',
+              modelId: promptModel || 'gpt-4',
+              temperature: promptTemp ? Number(promptTemp) : 0.7,
+              maxTokens: promptTokens ? Number(promptTokens) : 2000,
+              systemMessage: promptSystemMsg || '',
+            },
+          });
+        }
+      } catch (error) {
+        console.error('Error loading AI settings:', error);
+      } finally {
+        setIsLoadingSettings(false);
+      }
+    };
+
+    loadSettings();
+  }, []);
 
   // Fetch chat models when the component mounts
   useEffect(() => {
@@ -189,11 +409,61 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
     localStorage.setItem(`${type === 'contentSuggestions' ? 'content_suggestions' : 'prompt_enhancement'}_model`, modelId);
   };
 
+  const updateSystemMessage = (message: string) => {
+    const typeKey = activeMode === 'content' ? 'contentSuggestions' : 'promptEnhancement';
+
+    setSettings(prev => ({
+      ...prev,
+      [typeKey]: {
+        ...prev[typeKey]!,
+        systemMessage: message,
+      },
+    }));
+
+    localStorage.setItem(
+      `${activeMode === 'content' ? 'content_suggestions' : 'prompt_enhancement'}_system_message`,
+      message
+    );
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     setSaveResult(null);
     try {
+      // First, save settings to user preferences via the aiSettingsService
+      await aiSettingsService.saveAISettings(settings);
+
+      // Also save to localStorage as a backup/fallback
+      const { contentSuggestions, promptEnhancement } = settings;
+
+      // Content suggestions settings
+      if (contentSuggestions) {
+        localStorage.setItem('content_suggestions_provider', contentSuggestions.provider);
+        localStorage.setItem('content_suggestions_model', contentSuggestions.modelId);
+        localStorage.setItem('content_suggestions_temperature', String(contentSuggestions.temperature));
+        localStorage.setItem('content_suggestions_max_tokens', String(contentSuggestions.maxTokens));
+        if (contentSuggestions.systemMessage) {
+          localStorage.setItem('content_suggestions_system_message', contentSuggestions.systemMessage);
+        }
+      }
+
+      // Prompt enhancement settings
+      if (promptEnhancement) {
+        localStorage.setItem('prompt_enhancement_provider', promptEnhancement.provider);
+        localStorage.setItem('prompt_enhancement_model', promptEnhancement.modelId);
+        localStorage.setItem('prompt_enhancement_temperature', String(promptEnhancement.temperature));
+        localStorage.setItem('prompt_enhancement_max_tokens', String(promptEnhancement.maxTokens));
+        if (promptEnhancement.systemMessage) {
+          localStorage.setItem('prompt_enhancement_system_message', promptEnhancement.systemMessage);
+        }
+      }
+
+      // Call the parent component's onSave function
       await onSave(settings);
+
+      // Refresh AI configuration to apply new settings
+      await refreshConfiguration();
+
       setSaveResult({ success: true, message: 'Settings saved successfully!' });
     } catch (error: unknown) {
       console.error('Failed to save settings:', error);
@@ -261,6 +531,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
           border-[0.5px] border-white/10
           flex items-center justify-between
           group w-full
+          ${providerGradients[providerName]}
         `}
       >
         <div className="flex items-center gap-1.5">
@@ -287,7 +558,6 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
     );
   };
 
-
   const ModelSelect = ({
     models,
     selectedId,
@@ -301,6 +571,55 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
     const dropdownRef = useRef<HTMLDivElement>(null);
     const buttonRef = useRef<HTMLButtonElement>(null);
     const [position, setPosition] = useState({ top: 0, left: 0, width: 0, placement: 'bottom' as 'bottom' | 'top' });
+
+    // Model capability tags based on name patterns
+    const getModelCapabilities = (modelName: string) => {
+      const capabilities: { name: string, color: string, icon: React.ReactNode }[] = [];
+
+      const modelNameLower = modelName.toLowerCase();
+
+      if (modelNameLower.includes('gpt-4')) {
+        capabilities.push({
+          name: 'Advanced',
+          color: 'bg-[var(--color-accent)]/10 text-[var(--color-accent)]',
+          icon: <Star className="w-2 h-2 mr-0.5" />
+        });
+      }
+
+      if (modelNameLower.includes('claude') && modelNameLower.includes('3')) {
+        capabilities.push({
+          name: 'Advanced',
+          color: 'bg-[var(--color-accent)]/10 text-[var(--color-accent)]',
+          icon: <Star className="w-2 h-2 mr-0.5" />
+        });
+      }
+
+      if (modelNameLower.includes('code') || modelNameLower.includes('coder')) {
+        capabilities.push({
+          name: 'Code',
+          color: 'bg-[var(--color-accent)]/10 text-[var(--color-accent)]',
+          icon: <Code className="w-2 h-2 mr-0.5" />
+        });
+      }
+
+      if (modelNameLower.includes('visual') || modelNameLower.includes('vision')) {
+        capabilities.push({
+          name: 'Vision',
+          color: 'bg-[var(--color-accent)]/10 text-[var(--color-accent)]',
+          icon: <Eye className="w-2 h-2 mr-0.5" />
+        });
+      }
+
+      if (modelNameLower.includes('turbo') || modelName.includes('sonic')) {
+        capabilities.push({
+          name: 'Fast',
+          color: 'bg-[var(--color-accent)]/10 text-[var(--color-accent)]',
+          icon: <Zap className="w-2 h-2 mr-0.5" />
+        });
+      }
+
+      return capabilities;
+    };
 
     useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
@@ -335,6 +654,7 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
     }, [isOpen, models.length]);
 
     const selectedModel = models.find(m => m.id === selectedId);
+    const selectedCapabilities = selectedModel ? getModelCapabilities(selectedModel.name) : [];
 
     // Group models by provider
     const groupedModels = models.reduce((acc, model) => {
@@ -361,9 +681,23 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
             ${isOpen ? 'ring-1 ring-[var(--color-accent)]/20' : ''}
           `}
         >
-          <span className="font-medium text-xs truncate">
-            {selectedModel?.name || 'Select a model'}
-          </span>
+          <div className="flex flex-col items-start">
+            <span className="font-medium text-xs truncate">
+              {selectedModel?.name || 'Select a model'}
+            </span>
+
+            {/* Show capability badges if any */}
+            {selectedCapabilities.length > 0 && (
+              <div className="flex items-center gap-1 mt-0.5">
+                {selectedCapabilities.map((cap, idx) => (
+                  <span key={idx} className={`text-[8px] ${cap.color} px-1 py-0.5 rounded-full flex items-center`}>
+                    {cap.icon}
+                    {cap.name}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
           <ChevronDown
             className={`
               w-3.5 h-3.5 shrink-0 transition-transform duration-200 text-[var(--color-textSecondary)]
@@ -404,29 +738,50 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
                 <div className="px-2 py-1 text-[10px] font-medium text-[var(--color-textSecondary)] bg-[var(--color-surface)]/50">
                   {provider}
                 </div>
-                {providerModels.map(model => (
-                  <button
-                    key={model.id}
-                    onClick={() => {
-                      onSelect(model.id);
-                      setIsOpen(false);
-                    }}
-                    className={`
-                      w-full px-2 py-1.5 text-left
-                      flex items-center justify-between gap-1.5
-                      transition-all duration-200 text-xs
-                      ${selectedId === model.id
-                        ? 'bg-[var(--color-accent)]/10 text-[var(--color-accent)]'
-                        : 'text-[var(--color-text)] hover:bg-[var(--color-surfaceHover)]'
-                      }
-                    `}
-                  >
-                    <span className="font-medium truncate">{model.name}</span>
-                    {selectedId === model.id && (
-                      <CheckCircle className="w-3 h-3 shrink-0" />
-                    )}
-                  </button>
-                ))}
+                {providerModels.map(model => {
+                  const capabilities = getModelCapabilities(model.name);
+
+                  return (
+                    <button
+                      key={model.id}
+                      onClick={() => {
+                        onSelect(model.id);
+                        setIsOpen(false);
+                      }}
+                      className={`
+                        w-full px-2 py-1.5 text-left
+                        flex flex-col gap-0.5
+                        transition-all duration-200 text-xs
+                        ${selectedId === model.id
+                          ? 'bg-[var(--color-accent)]/10 text-[var(--color-accent)]'
+                          : 'text-[var(--color-text)] hover:bg-[var(--color-surfaceHover)]'
+                        }
+                      `}
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <span className="font-medium truncate">{model.name}</span>
+                        {selectedId === model.id && (
+                          <CheckCircle className="w-3 h-3 shrink-0" />
+                        )}
+                      </div>
+
+                      {/* Show capability badges */}
+                      {capabilities.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-1">
+                          {capabilities.map((cap, idx) => (
+                            <span
+                              key={idx}
+                              className={`text-[8px] ${cap.color} px-1 py-0.5 rounded-full flex items-center`}
+                            >
+                              {cap.icon}
+                              {cap.name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             ))}
           </div>
@@ -434,6 +789,70 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
       </div>
     );
   };
+
+  // Apply a configuration profile
+  const applyProfile = (profile: typeof configurationProfiles[0]) => {
+    // Copy the profile settings to the current settings
+    if (activeMode === 'content') {
+      setSettings(prev => ({
+        ...prev,
+        contentSuggestions: profile.contentSettings
+      }));
+
+      // Save to localStorage
+      localStorage.setItem('content_suggestions_provider', profile.contentSettings.provider);
+      localStorage.setItem('content_suggestions_model', profile.contentSettings.modelId);
+      localStorage.setItem('content_suggestions_temperature', String(profile.contentSettings.temperature));
+      localStorage.setItem('content_suggestions_max_tokens', String(profile.contentSettings.maxTokens));
+      localStorage.setItem('content_suggestions_system_message', profile.contentSettings.systemMessage || '');
+    } else {
+      setSettings(prev => ({
+        ...prev,
+        promptEnhancement: profile.promptSettings
+      }));
+
+      // Save to localStorage
+      localStorage.setItem('prompt_enhancement_provider', profile.promptSettings.provider);
+      localStorage.setItem('prompt_enhancement_model', profile.promptSettings.modelId);
+      localStorage.setItem('prompt_enhancement_temperature', String(profile.promptSettings.temperature));
+      localStorage.setItem('prompt_enhancement_max_tokens', String(profile.promptSettings.maxTokens));
+      localStorage.setItem('prompt_enhancement_system_message', profile.promptSettings.systemMessage || '');
+    }
+  };
+
+  const updateContentSuggestionsSetting = (key: string, value: string | number | boolean) => {
+    if (!settings.contentSuggestions?.provider) return;
+
+    setSettings({
+      ...settings,
+      contentSuggestions: {
+        ...settings.contentSuggestions,
+        [key]: value
+      }
+    });
+  };
+
+  const updatePromptEnhancementSetting = (key: string, value: string | number | boolean) => {
+    if (!settings.promptEnhancement?.provider) return;
+
+    setSettings({
+      ...settings,
+      promptEnhancement: {
+        ...settings.promptEnhancement,
+        [key]: value
+      }
+    });
+  };
+
+  // Return component if loading
+  if (isLoadingSettings) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader className="w-8 h-8 animate-spin text-[var(--color-accent)]" />
+        <span className="ml-3 text-[var(--color-text)]">Loading AI settings...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -468,17 +887,23 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
 
             // Get the provider logo
             const logoSrc = getProviderLogo(name);
+            const providerCapability = providerCapabilities[name];
+            const gradientClass = providerGradients[name];
 
             return (
               <motion.div
                 key={name}
                 variants={cardVariants}
+                whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
                 className={`
                   ${getContainerBackground()}
+                  ${gradientClass}
                   border-[0.5px] border-white/10
                   rounded-lg p-2
                   flex flex-col
                   ${isNotConfigured ? 'opacity-70' : ''}
+                  transition-all duration-300 ease-in-out
+                  hover:shadow-md hover:shadow-[var(--color-accent)]/5
                 `}
               >
                 <div className="flex items-center justify-between mb-1">
@@ -499,7 +924,12 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
                     )}
                     <p className="font-medium text-xs text-[var(--color-text)]">{name}</p>
                   </div>
+
+                  <Tooltip content={providerCapability.strengths}>
+                    <HelpCircle className="w-3 h-3 text-[var(--color-textSecondary)] hover:text-[var(--color-accent)]" />
+                  </Tooltip>
                 </div>
+
                 <div className="grid grid-cols-2 gap-1 text-[9px]">
                   <div className={`
                     rounded px-1 py-0.5 flex items-center justify-center gap-1
@@ -507,6 +937,8 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
                       ? "bg-[var(--color-accent)]/5 text-[var(--color-accent)]"
                       : "bg-red-500/10 text-red-500"}
                     h-5 min-w-0 relative
+                    transition-all duration-300
+                    ${agent ? "hover:bg-[var(--color-accent)]/10" : ""}
                   `}>
                     <Bot className="w-2 h-2 shrink-0" />
                     <span className="truncate">{agent ? "Agent" : "None"}</span>
@@ -519,12 +951,20 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
                       ? "bg-[var(--color-accent)]/5 text-[var(--color-accent)]"
                       : "bg-red-500/10 text-red-500"}
                     h-5 min-w-0 relative
+                    transition-all duration-300
+                    ${chat ? "hover:bg-[var(--color-accent)]/10" : ""}
                   `}>
                     <MessageSquare className="w-2 h-2 shrink-0" />
                     <span className="truncate">{chat ? "Chat" : "None"}</span>
                     {chat && <CheckCircle className="w-2 h-2 absolute right-1" />}
                     {!chat && <AlertCircle className="w-2 h-2 absolute right-1 text-red-500" />}
                   </div>
+                </div>
+
+                {/* Add a subtle capability indicator */}
+                <div className="mt-1.5 text-[8px] text-[var(--color-textSecondary)] leading-tight overflow-hidden text-ellipsis h-6">
+                  <Sparkles className="w-2 h-2 inline-block mr-0.5" />
+                  <span>{providerCapability.modelInfo}</span>
                 </div>
               </motion.div>
             );
@@ -536,31 +976,76 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <h4 className="text-sm font-medium text-[var(--color-text)]">AI Model Configuration</h4>
-          <div className="flex items-center gap-1 p-0.5 rounded-lg bg-[var(--color-surface)]/50 border-[0.5px] border-white/10">
-            <button
-              onClick={() => setActiveMode('content')}
-              className={`
-                px-2 py-1 rounded-md text-xs font-medium transition-all duration-200
-                ${activeMode === 'content'
-                  ? 'bg-[var(--color-accent)] text-white'
-                  : 'text-[var(--color-textSecondary)] hover:text-[var(--color-text)]'
-                }
-              `}
-            >
-              Content Generation
-            </button>
-            <button
-              onClick={() => setActiveMode('prompt')}
-              className={`
-                px-2 py-1 rounded-md text-xs font-medium transition-all duration-200
-                ${activeMode === 'prompt'
-                  ? 'bg-[var(--color-accent)] text-white'
-                  : 'text-[var(--color-textSecondary)] hover:text-[var(--color-text)]'
-                }
-              `}
-            >
-              Prompt Enhancement
-            </button>
+
+          {/* Configuration profile selector */}
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <button
+                onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+                className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md bg-[var(--color-accent)]/10 text-[var(--color-accent)] hover:bg-[var(--color-accent)]/20 transition-colors"
+              >
+                <Settings2 className="w-3 h-3" />
+                Load Profile
+                <ChevronDown className={`w-3 h-3 transition-transform ${profileMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              <AnimatePresence>
+                {profileMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 5 }}
+                    className="absolute right-0 z-50 mt-1 p-1 rounded-lg bg-[#1e293b] border border-white/10 shadow-lg w-48"
+                  >
+                    <div className="text-[8px] px-2 py-1 text-[var(--color-textSecondary)]">
+                      Select a preset configuration
+                    </div>
+                    {configurationProfiles.map(profile => (
+                      <button
+                        key={profile.id}
+                        onClick={() => {
+                          applyProfile(profile);
+                          setProfileMenuOpen(false);
+                        }}
+                        className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-[var(--color-text)] hover:bg-[var(--color-accent)]/10 rounded-md transition-colors"
+                      >
+                        <div className="w-5 h-5 rounded-full flex items-center justify-center bg-[var(--color-accent)]/10">
+                          {profile.icon}
+                        </div>
+                        <span>{profile.name}</span>
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            <div className="flex items-center gap-1 p-0.5 rounded-lg bg-[var(--color-surface)]/50 border-[0.5px] border-white/10">
+              <button
+                onClick={() => setActiveMode('content')}
+                className={`
+                  px-2 py-1 rounded-md text-xs font-medium transition-all duration-200
+                  ${activeMode === 'content'
+                    ? 'bg-[var(--color-accent)] text-white'
+                    : 'text-[var(--color-textSecondary)] hover:text-[var(--color-text)]'
+                  }
+                `}
+              >
+                Content Generation
+              </button>
+              <button
+                onClick={() => setActiveMode('prompt')}
+                className={`
+                  px-2 py-1 rounded-md text-xs font-medium transition-all duration-200
+                  ${activeMode === 'prompt'
+                    ? 'bg-[var(--color-accent)] text-white'
+                    : 'text-[var(--color-textSecondary)] hover:text-[var(--color-text)]'
+                  }
+                `}
+              >
+                Prompt Enhancement
+              </button>
+            </div>
           </div>
         </div>
 
@@ -582,6 +1067,31 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
               <label className="block text-xs font-medium text-[var(--color-text)]">
                 AI Provider
               </label>
+
+              {/* Enable/Disable Toggle */}
+              <div className="flex items-center justify-between w-full mb-2">
+                <label className="text-xs font-medium text-[var(--color-text)]">
+                  Enable {activeMode === 'content' ? 'Content Suggestions' : 'Prompt Enhancement'}
+                </label>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={activeMode === 'content'
+                      ? settings.contentSuggestions?.enabled !== false
+                      : settings.promptEnhancement?.enabled !== false}
+                    onChange={(e) => {
+                      if (activeMode === 'content') {
+                        updateContentSuggestionsSetting('enabled', e.target.checked);
+                      } else {
+                        updatePromptEnhancementSetting('enabled', e.target.checked);
+                      }
+                    }}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-gray-600/20 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[var(--color-accent)]"></div>
+                </label>
+              </div>
+
               <div className="grid grid-cols-5 lg:grid-cols-1 gap-1.5">
                 {(Object.entries(configurationStatus) as [AIProviderName, { agent: boolean; chat: boolean }][]).map(([name, { agent, chat }]) => {
                   const providerKey = name.toLowerCase() as AIProviderKey;
@@ -627,16 +1137,62 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
                   <label className="block text-xs font-medium text-[var(--color-text)]">
                     Temperature (Creativity)
                   </label>
+                  <Tooltip content="Higher values (warmer) make responses more creative but less predictable. Lower values (cooler) make responses more focused and deterministic.">
+                    <HelpCircle className="w-3 h-3 text-[var(--color-textSecondary)] hover:text-[var(--color-accent)]" />
+                  </Tooltip>
                 </div>
+
+                {/* Enhanced temperature slider with gradient background */}
                 <div className="flex items-center gap-3">
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={((getActiveSettings()?.temperature || 0.7) * 100)}
-                    onChange={(e) => {
+                  <div className="relative w-full">
+                    <div
+                      className="absolute h-1.5 rounded-lg w-full overflow-hidden"
+                      style={{
+                        background: 'linear-gradient(to right, var(--color-accent)/30, var(--color-accent)/70, var(--color-accent))'
+                      }}
+                    />
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={((getActiveSettings()?.temperature || 0.7) * 100)}
+                      onChange={(e) => {
+                        const type = activeMode === 'content' ? 'contentSuggestions' : 'promptEnhancement';
+                        const newTemperature = Number(e.target.value) / 100;
+                        setSettings(prev => ({
+                          ...prev,
+                          [type]: {
+                            ...prev[type]!,
+                            temperature: newTemperature
+                          }
+                        }));
+                        localStorage.setItem(`${type === 'contentSuggestions' ? 'content_suggestions' : 'prompt_enhancement'}_temperature`, String(newTemperature));
+                      }}
+                      className="
+                        w-full h-1.5 rounded-lg appearance-none cursor-pointer bg-transparent
+                        [&::-webkit-slider-thumb]:appearance-none
+                        [&::-webkit-slider-thumb]:w-3
+                        [&::-webkit-slider-thumb]:h-3
+                        [&::-webkit-slider-thumb]:rounded-full
+                        [&::-webkit-slider-thumb]:bg-[var(--color-accent)]
+                        [&::-webkit-slider-thumb]:shadow-sm
+                        [&::-webkit-slider-thumb]:cursor-pointer
+                        [&::-webkit-slider-thumb]:active:scale-105
+                        relative z-10
+                      "
+                    />
+                  </div>
+                  <span className="text-xs font-medium text-[var(--color-textSecondary)] w-8 text-right">
+                    {((getActiveSettings()?.temperature || 0.7) * 100).toFixed(0)}%
+                  </span>
+                </div>
+
+                {/* Temperature presets */}
+                <div className="flex items-center justify-between gap-1 pt-1 mt-1 border-t border-white/5">
+                  <button
+                    onClick={() => {
                       const type = activeMode === 'content' ? 'contentSuggestions' : 'promptEnhancement';
-                      const newTemperature = Number(e.target.value) / 100;
+                      const newTemperature = 0.2;
                       setSettings(prev => ({
                         ...prev,
                         [type]: {
@@ -646,21 +1202,46 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
                       }));
                       localStorage.setItem(`${type === 'contentSuggestions' ? 'content_suggestions' : 'prompt_enhancement'}_temperature`, String(newTemperature));
                     }}
-                    className="
-                      w-full h-1.5 rounded-lg appearance-none cursor-pointer
-                      bg-[var(--color-surface)]
-                      [&::-webkit-slider-thumb]:appearance-none
-                      [&::-webkit-slider-thumb]:w-3
-                      [&::-webkit-slider-thumb]:h-3
-                      [&::-webkit-slider-thumb]:rounded-full
-                      [&::-webkit-slider-thumb]:bg-[var(--color-accent)]
-                      [&::-webkit-slider-thumb]:cursor-pointer
-                    "
-                  />
-                  <span className="text-xs font-medium text-[var(--color-textSecondary)] w-8 text-right">
-                    {((getActiveSettings()?.temperature || 0.7) * 100).toFixed(0)}%
-                  </span>
+                    className="bg-[var(--color-accent)]/10 hover:bg-[var(--color-accent)]/20 text-[var(--color-accent)] text-[8px] font-medium rounded-full px-2 py-0.5 transition-colors"
+                  >
+                    Precise
+                  </button>
+                  <button
+                    onClick={() => {
+                      const type = activeMode === 'content' ? 'contentSuggestions' : 'promptEnhancement';
+                      const newTemperature = 0.5;
+                      setSettings(prev => ({
+                        ...prev,
+                        [type]: {
+                          ...prev[type]!,
+                          temperature: newTemperature
+                        }
+                      }));
+                      localStorage.setItem(`${type === 'contentSuggestions' ? 'content_suggestions' : 'prompt_enhancement'}_temperature`, String(newTemperature));
+                    }}
+                    className="bg-[var(--color-accent)]/10 hover:bg-[var(--color-accent)]/20 text-[var(--color-accent)] text-[8px] font-medium rounded-full px-2 py-0.5 transition-colors"
+                  >
+                    Balanced
+                  </button>
+                  <button
+                    onClick={() => {
+                      const type = activeMode === 'content' ? 'contentSuggestions' : 'promptEnhancement';
+                      const newTemperature = 0.85;
+                      setSettings(prev => ({
+                        ...prev,
+                        [type]: {
+                          ...prev[type]!,
+                          temperature: newTemperature
+                        }
+                      }));
+                      localStorage.setItem(`${type === 'contentSuggestions' ? 'content_suggestions' : 'prompt_enhancement'}_temperature`, String(newTemperature));
+                    }}
+                    className="bg-[var(--color-accent)]/10 hover:bg-[var(--color-accent)]/20 text-[var(--color-accent)] text-[8px] font-medium rounded-full px-2 py-0.5 transition-colors"
+                  >
+                    Creative
+                  </button>
                 </div>
+
                 <p className="text-[9px] text-[var(--color-textSecondary)]">
                   Higher values make the output more creative but less predictable
                 </p>
@@ -673,17 +1254,65 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
                   <label className="block text-xs font-medium text-[var(--color-text)]">
                     Maximum Length
                   </label>
+                  <Tooltip content="Controls the maximum number of tokens in the AI's response. Higher values allow for longer responses but may increase processing time.">
+                    <HelpCircle className="w-3 h-3 text-[var(--color-textSecondary)] hover:text-[var(--color-accent)]" />
+                  </Tooltip>
                 </div>
                 <div className="flex items-center gap-3">
-                  <input
-                    type="range"
-                    min="100"
-                    max="4000"
-                    step="100"
-                    value={getActiveSettings()?.maxTokens || 2000}
-                    onChange={(e) => {
+                  <div className="relative w-full">
+                    <div
+                      className="absolute h-1.5 rounded-lg w-full overflow-hidden"
+                      style={{
+                        background: 'linear-gradient(to right, var(--color-accent)/30, var(--color-accent)/70, var(--color-accent))'
+                      }}
+                    />
+                    <input
+                      type="range"
+                      min="100"
+                      max="4000"
+                      step="100"
+                      value={getActiveSettings()?.maxTokens || 2000}
+                      onChange={(e) => {
+                        const type = activeMode === 'content' ? 'contentSuggestions' : 'promptEnhancement';
+                        const newMaxTokens = Number(e.target.value);
+                        setSettings(prev => ({
+                          ...prev,
+                          [type]: {
+                            ...prev[type]!,
+                            maxTokens: newMaxTokens
+                          }
+                        }));
+                        localStorage.setItem(`${type === 'contentSuggestions' ? 'content_suggestions' : 'prompt_enhancement'}_max_tokens`, String(newMaxTokens));
+                      }}
+                      className="
+                        w-full h-1.5 rounded-lg appearance-none cursor-pointer
+                        bg-transparent
+                        [&::-webkit-slider-thumb]:appearance-none
+                        [&::-webkit-slider-thumb]:w-3
+                        [&::-webkit-slider-thumb]:h-3
+                        [&::-webkit-slider-thumb]:rounded-full
+                        [&::-webkit-slider-thumb]:bg-[var(--color-accent)]
+                        [&::-webkit-slider-thumb]:shadow-sm
+                        [&::-webkit-slider-thumb]:cursor-pointer
+                        [&::-webkit-slider-thumb]:active:scale-105
+                        relative z-10
+                      "
+                    />
+                  </div>
+                  <span className="text-xs font-medium text-[var(--color-textSecondary)] w-12 text-right flex items-center justify-end">
+                    <span className="mr-0.5">{getActiveSettings()?.maxTokens || 2000}</span>
+                    <Tooltip content="Tokens are pieces of words. As a rough guide, 1 token is about 4 characters or 0.75 words in English.">
+                      <Info className="w-3 h-3 text-[var(--color-textSecondary)] hover:text-[var(--color-accent)]" />
+                    </Tooltip>
+                  </span>
+                </div>
+
+                {/* Token length presets */}
+                <div className="flex items-center justify-between gap-1 pt-1 mt-1 border-t border-white/5">
+                  <button
+                    onClick={() => {
                       const type = activeMode === 'content' ? 'contentSuggestions' : 'promptEnhancement';
-                      const newMaxTokens = Number(e.target.value);
+                      const newMaxTokens = 1000;
                       setSettings(prev => ({
                         ...prev,
                         [type]: {
@@ -693,21 +1322,46 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
                       }));
                       localStorage.setItem(`${type === 'contentSuggestions' ? 'content_suggestions' : 'prompt_enhancement'}_max_tokens`, String(newMaxTokens));
                     }}
-                    className="
-                      w-full h-1.5 rounded-lg appearance-none cursor-pointer
-                      bg-[var(--color-surface)]
-                      [&::-webkit-slider-thumb]:appearance-none
-                      [&::-webkit-slider-thumb]:w-3
-                      [&::-webkit-slider-thumb]:h-3
-                      [&::-webkit-slider-thumb]:rounded-full
-                      [&::-webkit-slider-thumb]:bg-[var(--color-accent)]
-                      [&::-webkit-slider-thumb]:cursor-pointer
-                    "
-                  />
-                  <span className="text-xs font-medium text-[var(--color-textSecondary)] w-12 text-right">
-                    {getActiveSettings()?.maxTokens || 2000}
-                  </span>
+                    className="bg-[var(--color-accent)]/10 hover:bg-[var(--color-accent)]/20 text-[var(--color-accent)] text-[8px] font-medium rounded-full px-2 py-0.5 transition-colors"
+                  >
+                    Concise
+                  </button>
+                  <button
+                    onClick={() => {
+                      const type = activeMode === 'content' ? 'contentSuggestions' : 'promptEnhancement';
+                      const newMaxTokens = 2000;
+                      setSettings(prev => ({
+                        ...prev,
+                        [type]: {
+                          ...prev[type]!,
+                          maxTokens: newMaxTokens
+                        }
+                      }));
+                      localStorage.setItem(`${type === 'contentSuggestions' ? 'content_suggestions' : 'prompt_enhancement'}_max_tokens`, String(newMaxTokens));
+                    }}
+                    className="bg-[var(--color-accent)]/10 hover:bg-[var(--color-accent)]/20 text-[var(--color-accent)] text-[8px] font-medium rounded-full px-2 py-0.5 transition-colors"
+                  >
+                    Standard
+                  </button>
+                  <button
+                    onClick={() => {
+                      const type = activeMode === 'content' ? 'contentSuggestions' : 'promptEnhancement';
+                      const newMaxTokens = 3500;
+                      setSettings(prev => ({
+                        ...prev,
+                        [type]: {
+                          ...prev[type]!,
+                          maxTokens: newMaxTokens
+                        }
+                      }));
+                      localStorage.setItem(`${type === 'contentSuggestions' ? 'content_suggestions' : 'prompt_enhancement'}_max_tokens`, String(newMaxTokens));
+                    }}
+                    className="bg-[var(--color-accent)]/10 hover:bg-[var(--color-accent)]/20 text-[var(--color-accent)] text-[8px] font-medium rounded-full px-2 py-0.5 transition-colors"
+                  >
+                    Detailed
+                  </button>
                 </div>
+
                 <p className="text-[9px] text-[var(--color-textSecondary)]">
                   Maximum number of tokens in the response
                 </p>
@@ -716,39 +1370,86 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
 
             {/* Column 3: System Message */}
             <div className="space-y-2">
-              <div className="flex items-center gap-1.5">
-                <MessageSquare className="w-3 h-3 text-[var(--color-accent)]" />
-                <label className="block text-xs font-medium text-[var(--color-text)]">
-                  System Message
-                </label>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <MessageSquare className="w-3 h-3 text-[var(--color-accent)]" />
+                  <label className="block text-xs font-medium text-[var(--color-text)]">
+                    System Message
+                  </label>
+                  <Tooltip content="The system message sets the behavior and context for the AI. It's like giving instructions to a helpful assistant.">
+                    <HelpCircle className="w-3 h-3 text-[var(--color-textSecondary)] hover:text-[var(--color-accent)]" />
+                  </Tooltip>
+                </div>
+
+                {/* Template selector */}
+                <div className="relative">
+                  <button
+                    onClick={() => {
+                      // Toggle dropdown for system message templates
+                      // For this demo, let's just directly set a template based on activeMode
+                      const template = activeMode === 'content'
+                        ? 'You are a helpful content creation assistant. Generate engaging, well-structured content that captures reader attention and conveys information clearly.'
+                        : 'You are a helpful prompt enhancement assistant. Your goal is to improve user prompts by adding clarity, structure, and relevant details while preserving their original intent.';
+
+                      updateSystemMessage(template);
+                    }}
+                    className="text-[8px] font-medium px-2 py-0.5 rounded-md bg-[var(--color-accent)]/10 text-[var(--color-accent)] flex items-center gap-1 hover:bg-[var(--color-accent)]/20 transition-colors"
+                  >
+                    <Lightbulb className="w-2 h-2" />
+                    Template
+                  </button>
+                </div>
               </div>
-              <textarea
-                value={getActiveSettings()?.systemMessage || ''}
-                onChange={(e) => {
-                  const type = activeMode === 'content' ? 'contentSuggestions' : 'promptEnhancement';
-                  setSettings(prev => ({
-                    ...prev,
-                    [type]: {
-                      ...prev[type]!,
-                      systemMessage: e.target.value
-                    }
-                  }));
-                }}
-                placeholder="Enter a system message to guide the AI's behavior..."
-                className={`
-                  w-full px-2 py-1.5 rounded-lg
-                  ${getContainerBackground()}
-                  border-[0.5px] border-white/10
-                  text-xs text-[var(--color-text)]
-                  placeholder:text-[var(--color-textSecondary)]
-                  focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]/20
-                  min-h-[100px]
-                  resize-none
-                `}
-              />
-              <p className="text-[9px] text-[var(--color-textSecondary)]">
-                Set the AI's behavior and context for this mode
-              </p>
+
+              <div className="relative">
+                <textarea
+                  value={getActiveSettings()?.systemMessage || ''}
+                  onChange={(e) => {
+                    updateSystemMessage(e.target.value);
+                  }}
+                  placeholder="Enter a system message to guide the AI's behavior..."
+                  className={`
+                    w-full px-2 py-1.5 rounded-lg
+                    ${getContainerBackground()}
+                    border-[0.5px] border-white/10
+                    text-xs text-[var(--color-text)]
+                    placeholder:text-[var(--color-textSecondary)]
+                    focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]/20
+                    min-h-[100px]
+                    resize-none
+                  `}
+                />
+
+                {/* Character count badge */}
+                <div className="absolute bottom-2 right-2 text-[8px] px-1.5 py-0.5 rounded-full bg-[var(--color-surface)]/80 backdrop-blur-sm text-[var(--color-textSecondary)]">
+                  {(getActiveSettings()?.systemMessage || '').length} chars
+                </div>
+              </div>
+
+              <div className="text-[9px] text-[var(--color-textSecondary)] flex gap-1 items-start">
+                <UserCheck className="w-2.5 h-2.5 mt-0.5 shrink-0 text-[var(--color-accent)]" />
+                <span>
+                  Set the AI's behavior and context for this mode. A good system message helps the AI understand how it should respond.
+                </span>
+              </div>
+
+              {/* System message effectiveness indicator */}
+              {(getActiveSettings()?.systemMessage?.length || 0) > 0 && (
+                <div className="mt-1">
+                  <div className="w-full h-1.5 bg-[var(--color-surface)] rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${getEffectivenessColor(getActiveSettings()?.systemMessage || '')}`}
+                      style={{ width: `${getEffectivenessPercent(getActiveSettings()?.systemMessage || '')}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between items-center mt-0.5">
+                    <span className="text-[8px] text-[var(--color-textSecondary)]">Effectiveness</span>
+                    <span className="text-[8px] text-[var(--color-textSecondary)]">
+                      {getEffectivenessLabel(getActiveSettings()?.systemMessage || '')}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -776,16 +1477,45 @@ export function AISettingsSection({ onSave }: AISettingsSectionProps) {
                 disabled:opacity-50 disabled:cursor-not-allowed
                 disabled:hover:scale-100
                 text-xs font-medium
+                relative overflow-hidden group
               `}
             >
-              {isSaving ? (
-                <Loader className="w-3 h-3 animate-spin" />
-              ) : (
-                <Save className="w-3 h-3" />
+              {/* Background pulse animation when saving */}
+              {isSaving && (
+                <motion.div
+                  className="absolute inset-0 bg-white/20"
+                  animate={{
+                    scale: [1, 1.5, 1],
+                    opacity: [0.3, 0.1, 0.3]
+                  }}
+                  transition={{
+                    duration: 1.5,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                />
               )}
-              <span>
-                {isSaving ? 'Saving...' : 'Save Changes'}
-              </span>
+
+              <motion.div
+                className="flex items-center gap-1.5 relative z-10"
+                animate={isSaving ? { y: [0, -20, 20, 0] } : {}}
+                transition={isSaving ? {
+                  y: { duration: 0.3, ease: "easeOut" },
+                  opacity: { duration: 0.2 }
+                } : {}}
+              >
+                {isSaving ? (
+                  <Loader className="w-3 h-3 animate-spin" />
+                ) : (
+                  <Save className="w-3 h-3 group-hover:rotate-12 transition-transform" />
+                )}
+                <span>
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+                </span>
+              </motion.div>
+
+              {/* Subtle light effect on hover */}
+              <div className="absolute -inset-px bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 blur-sm transition-opacity" />
             </button>
           </div>
 

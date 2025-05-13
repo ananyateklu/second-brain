@@ -7,6 +7,7 @@ import { agentService, AgentRequestParameters } from '../services/ai/agent';
 import { modelService } from '../services/ai/modelService';
 import { messageService } from '../services/ai/messageService';
 import api from '../services/api/api';
+import aiSettingsService from '../services/api/aiSettings.service';
 
 interface AIContextType {
   // Agent statuses (unchanged)
@@ -48,6 +49,7 @@ interface AIContextType {
   refreshModels: () => Promise<void>;
   isLoadingModels: boolean;
   isLoadingConfigurations: boolean;
+  refreshConfiguration: () => Promise<void>;
 }
 
 const AIContext = createContext<AIContextType | null>(null);
@@ -404,6 +406,40 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  // Add a way to refresh configuration when settings change
+  const refreshConfiguration = useCallback(async () => {
+    try {
+      // Try to load AI settings from user preferences
+      const settings = await aiSettingsService.getAISettings();
+      if (settings) {
+        console.log('Loaded AI settings from user preferences:', settings);
+
+        // Apply any necessary configuration updates based on the settings
+        // This will vary depending on how the settings are used
+        if (settings.contentSuggestions) {
+          // Update any configuration based on content suggestions settings
+          console.log('Applying content suggestion settings');
+        }
+
+        if (settings.promptEnhancement) {
+          // Update any configuration based on prompt enhancement settings
+          console.log('Applying prompt enhancement settings');
+        }
+
+        // Refresh models with possibly new configuration
+        await refreshModels();
+      }
+    } catch (error) {
+      console.error('Error loading AI settings from preferences:', error);
+    }
+  }, [refreshModels]);
+
+  // UseEffect to load settings on init
+  useEffect(() => {
+    refreshConfiguration();
+  }, [refreshConfiguration]);
+
+  // Update the context value to include the refreshConfiguration function
   const value = useMemo(() => ({
     // Agent statuses
     isOpenAIConfigured,
@@ -428,11 +464,13 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
     checkConfigurations,
     refreshModels,
     isLoadingModels,
-    isLoadingConfigurations
+    isLoadingConfigurations,
+    refreshConfiguration
   }), [
     isOpenAIConfigured, isAnthropicConfigured, isGeminiConfigured, isOllamaConfigured, isGrokConfigured,
     isChatOpenAIConfigured, isChatAnthropicConfigured, isChatGeminiConfigured, isChatOllamaConfigured, isChatGrokConfigured,
-    error, sendMessage, configureGemini, availableModels, executionSteps, handleExecutionStep, transcribeAudio, checkConfigurations, refreshModels, isLoadingModels, isLoadingConfigurations
+    error, sendMessage, configureGemini, availableModels, executionSteps, handleExecutionStep, transcribeAudio,
+    checkConfigurations, refreshModels, isLoadingModels, isLoadingConfigurations, refreshConfiguration
   ]);
 
   return <AIContext.Provider value={value}>{children}</AIContext.Provider>;

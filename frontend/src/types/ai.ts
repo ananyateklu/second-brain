@@ -176,6 +176,7 @@ export interface AISettings {
     temperature?: number;
     maxTokens?: number;
     systemMessage?: string;
+    enabled?: boolean;
   };
   promptEnhancement?: {
     provider: 'openai' | 'anthropic' | 'gemini' | 'ollama' | 'grok';
@@ -183,5 +184,6 @@ export interface AISettings {
     temperature?: number;
     maxTokens?: number;
     systemMessage?: string;
+    enabled?: boolean;
   };
 }

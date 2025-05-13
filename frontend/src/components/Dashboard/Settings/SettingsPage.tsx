@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
-  Settings2, Palette, Bell, Lock, Cpu,
+  Settings2, Palette, Lock, Cpu,
   Database, User, Puzzle
 } from 'lucide-react';
 import { useTheme } from '../../../contexts/themeContextUtils';
@@ -14,8 +14,7 @@ import { useNotes } from '../../../contexts/notesContextUtils';
 
 // Lazy load section components
 const AISettingsSection = lazy(() => import('./AISettingsSection').then(module => ({ default: module.AISettingsSection })));
-const AppearanceSettingsSection = lazy(() => import('./AppearanceSettingsSection').then(module => ({ default: module.AppearanceSettingsSection })));
-const NotificationSettingsSection = lazy(() => import('./NotificationSettingsSection').then(module => ({ default: module.NotificationSettingsSection })));
+const PreferencesSection = lazy(() => import('./PreferencesSection').then(module => ({ default: module.PreferencesSection })));
 const SecuritySettingsSection = lazy(() => import('./SecuritySettingsSection').then(module => ({ default: module.SecuritySettingsSection })));
 const DataManagementSettingsSection = lazy(() => import('./DataManagementSettingsSection').then(module => ({ default: module.DataManagementSettingsSection })));
 const AccountSettingsSection = lazy(() => import('./AccountSettingsSection').then(module => ({ default: module.AccountSettingsSection })));
@@ -25,7 +24,7 @@ const SyncResultModal = lazy(() => import('./SyncResultModal').then(module => ({
 const generateState = () => Math.random().toString(36).substring(2, 15);
 
 // Type for the settings tabs
-type SettingsTabs = 'appearance' | 'notifications' | 'security' | 'aiconfig' | 'dataManagement' | 'account' | 'integrations';
+type SettingsTabs = 'appearance' | 'security' | 'aiconfig' | 'dataManagement' | 'account' | 'integrations';
 
 export function SettingsPage() {
   const { theme } = useTheme();
@@ -50,8 +49,11 @@ export function SettingsPage() {
   } = useNotes();
 
   const [activeTab, setActiveTab] = useState<SettingsTabs>(() => {
-    const savedTab = localStorage.getItem('settings_active_tab') as SettingsTabs | null;
-    return savedTab || 'appearance';
+    const savedTab = localStorage.getItem('settings_active_tab');
+    // If the saved tab was 'notifications', switch to 'appearance' since they're now combined
+    if (savedTab === 'notifications') return 'appearance';
+    // Check if the saved tab is a valid tab option
+    return (savedTab as SettingsTabs) || 'appearance';
   });
 
   // Save activeTab to localStorage when it changes
@@ -248,13 +250,8 @@ export function SettingsPage() {
   // Modify the tabContent definition to wrap each component with Suspense
   const tabContent = {
     appearance: (
-      <Suspense fallback={<div className="p-4 text-center">Loading appearance settings...</div>}>
-        <AppearanceSettingsSection />
-      </Suspense>
-    ),
-    notifications: (
-      <Suspense fallback={<div className="p-4 text-center">Loading notification settings...</div>}>
-        <NotificationSettingsSection />
+      <Suspense fallback={<div className="p-4 text-center">Loading preferences...</div>}>
+        <PreferencesSection />
       </Suspense>
     ),
     security: (
@@ -347,14 +344,7 @@ export function SettingsPage() {
                 className={activeTab === 'appearance' ? activeButtonClasses : buttonClasses}
               >
                 <Palette className="w-4 h-4" />
-                Appearance
-              </button>
-              <button
-                onClick={() => setActiveTab('notifications')}
-                className={activeTab === 'notifications' ? activeButtonClasses : buttonClasses}
-              >
-                <Bell className="w-4 h-4" />
-                Notifications
+                Preferences
               </button>
               <button
                 onClick={() => setActiveTab('security')}
