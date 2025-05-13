@@ -8,6 +8,8 @@ import { Note } from '../../types/note';
 import { Task } from '../../types/task';
 import { Reminder } from '../../types/reminder';
 import { Idea } from '../../types/idea';
+import aiSettingsService from '../api/aiSettings.service';
+import { AISettings } from '../../types/ai';
 
 interface SimilarityResult {
     id: string;
@@ -25,42 +27,97 @@ export class SimilarContentService {
     private readonly ollama = new OllamaService();
     private readonly grok = new GrokService();
 
-    // Use the same model configuration as contentSuggestionService
-    private get modelId(): string {
-        const provider = this.provider;
-        const selectedModelId = localStorage.getItem('content_suggestions_model');
+    // Cache for settings to avoid too many API calls
+    private cachedSettings: AISettings | null = null;
+    private settingsLastFetched: number = 0;
+    private readonly CACHE_DURATION = 60 * 1000; // 1 minute cache
 
-        const availableChatModels = modelService.getChatModels()
-            .filter(model => model.provider === provider && model.category === 'chat');
+    /**
+     * Get cached or fresh AI settings
+     */
+    private async getSettings(): Promise<AISettings | null> {
+        const now = Date.now();
+        // Return cached settings if they're fresh
+        if (this.cachedSettings && (now - this.settingsLastFetched < this.CACHE_DURATION)) {
+            return this.cachedSettings;
+        }
 
-        if (availableChatModels.length === 0) {
+        try {
+            // Fetch new settings from preferences
+            const settings = await aiSettingsService.getAISettings();
+            this.cachedSettings = settings;
+            this.settingsLastFetched = now;
+            return settings;
+        } catch (error) {
+            console.error('Error fetching AI settings:', error);
+            // If we have cached settings, return them even if expired
+            if (this.cachedSettings) {
+                return this.cachedSettings;
+            }
+            // Otherwise return null
+            return null;
+        }
+    }
+
+    /**
+     * Get model ID from settings or use a fallback
+     */
+    private async getModelId(): Promise<string> {
+        const provider = await this.getProvider();
+
+        try {
+            // Get settings from preferences
+            const settings = await this.getSettings();
+            const selectedModelId = settings?.contentSuggestions?.modelId;
+
+            // Get all chat models for the provider
+            const availableChatModels = modelService.getChatModels()
+                .filter(model => model.provider === provider && model.category === 'chat');
+
+            if (availableChatModels.length === 0) {
+                // Fallback if no models available for this provider
+                return provider === 'ollama' ? 'llama3.1:8b' :
+                    provider === 'grok' ? 'grok-beta' : 'gpt-4';
+            }
+
+            // Check if the selected model is valid
+            const isValidModel = selectedModelId && availableChatModels.some(model => model.id === selectedModelId);
+
+            if (isValidModel) {
+                return selectedModelId!;
+            }
+
+            // Default to the first available model for the provider
+            return availableChatModels[0]?.id ||
+                (provider === 'ollama' ? 'llama3.1:8b' :
+                    provider === 'grok' ? 'grok-beta' : 'gpt-4');
+        } catch (error) {
+            console.error('Error getting model ID:', error);
+            // Fallback to a reasonable default based on provider
             return provider === 'ollama' ? 'llama3.1:8b' :
                 provider === 'grok' ? 'grok-beta' : 'gpt-4';
         }
+    }
 
-        const isValidModel = availableChatModels.some(model => model.id === selectedModelId);
-        if (selectedModelId && isValidModel) {
-            return selectedModelId;
+    /**
+     * Get the provider from settings or use a fallback
+     */
+    private async getProvider(): Promise<'openai' | 'anthropic' | 'gemini' | 'ollama' | 'grok'> {
+        try {
+            // Get settings from preferences
+            const settings = await this.getSettings();
+            // Use provider from settings or default to openai
+            return settings?.contentSuggestions?.provider || 'openai';
+        } catch (error) {
+            console.error('Error getting provider:', error);
+            // Fallback to localStorage for backward compatibility
+            return (localStorage.getItem('content_suggestions_provider') as
+                'openai' | 'anthropic' | 'gemini' | 'ollama' | 'grok') || 'openai';
         }
-
-        return availableChatModels[0]?.id ||
-            (provider === 'ollama' ? 'llama3.1:8b' :
-                provider === 'grok' ? 'grok-beta' : 'gpt-4');
     }
 
-    private get provider(): 'openai' | 'anthropic' | 'gemini' | 'ollama' | 'grok' {
-        return (
-            (localStorage.getItem('content_suggestions_provider') as
-                | 'openai'
-                | 'anthropic'
-                | 'gemini'
-                | 'ollama'
-                | 'grok') || 'openai'
-        );
-    }
-
-    private getServiceForProvider() {
-        const provider = this.provider;
+    private async getServiceForProvider() {
+        const provider = await this.getProvider();
         switch (provider) {
             case 'openai':
                 return this.openai;
@@ -193,18 +250,31 @@ export class SimilarContentService {
         }>,
         maxResults: number
     ) {
-        const prompt = this.createSimilarItemsPrompt(currentNote, candidates, maxResults);
-        const service = this.getServiceForProvider();
+        const prompt = await this.createSimilarItemsPrompt(currentNote, candidates, maxResults);
+        const service = await this.getServiceForProvider();
+        const modelId = await this.getModelId();
+        const settings = await this.getSettings();
 
         try {
-            console.log("Sending prompt to AI model:", this.modelId);
+            console.log("Sending prompt to AI model:", modelId);
 
-            const response = await service.sendMessage(prompt, this.modelId);
-            console.log("Raw AI response:", response.content);
+            // Get parameters from settings
+            const parameters: Record<string, unknown> = {
+                temperature: settings?.contentSuggestions?.temperature ?? 0.7,
+                max_tokens: settings?.contentSuggestions?.maxTokens ?? 2000
+            };
 
-            const jsonMatch = response.content.match(/```json\n([\s\S]*?)\n```/) ||
-                response.content.match(/\[([\s\S]*?)\]/) ||
-                response.content.match(/{[\s\S]*?}/);
+            const response = await service.sendMessage(prompt, modelId, parameters);
+            // Convert response content to string to handle different types
+            const responseContent = typeof response.content === 'string'
+                ? response.content
+                : String(response.content);
+
+            console.log("Raw AI response:", responseContent);
+
+            const jsonMatch = responseContent.match(/```json\n([\s\S]*?)\n```/) ||
+                responseContent.match(/\[([\s\S]*?)\]/) ||
+                responseContent.match(/{[\s\S]*?}/);
 
             if (jsonMatch) {
                 let jsonStr = jsonMatch[1] || jsonMatch[0];
@@ -248,21 +318,20 @@ export class SimilarContentService {
                     }
                 } catch (jsonError) {
                     console.error('Error parsing JSON response:', jsonError);
+                    // Fall back to simpler similarity matching
+                    return this.fallbackSimilarityMatching(currentNote, candidates, maxResults);
                 }
             }
 
-            // Fallback to a simple approach if AI response is not parseable
-            console.log("Using fallback similarity matching");
+            console.warn('AI response did not contain parseable JSON, falling back to simple matching');
             return this.fallbackSimilarityMatching(currentNote, candidates, maxResults);
         } catch (error) {
-            console.error('Error getting AI recommendations:', error);
+            console.error('Error with AI similarity matching:', error);
+            // Fallback to simpler similarity matching on error
             return this.fallbackSimilarityMatching(currentNote, candidates, maxResults);
         }
     }
 
-    /**
-     * Fallback similarity matching using simple text matching when AI fails
-     */
     private fallbackSimilarityMatching(
         currentNote: {
             title: string;
@@ -324,10 +393,7 @@ export class SimilarContentService {
         return matches / keywords.length;
     }
 
-    /**
-     * Create a prompt to find similar items using AI
-     */
-    private createSimilarItemsPrompt(
+    private async createSimilarItemsPrompt(
         currentNote: {
             title: string;
             content: string;
@@ -341,49 +407,44 @@ export class SimilarContentService {
             type: 'note' | 'idea' | 'task' | 'reminder';
         }>,
         maxResults: number
-    ): string {
-        return `I have a note in my Second Brain app and I need to find other items (notes, ideas, tasks, reminders) that are semantically similar or related to this note. Please analyze the content and identify the most relevant items to suggest linking.
+    ): Promise<string> {
+        // Get system message if available
+        const settings = await this.getSettings();
+        const systemMessage = settings?.contentSuggestions?.systemMessage;
 
-CURRENT NOTE:
+        // Base prompt
+        let prompt = systemMessage ? `${systemMessage}\n\n` : '';
+
+        prompt += `Find similar items to this content. Return a JSON array of the ${maxResults} most similar items, ranked by similarity (0-1 score).
+
+Current item:
 Title: ${currentNote.title}
-Content: ${currentNote.content.slice(0, 1000)}${currentNote.content.length > 1000 ? '...' : ''}
-Tags: ${currentNote.tags.join(', ')}
+Content: ${currentNote.content.length > 1000 ? currentNote.content.substring(0, 1000) + "..." : currentNote.content}
+Tags: ${currentNote.tags?.join(', ') || 'None'}
 
-CANDIDATE ITEMS:
-${candidates.map((item, index) => `
-[Item ${index + 1}]
+Candidate items:
+${candidates.slice(0, 50).map((item, index) => `
+Item ${index + 1}:
 ID: ${item.id}
 Type: ${item.type}
 Title: ${item.title}
-Content: ${item.content.slice(0, 400)}${item.content.length > 400 ? '...' : ''}
-Tags: ${item.tags.join(', ')}
+Content: ${(item.content?.length || 0) > 200 ? item.content?.substring(0, 200) + "..." : item.content}
+Tags: ${item.tags?.join(', ') || 'None'}
 `).join('\n')}
 
-For each candidate item, calculate a similarity score between 0 and 1 where:
-- 1 means very closely related or almost identical in topic/content
-- 0.7-0.9 means strongly related 
-- 0.4-0.6 means moderately related or has some conceptual overlap
-- 0.1-0.3 means weakly related
-- 0 means completely unrelated
-
-Return the top ${maxResults} most similar items in JSON format. Each item in the JSON array MUST include "id", "title", "similarity", and "type".
-Example:
+Return ONLY a JSON array with the most similar items in this format:
 [
-  {
-    "id": "item_id_1",
-    "title": "Example Note Title",
-    "similarity": 0.85,
-    "type": "note"
-  },
-  {
-    "id": "item_id_2",
-    "title": "Related Task Name",
-    "similarity": 0.72,
-    "type": "task"
-  }
+    {
+        "id": "item_id",
+        "title": "Item Title",
+        "type": "note/idea/task/reminder",
+        "similarity": 0.95
+    }
 ]
 
-Only include items with meaningful similarity (score > 0.3). Ensure your response is a valid JSON array. If a title is long, you can truncate it, but it must be present.`;
+Include only the ${maxResults} most relevant items with the highest similarity score. Use a number between 0 and 1 for similarity.`;
+
+        return prompt;
     }
 }
 

@@ -2,23 +2,21 @@ import { useState, useEffect } from 'react';
 import { Link2, PlusCircle, Type, Lightbulb, CheckSquare, Loader } from 'lucide-react';
 import { useNotes } from '../../../../contexts/notesContextUtils';
 import { useTasks } from '../../../../contexts/tasksContextUtils';
-import { useIdeas } from '../../../../contexts/ideasContextUtils'; // Import useIdeas
-import { Idea } from '../../../../types/idea'; // Import Idea type
-// import { Note } from '../../../../types/note'; // Keep Note type for suggestions - REMOVED
-// import { Task } from '../../../../types/task'; // Keep Task type for suggestions - REMOVED
+import { useIdeas } from '../../../../contexts/ideasContextUtils';
+import { Idea } from '../../../../types/idea';
 import { similarContentService } from '../../../../services/ai/similarContentService';
 import { useTheme } from '../../../../contexts/themeContextUtils';
 import { motion } from 'framer-motion';
+import aiSettingsService from '../../../../services/api/aiSettings.service';
 
 interface SuggestedLinksSectionProps {
-    currentIdea: Idea; // Changed from currentNote
-    // IDs of items already linked to the currentIdea
+    currentIdea: Idea;
     linkedNoteIds: string[];
     linkedIdeaIds: string[];
     linkedTaskIds: string[];
-    refreshTrigger?: number; // Add optional refreshTrigger prop
+    refreshTrigger?: number;
     onLinkNote: (noteId: string) => Promise<void>;
-    onLinkIdea: (ideaId: string) => Promise<void>; // Added onLinkIdea
+    onLinkIdea: (ideaId: string) => Promise<void>;
     onLinkTask: (taskId: string) => Promise<void>;
 }
 
@@ -50,10 +48,45 @@ export function SuggestedLinksSection({
         displayKey?: string;
     }>>([]);
     const [error, setError] = useState('');
+    const [areSuggestionsEnabled, setAreSuggestionsEnabled] = useState<boolean>(true);
+
+    // Check if content suggestions are enabled in AI settings
+    useEffect(() => {
+        const checkAISettings = async () => {
+            try {
+                const settings = await aiSettingsService.getAISettings();
+                if (settings && settings.contentSuggestions) {
+                    // If enabled flag exists and is explicitly false, disable suggestions
+                    if (settings.contentSuggestions.enabled === false) {
+                        console.log("Content suggestions are disabled in user preferences");
+                        setAreSuggestionsEnabled(false);
+                    } else {
+                        setAreSuggestionsEnabled(true);
+                    }
+                } else {
+                    // No settings found, assume enabled for backward compatibility
+                    console.log("No AI settings found, assuming content suggestions are enabled");
+                    setAreSuggestionsEnabled(true);
+                }
+            } catch (error) {
+                console.warn("Error checking AI settings:", error);
+                // Default to enabled if there's an error
+                setAreSuggestionsEnabled(true);
+            }
+        };
+
+        checkAISettings();
+    }, []);
 
     useEffect(() => {
         const loadSuggestions = async () => {
-            if (!currentIdea || !allNotes.length || !allIdeas.length) return; // Check allIdeas as well
+            // Skip loading if suggestions are disabled in settings
+            if (!areSuggestionsEnabled || !currentIdea || !allNotes.length || !allIdeas.length) {
+                if (!areSuggestionsEnabled) {
+                    console.log("Skipping suggestions loading because they are disabled");
+                }
+                return;
+            }
 
             setIsLoading(true);
             setError('');
@@ -71,7 +104,7 @@ export function SuggestedLinksSection({
 
                 const excludeIds = [
                     ...linkedNoteIds,
-                    ...linkedIdeaIds, // Exclude already linked ideas
+                    ...linkedIdeaIds,
                     ...linkedTaskIds,
                     currentIdea.id
                 ];
@@ -99,7 +132,7 @@ export function SuggestedLinksSection({
                 const allSuggestions = await similarContentService.findSimilarContent(
                     currentItemDetails,
                     validNotes,
-                    validIdeas, // Pass filtered ideas
+                    validIdeas,
                     validTasks,
                     [],
                     excludeIds,
@@ -187,7 +220,7 @@ export function SuggestedLinksSection({
         };
 
         loadSuggestions();
-    }, [currentIdea, allNotes, allIdeas, allTasks, linkedNoteIds, linkedIdeaIds, linkedTaskIds, refreshTrigger]); // Add refreshTrigger
+    }, [currentIdea, allNotes, allIdeas, allTasks, linkedNoteIds, linkedIdeaIds, linkedTaskIds, refreshTrigger, areSuggestionsEnabled]);
 
     const handleLinkItem = async (item: typeof suggestions[0]) => {
         setSuggestions(prev => prev.map(s =>
