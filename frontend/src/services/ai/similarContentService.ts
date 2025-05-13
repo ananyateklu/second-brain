@@ -70,32 +70,39 @@ export class SimilarContentService {
             const settings = await this.getSettings();
             const selectedModelId = settings?.contentSuggestions?.modelId;
 
-            // Get all chat models for the provider
-            const availableChatModels = modelService.getChatModels()
-                .filter(model => model.provider === provider && model.category === 'chat');
-
-            if (availableChatModels.length === 0) {
-                // Fallback if no models available for this provider
-                return provider === 'ollama' ? 'llama3.1:8b' :
-                    provider === 'grok' ? 'grok-beta' : 'gpt-4';
+            if (selectedModelId) {
+                console.log(`Using selected model from settings: ${selectedModelId}`);
+                return selectedModelId;
             }
 
-            // Check if the selected model is valid
-            const isValidModel = selectedModelId && availableChatModels.some(model => model.id === selectedModelId);
+            // If no model is selected, get a list of available models
+            const availableChatModels = await modelService.getChatModelsAsync()
+                .then(models => models.filter(model => model.provider === provider && model.category === 'chat'))
+                .catch(error => {
+                    console.error('Error fetching async models:', error);
+                    // Fallback to synchronous method if async fails
+                    return modelService.getChatModels()
+                        .filter(model => model.provider === provider && model.category === 'chat');
+                });
 
-            if (isValidModel) {
-                return selectedModelId!;
+            if (availableChatModels.length > 0) {
+                console.log(`Using first available ${provider} model: ${availableChatModels[0].id}`);
+                return availableChatModels[0].id;
             }
 
-            // Default to the first available model for the provider
-            return availableChatModels[0]?.id ||
-                (provider === 'ollama' ? 'llama3.1:8b' :
-                    provider === 'grok' ? 'grok-beta' : 'gpt-4');
+            // Fallback to default models if no models available for this provider
+            console.log(`No available models for ${provider}, using fallback`);
+            return provider === 'ollama' ? 'llama3:latest' :
+                provider === 'grok' ? 'grok-beta' :
+                    provider === 'anthropic' ? 'claude-3-haiku-20240307' :
+                        'gpt-4';
         } catch (error) {
             console.error('Error getting model ID:', error);
             // Fallback to a reasonable default based on provider
-            return provider === 'ollama' ? 'llama3.1:8b' :
-                provider === 'grok' ? 'grok-beta' : 'gpt-4';
+            return provider === 'ollama' ? 'llama3:latest' :
+                provider === 'grok' ? 'grok-beta' :
+                    provider === 'anthropic' ? 'claude-3-haiku-20240307' :
+                        'gpt-4';
         }
     }
 
@@ -116,8 +123,281 @@ export class SimilarContentService {
         }
     }
 
-    private async getServiceForProvider() {
-        const provider = await this.getProvider();
+    // Using the non-async version of getServiceForProvider for efficiency
+
+    /**
+     * Find content similar to the given item
+     */
+    public async findSimilarContent(
+        currentItem: { id: string; title: string; content: string; tags?: string[] },
+        notes: Note[],
+        ideas: Idea[],
+        tasks: Task[],
+        reminders: Reminder[],
+        excludeIds: string[] = [],
+        maxResults: number = 5
+    ): Promise<SimilarityResult[]> {
+        try {
+            // Clear cache to ensure fresh settings
+            this.clearCache();
+
+            // Get settings with fresh data
+            const settings = await this.getSettings();
+
+            // Skip if disabled
+            if (settings?.contentSuggestions?.enabled === false) {
+                console.log("Content suggestions are disabled in user settings");
+                return [];
+            }
+
+            // Prepare content for embedding
+            const allContent = [
+                ...notes.map(note => ({
+                    id: note.id,
+                    title: note.title,
+                    content: note.content || '',
+                    type: 'note' as const,
+                    status: note.isArchived ? 'archived' : undefined
+                })),
+                ...ideas.map(idea => ({
+                    id: idea.id,
+                    title: idea.title,
+                    content: idea.content || '',
+                    type: 'idea' as const,
+                    status: idea.isArchived ? 'archived' : undefined
+                })),
+                ...tasks.map(task => ({
+                    id: task.id,
+                    title: task.title,
+                    content: task.description || '',
+                    type: 'task' as const,
+                    status: task.status,
+                    dueDate: task.dueDate
+                })),
+                ...reminders.map(reminder => ({
+                    id: reminder.id,
+                    title: reminder.title,
+                    content: reminder.description || '',
+                    type: 'reminder' as const
+                }))
+            ]
+                // Filter out the current item and any excluded IDs
+                .filter(item =>
+                    item.id !== currentItem.id &&
+                    !excludeIds.includes(item.id)
+                );
+
+            // If no content to compare, return empty results
+            if (allContent.length === 0) {
+                console.log("No content available to find similarities");
+                return [];
+            }
+
+            const provider = await this.getProvider();
+            const modelId = await this.getModelId();
+
+            // Create prompt with instructions
+            const prompt = this.createSimilarityPrompt(currentItem, allContent);
+            console.log("Sending prompt to AI model:", modelId);
+
+            // Get parameters from settings
+            const parameters: Record<string, unknown> = {
+                temperature: settings?.contentSuggestions?.temperature ?? 0.7,
+                max_tokens: settings?.contentSuggestions?.maxTokens ?? 2000
+            };
+
+            const service = this.getServiceForProvider(provider);
+            const response = await service.sendMessage(prompt, modelId, parameters);
+            // Convert response content to string to handle different types
+            const responseContent = typeof response.content === 'string'
+                ? response.content
+                : String(response.content);
+
+            console.log("Raw AI response:", responseContent);
+
+            // Extract JSON content from the response, handling markdown code blocks
+            let jsonContent = '';
+
+            // Check if response is wrapped in markdown code blocks (more flexible pattern)
+            const markdownMatch = responseContent.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+            if (markdownMatch) {
+                // Extract content from within the code block
+                jsonContent = markdownMatch[1].trim();
+                console.log("Extracted JSON from markdown code block");
+            } else {
+                // Try to find JSON array directly with a more robust pattern
+                // This handles both arrays and objects, even with nested content
+                const jsonArrayMatch = responseContent.match(/(\[[\s\S]*?\])/g);
+                if (jsonArrayMatch && jsonArrayMatch.length > 0) {
+                    // Take the largest match which is likely the full result
+                    jsonContent = jsonArrayMatch.sort((a, b) => b.length - a.length)[0];
+                    console.log("Extracted JSON array directly");
+                } else {
+                    // Try to find JSON object directly
+                    const jsonObjectMatch = responseContent.match(/(\{[\s\S]*?\})/g);
+                    if (jsonObjectMatch && jsonObjectMatch.length > 0) {
+                        // Take the largest match which is likely the full result
+                        jsonContent = jsonObjectMatch.sort((a, b) => b.length - a.length)[0];
+                        console.log("Extracted JSON object directly");
+                    } else {
+                        console.error("No JSON found in response:", responseContent);
+                        throw new Error("Invalid response format from AI service");
+                    }
+                }
+            }
+
+            // Perform additional cleanup on extracted JSON
+            jsonContent = jsonContent.replace(/^[\s\n]*/, '').replace(/[\s\n]*$/, '');
+
+            // Log what we found for debugging
+            console.log("Extracted JSON content:", jsonContent.substring(0, 100) + (jsonContent.length > 100 ? "..." : ""));
+
+            try {
+                // Parse the JSON content
+                const parsedResult = JSON.parse(jsonContent);
+
+                // Verify we have an array result
+                if (!Array.isArray(parsedResult)) {
+                    console.error("Parsed result is not an array:", parsedResult);
+                    // If the result is an object with a specific expected property, try to extract array
+                    if (parsedResult && typeof parsedResult === 'object' && 'results' in parsedResult) {
+                        console.log("Trying to extract results array from object");
+                        if (Array.isArray(parsedResult.results)) {
+                            const results = parsedResult.results as SimilarityResult[];
+                            const sortedResults = results
+                                .sort((a, b) => b.similarity - a.similarity)
+                                .slice(0, maxResults);
+
+                            console.log("Parsed similarity results from nested property:", sortedResults);
+                            return sortedResults;
+                        }
+                    }
+
+                    // If it's not an array but a single item, wrap it in an array
+                    if (parsedResult && typeof parsedResult === 'object' && 'id' in parsedResult && 'similarity' in parsedResult) {
+                        console.log("Converting single result to array");
+                        const singleItemArray = [parsedResult] as SimilarityResult[];
+                        console.log("Parsed similarity result as single item:", singleItemArray);
+                        return singleItemArray.slice(0, maxResults);
+                    }
+
+                    throw new Error("Expected an array of results but received a different format");
+                }
+
+                // Process array results
+                const results = parsedResult as SimilarityResult[];
+
+                // Verify array elements have required properties
+                const validResults = results.filter(item =>
+                    item &&
+                    typeof item === 'object' &&
+                    'id' in item &&
+                    'title' in item &&
+                    'similarity' in item &&
+                    'type' in item
+                );
+
+                if (validResults.length === 0) {
+                    console.error("No valid items found in results array:", results);
+                    throw new Error("Results array contains no valid items");
+                }
+
+                // Sort by similarity score (highest first)
+                const sortedResults = validResults
+                    .sort((a, b) => b.similarity - a.similarity)
+                    .slice(0, maxResults);
+
+                console.log("Parsed similarity results:", sortedResults);
+                return sortedResults;
+            } catch (jsonError) {
+                console.error("Failed to parse JSON response:", jsonError);
+                throw new Error("Invalid response format from AI service");
+            }
+        } catch (error) {
+            console.error("Error finding similar content:", error);
+            throw error;
+        }
+    }
+
+    /**
+     * Force refresh of cached settings
+     */
+    public clearCache(): void {
+        this.cachedSettings = null;
+        this.settingsLastFetched = 0;
+        console.log('Cleared similarContentService settings cache');
+    }
+
+    /**
+     * Create a prompt for finding similar content
+     */
+    private createSimilarityPrompt(
+        currentItem: { id: string; title: string; content: string; tags?: string[] },
+        candidates: Array<{
+            id: string;
+            title: string;
+            content: string;
+            type: 'note' | 'idea' | 'task' | 'reminder';
+            status?: string;
+            dueDate?: string | null;
+        }>
+    ): string {
+        // Create a similarity prompt based on the current item and candidates
+        const prompt = `Your task is to find items similar to the following content. Return ONLY a JSON array of similar items.
+
+Current Item:
+ID: ${currentItem.id}
+Title: ${currentItem.title}
+Content: ${currentItem.content.substring(0, Math.min(1000, currentItem.content.length))}
+Tags: ${currentItem.tags?.join(', ') || 'None'}
+
+Candidate Items:
+${candidates.slice(0, 50).map((item, index) => `
+Item ${index + 1}:
+ID: ${item.id}
+Type: ${item.type}
+Title: ${item.title}
+Content: ${item.content.substring(0, Math.min(200, item.content.length))}
+${item.status ? `Status: ${item.status}` : ''}
+${item.dueDate ? `Due Date: ${item.dueDate}` : ''}
+`).join('\n')}
+
+IMPORTANT: You MUST return a valid JSON array containing objects with these properties:
+- id: string (ID of the item)
+- title: string (title of the item)
+- type: string (type of the item - "note", "idea", "task", or "reminder")
+- similarity: number (between 0-1, with 1 being most similar)
+- status: string (optional - status of the item if available)
+- dueDate: string (optional - due date if available)
+
+Example of the EXACT format to return:
+[
+    {
+        "id": "abc123",
+        "title": "Example Title",
+        "type": "note",
+        "similarity": 0.95,
+        "status": "active" 
+    },
+    {
+        "id": "def456",
+        "title": "Another Title",
+        "type": "task",
+        "similarity": 0.82,
+        "status": "pending",
+        "dueDate": "2023-06-15"
+    }
+]
+
+Return ONLY the JSON array - no additional text, explanation, or markdown formatting.
+`;
+        return prompt;
+    }
+
+    /**
+     * Get the appropriate service for the specified provider
+     */
+    private getServiceForProvider(provider: string): OpenAIService | AnthropicService | GeminiService | OllamaService | GrokService {
         switch (provider) {
             case 'openai':
                 return this.openai;
@@ -132,319 +412,6 @@ export class SimilarContentService {
             default:
                 return this.openai;
         }
-    }
-
-    /**
-     * Find similar items to the current note
-     * @param currentNoteContent The content/context to find similar items for
-     * @param availableNotes All notes in the system
-     * @param availableIdeas All ideas in the system
-     * @param availableTasks All tasks in the system
-     * @param availableReminders All reminders in the system
-     * @param excludeIds IDs to exclude from results (like already linked items)
-     * @param maxResults Maximum number of results to return
-     * @returns List of similar items with similarity scores
-     */
-    async findSimilarContent(
-        currentItemContent: {
-            id: string;
-            title: string;
-            content: string;
-            tags: string[];
-        },
-        availableNotes: Note[],
-        availableIdeas: Idea[],
-        availableTasks: Task[],
-        availableReminders: Reminder[] = [],
-        excludeIds: string[] = [],
-        maxResults: number = 5
-    ): Promise<SimilarityResult[]> {
-        try {
-            console.log("findSimilarContent called with current item:", currentItemContent.title);
-
-            // Combine all items that aren't already linked
-            const allItems = [
-                ...availableNotes
-                    .filter(note => note.id !== currentItemContent.id && !excludeIds.includes(note.id))
-                    .map(note => ({
-                        id: note.id,
-                        title: note.title,
-                        content: note.content,
-                        tags: note.tags,
-                        type: 'note' as const
-                    })),
-                ...availableIdeas
-                    .filter(idea => idea.id !== currentItemContent.id && !excludeIds.includes(idea.id))
-                    .map(idea => ({
-                        id: idea.id,
-                        title: idea.title,
-                        content: idea.content,
-                        tags: idea.tags,
-                        type: 'idea' as const
-                    })),
-                ...availableTasks
-                    .filter(task => !excludeIds.includes(task.id))
-                    .map(task => ({
-                        id: task.id,
-                        title: task.title,
-                        content: task.description || '',
-                        tags: task.tags || [],
-                        type: 'task' as const,
-                        status: task.status,
-                        dueDate: task.dueDate
-                    })),
-                ...availableReminders
-                    .filter(reminder => !excludeIds.includes(reminder.id))
-                    .map(reminder => ({
-                        id: reminder.id,
-                        title: reminder.title,
-                        content: reminder.description || '',
-                        tags: [],
-                        type: 'reminder' as const,
-                        dueDate: reminder.dueDateTime
-                    }))
-            ];
-
-            console.log("Total candidate items:", allItems.length);
-            console.log("Sample of candidate items:", allItems.slice(0, 2));
-
-            if (allItems.length === 0) {
-                return [];
-            }
-
-            // If there are many items, use a more efficient approach with AI
-            const results = await this.findSimilarItemsViaAI(currentItemContent, allItems, maxResults);
-            console.log("Results from AI:", results);
-
-            return results.map(item => ({
-                id: item.id,
-                title: item.title,
-                similarity: item.similarity,
-                type: item.type,
-                status: 'status' in item ? item.status : undefined,
-                dueDate: 'dueDate' in item ? item.dueDate : undefined
-            }));
-        } catch (error) {
-            console.error('Failed to find similar content:', error);
-            return [];
-        }
-    }
-
-    /**
-     * Use AI to find similar items by sending the current note and all candidates
-     */
-    private async findSimilarItemsViaAI(
-        currentNote: {
-            title: string;
-            content: string;
-            tags: string[];
-        },
-        candidates: Array<{
-            id: string;
-            title: string;
-            content: string;
-            tags: string[];
-            type: 'note' | 'idea' | 'task' | 'reminder';
-            status?: string;
-            dueDate?: string | null;
-        }>,
-        maxResults: number
-    ) {
-        const prompt = await this.createSimilarItemsPrompt(currentNote, candidates, maxResults);
-        const service = await this.getServiceForProvider();
-        const modelId = await this.getModelId();
-        const settings = await this.getSettings();
-
-        try {
-            console.log("Sending prompt to AI model:", modelId);
-
-            // Get parameters from settings
-            const parameters: Record<string, unknown> = {
-                temperature: settings?.contentSuggestions?.temperature ?? 0.7,
-                max_tokens: settings?.contentSuggestions?.maxTokens ?? 2000
-            };
-
-            const response = await service.sendMessage(prompt, modelId, parameters);
-            // Convert response content to string to handle different types
-            const responseContent = typeof response.content === 'string'
-                ? response.content
-                : String(response.content);
-
-            console.log("Raw AI response:", responseContent);
-
-            const jsonMatch = responseContent.match(/```json\n([\s\S]*?)\n```/) ||
-                responseContent.match(/\[([\s\S]*?)\]/) ||
-                responseContent.match(/{[\s\S]*?}/);
-
-            if (jsonMatch) {
-                let jsonStr = jsonMatch[1] || jsonMatch[0];
-                // Ensure we have proper JSON
-                if (!jsonStr.startsWith('[')) {
-                    jsonStr = `[${jsonStr}]`;
-                }
-
-                try {
-                    console.log("Attempting to parse JSON:", jsonStr);
-                    const results = JSON.parse(jsonStr);
-                    console.log("Parsed results:", results);
-
-                    // Validate results
-                    if (Array.isArray(results)) {
-                        const validResults = results
-                            .filter(item =>
-                                typeof item.id === 'string' &&
-                                typeof item.similarity === 'number' &&
-                                item.similarity >= 0 && item.similarity <= 1 &&
-                                // Ensure type is one of the expected values
-                                ['note', 'idea', 'task', 'reminder'].includes(item.type)
-                            )
-                            .map(item => {
-                                // Try to find the original candidate to get the full details if AI misses some
-                                const originalItem = candidates.find(c => c.id === item.id);
-                                return {
-                                    id: item.id,
-                                    title: item.title || originalItem?.title || 'Title missing', // Prioritize AI title, then candidate, then fallback
-                                    similarity: item.similarity,
-                                    type: item.type,
-                                    status: item.status || originalItem?.status,
-                                    dueDate: item.dueDate || originalItem?.dueDate
-                                };
-                            })
-                            .filter(item => item.title !== 'Title missing') // Remove items where title could not be found
-                            .slice(0, maxResults);
-
-                        console.log("Valid results after filtering and mapping:", validResults);
-                        return validResults;
-                    }
-                } catch (jsonError) {
-                    console.error('Error parsing JSON response:', jsonError);
-                    // Fall back to simpler similarity matching
-                    return this.fallbackSimilarityMatching(currentNote, candidates, maxResults);
-                }
-            }
-
-            console.warn('AI response did not contain parseable JSON, falling back to simple matching');
-            return this.fallbackSimilarityMatching(currentNote, candidates, maxResults);
-        } catch (error) {
-            console.error('Error with AI similarity matching:', error);
-            // Fallback to simpler similarity matching on error
-            return this.fallbackSimilarityMatching(currentNote, candidates, maxResults);
-        }
-    }
-
-    private fallbackSimilarityMatching(
-        currentNote: {
-            title: string;
-            content: string;
-            tags: string[];
-        },
-        candidates: Array<{
-            id: string;
-            title: string;
-            content: string;
-            tags: string[];
-            type: 'note' | 'idea' | 'task' | 'reminder';
-            status?: string;
-            dueDate?: string | null;
-        }>,
-        maxResults: number
-    ) {
-        // Combine all text from the current note
-        const currentText = `${currentNote.title} ${currentNote.content} ${currentNote.tags.join(' ')}`.toLowerCase();
-        const keywords = this.extractKeywords(currentText);
-
-        // Score each candidate
-        const scoredCandidates = candidates.map(candidate => {
-            const candidateText = `${candidate.title} ${candidate.content} ${candidate.tags.join(' ')}`.toLowerCase();
-            const similarity = this.calculateKeywordSimilarity(keywords, candidateText);
-
-            return {
-                ...candidate,
-                similarity
-            };
-        });
-
-        // Sort by similarity score and return top results
-        return scoredCandidates
-            .sort((a, b) => b.similarity - a.similarity)
-            .slice(0, maxResults);
-    }
-
-    /**
-     * Extract meaningful keywords from text
-     */
-    private extractKeywords(text: string): string[] {
-        // Remove common words, keep words of length >= 4
-        return text
-            .toLowerCase()
-            .replace(/[^\w\s]/g, ' ')
-            .split(/\s+/)
-            .filter(word => word.length >= 4)
-            .filter(word => !['this', 'that', 'with', 'from', 'have', 'what', 'when'].includes(word));
-    }
-
-    /**
-     * Calculate similarity based on keyword matches
-     */
-    private calculateKeywordSimilarity(keywords: string[], targetText: string): number {
-        if (keywords.length === 0) return 0;
-
-        const matches = keywords.filter(keyword => targetText.includes(keyword)).length;
-        return matches / keywords.length;
-    }
-
-    private async createSimilarItemsPrompt(
-        currentNote: {
-            title: string;
-            content: string;
-            tags: string[];
-        },
-        candidates: Array<{
-            id: string;
-            title: string;
-            content: string;
-            tags: string[];
-            type: 'note' | 'idea' | 'task' | 'reminder';
-        }>,
-        maxResults: number
-    ): Promise<string> {
-        // Get system message if available
-        const settings = await this.getSettings();
-        const systemMessage = settings?.contentSuggestions?.systemMessage;
-
-        // Base prompt
-        let prompt = systemMessage ? `${systemMessage}\n\n` : '';
-
-        prompt += `Find similar items to this content. Return a JSON array of the ${maxResults} most similar items, ranked by similarity (0-1 score).
-
-Current item:
-Title: ${currentNote.title}
-Content: ${currentNote.content.length > 1000 ? currentNote.content.substring(0, 1000) + "..." : currentNote.content}
-Tags: ${currentNote.tags?.join(', ') || 'None'}
-
-Candidate items:
-${candidates.slice(0, 50).map((item, index) => `
-Item ${index + 1}:
-ID: ${item.id}
-Type: ${item.type}
-Title: ${item.title}
-Content: ${(item.content?.length || 0) > 200 ? item.content?.substring(0, 200) + "..." : item.content}
-Tags: ${item.tags?.join(', ') || 'None'}
-`).join('\n')}
-
-Return ONLY a JSON array with the most similar items in this format:
-[
-    {
-        "id": "item_id",
-        "title": "Item Title",
-        "type": "note/idea/task/reminder",
-        "similarity": 0.95
-    }
-]
-
-Include only the ${maxResults} most relevant items with the highest similarity score. Use a number between 0 and 1 for similarity.`;
-
-        return prompt;
     }
 }
 

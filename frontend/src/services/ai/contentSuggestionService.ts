@@ -1,6 +1,5 @@
 // ContentSuggestionService.ts
 import { PROMPT_CONFIG } from './promptConfig';
-import { modelService } from './modelService';
 import { OpenAIService } from './openai';
 import { AnthropicService } from './anthropic';
 import { GeminiService } from './gemini';
@@ -22,6 +21,15 @@ export class ContentSuggestionService {
   private cachedSettings: AISettings | null = null;
   private settingsLastFetched: number = 0;
   private readonly CACHE_DURATION = 60 * 1000; // 1 minute cache
+
+  /**
+   * Clears the cached settings to force fresh settings on next request
+   */
+  public clearCache(): void {
+    this.cachedSettings = null;
+    this.settingsLastFetched = 0;
+    console.log('ContentSuggestionService: Cache cleared');
+  }
 
   /**
    * Get cached or fresh AI settings
@@ -51,42 +59,39 @@ export class ContentSuggestionService {
   }
 
   /**
-   * Get model ID from settings or use a fallback
+   * Get model ID from settings or return a default
    */
-  private async getModelId(): Promise<string> {
-    const provider = await this.getProvider();
-
+  private async getModelId() {
     try {
       // Get settings from preferences
       const settings = await this.getSettings();
+      const provider = settings?.contentSuggestions?.provider || 'openai';
       const selectedModelId = settings?.contentSuggestions?.modelId;
 
-      // Get all chat models for the provider
-      const availableChatModels = modelService.getChatModels()
-        .filter(model => model.provider === provider && model.category === 'chat');
-
-      if (availableChatModels.length === 0) {
-        // Fallback if no models available for this provider
-        return provider === 'ollama' ? 'llama3.1:8b' :
-          provider === 'grok' ? 'grok-beta' : 'gpt-4';
+      // If user selected a specific model, use it
+      if (selectedModelId) {
+        console.log(`Using selected model from settings: ${selectedModelId}`);
+        return selectedModelId;
       }
 
-      // Check if the selected model is valid
-      const isValidModel = selectedModelId && availableChatModels.some(model => model.id === selectedModelId);
-
-      if (isValidModel) {
-        return selectedModelId!;
+      // Otherwise fall back to defaults
+      switch (provider) {
+        case 'openai':
+          return 'gpt-4o';
+        case 'anthropic':
+          return 'claude-3-haiku-20240307';
+        case 'gemini':
+          return 'gemini-1.5-pro-latest';
+        case 'ollama':
+          return 'llama3.1:8b';
+        case 'grok':
+          return 'grok-beta';
+        default:
+          return 'gpt-4o';
       }
-
-      // Default to the first available model for the provider
-      return availableChatModels[0]?.id ||
-        (provider === 'ollama' ? 'llama3.1:8b' :
-          provider === 'grok' ? 'grok-beta' : 'gpt-4');
     } catch (error) {
       console.error('Error getting model ID:', error);
-      // Fallback to a reasonable default based on provider
-      return provider === 'ollama' ? 'llama3.1:8b' :
-        provider === 'grok' ? 'grok-beta' : 'gpt-4';
+      return 'gpt-4o';
     }
   }
 
@@ -108,23 +113,31 @@ export class ContentSuggestionService {
   }
 
   /**
-   * Get the appropriate service instance based on the selected provider
+   * Get appropriate AI service based on provider saved in settings
    */
   private async getServiceForProvider() {
-    const provider = await this.getProvider();
-    switch (provider) {
-      case 'openai':
-        return this.openai;
-      case 'anthropic':
-        return this.anthropic;
-      case 'gemini':
-        return this.gemini;
-      case 'ollama':
-        return this.ollama;
-      case 'grok':
-        return this.grok;
-      default:
-        return this.openai; // Default fallback
+    try {
+      // Get settings and provider from user preferences
+      const settings = await this.getSettings();
+      const provider = settings?.contentSuggestions?.provider || 'openai';
+
+      switch (provider) {
+        case 'openai':
+          return this.openai;
+        case 'anthropic':
+          return this.anthropic;
+        case 'gemini':
+          return this.gemini;
+        case 'ollama':
+          return this.ollama;
+        case 'grok':
+          return this.grok;
+        default:
+          return this.openai;
+      }
+    } catch (error) {
+      console.error('Error getting service provider:', error);
+      return this.openai;
     }
   }
 
@@ -154,6 +167,15 @@ export class ContentSuggestionService {
       priority?: string;
     }
   ): Promise<string> {
+    // Clear cache to ensure fresh settings
+    this.clearCache();
+
+    // Check if feature is enabled
+    const settings = await this.getSettings();
+    if (!settings?.contentSuggestions?.enabled) {
+      throw new Error('Content suggestions are disabled in settings');
+    }
+
     const prompt = await this.createTitlePrompt(content, type, context);
     return this.generateSuggestion(prompt, 60);
   }
@@ -171,6 +193,15 @@ export class ContentSuggestionService {
       priority?: string;
     }
   ): Promise<string> {
+    // Clear cache to ensure fresh settings
+    this.clearCache();
+
+    // Check if feature is enabled
+    const settings = await this.getSettings();
+    if (!settings?.contentSuggestions?.enabled) {
+      throw new Error('Content suggestions are disabled in settings');
+    }
+
     const prompt = await this.createContentPrompt(title, type, context);
     return this.generateSuggestion(prompt);
   }
@@ -185,6 +216,15 @@ export class ContentSuggestionService {
       currentTags?: string[];
     }
   ): Promise<string[]> {
+    // Clear cache to ensure fresh settings
+    this.clearCache();
+
+    // Check if feature is enabled
+    const settings = await this.getSettings();
+    if (!settings?.contentSuggestions?.enabled) {
+      throw new Error('Content suggestions are disabled in settings');
+    }
+
     const prompt = await this.createTagsPrompt(input, type, context);
     const suggestion = await this.generateSuggestion(prompt);
     return suggestion
@@ -415,6 +455,96 @@ ${Object.entries(replacements)
       contextInfo += `\nPriority Level: ${context.priority}`;
     }
     return contextInfo;
+  }
+
+  /**
+   * Generate content suggestions using the configured AI provider
+   * @param contentType Type of content being generated
+   * @param prompt User prompt or context for generation
+   * @returns Generated content
+   */
+  async generateContentSuggestions(contentType: ContentType, prompt: string): Promise<string> {
+    try {
+      // Clear cache to ensure fresh settings
+      this.clearCache();
+
+      // Get settings (this will fetch fresh settings since cache was cleared)
+      const settings = await this.getSettings();
+      if (!settings?.contentSuggestions?.enabled) {
+        console.log('Content suggestions are disabled');
+        throw new Error('Content suggestions are disabled in settings');
+      }
+
+      // Extract settings
+      const modelId = settings?.contentSuggestions?.modelId || '';
+      const temperature = settings?.contentSuggestions?.temperature || 0.7;
+      const maxTokens = settings?.contentSuggestions?.maxTokens || 1500;
+      const systemMessage = settings?.contentSuggestions?.systemMessage || '';
+      const provider = settings?.contentSuggestions?.provider || 'openai';
+
+      // Get appropriate service
+      const service = await this.getServiceForProvider();
+
+      // Build request parameters
+      const parameters: Record<string, unknown> = {
+        temperature,
+        max_tokens: maxTokens,
+      };
+
+      // Prepare the prompt using the appropriate template from PROMPT_CONFIG
+      // This is a simplified implementation - you may need to adjust based on your actual usage
+      const providerPrompt = this.getPromptForProvider(contentType, provider, prompt);
+
+      // If there's a system message, prepend it
+      const finalPrompt = systemMessage
+        ? `${systemMessage}\n\n${providerPrompt}`
+        : providerPrompt;
+
+      // Send the formatted prompt to the configured AI model
+      const response = await service.sendMessage(finalPrompt, modelId, parameters);
+      return typeof response.content === 'string'
+        ? response.content
+        : String(response.content);
+    } catch (error) {
+      console.error('Error generating content suggestions:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get the appropriate prompt for the given content type and provider
+   */
+  private getPromptForProvider(
+    contentType: ContentType,
+    provider: string,
+    userPrompt: string
+  ): string {
+    try {
+      // Access the prompt config based on content type and provider
+      const contentSection = PROMPT_CONFIG.content;
+
+      // Check if we have configuration for this content type
+      if (!contentSection[contentType]) {
+        console.warn(`No prompt configuration found for content type: ${contentType}`);
+        return userPrompt;
+      }
+
+      // Get provider-specific prompt or fall back to OpenAI if not found
+      const providerConfig = contentSection[contentType];
+      const promptTemplate = providerConfig[provider as keyof typeof providerConfig] ||
+        providerConfig.openai ||
+        `Generate content for this ${contentType}:\n\n${userPrompt}`;
+
+      // Use the prompt template, replacing {title} with the user prompt
+      // This assumes the user prompt is a title in the case of content generation
+      return this.replacePlaceholders(promptTemplate, {
+        title: userPrompt,
+        context: '',  // No context provided in this simple version
+      });
+    } catch (error) {
+      console.error('Error formatting prompt for provider:', error);
+      return userPrompt;
+    }
   }
 }
 
