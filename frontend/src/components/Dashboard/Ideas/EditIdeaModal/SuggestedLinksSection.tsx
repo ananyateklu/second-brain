@@ -46,6 +46,20 @@ export function SuggestedLinksSection({
 
     const [linkingItems, setLinkingItems] = useState<Record<string, boolean>>({});
 
+    const consistentBorderColor = (() => {
+        switch (theme) {
+            case 'midnight':
+                return 'border-white/10'; // Subtle white border
+            case 'dark':
+                return 'border-gray-700/30'; // Subtle dark gray border
+            case 'full-dark':
+                return 'border-white/10'; // Subtle white border for very dark theme
+            case 'light':
+            default:
+                return 'border-[var(--color-border)]'; // Default for light
+        }
+    })();
+
     useEffect(() => {
         let isMounted = true;
         const loadAISettings = async () => {
@@ -125,12 +139,6 @@ export function SuggestedLinksSection({
         return null;
     }
 
-    const getBorderStyle = () => {
-        if (theme === 'midnight') return 'border-white/5';
-        if (theme === 'dark') return 'border-gray-700/30';
-        return 'border-[var(--color-border)]';
-    };
-
     const getItemBackground = () => {
         if (theme === 'dark') return 'bg-[#111827]';
         if (theme === 'midnight') return 'bg-[#1e293b]';
@@ -146,25 +154,41 @@ export function SuggestedLinksSection({
 
     const renderSuggestionItem = (item: SuggestionItem) => {
         let icon = null;
-        let bgColor = '';
-        let borderColor = '';
-        let textColor = '';
+        let iconColor = ''; // For the icon itself
+        let specificTextColor = ''; // For text elements like match score that need specific color
+
+        // Define consistent background and border colors using CSS theme variables
+        const consistentBgColor = 'bg-[var(--color-surface)]';
+        const consistentHoverBgColor = 'hover:bg-[var(--color-surfaceHover)]';
+
+        let statusBadgeBgColor = 'bg-gray-100';
+        let statusBadgeTextColor = 'text-gray-500';
+
+        switch (theme) {
+            case 'dark':
+                statusBadgeBgColor = 'bg-gray-800';
+                statusBadgeTextColor = 'text-gray-400';
+                break;
+            case 'midnight':
+            case 'full-dark':
+                statusBadgeBgColor = 'bg-gray-700/30'; // More subdued background
+                statusBadgeTextColor = 'text-gray-400'; // Consistent with dark theme text for status
+                break;
+            // Light theme (default) uses the initial values
+        }
 
         if (item.type === 'note') {
-            icon = <Type className="w-3 h-3 text-blue-500" />;
-            bgColor = 'bg-blue-50 dark:bg-blue-900/10';
-            borderColor = 'border-blue-200 dark:border-blue-800/30';
-            textColor = 'text-blue-500';
+            iconColor = 'text-blue-500';
+            icon = <Type className={`w-3 h-3 ${iconColor}`} />;
+            specificTextColor = 'text-blue-500';
         } else if (item.type === 'idea') {
-            icon = <Lightbulb className="w-3 h-3 text-yellow-500" />;
-            bgColor = 'bg-yellow-50 dark:bg-yellow-900/10';
-            borderColor = 'border-yellow-200 dark:border-yellow-800/30';
-            textColor = 'text-yellow-500';
+            iconColor = 'text-yellow-500';
+            icon = <Lightbulb className={`w-3 h-3 ${iconColor}`} />;
+            specificTextColor = 'text-yellow-500';
         } else if (item.type === 'task') {
-            icon = <CheckSquare className="w-3 h-3 text-green-500" />;
-            bgColor = 'bg-green-50 dark:bg-green-900/10';
-            borderColor = 'border-green-200 dark:border-green-800/30';
-            textColor = 'text-green-500';
+            iconColor = 'text-[var(--color-task)]';
+            icon = <CheckSquare className={`w-3 h-3 ${iconColor}`} />;
+            specificTextColor = 'text-[var(--color-task)]';
         }
 
         return (
@@ -173,10 +197,10 @@ export function SuggestedLinksSection({
                 initial={{ opacity: 0, y: 5 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.2 }}
-                className={`relative flex items-center gap-1.5 p-1.5 ${bgColor} rounded-lg border ${borderColor} group hover:bg-opacity-75 transition-colors cursor-pointer`}
+                className={`relative flex items-center gap-1.5 p-1.5 ${consistentBgColor} rounded-lg border ${consistentBorderColor} group ${consistentHoverBgColor} transition-colors cursor-pointer`}
                 onClick={() => !(linkingItems[item.id]) && handleLinkItem(item)}
             >
-                <div className={`shrink-0 p-1 ${bgColor} rounded-lg`}>
+                <div className={`shrink-0 p-1 ${consistentBgColor} rounded-lg`}>
                     {icon}
                 </div>
 
@@ -186,11 +210,11 @@ export function SuggestedLinksSection({
                         {linkingItems[item.id] && <Loader className="w-2 h-2 animate-spin" />}
                     </h6>
                     <div className="flex items-center gap-1.5">
-                        <span className={`inline-flex items-center px-1 py-0.5 text-[8px] font-medium ${bgColor} ${textColor} rounded`}>
+                        <span className={`inline-flex items-center px-1 py-0.5 text-[8px] font-medium ${consistentBgColor} ${specificTextColor} rounded`}>
                             Match: {formatScore(item.similarity)}
                         </span>
                         {item.type === 'task' && item.status && (
-                            <span className="inline-flex items-center px-1 py-0.5 text-[8px] font-medium bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded">
+                            <span className={`inline-flex items-center px-1 py-0.5 text-[8px] font-medium ${statusBadgeBgColor} ${statusBadgeTextColor} rounded`}>
                                 {item.status}
                             </span>
                         )}
@@ -203,7 +227,7 @@ export function SuggestedLinksSection({
                         e.stopPropagation();
                         handleLinkItem(item);
                     }}
-                    className={`absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 p-0.5 ${bgColor} ${textColor} rounded-full border ${borderColor} transition-all z-10`}
+                    className={`absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 p-0.5 ${consistentBgColor} ${specificTextColor} rounded-full border ${consistentBorderColor} transition-all z-10`}
                     disabled={linkingItems[item.id]}
                 >
                     <PlusCircle className="w-2.5 h-2.5" />
@@ -234,7 +258,7 @@ export function SuggestedLinksSection({
 
             <div className="grid grid-cols-1 gap-1.5">
                 {isLoading && allSuggestions.length === 0 && !error ? (
-                    <div className={`p-3 ${getItemBackground()} rounded-lg border ${getBorderStyle()} text-center`}>
+                    <div className={`p-3 ${getItemBackground()} rounded-lg border ${consistentBorderColor} text-center`}>
                         <p className="text-xs text-[var(--color-textSecondary)] flex justify-center items-center gap-2">
                             <Loader className="w-3 h-3 animate-spin" />
                             Finding related content...
@@ -270,7 +294,7 @@ export function SuggestedLinksSection({
                         )}
 
                         {!isLoading && allSuggestions.length === 0 && !error && hasSuggestionsLoadedOnce.current && (
-                            <div className={`p-3 ${getItemBackground()} rounded-lg border ${getBorderStyle()} text-center`}>
+                            <div className={`p-3 ${getItemBackground()} rounded-lg border ${consistentBorderColor} text-center`}>
                                 <p className="text-xs text-[var(--color-textSecondary)]">
                                     No relevant links found at the moment.
                                 </p>

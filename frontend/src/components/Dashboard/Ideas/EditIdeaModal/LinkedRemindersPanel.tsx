@@ -1,6 +1,6 @@
 import { Bell, Clock, Check, X, Plus, Loader, Sparkles } from 'lucide-react';
 import { Reminder as ReminderType } from '../../../../contexts/remindersContextUtils'; // For Reminder type from context
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceStrict } from 'date-fns';
 import { useReminders } from '../../../../contexts/remindersContextUtils';
 import { EditReminderModal } from '../../Reminders/EditReminderModal';
 import { useState, useEffect } from 'react';
@@ -34,28 +34,17 @@ interface MiniReminderCardProps {
     reminder: ReminderType; // Use full ReminderType from context
     onUnlink?: (reminderId: string) => void;
     onClick: () => void;
+    consistentBorderColor: string; // Passed from parent
 }
 
-function MiniReminderCard({ reminder, onUnlink, onClick }: MiniReminderCardProps) {
-    const { theme } = useTheme();
-
-    const getItemBackground = () => {
-        if (theme === 'dark') return 'bg-[#111827]';
-        if (theme === 'midnight') return 'bg-[#1e293b]';
-        return 'bg-[var(--color-surface)]';
-    };
-
-    const getBorderStyle = () => {
-        if (theme === 'midnight') return 'border-white/5';
-        return 'border-[var(--color-border)]';
-    };
+function MiniReminderCard({ reminder, onUnlink, onClick, consistentBorderColor }: MiniReminderCardProps) {
 
     return (
         <div
             onClick={onClick}
-            className={`relative flex items-center gap-1.5 p-1.5 ${getItemBackground()} rounded-lg border ${getBorderStyle()} group hover:bg-purple-400/5 transition-colors cursor-pointer`}
+            className={`relative flex items-center gap-1.5 p-1.5 bg-[var(--color-surface)] rounded-lg border ${consistentBorderColor} group hover:bg-[var(--color-surfaceHover)] transition-colors cursor-pointer`}
         >
-            <div className="shrink-0 p-1 bg-purple-400/10 rounded-lg">
+            <div className="shrink-0 p-1 bg-[var(--color-surface)] rounded-lg">
                 <Bell className="w-3 h-3 text-purple-500" />
             </div>
 
@@ -66,7 +55,7 @@ function MiniReminderCard({ reminder, onUnlink, onClick }: MiniReminderCardProps
                 <div className="flex items-center gap-1.5">
                     <span className="flex items-center gap-0.5 text-xs text-[var(--color-textSecondary)]">
                         <Clock className="w-2.5 h-2.5" />
-                        {formatDistanceToNow(new Date(reminder.dueDateTime), { addSuffix: true })}
+                        {formatDistanceStrict(new Date(reminder.dueDateTime), new Date(), { addSuffix: true })}
                     </span>
                     {reminder.isCompleted && (
                         <span className="inline-flex items-center gap-0.5 px-1 py-0.5 text-xs font-medium bg-green-900/20 text-green-400 rounded">
@@ -83,7 +72,7 @@ function MiniReminderCard({ reminder, onUnlink, onClick }: MiniReminderCardProps
                         e.stopPropagation();
                         onUnlink(reminder.id);
                     }}
-                    className={`absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 p-0.5 ${getItemBackground()} text-[var(--color-textSecondary)] hover:text-purple-500 hover:bg-purple-400/10 rounded-full border ${getBorderStyle()} transition-all z-10`}
+                    className={`absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 p-0.5 bg-[var(--color-surface)] text-purple-500 hover:text-purple-600 hover:bg-[var(--color-surfaceHover)] rounded-full border ${consistentBorderColor} transition-all z-10`}
                 >
                     <X className="w-2.5 h-2.5" />
                 </button>
@@ -96,15 +85,10 @@ interface SuggestedReminderCardProps {
     reminder: ReminderType & { similarity: number };
     onLink: (reminderId: string) => void;
     isLinking?: boolean;
+    consistentBorderColor: string; // Passed from parent
 }
 
-function SuggestedReminderCard({ reminder, onLink, isLinking = false }: SuggestedReminderCardProps) {
-    const { theme } = useTheme();
-
-    const getBorderStyle = () => {
-        if (theme === 'midnight') return 'border-white/5';
-        return 'border-[var(--color-border)]';
-    };
+function SuggestedReminderCard({ reminder, onLink, isLinking = false, consistentBorderColor }: SuggestedReminderCardProps) {
 
     const formatSimilarity = (score: number) => {
         return `${Math.round(score * 100)}%`;
@@ -114,10 +98,10 @@ function SuggestedReminderCard({ reminder, onLink, isLinking = false }: Suggeste
         <motion.div
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`relative flex items-center gap-1.5 p-1.5 bg-purple-50 dark:bg-purple-900/10 rounded-lg border border-purple-200 dark:border-purple-800/30 group hover:bg-purple-100 dark:hover:bg-purple-900/20 transition-colors cursor-pointer`}
+            className={`relative flex items-center gap-1.5 p-1.5 bg-[var(--color-surface)] rounded-lg border ${consistentBorderColor} group hover:bg-[var(--color-surfaceHover)] transition-colors cursor-pointer`}
             onClick={() => !isLinking && onLink(reminder.id)}
         >
-            <div className="shrink-0 p-1 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+            <div className="shrink-0 p-1 bg-[var(--color-surface)] rounded-lg">
                 <Bell className="w-3 h-3 text-purple-500" />
             </div>
 
@@ -129,9 +113,9 @@ function SuggestedReminderCard({ reminder, onLink, isLinking = false }: Suggeste
                 <div className="flex items-center gap-1.5">
                     <span className="flex items-center gap-0.5 text-xs text-[var(--color-textSecondary)]">
                         <Clock className="w-2.5 h-2.5" />
-                        {formatDistanceToNow(new Date(reminder.dueDateTime), { addSuffix: true })}
+                        {formatDistanceStrict(new Date(reminder.dueDateTime), new Date(), { addSuffix: true })}
                     </span>
-                    <span className="inline-flex items-center px-1 py-0.5 text-[8px] font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-500 rounded">
+                    <span className="inline-flex items-center px-1 py-0.5 text-[8px] font-medium bg-[var(--color-surface)] text-purple-500 rounded">
                         Match: {formatSimilarity(reminder.similarity)}
                     </span>
                 </div>
@@ -143,7 +127,7 @@ function SuggestedReminderCard({ reminder, onLink, isLinking = false }: Suggeste
                     e.stopPropagation();
                     onLink(reminder.id);
                 }}
-                className={`absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 p-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-500 hover:text-purple-600 rounded-full border ${getBorderStyle()} transition-all z-10`}
+                className={`absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 p-0.5 bg-[var(--color-surface)] text-purple-500 hover:text-purple-600 hover:bg-[var(--color-surfaceHover)] rounded-full border ${consistentBorderColor} transition-all z-10`}
                 disabled={isLinking}
             >
                 <Plus className="w-2.5 h-2.5" />
@@ -174,7 +158,23 @@ export function LinkedRemindersPanel({
     const [linkingReminderId, setLinkingReminderId] = useState<string | null>(null);
     const [processedSuggestions, setProcessedSuggestions] = useState<Array<ReminderType & { similarity: number }>>([]);
 
+    const consistentBorderColor = (() => {
+        switch (theme) {
+            case 'midnight':
+                return 'border-white/10';
+            case 'dark':
+                return 'border-gray-700/30';
+            case 'full-dark':
+                return 'border-white/10';
+            case 'light':
+            default:
+                return 'border-[var(--color-border)]';
+        }
+    })();
+
     const getContainerBackground = () => {
+        // This function is used for the panel background itself, not individual cards.
+        // Keeping its logic separate for clarity or if panel needs different styling later.
         if (theme === 'dark') return 'bg-[#111827]';
         if (theme === 'midnight') return 'bg-[#1e293b]';
         return 'bg-[var(--color-surface)]';
@@ -263,6 +263,7 @@ export function LinkedRemindersPanel({
                                     reminder={reminder}
                                     onLink={handleLinkReminder}
                                     isLinking={linkingReminderId === reminder.id}
+                                    consistentBorderColor={consistentBorderColor}
                                 />
                             ))}
                             {processedSuggestions.length === 0 && !isLoadingSuggestions && (
@@ -294,6 +295,7 @@ export function LinkedRemindersPanel({
                                 reminder={fullReminder}
                                 onUnlink={onUnlink}
                                 onClick={() => setSelectedReminder(fullReminder)}
+                                consistentBorderColor={consistentBorderColor}
                             />
                         );
                     })}
@@ -316,6 +318,7 @@ export function LinkedRemindersPanel({
                                     reminder={reminder}
                                     onLink={handleLinkReminder}
                                     isLinking={linkingReminderId === reminder.id}
+                                    consistentBorderColor={consistentBorderColor}
                                 />
                             ))}
                             {processedSuggestions.length === 0 && !isLoadingSuggestions && (
