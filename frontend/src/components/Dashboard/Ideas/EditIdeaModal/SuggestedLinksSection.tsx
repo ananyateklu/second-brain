@@ -68,12 +68,13 @@ export function SuggestedLinksSection({
                 const settings = await aiSettingsService.getAISettings();
                 if (isMounted) {
                     const newEnabledState = settings?.contentSuggestions?.enabled !== false;
+                    console.log('[SuggestedLinksSection] AI Content Suggestions Enabled:', newEnabledState, 'Settings:', settings?.contentSuggestions);
                     setIsEnabled(newEnabledState);
                 }
             } catch (err) {
                 console.error('Error loading AI settings in SuggestedLinksSection:', err);
                 if (isMounted) {
-                    setIsEnabled(true);
+                    setIsEnabled(true); // Default to true on error
                 }
             }
         };
@@ -82,10 +83,14 @@ export function SuggestedLinksSection({
     }, [settingsVersion]);
 
     useEffect(() => {
+        console.log('[SuggestedLinksSection] Props received - isLoading:', isLoading, 'error:', error);
+        console.log('[SuggestedLinksSection] suggestedNotes:', suggestedNotes?.length, suggestedNotes);
+        console.log('[SuggestedLinksSection] suggestedIdeas:', suggestedIdeas?.length, suggestedIdeas);
+        console.log('[SuggestedLinksSection] suggestedTasks:', suggestedTasks?.length, suggestedTasks);
         if (!isLoading && !error) {
             hasSuggestionsLoadedOnce.current = true;
         }
-    }, [isLoading, error]);
+    }, [isLoading, error, suggestedNotes, suggestedIdeas, suggestedTasks]);
 
     const handleLinkItem = async (item: SuggestionItem) => {
         setLinkingItems(prev => ({ ...prev, [item.id]: true }));
@@ -124,9 +129,13 @@ export function SuggestedLinksSection({
             displayKey: `task-${item.id}-${index}`,
             isLinking: linkingItems[item.id] || false
         }))
-    ].filter(s => s.similarity > 0);
+    ].filter(s => s.similarity > 0)
+        .sort((a, b) => b.similarity - a.similarity);
+
+    console.log('[SuggestedLinksSection] Processed allSuggestions:', allSuggestions?.length, allSuggestions);
 
     if (!isEnabled) {
+        console.log('[SuggestedLinksSection] Rendering: Suggestions disabled by AI settings.');
         return (
             <div className="p-3 bg-[var(--color-surface)] rounded-lg border border-[var(--color-border)] text-center">
                 <p className="text-xs text-[var(--color-textSecondary)]">
@@ -134,10 +143,6 @@ export function SuggestedLinksSection({
                 </p>
             </div>
         );
-    }
-
-    if (allSuggestions.length === 0 && !isLoading && !error && !hasSuggestionsLoadedOnce.current) {
-        return null;
     }
 
     const getItemBackground = () => {
@@ -192,6 +197,12 @@ export function SuggestedLinksSection({
             specificTextColor = 'text-[var(--color-task)]';
         }
 
+        // If the item is linking AND the main suggestions list is loading,
+        // show a skeleton for this specific item.
+        if (linkingItems[item.id] && isLoading) {
+            return <GenericSuggestionSkeleton key={item.displayKey} />;
+        }
+
         return (
             <motion.div
                 key={item.displayKey}
@@ -237,10 +248,6 @@ export function SuggestedLinksSection({
         );
     };
 
-    const noteSuggestionsToDisplay = allSuggestions.filter(item => item.type === 'note');
-    const ideaSuggestionsToDisplay = allSuggestions.filter(item => item.type === 'idea');
-    const taskSuggestionsToDisplay = allSuggestions.filter(item => item.type === 'task');
-
     return (
         <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -256,52 +263,31 @@ export function SuggestedLinksSection({
                 </div>
             )}
 
-            <div className="grid grid-cols-1 gap-1.5">
-                {isLoading && allSuggestions.length === 0 && !error ? (
-                    <div className={`grid grid-cols-1 md:grid-cols-2 gap-1.5`}>
-                        <GenericSuggestionSkeleton />
-                        <GenericSuggestionSkeleton />
-                        <GenericSuggestionSkeleton />
-                    </div>
-                ) : (
-                    <>
-                        {noteSuggestionsToDisplay.length > 0 && (
-                            <div className="space-y-1.5">
-                                <h4 className="text-xs font-medium text-[var(--color-textSecondary)]">Notes</h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
-                                    {noteSuggestionsToDisplay.map(renderSuggestionItem)}
-                                </div>
-                            </div>
-                        )}
+            {!error && isLoading && (
+                <div className={`grid grid-cols-1 md:grid-cols-2 gap-1.5`}>
+                    <GenericSuggestionSkeleton />
+                    <GenericSuggestionSkeleton />
+                    <GenericSuggestionSkeleton />
+                </div>
+            )}
 
-                        {ideaSuggestionsToDisplay.length > 0 && (
-                            <div className="space-y-1.5">
-                                <h4 className="text-xs font-medium text-[var(--color-textSecondary)]">Ideas</h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
-                                    {ideaSuggestionsToDisplay.map(renderSuggestionItem)}
-                                </div>
-                            </div>
-                        )}
-
-                        {taskSuggestionsToDisplay.length > 0 && (
-                            <div className="space-y-1.5">
-                                <h4 className="text-xs font-medium text-[var(--color-textSecondary)]">Tasks</h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
-                                    {taskSuggestionsToDisplay.map(renderSuggestionItem)}
-                                </div>
-                            </div>
-                        )}
-
-                        {!isLoading && allSuggestions.length === 0 && !error && hasSuggestionsLoadedOnce.current && (
+            {!error && !isLoading && (
+                <>
+                    {allSuggestions.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
+                            {allSuggestions.map(renderSuggestionItem)}
+                        </div>
+                    ) : (
+                        hasSuggestionsLoadedOnce.current && (
                             <div className={`p-3 ${getItemBackground()} rounded-lg border ${consistentBorderColor} text-center`}>
                                 <p className="text-xs text-[var(--color-textSecondary)]">
                                     No relevant links found at the moment.
                                 </p>
                             </div>
-                        )}
-                    </>
-                )}
-            </div>
+                        )
+                    )}
+                </>
+            )}
         </div>
     );
 } 
