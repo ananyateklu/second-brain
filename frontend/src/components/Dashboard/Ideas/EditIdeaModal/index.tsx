@@ -213,13 +213,35 @@ export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaMo
       console.log("Raw AI results:", JSON.stringify(results));
 
       // Separate suggestions by type
-      const noteResults = results.filter(item => item.type === 'note');
-      const ideaResults = results.filter(item => item.type === 'idea');
-      const taskResults = results.filter(item => item.type === 'task');
-      const reminderResults = results.filter(item => item.type === 'reminder');
+      const rawNoteResults = results.filter(item => item.type === 'note');
+      const rawIdeaResults = results.filter(item => item.type === 'idea');
+      const rawTaskResults = results.filter(item => item.type === 'task');
+      const reminderResults = results.filter(item => item.type === 'reminder'); // Reminders are already cross-referenced later
+
+      // Filter out suggestions for items that don't exist in the local state
+      const noteResults = rawNoteResults.filter(suggestedNote =>
+        notes.some(localNote => localNote.id === suggestedNote.id)
+      );
+      const ideaResults = rawIdeaResults.filter(suggestedIdea =>
+        ideasState.ideas.some(localIdea => localIdea.id === suggestedIdea.id)
+      );
+      const taskResults = rawTaskResults.filter(suggestedTask =>
+        tasks.some(localTask => localTask.id === suggestedTask.id)
+      );
+
+      // Log if any suggestions were filtered out
+      if (rawNoteResults.length !== noteResults.length) {
+        console.log(`Filtered ${rawNoteResults.length - noteResults.length} note suggestions that don't exist locally.`);
+      }
+      if (rawIdeaResults.length !== ideaResults.length) {
+        console.log(`Filtered ${rawIdeaResults.length - ideaResults.length} idea suggestions that don't exist locally.`);
+      }
+      if (rawTaskResults.length !== taskResults.length) {
+        console.log(`Filtered ${rawTaskResults.length - taskResults.length} task suggestions that don't exist locally.`);
+      }
 
       // Log result distribution
-      console.log("Suggestion distribution:", {
+      console.log("Suggestion distribution (after filtering):", {
         notes: noteResults.length,
         ideas: ideaResults.length,
         tasks: taskResults.length,

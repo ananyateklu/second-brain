@@ -66,29 +66,28 @@ export function LinkedNotesPanel({
     }
   };
 
-  const getItemBackground = () => {
+  const itemBackgroundColor = 'bg-[var(--color-surface)]';
+  const itemHoverBackgroundColor = 'hover:bg-[var(--color-surfaceHover)]';
+  const itemBorderColor = (() => {
+    switch (theme) {
+      case 'midnight':
+        return 'border-white/10';
+      case 'dark':
+        return 'border-gray-700/30';
+      case 'full-dark':
+        return 'border-white/10';
+      case 'light':
+      default:
+        return 'border-[var(--color-border)]';
+    }
+  })();
+
+  const emptyStateBackgroundColor = (() => {
+    // Retaining original logic for empty state background as it might be intentionally different
     if (theme === 'dark') return 'bg-[#111827]';
     if (theme === 'midnight') return 'bg-[#1e293b]';
     return 'bg-[var(--color-surface)]';
-  };
-
-  const getItemHoverBackground = () => {
-    if (theme === 'dark') return 'hover:bg-[#1f2937]';
-    if (theme === 'midnight') return 'hover:bg-[#273344]';
-    return 'hover:bg-[var(--color-surfaceHover)]';
-  };
-
-  const getEmptyStateBackground = () => {
-    if (theme === 'dark') return 'bg-[#111827]';
-    if (theme === 'midnight') return 'bg-[#1e293b]';
-    return 'bg-[var(--color-surface)]';
-  };
-
-  const getBorderStyle = () => {
-    if (theme === 'midnight') return 'border border-white/5';
-    if (theme === 'dark') return 'border border-gray-700/30';
-    return 'border border-[var(--color-border)]';
-  };
+  })();
 
   const hasLinkedItems = linkedNotes.length > 0 || linkedIdeas.length > 0 || linkedTasks.length > 0;
 
@@ -146,9 +145,9 @@ export function LinkedNotesPanel({
                       <div
                         key={item.id}
                         onClick={() => handleIdeaClick(item.id, item.itemType)}
-                        className={`group flex items-start gap-2.5 p-2 rounded-lg ${getItemBackground()} ${getItemHoverBackground()} ${getBorderStyle()} transition-colors cursor-pointer relative`}
+                        className={`group flex items-start gap-2.5 p-2 rounded-lg ${itemBackgroundColor} ${itemHoverBackgroundColor} border ${itemBorderColor} transition-colors cursor-pointer relative`}
                       >
-                        <div className={`shrink-0 p-1.5 rounded-lg ${item.itemType === 'idea' ? 'bg-[var(--color-idea)]/15' : 'bg-[var(--color-note)]/15'}`}>
+                        <div className={`shrink-0 p-1.5 rounded-lg bg-[var(--color-surface)]`}>
                           {item.itemType === 'idea' ? (
                             <Lightbulb className="w-3.5 h-3.5 text-[var(--color-idea)]" />
                           ) : (
@@ -173,7 +172,7 @@ export function LinkedNotesPanel({
                               onUnlinkNote(item.id);
                             }
                           }}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-1 text-[var(--color-textSecondary)] hover:text-red-400 hover:bg-red-900/20 rounded transition-all z-10"
+                          className={`absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-1 text-[var(--color-textSecondary)] hover:text-red-400 hover:bg-[var(--color-surfaceHover)] rounded-full border ${itemBorderColor} transition-all z-10`}
                         >
                           <X className="w-3 h-3" />
                         </button>
@@ -195,9 +194,9 @@ export function LinkedNotesPanel({
                     <div
                       key={task.id}
                       onClick={() => handleTaskClick(task.id)}
-                      className={`group flex items-start gap-2.5 p-2 rounded-lg ${getItemBackground()} ${getItemHoverBackground()} ${getBorderStyle()} transition-colors cursor-pointer relative`}
+                      className={`group flex items-start gap-2.5 p-2 rounded-lg ${itemBackgroundColor} ${itemHoverBackgroundColor} border ${itemBorderColor} transition-colors cursor-pointer relative`}
                     >
-                      <div className="shrink-0 p-1.5 bg-[var(--color-task)]/15 rounded-lg">
+                      <div className="shrink-0 p-1.5 bg-[var(--color-surface)] rounded-lg">
                         <CheckSquare className="w-3.5 h-3.5 text-[var(--color-task)]" />
                       </div>
                       <div className="flex-1 min-w-0 pr-8">
@@ -222,7 +221,7 @@ export function LinkedNotesPanel({
                           e.stopPropagation();
                           onUnlinkTask(task.id);
                         }}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-1 text-[var(--color-textSecondary)] hover:text-red-400 hover:bg-red-900/20 rounded transition-all z-10"
+                        className={`absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-1 text-[var(--color-textSecondary)] hover:text-red-400 hover:bg-[var(--color-surfaceHover)] rounded-full border ${itemBorderColor} transition-all z-10`}
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -234,7 +233,7 @@ export function LinkedNotesPanel({
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-full py-8 text-center px-6">
-            <div className={`p-3 ${getEmptyStateBackground()} rounded-full mb-3 ${getBorderStyle()}`}>
+            <div className={`p-3 ${emptyStateBackgroundColor} rounded-full mb-3 border ${itemBorderColor}`}>
               <Link2 className="w-5 h-5 text-[var(--color-idea)]" />
             </div>
             <p className="text-sm font-medium text-[var(--color-text)] mb-1">
