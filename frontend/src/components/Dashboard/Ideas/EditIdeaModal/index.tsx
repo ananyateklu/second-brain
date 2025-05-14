@@ -438,7 +438,7 @@ export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaMo
             onShowDeleteConfirm={() => setShowDeleteConfirm(true)}
           />
 
-          <div className="flex-1 grid grid-cols-[1fr,360px] min-h-0 overflow-hidden">
+          <div className="flex-1 grid grid-cols-[1fr,360px] min-h-0 overflow-y-auto">
             <MainContent
               title={title}
               content={content}

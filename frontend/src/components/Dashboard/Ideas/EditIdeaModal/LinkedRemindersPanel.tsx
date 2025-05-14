@@ -6,6 +6,7 @@ import { EditReminderModal } from '../../Reminders/EditReminderModal';
 import { useState, useEffect } from 'react';
 import { useTheme } from '../../../../contexts/themeContextUtils';
 import { motion } from 'framer-motion';
+import { GenericSuggestionSkeleton } from './GenericSuggestionSkeleton';
 
 // Interface for suggestion items passed from parent
 interface SuggestionItem {
@@ -245,74 +246,67 @@ export function LinkedRemindersPanel({
         return allRemindersFromContext.find(r => r.id === linkedReminder.id);
     }).filter(Boolean) as ReminderType[];
 
-    if (displayableReminders.length === 0) {
-        return (
-            <div className={`p-3 ${getContainerBackground()}`}>
-                {(processedSuggestions.length > 0 || isLoadingSuggestions) ? (
-                    <div className="space-y-2">
-                        <div className="flex items-center gap-1.5 mb-2">
-                            <Sparkles className="w-3 h-3 text-purple-500" />
-                            <p className="text-xs font-medium text-[var(--color-text)]">Suggested Reminders</p>
-                            {isLoadingSuggestions && <Loader className="w-2.5 h-2.5 text-purple-500 animate-spin ml-auto" />}
-                        </div>
+    if (displayableReminders.length === 0 && processedSuggestions.length === 0 && !isLoadingSuggestions) {
+        // This case is when there are no linked reminders, no suggestions to show (after loading), and not currently loading.
+        // The original component had a slightly different conditional structure here.
+        // We want to show the empty state for suggestions if there are no linked items AND no suggestions.
+        // If there ARE linked items, but no suggestions, this part of the UI (suggestions) would just be empty or show "no suggestions".
+        // For now, let's adjust the primary return for when there are truly NO items (linked or suggested) to show, 
+        // and handle suggestions separately.
 
-                        <div className="flex flex-wrap gap-1.5">
-                            {processedSuggestions.map(reminder => (
-                                <SuggestedReminderCard
-                                    key={reminder.id}
-                                    reminder={reminder}
-                                    onLink={handleLinkReminder}
-                                    isLinking={linkingReminderId === reminder.id}
-                                    consistentBorderColor={consistentBorderColor}
-                                />
-                            ))}
-                            {processedSuggestions.length === 0 && !isLoadingSuggestions && (
-                                <p className="text-xs text-[var(--color-textSecondary)] w-full text-center">
-                                    {suggestedReminders && suggestedReminders.length > 0
-                                        ? "Could not process reminder suggestions"
-                                        : "No relevant reminders found"}
-                                </p>
-                            )}
-                        </div>
-                    </div>
-                ) : (
-                    <p className="text-xs text-[var(--color-textSecondary)] text-center">No linked reminders</p>
-                )}
+        // If no linked reminders AND no processed suggestions (and not loading them), show an empty panel.
+        // The suggestions part will be handled below.
+        return (
+            <div className={`p-3 ${getContainerBackground()} rounded-lg border ${consistentBorderColor}`}>
+                <p className="text-xs text-center text-[var(--color-textSecondary)]">
+                    No reminders linked or suggested yet.
+                </p>
             </div>
         );
     }
 
+    // Determine if we should show the "Suggested Reminders" section at all
+    const showSuggestionsSection = isLoadingSuggestions || processedSuggestions.length > 0 || (suggestedReminders && suggestedReminders.length > 0 && !isLoadingSuggestions && processedSuggestions.length === 0); // last case for when suggestions provided but failed to process
+
     return (
-        <>
-            <div className={`p-1.5 ${getContainerBackground()}`}>
-                <div className="flex flex-wrap gap-1.5">
-                    {displayableReminders.map(fullReminder => { // Iterate over displayableReminders
-                        if (!fullReminder) return null; // Should be filtered by now, but as a safeguard
-
-                        return (
-                            <MiniReminderCard
-                                key={fullReminder.id} // Use fullReminder.id
-                                reminder={fullReminder}
-                                onUnlink={onUnlink}
-                                onClick={() => setSelectedReminder(fullReminder)}
-                                consistentBorderColor={consistentBorderColor}
-                            />
-                        );
-                    })}
+        <div className={`p-3 ${getContainerBackground()} rounded-lg border ${consistentBorderColor} space-y-3`}>
+            {/* Linked Reminders Section */}
+            {displayableReminders.length > 0 && (
+                <div className="space-y-2">
+                    <p className="text-xs font-medium text-[var(--color-text)]">Linked Reminders</p>
+                    <div className="flex flex-wrap gap-1.5">
+                        {displayableReminders.map(reminder => (
+                            reminder && (
+                                <MiniReminderCard
+                                    key={reminder.id}
+                                    reminder={reminder}
+                                    onUnlink={onUnlink ? () => onUnlink(reminder.id) : undefined}
+                                    onClick={() => setSelectedReminder(reminder)}
+                                    consistentBorderColor={consistentBorderColor}
+                                />
+                            )
+                        ))}
+                    </div>
                 </div>
-            </div>
+            )}
 
-            {(processedSuggestions.length > 0 || isLoadingSuggestions) && (
-                <div className={`px-1.5 pb-1.5 ${getContainerBackground()}`}>
-                    <div className="border-t border-[var(--color-border)]/10 dark:border-white/5 midnight:border-white/5 pt-1.5 mt-1">
-                        <div className="flex items-center gap-1.5 mb-2">
-                            <Sparkles className="w-3 h-3 text-purple-500" />
-                            <p className="text-xs font-medium text-[var(--color-text)]">Suggested Reminders</p>
-                            {isLoadingSuggestions && <Loader className="w-2.5 h-2.5 text-purple-500 animate-spin ml-auto" />}
-                        </div>
+            {/* Suggested Reminders Section */}
+            {showSuggestionsSection && (
+                <div className="space-y-2">
+                    <div className="flex items-center gap-1.5 mb-1">
+                        <Sparkles className="w-3 h-3 text-purple-500" />
+                        <p className="text-xs font-medium text-[var(--color-text)]">Suggested Reminders</p>
+                        {/* {isLoadingSuggestions && <Loader className="w-2.5 h-2.5 text-purple-500 animate-spin ml-auto" />} Removed loader */}
+                    </div>
 
-                        <div className="flex flex-wrap gap-1.5">
-                            {processedSuggestions.map(reminder => (
+                    <div className="flex flex-wrap gap-1.5">
+                        {isLoadingSuggestions ? (
+                            <>
+                                <GenericSuggestionSkeleton type="reminder" />
+                                <GenericSuggestionSkeleton type="reminder" />
+                            </>
+                        ) : processedSuggestions.length > 0 ? (
+                            processedSuggestions.map(reminder => (
                                 <SuggestedReminderCard
                                     key={reminder.id}
                                     reminder={reminder}
@@ -320,22 +314,33 @@ export function LinkedRemindersPanel({
                                     isLinking={linkingReminderId === reminder.id}
                                     consistentBorderColor={consistentBorderColor}
                                 />
-                            ))}
-                            {processedSuggestions.length === 0 && !isLoadingSuggestions && (
-                                <p className="text-xs text-[var(--color-textSecondary)] w-full text-center">No relevant reminders found</p>
-                            )}
-                        </div>
+                            ))
+                        ) : (
+                            // Only show this if not loading and no processed suggestions
+                            <p className="text-xs text-[var(--color-textSecondary)] w-full text-center py-2">
+                                {suggestedReminders && suggestedReminders.length > 0
+                                    ? "Could not process reminder suggestions at this time."
+                                    : "No relevant reminders found to suggest."}
+                            </p>
+                        )}
                     </div>
                 </div>
             )}
 
+            {/* Empty state for the whole panel if absolutely nothing to show */}
+            {displayableReminders.length === 0 && !showSuggestionsSection && (
+                <p className="text-xs text-center text-[var(--color-textSecondary)] py-4">
+                    No reminders linked or suggested yet.
+                </p>
+            )}
+
             {selectedReminder && (
                 <EditReminderModal
-                    isOpen={true}
+                    isOpen={!!selectedReminder}
                     onClose={() => setSelectedReminder(null)}
                     reminder={selectedReminder}
                 />
             )}
-        </>
+        </div>
     );
 } 
