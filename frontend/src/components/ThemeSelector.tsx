@@ -28,23 +28,23 @@ export function ThemeSelector() {
 
     switch (themeName) {
       case 'light':
-        return <Sun className={`w-4 h-4 ${iconColor}`} />;
+        return <Sun className={`w-3.5 h-3.5 ${iconColor}`} />;
       case 'dark':
-        return <Moon className={`w-4 h-4 ${iconColor}`} />;
+        return <Moon className={`w-3.5 h-3.5 ${iconColor}`} />;
       case 'midnight':
-        return <Palette className={`w-4 h-4 ${iconColor}`} />;
+        return <Palette className={`w-3.5 h-3.5 ${iconColor}`} />;
       case 'full-dark':
-        return <Eclipse className={`w-4 h-4 ${iconColor}`} />;
+        return <Eclipse className={`w-3.5 h-3.5 ${iconColor}`} />;
       default:
         return null;
     }
   };
 
   const getButtonStyles = (isSelected: boolean, themeName: ThemeName) => {
-    const baseStyles = "flex items-center gap-2 px-3 py-2 rounded-md transition-colors duration-200";
+    const baseStyles = "flex items-center justify-center p-1.5 rounded-md transition-colors duration-200";
 
     if (isSelected) {
-      return `${baseStyles} bg-[#4c9959]/10 text-[#4c9959] ring-2 ring-[#4c9959]/20`;
+      return `${baseStyles} bg-[#4c9959]/10 text-[#4c9959] ring-1 ring-[#4c9959]/20`;
     }
 
     if (isSafari) {
@@ -73,13 +73,12 @@ export function ThemeSelector() {
   };
 
   if (!mounted) {
-    return <div className="w-[200px] h-[44px] bg-[var(--color-secondary)]/30 rounded-lg animate-pulse" />;
+    return <div className="w-[120px] h-[32px] bg-[var(--color-secondary)]/30 rounded-lg animate-pulse" />;
   }
 
   return (
-    <div className={`flex gap-2 p-2 rounded-lg transition-colors duration-200 bg-[var(--themeSelectorContainerBackground)] ${theme === 'dark' || theme === 'midnight' || theme === 'full-dark' ? 'border border-white/10' : ''}`}>
+    <div className={`flex gap-1 p-1 rounded-lg transition-colors duration-200 bg-[var(--themeSelectorContainerBackground)] ${theme === 'dark' || theme === 'midnight' || theme === 'full-dark' ? 'border border-white/10' : ''}`}>
       {Object.keys(themes).map((themeName) => {
-        const currentTheme = themes[themeName as ThemeName];
         const isSelected = theme === themeName;
 
         return (
@@ -87,15 +86,10 @@ export function ThemeSelector() {
             key={themeName}
             onClick={() => handleThemeChange(themeName as ThemeName)}
             className={getButtonStyles(isSelected, themeName as ThemeName)}
-            title={`Switch to ${currentTheme.name} theme`}
+            title={`Switch to ${themes[themeName as ThemeName].name} theme`}
             data-theme={themeName}
           >
-            <span className="transition-colors duration-200">
-              {getThemeIcon(themeName as ThemeName, isSelected)}
-            </span>
-            <span className={`text-sm font-medium transition-colors duration-200 ${isSelected ? 'text-[#4c9959]' : ''}`}>
-              {currentTheme.name}
-            </span>
+            {getThemeIcon(themeName as ThemeName, isSelected)}
           </button>
         );
       })}
