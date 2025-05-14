@@ -171,6 +171,7 @@ export class SignalRService {
     }
 
     if (this.isStarting) {
+      console.warn('[SignalR] Start called while already starting.');
       return;
     }
 
@@ -180,56 +181,24 @@ export class SignalRService {
       return;
     }
 
+    this.isStarting = true;
     try {
-      this.isStarting = true;
-
       if (this.connection.state !== signalR.HubConnectionState.Disconnected) {
         await this.connection.stop();
-        await new Promise(resolve => setTimeout(resolve, 500)); // Reduced delay
+        await new Promise(resolve => setTimeout(resolve, 250));
       }
 
-      // Always create a fresh connection
       this.connection = this.buildConnection();
       this.setupConnectionHandlers();
 
-      let retryCount = 0;
-      const maxRetries = 3;
-      let lastError = null;
-
-      while (retryCount < maxRetries) {
-        try {
-          await this.connection.start();
-          this.reconnectAttempts = 0;
-          await this.reregisterEvents();
-          this.notifyStateChange('connected');
-          return; // Success, exit the function
-        } catch (err) {
-          lastError = err;
-          retryCount++;
-          if (retryCount === maxRetries) {
-            console.error('[SignalR] Max retries reached:', lastError);
-            break;
-          }
-          const delay = Math.min(1000 * Math.pow(2, retryCount), 5000);
-          await new Promise(resolve => setTimeout(resolve, delay));
-        }
-      }
-
-      // If we get here, all retries failed
-      const error = new SignalRError('Failed to connect after multiple attempts', lastError instanceof Error ? lastError : undefined);
-      this.notifyStateChange('error', error);
-      throw error;
+      await this.connection.start();
+      this.reconnectAttempts = 0;
+      await this.reregisterEvents();
+      this.notifyStateChange('connected');
     } catch (err) {
-      console.error('[SignalR] Connection Error:', err);
-      const error = new SignalRError('Connection error', err instanceof Error ? err : undefined);
+      console.error('[SignalR] Connection Error during start:', err);
+      const error = new SignalRError('Failed to connect', err instanceof Error ? err : undefined);
       this.notifyStateChange('error', error);
-
-      if (this.reconnectAttempts < this.maxReconnectAttempts) {
-        const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
-        setTimeout(() => this.start(), delay);
-      } else {
-        this.notifyStateChange('error', new SignalRError('Max reconnection attempts reached'));
-      }
       throw error;
     } finally {
       this.isStarting = false;
