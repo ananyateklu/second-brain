@@ -105,15 +105,15 @@ export function MainContent({
           value={content}
           onChange={(e) => onContentChange(e.target.value)}
           rows={6}
-          className="focus:ring-[var(--color-idea)] min-h-[220px]"
+          className="focus:ring-[var(--color-idea)] min-h-[120px] max-h-[200px]"
           placeholder="Write your idea here..."
           disabled={isLoading}
         />
 
         {/* Linked Reminders - Replaced with new panel */}
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-textSecondary)]">
+            <label className="flex items-center gap-2 text-sm font-semibold text-[var(--color-textSecondary)]">
               <Bell className="w-4 h-4" />
               Linked Reminders
             </label>
@@ -139,8 +139,8 @@ export function MainContent({
         </div>
 
         {/* Tags */}
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium text-[var(--color-textSecondary)]">
+        <div className="space-y-2">
+          <label className="text-sm font-semibold text-[var(--color-textSecondary)]">
             Tags
           </label>
           <div className="flex gap-2 items-center">

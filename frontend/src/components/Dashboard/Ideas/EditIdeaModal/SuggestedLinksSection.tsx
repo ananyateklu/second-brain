@@ -4,6 +4,7 @@ import { useTheme } from '../../../../contexts/themeContextUtils';
 import { motion } from 'framer-motion';
 import aiSettingsService from '../../../../services/api/aiSettings.service';
 import { useAI } from '../../../../contexts/AIContext';
+import { GenericSuggestionSkeleton } from './GenericSuggestionSkeleton';
 
 // Define a consistent interface for suggestion items
 interface SuggestionItem {
@@ -247,7 +248,6 @@ export function SuggestedLinksSection({
                     <Link2 className="w-3.5 h-3.5 text-[var(--color-textSecondary)]" />
                     Suggested Links
                 </h3>
-                {isLoading && <Loader className="w-3 h-3 animate-spin text-[var(--color-textSecondary)]" />}
             </div>
 
             {error && (
@@ -258,11 +258,10 @@ export function SuggestedLinksSection({
 
             <div className="grid grid-cols-1 gap-1.5">
                 {isLoading && allSuggestions.length === 0 && !error ? (
-                    <div className={`p-3 ${getItemBackground()} rounded-lg border ${consistentBorderColor} text-center`}>
-                        <p className="text-xs text-[var(--color-textSecondary)] flex justify-center items-center gap-2">
-                            <Loader className="w-3 h-3 animate-spin" />
-                            Finding related content...
-                        </p>
+                    <div className={`grid grid-cols-1 md:grid-cols-2 gap-1.5`}>
+                        <GenericSuggestionSkeleton />
+                        <GenericSuggestionSkeleton />
+                        <GenericSuggestionSkeleton />
                     </div>
                 ) : (
                     <>

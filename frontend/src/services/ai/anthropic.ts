@@ -327,7 +327,7 @@ export class AnthropicService {
         temperature: 0.7
       });
 
-      return this.cleanContent(response.content);
+      return this.cleanContent(response.content as string);
     } catch (error) {
       console.error('Error generating content:', error);
       throw new Error('Failed to generate content');
@@ -402,7 +402,7 @@ export class AnthropicService {
         temperature: 0.7
       });
 
-      return this.cleanTitle(response.content);
+      return this.cleanTitle(response.content as string);
     } catch (error) {
       console.error('Error generating title:', error);
       throw new Error('Failed to generate title');
@@ -417,7 +417,7 @@ export class AnthropicService {
         temperature: 0.7
       });
 
-      return this.cleanAndParseTags(response.content);
+      return this.cleanAndParseTags(response.content as string);
     } catch (error) {
       console.error('Error generating tags:', error);
       throw new Error('Failed to generate tags');
