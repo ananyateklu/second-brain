@@ -15,8 +15,9 @@ import { AddReminderLinkModal } from '../../Notes/EditNoteModal/AddReminderLinkM
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../../../contexts/themeContextUtils';
-import { SuggestedLinksSection } from './SuggestedLinksSection';
+import { UnifiedSuggestionPopup } from './UnifiedSuggestionPopup';
 import { similarContentService } from '../../../../services/ai/similarContentService';
+import { FooterActions } from './FooterActions';
 
 // Define a unified interface for suggestions from any content type
 interface UnifiedSuggestion {
@@ -58,8 +59,8 @@ interface IdeaReminderLink {
 
 export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaModalProps) {
   const navigate = useNavigate();
-  const { notes } = useNotes();
-  const { tasks } = useTasks();
+  const { notes: allNotes } = useNotes();
+  const { tasks: allTasks } = useTasks();
   const { updateIdea, deleteIdea, addLink, removeLink, state: ideasState } = useIdeas();
   const { reminders: allReminders } = useReminders();
   const { theme } = useTheme();
@@ -78,9 +79,8 @@ export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaMo
   const [showAddLinkModal, setShowAddLinkModal] = useState(false);
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
   const [showAddReminderModal, setShowAddReminderModal] = useState(false);
-  const [refreshSuggestions, setRefreshSuggestions] = useState(0);
+  const [isSuggestionPopupOpen, setIsSuggestionPopupOpen] = useState(false);
 
-  // Add new state for centralized suggestion management
   const [suggestionState, setSuggestionState] = useState<SuggestionState>({
     isLoading: false,
     error: null,
@@ -92,326 +92,150 @@ export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaMo
     }
   });
 
-  // Reset states when modal opens/closes
   useEffect(() => {
     if (!isOpen) {
       setShowDeleteConfirm(false);
       setError('');
+      setIsSuggestionPopupOpen(false);
     }
   }, [isOpen]);
 
-  // Get current idea from context to ensure we have latest data
   const currentIdea = ideasState.ideas.find(i => i.id === initialIdea?.id);
 
   useEffect(() => {
     if (currentIdea) {
       setTitle(currentIdea.title);
       setContent(currentIdea.content);
-      setTags(currentIdea.tags);
+      setTags(currentIdea.tags || []);
       setError('');
+    } else {
+      setTitle('');
+      setContent('');
+      setTags([]);
+      setError('Idea not found.');
     }
   }, [currentIdea]);
 
-  // Update linked items whenever they change
   useEffect(() => {
     if (currentIdea) {
-      // Filter linked notes
-      const linkedNotesList = notes.filter(n =>
-        currentIdea.linkedItems?.some(item => item.id === n.id && item.type === 'Note')
-      );
+      const linkedItems = currentIdea.linkedItems || [];
+      const linkedNotesList = allNotes.filter(n => linkedItems.some(item => item.id === n.id && item.type === 'Note'));
       setLinkedNotes(linkedNotesList);
 
-      // Filter linked ideas
-      const linkedIdeasList = ideasState.ideas.filter(i =>
-        currentIdea.linkedItems?.some(item => item.id === i.id && item.type === 'Idea')
-      );
+      const linkedIdeasList = ideasState.ideas.filter(i => linkedItems.some(item => item.id === i.id && item.type === 'Idea') && i.id !== currentIdea.id);
       setLinkedIdeas(linkedIdeasList);
 
-      // Filter linked tasks
-      const linkedTasksList = tasks.filter(t =>
-        currentIdea.linkedItems?.some(item => item.id === t.id && item.type === 'Task')
-      );
+      const linkedTasksList = allTasks.filter(t => linkedItems.some(item => item.id === t.id && item.type === 'Task'));
       setLinkedTasks(linkedTasksList);
 
-      // Filter linked reminders and format them
-      const linkedRemindersList = currentIdea.linkedItems
-        ?.filter(item => item.type === 'Reminder')
+      const linkedRemindersList = linkedItems
+        .filter(item => item.type === 'Reminder')
         .map(item => {
           const fullReminder = allReminders.find(r => r.id === item.id);
           if (!fullReminder) return null;
-          return {
-            id: fullReminder.id,
-            title: fullReminder.title,
-            dueDateTime: fullReminder.dueDateTime,
-            isCompleted: fullReminder.isCompleted,
-            isSnoozed: fullReminder.isSnoozed,
-            createdAt: fullReminder.createdAt,
-            updatedAt: fullReminder.updatedAt,
-          };
+          return { ...fullReminder } as IdeaReminderLink;
         })
-        .filter(Boolean) as IdeaReminderLink[] || [];
+        .filter(Boolean) as IdeaReminderLink[];
       setLinkedReminders(linkedRemindersList);
     }
-  }, [currentIdea, currentIdea?.linkedItems, notes, tasks, ideasState.ideas, allReminders]);
+  }, [currentIdea, allNotes, allTasks, ideasState.ideas, allReminders]);
 
-  // Create a centralized function to load all suggestions at once
   const loadAllSuggestions = useCallback(async () => {
     if (!currentIdea) return;
-
-    // Skip if there's nothing to compare against
-    const hasNotes = notes.length > 0;
-    const hasIdeas = ideasState.ideas.length > 1; // More than 1 because we exclude the current idea
-    const hasTasks = tasks.length > 0;
-    const hasReminders = allReminders.length > 0;
-
-    if (!hasNotes && !hasIdeas && !hasTasks && !hasReminders) {
-      console.log("Skipping suggestions: no content to compare against");
+    const hasSourceNotes = allNotes.length > 0;
+    const hasSourceIdeas = ideasState.ideas.length > 1;
+    const hasSourceTasks = allTasks.length > 0;
+    const hasSourceReminders = allReminders.length > 0;
+    if (!hasSourceNotes && !hasSourceIdeas && !hasSourceTasks && !hasSourceReminders) {
+      setSuggestionState(prev => ({ ...prev, isLoading: false, suggestions: { notes: [], ideas: [], tasks: [], reminders: [] } }));
       return;
     }
-
     try {
       setSuggestionState(prev => ({ ...prev, isLoading: true, error: null }));
-      console.log("Loading all content suggestions for:", currentIdea.title);
-
-      // Get IDs of already linked items
       const linkedIds = currentIdea.linkedItems?.map(item => item.id) || [];
-
-      // Log content availability for debugging
-      console.log("Available items for suggestions:", {
-        notes: notes.length,
-        ideas: ideasState.ideas.length - 1, // Minus current idea
-        tasks: tasks.length,
-        reminders: allReminders.length,
-        alreadyLinked: linkedIds.length
-      });
-
-      // Log reminder details for debugging
-      if (hasReminders) {
-        console.log("Available reminders:", allReminders.map(r => ({
-          id: r.id,
-          title: r.title
-        })));
-      }
-
-      // Make a single call to the similarContentService with all content types
       const results = await similarContentService.findSimilarContent(
-        {
-          id: currentIdea.id,
-          title: currentIdea.title,
-          content: currentIdea.content || '',
-          tags: currentIdea.tags || []
-        },
-        notes,
-        ideasState.ideas.filter(idea => idea.id !== currentIdea.id), // Filter out current idea
-        tasks,
-        allReminders,
-        linkedIds, // Exclude already linked items
-        12 // Increased to get enough results for all types
+        { id: currentIdea.id, title: currentIdea.title, content: currentIdea.content || '', tags: currentIdea.tags || [] },
+        allNotes, ideasState.ideas.filter(idea => idea.id !== currentIdea.id), allTasks, allReminders, linkedIds, 12
       );
-
-      console.log("Successfully received all suggestions:", results.length);
-      console.log("Raw AI results:", JSON.stringify(results));
-
-      // Separate suggestions by type
-      const rawNoteResults = results.filter(item => item.type === 'note');
-      const rawIdeaResults = results.filter(item => item.type === 'idea');
-      const rawTaskResults = results.filter(item => item.type === 'task');
-      const reminderResults = results.filter(item => item.type === 'reminder'); // Reminders are already cross-referenced later
-
-      // Filter out suggestions for items that don't exist in the local state
-      const noteResults = rawNoteResults.filter(suggestedNote =>
-        notes.some(localNote => localNote.id === suggestedNote.id)
-      );
-      const ideaResults = rawIdeaResults.filter(suggestedIdea =>
-        ideasState.ideas.some(localIdea => localIdea.id === suggestedIdea.id)
-      );
-      const taskResults = rawTaskResults.filter(suggestedTask =>
-        tasks.some(localTask => localTask.id === suggestedTask.id)
-      );
-
-      // Log if any suggestions were filtered out
-      if (rawNoteResults.length !== noteResults.length) {
-        console.log(`Filtered ${rawNoteResults.length - noteResults.length} note suggestions that don't exist locally.`);
-      }
-      if (rawIdeaResults.length !== ideaResults.length) {
-        console.log(`Filtered ${rawIdeaResults.length - ideaResults.length} idea suggestions that don't exist locally.`);
-      }
-      if (rawTaskResults.length !== taskResults.length) {
-        console.log(`Filtered ${rawTaskResults.length - taskResults.length} task suggestions that don't exist locally.`);
-      }
-
-      // Log result distribution
-      console.log("Suggestion distribution (after filtering):", {
-        notes: noteResults.length,
-        ideas: ideaResults.length,
-        tasks: taskResults.length,
-        reminders: reminderResults.length
-      });
-
-      // Log specific reminder results for debugging
-      if (reminderResults.length > 0) {
-        console.log("Reminder suggestion details:", reminderResults.map(r => ({
-          id: r.id,
-          title: r.title,
-          similarity: r.similarity,
-          type: r.type
-        })));
-
-        // Verify reminder IDs exist in the system
-        const foundReminderCount = reminderResults.filter(r =>
-          allReminders.some(ar => ar.id === r.id)
-        ).length;
-
-        console.log(`Found ${foundReminderCount} out of ${reminderResults.length} reminders in context`);
-      } else {
-        console.log("No reminder suggestions were found");
-      }
-
-      // Update our centralized suggestion state
+      const noteResults = results.filter(item => item.type === 'note' && allNotes.some(local => local.id === item.id));
+      const ideaResults = results.filter(item => item.type === 'idea' && ideasState.ideas.some(local => local.id === item.id));
+      const taskResults = results.filter(item => item.type === 'task' && allTasks.some(local => local.id === item.id));
+      const reminderResults = results.filter(item => item.type === 'reminder' && allReminders.some(local => local.id === item.id));
       setSuggestionState({
-        isLoading: false,
-        error: null,
+        isLoading: false, error: null,
         suggestions: {
-          notes: noteResults,
-          ideas: ideaResults,
-          tasks: taskResults,
-          reminders: reminderResults
+          notes: noteResults.map(s => ({ ...s, type: 'note' } as UnifiedSuggestion)),
+          ideas: ideaResults.map(s => ({ ...s, type: 'idea' } as UnifiedSuggestion)),
+          tasks: taskResults.map(s => ({ ...s, type: 'task' } as UnifiedSuggestion)),
+          reminders: reminderResults.map(s => ({ ...s, type: 'reminder' } as UnifiedSuggestion)),
         }
       });
-
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error("Error loading suggestions:", error);
-      setSuggestionState(prev => ({
-        ...prev,
-        isLoading: false,
-        error: errorMessage
-      }));
+    } catch (err: unknown) {
+      console.error("Error loading suggestions:", err);
+      const message = err instanceof Error ? err.message : 'Failed to load suggestions';
+      setSuggestionState(prev => ({ ...prev, isLoading: false, error: message }));
     }
-  }, [currentIdea, notes, ideasState.ideas, tasks, allReminders]);
+  }, [currentIdea, allNotes, ideasState.ideas, allTasks, allReminders]);
 
-  // Load suggestions on modal open and when linked items change
-  useEffect(() => {
-    if (isOpen && currentIdea) {
-      loadAllSuggestions();
+  const openSuggestionPopup = () => {
+    setIsSuggestionPopupOpen(true);
+    loadAllSuggestions();
+  };
+
+  const closeSuggestionPopup = () => {
+    setIsSuggestionPopupOpen(false);
+  };
+
+  const handleSave = async () => {
+    if (!currentIdea) return;
+    setIsLoading(true);
+    setError('');
+    try {
+      await updateIdea(currentIdea.id, { title, content, tags });
+      onClose();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to update idea';
+      setError(message);
+    } finally {
+      setIsLoading(false);
     }
-  }, [isOpen, currentIdea, refreshSuggestions, loadAllSuggestions]);
-
-  // Add a debug logger for reminder suggestions
-  useEffect(() => {
-    if (suggestionState.suggestions.reminders.length > 0) {
-      console.log("EditIdeaModal: Found reminder suggestions:",
-        suggestionState.suggestions.reminders.map(r => ({
-          id: r.id,
-          title: r.title,
-          type: r.type,
-          similarity: r.similarity
-        }))
-      );
-    }
-  }, [suggestionState.suggestions.reminders]);
-
-  if (!isOpen || !currentIdea) return null;
+  };
 
   const handleDelete = async () => {
+    if (!currentIdea) return;
     setIsLoading(true);
     try {
       await deleteIdea(currentIdea.id);
-      setShowDeleteConfirm(false);
-      navigate('/dashboard/ideas');
       onClose();
-    } catch (err) {
-      console.error('Failed to delete idea:', err);
-      setError('Failed to delete idea');
+      navigate('/dashboard/ideas');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to delete idea';
+      setError(message);
     } finally {
       setIsLoading(false);
+      setShowDeleteConfirm(false);
     }
   };
 
-  const handleUnlinkTask = async (taskId: string) => {
+  const handleLinkItemFromPopup = async (itemId: string, itemType: 'Note' | 'Idea' | 'Task' | 'Reminder') => {
+    if (!currentIdea) return false;
     try {
-      await removeLink(currentIdea.id, taskId, 'Task');
-      triggerRefreshSuggestions();
-    } catch (err) {
-      console.error('Failed to unlink task:', err);
-      setError('Failed to unlink task. Please try again.');
-    }
-  };
-
-  const handleUnlinkReminder = async (reminderId: string) => {
-    try {
-      setIsLoading(true);
-      await removeLink(currentIdea.id, reminderId, 'Reminder');
-      triggerRefreshSuggestions();
-    } catch (err) {
-      console.error('Failed to unlink reminder:', err);
-      setError('Failed to unlink reminder. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleLinkReminder = async (reminderId: string) => {
-    try {
-      setIsLoading(true);
-      setError('');
-      await addLink(currentIdea.id, reminderId, 'Reminder');
-      triggerRefreshSuggestions();
+      await addLink(currentIdea.id, itemId, itemType);
+      if (isSuggestionPopupOpen) loadAllSuggestions();
       return true;
     } catch (error) {
-      console.error('Failed to link reminder:', error);
-      setError('Failed to link reminder. Please try again.');
+      console.error(`Failed to link ${itemType} from popup:`, error);
       return false;
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!title.trim()) {
-      setError('Title is required');
-      return;
-    }
-
-    setIsLoading(true);
-    setError('');
-
-    try {
-      await updateIdea(currentIdea.id, {
-        title: title.trim(),
-        content: content.trim(),
-        tags
-      });
-      onClose();
-    } catch (err) {
-      console.error('Failed to update idea:', err);
-      setError('Failed to update idea. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleTagInputChange = (value: string | string[]) => {
-    if (Array.isArray(value)) {
-      setTags(value);
-    } else {
-      setTagInput(value);
-    }
-  };
-
-  const formattedTasks = linkedTasks.map(task => ({
-    ...task,
-    dueDate: task.dueDate === undefined ? null : task.dueDate
-  }));
-
-  const handleUnlinkItem = async (itemId: string, itemType: 'Note' | 'Idea') => {
+  const handleUnlinkItem = async (itemId: string, itemType: 'Note' | 'Idea' | 'Task' | 'Reminder') => {
+    if (!currentIdea) return;
     try {
       await removeLink(currentIdea.id, itemId, itemType);
-      triggerRefreshSuggestions();
+      if (isSuggestionPopupOpen) loadAllSuggestions();
     } catch (error) {
-      console.error('Failed to unlink item:', { type: itemType.toLowerCase(), error });
+      console.error(`Failed to unlink ${itemType}:`, error);
     }
   };
 
@@ -421,24 +245,31 @@ export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaMo
     return 'border-[var(--color-border)]';
   };
 
-  // Add this function to refresh suggestions
-  const triggerRefreshSuggestions = () => {
-    setRefreshSuggestions(prev => prev + 1);
+  if (!isOpen || !currentIdea) {
+    return null;
+  }
+
+  const headerIdea = {
+    ...currentIdea,
+    title,
+    content,
+    tags,
+    linkedItems: currentIdea.linkedItems || []
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-
-      <div className="relative w-full max-w-5xl max-h-[85vh] bg-[var(--color-background)] rounded-2xl shadow-xl overflow-hidden border border-[var(--color-border)]">
-        <form onSubmit={handleSubmit} className="flex flex-col h-full">
-          <Header
-            idea={currentIdea}
-            onClose={onClose}
-            onShowDeleteConfirm={() => setShowDeleteConfirm(true)}
-          />
-
-          <div className="flex-1 grid grid-cols-[1fr,360px] min-h-0 overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
+      <div
+        className={`relative flex flex-col w-full max-w-4xl h-auto max-h-[90vh] bg-[var(--color-background)] rounded-xl shadow-2xl overflow-hidden border ${getBorderStyle()}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <Header
+          idea={headerIdea}
+          onClose={onClose}
+          onShowDeleteConfirm={() => setShowDeleteConfirm(true)}
+        />
+        <div className="flex flex-1 min-h-0">
+          <div className={`flex-1 flex flex-col min-w-0 border-r ${getBorderStyle()}`}>
             <MainContent
               title={title}
               content={content}
@@ -449,135 +280,91 @@ export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaMo
               linkedReminders={linkedReminders}
               onTitleChange={setTitle}
               onContentChange={setContent}
-              onTagInputChange={handleTagInputChange}
+              onTagInputChange={setTagInput}
               onAddTag={() => {
-                const trimmedTag = tagInput.trim();
-                if (trimmedTag && !tags.includes(trimmedTag)) {
-                  setTags([...tags, trimmedTag]);
+                if (tagInput.trim() && !tags.includes(tagInput.trim())) {
+                  setTags([...tags, tagInput.trim()]);
                   setTagInput('');
                 }
               }}
-              onRemoveTag={(tag) => setTags(tags.filter(t => t !== tag))}
+              onRemoveTag={(tagToRemove) => setTags(tags.filter(t => t !== tagToRemove))}
               onShowAddReminder={() => setShowAddReminderModal(true)}
-              onUnlinkReminder={handleUnlinkReminder}
+              onUnlinkReminder={(reminderId) => handleUnlinkItem(reminderId, 'Reminder')}
+              onOpenSuggestionPopup={openSuggestionPopup}
               currentIdea={currentIdea}
-              onLinkReminder={handleLinkReminder}
-              suggestedReminders={suggestionState.suggestions.reminders}
-              suggestionsLoading={suggestionState.isLoading}
             />
-            <div className={`flex flex-col overflow-y-auto border-l ${theme === 'midnight' ? 'border-white/5' : theme === 'dark' ? 'border-gray-700/30' : 'border-[var(--color-border)]'} bg-[var(--color-surface)]`}>
-              <div className="p-4 space-y-4">
-                <SuggestedLinksSection
-                  suggestedNotes={suggestionState.suggestions.notes}
-                  suggestedIdeas={suggestionState.suggestions.ideas}
-                  suggestedTasks={suggestionState.suggestions.tasks}
-                  isLoading={suggestionState.isLoading}
-                  error={suggestionState.error}
-                  onLinkNote={async (noteId) => {
-                    try {
-                      await addLink(currentIdea.id, noteId, 'Note');
-                      triggerRefreshSuggestions();
-                    } catch (error) {
-                      console.error('Failed to link note:', error);
-                    }
-                  }}
-                  onLinkIdea={async (ideaId) => {
-                    try {
-                      await addLink(currentIdea.id, ideaId, 'Idea');
-                      triggerRefreshSuggestions();
-                    } catch (error) {
-                      console.error('Failed to link idea:', error);
-                    }
-                  }}
-                  onLinkTask={async (taskId) => {
-                    try {
-                      console.log(`EditIdeaModal: Attempting to link task ID: ${taskId} to idea ID: ${currentIdea.id}`);
-                      await addLink(currentIdea.id, taskId, 'Task');
-                      console.log(`EditIdeaModal: Successfully linked task ID: ${taskId} to idea ID: ${currentIdea.id}`);
-                      triggerRefreshSuggestions();
-                    } catch (error) {
-                      console.error('EditIdeaModal: Failed to link task:', error);
-                      throw error;
-                    }
-                  }}
-                />
-              </div>
-              <LinkedNotesPanel
-                linkedNotes={linkedNotes}
-                linkedTasks={formattedTasks}
-                linkedIdeas={linkedIdeas}
-                onShowAddLink={() => setShowAddLinkModal(true)}
-                onShowAddTask={() => setShowAddTaskModal(true)}
-                onUnlinkTask={handleUnlinkTask}
-                currentNoteId={currentIdea.id}
-                onUnlinkNote={(noteId) => handleUnlinkItem(noteId, 'Note')}
-                onUnlinkIdea={(ideaId) => handleUnlinkItem(ideaId, 'Idea')}
-              />
-            </div>
           </div>
 
-          <div className={`shrink-0 flex justify-end gap-3 px-6 py-4 border-t ${getBorderStyle()} bg-[var(--color-surface)]`}>
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isLoading}
-              className="px-4 py-2 text-[var(--color-textSecondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-surfaceHover)] rounded-lg transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="px-4 py-2 bg-[var(--color-accent)] text-white rounded-lg hover:bg-[var(--color-accentHover)] transition-colors flex items-center gap-2"
-            >
-              {isLoading && (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              )}
-              Save Changes
-            </button>
+          <div className="w-[340px] flex-shrink-0 overflow-y-auto bg-[var(--color-surface)] flex flex-col">
+            <LinkedNotesPanel
+              linkedNotes={linkedNotes}
+              linkedIdeas={linkedIdeas}
+              linkedTasks={linkedTasks}
+              onUnlinkNote={(noteId) => handleUnlinkItem(noteId, 'Note')}
+              onUnlinkIdea={(ideaId) => handleUnlinkItem(ideaId, 'Idea')}
+              onUnlinkTask={(taskId) => handleUnlinkItem(taskId, 'Task')}
+              onShowAddLink={() => setShowAddLinkModal(true)}
+              onShowAddTask={() => setShowAddTaskModal(true)}
+              currentNoteId={currentIdea.id}
+            />
           </div>
-        </form>
+        </div>
 
-        <DeleteConfirmDialog
-          isOpen={showDeleteConfirm}
-          onClose={() => setShowDeleteConfirm(false)}
-          onDelete={handleDelete}
+        <FooterActions
+          onClose={onClose}
+          onSave={handleSave}
           isLoading={isLoading}
-          itemName={currentIdea.title}
+          getBorderStyle={getBorderStyle}
         />
 
-        {showAddLinkModal && (
+        {showDeleteConfirm && (
+          <DeleteConfirmDialog
+            isOpen={showDeleteConfirm}
+            isLoading={isLoading}
+            onClose={() => setShowDeleteConfirm(false)}
+            onDelete={handleDelete}
+            itemName={currentIdea.title}
+          />
+        )}
+        {showAddLinkModal && currentIdea && (
           <IdeaAddLinkModal
             isOpen={showAddLinkModal}
             onClose={() => setShowAddLinkModal(false)}
             ideaId={currentIdea.id}
             onLinkAdded={() => {
-              setShowAddLinkModal(false);
-              triggerRefreshSuggestions();
+              // The modal handles its own linking. This callback is for any post-linking actions in parent if needed.
+              // For example, refresh suggestions if the popup is open:
+              // if (isSuggestionPopupOpen) loadAllSuggestions();
             }}
           />
         )}
-
-        {showAddTaskModal && (
+        {showAddTaskModal && currentIdea && (
           <IdeaAddTaskLinkModal
             isOpen={showAddTaskModal}
             onClose={() => setShowAddTaskModal(false)}
             ideaId={currentIdea.id}
             onLinkAdded={() => {
-              setShowAddTaskModal(false);
-              triggerRefreshSuggestions();
+              // if (isSuggestionPopupOpen) loadAllSuggestions();
             }}
           />
         )}
-
-        {showAddReminderModal && (
+        {showAddReminderModal && currentIdea && (
           <AddReminderLinkModal
             isOpen={showAddReminderModal}
             onClose={() => setShowAddReminderModal(false)}
-            onSelect={handleLinkReminder}
+            onSelect={(reminderId) => handleLinkItemFromPopup(reminderId, 'Reminder')}
             currentLinkedReminderIds={linkedReminders.map(r => r.id)}
-            passedSuggestedReminders={suggestionState.suggestions.reminders}
-            isLoadingSuggestions={suggestionState.isLoading}
+          />
+        )}
+
+        {currentIdea && (
+          <UnifiedSuggestionPopup
+            isOpen={isSuggestionPopupOpen}
+            onClose={closeSuggestionPopup}
+            currentIdea={currentIdea}
+            suggestionState={suggestionState}
+            loadSuggestions={loadAllSuggestions}
+            onLinkItem={handleLinkItemFromPopup}
           />
         )}
       </div>

@@ -1,4 +1,4 @@
-import { Type, Tag as TagIcon, X, Bell, Plus, AlignLeft } from 'lucide-react';
+import { Type, Tag as TagIcon, X, Bell, Plus, AlignLeft, Sparkles } from 'lucide-react';
 import { Input } from '../../../../components/shared/Input';
 import { TextArea } from '../../../../components/shared/TextArea';
 import { LinkedRemindersPanel } from './LinkedRemindersPanel';
@@ -15,16 +15,6 @@ interface IdeaReminderLink {
   updatedAt?: string;
 }
 
-// Definition for suggestion items
-interface SuggestionItem {
-  id: string;
-  title: string;
-  similarity: number;
-  type: 'note' | 'idea' | 'task' | 'reminder';
-  status?: string;
-  dueDate?: string | null;
-}
-
 interface MainContentProps {
   title: string;
   content: string;
@@ -36,14 +26,12 @@ interface MainContentProps {
   currentIdea?: Idea;
   onTitleChange: (value: string) => void;
   onContentChange: (value: string) => void;
-  onTagInputChange: (value: string | string[]) => void;
+  onTagInputChange: (value: string) => void;
   onAddTag: () => void;
   onRemoveTag: (tag: string) => void;
   onShowAddReminder: () => void;
   onUnlinkReminder: (reminderId: string) => void;
-  onLinkReminder: (reminderId: string) => Promise<boolean | void>;
-  suggestedReminders?: SuggestionItem[];
-  suggestionsLoading?: boolean;
+  onOpenSuggestionPopup: () => void;
 }
 
 export function MainContent({
@@ -61,26 +49,12 @@ export function MainContent({
   onRemoveTag,
   onShowAddReminder,
   onUnlinkReminder,
-  onLinkReminder,
-  suggestedReminders = [],
-  suggestionsLoading = false,
+  onOpenSuggestionPopup,
 }: MainContentProps) {
-
-  // Add logging for debugging
-  if (suggestedReminders.length > 0) {
-    console.log("MainContent: Received reminder suggestions:",
-      suggestedReminders.map(r => ({
-        id: r.id,
-        title: r.title,
-        type: r.type,
-        similarity: r.similarity
-      }))
-    );
-  }
 
   return (
     <div className="flex-1 overflow-y-auto bg-[var(--color-surface)]">
-      <div className="p-4 space-y-4">
+      <div className="p-4 space-y-6">
         {error && (
           <div className="p-3 bg-red-900/20 text-red-400 rounded-lg">
             {error}
@@ -110,7 +84,19 @@ export function MainContent({
           disabled={isLoading}
         />
 
-        {/* Linked Reminders - Replaced with new panel */}
+        {/* Suggest Related Items Button */}
+        <div>
+          <button
+            onClick={onOpenSuggestionPopup}
+            disabled={isLoading}
+            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[var(--color-primary)] hover:bg-[var(--color-primary)]/90 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--color-primary)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            <Sparkles className="w-4 h-4" />
+            Suggest Related Items
+          </button>
+        </div>
+
+        {/* Linked Reminders Panel */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <label className="flex items-center gap-2 text-sm font-semibold text-[var(--color-textSecondary)]">
@@ -132,9 +118,6 @@ export function MainContent({
           <LinkedRemindersPanel
             reminders={linkedReminders}
             onUnlink={onUnlinkReminder}
-            onLink={onLinkReminder}
-            suggestedReminders={suggestedReminders}
-            isLoadingSuggestions={suggestionsLoading}
           />
         </div>
 
