@@ -1,0 +1,385 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Dashboard Context Handlers
+
+The Second Brain application uses a modular system of stat handlers to calculate various metrics for the dashboard. These handlers are specialized functions that process application data and return formatted statistics.
+
+## Stats Handler Architecture
+
+Each statistics handler is implemented as a pure function that:
+
+1. Takes relevant application data (notes, tasks, etc.)
+2. Performs calculations and data transformations
+3. Returns a standardized `StatValue` object with visualization-ready data
+
+The handlers are organized in dedicated files under `src/utils/dashboard/statsHandlers/`:
+
+```
+statsHandlers/
+├── activityStatsHandler.ts   // User activity metrics
+├── categoryStatsHandler.ts   // Content categorization analysis
+├── connectionStatsHandler.ts // Content relationship metrics
+├── freshnessStatsHandler.ts  // Content recency and update metrics
+├── ideasStatsHandler.ts      // Ideas management statistics
+├── noteStatsHandler.ts       // Note-related metrics
+├── reminderStatsHandler.ts   // Reminder status metrics
+└── taskStatsHandler.ts       // Task completion and status metrics
+```
+
+## Handler Implementation Pattern
+
+Each handler follows a consistent implementation pattern:
+
+```typescript
+// Example note stats handler
+export function getTotalNotesStatValue(notes: Note[]): StatValue {
+  // 1. Extract relevant data
+  const totalNotes = notes.length;
+  
+  // 2. Calculate changes over time (e.g., weekly comparison)
+  const weekAgo = new Date();
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  
+  const newNotes = notes.filter(note => 
+    new Date(note.createdAt) > weekAgo
+  ).length;
+  
+  // 3. Calculate percentages or other derived metrics
+  const percentChange = totalNotes > 0 ? 
+    ((newNotes / totalNotes) * 100).toFixed(1) : '0';
+  
+  // 4. Prepare activity data for visualization
+  const activityData = calculateActivityTimeline(notes, 14);
+  
+  // 5. Return formatted StatValue object
+  return {
+    value: totalNotes,
+    change: newNotes,
+    timeframe: `${newNotes} new this week`,
+    description: `${percentChange}% growth in the last 7 days`,
+    metadata: {
+      activityData
+    }
+  };
+}
+```
+
+## Common Data Processing Functions
+
+The handlers utilize shared utility functions for common calculations:
+
+```typescript
+// Calculate weekly change for trend analysis
+export const calculateWeeklyChange = (
+  notes: Note[], 
+  type: 'created' | 'updated'
+) => {
+  const now = new Date();
+  const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+  const thisWeek = notes.filter(note => {
+    const date = new Date(type === 'created' ? note.createdAt : note.updatedAt);
+    return date >= oneWeekAgo;
+  }).length;
+
+  const lastWeek = notes.filter(note => {
+    const date = new Date(type === 'created' ? note.createdAt : note.updatedAt);
+    return date >= twoWeeksAgo && date < oneWeekAgo;
+  }).length;
+
+  return thisWeek - lastWeek;
+};
+
+// Format relative time for display
+export const formatTimeAgo = (date: Date) => {
+  const now = new Date();
+  const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+  
+  if (diffInMinutes < 1) return 'Just now';
+  if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+  // Additional formatting logic...
+};
+```
+
+## Key Statistic Handlers
+
+### Note Statistics
+
+```typescript
+// Note count and management statistics
+export function getTotalNotesStatValue(notes: Note[]): StatValue {
+  // Implementation details...
+}
+
+export function getNewNotesStatValue(notes: Note[]): StatValue {
+  // Implementation details...
+}
+
+export function getLastUpdateStatValue(notes: Note[]): StatValue {
+  // Implementation details...
+}
+
+export function getWordCountStatValue(notes: Note[]): StatValue {
+  // Implementation details...
+}
+```
+
+### Task Statistics
+
+```typescript
+// Task management statistics
+export function getActiveTasksStatValue(tasks: Task[]): StatValue {
+  // Implementation details...
+}
+
+export function getCompletedTasksStatValue(tasks: Task[]): StatValue {
+  // Implementation details...
+}
+
+export function getTaskCompletionRateStatValue(tasks: Task[]): StatValue {
+  // Implementation details...
+}
+
+export function getTasksDueSoonStatValue(tasks: Task[]): StatValue {
+  // Implementation details...
+}
+```
+
+### Connection Statistics
+
+```typescript
+// Content relationship statistics
+export function getConnectionsStatValue(notes: Note[]): StatValue {
+  // Count links between notes
+  const connections = notes.reduce((count, note) => {
+    // Parse note content for links to other notes
+    const linkCount = countLinksInContent(note.content);
+    return count + linkCount;
+  }, 0);
+  
+  // Additional processing...
+  return {
+    value: connections,
+    // Other fields...
+  };
+}
+
+export function getConnectionTypesStatValue(notes: Note[]): StatValue {
+  // Categorize different types of connections
+  // Implementation details...
+}
+```
+
+### Activity Statistics
+
+```typescript
+// User activity tracking
+export function getDailyActivityStatValue(activities: Activity[]): StatValue {
+  // Process activity data for heatmap visualization
+  const last30Days = generateLast30DaysArray();
+  
+  // Count activities per day
+  const countsByDay = activities.reduce((counts, activity) => {
+    const date = new Date(activity.timestamp).toISOString().split('T')[0];
+    counts[date] = (counts[date] || 0) + 1;
+    return counts;
+  }, {} as Record<string, number>);
+  
+  // Format for visualization
+  const activityData = last30Days.map(date => countsByDay[date] || 0);
+  
+  return {
+    value: activities.length,
+    timeframe: 'Last 30 days',
+    metadata: {
+      activityData
+    }
+  };
+}
+```
+
+## Category and Tag Analysis
+
+```typescript
+// Content organization statistics
+export function getCategoriesStatValue(
+  notes: Note[], 
+  tasks: Task[], 
+  reminders: Reminder[]
+): StatValue {
+  // Extract all tags from content
+  const allTags = [
+    ...notes.flatMap(note => note.tags || []),
+    ...tasks.flatMap(task => task.tags || []),
+    ...reminders.flatMap(reminder => reminder.tags || [])
+  ];
+  
+  // Count frequency of each tag
+  const tagCounts = allTags.reduce((counts, tag) => {
+    counts[tag] = (counts[tag] || 0) + 1;
+    return counts;
+  }, {} as Record<string, number>);
+  
+  // Sort by frequency and take top tags
+  const topTags = Object.entries(tagCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+  
+  return {
+    value: Object.keys(tagCounts).length,
+    additionalInfo: topTags.map(([tag, count]) => ({
+      label: tag,
+      value: count
+    }))
+  };
+}
+```
+
+## Content Freshness Analysis
+
+```typescript
+// Content recency analysis
+export function getContentFreshnessStatValue(notes: Note[]): StatValue {
+  // Calculate age of content
+  const now = new Date();
+  const ages = notes.map(note => {
+    const lastUpdated = new Date(note.updatedAt);
+    const ageInDays = Math.floor((now.getTime() - lastUpdated.getTime()) / (1000 * 60 * 60 * 24));
+    return ageInDays;
+  });
+  
+  // Categorize by age
+  const fresh = ages.filter(age => age < 7).length;
+  const recent = ages.filter(age => age >= 7 && age < 30).length;
+  const aging = ages.filter(age => age >= 30 && age < 90).length;
+  const stale = ages.filter(age => age >= 90).length;
+  
+  // Format for visualization
+  return {
+    value: `${Math.round((fresh / ages.length) * 100)}%`,
+    description: 'Content updated in last 7 days',
+    additionalInfo: [
+      { label: 'Fresh (<7d)', value: fresh },
+      { label: 'Recent (<30d)', value: recent },
+      { label: 'Aging (<90d)', value: aging },
+      { label: 'Stale (90d+)', value: stale }
+    ]
+  };
+}
+```
+
+## Reminder Statistics
+
+```typescript
+// Reminder status and due date analysis
+export function getRemindersStatValue(reminders: Reminder[]): StatValue {
+  // Filter for active reminders
+  const activeReminders = reminders.filter(r => !r.isCompleted);
+  
+  // Calculate due date distribution
+  const now = new Date();
+  const today = new Date(now.setHours(0, 0, 0, 0));
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const nextWeek = new Date(today);
+  nextWeek.setDate(nextWeek.getDate() + 7);
+  
+  const dueSoon = activeReminders.filter(r => {
+    const dueDate = new Date(r.dueDateTime);
+    return dueDate < tomorrow;
+  }).length;
+  
+  const dueThisWeek = activeReminders.filter(r => {
+    const dueDate = new Date(r.dueDateTime);
+    return dueDate >= tomorrow && dueDate < nextWeek;
+  }).length;
+  
+  return {
+    value: activeReminders.length,
+    description: dueSoon > 0 ? `${dueSoon} due today` : `${dueThisWeek} due this week`,
+    additionalInfo: [
+      { label: 'Due today', value: dueSoon },
+      { label: 'This week', value: dueThisWeek }
+    ]
+  };
+}
+```
+
+## Ideas Statistics
+
+```typescript
+// Ideas tracking and management
+export function getIdeasCountStatValue(ideas: Idea[]): StatValue {
+  const totalIdeas = ideas.length;
+  
+  // Calculate new ideas from last week
+  const weekAgo = new Date();
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  
+  const newIdeas = ideas.filter(idea => 
+    new Date(idea.createdAt) > weekAgo
+  ).length;
+  
+  // Calculate status breakdown
+  const statusBreakdown = ideas.reduce((counts, idea) => {
+    const status = idea.status || 'New';
+    counts[status] = (counts[status] || 0) + 1;
+    return counts;
+  }, {} as Record<string, number>);
+  
+  return {
+    value: totalIdeas,
+    change: newIdeas,
+    timeframe: `${newIdeas} new this week`,
+    additionalInfo: Object.entries(statusBreakdown).map(([status, count]) => ({
+      label: status,
+      value: count
+    }))
+  };
+}
+```
+
+## Stat Registry Interface
+
+All these handlers are registered in the central `statsRegistry.ts` file, which makes them available to the dashboard context:
+
+```typescript
+// Central registry of all available stat handlers
+export function getStatById(statId: string, data: StatHandlerData): StatValue {
+  // Check if we have a handler for this stat ID
+  const handler = statsRegistry[statId];
+  if (!handler) {
+    console.warn(`No handler found for stat ID: ${statId}`);
+    return {
+      value: 'N/A',
+      timeframe: 'Unknown stat',
+      description: `No handler for "${statId}"`
+    };
+  }
+
+  try {
+    return handler(data);
+  } catch (error) {
+    console.error('Error calculating stat:', statId, error);
+    return {
+      value: 'Error',
+      timeframe: 'Calculation failed',
+      description: 'An error occurred'
+    };
+  }
+}
+```
+
+## Performance Considerations
+
+Stat handlers are implemented with performance in mind:
+
+1. **Memoization**: Expensive calculations use React's `useMemo` hook
+2. **Throttling**: Time-based refreshes are throttled to prevent excessive recalculation
+3. **Progressive Loading**: Stats load incrementally as data becomes available
+4. **Caching**: Some derived values are cached to prevent redundant calculations
+5. **Error Boundaries**: Failed calculations don't crash the entire dashboard

@@ -17,7 +17,10 @@ frontend/
 │   │   ├── Dashboard/        # Dashboard-related components
 │   │   ├── shared/           # Shared/reusable components
 │   │   ├── ErrorBoundary.tsx # Global error boundary component
-│   │   └── ProtectedRoute.tsx # Auth protection component
+│   │   ├── ProtectedRoute.tsx # Auth protection component
+│   │   ├── LoginPage.tsx     # Authentication pages
+│   │   ├── RegistrationPage.tsx
+│   │   └── ThemeSelector.tsx # Theme selection component
 │   ├── contexts/             # React Context providers
 │   │   ├── *Context.tsx      # Context provider components
 │   │   └── *contextUtils.ts  # Utils for respective contexts
@@ -29,13 +32,10 @@ frontend/
 │   │   │   └── *.service.ts  # Domain-specific API services
 │   │   ├── ai/               # AI provider implementations
 │   │   │   ├── models.ts     # AI model definitions
-│   │   │   ├── openai.ts     # OpenAI implementation
-│   │   │   ├── anthropic.ts  # Anthropic/Claude implementation
-│   │   │   ├── gemini.ts     # Google Gemini implementation
-│   │   │   ├── grok.ts       # Grok implementation
-│   │   │   ├── ollama.ts      # Local LLM implementation
-│   │   │   └── messageService.ts # Message handling service
-│   │   └── notification/     # Notification services
+│   │   │   └── provider implementations
+│   │   ├── notification/     # Notification services
+│   │   ├── aiService.ts      # AI service main implementation
+│   │   └── signalR.ts        # SignalR implementation for real-time features
 │   ├── theme/                # Theme configuration
 │   │   ├── theme.config.ts   # Theme definitions
 │   │   └── themeConfig.types.ts # Theme type definitions
@@ -45,13 +45,13 @@ frontend/
 │   │   ├── themeScript.ts    # Early-load theme script
 │   │   └── *.utils.ts        # Domain-specific utilities
 │   ├── App.tsx               # Main App component
-│   ├── index.css             # Global CSS
+│   ├── index.css             # Global CSS and Tailwind imports
 │   └── main.tsx              # Application entry point
 ```
 
-## Optimized Context Providers
+## Provider Architecture
 
-The application uses a streamlined context provider architecture in `App.tsx`:
+The application uses a two-tiered context provider architecture in `App.tsx`:
 
 ```tsx
 // Centralized context provider component to improve organization and performance
@@ -81,9 +81,11 @@ const FeatureProviders = ({ children }: { children: React.ReactNode }) => (
               <RemindersProvider>
                 <NotesWithRemindersProvider>
                   <TasksProvider>
-                    <DashboardProvider>
-                      {children}
-                    </DashboardProvider>
+                    <IdeasProvider>
+                      <DashboardProvider>
+                        {children}
+                      </DashboardProvider>
+                    </IdeasProvider>
                   </TasksProvider>
                 </NotesWithRemindersProvider>
               </RemindersProvider>
@@ -98,166 +100,70 @@ const FeatureProviders = ({ children }: { children: React.ReactNode }) => (
 
 This improved organization loads app-wide providers first and feature-specific providers only when needed.
 
-## Key Context Providers
+## Key Contexts
 
-- **AuthContext**: Authentication state and operations
-- **ThemeContext**: Theme settings and operations
-- **NotesContext**: Notes data and operations
-- **TasksContext**: Tasks data and operations
-- **RemindersContext**: Reminders data and operations
-- **AIContext**: AI provider configurations and operations
-- **DashboardContext**: Dashboard UI state and settings
-- **TrashContext**: Deleted items management
-- **ModalContext**: Modal dialog management
-- **ActivityContext**: User activity tracking
-- **RecordingContext**: Audio recording for transcription
+The application uses a comprehensive context system to manage state:
+
+1. **AuthContext**: Authentication state, user profile and login/logout operations
+2. **ThemeContext**: Theme settings and dynamic theme switching operations
+3. **NotesWithRemindersContext**: Notes data, operations, and reminder integration
+4. **TasksContext**: Task management, status updates, and filtering
+5. **IdeasContext**: Ideas management and operations
+6. **RemindersContext**: Time-based reminders and notifications
+7. **AIContext**: AI provider configurations and chat operations
+8. **DashboardContext**: Dashboard UI state, layouts, and visualization settings
+9. **TrashContext**: Deleted items management with restoration capabilities
+10. **ModalContext**: Centralized modal dialog management
+11. **ActivityContext**: User activity tracking and history
+12. **RecordingContext**: Audio recording for transcription and notes
+
+Each context is split into a main Context file and a utility file that contains helper functions, types, and constants.
+
+## Route Structure
+
+The application uses React Router v6 for routing with these key features:
+
+```tsx
+// Application routes component
+const AppRoutes = () => (
+  <Suspense fallback={<LoadingScreen message="Loading application..." />}>
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegistrationPage />} />
+      <Route
+        path="/dashboard/*"
+        element={
+          <ProtectedRoute>
+            <FeatureProviders>
+              <Dashboard />
+            </FeatureProviders>
+          </ProtectedRoute>
+        }
+      />
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+    </Routes>
+  </Suspense>
+);
+```
+
+Routes use lazy loading for improved performance and the `ProtectedRoute` component for authentication guards.
 
 ## Component Patterns
 
-1. **Feature-based organization**: Components are organized by feature (Notes, Tasks, etc.)
+1. **Feature-based organization**: Components are organized by feature (Notes, Tasks, Ideas)
 2. **Compound components**: Complex UI elements use compound component pattern
 3. **Custom hooks**: Business logic is extracted into custom hooks
 4. **Context consumers**: Components use context via custom hooks (`useNotes`, `useTasks`, etc.)
 5. **Error boundaries**: Components are wrapped with error boundaries for resilience
 6. **Lazy loading**: Route components are lazy-loaded for optimized performance
+7. **Suspense**: Used with lazy loading to provide loading states
 
-## API Integration
+## AI Integration
 
-The API client in `services/api/api.ts` implements token management and request/response interceptors:
-
-```typescript
-// Token management interface
-interface ITokenManager {
-  getAccessToken(): string | null;
-  getRefreshToken(): string | null;
-  setTokens(accessToken: string, refreshToken: string): void;
-  clearTokens(): void;
-}
-
-// API instance with interceptors
-const api = axios.create({
-  baseURL: 'http://localhost:5127',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Request interceptor adds auth token
-api.interceptors.request.use(config => {
-  const token = TokenManager.getAccessToken();
-  if (token) {
-    config.headers['Authorization'] = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// Response interceptor handles token refresh
-api.interceptors.response.use(
-  response => response,
-  async error => {
-    // Handle 401 with token refresh logic
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      // Token refresh logic with race condition prevention
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          pendingRequests.push({
-            resolve,
-            reject,
-            config: originalRequest
-          });
-        });
-      }
-      
-      isRefreshing = true;
-      // Refresh token implementation
-      // ...
-    }
-    return Promise.reject(error);
-  }
-);
-```
-
-Domain-specific services build on this API client:
+The application integrates with multiple AI providers through a unified interface in `services/aiService.ts`:
 
 ```typescript
-// Example notes service
-export const notesService = {
-  getNotes: async (): Promise<Note[]> => {
-    const response = await api.get('/api/notes');
-    return response.data;
-  },
-  
-  createNote: async (note: CreateNoteDto): Promise<Note> => {
-    const response = await api.post('/api/notes', note);
-    return response.data;
-  }
-};
-```
-
-## Authentication System
-
-The authentication system uses a hybrid approach for secure token storage:
-
-```typescript
-// TokenManager in AuthContext.tsx
-export class TokenManager {
-  private static readonly ACCESS_TOKEN_KEY = 'access_token';
-  private static readonly REFRESH_TOKEN_KEY = 'refresh_token';
-
-  // In-memory storage for access token to avoid XSS attacks
-  private static accessToken: string | null = null;
-
-  static getAccessToken(): string | null {
-    return this.accessToken;
-  }
-
-  static getRefreshToken(): string | null {
-    return localStorage.getItem(this.REFRESH_TOKEN_KEY);
-  }
-
-  static setTokens(accessToken: string, refreshToken: string) {
-    this.accessToken = accessToken;
-    localStorage.setItem(this.REFRESH_TOKEN_KEY, refreshToken);
-  }
-  
-  static clearTokens() {
-    this.accessToken = null;
-    localStorage.removeItem(this.REFRESH_TOKEN_KEY);
-  }
-}
-```
-
-This approach stores access tokens in memory for security while keeping refresh tokens in localStorage for persistence.
-
-## SignalR Integration
-
-The application uses SignalR for real-time communication with built-in reconnection handling:
-
-```typescript
-// SignalR connection with auth token
-const connection = new signalR.HubConnectionBuilder()
-  .withUrl(`${baseUrl}/toolHub`, {
-    accessTokenFactory: () => TokenManager.getAccessToken() || '',
-  })
-  .withAutomaticReconnect({
-    nextRetryDelayInMilliseconds: (retryContext) => {
-      // Exponential backoff logic
-      const delay = Math.min(
-        1000 * Math.pow(2, retryContext.previousRetryCount),
-        30000 // Max 30 seconds
-      );
-      return delay;
-    }
-  })
-  .build();
-```
-
-## Multi-Provider AI System
-
-The application integrates with multiple AI providers through a unified interface:
-
-```typescript
-// AI Model definitions
+// AI Service structure in aiService.ts
 export interface AIModel {
   id: string;
   name: string;
@@ -269,183 +175,126 @@ export interface AIModel {
   isStreaming: boolean;
 }
 
-// Provider-specific implementations
-// OpenAI implementation
-export const sendMessageToOpenAI = async (
-  message: string,
-  modelId: string,
-  messageCallback: (message: string) => void
-): Promise<void> => {
-  // OpenAI-specific implementation
-};
+// Supported AI providers include:
+// - OpenAI (GPT models)
+// - Anthropic (Claude models)
+// - Google (Gemini models)
+// - Local models via Ollama
+```
 
-// Anthropic/Claude implementation
-export const sendMessageToAnthropic = async (
-  message: string,
-  modelId: string,
-  messageCallback: (message: string) => void
-): Promise<void> => {
-  // Anthropic-specific implementation
-};
+## SignalR Integration
 
-// Message handling service
-export const sendMessage = async (
-  message: string,
-  modelId: string,
-  messageCallback: (message: string) => void
-): Promise<void> => {
-  const model = getModelById(modelId);
+The application uses SignalR for real-time communication with built-in reconnection handling:
+
+```typescript
+// SignalR connection with auth token and reconnection logic
+export class SignalRService {
+  private connection: signalR.HubConnection;
   
-  switch (model.provider) {
-    case 'openai':
-      return sendMessageToOpenAI(message, modelId, messageCallback);
-    case 'anthropic':
-      return sendMessageToAnthropic(message, modelId, messageCallback);
-    case 'gemini':
-      return sendMessageToGemini(message, modelId, messageCallback);
-    case 'grok':
-      return sendMessageToGrok(message, modelId, messageCallback);
-    case 'ollama':
-      return sendMessageToOllama(message, modelId, messageCallback);
-    default:
-      throw new Error(`Unsupported provider: ${model.provider}`);
+  constructor(hubUrl: string, getAccessToken: () => string | null) {
+    this.connection = new signalR.HubConnectionBuilder()
+      .withUrl(hubUrl, {
+        accessTokenFactory: () => getAccessToken() || '',
+      })
+      .withAutomaticReconnect({
+        nextRetryDelayInMilliseconds: this.getRetryDelay
+      })
+      .build();
   }
-};
+  
+  // Advanced reconnection strategy with exponential backoff
+  private getRetryDelay(retryContext: signalR.RetryContext): number {
+    // Implementation details for retry logic
+  }
+}
+```
+
+## Data Visualization 
+
+The application uses multiple visualization libraries:
+
+1. **Chart.js & react-chartjs-2**: For dashboard statistics and data visualization
+2. **Recharts**: For alternative charting needs
+3. **Cytoscape.js**: For graph and network visualizations
+4. **ReactFlow**: For workflow and connection diagrams
+
+## Document Processing
+
+The application includes rich document processing capabilities:
+
+1. **PDF.js**: PDF rendering and text extraction
+2. **Mammoth**: Word document conversion
+3. **XLSX**: Spreadsheet processing
+4. **Marked & React Markdown**: Markdown rendering
+5. **KaTeX**: Mathematical notation rendering
+6. **Mermaid**: Diagram rendering from text descriptions
+7. **PrismJS**: Code syntax highlighting
+
+## Authentication System
+
+The authentication system uses a hybrid approach for secure token storage:
+
+```typescript
+// TokenManager in AuthContext.tsx
+export class TokenManager {
+  // In-memory storage for access token to avoid XSS attacks
+  private static accessToken: string | null = null;
+  
+  // Local storage for refresh token for persistence
+  private static readonly REFRESH_TOKEN_KEY = 'refresh_token';
+
+  // Methods for token management
+  static getAccessToken(): string | null { /* ... */ }
+  static getRefreshToken(): string | null { /* ... */ }
+  static setTokens(accessToken: string, refreshToken: string) { /* ... */ }
+  static clearTokens() { /* ... */ }
+}
 ```
 
 ## Theme System
 
-The theme system uses a multi-layered approach with CSS variables, Tailwind classes, and early-load script:
-
-### Theme Configuration
+The theme system uses a multi-layered approach with CSS variables, Tailwind classes, and an early-load script to prevent flash of unstyled content (FOUC):
 
 ```typescript
-// Theme configuration in theme.config.ts
+// Theme configuration with multiple color schemes
 export const themes: Record<ThemeName, ThemeConfig> = {
-  light: {
-    name: 'Light',
-    colors: {
-      primary: '#2563eb',
-      secondary: '#64748b',
-      background: '#ffffff',
-      surface: '#f8fafc',
-      text: '#1e293b',
-      // Many more color definitions...
-    }
-  },
-  dark: {
-    // Dark theme colors...
-  },
-  midnight: {
-    // Midnight theme colors...
-  },
-  'full-dark': {
-    // Full dark theme colors...
-  }
+  light: { /* Light theme colors and settings */ },
+  dark: { /* Dark theme colors and settings */ },
+  midnight: { /* Midnight theme colors and settings */ },
+  'full-dark': { /* Full dark theme colors and settings */ }
 };
 ```
 
-### Theme Application
+## Technologies & Libraries
 
-```typescript
-// Apply CSS variables
-Object.entries(theme.colors).forEach(([key, value]) => {
-  root.style.setProperty(`--${key}`, value);
-  root.style.setProperty(`--color-${key}`, value);
-});
+Key libraries and technologies used in the frontend:
 
-// Apply Tailwind classes
-root.classList.remove('light', 'dark', 'midnight', 'full-dark');
-root.classList.add(themeName);
+- **React 18**: Core UI library with concurrent features
+- **TypeScript**: Static typing
+- **Vite**: Fast build tool and development server
+- **TailwindCSS**: Utility-first CSS framework
+- **React Router 6**: Routing with modern features
+- **Axios**: HTTP client with interceptor support
+- **SignalR**: Real-time communication
+- **Headless UI**: Accessible UI components
+- **Framer Motion**: Animation library
+- **React Beautiful DnD**: Drag and drop functionality
+- **AI SDKs**: OpenAI, Anthropic, Google Generative AI
 
-// Set color-scheme property
-root.style.colorScheme = themeName === 'light' ? 'light' : 'dark';
-```
+## Performance Optimizations
 
-### Early-Load Theme Script
-
-The application uses a script to apply the theme before the React app loads to prevent flash of unstyled content:
-
-```typescript
-// themeScript.ts - Embedded in index.html
-export const themeScript = `
-  (function() {
-    // Embed the themes configuration directly into the script
-    const themes = ${themesJSON};
-    
-    try {
-      const savedTheme = localStorage.getItem('theme');
-      const systemDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      
-      // Determine the initial theme
-      let themeName = savedTheme;
-      if (!themeName || !themes[themeName]) {
-        themeName = systemDarkMode ? 'dark' : 'light';
-      }
-
-      // Apply theme to HTML root
-      const root = document.documentElement;
-      root.setAttribute('data-theme', themeName);
-      root.classList.toggle('dark', themeName !== 'light');
-      
-      // Apply CSS variables
-      const themeColors = themes[themeName].colors;
-      for (const key in themeColors) {
-        root.style.setProperty('--' + key, themeColors[key]);
-        root.style.setProperty('--color-' + key, themeColors[key]);
-      }
-      
-      // Safari-specific fixes
-      // ...
-    } catch (e) {
-      console.error('Error applying initial theme:', e);
-    }
-  })();
-`;
-```
-
-## Dashboard Visualization System
-
-The dashboard uses a modular visualization system with:
-
-1. **Stats Registry**: Central registry mapping stat IDs to handler functions
-2. **Stat Handlers**: Specialized modules calculating specific statistics
-3. **Visualization Components**: Reusable chart and visualization components
-4. **Responsive Layouts**: Cards that adapt to different sizes and screen widths
-
-```typescript
-// Stats Registry Pattern
-type StatHandler = (data: StatHandlerData) => StatValue;
-
-const statsRegistry: Record<string, StatHandler> = {
-  'total-notes': ({ notes }) => getTotalNotesStatValue(notes),
-  'active-tasks': ({ tasks }) => getActiveTasksStatValue(tasks),
-  // Other stat handlers...
-};
-
-// Dashboard Context provides stat configuration
-export function useDashboardContext() {
-  // State for enabled stats, sizes, and order
-  const [enabledStats, setEnabledStats] = useState<string[]>(DEFAULT_ENABLED_STATS);
-  const [statSizes, setStatSizes] = useState<Record<string, StatSize>>(DEFAULT_STAT_SIZES);
-  const [statOrder, setStatOrder] = useState<string[]>(DEFAULT_STAT_ORDER);
-  
-  // Functions to manage stats
-  const toggleStat = (statId: string) => { /*...*/ };
-  const resizeStat = (statId: string, size: StatSize) => { /*...*/ };
-  const reorderStats = (newOrder: string[]) => { /*...*/ };
-  
-  // ...
-}
-```
+1. **Code Splitting**: Lazy loading for route components
+2. **Virtualization**: Using Tanstack Virtual for long lists
+3. **Memoization**: Strategic use of useMemo and useCallback
+4. **Suspense Boundaries**: Loading states for async operations
+5. **Two-Tier Provider Structure**: Optimized context hierarchy
 
 ## Important Notes
 
 1. **Error Handling**: All components should use error boundaries
 2. **Provider Dependencies**: Some contexts depend on others being initialized first
-3. **Safari-specific Code**: Theme system has special handling for Safari browser
-4. **Optimistic Updates**: Many operations update local state before API calls complete
-5. **Lazy Loading**: Use lazy loading for components to improve performance
-6. **Token Security**: Access tokens stored in memory, refresh tokens in localStorage
-7. **Multi-theme Support**: Four themes with CSS variables and Tailwind integration
-8. **AI Provider Abstraction**: Unified interface for multiple AI providers 
+3. **Optimistic Updates**: Many operations update local state before API calls complete
+4. **Token Security**: Access tokens stored in memory, refresh tokens in localStorage
+5. **Multi-theme Support**: Multiple themes with CSS variables and Tailwind integration
+6. **AI Provider Abstraction**: Unified interface for multiple AI providers
+7. **Responsive Design**: All UI components built with mobile-first approach 
