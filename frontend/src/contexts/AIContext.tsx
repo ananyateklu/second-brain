@@ -108,7 +108,7 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
       try {
         console.log(`Checking endpoint: ${endpoint}`);
         const response = await api.get(endpoint);
-        console.log(`Response from ${endpoint}:`, response.data);
+        console.log('Response from endpoint:', endpoint, response.data);
 
         // Try to extract configuration status from various response formats
         let isConfigured = false;
@@ -142,7 +142,7 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
         setter(isConfigured);
         return isConfigured;
       } catch (error) {
-        console.warn(`Error checking ${endpoint}:`, error);
+        console.warn(`Error checking endpoint:`, endpoint, error);
         setter(false);
         return false;
       }
