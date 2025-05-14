@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useIdeas } from '../../../../contexts/ideasContextUtils';
 import { Idea } from '../../../../types/idea';
 import { useNotes } from '../../../../contexts/notesContextUtils';
@@ -16,6 +16,29 @@ import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../../../contexts/themeContextUtils';
 import { SuggestedLinksSection } from './SuggestedLinksSection';
+import { similarContentService } from '../../../../services/ai/similarContentService';
+
+// Define a unified interface for suggestions from any content type
+interface UnifiedSuggestion {
+  id: string;
+  title: string;
+  similarity: number;
+  type: 'note' | 'idea' | 'task' | 'reminder';
+  status?: string;
+  dueDate?: string | null;
+}
+
+// Create a context type for our centralized suggestions
+interface SuggestionState {
+  isLoading: boolean;
+  error: string | null;
+  suggestions: {
+    notes: UnifiedSuggestion[];
+    ideas: UnifiedSuggestion[];
+    tasks: UnifiedSuggestion[];
+    reminders: UnifiedSuggestion[];
+  };
+}
 
 interface EditIdeaModalProps {
   idea: Idea;
@@ -56,6 +79,18 @@ export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaMo
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
   const [showAddReminderModal, setShowAddReminderModal] = useState(false);
   const [refreshSuggestions, setRefreshSuggestions] = useState(0);
+
+  // Add new state for centralized suggestion management
+  const [suggestionState, setSuggestionState] = useState<SuggestionState>({
+    isLoading: false,
+    error: null,
+    suggestions: {
+      notes: [],
+      ideas: [],
+      tasks: [],
+      reminders: []
+    }
+  });
 
   // Reset states when modal opens/closes
   useEffect(() => {
@@ -118,6 +153,141 @@ export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaMo
       setLinkedReminders(linkedRemindersList);
     }
   }, [currentIdea, currentIdea?.linkedItems, notes, tasks, ideasState.ideas, allReminders]);
+
+  // Create a centralized function to load all suggestions at once
+  const loadAllSuggestions = useCallback(async () => {
+    if (!currentIdea) return;
+
+    // Skip if there's nothing to compare against
+    const hasNotes = notes.length > 0;
+    const hasIdeas = ideasState.ideas.length > 1; // More than 1 because we exclude the current idea
+    const hasTasks = tasks.length > 0;
+    const hasReminders = allReminders.length > 0;
+
+    if (!hasNotes && !hasIdeas && !hasTasks && !hasReminders) {
+      console.log("Skipping suggestions: no content to compare against");
+      return;
+    }
+
+    try {
+      setSuggestionState(prev => ({ ...prev, isLoading: true, error: null }));
+      console.log("Loading all content suggestions for:", currentIdea.title);
+
+      // Get IDs of already linked items
+      const linkedIds = currentIdea.linkedItems?.map(item => item.id) || [];
+
+      // Log content availability for debugging
+      console.log("Available items for suggestions:", {
+        notes: notes.length,
+        ideas: ideasState.ideas.length - 1, // Minus current idea
+        tasks: tasks.length,
+        reminders: allReminders.length,
+        alreadyLinked: linkedIds.length
+      });
+
+      // Log reminder details for debugging
+      if (hasReminders) {
+        console.log("Available reminders:", allReminders.map(r => ({
+          id: r.id,
+          title: r.title
+        })));
+      }
+
+      // Make a single call to the similarContentService with all content types
+      const results = await similarContentService.findSimilarContent(
+        {
+          id: currentIdea.id,
+          title: currentIdea.title,
+          content: currentIdea.content || '',
+          tags: currentIdea.tags || []
+        },
+        notes,
+        ideasState.ideas.filter(idea => idea.id !== currentIdea.id), // Filter out current idea
+        tasks,
+        allReminders,
+        linkedIds, // Exclude already linked items
+        12 // Increased to get enough results for all types
+      );
+
+      console.log("Successfully received all suggestions:", results.length);
+      console.log("Raw AI results:", JSON.stringify(results));
+
+      // Separate suggestions by type
+      const noteResults = results.filter(item => item.type === 'note');
+      const ideaResults = results.filter(item => item.type === 'idea');
+      const taskResults = results.filter(item => item.type === 'task');
+      const reminderResults = results.filter(item => item.type === 'reminder');
+
+      // Log result distribution
+      console.log("Suggestion distribution:", {
+        notes: noteResults.length,
+        ideas: ideaResults.length,
+        tasks: taskResults.length,
+        reminders: reminderResults.length
+      });
+
+      // Log specific reminder results for debugging
+      if (reminderResults.length > 0) {
+        console.log("Reminder suggestion details:", reminderResults.map(r => ({
+          id: r.id,
+          title: r.title,
+          similarity: r.similarity,
+          type: r.type
+        })));
+
+        // Verify reminder IDs exist in the system
+        const foundReminderCount = reminderResults.filter(r =>
+          allReminders.some(ar => ar.id === r.id)
+        ).length;
+
+        console.log(`Found ${foundReminderCount} out of ${reminderResults.length} reminders in context`);
+      } else {
+        console.log("No reminder suggestions were found");
+      }
+
+      // Update our centralized suggestion state
+      setSuggestionState({
+        isLoading: false,
+        error: null,
+        suggestions: {
+          notes: noteResults,
+          ideas: ideaResults,
+          tasks: taskResults,
+          reminders: reminderResults
+        }
+      });
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error("Error loading suggestions:", error);
+      setSuggestionState(prev => ({
+        ...prev,
+        isLoading: false,
+        error: errorMessage
+      }));
+    }
+  }, [currentIdea, notes, ideasState.ideas, tasks, allReminders]);
+
+  // Load suggestions on modal open and when linked items change
+  useEffect(() => {
+    if (isOpen && currentIdea) {
+      loadAllSuggestions();
+    }
+  }, [isOpen, currentIdea, refreshSuggestions, loadAllSuggestions]);
+
+  // Add a debug logger for reminder suggestions
+  useEffect(() => {
+    if (suggestionState.suggestions.reminders.length > 0) {
+      console.log("EditIdeaModal: Found reminder suggestions:",
+        suggestionState.suggestions.reminders.map(r => ({
+          id: r.id,
+          title: r.title,
+          type: r.type,
+          similarity: r.similarity
+        }))
+      );
+    }
+  }, [suggestionState.suggestions.reminders]);
 
   if (!isOpen || !currentIdea) return null;
 
@@ -270,15 +440,17 @@ export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaMo
               onUnlinkReminder={handleUnlinkReminder}
               currentIdea={currentIdea}
               onLinkReminder={handleLinkReminder}
+              suggestedReminders={suggestionState.suggestions.reminders}
+              suggestionsLoading={suggestionState.isLoading}
             />
             <div className={`flex flex-col overflow-y-auto border-l ${theme === 'midnight' ? 'border-white/5' : theme === 'dark' ? 'border-gray-700/30' : 'border-[var(--color-border)]'} bg-[var(--color-surface)]`}>
               <div className="p-4 space-y-4">
                 <SuggestedLinksSection
-                  currentIdea={currentIdea}
-                  linkedNoteIds={currentIdea.linkedItems?.filter(item => item.type === 'Note').map(item => item.id) || []}
-                  linkedIdeaIds={currentIdea.linkedItems?.filter(item => item.type === 'Idea').map(item => item.id) || []}
-                  linkedTaskIds={currentIdea.linkedItems?.filter(item => item.type === 'Task').map(item => item.id) || []}
-                  refreshTrigger={refreshSuggestions}
+                  suggestedNotes={suggestionState.suggestions.notes}
+                  suggestedIdeas={suggestionState.suggestions.ideas}
+                  suggestedTasks={suggestionState.suggestions.tasks}
+                  isLoading={suggestionState.isLoading}
+                  error={suggestionState.error}
                   onLinkNote={async (noteId) => {
                     try {
                       await addLink(currentIdea.id, noteId, 'Note');
@@ -297,10 +469,13 @@ export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaMo
                   }}
                   onLinkTask={async (taskId) => {
                     try {
+                      console.log(`EditIdeaModal: Attempting to link task ID: ${taskId} to idea ID: ${currentIdea.id}`);
                       await addLink(currentIdea.id, taskId, 'Task');
+                      console.log(`EditIdeaModal: Successfully linked task ID: ${taskId} to idea ID: ${currentIdea.id}`);
                       triggerRefreshSuggestions();
                     } catch (error) {
-                      console.error('Failed to link task:', error);
+                      console.error('EditIdeaModal: Failed to link task:', error);
+                      throw error;
                     }
                   }}
                 />
@@ -379,6 +554,8 @@ export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaMo
             onClose={() => setShowAddReminderModal(false)}
             onSelect={handleLinkReminder}
             currentLinkedReminderIds={linkedReminders.map(r => r.id)}
+            passedSuggestedReminders={suggestionState.suggestions.reminders}
+            isLoadingSuggestions={suggestionState.isLoading}
           />
         )}
       </div>
