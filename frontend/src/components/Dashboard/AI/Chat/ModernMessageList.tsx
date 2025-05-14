@@ -131,7 +131,7 @@ export function ModernMessageList(props: ModernMessageListProps) { // Renamed co
                 <div
                     ref={scrollContainerRef}
                     onScroll={handleScroll}
-                    className="h-full overflow-y-auto overflow-x-hidden px-1 sm:px-2 md:px-4 py-4 pb-16 space-y-4 custom-scrollbar"
+                    className="h-full overflow-y-auto overflow-x-hidden px-1 sm:px-2 md:px-3 py-2 space-y-2 custom-scrollbar"
                 >
                     {groupedMessages.map((group, groupIndex) => {
                         const date = new Date(group[0].timestamp);
@@ -152,7 +152,7 @@ export function ModernMessageList(props: ModernMessageListProps) { // Renamed co
                                         </div>
                                     </div>
                                 )}
-                                <div className="space-y-1 mx-2 sm:mx-3 md:mx-5 lg:mx-10">
+                                <div className="space-y-1 mx-2 sm:mx-2 md:mx-4 lg:mx-8">
                                     {group.map((message, index) => (
                                         <AIMessage
                                             key={`${message.id}-${index}`}
@@ -167,7 +167,7 @@ export function ModernMessageList(props: ModernMessageListProps) { // Renamed co
                             </div>
                         );
                     })}
-                    <div ref={props.messagesEndRef} className="h-12" />
+                    <div ref={props.messagesEndRef} className="h-8" />
                 </div>
             ) : null}
         </div>
