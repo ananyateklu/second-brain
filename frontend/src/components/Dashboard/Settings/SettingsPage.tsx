@@ -215,7 +215,6 @@ export function SettingsPage() {
 
   const sectionClasses = `
     relative 
-    overflow-hidden 
     rounded-2xl 
     ${getContainerBackground()}
     backdrop-blur-xl 
@@ -242,7 +241,7 @@ export function SettingsPage() {
   const activeButtonClasses = `
     text-sm flex items-center gap-2 px-4 py-2 rounded-lg
     bg-[var(--color-accent)]/10
-    border-[0.5px] border-[var(--color-accent)]/20
+    border-[0.5px] border-[var(--color-accent)]
     text-[var(--color-accent)]
     transition-all duration-200
   `;
@@ -301,17 +300,17 @@ export function SettingsPage() {
   console.log('[SettingsPage Render] isTickTickConnectedUI:', isTickTickConnectedUI, 'Context:', isTickTickConnected, 'Notes Connected:', notesTickTickConnected);
 
   return (
-    <div className="min-h-screen overflow-visible bg-fixed">
+    <div className="overflow-hidden bg-fixed">
       {/* Background */}
       <div className="fixed inset-0 bg-[var(--color-background)] -z-10" />
 
-      <div className="container mx-auto px-4 py-6 max-w-7xl">
+      <div className="container mx-auto px-4 py-6 max-w-7xl  flex flex-col overflow-hidden">
         {/* Page Header */}
         <motion.div
           initial="hidden"
           animate="visible"
           variants={cardVariants}
-          className={`mb-8 ${sectionClasses}`}
+          className={`mb-8 ${sectionClasses} flex-shrink-0`}
         >
           <div className="p-6">
             <motion.div
@@ -332,11 +331,11 @@ export function SettingsPage() {
         </motion.div>
 
         {/* Content Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-6 flex-grow overflow-hidden">
           {/* Sidebar Navigation */}
           <motion.div
             variants={cardVariants}
-            className={`p-3 h-fit ${sectionClasses}`}
+            className={`p-3 ${sectionClasses} overflow-y-auto`}
           >
             <nav className="flex flex-col gap-2">
               <button
@@ -387,7 +386,7 @@ export function SettingsPage() {
           {/* Main Content */}
           <motion.div
             variants={cardVariants}
-            className={`p-6 ${sectionClasses}`}
+            className={`p-6 ${sectionClasses} h-[700px] overflow-y-auto`}
           >
             {tabContent[activeTab as keyof typeof tabContent]}
           </motion.div>
