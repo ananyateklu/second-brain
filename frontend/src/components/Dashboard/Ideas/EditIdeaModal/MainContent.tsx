@@ -15,6 +15,16 @@ interface IdeaReminderLink {
   updatedAt?: string;
 }
 
+// Definition for suggestion items
+interface SuggestionItem {
+  id: string;
+  title: string;
+  similarity: number;
+  type: 'note' | 'idea' | 'task' | 'reminder';
+  status?: string;
+  dueDate?: string | null;
+}
+
 interface MainContentProps {
   title: string;
   content: string;
@@ -32,6 +42,8 @@ interface MainContentProps {
   onShowAddReminder: () => void;
   onUnlinkReminder: (reminderId: string) => void;
   onLinkReminder: (reminderId: string) => Promise<boolean | void>;
+  suggestedReminders?: SuggestionItem[];
+  suggestionsLoading?: boolean;
 }
 
 export function MainContent({
@@ -42,7 +54,6 @@ export function MainContent({
   error,
   isLoading,
   linkedReminders,
-  currentIdea,
   onTitleChange,
   onContentChange,
   onTagInputChange,
@@ -51,7 +62,22 @@ export function MainContent({
   onShowAddReminder,
   onUnlinkReminder,
   onLinkReminder,
+  suggestedReminders = [],
+  suggestionsLoading = false,
 }: MainContentProps) {
+
+  // Add logging for debugging
+  if (suggestedReminders.length > 0) {
+    console.log("MainContent: Received reminder suggestions:",
+      suggestedReminders.map(r => ({
+        id: r.id,
+        title: r.title,
+        type: r.type,
+        similarity: r.similarity
+      }))
+    );
+  }
+
   return (
     <div className="flex-1 overflow-y-auto bg-[var(--color-surface)]">
       <div className="p-4 space-y-4">
@@ -107,7 +133,8 @@ export function MainContent({
             reminders={linkedReminders}
             onUnlink={onUnlinkReminder}
             onLink={onLinkReminder}
-            currentIdea={currentIdea}
+            suggestedReminders={suggestedReminders}
+            isLoadingSuggestions={suggestionsLoading}
           />
         </div>
 

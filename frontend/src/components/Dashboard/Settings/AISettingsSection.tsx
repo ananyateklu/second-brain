@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Bot, Settings2, AlertCircle, CheckCircle, Loader, Save, ChevronDown, Sliders, MessageSquare, Zap, Info, Star, UserCheck, Lightbulb, HelpCircle, Sparkles, Code, Eye } from 'lucide-react';
+import { Bot, Settings2, AlertCircle, CheckCircle, Loader, Save, ChevronDown, Sliders, MessageSquare, Zap, Info, Star, UserCheck, Lightbulb, HelpCircle, Sparkles, Code, Eye, Link2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAI } from '../../../contexts/AIContext';
 import { useTheme } from '../../../contexts/themeContextUtils';
@@ -184,6 +184,25 @@ const configurationProfiles = [
       temperature: 0.3,
       maxTokens: 1500,
       systemMessage: 'You are a technical prompt enhancement assistant. Add precise specifications, requirements, and technical details to prompts while maintaining clarity.'
+    }
+  },
+  {
+    id: 'link-suggestion',
+    name: 'Link Suggestion',
+    icon: <Link2 className="w-3 h-3" />,
+    contentSettings: {
+      provider: 'openai' as AIProviderKey,
+      modelId: 'gpt-4',
+      temperature: 0.3,
+      maxTokens: 2000,
+      systemMessage: 'You are a semantic connection specialist. Find meaningful connections between all content types (notes, tasks, ideas) with equal importance. Look for shared concepts, themes, and contextual relationships. Do not favor notes over other content types - tasks and ideas are equally important connections.'
+    },
+    promptSettings: {
+      provider: 'openai' as AIProviderKey,
+      modelId: 'gpt-4',
+      temperature: 0.3,
+      maxTokens: 1500,
+      systemMessage: 'Help identify connections between concepts across all content types (notes, tasks, ideas) by finding semantic similarities and related topics. Treat all content types with equal importance.'
     }
   }
 ];

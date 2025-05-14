@@ -1,14 +1,21 @@
 import { Bell, Clock, Check, X, Plus, Loader, Sparkles } from 'lucide-react';
-// Changed import from note to idea
-import { Idea } from '../../../../types/idea'; // For currentIdea type
 import { Reminder as ReminderType } from '../../../../contexts/remindersContextUtils'; // For Reminder type from context
 import { formatDistanceToNow } from 'date-fns';
 import { useReminders } from '../../../../contexts/remindersContextUtils';
 import { EditReminderModal } from '../../Reminders/EditReminderModal';
 import { useState, useEffect } from 'react';
 import { useTheme } from '../../../../contexts/themeContextUtils';
-import { similarContentService } from '../../../../services/ai/similarContentService';
 import { motion } from 'framer-motion';
+
+// Interface for suggestion items passed from parent
+interface SuggestionItem {
+    id: string;
+    title: string;
+    similarity: number;
+    type: 'note' | 'idea' | 'task' | 'reminder';
+    status?: string;
+    dueDate?: string | null;
+}
 
 // Re-using LinkedReminder type for simplicity, assuming it just needs id and title for display in some contexts
 // If specific idea-related reminder fields are needed, this might need adjustment.
@@ -150,21 +157,22 @@ interface LinkedRemindersPanelProps {
     reminders: LinkedReminderDisplay[];
     onUnlink?: (reminderId: string) => void;
     onLink?: (reminderId: string) => Promise<boolean | void>; // Match EditIdeaModal handleLinkReminder
-    currentIdea?: Idea; // Changed from currentNote to currentIdea
+    suggestedReminders?: SuggestionItem[]; // Accept suggestions passed from parent instead of fetching
+    isLoadingSuggestions?: boolean; // Loading state passed from parent
 }
 
 export function LinkedRemindersPanel({
     reminders,
     onUnlink,
     onLink,
-    currentIdea // Changed from currentNote
+    suggestedReminders = [],
+    isLoadingSuggestions = false
 }: LinkedRemindersPanelProps) {
     const { reminders: allRemindersFromContext } = useReminders(); // Renamed to avoid conflict
     const { theme } = useTheme();
     const [selectedReminder, setSelectedReminder] = useState<ReminderType | null>(null);
-    const [suggestedReminders, setSuggestedReminders] = useState<Array<ReminderType & { similarity: number }>>([]);
-    const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
     const [linkingReminderId, setLinkingReminderId] = useState<string | null>(null);
+    const [processedSuggestions, setProcessedSuggestions] = useState<Array<ReminderType & { similarity: number }>>([]);
 
     const getContainerBackground = () => {
         if (theme === 'dark') return 'bg-[#111827]';
@@ -172,52 +180,52 @@ export function LinkedRemindersPanel({
         return 'bg-[var(--color-surface)]';
     };
 
+    // Process suggestion items into full reminder objects
     useEffect(() => {
-        // Ensure allRemindersFromContext is not empty before proceeding
-        if (!currentIdea || !allRemindersFromContext || allRemindersFromContext.length === 0 || !onLink) return;
+        console.log("Processing reminder suggestions:", suggestedReminders);
 
-        const loadSuggestedReminders = async () => {
-            setIsLoadingSuggestions(true);
-            try {
-                const linkedReminderIds = reminders.map(r => r.id);
-                const suggestions = await similarContentService.findSimilarContent(
-                    { // Pass currentIdea properties
-                        id: currentIdea.id,
-                        title: currentIdea.title,
-                        content: currentIdea.content,
-                        tags: currentIdea.tags
-                    },
-                    [],                       // availableNotes
-                    [],                       // availableIdeas
-                    [],                       // availableTasks
-                    allRemindersFromContext,  // availableReminders
-                    linkedReminderIds,        // excludeIds
-                    3                         // maxResults
-                );
+        if (!suggestedReminders?.length) {
+            console.log("No reminder suggestions provided");
+            setProcessedSuggestions([]);
+            return;
+        }
 
-                const reminderSuggestions = suggestions
-                    .filter(s => s.type === 'reminder' && s.similarity > 0.3)
-                    .map(s => {
-                        const fullReminder = allRemindersFromContext.find(r => r.id === s.id);
-                        if (!fullReminder) return null;
-                        return {
-                            ...fullReminder,
-                            similarity: s.similarity
-                        };
-                    })
-                    .filter(Boolean)
-                    .sort((a, b) => b!.similarity - a!.similarity) as Array<ReminderType & { similarity: number }>;
+        // Filter to only include reminder type
+        const reminderSuggestions = suggestedReminders.filter(s => s.type === 'reminder');
+        console.log(`Found ${reminderSuggestions.length} reminder suggestions with type 'reminder'`);
 
-                setSuggestedReminders(reminderSuggestions);
-            } catch (err) {
-                console.error('Failed to get suggested reminders:', err);
-            } finally {
-                setIsLoadingSuggestions(false);
-            }
-        };
+        if (reminderSuggestions.length === 0) {
+            console.log("No suggestions with type 'reminder' found");
+            setProcessedSuggestions([]);
+            return;
+        }
 
-        loadSuggestedReminders();
-    }, [currentIdea, allRemindersFromContext, onLink, reminders]);
+        // Log reminder IDs for comparison
+        console.log("Reminder suggestion IDs:", reminderSuggestions.map(r => r.id));
+        console.log("Available reminder IDs:", allRemindersFromContext.map(r => r.id));
+
+        // Convert suggestion items to full reminder objects
+        const processed = reminderSuggestions
+            .map(suggestion => {
+                const fullReminder = allRemindersFromContext.find(r => r.id === suggestion.id);
+
+                // Log for debugging
+                if (!fullReminder) {
+                    console.log(`Could not find full reminder with ID: ${suggestion.id}`);
+                    return null;
+                }
+
+                console.log(`Found matching reminder: "${fullReminder.title}" for suggestion ID: ${suggestion.id}`);
+                return {
+                    ...fullReminder,
+                    similarity: suggestion.similarity
+                };
+            })
+            .filter(Boolean) as Array<ReminderType & { similarity: number }>;
+
+        console.log(`Processed ${processed.length} suggestions into full reminders`);
+        setProcessedSuggestions(processed);
+    }, [suggestedReminders, allRemindersFromContext]);
 
     const handleLinkReminder = async (reminderId: string) => {
         if (!onLink) return;
@@ -225,7 +233,6 @@ export function LinkedRemindersPanel({
         setLinkingReminderId(reminderId);
         try {
             await onLink(reminderId);
-            setSuggestedReminders(prev => prev.filter(r => r.id !== reminderId));
         } catch (error) {
             console.error('Failed to link reminder:', error);
         } finally {
@@ -238,11 +245,10 @@ export function LinkedRemindersPanel({
         return allRemindersFromContext.find(r => r.id === linkedReminder.id);
     }).filter(Boolean) as ReminderType[];
 
-
     if (displayableReminders.length === 0) {
         return (
             <div className={`p-3 ${getContainerBackground()}`}>
-                {suggestedReminders.length > 0 || isLoadingSuggestions ? (
+                {(processedSuggestions.length > 0 || isLoadingSuggestions) ? (
                     <div className="space-y-2">
                         <div className="flex items-center gap-1.5 mb-2">
                             <Sparkles className="w-3 h-3 text-purple-500" />
@@ -251,7 +257,7 @@ export function LinkedRemindersPanel({
                         </div>
 
                         <div className="flex flex-wrap gap-1.5">
-                            {suggestedReminders.map(reminder => (
+                            {processedSuggestions.map(reminder => (
                                 <SuggestedReminderCard
                                     key={reminder.id}
                                     reminder={reminder}
@@ -259,6 +265,13 @@ export function LinkedRemindersPanel({
                                     isLinking={linkingReminderId === reminder.id}
                                 />
                             ))}
+                            {processedSuggestions.length === 0 && !isLoadingSuggestions && (
+                                <p className="text-xs text-[var(--color-textSecondary)] w-full text-center">
+                                    {suggestedReminders && suggestedReminders.length > 0
+                                        ? "Could not process reminder suggestions"
+                                        : "No relevant reminders found"}
+                                </p>
+                            )}
                         </div>
                     </div>
                 ) : (
@@ -287,7 +300,7 @@ export function LinkedRemindersPanel({
                 </div>
             </div>
 
-            {(suggestedReminders.length > 0 || isLoadingSuggestions) && (
+            {(processedSuggestions.length > 0 || isLoadingSuggestions) && (
                 <div className={`px-1.5 pb-1.5 ${getContainerBackground()}`}>
                     <div className="border-t border-[var(--color-border)]/10 dark:border-white/5 midnight:border-white/5 pt-1.5 mt-1">
                         <div className="flex items-center gap-1.5 mb-2">
@@ -297,7 +310,7 @@ export function LinkedRemindersPanel({
                         </div>
 
                         <div className="flex flex-wrap gap-1.5">
-                            {suggestedReminders.map(reminder => (
+                            {processedSuggestions.map(reminder => (
                                 <SuggestedReminderCard
                                     key={reminder.id}
                                     reminder={reminder}
@@ -305,6 +318,9 @@ export function LinkedRemindersPanel({
                                     isLinking={linkingReminderId === reminder.id}
                                 />
                             ))}
+                            {processedSuggestions.length === 0 && !isLoadingSuggestions && (
+                                <p className="text-xs text-[var(--color-textSecondary)] w-full text-center">No relevant reminders found</p>
+                            )}
                         </div>
                     </div>
                 </div>

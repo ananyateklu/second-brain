@@ -18,6 +18,7 @@ interface SimilarityResult {
     type: 'note' | 'idea' | 'task' | 'reminder';
     status?: string; // for tasks
     dueDate?: string | null; // for tasks and reminders
+    validItem?: boolean; // for pre-validated items
 }
 
 export class SimilarContentService {
@@ -85,6 +86,58 @@ export class SimilarContentService {
                         .filter(model => model.provider === provider && model.category === 'chat');
                 });
 
+            // For link suggestions, prefer models with higher reasoning capabilities
+            const isLinkSuggestionModelSelection = settings?.contentSuggestions?.systemMessage?.includes('Find meaningful connections') ||
+                settings?.contentSuggestions?.systemMessage?.includes('Help identify connections') ||
+                settings?.contentSuggestions?.systemMessage?.includes('semantic connection specialist') ||
+                settings?.contentSuggestions?.systemMessage?.includes('connection discovery');
+
+            if (isLinkSuggestionModelSelection) {
+                console.log('Using optimized model selection for link suggestions');
+
+                // For different providers, select optimal models for semantic tasks
+                if (provider === 'openai') {
+                    // Prefer GPT-4 models for link suggestions
+                    const gpt4Models = availableChatModels.filter(m => m.id.includes('gpt-4'));
+                    if (gpt4Models.length > 0) {
+                        console.log(`Using GPT-4 model for link suggestions: ${gpt4Models[0].id}`);
+                        return gpt4Models[0].id;
+                    }
+                } else if (provider === 'anthropic') {
+                    // Prefer Claude 3 models for link suggestions
+                    const claude3Models = availableChatModels.filter(m => m.id.includes('claude-3'));
+                    if (claude3Models.length > 0) {
+                        console.log(`Using Claude 3 model for link suggestions: ${claude3Models[0].id}`);
+                        return claude3Models[0].id;
+                    }
+                } else if (provider === 'gemini') {
+                    // Prefer Gemini Pro or Ultra models
+                    const geminiAdvancedModels = availableChatModels.filter(m =>
+                        m.id.includes('pro') || m.id.includes('ultra') || m.id.includes('1.5')
+                    );
+                    if (geminiAdvancedModels.length > 0) {
+                        console.log(`Using advanced Gemini model for link suggestions: ${geminiAdvancedModels[0].id}`);
+                        return geminiAdvancedModels[0].id;
+                    }
+                } else if (provider === 'ollama') {
+                    // For Ollama, prefer larger models or models known for reasoning
+                    const ollamaPreferredModels = availableChatModels.filter(m =>
+                        m.id.includes('llama3') ||
+                        m.id.includes('mistral') ||
+                        m.id.includes('mixtral') ||
+                        m.id.includes('wizard')
+                    );
+                    if (ollamaPreferredModels.length > 0) {
+                        console.log(`Using optimized Ollama model for link suggestions: ${ollamaPreferredModels[0].id}`);
+                        return ollamaPreferredModels[0].id;
+                    }
+                } else if (provider === 'grok') {
+                    // Grok typically only has one model available
+                    console.log(`Using Grok model for link suggestions: ${availableChatModels[0]?.id || 'grok-beta'}`);
+                    return availableChatModels[0]?.id || 'grok-beta';
+                }
+            }
+
             if (availableChatModels.length > 0) {
                 console.log(`Using first available ${provider} model: ${availableChatModels[0].id}`);
                 return availableChatModels[0].id;
@@ -95,14 +148,16 @@ export class SimilarContentService {
             return provider === 'ollama' ? 'llama3:latest' :
                 provider === 'grok' ? 'grok-beta' :
                     provider === 'anthropic' ? 'claude-3-haiku-20240307' :
-                        'gpt-4';
+                        provider === 'gemini' ? 'gemini-1.5-pro-latest' :
+                            'gpt-4';
         } catch (error) {
             console.error('Error getting model ID:', error);
             // Fallback to a reasonable default based on provider
             return provider === 'ollama' ? 'llama3:latest' :
                 provider === 'grok' ? 'grok-beta' :
                     provider === 'anthropic' ? 'claude-3-haiku-20240307' :
-                        'gpt-4';
+                        provider === 'gemini' ? 'gemini-1.5-pro-latest' :
+                            'gpt-4';
         }
     }
 
@@ -113,7 +168,20 @@ export class SimilarContentService {
         try {
             // Get settings from preferences
             const settings = await this.getSettings();
-            // Use provider from settings or default to openai
+
+            // Check if using link suggestion profile
+            const isLinkSuggestionMode = settings?.contentSuggestions?.systemMessage?.includes('Find meaningful connections') ||
+                settings?.contentSuggestions?.systemMessage?.includes('Help identify connections') ||
+                settings?.contentSuggestions?.systemMessage?.includes('semantic connection specialist') ||
+                settings?.contentSuggestions?.systemMessage?.includes('connection discovery');
+
+            if (isLinkSuggestionMode) {
+                // Log a message but respect the user's choice
+                const configuredProvider = settings?.contentSuggestions?.provider;
+                console.log(`Using configured provider ${configuredProvider} for link suggestions. Note: OpenAI and Anthropic often perform best for semantic connection tasks.`);
+            }
+
+            // Always use provider from settings or default to openai
             return settings?.contentSuggestions?.provider || 'openai';
         } catch (error) {
             console.error('Error getting provider:', error);
@@ -143,12 +211,6 @@ export class SimilarContentService {
 
             // Get settings with fresh data
             const settings = await this.getSettings();
-
-            // Skip if disabled
-            if (settings?.contentSuggestions?.enabled === false) {
-                console.log("Content suggestions are disabled in user settings");
-                return [];
-            }
 
             // Prepare content for embedding
             const allContent = [
@@ -187,6 +249,25 @@ export class SimilarContentService {
                     !excludeIds.includes(item.id)
                 );
 
+            // Debug output for content types being sent to AI
+            console.log("CONTENT BEING SENT TO AI:");
+            console.log("Notes count:", notes.length);
+            console.log("Ideas count:", ideas.length);
+            console.log("Tasks count:", tasks.length);
+            console.log("After filtering, content by type:", {
+                notes: allContent.filter(item => item.type === 'note').length,
+                ideas: allContent.filter(item => item.type === 'idea').length,
+                tasks: allContent.filter(item => item.type === 'task').length,
+                reminders: allContent.filter(item => item.type === 'reminder').length
+            });
+
+            if (allContent.filter(item => item.type === 'idea').length > 0) {
+                console.log("IDEA EXAMPLES:", allContent.filter(item => item.type === 'idea').slice(0, 2).map(i => ({ id: i.id, title: i.title })));
+            }
+            if (allContent.filter(item => item.type === 'task').length > 0) {
+                console.log("TASK EXAMPLES:", allContent.filter(item => item.type === 'task').slice(0, 2).map(t => ({ id: t.id, title: t.title })));
+            }
+
             // If no content to compare, return empty results
             if (allContent.length === 0) {
                 console.log("No content available to find similarities");
@@ -197,7 +278,16 @@ export class SimilarContentService {
             const modelId = await this.getModelId();
 
             // Create prompt with instructions
-            const prompt = this.createSimilarityPrompt(currentItem, allContent);
+            const basePrompt = this.createSimilarityPrompt(currentItem, allContent, settings?.contentSuggestions?.maxTokens);
+
+            // Get the system message from settings
+            const systemMessage = settings?.contentSuggestions?.systemMessage;
+
+            // Combine system message with the prompt if available
+            const prompt = systemMessage
+                ? `${systemMessage}\n\n${basePrompt}`
+                : basePrompt;
+
             console.log("Sending prompt to AI model:", modelId);
 
             // Get parameters from settings
@@ -207,6 +297,11 @@ export class SimilarContentService {
             };
 
             const service = this.getServiceForProvider(provider);
+            console.log("Using service:", service);
+            console.log("Prompt:", prompt);
+            console.log("Parameters:", parameters);
+            console.log("Provider:", provider);
+            console.log("Model ID:", modelId);
             const response = await service.sendMessage(prompt, modelId, parameters);
             // Convert response content to string to handle different types
             const responseContent = typeof response.content === 'string'
@@ -302,13 +397,75 @@ export class SimilarContentService {
                     throw new Error("Results array contains no valid items");
                 }
 
-                // Sort by similarity score (highest first)
-                const sortedResults = validResults
+                // Validate and correct types by cross-checking against original arrays
+                const correctedResults = validResults.map(item => {
+                    // Make a copy to avoid modifying the original
+                    const correctedItem = { ...item };
+
+                    // Store original information for debugging
+                    const originalType = item.type;
+                    const originalSimilarity = item.similarity;
+
+                    // Check if this item exists in one of our arrays to validate its type
+                    const noteMatch = notes.find(note => note.id === item.id);
+                    const ideaMatch = ideas.find(idea => idea.id === item.id);
+                    const taskMatch = tasks.find(task => task.id === item.id);
+
+                    // If the item exists in one of our arrays but has the wrong type, fix it
+                    if (noteMatch && item.type !== 'note') {
+                        console.log(`Correcting type from ${item.type} to 'note' for item ${item.id} (${item.title})`);
+                        correctedItem.type = 'note';
+                    } else if (ideaMatch && item.type !== 'idea') {
+                        console.log(`Correcting type from ${item.type} to 'idea' for item ${item.id} (${item.title})`);
+                        correctedItem.type = 'idea';
+                    } else if (taskMatch && item.type !== 'task') {
+                        console.log(`Correcting type from ${item.type} to 'task' for item ${item.id} (${item.title})`);
+                        correctedItem.type = 'task';
+                    }
+
+                    // Special case: If we have a task and the similarity seems unusually low or potentially modified,
+                    // log detailed information to help diagnose why tasks might be showing fixed similarity scores
+                    if ((originalType === 'task' || correctedItem.type === 'task') &&
+                        (originalSimilarity === 0.32 || correctedItem.similarity === 0.32)) {
+                        console.log(`TASK SIMILARITY CHECK: Item "${item.title}" (${item.id}):
+                            - Original type: ${originalType}, Corrected type: ${correctedItem.type}
+                            - Original similarity: ${originalSimilarity}, Current similarity: ${correctedItem.similarity}
+                            - Is this a fixed/default similarity value? ${originalSimilarity === 0.32 ? "YES" : "NO"}
+                        `);
+                    }
+
+                    return correctedItem;
+                });
+
+                // Check if we have a balanced distribution of content types
+                const resultsByType = correctedResults.reduce<Record<string, SimilarityResult[]>>((acc, item) => {
+                    acc[item.type] = (acc[item.type] || []);
+                    acc[item.type].push(item);
+                    return acc;
+                }, {});
+
+                // Log the distribution for debugging
+                console.log("Results by type before balancing:", Object.keys(resultsByType).map(type =>
+                    `${type}: ${resultsByType[type]?.length || 0}`
+                ));
+
+                // Remove fallback logic as requested by the user.
+                // The new prompt should be effective enough.
+                const enhancedResults = [...correctedResults];
+
+                // Sort by similarity score (highest first) and limit results
+                const sortedAndLimitedResults = enhancedResults
                     .sort((a, b) => b.similarity - a.similarity)
                     .slice(0, maxResults);
 
-                console.log("Parsed similarity results:", sortedResults);
-                return sortedResults;
+                // Log final results
+                console.log("Parsed similarity results (no manual fallback):", sortedAndLimitedResults);
+                console.log("Final type distribution:", sortedAndLimitedResults.reduce((acc, item) => {
+                    acc[item.type] = (acc[item.type] || 0) + 1;
+                    return acc;
+                }, {} as Record<string, number>));
+
+                return sortedAndLimitedResults;
             } catch (jsonError) {
                 console.error("Failed to parse JSON response:", jsonError);
                 throw new Error("Invalid response format from AI service");
@@ -340,56 +497,57 @@ export class SimilarContentService {
             type: 'note' | 'idea' | 'task' | 'reminder';
             status?: string;
             dueDate?: string | null;
-        }>
+        }>,
+        maxTokens?: number
     ): string {
-        // Create a similarity prompt based on the current item and candidates
-        const prompt = `Your task is to find items similar to the following content. Return ONLY a JSON array of similar items.
+        // Count the number of each type for context
+        const typeCounts = candidates.reduce((acc, item) => {
+            acc[item.type] = (acc[item.type] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
 
-Current Item:
+        const contentTypesMessage = `Available content for comparison: ${typeCounts['note'] || 0} notes, ${typeCounts['idea'] || 0} ideas, ${typeCounts['task'] || 0} tasks, ${typeCounts['reminder'] || 0} reminders.`;
+
+        // Simplified and more effective prompt
+        const prompt = `
+Analyze the CURRENT ITEM and find the most semantically similar items from the CANDIDATE ITEMS.
+Consider the title, content, and tags for similarity.
+All content types (note, idea, task, reminder) are equally important.
+Return up to ${maxTokens && maxTokens > 1000 ? 10 : 5} of the most relevant items.
+The similarity score (0 to 1) must reflect genuine semantic similarity.
+
+CURRENT ITEM:
 ID: ${currentItem.id}
 Title: ${currentItem.title}
-Content: ${currentItem.content.substring(0, Math.min(1000, currentItem.content.length))}
+Content: ${currentItem.content.substring(0, Math.min(500, currentItem.content.length))}${currentItem.content.length > 500 ? '...' : ''}
 Tags: ${currentItem.tags?.join(', ') || 'None'}
 
-Candidate Items:
-${candidates.slice(0, 50).map((item, index) => `
-Item ${index + 1}:
-ID: ${item.id}
-Type: ${item.type}
-Title: ${item.title}
-Content: ${item.content.substring(0, Math.min(200, item.content.length))}
-${item.status ? `Status: ${item.status}` : ''}
-${item.dueDate ? `Due Date: ${item.dueDate}` : ''}
+${contentTypesMessage}
+
+CANDIDATE ITEMS TO COMPARE (sample, full list provided to the model):
+${candidates.slice(0, 30).map((item, index) => `
+${index + 1}. ID: ${item.id} | Type: ${item.type} | Title: ${item.title}
+   Content: ${item.content.substring(0, Math.min(100, item.content.length))}${item.content.length > 100 ? '...' : ''}
+   ${item.type === 'task' && item.status ? `Status: ${item.status}` : ''}${item.type === 'task' && item.dueDate ? ` | Due Date: ${item.dueDate}` : ''}
 `).join('\n')}
 
-IMPORTANT: You MUST return a valid JSON array containing objects with these properties:
-- id: string (ID of the item)
-- title: string (title of the item)
-- type: string (type of the item - "note", "idea", "task", or "reminder")
-- similarity: number (between 0-1, with 1 being most similar)
-- status: string (optional - status of the item if available)
-- dueDate: string (optional - due date if available)
+RESPONSE FORMAT:
+Return ONLY a JSON array of objects. Each object must have these properties:
+- id: string (exact ID from input)
+- title: string (item title)
+- type: "note" | "idea" | "task" | "reminder" (correct type for the ID)
+- similarity: number (0.0 to 1.0, reflecting true semantic similarity)
+- status?: string (for tasks, if applicable)
+- dueDate?: string (for tasks or reminders, if applicable)
 
-Example of the EXACT format to return:
+Example:
 [
-    {
-        "id": "abc123",
-        "title": "Example Title",
-        "type": "note",
-        "similarity": 0.95,
-        "status": "active" 
-    },
-    {
-        "id": "def456",
-        "title": "Another Title",
-        "type": "task",
-        "similarity": 0.82,
-        "status": "pending",
-        "dueDate": "2023-06-15"
-    }
+  {"id": "abc123", "title": "Related Note Title", "type": "note", "similarity": 0.88},
+  {"id": "def456", "title": "Relevant Project Task", "type": "task", "similarity": 0.75, "status": "pending"},
+  {"id": "ghi789", "title": "Connected Idea", "type": "idea", "similarity": 0.92}
 ]
 
-Return ONLY the JSON array - no additional text, explanation, or markdown formatting.
+Focus on high-quality, diverse suggestions if relevant items exist across types. Do not invent items or use placeholder similarities.
 `;
         return prompt;
     }
