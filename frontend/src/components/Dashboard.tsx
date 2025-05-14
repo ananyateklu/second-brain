@@ -48,19 +48,15 @@ export function Dashboard() {
 
       {/* Main Content Area */}
       <div className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarOpen ? 'lg:pl-60' : 'pl-0'} relative`}>
-        {/* Fixed Header */}
-        <div className={`fixed top-0 right-0 left-0 transition-all duration-300 ${isSidebarOpen ? 'lg:left-60' : 'left-0'} z-20`}>
-          <Header
-            isSidebarOpen={isSidebarOpen}
-            toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-          />
-        </div>
-
         {/* Scrollable Content */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden pt-20 relative">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden pt-0 relative">
           <div className={`max-w-[1920px] mx-auto transition-all duration-300 ${isSidebarOpen ? 'px-4 sm:px-6 lg:px-12' : 'px-6 sm:px-12 lg:px-16'} py-8`}>
+            <Header
+              isSidebarOpen={isSidebarOpen}
+              toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+            />
             {!shouldHideWelcomeBar && <WelcomeBar />}
             <Suspense fallback={<div className="flex justify-center items-center h-64"><LoadingScreen message="Loading content..." /></div>}>
               <DashboardRoutes />

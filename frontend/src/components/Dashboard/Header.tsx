@@ -1,4 +1,4 @@
-import { Search, Menu, X, User as UserIcon, Maximize, Minimize } from 'lucide-react';
+import { Search, User as UserIcon, Maximize, Minimize } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -52,26 +52,30 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
       initial="hidden"
       animate="visible"
       variants={cardVariants}
-      className={`fixed top-0 right-0 left-0 z-40 
+      className={`sticky top-8 z-40 
+        max-w-[1800px] mx-auto 
         bg-[var(--header-background)] 
         backdrop-blur-xl 
+        rounded-2xl 
         border-b-[0.5px] border-white/10
         transition-all duration-200
         shadow-[0_4px_24px_-2px_rgba(0,0,0,0.12),0_8px_16px_-4px_rgba(0,0,0,0.08)]
         dark:shadow-[0_4px_24px_-2px_rgba(0,0,0,0.3),0_8px_16px_-4px_rgba(0,0,0,0.2)]
-        ring-1 ring-white/5 w-full`}
+        ring-1 ring-white/5
+        mb-6`}
     >
-      <div className="w-full h-20 px-6 sm:px-8 md:px-10 lg:px-16 flex items-center gap-4">
+      <div className="w-full h-16 pl-1 pr-6 sm:pl-3 sm:pr-8 md:px-10 lg:px-5 flex items-center gap-4">
         <div className="w-10">
           <button
             onClick={toggleSidebar}
             className={`p-1.5 rounded-lg ${getHoverClass()} transition-colors duration-200`}
             aria-label={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+            title={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
           >
             {isSidebarOpen ? (
-              <X className="w-6 h-6 text-[var(--color-textSecondary)] transition-colors duration-200" />
+              <Minimize className="w-5 h-5 text-[var(--color-textSecondary)] transition-colors duration-200" />
             ) : (
-              <Menu className="w-6 h-6 text-[var(--color-textSecondary)] transition-colors duration-200" />
+              <Maximize className="w-5 h-5 text-[var(--color-textSecondary)] transition-colors duration-200" />
             )}
           </button>
         </div>
@@ -95,20 +99,6 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
             onClick={() => navigate('/dashboard/search')}
           >
             <Search className="w-5 h-5 text-[var(--color-textSecondary)] transition-colors duration-200" />
-          </button>
-
-          {/* Fullscreen toggle button */}
-          <button
-            className={`hidden sm:flex p-2 rounded-lg ${getHoverClass()} transition-colors duration-200`}
-            onClick={toggleSidebar}
-            aria-label={isSidebarOpen ? "Enter fullscreen" : "Exit fullscreen"}
-            title={isSidebarOpen ? "Enter fullscreen" : "Exit fullscreen"}
-          >
-            {isSidebarOpen ? (
-              <Maximize className="w-5 h-5 text-[var(--color-textSecondary)] transition-colors duration-200" />
-            ) : (
-              <Minimize className="w-5 h-5 text-[var(--color-textSecondary)] transition-colors duration-200" />
-            )}
           </button>
 
           <ThemeSelector />
