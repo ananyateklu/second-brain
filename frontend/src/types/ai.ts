@@ -20,6 +20,16 @@ export interface AIModel {
   endpoint: 'chat' | 'completions' | 'images' | 'audio' | 'embeddings' | 'rag' | 'agent' | 'search';
   rateLimits?: RateLimits;
   size?: string;
+  // Gemini-specific capability flags (optional to avoid breaking other providers)
+  supportsMultimodalInput?: Array<'image' | 'audio' | 'video'>;
+  canProcessImages?: boolean;
+  canGenerateImages?: boolean;
+  supportsFunctionCalling?: boolean;
+  supportsStreaming?: boolean;
+  inputTokenLimit?: number;
+  outputTokenLimit?: number;
+  defaultGenerationConfig?: GenerationConfig;
+  defaultSafetySettings?: SafetySetting[];
 }
 
 export interface AIMessage {
@@ -186,4 +196,20 @@ export interface AISettings {
     systemMessage?: string;
     enabled?: boolean;
   };
+}
+
+export interface GenerationConfig {
+  stopSequences?: string[];
+  temperature?: number;
+  maxOutputTokens?: number;
+  topP?: number;
+  topK?: number;
+  candidateCount?: number;
+  responseMimeType?: string;
+  responseSchema?: unknown;
+}
+
+export interface SafetySetting {
+  category: string;
+  threshold: string;
 }
