@@ -1,5 +1,25 @@
 import { AIModel } from '../../types/ai';
 
+// Helper with common Gemini chat capabilities
+const CHAT_CAPABILITIES = {
+    supportsStreaming: true,
+    supportsMultimodalInput: ['image'] as Array<'image' | 'audio' | 'video'>,
+    canProcessImages: true,
+    canGenerateImages: false,
+    supportsFunctionCalling: true,
+    inputTokenLimit: 1048576,
+    outputTokenLimit: 8192,
+};
+
+// Helper for Imagen image generation models
+const IMAGE_CAPABILITIES = {
+    supportsStreaming: false,
+    canProcessImages: false,
+    canGenerateImages: true,
+    supportsMultimodalInput: [] as Array<'image' | 'audio' | 'video'>,
+    supportsFunctionCalling: false,
+};
+
 export const GEMINI_MODELS: AIModel[] = [
     {
         id: 'gemini-1.5-pro',
@@ -16,6 +36,7 @@ export const GEMINI_MODELS: AIModel[] = [
             rpm: 60,
         },
         size: '1.5T',
+        ...CHAT_CAPABILITIES,
     },
     {
         id: 'gemini-2.0-flash-exp',
@@ -32,6 +53,7 @@ export const GEMINI_MODELS: AIModel[] = [
             rpm: 60,
         },
         size: '2T',
+        ...CHAT_CAPABILITIES,
     },
     {
         id: 'gemini-1.5-flash',
@@ -48,6 +70,7 @@ export const GEMINI_MODELS: AIModel[] = [
             rpm: 60,
         },
         size: '1.5T',
+        ...CHAT_CAPABILITIES,
     },
     {
         id: 'gemini-1.5-flash-8b',
@@ -64,6 +87,7 @@ export const GEMINI_MODELS: AIModel[] = [
             rpm: 60,
         },
         size: '8B',
+        ...CHAT_CAPABILITIES,
     },
     {
         id: 'gemini-1.0-pro',
@@ -79,6 +103,7 @@ export const GEMINI_MODELS: AIModel[] = [
             tpm: 60000,
             rpm: 45,
         },
+        ...CHAT_CAPABILITIES,
     },
     {
         id: 'gemini-2.0-flash-exp',
@@ -95,6 +120,7 @@ export const GEMINI_MODELS: AIModel[] = [
             rpm: 60,
         },
         size: '2T',
+        ...CHAT_CAPABILITIES,
     },
     {
         id: 'gemini-1.5-pro-agent',
@@ -111,6 +137,7 @@ export const GEMINI_MODELS: AIModel[] = [
             rpm: 60,
         },
         size: '1.5T',
+        ...CHAT_CAPABILITIES,
     },
     {
         id: 'gemini-1.5-flash-agent',
@@ -127,6 +154,7 @@ export const GEMINI_MODELS: AIModel[] = [
             rpm: 60,
         },
         size: '1.5T',
+        ...CHAT_CAPABILITIES,
     },
     {
         id: 'gemini-1.5-flash-8b-agent',
@@ -143,6 +171,7 @@ export const GEMINI_MODELS: AIModel[] = [
             rpm: 60,
         },
         size: '8B',
+        ...CHAT_CAPABILITIES,
     },
     {
         id: 'gemini-1.0-pro-agent',
@@ -158,6 +187,7 @@ export const GEMINI_MODELS: AIModel[] = [
             tpm: 60000,
             rpm: 45,
         },
+        ...CHAT_CAPABILITIES,
     },
     {
         id: 'gemini-2.5-flash-preview-04-17',
@@ -170,6 +200,7 @@ export const GEMINI_MODELS: AIModel[] = [
         color: '#4285F4',
         endpoint: 'chat',
         rateLimits: { tpm: 100000, rpm: 60 },
+        ...CHAT_CAPABILITIES,
     },
     {
         id: 'gemini-2.5-pro-preview-05-06',
@@ -182,6 +213,7 @@ export const GEMINI_MODELS: AIModel[] = [
         color: '#4285F4',
         endpoint: 'chat',
         rateLimits: { tpm: 100000, rpm: 60 },
+        ...CHAT_CAPABILITIES,
     },
     {
         id: 'gemini-2.0-flash',
@@ -195,6 +227,7 @@ export const GEMINI_MODELS: AIModel[] = [
         endpoint: 'chat',
         rateLimits: { tpm: 100000, rpm: 60 },
         size: '2T',
+        ...CHAT_CAPABILITIES,
     },
     {
         id: 'gemini-2.0-flash-lite',
@@ -207,6 +240,7 @@ export const GEMINI_MODELS: AIModel[] = [
         color: '#4285F4',
         endpoint: 'chat',
         rateLimits: { tpm: 100000, rpm: 60 },
+        ...CHAT_CAPABILITIES,
     },
     {
         id: 'gemini-embedding-exp',
@@ -218,6 +252,11 @@ export const GEMINI_MODELS: AIModel[] = [
         isReasoner: false,
         color: '#4285F4',
         endpoint: 'embeddings',
+        supportsStreaming: false,
+        supportsMultimodalInput: [] as Array<'image' | 'audio' | 'video'>,
+        supportsFunctionCalling: false,
+        canProcessImages: false,
+        canGenerateImages: false,
     },
     {
         id: 'imagen-3.0-generate-002',
@@ -229,6 +268,7 @@ export const GEMINI_MODELS: AIModel[] = [
         isReasoner: false,
         color: '#4285F4',
         endpoint: 'images',
+        ...IMAGE_CAPABILITIES,
     },
     {
         id: 'veo-2.0-generate-001',
@@ -240,6 +280,7 @@ export const GEMINI_MODELS: AIModel[] = [
         isReasoner: false,
         color: '#4285F4',
         endpoint: 'agent',
+        ...CHAT_CAPABILITIES,
     },
     {
         id: 'gemini-2.0-flash-live-001',
@@ -252,5 +293,6 @@ export const GEMINI_MODELS: AIModel[] = [
         color: '#4285F4',
         endpoint: 'chat',
         rateLimits: { tpm: 100000, rpm: 60 },
+        ...CHAT_CAPABILITIES,
     }
 ]; 
