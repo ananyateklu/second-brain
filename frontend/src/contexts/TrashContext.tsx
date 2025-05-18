@@ -56,7 +56,7 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
           content: note.content,
           metadata: {
             tags: note.tags,
-            linkedItems: note.linkedNoteIds,
+            linkedItems: note.linkedItems,
             isFavorite: note.isFavorite
           },
           deletedAt: note.deletedAt ?? new Date().toISOString(),
@@ -70,7 +70,7 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
           content: idea.content,
           metadata: {
             tags: idea.tags,
-            linkedItems: idea.linkedItems?.map(item => item.id) || [],
+            linkedItems: idea.linkedItems,
             isFavorite: idea.isFavorite
           },
           deletedAt: idea.deletedAt ?? new Date().toISOString(),
@@ -207,8 +207,8 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
   const handleTaskDeletion = useCallback(async (item: TrashedItem) => {
     const taskLinkedItems = item.metadata?.linkedItems || [];
     for (const linkedItem of taskLinkedItems) {
-      await tasksService.removeTaskLink(item.id, linkedItem).catch(error =>
-        console.warn('Failed to unlink item from task:', linkedItem, item.id, error)
+      await tasksService.removeTaskLink(item.id, linkedItem.id).catch(error =>
+        console.warn('Failed to unlink item from task:', linkedItem.id, item.id, error)
       );
     }
     await tasksService.deleteTaskPermanently(item.id);
@@ -216,16 +216,20 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
 
   const handleNoteDeletion = useCallback(async (item: TrashedItem) => {
     const noteLinkedItems = item.metadata?.linkedItems || [];
-    for (const linkedNoteId of noteLinkedItems) {
-      await notesService.removeLink(item.id, linkedNoteId).catch(error =>
-        console.warn('Failed to unlink note from note:', linkedNoteId, item.id, error)
-      );
+    for (const linkedItem of noteLinkedItems) {
+      if (linkedItem.type !== 'Reminder') {
+        await notesService.removeLink(item.id, linkedItem.id, linkedItem.type).catch(error =>
+          console.warn('Failed to unlink item from note:', linkedItem.id, item.id, error)
+        );
+      }
     }
 
-    for (const linkedItemId of noteLinkedItems) {
-      await notesService.removeReminderFromNote(item.id, linkedItemId).catch(error =>
-        console.warn('Failed to unlink item from note:', linkedItemId, item.id, error)
-      );
+    for (const linkedItem of noteLinkedItems) {
+      if (linkedItem.type === 'Reminder') {
+        await notesService.removeReminderFromNote(item.id, linkedItem.id).catch(error =>
+          console.warn('Failed to unlink reminder from note:', linkedItem.id, item.id, error)
+        );
+      }
     }
 
     await notesService.deleteNotePermanently(item.id);
@@ -233,9 +237,9 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
 
   const handleIdeaDeletion = useCallback(async (item: TrashedItem) => {
     const ideaLinkedItems = item.metadata?.linkedItems || [];
-    for (const linkedItemId of ideaLinkedItems) {
-      await ideasService.removeLink(item.id, linkedItemId, 'Note').catch(error =>
-        console.warn('Failed to unlink item from idea:', linkedItemId, item.id, error)
+    for (const linkedItem of ideaLinkedItems) {
+      await ideasService.removeLink(item.id, linkedItem.id, linkedItem.type).catch(error =>
+        console.warn('Failed to unlink item from idea:', linkedItem.id, item.id, error)
       );
     }
 
@@ -245,8 +249,8 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
   const handleReminderDeletion = useCallback(async (item: TrashedItem) => {
     const reminderLinkedItems = item.metadata?.linkedItems || [];
     for (const linkedItem of reminderLinkedItems) {
-      await reminderService.removeReminderLink(item.id, linkedItem).catch(error =>
-        console.warn('Failed to unlink item from reminder:', linkedItem, item.id, error)
+      await reminderService.removeReminderLink(item.id, linkedItem.id).catch(error =>
+        console.warn('Failed to unlink item from reminder:', linkedItem.id, item.id, error)
       );
     }
     await reminderService.deleteReminderPermanently(item.id);
@@ -336,7 +340,7 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
         content: note.content,
         metadata: {
           tags: note.tags,
-          linkedItems: note.linkedNoteIds,
+          linkedItems: note.linkedItems,
           isFavorite: note.isFavorite
         },
         deletedAt: note.deletedAt ?? new Date().toISOString(),
@@ -367,7 +371,7 @@ export function TrashProvider({ children, onRestoreNote }: TrashProviderProps) {
         content: idea.content,
         metadata: {
           tags: idea.tags,
-          linkedItems: idea.linkedItems?.map(item => item.id) || [],
+          linkedItems: idea.linkedItems,
           isFavorite: idea.isFavorite
         },
         deletedAt: idea.deletedAt ?? new Date().toISOString(),

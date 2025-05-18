@@ -111,11 +111,8 @@ export const notesService = {
     return processNoteResponse(response.data);
   },
 
-  async deleteNote(id: string): Promise<Note> {
-    return await this.updateNote(id, {
-      isDeleted: true,
-      deletedAt: new Date().toISOString()
-    });
+  async deleteNote(id: string): Promise<void> {
+    await api.delete(`/api/Notes/${id}`);
   },
 
   async addLink(noteId: string, data: AddNoteLinkData): Promise<Note> {

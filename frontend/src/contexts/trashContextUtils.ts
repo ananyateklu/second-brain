@@ -19,7 +19,7 @@ export interface TrashedItem {
     isCompleted?: boolean;
     isSnoozed?: boolean;
     snoozeUntil?: string;
-    linkedItems?: string[];
+    linkedItems?: Array<{ id: string; type: string; title?: string; linkType?: string }>;
     isFavorite?: boolean;
   };
   deletedAt: string;

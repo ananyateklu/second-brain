@@ -144,15 +144,13 @@ export function TrashList({
                 tags: item.metadata?.tags || [],
                 isFavorite: item.metadata?.isFavorite || false,
                 isPinned: false,
-                isIdea: false,
-                linkedNoteIds: item.metadata?.linkedItems || [],
-                linkedTasks: [],
-                linkedReminders: [],
-                links: [],
                 isArchived: false,
                 isDeleted: true,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
+                createdAt: item.metadata && 'createdAt' in item.metadata ? item.metadata.createdAt as string : new Date().toISOString(),
+                updatedAt: item.metadata && 'updatedAt' in item.metadata ? item.metadata.updatedAt as string : new Date().toISOString(),
+                deletedAt: item.deletedAt,
+                archivedAt: item.metadata && 'archivedAt' in item.metadata ? item.metadata.archivedAt as string : undefined,
+                linkedItems: (item.metadata?.linkedItems || []).map(li => ({ ...li, type: li.type as 'Note' | 'Idea' | 'Task' | 'Reminder' })),
               } as Note;
               return (
                 <NoteCard
@@ -201,15 +199,12 @@ export function TrashList({
                 isFavorite: item.metadata?.isFavorite || false,
                 isPinned: false,
                 isArchived: false,
-                linkedItems: (item.metadata?.linkedItems || []).map(id => ({
-                  id,
-                  title: '', // We don't have the title here, but IdeaCard can handle this
-                  type: 'Note' // Default to Note type
-                })),
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
+                createdAt: item.metadata && 'createdAt' in item.metadata ? item.metadata.createdAt as string : new Date().toISOString(),
+                updatedAt: item.metadata && 'updatedAt' in item.metadata ? item.metadata.updatedAt as string : new Date().toISOString(),
                 isDeleted: true,
-                deletedAt: item.deletedAt
+                deletedAt: item.deletedAt,
+                archivedAt: item.metadata && 'archivedAt' in item.metadata ? item.metadata.archivedAt as string : undefined,
+                linkedItems: (item.metadata?.linkedItems || []).map(li => ({ ...li, title: li.title || '', type: li.type as 'Note' | 'Idea' | 'Task' | 'Reminder' })),
               };
               return (
                 <IdeaCard
