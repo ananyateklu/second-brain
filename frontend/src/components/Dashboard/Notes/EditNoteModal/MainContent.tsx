@@ -31,7 +31,7 @@ interface MainContentProps {
   onRemoveTag: (tag: string) => void;
   onShowAddReminder: () => void;
   onUnlinkReminder: (reminderId: string) => void;
-  onLinkReminder?: (reminderId: string) => Promise<void>;
+  onLinkReminder?: (reminderId: string) => Promise<boolean | void>;
   setError: (error: string) => void;
   suggestedReminders?: SuggestionItem[];
   suggestionsLoading?: boolean;
@@ -97,7 +97,7 @@ export function MainContent({
           value={content}
           onChange={(e) => onContentChange(e.target.value)}
           rows={6}
-          className="focus:ring-[var(--color-note)] min-h-[220px]"
+          className="focus:ring-[var(--color-note)] min-h-[120px] max-h-[200px]"
           placeholder="Write your note here..."
           disabled={isLoading}
         />
@@ -121,7 +121,7 @@ export function MainContent({
               Add Reminder
             </button>
           </div>
-          <div className={`${getBackgroundColor()} border ${getBorderStyle()} rounded-lg overflow-hidden max-h-[120px] overflow-y-auto`}>
+          <div className={`${getBackgroundColor()} border ${getBorderStyle()} rounded-lg overflow-y-auto`}>
             <LinkedRemindersPanel
               reminders={linkedReminders}
               onUnlink={onUnlinkReminder}
