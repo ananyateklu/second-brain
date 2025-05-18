@@ -1,7 +1,27 @@
 import { AIModel, AIResponse, AnthropicToolResult, AnthropicResponse, AnthropicGeneratedFields, AccumulatedContext } from '../../types/ai';
-import { AI_MODELS } from './models';
+// import { AI_MODELS } from './models'; // This line is removed as it's unused
 import api from '../api/api';
 import { agentService } from './agent';
+
+interface BackendAnthropicModelInfo {
+  id: string;
+  display_name: string;
+  created_at?: string;
+  type: string;
+  description?: string;
+  input_token_limit?: number;
+  output_token_limit?: number;
+  context_window_size?: number;
+  max_output_tokens?: number;
+  capabilities?: string[];
+}
+
+interface BackendAnthropicModelsResponse {
+  data: BackendAnthropicModelInfo[];
+  first_id?: string;
+  has_more: boolean;
+  last_id?: string;
+}
 
 interface RequestParameters {
   max_tokens?: number;
@@ -37,6 +57,7 @@ interface RequestData {
 
 export class AnthropicService {
   private isEnabled = false;
+  private fetchedModels: AIModel[] | null = null;
 
   async testConnection(): Promise<boolean> {
     try {
@@ -484,22 +505,66 @@ export class AnthropicService {
     }
   }
 
+  private async fetchModelsFromAPI(): Promise<AIModel[]> {
+    try {
+      const response = await api.get<BackendAnthropicModelsResponse>('/api/Claude/models');
+      if (response.data && response.data.data) {
+        return response.data.data.map(modelInfo => ({
+          id: modelInfo.id,
+          name: modelInfo.display_name || modelInfo.id,
+          provider: 'anthropic',
+          category: 'chat',
+          description: modelInfo.description || `Anthropic model: ${modelInfo.display_name || modelInfo.id}`,
+          isConfigured: true,
+          isReasoner: false,
+          color: '#F97316',
+          endpoint: 'chat',
+          rateLimits: {
+            maxInputTokens: modelInfo.input_token_limit || modelInfo.context_window_size || 200000,
+            maxOutputTokens: modelInfo.output_token_limit || modelInfo.max_output_tokens || 4096,
+          },
+          size: '',
+        }));
+      }
+      return [];
+    } catch (error) {
+      console.error('Error fetching Anthropic models from backend:', error);
+      return [];
+    }
+  }
+
+  async getModels(): Promise<AIModel[]> {
+    if (this.fetchedModels) {
+      return this.fetchedModels;
+    }
+    const apiModels = await this.fetchModelsFromAPI();
+    if (apiModels.length > 0) {
+      this.fetchedModels = apiModels;
+      return apiModels;
+    }
+    console.warn("Falling back to static Anthropic models as API fetch failed or returned no models.");
+    const staticModels = (await import('./anthropicModels')).ANTHROPIC_MODELS;
+    this.fetchedModels = staticModels;
+    return staticModels;
+  }
+
   async isConfigured(): Promise<boolean> {
     try {
-      const isConfigured = await agentService.isAnthropicConfigured();
-      this.isEnabled = isConfigured;
-      return isConfigured;
+      const isAgentConfigured = await agentService.isAnthropicConfigured();
+      this.isEnabled = isAgentConfigured;
+      if (isAgentConfigured) {
+        const models = await this.getModels();
+        this.isEnabled = models.length > 0;
+      }
+      return this.isEnabled;
     } catch (error) {
       console.error('Error checking Anthropic configuration:', error);
+      this.isEnabled = false;
       return false;
     }
   }
 
   getIsEnabled(): boolean {
     return this.isEnabled;
-  }
-
-  getModels(): AIModel[] {
-    return AI_MODELS.filter(model => model.provider === 'anthropic');
   }
 }

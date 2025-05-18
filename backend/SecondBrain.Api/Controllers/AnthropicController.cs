@@ -97,5 +97,32 @@ namespace SecondBrain.Api.Controllers
                 return Ok(new { isConnected = false, error = "Internal server error." });
             }
         }
+
+        /// <summary>
+        /// Retrieves a list of available Anthropic models.
+        /// </summary>
+        /// <returns>A list of available models.</returns>
+        [HttpGet("models")]
+        [Authorize] // Consistent with other secured endpoints
+        public async Task<IActionResult> GetAvailableModels()
+        {
+            try
+            {
+                _logger.LogInformation("Attempting to fetch available Anthropic models.");
+                var modelsResponse = await _anthropicService.GetModelsAsync();
+                _logger.LogInformation("Successfully fetched {ModelCount} models from Anthropic.", modelsResponse.Data.Count);
+                return Ok(modelsResponse); // Or map to a simpler DTO if needed, but returning the full response for now.
+            }
+            catch (AnthropicException ex)
+            {
+                _logger.LogError(ex, "Anthropic API Error while fetching models: {Message}", ex.Message);
+                return BadRequest(new { error = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected Error while fetching models: {Message}", ex.Message);
+                return StatusCode(500, new { error = "Internal server error while fetching models." });
+            }
+        }
     }
 }

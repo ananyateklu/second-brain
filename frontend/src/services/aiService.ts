@@ -118,16 +118,28 @@ export class AIService {
       models.push(...agentModels);
 
       // Add OpenAI models
-      models.push(...this.openai.getModels().filter((m: AIModel) => !agentModelIds.has(m.id) && m.category !== 'agent'));
+      const openAIModels = await this.openai.getModels();
+      models.push(...openAIModels.filter((m: AIModel) => !agentModelIds.has(m.id) && m.category !== 'agent'));
 
       // Add Anthropic models
-      models.push(...this.anthropic.getModels().filter((m: AIModel) => !agentModelIds.has(m.id) && m.category !== 'agent'));
+      const anthropicModels = await this.anthropic.getModels();
+      models.push(...anthropicModels.filter((m: AIModel) => !agentModelIds.has(m.id) && m.category !== 'agent'));
 
-      // Add Gemini models
-      models.push(...this.gemini.getModels().filter((m: AIModel) => !agentModelIds.has(m.id) && m.category !== 'agent'));
+      // Add Gemini models dynamically fetched from backend
+      try {
+        const geminiModels = await this.gemini.getModels();
+        models.push(...geminiModels.filter((m: AIModel) => !agentModelIds.has(m.id) && m.category !== 'agent'));
+      } catch (geminiError) {
+        console.error('Error fetching Gemini models in AIService:', geminiError);
+      }
 
-      // Add Grok models
-      models.push(...this.grokService.getModels().filter((m: AIModel) => !agentModelIds.has(m.id) && m.category !== 'agent'));
+      // Add Grok models dynamically fetched from the backend
+      try {
+        const grokModels = await this.grokService.getModels();
+        models.push(...grokModels.filter((m: AIModel) => !agentModelIds.has(m.id) && m.category !== 'agent'));
+      } catch (grokError) {
+        console.error('Error fetching Grok models in AIService:', grokError);
+      }
 
       // Fetch Ollama models only if configured
       let ollamaModels: AIModel[] = [];

@@ -17,6 +17,7 @@ namespace SecondBrain.Api.Controllers
         private readonly ILogger<GrokController> _logger;
         private readonly HttpClient _httpClient;
         private readonly string _baseUrl;
+        private readonly JsonSerializerOptions _jsonOptions;
 
         public GrokController(ILogger<GrokController> logger, IConfiguration configuration, IWebHostEnvironment environment)
         {
@@ -35,6 +36,11 @@ namespace SecondBrain.Api.Controllers
                 throw new ArgumentException("Grok API key not configured");
             }
             _httpClient.DefaultRequestHeaders.Add("x-api-key", apiKey);
+
+            _jsonOptions = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
         }
 
         [HttpPost("send")]
@@ -170,6 +176,35 @@ namespace SecondBrain.Api.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error in GrokController.ExecuteFunctionCall");
+                return StatusCode(500, new { error = "Internal server error", details = ex.Message });
+            }
+        }
+
+        [HttpGet("models")]
+        public async Task<IActionResult> GetModels()
+        {
+            try
+            {
+                _logger.LogInformation("Fetching list of Grok models");
+                var response = await _httpClient.GetAsync($"{_baseUrl}/models");
+                var content = await response.Content.ReadAsStringAsync();
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogError("Error fetching Grok models: {StatusCode} - {Content}", response.StatusCode, content);
+                    return StatusCode((int)response.StatusCode, new { error = "Failed to fetch Grok models", details = content });
+                }
+                using var document = JsonDocument.Parse(content);
+                if (!document.RootElement.TryGetProperty("data", out var dataElement))
+                {
+                    _logger.LogError("Grok models response missing 'data' field: {Content}", content);
+                    return BadRequest(new { error = "Invalid Grok models response" });
+                }
+                // Return the 'data' array directly
+                return Ok(JsonSerializer.Deserialize<object>(dataElement.GetRawText(), _jsonOptions));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in GrokController.GetModels");
                 return StatusCode(500, new { error = "Internal server error", details = ex.Message });
             }
         }

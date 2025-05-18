@@ -102,25 +102,39 @@ export class GrokService {
     return this.isEnabled;
   }
 
-  getModels(): AIModel[] {
-    return [
-      {
-        id: 'grok-beta',
-        name: 'Grok Beta',
+  async getModels(): Promise<AIModel[]> {
+    try {
+      const response = await api.get('/api/Grok/models');
+      const data: Array<{ id: string }> = response.data;
+      return data.map(m => ({
+        id: m.id,
+        name: m.id,
         provider: 'grok',
         category: 'chat',
+        description: m.id,
         isReasoner: false,
-        description: 'Grok Beta - Comparable performance to Grok 2 but with improved efficiency, speed and capabilities',
         isConfigured: this.isConfigured(),
         color: '#1DA1F2',
         endpoint: 'chat',
-        rateLimits: {
-          tpm: 100000,
-          rpm: 500,
-          rpd: 10000,
-          tpd: 1000000,
-        },
-      }
-    ];
+        rateLimits: {}
+      }));
+    } catch (error) {
+      console.error('Error fetching Grok models:', error);
+      // Fallback to default model
+      return [
+        {
+          id: 'grok-beta',
+          name: 'Grok Beta',
+          provider: 'grok',
+          category: 'chat',
+          description: 'Grok Beta - Fallback model',
+          isReasoner: false,
+          isConfigured: this.isConfigured(),
+          color: '#1DA1F2',
+          endpoint: 'chat',
+          rateLimits: {}
+        }
+      ];
+    }
   }
 }

@@ -57,7 +57,46 @@ export class GeminiService {
     throw new Error(error?.message || 'An unexpected error occurred');
   }
 
-  getModels(): AIModel[] {
-    return AI_MODELS.filter(model => model.provider === 'gemini');
+  /**
+   * Fetch Gemini models from backend. Falls back to static list on error.
+   */
+  async getModels(): Promise<AIModel[]> {
+    try {
+      const response = await api.get<{
+        models: Array<{
+          name: string;
+          version: string;
+          displayName: string;
+          description: string;
+          inputTokenLimit: number;
+          outputTokenLimit: number;
+          supportedGenerationMethods: string[];
+        }>
+      }>('/api/gemini/models');
+      return response.data.models.map(m => {
+        // m.name is "models/{modelId}"
+        const id = m.name.split('/')[1] || m.name;
+        return {
+          id,
+          name: m.displayName || id,
+          provider: 'gemini',
+          category: 'chat',
+          description: m.description,
+          isConfigured: this.isConfigured(),
+          isReasoner: false,
+          color: '#4285F4',
+          endpoint: 'chat',
+          inputTokenLimit: m.inputTokenLimit,
+          outputTokenLimit: m.outputTokenLimit,
+          supportsFunctionCalling: (m.supportedGenerationMethods?.length ?? 0) > 0,
+          supportsStreaming: true,
+          rateLimits: {}
+        } as AIModel;
+      });
+    } catch (error) {
+      console.error('Error fetching Gemini models from backend:', error);
+      // Fallback to static configuration
+      return AI_MODELS.filter(model => model.provider === 'gemini');
+    }
   }
 }
