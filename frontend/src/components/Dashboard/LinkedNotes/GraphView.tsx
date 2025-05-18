@@ -55,72 +55,35 @@ const prepareEdges = (notes: Note[], ideas: Idea[], tasks: Task[]): Edge[] => {
   const edges: Edge[] = [];
   const processedPairs = new Set<string>();
 
-  // Create edges from notes to notes
-  notes.forEach(note => {
-    (note.linkedNoteIds || []).forEach(targetId => {
-      const pairId = [note.id, targetId].sort().join('-');
-      if (!processedPairs.has(pairId)) {
-        processedPairs.add(pairId);
-        edges.push({
-          id: `${note.id}-${targetId}`,
-          source: note.id,
-          target: targetId,
-          data: {
-            sourceType: 'note',
-            targetType: 'note'
-          }
-        });
-      }
-    });
-  });
-
-  // Create edges from ideas to any linked item
-  ideas.forEach(idea => {
-    (idea.linkedItems || []).forEach(linkedItem => {
+  const addItemEdges = (sourceItem: Note | Idea | Task, itemType: 'note' | 'idea' | 'task') => {
+    sourceItem.linkedItems?.forEach(linkedItem => {
       const targetId = linkedItem.id;
-      const targetType = linkedItem.type === 'Note' ? 'note' :
-        linkedItem.type === 'Idea' ? 'idea' :
-          linkedItem.type === 'Task' ? 'task' : 'unknown';
+      const targetType = linkedItem.type.toLowerCase() as 'note' | 'idea' | 'task' | 'reminder';
 
-      const pairId = [idea.id, targetId].sort().join('-');
+      if (targetType !== 'note' && targetType !== 'idea' && targetType !== 'task') {
+        return;
+      }
+
+      const pairId = [sourceItem.id, targetId].sort().join('-');
       if (!processedPairs.has(pairId)) {
         processedPairs.add(pairId);
         edges.push({
-          id: `${idea.id}-${targetId}`,
-          source: idea.id,
+          id: `${sourceItem.id}-${targetId}`,
+          source: sourceItem.id,
           target: targetId,
           data: {
-            sourceType: 'idea',
-            targetType: targetType.toLowerCase()
-          }
+            sourceType: itemType,
+            targetType: targetType,
+          },
+          markerEnd: { type: MarkerType.ArrowClosed },
         });
       }
     });
-  });
+  };
 
-  // Create edges from tasks to any linked item
-  tasks.forEach(task => {
-    (task.linkedItems || []).forEach(linkedItem => {
-      const targetId = linkedItem.id;
-      const targetType = linkedItem.type === 'Note' ? 'note' :
-        linkedItem.type === 'Idea' ? 'idea' :
-          linkedItem.type === 'Task' ? 'task' : 'unknown';
-
-      const pairId = [task.id, targetId].sort().join('-');
-      if (!processedPairs.has(pairId)) {
-        processedPairs.add(pairId);
-        edges.push({
-          id: `${task.id}-${targetId}`,
-          source: task.id,
-          target: targetId,
-          data: {
-            sourceType: 'task',
-            targetType: targetType.toLowerCase()
-          }
-        });
-      }
-    });
-  });
+  notes.forEach(note => addItemEdges(note, 'note'));
+  ideas.forEach(idea => addItemEdges(idea, 'idea'));
+  tasks.forEach(task => addItemEdges(task, 'task'));
 
   return edges;
 };
@@ -318,9 +281,7 @@ function GraphViewContent({ onNodeSelect, selectedItemId }: GraphViewProps) {
   const [isLoading, setIsLoading] = useState(true);
 
   const notesWithLinks = useMemo(() => notes.filter(note =>
-    (note.linkedNoteIds?.length ?? 0) > 0 ||
-    (note.linkedTasks?.length ?? 0) > 0 ||
-    (note.linkedReminders?.length ?? 0) > 0
+    (note.linkedItems?.length ?? 0) > 0
   ), [notes]);
 
   const ideasWithLinks = useMemo(() => ideas.filter(idea =>
