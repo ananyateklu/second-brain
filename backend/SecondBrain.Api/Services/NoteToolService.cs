@@ -131,75 +131,89 @@ namespace SecondBrain.Api.Services
 
         public async Task<NoteToolResponse> LinkNotesAsync(string sourceId, string[] targetIds, string userId)
         {
-            try
+            var sourceNote = await _context.Notes.FindAsync(sourceId);
+            if (sourceNote == null || sourceNote.UserId != userId)
             {
-                if (targetIds.Length > MAX_LINKS)
+                return new NoteToolResponse { Success = false, Message = "Source note not found or access denied." };
+            }
+
+            if (targetIds == null || !targetIds.Any())
+            {
+                return new NoteToolResponse { Success = false, Message = "No target notes specified for linking." };
+            }
+
+            var linkedNotesCount = 0;
+            var alreadyLinkedCount = 0;
+            var notFoundCount = 0;
+            var linksAdded = new List<object>();
+
+            foreach (var targetId in targetIds.Distinct().Take(MAX_LINKS)) // Limit the number of links to process
+            {
+                if (sourceId == targetId) continue; // Cannot link a note to itself
+
+                var targetNote = await _context.Notes.FindAsync(targetId);
+                if (targetNote == null || targetNote.UserId != userId)
                 {
-                    return new NoteToolResponse
-                    {
-                        Success = false,
-                        Message = $"Cannot link more than {MAX_LINKS} notes at once"
-                    };
+                    notFoundCount++;
+                    continue;
                 }
 
-                // Verify ownership of all notes
-                var allNoteIds = new[] { sourceId }.Concat(targetIds);
-                var notes = await _context.Notes
-                    .Where(n => allNoteIds.Contains(n.Id) && n.UserId == userId)
-                    .ToListAsync();
-
-                if (notes.Count != allNoteIds.Count())
+                var existingLink = await _context.NoteLinks
+                    .FirstOrDefaultAsync(nl => nl.NoteId == sourceId && nl.LinkedItemId == targetId && nl.LinkedItemType == "Note" && !nl.IsDeleted);
+                
+                if (existingLink != null)
                 {
-                    return new NoteToolResponse
-                    {
-                        Success = false,
-                        Message = "Some notes were not found or don't belong to the user"
-                    };
+                    alreadyLinkedCount++;
+                    continue;
                 }
 
-                var sourceNote = notes.First(n => n.Id == sourceId);
-                var linkedNotes = new List<NoteLink>();
+                // Check for soft-deleted link to reactivate
+                var softDeletedLink = await _context.NoteLinks
+                    .FirstOrDefaultAsync(nl => nl.NoteId == sourceId && nl.LinkedItemId == targetId && nl.LinkedItemType == "Note" && nl.IsDeleted);
 
-                foreach (var targetId in targetIds)
+                if (softDeletedLink != null)
                 {
-                    var link = new NoteLink
+                    softDeletedLink.IsDeleted = false;
+                    softDeletedLink.CreatedAt = DateTime.UtcNow; // Optionally update CreatedAt upon reactivation
+                    softDeletedLink.CreatedBy = userId;
+                }
+                else
+                {
+                    var newLink = new NoteLink
                     {
                         NoteId = sourceId,
-                        LinkedNoteId = targetId,
-                        IsDeleted = false
+                        LinkedItemId = targetId,
+                        LinkedItemType = "Note", // Explicitly setting type for Note-to-Note link
+                        CreatedBy = userId,
+                        CreatedAt = DateTime.UtcNow
                     };
-                    linkedNotes.Add(link);
+                    _context.NoteLinks.Add(newLink);
                 }
+                linkedNotesCount++;
+                linksAdded.Add(new { sourceId = sourceId, targetId = targetId, type = "Note" });
 
-                await _context.NoteLinks.AddRangeAsync(linkedNotes);
-                await _context.SaveChangesAsync();
-
-                // Log activity
-                await _activityLogger.LogActivityAsync(
-                    userId,
-                    "LINK",
-                    "NOTE",
-                    sourceId,
-                    sourceNote.Title,
-                    $"Linked note to {targetIds.Length} other notes",
-                    new { LinkedNoteIds = targetIds }
-                );
-
-                return new NoteToolResponse
-                {
-                    Success = true,
-                    Message = $"Successfully linked {targetIds.Length} notes"
-                };
+                // Consider bidirectional linking based on requirements
+                // For now, creating only one-way link as per IdeaLinks behavior
             }
-            catch (Exception ex)
+
+            if (linkedNotesCount > 0)
             {
-                _logger.LogError(ex, "Error linking notes through tool service");
-                return new NoteToolResponse
-                {
-                    Success = false,
-                    Message = "Failed to link notes: " + ex.Message
-                };
+                await _context.SaveChangesAsync();
+                await _activityLogger.LogActivityAsync(userId, ActivityActionType.LINK.ToString(), ActivityItemType.NOTE.ToString(), sourceId, sourceNote.Title, $"Linked note '{sourceNote.Title}' to {linkedNotesCount} other note(s).");
+                var (newXP, newLevel, leveledUp) = await _xpService.AwardXPAsync(userId, "createlink", linkedNotesCount);
+                // Check for achievements related to linking notes
             }
+
+            string message = $"Processed {targetIds.Length} link requests. Added {linkedNotesCount} new links.";
+            if (alreadyLinkedCount > 0) message += $" {alreadyLinkedCount} were already linked.";
+            if (notFoundCount > 0) message += $" {notFoundCount} target notes not found or access denied.";
+
+            return new NoteToolResponse
+            {
+                Success = true,
+                Message = message,
+                Data = new { linksAdded }
+            };
         }
 
         public async Task<NoteToolResponse> UpdateNoteAsync(string noteId, NoteToolRequest request)
@@ -285,60 +299,63 @@ namespace SecondBrain.Api.Services
 
         public async Task<NoteToolResponse> UnlinkNotesAsync(string sourceId, string[] targetIds, string userId)
         {
-            try
+            var sourceNote = await _context.Notes.FindAsync(sourceId);
+            if (sourceNote == null || sourceNote.UserId != userId)
             {
-                var links = await _context.NoteLinks
-                    .Where(nl => nl.NoteId == sourceId && 
-                                targetIds.Contains(nl.LinkedNoteId) && 
-                                !nl.IsDeleted)
-                    .ToListAsync();
+                return new NoteToolResponse { Success = false, Message = "Source note not found or access denied." };
+            }
 
-                // Verify ownership
-                var sourceNote = await _context.Notes
-                    .FirstOrDefaultAsync(n => n.Id == sourceId && n.UserId == userId);
+            if (targetIds == null || !targetIds.Any())
+            {
+                return new NoteToolResponse { Success = false, Message = "No target notes specified for unlinking." };
+            }
 
-                if (sourceNote == null)
+            var unlinkedCount = 0;
+            var notFoundCount = 0;
+            var linksRemovedDetails = new List<object>();
+
+            foreach (var targetId in targetIds.Distinct())
+            {
+                var link = await _context.NoteLinks
+                    .FirstOrDefaultAsync(nl => nl.NoteId == sourceId && nl.LinkedItemId == targetId && nl.LinkedItemType == "Note" && !nl.IsDeleted);
+
+                if (link == null)
                 {
-                    return new NoteToolResponse
+                    // Also check if they are trying to unlink a link that was to a different item type by mistake (though UI should prevent this)
+                    var anyLink = await _context.NoteLinks.FirstOrDefaultAsync(nl => nl.NoteId == sourceId && nl.LinkedItemId == targetId && !nl.IsDeleted);
+                    if(anyLink != null && anyLink.LinkedItemType != "Note")
                     {
-                        Success = false,
-                        Message = "Source note not found or access denied"
-                    };
+                         _logger.LogWarning("User {UserId} attempted to unlink note {SourceId} from {TargetId} using Note-to-Note unlink, but actual link type was {LinkType}", userId, sourceId, targetId, anyLink.LinkedItemType);
+                        // Decide if this should be an error or if we should proceed if the user owns the note.
+                        // For now, we treat it as not found for Note-to-Note unlinking.
+                    }
+                    notFoundCount++;
+                    continue;
                 }
 
-                foreach (var link in links)
-                {
-                    link.IsDeleted = true;
-                }
+                link.IsDeleted = true;
+                link.DeletedAt = DateTime.UtcNow;
+                unlinkedCount++;
+                linksRemovedDetails.Add(new { sourceId = sourceId, targetId = targetId, type = link.LinkedItemType });
 
-                await _context.SaveChangesAsync();
-
-                // Log activity
-                await _activityLogger.LogActivityAsync(
-                    userId,
-                    ActivityActionType.UNLINK.ToString(),
-                    ActivityItemType.NOTELINK.ToString(),
-                    sourceId,
-                    sourceNote.Title,
-                    $"Unlinked {links.Count} notes from {sourceNote.Title}",
-                    new { UnlinkedNoteIds = targetIds }
-                );
-
-                return new NoteToolResponse
-                {
-                    Success = true,
-                    Message = $"Successfully unlinked {links.Count} notes"
-                };
+                // Consider bidirectional unlinking
             }
-            catch (Exception ex)
+
+            if (unlinkedCount > 0)
             {
-                _logger.LogError(ex, "Error unlinking notes through tool service");
-                return new NoteToolResponse
-                {
-                    Success = false,
-                    Message = "Failed to unlink notes: " + ex.Message
-                };
+                await _context.SaveChangesAsync();
+                await _activityLogger.LogActivityAsync(userId, ActivityActionType.UNLINK.ToString(), ActivityItemType.NOTE.ToString(), sourceId, sourceNote.Title, $"Unlinked note '{sourceNote.Title}' from {unlinkedCount} other note(s).");
             }
+
+            string message = $"Processed {targetIds.Length} unlink requests. Removed {unlinkedCount} links.";
+            if (notFoundCount > 0) message += $" {notFoundCount} links not found.";
+
+            return new NoteToolResponse
+            {
+                Success = true,
+                Message = message,
+                Data = new { linksRemovedDetails }
+            };
         }
 
         public async Task<NoteToolResponse> ArchiveNoteAsync(string noteId, string userId)

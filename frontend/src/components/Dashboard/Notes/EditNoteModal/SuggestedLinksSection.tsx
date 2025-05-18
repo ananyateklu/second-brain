@@ -1,147 +1,139 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link2, PlusCircle, Type, Lightbulb, CheckSquare, Loader } from 'lucide-react';
-import { useNotes } from '../../../../contexts/notesContextUtils';
-import { useTasks } from '../../../../contexts/tasksContextUtils';
-import { useIdeas } from '../../../../contexts/ideasContextUtils';
-import { Note } from '../../../../types/note';
-import { similarContentService } from '../../../../services/ai/similarContentService';
 import { useTheme } from '../../../../contexts/themeContextUtils';
 import { motion } from 'framer-motion';
+import aiSettingsService from '../../../../services/api/aiSettings.service';
+import { useAI } from '../../../../contexts/AIContext';
+import { GenericSuggestionSkeleton } from './GenericSuggestionSkeleton';
+
+interface SuggestionItem {
+    id: string;
+    title: string;
+    similarity: number;
+    type: 'note' | 'idea' | 'task' | 'reminder';
+    status?: string;
+    dueDate?: string | null;
+    isLinking?: boolean;
+    displayKey?: string;
+}
 
 interface SuggestedLinksSectionProps {
-    currentNote: Note;
-    linkedNoteIds: string[];
-    linkedTaskIds: string[];
-    linkedIdeaIds?: string[];
+    suggestedNotes: SuggestionItem[];
+    suggestedIdeas: SuggestionItem[];
+    suggestedTasks: SuggestionItem[];
+    isLoading: boolean;
+    error: string | null;
     onLinkNote: (noteId: string) => Promise<void>;
+    onLinkIdea: (ideaId: string) => Promise<void>;
     onLinkTask: (taskId: string) => Promise<void>;
-    onLinkIdea?: (ideaId: string) => Promise<void>;
 }
 
 export function SuggestedLinksSection({
-    currentNote,
-    linkedNoteIds,
-    linkedTaskIds,
-    linkedIdeaIds = [],
+    suggestedNotes = [],
+    suggestedIdeas = [],
+    suggestedTasks = [],
+    isLoading,
+    error,
     onLinkNote,
-    onLinkTask,
-    onLinkIdea = async () => { }
+    onLinkIdea,
+    onLinkTask
 }: SuggestedLinksSectionProps) {
-    const { notes } = useNotes();
-    const { tasks } = useTasks();
-    const { state: { ideas = [] } } = useIdeas();
     const { theme } = useTheme();
+    const { settingsVersion } = useAI();
 
-    const [isLoading, setIsLoading] = useState(false);
-    const [suggestions, setSuggestions] = useState<Array<{
-        id: string;
-        title: string;
-        type: 'note' | 'idea' | 'task';
-        status?: string;
-        dueDate?: string | null;
-        similarity: number;
-        isLinking?: boolean;
-        error?: string;
-    }>>([]);
-    const [error, setError] = useState('');
+    const [isEnabled, setIsEnabled] = useState<boolean>(true);
+    const hasSuggestionsLoadedOnce = useRef(false);
+    const [linkingItems, setLinkingItems] = useState<Record<string, boolean>>({});
 
-    // Load suggestions when the component mounts or when dependencies change
+    const consistentBorderColor = (() => {
+        switch (theme) {
+            case 'midnight':
+                return 'border-white/10';
+            case 'dark':
+                return 'border-gray-700/30';
+            case 'full-dark':
+                return 'border-white/10';
+            case 'light':
+            default:
+                return 'border-[var(--color-border)]';
+        }
+    })();
+
     useEffect(() => {
-        const loadSuggestions = async () => {
-            if (!currentNote || (!notes.length && !ideas.length && !tasks.length)) return;
-
-            setIsLoading(true);
-            setError('');
-
+        let isMounted = true;
+        const loadAISettings = async () => {
             try {
-                // Get recommendations from AI
-                const excludeIds = [...linkedNoteIds, ...linkedTaskIds, ...linkedIdeaIds, currentNote.id];
-                const allSuggestions = await similarContentService.findSimilarContent(
-                    {
-                        id: currentNote.id,
-                        title: currentNote.title,
-                        content: currentNote.content,
-                        tags: currentNote.tags
-                    },
-                    notes,
-                    ideas, // Include ideas for suggestions
-                    tasks,
-                    [], // Empty reminders array
-                    excludeIds,
-                    5 // Max number of suggestions
-                );
-
-                // Filter out any reminder suggestions that might come back
-                const nonReminderSuggestions = allSuggestions
-                    .filter(s => s.type !== 'reminder')
-                    .filter(s => s.similarity > 0.3) // Only show items with meaningful similarity
-                    .sort((a, b) => b.similarity - a.similarity);
-
-                // Safe to cast since we've filtered out reminders
-                setSuggestions(nonReminderSuggestions as Array<typeof suggestions[0]>);
+                const settings = await aiSettingsService.getAISettings();
+                if (isMounted) {
+                    const newEnabledState = settings?.contentSuggestions?.enabled !== false;
+                    setIsEnabled(newEnabledState);
+                }
             } catch (err) {
-                console.error('Failed to get suggestions:', err);
-                setError('Could not load suggestions. Please try again later.');
-            } finally {
-                setIsLoading(false);
+                console.error('Error loading AI settings in SuggestedLinksSection:', err);
+                if (isMounted) {
+                    setIsEnabled(true);
+                }
             }
         };
+        loadAISettings();
+        return () => { isMounted = false; };
+    }, [settingsVersion]);
 
-        loadSuggestions();
-    }, [currentNote, notes, ideas, tasks, linkedNoteIds, linkedTaskIds, linkedIdeaIds]);
+    useEffect(() => {
+        if (!isLoading && !error) {
+            hasSuggestionsLoadedOnce.current = true;
+        }
+    }, [isLoading, error, suggestedNotes, suggestedIdeas, suggestedTasks]);
 
-    const handleLinkItem = async (item: typeof suggestions[0]) => {
-        // Update local state to show linking in progress
-        setSuggestions(prev => prev.map(s =>
-            s.id === item.id ? { ...s, isLinking: true, error: undefined } : s
-        ));
-
+    const handleLinkItem = async (item: SuggestionItem) => {
+        setLinkingItems(prev => ({ ...prev, [item.id]: true }));
         try {
-            // Different actions based on item type
             if (item.type === 'note') {
                 await onLinkNote(item.id);
             } else if (item.type === 'idea') {
-                if (onLinkIdea) {
-                    await onLinkIdea(item.id);
-                } else {
-                    throw new Error('Linking to ideas is not supported');
-                }
+                await onLinkIdea(item.id);
             } else if (item.type === 'task') {
                 await onLinkTask(item.id);
             }
-
-            // Remove the suggestion after successful linking
-            setSuggestions(prev => prev.filter(s => s.id !== item.id));
-
-        } catch (error) {
-            console.error('Failed to link item:', error);
-
-            // Show the error on the specific suggestion
-            const errorMessage = error instanceof Error ? error.message : 'Failed to link item';
-            setSuggestions(prev => prev.map(s =>
-                s.id === item.id ? { ...s, isLinking: false, error: errorMessage } : s
-            ));
-
-            // Wait a moment before clearing the error
-            setTimeout(() => {
-                setSuggestions(prev => prev.map(s =>
-                    s.id === item.id ? { ...s, error: undefined } : s
-                ));
-            }, 3000);
+        } catch (linkError) {
+            console.error('Failed to link item in SuggestedLinksSection:', linkError);
+        } finally {
+            setLinkingItems(prev => {
+                const newState = { ...prev };
+                delete newState[item.id];
+                return newState;
+            });
         }
     };
 
-    // Check if we have any suggestions to show
-    if (suggestions.length === 0 && !isLoading) {
-        return null;
-    }
+    const allSuggestions = [
+        ...suggestedNotes.map((item, index) => ({
+            ...item,
+            displayKey: `note-${item.id}-${index}`,
+            isLinking: linkingItems[item.id] || false
+        })),
+        ...suggestedIdeas.map((item, index) => ({
+            ...item,
+            displayKey: `idea-${item.id}-${index}`,
+            isLinking: linkingItems[item.id] || false
+        })),
+        ...suggestedTasks.map((item, index) => ({
+            ...item,
+            displayKey: `task-${item.id}-${index}`,
+            isLinking: linkingItems[item.id] || false
+        }))
+    ].filter(s => s.type !== 'reminder' && s.similarity > 0)
+        .sort((a, b) => b.similarity - a.similarity);
 
-    // Styling
-    const getBorderStyle = () => {
-        if (theme === 'midnight') return 'border-white/5';
-        if (theme === 'dark') return 'border-gray-700/30';
-        return 'border-[var(--color-border)]';
-    };
+    if (!isEnabled) {
+        return (
+            <div className="p-3 bg-[var(--color-surface)] rounded-lg border border-[var(--color-border)] text-center">
+                <p className="text-xs text-[var(--color-textSecondary)]">
+                    Content suggestions are disabled in AI settings.
+                </p>
+            </div>
+        );
+    }
 
     const getItemBackground = () => {
         if (theme === 'dark') return 'bg-[#111827]';
@@ -149,107 +141,137 @@ export function SuggestedLinksSection({
         return 'bg-[var(--color-surface)]';
     };
 
-    const getItemHoverBackground = () => {
-        if (theme === 'dark') return 'hover:bg-[#1f2937]';
-        if (theme === 'midnight') return 'hover:bg-[#273344]';
-        return 'hover:bg-[var(--color-surfaceHover)]';
-    };
-
-    const formatScore = (score: number) => {
-        // Format as percentage
+    const formatScore = (score: number): string => {
+        if (typeof score !== 'number' || isNaN(score)) {
+            return '-';
+        }
         return `${Math.round(score * 100)}%`;
     };
 
+    const renderSuggestionItem = (item: SuggestionItem) => {
+        let icon = null;
+        let iconColor = '';
+        let specificTextColor = '';
+
+        const consistentBgColor = 'bg-[var(--color-surface)]';
+        const consistentHoverBgColor = 'hover:bg-[var(--color-surfaceHover)]';
+
+        let statusBadgeBgColor = 'bg-gray-100';
+        let statusBadgeTextColor = 'text-gray-500';
+
+        switch (theme) {
+            case 'dark':
+                statusBadgeBgColor = 'bg-gray-800';
+                statusBadgeTextColor = 'text-gray-400';
+                break;
+            case 'midnight':
+            case 'full-dark':
+                statusBadgeBgColor = 'bg-gray-700/30';
+                statusBadgeTextColor = 'text-gray-400';
+                break;
+        }
+
+        if (item.type === 'note') {
+            iconColor = 'text-[var(--color-note)]';
+            icon = <Type className={`w-3 h-3 ${iconColor}`} />;
+            specificTextColor = 'text-[var(--color-note)]';
+        } else if (item.type === 'idea') {
+            iconColor = 'text-[var(--color-idea)]';
+            icon = <Lightbulb className={`w-3 h-3 ${iconColor}`} />;
+            specificTextColor = 'text-[var(--color-idea)]';
+        } else if (item.type === 'task') {
+            iconColor = 'text-[var(--color-task)]';
+            icon = <CheckSquare className={`w-3 h-3 ${iconColor}`} />;
+            specificTextColor = 'text-[var(--color-task)]';
+        }
+
+        if (linkingItems[item.id]) {
+            return <GenericSuggestionSkeleton key={item.displayKey} type={item.type === 'reminder' ? 'reminder' : 'item'} />;
+        }
+
+        return (
+            <motion.div
+                key={item.displayKey}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+                className={`relative flex items-center gap-1.5 p-1.5 ${consistentBgColor} rounded-lg border ${consistentBorderColor} group ${consistentHoverBgColor} transition-colors cursor-pointer`}
+                onClick={() => !(linkingItems[item.id]) && handleLinkItem(item)}
+            >
+                <div className={`shrink-0 p-1 ${consistentBgColor} rounded-lg`}>
+                    {icon}
+                </div>
+                <div className="min-w-0 flex-1">
+                    <h6 className="text-xs font-medium text-[var(--color-text)] truncate flex items-center gap-1">
+                        {item.title}
+                        {linkingItems[item.id] && <Loader className="w-2 h-2 animate-spin" />}
+                    </h6>
+                    <div className="flex items-center gap-1.5">
+                        <span className={`inline-flex items-center px-1 py-0.5 text-[8px] font-medium ${consistentBgColor} ${specificTextColor} rounded`}>
+                            Match: {formatScore(item.similarity)}
+                        </span>
+                        {item.type === 'task' && item.status && (
+                            <span className={`inline-flex items-center px-1 py-0.5 text-[8px] font-medium ${statusBadgeBgColor} ${statusBadgeTextColor} rounded`}>
+                                {item.status}
+                            </span>
+                        )}
+                    </div>
+                </div>
+                <button
+                    onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleLinkItem(item);
+                    }}
+                    className={`absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 p-0.5 ${consistentBgColor} ${specificTextColor} rounded-full border ${consistentBorderColor} transition-all z-10`}
+                    disabled={linkingItems[item.id]}
+                >
+                    <PlusCircle className="w-2.5 h-2.5" />
+                </button>
+            </motion.div>
+        );
+    };
+
     return (
-        <div data-testid="suggested-links-section">
-            <div className="flex items-center gap-2 mb-3">
-                <Link2 className="w-3.5 h-3.5 text-[var(--color-textSecondary)]" />
-                <h6 className="text-xs font-medium text-[var(--color-textSecondary)]">
+        <div data-testid="suggested-links-section" className="space-y-3">
+            <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium text-[var(--color-text)] flex items-center gap-1.5">
+                    <Link2 className="w-3.5 h-3.5 text-[var(--color-textSecondary)]" />
                     Suggested Links
-                </h6>
-                {isLoading && (
-                    <Loader className="w-3 h-3 text-[var(--color-textSecondary)] animate-spin ml-1" />
-                )}
+                    {isLoading && <Loader className="w-3 h-3 text-[var(--color-textSecondary)] animate-spin ml-1" />}
+                </h3>
             </div>
 
-            {error ? (
-                <div className="text-xs text-[var(--color-textSecondary)] px-2">
-                    {error}
+            {error && (
+                <div className="p-2 text-xs text-red-500 bg-red-500/10 rounded-lg border border-red-500/20">
+                    Error loading suggestions: {error}
                 </div>
-            ) : (
-                <div className="space-y-2">
-                    {suggestions.map(item => (
-                        <motion.div
-                            key={item.id}
-                            initial={{ opacity: 0, y: 5 }}
-                            animate={{ opacity: 0.65, y: 0 }}
-                            whileHover={{ opacity: 1 }}
-                            transition={{ duration: 0.2 }}
-                            onClick={() => !item.isLinking && handleLinkItem(item)}
-                            className={`
-                group flex items-start gap-2.5 p-2 rounded-lg cursor-pointer
-                ${getItemBackground()} ${getItemHoverBackground()} border ${getBorderStyle()}
-                transition-all duration-200 opacity-65 hover:opacity-100 relative
-                ${item.isLinking ? 'pointer-events-none' : 'cursor-pointer'}
-                ${item.error ? 'border-red-500/50' : ''}
-              `}
-                        >
-                            {/* Icon based on item type */}
-                            <div className={`
-                shrink-0 p-1.5 rounded-lg
-                ${item.type === 'idea' ? 'bg-[var(--color-idea)]/15' :
-                                    item.type === 'note' ? 'bg-[var(--color-note)]/15' :
-                                        'bg-[var(--color-task)]/15'}
-              `}>
-                                {item.type === 'idea' ? (
-                                    <Lightbulb className="w-3.5 h-3.5 text-[var(--color-idea)]" />
-                                ) : item.type === 'note' ? (
-                                    <Type className="w-3.5 h-3.5 text-[var(--color-note)]" />
-                                ) : (
-                                    <CheckSquare className="w-3.5 h-3.5 text-[var(--color-task)]" />
-                                )}
-                            </div>
+            )}
 
-                            {/* Item title and metadata */}
-                            <div className="flex-1 min-w-0">
-                                <h6 className="text-sm font-medium text-[var(--color-text)] truncate flex items-center gap-1">
-                                    {item.title}
-                                    {item.isLinking && (
-                                        <Loader className="w-3 h-3 ml-1 inline animate-spin text-[var(--color-accent)]" />
-                                    )}
-                                </h6>
-
-                                {item.error ? (
-                                    <p className="text-xs text-red-500 mt-0.5">{item.error}</p>
-                                ) : (
-                                    <div className="flex items-center gap-2">
-                                        <p className="text-xs text-[var(--color-textSecondary)]">
-                                            {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
-                                        </p>
-                                        {item.status && (
-                                            <p className="text-xs text-[var(--color-textSecondary)]">
-                                                {item.status}
-                                            </p>
-                                        )}
-                                        {item.dueDate && (
-                                            <p className="text-xs text-[var(--color-textSecondary)]">
-                                                {new Date(item.dueDate).toLocaleDateString()}
-                                            </p>
-                                        )}
-                                        <p className="text-xs text-[var(--color-accent)]">
-                                            Match: {formatScore(item.similarity)}
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Add icon */}
-                            <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <PlusCircle className="w-4 h-4 text-[var(--color-accent)]" />
-                            </div>
-                        </motion.div>
-                    ))}
+            {!error && isLoading && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
+                    <GenericSuggestionSkeleton />
+                    <GenericSuggestionSkeleton />
+                    <GenericSuggestionSkeleton />
                 </div>
+            )}
+
+            {!error && !isLoading && (
+                <>
+                    {allSuggestions.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
+                            {allSuggestions.map(renderSuggestionItem)}
+                        </div>
+                    ) : (
+                        hasSuggestionsLoadedOnce.current && (
+                            <div className={`p-3 ${getItemBackground()} rounded-lg border ${consistentBorderColor} text-center`}>
+                                <p className="text-xs text-[var(--color-textSecondary)]">
+                                    No relevant links found at the moment.
+                                </p>
+                            </div>
+                        )
+                    )}
+                </>
             )}
         </div>
     );

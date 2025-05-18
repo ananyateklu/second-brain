@@ -105,7 +105,7 @@ namespace SecondBrain.Data
                     .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(tn => tn.Note)
-                    .WithMany(n => n.TaskItemNotes)
+                    .WithMany()
                     .HasForeignKey(tn => tn.NoteId)
                     .OnDelete(DeleteBehavior.Restrict);
             });
@@ -117,28 +117,31 @@ namespace SecondBrain.Data
                     .HasMaxLength(36);  // Ensure consistent length
             });
 
-            // Configure composite key
-            modelBuilder.Entity<NoteLink>()
-                .HasKey(nl => new { nl.NoteId, nl.LinkedNoteId });
+            // Configure NoteLink entity (New generalized structure)
+            modelBuilder.Entity<NoteLink>(entity =>
+            {
+                // Configure composite key
+                entity.HasKey(nl => new { nl.NoteId, nl.LinkedItemId, nl.LinkedItemType });
 
-            // Configure relationship for NoteId
-            modelBuilder.Entity<NoteLink>()
-                .HasOne(nl => nl.Note)
-                .WithMany(n => n.NoteLinks)
-                .HasForeignKey(nl => nl.NoteId)
-                .OnDelete(DeleteBehavior.Restrict);
+                // Configure relationship for NoteId (Note to NoteLink)
+                entity.HasOne(nl => nl.Note)
+                    .WithMany(n => n.NoteLinks) // Refers to ICollection<NoteLink> in Note.cs
+                    .HasForeignKey(nl => nl.NoteId)
+                    .OnDelete(DeleteBehavior.Cascade); // Matches SQL ON DELETE CASCADE
 
-            // Configure relationship for LinkedNoteId
-            modelBuilder.Entity<NoteLink>()
-                .HasOne(nl => nl.LinkedNote)
-                .WithMany()
-                .HasForeignKey(nl => nl.LinkedNoteId)
-                .OnDelete(DeleteBehavior.Restrict);
+                // Configure relationship for CreatedBy (User to NoteLink)
+                entity.HasOne(nl => nl.UserCreator)
+                    .WithMany() // User does not have a direct ICollection<NoteLink> for links they created
+                    .HasForeignKey(nl => nl.CreatedBy)
+                    .IsRequired(false) // CreatedBy is nullable
+                    .OnDelete(DeleteBehavior.ClientSetNull); // EF Core default for optional relationships if not specified
 
-            // Set default value for IsDeleted
-            modelBuilder.Entity<NoteLink>()
-                .Property(nl => nl.IsDeleted)
-                .HasDefaultValue(false);
+                entity.Property(nl => nl.LinkedItemId).HasMaxLength(450);
+                entity.Property(nl => nl.LinkedItemType).HasMaxLength(50);
+                entity.Property(nl => nl.LinkType).HasMaxLength(50);
+
+                // IsDeleted and CreatedAt have default values in the entity class itself.
+            });
 
             modelBuilder.Entity<IdeaLink>()
                 .HasKey(il => new { il.IdeaId, il.LinkedItemId });
@@ -254,7 +257,7 @@ namespace SecondBrain.Data
                     .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(e => e.LinkedItem)
-                    .WithMany(n => n.TaskLinks)
+                    .WithMany()
                     .HasForeignKey(e => e.LinkedItemId)
                     .OnDelete(DeleteBehavior.Restrict);
 
@@ -271,33 +274,6 @@ namespace SecondBrain.Data
                 entity.HasIndex(e => e.TaskId);
                 entity.HasIndex(e => e.LinkedItemId);
                 entity.HasIndex(e => e.CreatedBy);
-                entity.HasIndex(e => e.IsDeleted);
-            });
-
-            // Configure NoteLink entity
-            modelBuilder.Entity<NoteLink>(entity =>
-            {
-                // Configure composite key
-                entity.HasKey(e => new { e.NoteId, e.LinkedNoteId });
-
-                // Configure relationships
-                entity.HasOne(e => e.Note)
-                    .WithMany(n => n.NoteLinks)
-                    .HasForeignKey(e => e.NoteId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
-                entity.HasOne(e => e.LinkedNote)
-                    .WithMany()
-                    .HasForeignKey(e => e.LinkedNoteId)
-                    .OnDelete(DeleteBehavior.Restrict);
-
-                // Set default value for IsDeleted
-                entity.Property(e => e.IsDeleted)
-                    .HasDefaultValue(false);
-
-                // Configure indexes
-                entity.HasIndex(e => e.NoteId);
-                entity.HasIndex(e => e.LinkedNoteId);
                 entity.HasIndex(e => e.IsDeleted);
             });
 

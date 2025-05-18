@@ -413,28 +413,51 @@ const Actions = memo(function Actions({
 });
 
 function Metadata({ note }: { note: Note }) {
+  const linkedNotesCount = useMemo(() =>
+    (note.linkedItems || []).filter(item => item.type === 'Note').length,
+    [note.linkedItems]
+  );
+  const linkedTasksCount = useMemo(() =>
+    (note.linkedItems || []).filter(item => item.type === 'Task').length,
+    [note.linkedItems]
+  );
+  const linkedRemindersCount = useMemo(() =>
+    (note.linkedItems || []).filter(item => item.type === 'Reminder').length,
+    [note.linkedItems]
+  );
+  const linkedIdeasCount = useMemo(() =>
+    (note.linkedItems || []).filter(item => item.type === 'Idea').length,
+    [note.linkedItems]
+  );
+
   return (
     <div className="flex items-center gap-2 text-[11px] text-[var(--color-textSecondary)]">
       <div className="flex items-center gap-1">
         <Clock className="w-3 h-3" />
         <span>{formatDate(note.updatedAt)}</span>
       </div>
-      {note.linkedNoteIds && note.linkedNoteIds.length > 0 && (
-        <div className="flex items-center gap-1">
+      {(linkedNotesCount > 0) && (
+        <div className="flex items-center gap-1" title={`${linkedNotesCount} linked notes`}>
+          <FileText className="w-3 h-3" />
+          <span>{linkedNotesCount}</span>
+        </div>
+      )}
+      {(linkedIdeasCount > 0) && (
+        <div className="flex items-center gap-1" title={`${linkedIdeasCount} linked ideas`}>
           <Link2 className="w-3 h-3" />
-          <span>{note.linkedNoteIds.length} linked</span>
+          <span>{linkedIdeasCount}</span>
         </div>
       )}
-      {note.linkedTasks && note.linkedTasks.length > 0 && (
-        <div className="flex items-center gap-1">
+      {(linkedTasksCount > 0) && (
+        <div className="flex items-center gap-1" title={`${linkedTasksCount} linked tasks`}>
           <CheckSquare className="w-3 h-3" />
-          <span>{note.linkedTasks.length} tasks</span>
+          <span>{linkedTasksCount}</span>
         </div>
       )}
-      {note.linkedReminders && note.linkedReminders.length > 0 && (
-        <div className="flex items-center gap-1">
+      {(linkedRemindersCount > 0) && (
+        <div className="flex items-center gap-1" title={`${linkedRemindersCount} linked reminders`}>
           <Clock className="w-3 h-3" />
-          <span>{note.linkedReminders.length} reminders</span>
+          <span>{linkedRemindersCount}</span>
         </div>
       )}
     </div>
@@ -444,24 +467,47 @@ const MemoizedMetadata = memo(Metadata);
 
 // Smaller metadata variant for mindMap view
 function SmallMetadata({ note }: { note: Note }) {
+  const linkedNotesCount = useMemo(() =>
+    (note.linkedItems || []).filter(item => item.type === 'Note').length,
+    [note.linkedItems]
+  );
+  const linkedTasksCount = useMemo(() =>
+    (note.linkedItems || []).filter(item => item.type === 'Task').length,
+    [note.linkedItems]
+  );
+  const linkedRemindersCount = useMemo(() =>
+    (note.linkedItems || []).filter(item => item.type === 'Reminder').length,
+    [note.linkedItems]
+  );
+  const linkedIdeasCount = useMemo(() =>
+    (note.linkedItems || []).filter(item => item.type === 'Idea').length,
+    [note.linkedItems]
+  );
+
   return (
     <>
-      {(note.linkedNoteIds?.length ?? 0) > 0 && (
-        <div className="flex items-center gap-1">
+      {(linkedNotesCount > 0) && (
+        <div className="flex items-center gap-1" title={`${linkedNotesCount} linked notes`}>
+          <FileText className="w-2.5 h-2.5" />
+          <span>{linkedNotesCount}</span>
+        </div>
+      )}
+      {(linkedIdeasCount > 0) && (
+        <div className="flex items-center gap-1" title={`${linkedIdeasCount} linked ideas`}>
           <Link2 className="w-2.5 h-2.5" />
-          <span>{note.linkedNoteIds.length}</span>
+          <span>{linkedIdeasCount}</span>
         </div>
       )}
-      {(note.linkedTasks?.length ?? 0) > 0 && (
-        <div className="flex items-center gap-1">
+      {(linkedTasksCount > 0) && (
+        <div className="flex items-center gap-1" title={`${linkedTasksCount} linked tasks`}>
           <CheckSquare className="w-2.5 h-2.5" />
-          <span>{note.linkedTasks?.length}</span>
+          <span>{linkedTasksCount}</span>
         </div>
       )}
-      {(note.linkedReminders?.length ?? 0) > 0 && (
-        <div className="flex items-center gap-1">
+      {(linkedRemindersCount > 0) && (
+        <div className="flex items-center gap-1" title={`${linkedRemindersCount} linked reminders`}>
           <Clock className="w-2.5 h-2.5" />
-          <span>{note.linkedReminders.length}</span>
+          <span>{linkedRemindersCount}</span>
         </div>
       )}
     </>

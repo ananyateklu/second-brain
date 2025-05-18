@@ -183,40 +183,24 @@ export function LinkedRemindersPanel({
 
     // Process suggestion items into full reminder objects
     useEffect(() => {
-        console.log("Processing reminder suggestions:", suggestedReminders);
 
         if (!suggestedReminders?.length) {
-            console.log("No reminder suggestions provided");
             setProcessedSuggestions([]);
             return;
         }
 
         // Filter to only include reminder type
         const reminderSuggestions = suggestedReminders.filter(s => s.type === 'reminder');
-        console.log(`Found ${reminderSuggestions.length} reminder suggestions with type 'reminder'`);
 
         if (reminderSuggestions.length === 0) {
-            console.log("No suggestions with type 'reminder' found");
             setProcessedSuggestions([]);
             return;
         }
-
-        // Log reminder IDs for comparison
-        console.log("Reminder suggestion IDs:", reminderSuggestions.map(r => r.id));
-        console.log("Available reminder IDs:", allRemindersFromContext.map(r => r.id));
 
         // Convert suggestion items to full reminder objects
         const processed = reminderSuggestions
             .map(suggestion => {
                 const fullReminder = allRemindersFromContext.find(r => r.id === suggestion.id);
-
-                // Log for debugging
-                if (!fullReminder) {
-                    console.log(`Could not find full reminder with ID: ${suggestion.id}`);
-                    return null;
-                }
-
-                console.log(`Found matching reminder: "${fullReminder.title}" for suggestion ID: ${suggestion.id}`);
                 return {
                     ...fullReminder,
                     similarity: suggestion.similarity
@@ -224,7 +208,6 @@ export function LinkedRemindersPanel({
             })
             .filter(Boolean) as Array<ReminderType & { similarity: number }>;
 
-        console.log(`Processed ${processed.length} suggestions into full reminders`);
         setProcessedSuggestions(processed);
     }, [suggestedReminders, allRemindersFromContext]);
 

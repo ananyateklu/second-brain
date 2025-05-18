@@ -354,9 +354,9 @@ namespace SecondBrain.Api.Controllers
                 var uniquePairs = new HashSet<string>();
                 foreach (var link in noteLinks)
                 {
-                    var pair = link.NoteId.CompareTo(link.LinkedNoteId) < 0 
-                        ? $"{link.NoteId}:{link.LinkedNoteId}" 
-                        : $"{link.LinkedNoteId}:{link.NoteId}";
+                    var pair = link.NoteId.CompareTo(link.LinkedItemId) < 0 
+                        ? $"{link.NoteId}:{link.LinkedItemId}" 
+                        : $"{link.LinkedItemId}:{link.NoteId}";
                     
                     if (uniquePairs.Add(pair))
                     {
@@ -366,7 +366,7 @@ namespace SecondBrain.Api.Controllers
                             Source = "Link",
                             Action = "Create",
                             Amount = XPValues.CreateLink,
-                            ItemId = $"{link.NoteId}:{link.LinkedNoteId}", // Using composite key
+                            ItemId = $"{link.NoteId}:{link.LinkedItemId}", // Using composite key
                             ItemTitle = "Note Link",
                             CreatedAt = link.CreatedAt
                         });

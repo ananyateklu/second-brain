@@ -72,7 +72,6 @@ export class SimilarContentService {
             const selectedModelId = settings?.contentSuggestions?.modelId;
 
             if (selectedModelId) {
-                console.log(`Using selected model from settings: ${selectedModelId}`);
                 return selectedModelId;
             }
 
@@ -93,21 +92,18 @@ export class SimilarContentService {
                 settings?.contentSuggestions?.systemMessage?.includes('connection discovery');
 
             if (isLinkSuggestionModelSelection) {
-                console.log('Using optimized model selection for link suggestions');
 
                 // For different providers, select optimal models for semantic tasks
                 if (provider === 'openai') {
                     // Prefer GPT-4 models for link suggestions
                     const gpt4Models = availableChatModels.filter(m => m.id.includes('gpt-4'));
                     if (gpt4Models.length > 0) {
-                        console.log(`Using GPT-4 model for link suggestions: ${gpt4Models[0].id}`);
                         return gpt4Models[0].id;
                     }
                 } else if (provider === 'anthropic') {
                     // Prefer Claude 3 models for link suggestions
                     const claude3Models = availableChatModels.filter(m => m.id.includes('claude-3'));
                     if (claude3Models.length > 0) {
-                        console.log(`Using Claude 3 model for link suggestions: ${claude3Models[0].id}`);
                         return claude3Models[0].id;
                     }
                 } else if (provider === 'gemini') {
@@ -116,7 +112,6 @@ export class SimilarContentService {
                         m.id.includes('pro') || m.id.includes('ultra') || m.id.includes('1.5')
                     );
                     if (geminiAdvancedModels.length > 0) {
-                        console.log(`Using advanced Gemini model for link suggestions: ${geminiAdvancedModels[0].id}`);
                         return geminiAdvancedModels[0].id;
                     }
                 } else if (provider === 'ollama') {
@@ -128,23 +123,19 @@ export class SimilarContentService {
                         m.id.includes('wizard')
                     );
                     if (ollamaPreferredModels.length > 0) {
-                        console.log(`Using optimized Ollama model for link suggestions: ${ollamaPreferredModels[0].id}`);
                         return ollamaPreferredModels[0].id;
                     }
                 } else if (provider === 'grok') {
                     // Grok typically only has one model available
-                    console.log(`Using Grok model for link suggestions: ${availableChatModels[0]?.id || 'grok-beta'}`);
                     return availableChatModels[0]?.id || 'grok-beta';
                 }
             }
 
             if (availableChatModels.length > 0) {
-                console.log(`Using first available ${provider} model: ${availableChatModels[0].id}`);
                 return availableChatModels[0].id;
             }
 
             // Fallback to default models if no models available for this provider
-            console.log(`No available models for ${provider}, using fallback`);
             return provider === 'ollama' ? 'llama3:latest' :
                 provider === 'grok' ? 'grok-beta' :
                     provider === 'anthropic' ? 'claude-3-haiku-20240307' :
@@ -168,18 +159,6 @@ export class SimilarContentService {
         try {
             // Get settings from preferences
             const settings = await this.getSettings();
-
-            // Check if using link suggestion profile
-            const isLinkSuggestionMode = settings?.contentSuggestions?.systemMessage?.includes('Find meaningful connections') ||
-                settings?.contentSuggestions?.systemMessage?.includes('Help identify connections') ||
-                settings?.contentSuggestions?.systemMessage?.includes('semantic connection specialist') ||
-                settings?.contentSuggestions?.systemMessage?.includes('connection discovery');
-
-            if (isLinkSuggestionMode) {
-                // Log a message but respect the user's choice
-                const configuredProvider = settings?.contentSuggestions?.provider;
-                console.log(`Using configured provider ${configuredProvider} for link suggestions. Note: OpenAI and Anthropic often perform best for semantic connection tasks.`);
-            }
 
             // Always use provider from settings or default to openai
             return settings?.contentSuggestions?.provider || 'openai';
@@ -249,28 +228,8 @@ export class SimilarContentService {
                     !excludeIds.includes(item.id)
                 );
 
-            // Debug output for content types being sent to AI
-            console.log("CONTENT BEING SENT TO AI:");
-            console.log("Notes count:", notes.length);
-            console.log("Ideas count:", ideas.length);
-            console.log("Tasks count:", tasks.length);
-            console.log("After filtering, content by type:", {
-                notes: allContent.filter(item => item.type === 'note').length,
-                ideas: allContent.filter(item => item.type === 'idea').length,
-                tasks: allContent.filter(item => item.type === 'task').length,
-                reminders: allContent.filter(item => item.type === 'reminder').length
-            });
-
-            if (allContent.filter(item => item.type === 'idea').length > 0) {
-                console.log("IDEA EXAMPLES:", allContent.filter(item => item.type === 'idea').slice(0, 2).map(i => ({ id: i.id, title: i.title })));
-            }
-            if (allContent.filter(item => item.type === 'task').length > 0) {
-                console.log("TASK EXAMPLES:", allContent.filter(item => item.type === 'task').slice(0, 2).map(t => ({ id: t.id, title: t.title })));
-            }
-
             // If no content to compare, return empty results
             if (allContent.length === 0) {
-                console.log("No content available to find similarities");
                 return [];
             }
 
@@ -288,8 +247,6 @@ export class SimilarContentService {
                 ? `${systemMessage}\n\n${basePrompt}`
                 : basePrompt;
 
-            console.log("Sending prompt to AI model:", modelId);
-
             // Get parameters from settings
             const parameters: Record<string, unknown> = {
                 temperature: settings?.contentSuggestions?.temperature ?? 0.7,
@@ -297,18 +254,11 @@ export class SimilarContentService {
             };
 
             const service = this.getServiceForProvider(provider);
-            console.log("Using service:", service);
-            console.log("Prompt:", prompt);
-            console.log("Parameters:", parameters);
-            console.log("Provider:", provider);
-            console.log("Model ID:", modelId);
             const response = await service.sendMessage(prompt, modelId, parameters);
             // Convert response content to string to handle different types
             const responseContent = typeof response.content === 'string'
                 ? response.content
                 : String(response.content);
-
-            console.log("Raw AI response:", responseContent);
 
             // Extract JSON content from the response, handling markdown code blocks
             let jsonContent = '';
@@ -318,7 +268,6 @@ export class SimilarContentService {
             if (markdownMatch) {
                 // Extract content from within the code block
                 jsonContent = markdownMatch[1].trim();
-                console.log("Extracted JSON from markdown code block");
             } else {
                 // Try to find JSON array directly with a more robust pattern
                 // This handles both arrays and objects, even with nested content
@@ -326,14 +275,12 @@ export class SimilarContentService {
                 if (jsonArrayMatch && jsonArrayMatch.length > 0) {
                     // Take the largest match which is likely the full result
                     jsonContent = jsonArrayMatch.sort((a, b) => b.length - a.length)[0];
-                    console.log("Extracted JSON array directly");
                 } else {
                     // Try to find JSON object directly
                     const jsonObjectMatch = responseContent.match(/(\{[\s\S]*?\})/g);
                     if (jsonObjectMatch && jsonObjectMatch.length > 0) {
                         // Take the largest match which is likely the full result
                         jsonContent = jsonObjectMatch.sort((a, b) => b.length - a.length)[0];
-                        console.log("Extracted JSON object directly");
                     } else {
                         console.error("No JSON found in response:", responseContent);
                         throw new Error("Invalid response format from AI service");
@@ -344,9 +291,6 @@ export class SimilarContentService {
             // Perform additional cleanup on extracted JSON
             jsonContent = jsonContent.replace(/^[\s\n]*/, '').replace(/[\s\n]*$/, '');
 
-            // Log what we found for debugging
-            console.log("Extracted JSON content:", jsonContent.substring(0, 100) + (jsonContent.length > 100 ? "..." : ""));
-
             try {
                 // Parse the JSON content
                 const parsedResult = JSON.parse(jsonContent);
@@ -356,23 +300,19 @@ export class SimilarContentService {
                     console.error("Parsed result is not an array:", parsedResult);
                     // If the result is an object with a specific expected property, try to extract array
                     if (parsedResult && typeof parsedResult === 'object' && 'results' in parsedResult) {
-                        console.log("Trying to extract results array from object");
                         if (Array.isArray(parsedResult.results)) {
                             const results = parsedResult.results as SimilarityResult[];
                             const sortedResults = results
                                 .sort((a, b) => b.similarity - a.similarity)
                                 .slice(0, maxResults);
 
-                            console.log("Parsed similarity results from nested property:", sortedResults);
                             return sortedResults;
                         }
                     }
 
                     // If it's not an array but a single item, wrap it in an array
                     if (parsedResult && typeof parsedResult === 'object' && 'id' in parsedResult && 'similarity' in parsedResult) {
-                        console.log("Converting single result to array");
                         const singleItemArray = [parsedResult] as SimilarityResult[];
-                        console.log("Parsed similarity result as single item:", singleItemArray);
                         return singleItemArray.slice(0, maxResults);
                     }
 
@@ -402,10 +342,6 @@ export class SimilarContentService {
                     // Make a copy to avoid modifying the original
                     const correctedItem = { ...item };
 
-                    // Store original information for debugging
-                    const originalType = item.type;
-                    const originalSimilarity = item.similarity;
-
                     // Check if this item exists in one of our arrays to validate its type
                     const noteMatch = notes.find(note => note.id === item.id);
                     const ideaMatch = ideas.find(idea => idea.id === item.id);
@@ -413,41 +349,15 @@ export class SimilarContentService {
 
                     // If the item exists in one of our arrays but has the wrong type, fix it
                     if (noteMatch && item.type !== 'note') {
-                        console.log(`Correcting type from ${item.type} to 'note' for item ${item.id} (${item.title})`);
                         correctedItem.type = 'note';
                     } else if (ideaMatch && item.type !== 'idea') {
-                        console.log(`Correcting type from ${item.type} to 'idea' for item ${item.id} (${item.title})`);
                         correctedItem.type = 'idea';
                     } else if (taskMatch && item.type !== 'task') {
-                        console.log(`Correcting type from ${item.type} to 'task' for item ${item.id} (${item.title})`);
                         correctedItem.type = 'task';
-                    }
-
-                    // Special case: If we have a task and the similarity seems unusually low or potentially modified,
-                    // log detailed information to help diagnose why tasks might be showing fixed similarity scores
-                    if ((originalType === 'task' || correctedItem.type === 'task') &&
-                        (originalSimilarity === 0.32 || correctedItem.similarity === 0.32)) {
-                        console.log(`TASK SIMILARITY CHECK: Item "${item.title}" (${item.id}):
-                            - Original type: ${originalType}, Corrected type: ${correctedItem.type}
-                            - Original similarity: ${originalSimilarity}, Current similarity: ${correctedItem.similarity}
-                            - Is this a fixed/default similarity value? ${originalSimilarity === 0.32 ? "YES" : "NO"}
-                        `);
                     }
 
                     return correctedItem;
                 });
-
-                // Check if we have a balanced distribution of content types
-                const resultsByType = correctedResults.reduce<Record<string, SimilarityResult[]>>((acc, item) => {
-                    acc[item.type] = (acc[item.type] || []);
-                    acc[item.type].push(item);
-                    return acc;
-                }, {});
-
-                // Log the distribution for debugging
-                console.log("Results by type before balancing:", Object.keys(resultsByType).map(type =>
-                    `${type}: ${resultsByType[type]?.length || 0}`
-                ));
 
                 // Remove fallback logic as requested by the user.
                 // The new prompt should be effective enough.
@@ -457,13 +367,6 @@ export class SimilarContentService {
                 const sortedAndLimitedResults = enhancedResults
                     .sort((a, b) => b.similarity - a.similarity)
                     .slice(0, maxResults);
-
-                // Log final results
-                console.log("Parsed similarity results (no manual fallback):", sortedAndLimitedResults);
-                console.log("Final type distribution:", sortedAndLimitedResults.reduce((acc, item) => {
-                    acc[item.type] = (acc[item.type] || 0) + 1;
-                    return acc;
-                }, {} as Record<string, number>));
 
                 return sortedAndLimitedResults;
             } catch (jsonError) {
@@ -482,7 +385,6 @@ export class SimilarContentService {
     public clearCache(): void {
         this.cachedSettings = null;
         this.settingsLastFetched = 0;
-        console.log('Cleared similarContentService settings cache');
     }
 
     /**

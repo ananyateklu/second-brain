@@ -57,12 +57,12 @@ namespace SecondBrain.Api.Controllers
                     .ToList();
 
                 var linkedNotes = await _context.Notes
-                    .Where(n => linkedItemIds.Contains(n.Id) && n.UserId == userId && !n.IsDeleted)
+                    .Where(n => linkedItemIds.Contains(n.Id) && n.UserId == userId && !n.IsDeleted && !n.IsArchived)
                     .Select(n => new { n.Id, n.Title, Type = "Note" })
                     .ToListAsync();
 
                 var linkedIdeas = await _context.Ideas
-                    .Where(i => linkedItemIds.Contains(i.Id) && i.UserId == userId && !i.IsDeleted)
+                    .Where(i => linkedItemIds.Contains(i.Id) && i.UserId == userId && !i.IsDeleted && !i.IsArchived)
                     .Select(i => new { i.Id, i.Title, Type = "Idea" })
                     .ToListAsync();
 
@@ -187,12 +187,12 @@ namespace SecondBrain.Api.Controllers
                     .ToList();
 
                 var linkedNotes = await _context.Notes
-                    .Where(n => linkedItemIds.Contains(n.Id) && n.UserId == userId && !n.IsDeleted)
+                    .Where(n => linkedItemIds.Contains(n.Id) && n.UserId == userId && !n.IsDeleted && !n.IsArchived)
                     .Select(n => new { n.Id, n.Title, Type = "Note" })
                     .ToListAsync();
 
                 var linkedIdeas = await _context.Ideas
-                    .Where(i => linkedItemIds.Contains(i.Id) && i.UserId == userId && !i.IsDeleted)
+                    .Where(i => linkedItemIds.Contains(i.Id) && i.UserId == userId && !i.IsDeleted && !i.IsArchived)
                     .Select(i => new { i.Id, i.Title, Type = "Idea" })
                     .ToListAsync();
                 

@@ -65,7 +65,6 @@ const aiSettingsService = {
     clearCache: (): void => {
         cachedSettings = null;
         settingsLastFetched = 0;
-        console.log('AI settings cache cleared');
     }
 };
 

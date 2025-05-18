@@ -106,7 +106,7 @@ namespace SecondBrain.Api.Controllers
                 }
 
                 var noteCount = await _context.Notes.CountAsync(n => n.UserId == userId && !n.IsDeleted);
-                var linkCount = await _context.NoteLinks.CountAsync(nl => nl.Note.UserId == userId && !nl.IsDeleted);
+                var linkCount = await _context.NoteLinks.CountAsync(nl => nl.Note != null && nl.Note.UserId == userId && !nl.IsDeleted);
 
                 var progress = new AchievementProgressResponse
                 {
@@ -121,6 +121,21 @@ namespace SecondBrain.Api.Controllers
                         NextMilestone = GetNextMilestone(linkCount, new[] { 1, 50 })
                     }
                 };
+
+                // The achievement unlocking logic is handled by AchievementService.CheckAndUnlockAchievementsAsync
+                // when the actual link creation event occurs. This endpoint should focus on reporting progress.
+                // Removing the unlock attempt from here to avoid redundancy and keep concerns separated.
+                /*
+                // Check First Link achievement
+                var firstLinkAchievement = await _context.Achievements.FirstOrDefaultAsync(a => a.Name == "First Link Created");
+                if (firstLinkAchievement != null && !await _context.UserAchievements.AnyAsync(ua => ua.UserId == userId && ua.AchievementId == firstLinkAchievement.Id))
+                {
+                    if (linkCount > 0)
+                    {
+                        await CreateUserAchievement(user, firstLinkAchievement);
+                    }
+                }
+                */
 
                 return Ok(progress);
             }
