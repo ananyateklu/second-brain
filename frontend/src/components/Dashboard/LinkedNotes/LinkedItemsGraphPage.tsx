@@ -4,7 +4,7 @@ import { NoteDetailsPanel } from './NoteDetailsPanel';
 import { TaskDetailsPanel } from './TaskDetailsPanel';
 import { ListView } from './ListView';
 import { List, Network, Link2, Type, Lightbulb, GitBranch, Info, CheckSquare, Bell } from 'lucide-react';
-import type { Note } from '../../../types/note';
+import type { Note, LinkedItem } from '../../../types/note';
 import { useNotes } from '../../../contexts/notesContextUtils';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { shouldShowTooltip, markTooltipAsSeen } from './utils/graphStorage';
@@ -68,14 +68,11 @@ const processNoteConnections = (note: NoteWithConnections, oneWeekAgo: Date, one
   let recentWeek = 0;
   let recentMonth = 0;
 
-  note.linkedNoteIds?.forEach(id => {
-    const connection = note.connections?.find(c => c.noteId === id);
-    if (connection?.createdAt) {
-      const connectionDate = new Date(connection.createdAt);
-      if (connectionDate > oneWeekAgo) recentWeek++;
-      if (connectionDate > oneMonthAgo) recentMonth++;
-    }
-  });
+  if (note.linkedItems && note.linkedItems.length > 0) {
+    const linkActivityDate = new Date(note.updatedAt || note.createdAt);
+    if (linkActivityDate > oneWeekAgo) recentWeek += note.linkedItems.length;
+    if (linkActivityDate > oneMonthAgo) recentMonth += note.linkedItems.length;
+  }
 
   return { recentWeek, recentMonth };
 };
@@ -84,11 +81,10 @@ const processIdeaConnections = (idea: IdeaWithConnections, oneWeekAgo: Date, one
   let recentWeek = 0;
   let recentMonth = 0;
 
-  const linkedItemsCount = idea.linkedItems?.length || 0;
-  for (let i = 0; i < linkedItemsCount; i++) {
-    const connectionDate = new Date(idea.createdAt); // Using idea creation date as link creation date
-    if (connectionDate > oneWeekAgo) recentWeek++;
-    if (connectionDate > oneMonthAgo) recentMonth++;
+  if (idea.linkedItems && idea.linkedItems.length > 0) {
+    const linkActivityDate = new Date(idea.updatedAt || idea.createdAt);
+    if (linkActivityDate > oneWeekAgo) recentWeek += idea.linkedItems.length;
+    if (linkActivityDate > oneMonthAgo) recentMonth += idea.linkedItems.length;
   }
 
   return { recentWeek, recentMonth };
@@ -98,11 +94,10 @@ const processTaskConnections = (task: TaskWithConnections, oneWeekAgo: Date, one
   let recentWeek = 0;
   let recentMonth = 0;
 
-  const linkedItemsCount = task.linkedItems?.length || 0;
-  for (let i = 0; i < linkedItemsCount; i++) {
-    const connectionDate = new Date(task.createdAt); // Using task creation date as link creation date
-    if (connectionDate > oneWeekAgo) recentWeek++;
-    if (connectionDate > oneMonthAgo) recentMonth++;
+  if (task.linkedItems && task.linkedItems.length > 0) {
+    const linkActivityDate = new Date(task.updatedAt || task.createdAt);
+    if (linkActivityDate > oneWeekAgo) recentWeek += task.linkedItems.length;
+    if (linkActivityDate > oneMonthAgo) recentMonth += task.linkedItems.length;
   }
 
   return { recentWeek, recentMonth };
@@ -123,9 +118,9 @@ const findClusters = (notes: Note[], ideas: Idea[], tasks: Task[]) => {
         visited.add(currentId);
 
         const currentNote = notes.find(n => n.id === currentId);
-        currentNote?.linkedNoteIds?.forEach(linkedId => {
-          if (!visited.has(linkedId)) {
-            stack.push(linkedId);
+        currentNote?.linkedItems?.forEach((linkedItem: LinkedItem) => {
+          if ((linkedItem.type === 'Note' || linkedItem.type === 'Idea' || linkedItem.type === 'Task') && !visited.has(linkedItem.id)) {
+            stack.push(linkedItem.id);
           }
         });
       }
@@ -143,8 +138,8 @@ const findClusters = (notes: Note[], ideas: Idea[], tasks: Task[]) => {
         visited.add(currentId);
 
         const currentIdea = ideas.find(i => i.id === currentId);
-        currentIdea?.linkedItems?.forEach(item => {
-          if (!visited.has(item.id)) {
+        currentIdea?.linkedItems?.forEach((item: LinkedItem) => {
+          if ((item.type === 'Note' || item.type === 'Idea' || item.type === 'Task') && !visited.has(item.id)) {
             stack.push(item.id);
           }
         });
@@ -164,7 +159,9 @@ const findClusters = (notes: Note[], ideas: Idea[], tasks: Task[]) => {
 
         const currentTask = tasks.find(t => t.id === currentId);
         currentTask?.linkedItems?.forEach(item => {
-          if (!visited.has(item.id)) {
+          // task.linkedItems.type is 'string', so we check if it's one of the expected types
+          const itemType = item.type as 'Note' | 'Idea' | 'Task' | 'Reminder' | string;
+          if ((itemType === 'Note' || itemType === 'Idea' || itemType === 'Task') && !visited.has(item.id)) {
             stack.push(item.id);
           }
         });
@@ -224,16 +221,10 @@ export function LinkedNotesPage() {
     // Use a Set to track unique connections between items
     const connectionSet = new Set<string>();
 
-    // Count note-to-note connections
+    // Count note-to-note connections and note-to-reminder connections
     notes.forEach(note => {
-      (note.linkedNoteIds || []).forEach(targetId => {
-        const pairId = [note.id, targetId].sort().join('-');
-        connectionSet.add(pairId);
-      });
-
-      // Count note-to-reminder connections
-      (note.linkedReminders || []).forEach(reminder => {
-        const pairId = [note.id, reminder.id].sort().join('-');
+      (note.linkedItems || []).forEach((linkedItem: LinkedItem) => {
+        const pairId = [note.id, linkedItem.id].sort().join('-');
         connectionSet.add(pairId);
       });
     });
@@ -266,8 +257,7 @@ export function LinkedNotesPage() {
 
     // Count isolated notes, ideas, tasks and reminders (those without connections)
     const isolatedNotes = notes.filter(note =>
-      (!note.linkedNoteIds || note.linkedNoteIds.length === 0) &&
-      (!note.linkedReminders || note.linkedReminders.length === 0)
+      (!note.linkedItems || note.linkedItems.length === 0)
     ).length;
 
     const isolatedIdeas = ideas.filter(idea =>
