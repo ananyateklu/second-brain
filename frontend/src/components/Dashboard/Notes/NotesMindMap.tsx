@@ -87,15 +87,19 @@ const prepareEdges = (notes: NotesMindMapProps['notes']): FlowEdge[] => {
   const processedPairs = new Set<string>();
 
   return notes.flatMap(note =>
-    (note.linkedNoteIds || [])
+    (note.linkedItems || [])
+      .filter(item => item.type === 'Note')
+      .map(linkedItem => linkedItem.id)
       .filter(targetId => {
+        if (!notes.some(n => n.id === targetId)) return false;
+
         const pairId = [note.id, targetId].sort((a, b) => a.localeCompare(b)).join('-');
         if (processedPairs.has(pairId)) return false;
         processedPairs.add(pairId);
-        return notes.some(n => n.id === targetId);
+        return true;
       })
       .map(targetId => ({
-        id: `${note.id}-${targetId}`,
+        id: `${note.id}-linkto-${targetId}`,
         source: note.id,
         target: targetId,
         type: 'default',
@@ -109,7 +113,7 @@ const prepareEdges = (notes: NotesMindMapProps['notes']): FlowEdge[] => {
         markerEnd: {
           type: MarkerType.ArrowClosed,
           width: 15,
-          height: 15
+          height: 15,
         }
       }))
   );

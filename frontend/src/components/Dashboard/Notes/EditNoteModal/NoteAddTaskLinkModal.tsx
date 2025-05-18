@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X, Search, CheckSquare, AlertCircle, Calendar } from 'lucide-react';
 import { useTasks } from '../../../../contexts/tasksContextUtils';
+import { useNotes } from '../../../../contexts/notesContextUtils';
 
 interface AddTaskLinkModalProps {
     isOpen: boolean;
@@ -10,7 +11,8 @@ interface AddTaskLinkModalProps {
 }
 
 export function AddTaskLinkModal({ isOpen, onClose, noteId, onLinkAdded }: AddTaskLinkModalProps) {
-    const { tasks, addTaskLink } = useTasks();
+    const { tasks } = useTasks();
+    const { addLink: addLinkFromNotes } = useNotes();
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
@@ -18,10 +20,10 @@ export function AddTaskLinkModal({ isOpen, onClose, noteId, onLinkAdded }: AddTa
     if (!isOpen) return null;
 
     const filteredTasks = tasks
-        .filter(task => !task.linkedItems?.some(item => item.id === noteId))
+        .filter(task => !task.linkedItems?.some(item => item.id === noteId && item.type === 'Note'))
         .filter(task =>
             task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            task.description.toLowerCase().includes(searchQuery.toLowerCase())
+            (task.description && task.description.toLowerCase().includes(searchQuery.toLowerCase()))
         );
 
     const handleLinkTask = async (taskId: string) => {
@@ -29,11 +31,7 @@ export function AddTaskLinkModal({ isOpen, onClose, noteId, onLinkAdded }: AddTa
         setError('');
 
         try {
-            await addTaskLink({
-                taskId,
-                linkedItemId: noteId,
-                itemType: 'note'
-            });
+            await addLinkFromNotes(noteId, taskId, 'Task');
             onLinkAdded();
             onClose();
         } catch (err) {
@@ -105,20 +103,18 @@ export function AddTaskLinkModal({ isOpen, onClose, noteId, onLinkAdded }: AddTa
                                                     {task.title}
                                                 </h6>
                                                 <div className="flex items-center gap-2 mt-1">
-                                                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                                        task.status === 'Completed'
-                                                            ? 'bg-[var(--color-task)]/10 text-[var(--color-task)]'
-                                                            : 'bg-yellow-500/10 text-yellow-500'
-                                                    }`}>
+                                                    <span className={`text-xs px-2 py-0.5 rounded-full ${task.status === 'Completed'
+                                                        ? 'bg-[var(--color-task)]/10 text-[var(--color-task)]'
+                                                        : 'bg-yellow-500/10 text-yellow-500'
+                                                        }`}>
                                                         {task.status}
                                                     </span>
-                                                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                                                        task.priority === 'high'
-                                                            ? 'bg-red-500/10 text-red-500'
-                                                            : task.priority === 'medium'
-                                                                ? 'bg-orange-500/10 text-orange-500'
-                                                                : 'bg-blue-500/10 text-blue-500'
-                                                    }`}>
+                                                    <span className={`text-xs px-2 py-0.5 rounded-full ${task.priority === 'high'
+                                                        ? 'bg-red-500/10 text-red-500'
+                                                        : task.priority === 'medium'
+                                                            ? 'bg-orange-500/10 text-orange-500'
+                                                            : 'bg-blue-500/10 text-blue-500'
+                                                        }`}>
                                                         {task.priority}
                                                     </span>
                                                     {task.dueDate && (

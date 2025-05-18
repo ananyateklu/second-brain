@@ -1,5 +1,5 @@
 import api from './api';
-import { Note, LinkedTask, NoteLink } from '../../types/note';
+import { Note } from '../../types/note';
 
 // API response types
 export interface NoteResponse {
@@ -14,30 +14,13 @@ export interface NoteResponse {
   deletedAt?: string;
   createdAt: string;
   updatedAt: string;
-  linkedNoteIds: string[];
-  linkedNotes?: Note[];
   archivedAt?: string;
-  linkedTasks?: Array<{
+  linkedItems: Array<{
     id: string;
+    type: string;
     title: string;
-    description?: string;
-    status: string;
-    priority: string;
-    dueDate?: string;
-    createdAt: string;
-    updatedAt: string;
+    linkType?: string;
   }>;
-  linkedReminders?: Array<{
-    id: string;
-    title: string;
-    description: string;
-    dueDateTime: string;
-    isCompleted: boolean;
-    isSnoozed: boolean;
-    createdAt: string;
-    updatedAt: string;
-  }>;
-  links?: NoteLink[];
 }
 
 export interface CreateNoteData {
@@ -69,22 +52,12 @@ export interface UpdateNoteData {
   linkedNoteIds?: string[];
 }
 
-const processTaskStatus = (status: string): LinkedTask['status'] => {
-  const normalizedStatus = status.toLowerCase();
-  return normalizedStatus === 'completed' ? 'completed' : 'incomplete';
-};
-
-const processTaskPriority = (priority: string): LinkedTask['priority'] => {
-  const normalizedPriority = priority.toLowerCase();
-  switch (normalizedPriority) {
-    case 'high':
-      return 'high';
-    case 'low':
-      return 'low';
-    default:
-      return 'medium';
-  }
-};
+// For linking, the backend NoteLinkRequest expects LinkedItemId and LinkedItemType
+export interface AddNoteLinkData {
+  linkedItemId: string;
+  linkedItemType: 'Note' | 'Idea' | 'Task' | 'Reminder';
+  linkType?: string;
+}
 
 const processNoteResponse = (note: NoteResponse): Note => ({
   id: note.id,
@@ -99,19 +72,12 @@ const processNoteResponse = (note: NoteResponse): Note => ({
   createdAt: note.createdAt,
   updatedAt: note.updatedAt,
   archivedAt: note.archivedAt,
-  linkedNoteIds: note.linkedNoteIds || [],
-  links: note.links || [],
-  linkedTasks: note.linkedTasks?.map(task => ({
-    id: task.id,
-    title: task.title,
-    description: task.description,
-    status: processTaskStatus(task.status),
-    priority: processTaskPriority(task.priority),
-    dueDate: task.dueDate,
-    createdAt: task.createdAt,
-    updatedAt: task.updatedAt || task.createdAt
-  })) || [],
-  linkedReminders: note.linkedReminders || []
+  linkedItems: (note.linkedItems || []).map(item => ({
+    id: item.id,
+    title: item.title,
+    type: item.type as 'Note' | 'Idea' | 'Task' | 'Reminder',
+    linkType: item.linkType
+  })),
 });
 
 export const notesService = {
@@ -132,6 +98,11 @@ export const notesService = {
       .map(processNoteResponse);
   },
 
+  async getNoteById(id: string): Promise<Note> {
+    const response = await api.get<NoteResponse>(`/api/Notes/${id}`);
+    return processNoteResponse(response.data);
+  },
+
   async updateNote(id: string, data: Partial<UpdateNoteData>): Promise<Note> {
     const response = await api.put<NoteResponse>(`/api/Notes/${id}`, {
       ...data,
@@ -147,36 +118,17 @@ export const notesService = {
     });
   },
 
-  async addLink(sourceId: string, targetId: string, linkType: string = 'default'): Promise<LinkResponse> {
-    const response = await api.post<LinkResponse>(`/api/Notes/${sourceId}/links`, {
-      targetNoteId: targetId,
-      linkType: linkType
-    });
-    return response.data;
+  async addLink(noteId: string, data: AddNoteLinkData): Promise<Note> {
+    const response = await api.post<NoteResponse>(`/api/Notes/${noteId}/links`, data);
+    return processNoteResponse(response.data);
   },
 
-  async removeLink(sourceId: string, targetId: string): Promise<{ sourceNote: Note; targetNote: Note }> {
-    if (!sourceId || !targetId) {
-      throw new Error('Both sourceId and targetId are required to remove a link');
+  async removeLink(noteId: string, linkedItemId: string, linkedItemType: string): Promise<Note> {
+    if (!noteId || !linkedItemId || !linkedItemType) {
+      throw new Error('noteId, linkedItemId, and linkedItemType are required to remove a link');
     }
-
-    try {
-      await api.delete(`/api/Notes/${sourceId}/links/${targetId}`);
-
-      // Fetch fresh data for both notes after unlinking
-      const [sourceResponse, targetResponse] = await Promise.all([
-        api.get<NoteResponse>(`/api/Notes/${sourceId}`),
-        api.get<NoteResponse>(`/api/Notes/${targetId}`)
-      ]);
-
-      return {
-        sourceNote: processNoteResponse(sourceResponse.data),
-        targetNote: processNoteResponse(targetResponse.data)
-      };
-    } catch (error) {
-      console.error('Error removing link:', error);
-      throw error;
-    }
+    const response = await api.delete<NoteResponse>(`/api/Notes/${noteId}/links/${linkedItemType}/${linkedItemId}`);
+    return processNoteResponse(response.data);
   },
 
   async linkReminder(noteId: string, reminderId: string): Promise<Note> {
@@ -197,7 +149,7 @@ export const notesService = {
   },
 
   async unlinkReminder(noteId: string, reminderId: string): Promise<Note> {
-    const response = await api.delete<Note>(`/api/Notes/${noteId}/reminders/${reminderId}`);
+    const response = await api.delete<NoteResponse>(`/api/Notes/${noteId}/reminders/${reminderId}`);
     return processNoteResponse(response.data);
   },
 
@@ -236,13 +188,13 @@ export const notesService = {
   },
 
   async addReminderToNote(noteId: string, reminderId: string): Promise<Note> {
-    const response = await api.post<Note>(`/api/Notes/${noteId}/reminders`, { reminderId });
-    return response.data;
+    const response = await api.post<NoteResponse>(`/api/Notes/${noteId}/reminders`, { reminderId });
+    return processNoteResponse(response.data);
   },
 
   async removeReminderFromNote(noteId: string, reminderId: string): Promise<Note> {
-    const response = await api.delete<Note>(`/api/Notes/${noteId}/reminders/${reminderId}`);
-    return response.data;
+    const response = await api.delete<NoteResponse>(`/api/Notes/${noteId}/reminders/${reminderId}`);
+    return processNoteResponse(response.data);
   },
 
   async triggerUserStatsUpdate(): Promise<void> {

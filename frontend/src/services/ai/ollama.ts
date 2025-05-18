@@ -157,7 +157,6 @@ export class OllamaService {
       return new Promise((resolve, reject) => {
         eventSource.onmessage = (event) => {
           try {
-            console.log('Received event data:', event.data);
             const data = JSON.parse(event.data);
 
             if (data.Type === 'content') {

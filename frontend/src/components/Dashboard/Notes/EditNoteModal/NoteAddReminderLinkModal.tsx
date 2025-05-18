@@ -53,7 +53,8 @@ export function AddReminderLinkModal({
 
   useEffect(() => {
     if (!passedSuggestedReminders || passedSuggestedReminders.length === 0) {
-      setProcessedSuggestions([]);
+      // Only update if it's not already empty to prevent unnecessary renders
+      setProcessedSuggestions(prev => prev.length === 0 ? prev : []);
       return;
     }
 
@@ -72,7 +73,17 @@ export function AddReminderLinkModal({
       })
       .filter(Boolean) as Array<ReminderType & { similarity: number }>;
 
-    setProcessedSuggestions(fullyProcessed);
+    setProcessedSuggestions(prevSuggestions => {
+      // Create a comparable key from IDs and similarities to check for effective changes.
+      // Sorting ensures order doesn't affect the key.
+      const newKey = fullyProcessed.map(s => `${s.id}:${s.similarity}`).sort().join(',');
+      const prevKey = prevSuggestions.map(s => `${s.id}:${s.similarity}`).sort().join(',');
+
+      if (newKey === prevKey) {
+        return prevSuggestions; // Data hasn't effectively changed, prevent update
+      }
+      return fullyProcessed; // Update with new data
+    });
 
   }, [passedSuggestedReminders, reminders]);
 

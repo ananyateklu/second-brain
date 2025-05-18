@@ -1,9 +1,20 @@
 import { Type, Tag as TagIcon, X, Bell, Plus, AlignLeft } from 'lucide-react';
-import { LinkedReminder, Note } from '../../../../types/note';
+import { LinkedReminder } from '../../../../types/note';
 import { LinkedRemindersPanel } from './LinkedRemindersPanel';
 import { Input } from '../../../../components/shared/Input';
 import { TextArea } from '../../../../components/shared/TextArea';
 import { useTheme } from '../../../../contexts/themeContextUtils';
+
+// Copied from EditIdeaModal/MainContent.tsx and EditNoteModal/index.tsx (UnifiedSuggestion)
+// This defines the shape of suggestion items passed to this component
+interface SuggestionItem {
+  id: string;
+  title: string;
+  similarity: number;
+  type: 'note' | 'idea' | 'task' | 'reminder';
+  status?: string;
+  dueDate?: string | null;
+}
 
 interface MainContentProps {
   title: string;
@@ -21,8 +32,9 @@ interface MainContentProps {
   onShowAddReminder: () => void;
   onUnlinkReminder: (reminderId: string) => void;
   onLinkReminder?: (reminderId: string) => Promise<void>;
-  currentNote?: Note;
   setError: (error: string) => void;
+  suggestedReminders?: SuggestionItem[];
+  suggestionsLoading?: boolean;
 }
 
 export function MainContent({
@@ -41,7 +53,8 @@ export function MainContent({
   onShowAddReminder,
   onUnlinkReminder,
   onLinkReminder,
-  currentNote
+  suggestedReminders = [],
+  suggestionsLoading = false
 }: MainContentProps) {
   const { theme } = useTheme();
 
@@ -113,7 +126,8 @@ export function MainContent({
               reminders={linkedReminders}
               onUnlink={onUnlinkReminder}
               onLink={onLinkReminder}
-              currentNote={currentNote}
+              suggestedReminders={suggestedReminders}
+              isLoadingSuggestions={suggestionsLoading}
             />
           </div>
         </div>

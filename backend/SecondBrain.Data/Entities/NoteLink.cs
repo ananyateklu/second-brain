@@ -1,34 +1,36 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SecondBrain.Data.Entities
 {
     public class NoteLink
     {
+        // Composite Key will be configured in DataContext.OnModelCreating
         [Required]
         [MaxLength(36)]
-        public string NoteId { get; set; } = string.Empty;
-
-        public Note Note { get; set; } = null!;
+        public required string NoteId { get; set; } // FK to Note
+        [ForeignKey("NoteId")]
+        public Note? Note { get; set; }
 
         [Required]
-        [MaxLength(36)]
-        public string LinkedNoteId { get; set; } = string.Empty;
-
-        public Note LinkedNote { get; set; } = null!;
-
-        // Add a link type to match frontend model
+        [MaxLength(450)] // To accommodate longer IDs like Reminders.Id
+        public required string LinkedItemId { get; set; } // ID of the linked entity (was LinkedNoteId)
+        
+        [Required]
         [MaxLength(50)]
-        public string LinkType { get; set; } = "default";
+        public required string LinkedItemType { get; set; } // Type: "Note", "Idea", "Task", "Reminder"
 
-        // Track when the link was created
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-        // Track who created the link
-        [MaxLength(450)]
-        public string CreatedBy { get; set; } = string.Empty;
+        [MaxLength(50)]
+        public string? LinkType { get; set; } // Optional: "related", "reference", etc.
 
         public bool IsDeleted { get; set; } = false;
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        
+        [MaxLength(450)]
+        public string? CreatedBy { get; set; } // FK to User Id
+        [ForeignKey("CreatedBy")]
+        public User? UserCreator { get; set; }
         public DateTime? DeletedAt { get; set; }
     }
 } 

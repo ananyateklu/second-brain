@@ -1,15 +1,14 @@
 import { Link2, Plus, Type, CheckSquare, X, Calendar, Lightbulb } from 'lucide-react';
 import type { Note } from '../../../../types/note';
-import { useNotes } from '../../../../contexts/notesContextUtils';
-import { useState, useEffect } from 'react';
-import { EditNoteModal } from '../EditNoteModal';
-import { EditTaskModal } from '../../Tasks/EditTaskModal';
 import { useTasks } from '../../../../contexts/tasksContextUtils';
 import { useIdeas } from '../../../../contexts/ideasContextUtils';
 import type { Task } from '../../../../types/task';
 import type { Idea } from '../../../../types/idea';
 import { useTheme } from '../../../../contexts/themeContextUtils';
 import { EditIdeaModal } from '../../Ideas/EditIdeaModal';
+import { useState, useEffect } from 'react';
+import { EditNoteModal } from '../EditNoteModal';
+import { EditTaskModal } from '../../Tasks/EditTaskModal';
 
 interface LinkedNotesPanelProps {
   linkedNotes: Note[];
@@ -25,7 +24,7 @@ interface LinkedNotesPanelProps {
   onShowAddTask: () => void;
   currentNoteId: string;
   onUnlinkTask: (taskId: string) => void;
-  onUnlinkIdea?: (ideaId: string) => void;
+  onUnlinkIdea?: (ideaId: string) => Promise<void>;
   currentNote: Note;
   linkedReminders?: Array<{
     id: string;
@@ -41,6 +40,7 @@ interface LinkedNotesPanelProps {
   onLinkTask?: (taskId: string) => Promise<void>;
   onLinkIdea?: (ideaId: string) => Promise<void>;
   onLinkReminder?: (reminderId: string) => Promise<void>;
+  onUnlinkNote?: (noteId: string) => Promise<void>;
 }
 
 export function LinkedNotesPanel({
@@ -52,8 +52,8 @@ export function LinkedNotesPanel({
   currentNoteId,
   onUnlinkTask,
   onUnlinkIdea = async () => { },
+  onUnlinkNote,
 }: LinkedNotesPanelProps) {
-  const { removeLink } = useNotes();
   const { tasks } = useTasks();
   const { state: { ideas: allIdeasContext } } = useIdeas();
   const { theme } = useTheme();
@@ -61,15 +61,35 @@ export function LinkedNotesPanel({
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedIdea, setSelectedIdea] = useState<Idea | null>(null);
 
-  const handleUnlinkNote = async (linkedNoteId: string) => {
+  const handleLocalUnlinkNote = async (linkedNoteId: string) => {
     if (!currentNoteId) {
       console.error('Missing currentNoteId');
       return;
     }
     try {
-      removeLink(currentNoteId, linkedNoteId);
+      if (onUnlinkNote) {
+        await onUnlinkNote(linkedNoteId);
+      } else {
+        console.warn('onUnlinkNote prop was not provided to LinkedNotesPanel.');
+      }
     } catch (error) {
-      console.error('Failed to unlink:', error);
+      console.error('Failed to unlink note:', error);
+    }
+  };
+
+  const handleLocalUnlinkTask = async (taskId: string) => {
+    try {
+      await onUnlinkTask(taskId);
+    } catch (error) {
+      console.error('Failed to unlink task:', error);
+    }
+  };
+
+  const handleLocalUnlinkIdea = async (ideaId: string) => {
+    try {
+      await onUnlinkIdea(ideaId);
+    } catch (error) {
+      console.error('Failed to unlink idea:', error);
     }
   };
 
@@ -81,7 +101,7 @@ export function LinkedNotesPanel({
   };
 
   const handleIdeaClick = (ideaId: string) => {
-    const idea = linkedIdeas.find(i => i.id === ideaId) || allIdeasContext.find(i => i.id === ideaId);
+    const idea = (linkedIdeas || []).find(i => i.id === ideaId) || allIdeasContext.find(i => i.id === ideaId);
     if (idea) {
       setSelectedIdea(idea);
     }
@@ -111,16 +131,14 @@ export function LinkedNotesPanel({
     return 'border border-[var(--color-border)]';
   };
 
-  const hasLinkedItems = linkedNotes.length > 0 || linkedTasks.length > 0 || linkedIdeas.length > 0;
-
-  // Combine notes and ideas for rendering under one section
   const combinedNotesAndIdeas = [
-    ...linkedNotes.map(note => ({ ...note, itemType: 'note' as const })),
-    ...linkedIdeas.map(idea => ({ ...idea, itemType: 'idea' as const }))
+    ...(linkedNotes || []).map(note => ({ ...note, itemType: 'note' as const })),
+    ...(linkedIdeas || []).map(idea => ({ ...idea, itemType: 'idea' as const }))
   ];
 
+  const hasLinkedItems = (linkedNotes?.length || 0) > 0 || (linkedTasks?.length || 0) > 0 || (linkedIdeas?.length || 0) > 0;
+
   useEffect(() => {
-    // When no linked items exist, only show empty state if suggestions are also empty
     if (!hasLinkedItems) {
       const checkSuggestions = setTimeout(() => {
         const suggestedSection = document.querySelector('[data-testid="suggested-links-section"]');
@@ -128,10 +146,8 @@ export function LinkedNotesPanel({
 
         if (emptyState) {
           if (suggestedSection && suggestedSection.querySelectorAll('.group').length > 0) {
-            // Suggestions exist, hide the empty state
             emptyState.style.display = 'none';
           } else {
-            // No suggestions, show the empty state
             emptyState.style.display = 'flex';
           }
         }
@@ -176,7 +192,6 @@ export function LinkedNotesPanel({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
-          {/* Display linked items below suggestions */}
           {hasLinkedItems && (
             <div className="p-3 space-y-4 border-t border-[var(--color-border)]/10 dark:border-white/5 midnight:border-white/5">
               {/* Notes & Ideas Section */}
@@ -212,9 +227,9 @@ export function LinkedNotesPanel({
                             e.preventDefault();
                             e.stopPropagation();
                             if (item.itemType === 'idea') {
-                              onUnlinkIdea(item.id);
+                              handleLocalUnlinkIdea(item.id);
                             } else {
-                              handleUnlinkNote(item.id);
+                              handleLocalUnlinkNote(item.id);
                             }
                           }}
                           className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-1 text-[var(--color-textSecondary)] hover:text-red-400 hover:bg-red-900/20 rounded transition-all z-10"
@@ -228,13 +243,13 @@ export function LinkedNotesPanel({
               )}
 
               {/* Tasks Section */}
-              {linkedTasks.length > 0 && (
+              {(linkedTasks || []).length > 0 && (
                 <div>
                   <h6 className="text-xs font-medium text-[var(--color-task)] uppercase tracking-wider px-1 mb-2">
                     Tasks
                   </h6>
                   <div className="space-y-2">
-                    {linkedTasks.map(task => (
+                    {(linkedTasks || []).map(task => (
                       <div
                         key={task.id}
                         onClick={() => handleTaskClick(task.id)}
@@ -263,7 +278,7 @@ export function LinkedNotesPanel({
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            onUnlinkTask(task.id);
+                            handleLocalUnlinkTask(task.id);
                           }}
                           className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 p-1 text-[var(--color-textSecondary)] hover:text-red-400 hover:bg-red-900/20 rounded transition-all z-10"
                         >

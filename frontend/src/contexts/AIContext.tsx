@@ -106,9 +106,7 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
   const checkChatProviderConfigurations = useCallback(async () => {
     const checkGenericEndpoint = async (endpoint: string, setter: React.Dispatch<React.SetStateAction<boolean>>) => {
       try {
-        console.log(`Checking endpoint: ${endpoint}`);
         const response = await api.get(endpoint);
-        console.log('Response from endpoint:', endpoint, response.data);
 
         // Try to extract configuration status from various response formats
         let isConfigured = false;
@@ -124,7 +122,6 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
           else {
             for (const key in response.data) {
               if (typeof response.data[key] === 'boolean' && response.data[key] === true) {
-                console.log(`Found boolean true value in property "${key}"`);
                 isConfigured = true;
                 break;
               }
@@ -138,7 +135,6 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
           isConfigured = true;
         }
 
-        console.log(`Status for ${endpoint}: ${isConfigured ? 'CONFIGURED' : 'NOT CONFIGURED'}`);
         setter(isConfigured);
         return isConfigured;
       } catch (error) {
@@ -152,7 +148,6 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
       try {
         const response = await api.get('/api/ai/openai/status');
         const isConfigured = response.data?.isConfigured ?? false; // Use isConfigured for OpenAI
-        console.log('OpenAI chat status:', isConfigured);
         setter(isConfigured);
         return isConfigured;
       } catch (error) {
@@ -168,7 +163,6 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
         const response = await api.get('/api/ollama/models');
         // Check if the response is successful and contains a models array
         const isConfigured = response.status === 200 && Array.isArray(response.data?.models);
-        console.log('Ollama chat status:', isConfigured);
         setter(isConfigured);
         return isConfigured;
       } catch (error) {
@@ -210,7 +204,6 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
       } catch (agentError) {
         // If agent check fails, don't override the chat configurations we already checked
         console.error('Error checking agent configurations:', agentError);
-        console.log('Agent check failed but chat configurations were already checked');
 
         // Set all agent configs to false
         setIsOpenAIConfigured(false);
@@ -413,7 +406,6 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
 
   // Add debugging for refresh configuration
   const refreshConfiguration = useCallback(async () => {
-    console.log("Refreshing AI configuration...");
     setIsLoadingConfigurations(true);
 
     try {
@@ -426,7 +418,6 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
       // Increment settings version to notify components that settings have changed
       setSettingsVersion(prev => prev + 1);
 
-      console.log("AI configuration refreshed successfully");
     } catch (error) {
       console.error("Error refreshing AI configuration:", error);
     } finally {

@@ -1,21 +1,18 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { NotesContext, useNotes } from './notesContextUtils';
+import { NotesContext } from './notesContextUtils';
 import { useActivities } from './activityContextUtils';
-import { notesService, type UpdateNoteData } from '../services/api/notes.service';
+import { notesService, type UpdateNoteData, type AddNoteLinkData, type CreateNoteData } from '../services/api/notes.service';
 import { integrationsService, SyncConfig, SyncResult } from '../services/api/integrations.service';
-import { useTrash } from './trashContextUtils';
 import { useAuth } from '../hooks/useAuth';
 import { sortNotes } from '../utils/noteUtils';
 import type { Note } from '../types/note';
 import { TickTickTask } from '../types/integrations';
-import { useReminders } from './remindersContextUtils';
 
 export function NotesProvider({ children }: { children: React.ReactNode }) {
   const [notes, setNotes] = useState<Note[]>([]);
   const [archivedNotes, setArchivedNotes] = useState<Note[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { createActivity } = useActivities();
-  const { moveToTrash } = useTrash();
   const { user } = useAuth();
 
   // TickTick specific state
@@ -30,99 +27,513 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     return localStorage.getItem('ticktick_notes_project_id') || '';
   });
 
-  // Persist TickTick connection status to localStorage whenever it changes
+  // TickTick Sync State
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const [lastSynced, setLastSynced] = useState<string | null>(localStorage.getItem('last_ticktick_sync_time'));
+  const [syncTaskCount, setSyncTaskCount] = useState({ local: 0, tickTick: 0, mapped: 0 });
+
   useEffect(() => {
     localStorage.setItem('ticktick_connected', isTickTickConnected.toString());
   }, [isTickTickConnected]);
 
-  // Persist TickTick project ID to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem('ticktick_notes_project_id', tickTickProjectId);
   }, [tickTickProjectId]);
 
-  // Check TickTick connection status
-  const checkTickTickStatus = useCallback(async (forceCheck: boolean = false) => {
-    try {
-      // Skip network request if we already know we're connected and this isn't a forced check
-      if (isTickTickConnected && !forceCheck) {
-        return;
-      }
+  const logActivityError = useCallback((error: unknown, context: string) => {
+    console.error(`[NotesContext Error - ${context}]:`, error);
+    // Potentially add user-facing notification here via a notification context
+  }, []);
 
-      const status = await integrationsService.getTickTickStatus(isTickTickConnected);
-
-      // Only update the state if it's different from current state or we're forcing a check
-      if (status.isConnected !== isTickTickConnected || forceCheck) {
-        setIsTickTickConnected(status.isConnected);
-      }
-    } catch (error) {
-      console.error('Failed to check TickTick connection status:', error);
-      // Don't change state on errors to avoid flickering during network issues
-    }
-  }, [isTickTickConnected]);
-
-  const isLoadingArchived = useRef(false);
-  const hasLoadedArchived = useRef(false);
-
-  const loadArchivedNotes = useCallback(async () => {
-    // Skip if already loaded or loading
-    if (hasLoadedArchived.current || isLoadingArchived.current) {
-      return;
-    }
-
-    try {
-      isLoadingArchived.current = true;
-      setIsLoading(true);
-
-      const notes = await notesService.getArchivedNotes();
-      setArchivedNotes(notes);
-      hasLoadedArchived.current = true;
-    } catch (error) {
-      console.error('[NotesContext] Failed to load archived notes:', error);
-      throw error;
-    } finally {
-      isLoadingArchived.current = false;
-      setIsLoading(false);
-    }
-  }, []); // No dependencies needed
-
-  // Reset flags when user changes
-  useEffect(() => {
-    hasLoadedArchived.current = false;
-    isLoadingArchived.current = false;
-  }, [user]);
+  const createSafeNote = (newNote: Note): Note => ({
+    ...newNote,
+    tags: newNote.tags || [],
+    isFavorite: newNote.isFavorite || false,
+    isPinned: newNote.isPinned || false,
+    isArchived: newNote.isArchived || false,
+    isDeleted: newNote.isDeleted || false,
+    linkedItems: newNote.linkedItems || [],
+  });
 
   const fetchNotes = useCallback(async () => {
     try {
       setIsLoading(true);
       const fetchedNotes = await notesService.getAllNotes();
-
       const processedNotes = fetchedNotes
         .filter(note => !note.isArchived && !note.isDeleted)
-        .map(note => ({
-          ...note,
-          isArchived: false,
-          isDeleted: false,
-          linkedNoteIds: note.linkedNoteIds || [],
-          linkedNotes: note.linkedNotes || [],
-          linkedTasks: note.linkedTasks || [],
-          linkedReminders: note.linkedReminders || []
-        })) as Note[];
-
+        .map(note => createSafeNote(note));
       setNotes(sortNotes(processedNotes));
-      setIsLoading(false);
     } catch (error) {
-      console.error('Failed to fetch notes:', error);
+      logActivityError(error, 'fetch notes');
+    } finally {
       setIsLoading(false);
     }
+  }, [logActivityError]);
+
+  const isLoadingArchived = useRef(false);
+  const hasLoadedArchived = useRef(false);
+
+  const loadArchivedNotes = useCallback(async (forceRefresh: boolean = false) => {
+    if ((hasLoadedArchived.current && !forceRefresh) || isLoadingArchived.current) {
+      return;
+    }
+    try {
+      isLoadingArchived.current = true;
+      const notesData = await notesService.getArchivedNotes();
+      setArchivedNotes(notesData.map(n => createSafeNote(n)));
+      hasLoadedArchived.current = true;
+    } catch (error) {
+      logActivityError(error, '[NotesContext] Failed to load archived notes:');
+    } finally {
+      isLoadingArchived.current = false;
+    }
+  }, [logActivityError]);
+
+  useEffect(() => {
+    hasLoadedArchived.current = false;
+    isLoadingArchived.current = false;
+  }, [user]);
+
+  const addNote = useCallback(
+    async (noteData: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'linkedItems'>) => {
+      try {
+        const newNote = await notesService.createNote(noteData as CreateNoteData);
+        const safeNewNote = createSafeNote(newNote);
+        setNotes(prevNotes => sortNotes([...prevNotes, safeNewNote]));
+        createActivity({
+          actionType: 'create',
+          itemType: 'note',
+          itemId: safeNewNote.id,
+          itemTitle: safeNewNote.title,
+          description: `Created note '${safeNewNote.title}'`,
+        });
+      } catch (error) {
+        logActivityError(error, 'add note');
+        throw error;
+      }
+    },
+    [createActivity, logActivityError]
+  );
+
+  const updateNote = useCallback(
+    async (id: string, updates: Partial<Note>) => {
+      try {
+        const updatedNoteData = await notesService.updateNote(id, updates as UpdateNoteData);
+        const safeUpdatedNote = createSafeNote(updatedNoteData);
+        setNotes(prevNotes =>
+          sortNotes(prevNotes.map(note => (note.id === id ? safeUpdatedNote : note)))
+        );
+        if (safeUpdatedNote.isArchived) {
+          setArchivedNotes(prevArchived => sortNotes([...prevArchived, safeUpdatedNote]));
+          setNotes(prevNotes => sortNotes(prevNotes.filter(note => note.id !== id)));
+        } else {
+          setArchivedNotes(prevArchived => sortNotes(prevArchived.filter(note => note.id !== id)));
+        }
+        createActivity({
+          actionType: 'update',
+          itemType: 'note',
+          itemId: safeUpdatedNote.id,
+          itemTitle: safeUpdatedNote.title,
+          description: `Updated note '${safeUpdatedNote.title}'`,
+        });
+        return safeUpdatedNote;
+      } catch (error) {
+        logActivityError(error, `update note ${id}`);
+        throw error;
+      }
+    },
+    [createActivity, logActivityError]
+  );
+
+  const deleteNote = useCallback(
+    async (id: string) => {
+      try {
+        const noteToDelete = notes.find(n => n.id === id) || archivedNotes.find(n => n.id === id);
+        await notesService.deleteNote(id); // This now returns Note but we handle it as a soft delete
+
+        setNotes(prevNotes => sortNotes(prevNotes.filter(note => note.id !== id)));
+        setArchivedNotes(prevArchived => sortNotes(prevArchived.filter(note => note.id !== id)));
+        if (noteToDelete) {
+          // moveToTrash({ ...noteToDelete, itemType: 'note' });
+          createActivity({
+            actionType: 'delete',
+            itemType: 'note',
+            itemId: id,
+            itemTitle: noteToDelete.title,
+            description: `Deleted note '${noteToDelete.title}'`,
+          });
+        }
+      } catch (error) {
+        logActivityError(error, `delete note ${id}`);
+        throw error;
+      }
+    },
+    [notes, archivedNotes, createActivity, logActivityError]
+  );
+
+  const togglePinNote = useCallback(
+    async (id: string) => {
+      try {
+        const note = notes.find(n => n.id === id);
+        if (!note) throw new Error('Note not found');
+        const updatedNote = await notesService.updateNote(id, { isPinned: !note.isPinned });
+        const safeUpdatedNote = createSafeNote(updatedNote);
+        setNotes(prevNotes =>
+          sortNotes(prevNotes.map(n => (n.id === id ? safeUpdatedNote : n)))
+        );
+        createActivity({
+          actionType: safeUpdatedNote.isPinned ? 'pin' : 'unpin',
+          itemType: 'note',
+          itemId: id,
+          itemTitle: safeUpdatedNote.title,
+          description: `${safeUpdatedNote.isPinned ? 'Pinned' : 'Unpinned'} note '${safeUpdatedNote.title}'`,
+        });
+      } catch (error) {
+        logActivityError(error, `toggle pin for note ${id}`);
+        throw error;
+      }
+    },
+    [notes, createActivity, logActivityError]
+  );
+
+  const toggleFavoriteNote = useCallback(
+    async (id: string) => {
+      try {
+        const note = notes.find(n => n.id === id) || archivedNotes.find(n => n.id === id);
+        if (!note) throw new Error('Note not found');
+        const updatedNote = await notesService.updateNote(id, { isFavorite: !note.isFavorite });
+        const safeUpdatedNote = createSafeNote(updatedNote);
+
+        if (archivedNotes.find(n => n.id === id)) {
+          setArchivedNotes(prevArchived =>
+            sortNotes(prevArchived.map(n => (n.id === id ? safeUpdatedNote : n)))
+          );
+        } else {
+          setNotes(prevNotes =>
+            sortNotes(prevNotes.map(n => (n.id === id ? safeUpdatedNote : n)))
+          );
+        }
+        createActivity({
+          actionType: safeUpdatedNote.isFavorite ? 'favorite' : 'unfavorite',
+          itemType: 'note',
+          itemId: id,
+          itemTitle: safeUpdatedNote.title,
+          description: `${safeUpdatedNote.isFavorite ? 'Favorited' : 'Unfavorited'} note '${safeUpdatedNote.title}'`,
+        });
+      } catch (error) {
+        logActivityError(error, `toggle favorite for note ${id}`);
+        throw error;
+      }
+    },
+    [notes, archivedNotes, createActivity, logActivityError]
+  );
+
+  const archiveNote = useCallback(
+    async (id: string) => {
+      try {
+        const note = notes.find(n => n.id === id);
+        if (!note) throw new Error('Note not found to archive');
+        const updatedNote = await notesService.updateNote(id, { isArchived: true, archivedAt: new Date().toISOString() });
+        const safeUpdatedNote = createSafeNote(updatedNote);
+
+        setNotes(prevNotes => sortNotes(prevNotes.filter(n => n.id !== id)));
+        setArchivedNotes(prevArchived => sortNotes([safeUpdatedNote, ...prevArchived]));
+        createActivity({
+          actionType: 'archive',
+          itemType: 'note',
+          itemId: id,
+          itemTitle: safeUpdatedNote.title,
+          description: `Archived note '${safeUpdatedNote.title}'`,
+        });
+      } catch (error) {
+        logActivityError(error, `archive note ${id}`);
+        throw error;
+      }
+    },
+    [notes, createActivity, logActivityError]
+  );
+
+  const unarchiveNote = useCallback(
+    async (id: string): Promise<Note> => {
+      try {
+        const note = archivedNotes.find(n => n.id === id);
+        if (!note) throw new Error('Note not found to unarchive');
+        const updatedNote = await notesService.unarchiveNote(id);
+        const safeUpdatedNote = createSafeNote(updatedNote);
+
+        setArchivedNotes(prevArchived => sortNotes(prevArchived.filter(n => n.id !== id)));
+        setNotes(prevNotes => sortNotes([safeUpdatedNote, ...prevNotes]));
+        createActivity({
+          actionType: 'unarchive',
+          itemType: 'note',
+          itemId: id,
+          itemTitle: safeUpdatedNote.title,
+          description: `Unarchived note '${safeUpdatedNote.title}'`,
+        });
+        return safeUpdatedNote;
+      } catch (error) {
+        logActivityError(error, `unarchive note ${id}`);
+        throw error;
+      }
+    },
+    [archivedNotes, createActivity, logActivityError]
+  );
+
+  const addLink = useCallback(
+    async (noteId: string, linkedItemId: string, linkedItemType: 'Note' | 'Idea' | 'Task' | 'Reminder', linkType: string = 'related') => {
+      try {
+        const linkData: AddNoteLinkData = { linkedItemId, linkedItemType, linkType };
+        const updatedNote = await notesService.addLink(noteId, linkData);
+
+        setNotes(prevNotes =>
+          prevNotes.map(n => (n.id === noteId ? createSafeNote(updatedNote) : n))
+        );
+        if (linkedItemType === 'Note') {
+          const linkedNoteDetails = await notesService.getNoteById(linkedItemId);
+          if (linkedNoteDetails) {
+            setNotes(prevNotes =>
+              prevNotes.map(n => (n.id === linkedItemId ? createSafeNote(linkedNoteDetails) : n))
+            );
+          }
+        }
+        createActivity({
+          actionType: 'link_note',
+          itemType: 'note',
+          itemId: noteId,
+          itemTitle: updatedNote.title,
+          description: `Linked note '${updatedNote.title}' to ${linkedItemType} '${linkedItemId}'`
+        });
+        // To match NotesContextType, this should be Promise<void>
+        // The service returns Promise<Note>, so if the context needs void, don't return updatedNote
+      } catch (error) {
+        logActivityError(error, `link note ${noteId} to ${linkedItemType} ${linkedItemId}`);
+        throw error;
+      }
+    },
+    [createActivity, logActivityError]
+  );
+
+  const removeLink = useCallback(
+    async (noteId: string, linkedItemId: string, linkedItemType: string) => {
+      try {
+        // Optimistically find the note to log its state before update
+        // originalNoteState = notes.find(n => n.id === noteId); // Variable no longer needed
+
+        const updatedNote = await notesService.removeLink(noteId, linkedItemId, linkedItemType);
+        const safeUpdatedNote = createSafeNote(updatedNote);
+
+        setNotes(prevNotes => {
+          const newNotes = prevNotes.map(n => (n.id === noteId ? safeUpdatedNote : n));
+          return sortNotes(newNotes);
+        });
+
+        if (linkedItemType === 'Note') {
+          // If a note was unlinked from another note, the other note's linkedItems also change.
+          // We need to ensure that other note is also updated in our local state if it's present.
+          const unlinkedNoteDetails = await notesService.getNoteById(linkedItemId); // This fetches the other note
+          if (unlinkedNoteDetails) {
+            const safeUnlinkedNoteDetails = createSafeNote(unlinkedNoteDetails);
+            setNotes(prevNotes => {
+              const newNotes = prevNotes.map(n => (n.id === linkedItemId ? safeUnlinkedNoteDetails : n));
+              return sortNotes(newNotes);
+            });
+          }
+        }
+        createActivity({
+          actionType: 'unlink_note',
+          itemType: 'note',
+          itemId: noteId,
+          itemTitle: updatedNote.title,
+          description: `Unlinked note '${updatedNote.title}' from ${linkedItemType} '${linkedItemId}'`
+        });
+        // To match NotesContextType, this should be Promise<void>
+      } catch (error) {
+        logActivityError(error, `unlink note ${noteId} from ${linkedItemType} ${linkedItemId}`);
+        throw error;
+      }
+    },
+    [createActivity, logActivityError]
+  );
+
+  const linkReminder = useCallback(
+    async (noteId: string, reminderId: string): Promise<Note> => {
+      try {
+        const updatedNote = await notesService.linkReminder(noteId, reminderId);
+        setNotes(prevNotes =>
+          prevNotes.map(n => (n.id === noteId ? createSafeNote(updatedNote) : n))
+        );
+        createActivity({
+          actionType: 'link_reminder',
+          itemType: 'note',
+          itemId: noteId,
+          itemTitle: updatedNote.title,
+          description: `Linked reminder to note '${updatedNote.title}'`,
+        });
+        return updatedNote;
+      } catch (error) {
+        logActivityError(error, `link reminder ${reminderId} to note ${noteId}`);
+        throw error;
+      }
+    },
+    [createActivity, logActivityError]
+  );
+
+  const unlinkReminder = useCallback(
+    async (noteId: string, reminderId: string): Promise<Note> => {
+      try {
+        const updatedNote = await notesService.unlinkReminder(noteId, reminderId);
+        setNotes(prevNotes =>
+          prevNotes.map(n => (n.id === noteId ? createSafeNote(updatedNote) : n))
+        );
+        createActivity({
+          actionType: 'unlink_reminder',
+          itemType: 'note',
+          itemId: noteId,
+          itemTitle: updatedNote.title,
+          description: `Unlinked reminder from note '${updatedNote.title}'`,
+        });
+        return updatedNote;
+      } catch (error) {
+        logActivityError(error, `unlink reminder ${reminderId} from note ${noteId}`);
+        throw error;
+      }
+    },
+    [createActivity, logActivityError]
+  );
+
+  const clearArchivedNotes = useCallback(() => {
+    setArchivedNotes([]);
+    hasLoadedArchived.current = false;
   }, []);
 
-  // Fetch TickTick notes
+  const restoreMultipleNotes = useCallback(async (ids: string[]) => {
+    const results = await Promise.allSettled(
+      ids.map(async (id) => {
+        const note = await notesService.restoreNote(id);
+        return createSafeNote(note);
+      })
+    );
+
+    const successfullyRestored: Note[] = [];
+    results.forEach(result => {
+      if (result.status === 'fulfilled') {
+        successfullyRestored.push(result.value);
+      } else {
+        logActivityError(result.reason, `restore multiple notes - id ${ids[results.indexOf(result)]}`);
+      }
+    });
+
+    if (successfullyRestored.length > 0) {
+      setNotes(prev => sortNotes([...prev, ...successfullyRestored]));
+      setArchivedNotes(prev => sortNotes(prev.filter(n => !ids.includes(n.id))));
+      // createBulkRestoreActivity(successfullyRestored);
+    }
+    return results;
+  }, [logActivityError]);
+
+  const restoreNote = useCallback(
+    async (restoredNoteData: Note): Promise<void> => { // Parameter changed to Note
+      try {
+        // The note data is already passed, assuming it's the full note object after restoration from service
+        const safeRestoredNote = createSafeNote(restoredNoteData);
+
+        setNotes(prevNotes => sortNotes([safeRestoredNote, ...prevNotes.filter(n => n.id !== safeRestoredNote.id)]));
+        setArchivedNotes(prevArchived => sortNotes(prevArchived.filter(n => n.id !== safeRestoredNote.id)));
+        createActivity({
+          actionType: 'restore',
+          itemType: 'note',
+          itemId: safeRestoredNote.id,
+          itemTitle: safeRestoredNote.title,
+          description: `Restored note '${safeRestoredNote.title}'`
+        });
+      } catch (error) {
+        logActivityError(error, `restore note ${restoredNoteData.id}`);
+        throw error;
+      }
+    },
+    [createActivity, logActivityError]
+  );
+
+  const addReminderToNote = useCallback(async (noteId: string, reminderId: string): Promise<Note> => {
+    try {
+      const updatedNote = await notesService.linkReminder(noteId, reminderId);
+      setNotes(prevNotes => prevNotes.map(n => (n.id === noteId ? createSafeNote(updatedNote) : n)));
+      createActivity({
+        actionType: 'add_reminder_to_note',
+        itemType: 'note',
+        itemId: noteId,
+        itemTitle: updatedNote.title,
+        description: `Added reminder to note '${updatedNote.title}'`
+      });
+      return updatedNote;
+    } catch (err) {
+      logActivityError(err, `add reminder to note ${noteId}`);
+      throw err;
+    }
+  }, [createActivity, logActivityError]);
+
+  const removeReminderFromNote = useCallback(async (noteId: string, reminderId: string): Promise<Note> => {
+    try {
+      const updatedNote = await notesService.unlinkReminder(noteId, reminderId);
+      setNotes(prevNotes => prevNotes.map(n => (n.id === noteId ? createSafeNote(updatedNote) : n)));
+      createActivity({
+        actionType: 'remove_reminder_from_note',
+        itemType: 'note',
+        itemId: noteId,
+        itemTitle: updatedNote.title,
+        description: `Removed reminder from note '${updatedNote.title}'`
+      });
+      return updatedNote;
+    } catch (err) {
+      logActivityError(err, `remove reminder from note ${noteId}`);
+      throw err;
+    }
+  }, [createActivity, logActivityError]);
+
+  const duplicateNote = useCallback(async (noteId: string): Promise<Note> => {
+    try {
+      const newNote = await notesService.duplicateNote(noteId);
+      const safeNewNote = createSafeNote(newNote);
+      setNotes(prev => sortNotes([...prev, safeNewNote]));
+      createActivity({
+        actionType: 'duplicate',
+        itemType: 'note',
+        itemId: safeNewNote.id,
+        itemTitle: safeNewNote.title,
+        description: `Duplicated note '${safeNewNote.title}' from note ID ${noteId}`,
+      });
+      return safeNewNote;
+    } catch (error) {
+      logActivityError(error, `duplicate note ${noteId}`);
+      throw error;
+    }
+  }, [createActivity, logActivityError]);
+
+  const duplicateNotes = useCallback(
+    async (noteIds: string[]): Promise<Note[]> => {
+      const duplicatedNotes: Note[] = [];
+      for (const noteId of noteIds) {
+        try {
+          const newNote = await duplicateNote(noteId); // Uses the already defined duplicateNote
+          duplicatedNotes.push(newNote);
+        } catch (error) {
+          logActivityError(error, `duplicate note ${noteId} in batch`);
+          // Optionally, collect errors and report them
+        }
+      }
+      return duplicatedNotes;
+    },
+    [duplicateNote, logActivityError] // Ensure duplicateNote is in dependency array
+  );
+
+  // TickTick Integration specific logic
+
   const fetchTickTickNotes = useCallback(async () => {
     if (!user || !isTickTickConnected) return;
     setIsTickTickLoading(true);
     setTickTickError(null);
     try {
-      // Get TickTick notes, filtering by NOTE kind
       const fetchedTickTickNotes = await integrationsService.getTickTickTasks(tickTickProjectId);
       setTickTickNotes(fetchedTickTickNotes);
     } catch (error: unknown) {
@@ -137,971 +548,287 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user, isTickTickConnected, tickTickProjectId]);
 
-  // Add a separate effect to check TickTick connection status on mount and when auth changes
+  const checkTickTickStatus = useCallback(async (forceCheck: boolean = false) => {
+    try {
+      if (isTickTickConnected && !forceCheck && localStorage.getItem('ticktick_connected') === 'true') {
+        return;
+      }
+      const status = await integrationsService.getTickTickStatus(isTickTickConnected);
+      if (status.isConnected !== isTickTickConnected || forceCheck) {
+        setIsTickTickConnected(status.isConnected);
+        if (status.isConnected) {
+          // If just connected, fetch notes and project ID
+          const storedProjectId = localStorage.getItem('ticktick_notes_project_id') || '';
+          setTickTickProjectId(storedProjectId); // Ensure project ID is set before fetching
+          if (storedProjectId) { // Only fetch if a project ID is set
+            await fetchTickTickNotes();
+          }
+        } else {
+          setTickTickNotes([]); // Clear TickTick notes if disconnected
+        }
+      }
+    } catch (error) {
+      logActivityError(error, 'Failed to check TickTick connection status');
+      setIsTickTickConnected(false); // Assume disconnected on error
+    }
+  }, [fetchTickTickNotes, logActivityError, isTickTickConnected]);
+
   useEffect(() => {
     if (user) {
-      // If user is authenticated, validate our localStorage connection status with backend
-      checkTickTickStatus(true); // Force a check on authentication
-
-      // Subscribe to SignalR reconnection events to revalidate TickTick connection
+      checkTickTickStatus(true); // Force check on user load
       const handleReconnect = () => {
         setTimeout(() => checkTickTickStatus(true), 1000);
       };
-
       window.addEventListener('signalr:reconnected', handleReconnect);
-
       return () => {
         window.removeEventListener('signalr:reconnected', handleReconnect);
       };
     }
   }, [user, checkTickTickStatus]);
 
-  // Update TickTick project ID and refetch notes
   const updateTickTickProjectId = useCallback(async (projectId: string) => {
     setTickTickProjectId(projectId);
-    // If there's a project ID and we're connected, fetch notes immediately
     if (projectId && isTickTickConnected) {
-      await fetchTickTickNotes();
+      await fetchTickTickNotes(); // Refetch notes for the new project
+    } else if (!projectId) {
+      setTickTickNotes([]); // Clear notes if no project is selected
     }
   }, [isTickTickConnected, fetchTickTickNotes]);
 
-  // Load regular notes when user is available
   useEffect(() => {
     if (user) {
       fetchNotes();
     }
   }, [user, fetchNotes]);
 
-  // Fetch TickTick notes when the page loads, or when connection/project changes
   useEffect(() => {
     if (isTickTickConnected && tickTickProjectId) {
       fetchTickTickNotes();
+    } else if (isTickTickConnected && !tickTickProjectId) {
+      // If connected but no project ID, clear notes or prompt user
+      setTickTickNotes([]);
     }
   }, [isTickTickConnected, tickTickProjectId, fetchTickTickNotes]);
 
-  // TickTick note operations
-  const getTickTickNote = useCallback(async (projectId: string, noteId: string): Promise<TickTickTask | null> => {
+  const getTickTickNote = useCallback(async (projectIdParam: string, noteId: string): Promise<TickTickTask | null> => {
     try {
-      const note = await integrationsService.getTickTickTask(projectId, noteId);
+      const note = await integrationsService.getTickTickTask(projectIdParam, noteId);
       return note;
     } catch (error) {
-      console.error('Failed to fetch TickTick note:', error);
+      logActivityError(error, `fetch TickTick note ${noteId}`);
       return null;
     }
-  }, []);
+  }, [logActivityError]);
 
   const updateTickTickNote = useCallback(async (noteId: string, note: Partial<TickTickTask> & { id: string; projectId: string }): Promise<TickTickTask | null> => {
     try {
       const updatedNote = await integrationsService.updateTickTickTask(noteId, note);
-
-      // After successful update, refresh the TickTick notes list to show updated data
-      await fetchTickTickNotes();
-
+      await fetchTickTickNotes(); // Refresh the list
       return updatedNote;
     } catch (error) {
-      console.error('Failed to update TickTick note:', error);
+      logActivityError(error, `update TickTick note ${noteId}`);
       return null;
     }
-  }, [fetchTickTickNotes]);
+  }, [fetchTickTickNotes, logActivityError]);
 
-  const deleteTickTickNote = useCallback(async (projectId: string, noteId: string): Promise<boolean> => {
+  const deleteTickTickNote = useCallback(async (projectIdParam: string, noteId: string): Promise<boolean> => {
     try {
-      const success = await integrationsService.deleteTickTickTask(projectId, noteId);
-
-      // After successful deletion, refresh the TickTick notes list to show updated data
-      if (success) {
-        await fetchTickTickNotes();
-      }
-
-      return success;
+      await integrationsService.deleteTickTickTask(projectIdParam, noteId);
+      await fetchTickTickNotes(); // Refresh the list
+      return true;
     } catch (error) {
-      console.error('Failed to delete TickTick note:', error);
+      logActivityError(error, `delete TickTick note ${noteId}`);
       return false;
     }
-  }, [fetchTickTickNotes]);
+  }, [fetchTickTickNotes, logActivityError]);
 
-  const createTickTickNote = useCallback(async (projectId: string, noteData: Partial<TickTickTask>): Promise<TickTickTask | null> => {
+  const createTickTickNote = useCallback(async (projectIdParam: string, noteData: Partial<TickTickTask>): Promise<TickTickTask | null> => {
     try {
-      const createdNote = await integrationsService.createTickTickTask(projectId, noteData);
-      // Refresh TickTick notes after creation
-      await fetchTickTickNotes();
-      return createdNote;
+      const newNote = await integrationsService.createTickTickTask(projectIdParam, noteData);
+      await fetchTickTickNotes(); // Refresh the list
+      return newNote;
     } catch (error) {
-      console.error('Failed to create TickTick note:', error);
-      setTickTickError('Failed to create note in TickTick.');
+      logActivityError(error, `create TickTick note`);
       return null;
     }
-  }, [fetchTickTickNotes]);
+  }, [fetchTickTickNotes, logActivityError]);
 
-  const createSafeNote = (newNote: Note): Note => ({
-    ...newNote,
-    tags: Array.isArray(newNote.tags) ? newNote.tags : [],
-    linkedNoteIds: Array.isArray(newNote.linkedNoteIds) ? newNote.linkedNoteIds : [],
-    isArchived: false,
-    isDeleted: false,
-    linkedTasks: Array.isArray(newNote.linkedTasks) ? newNote.linkedTasks : [],
-    linkedReminders: Array.isArray(newNote.linkedReminders) ? newNote.linkedReminders : []
-  });
-
-  const logActivityError = (error: unknown, context: string) => {
-    console.error('Failed to add activity:', context, error);
-  };
-
-  const createNoteActivity = useCallback(async (note: Note) => {
-    if (!createActivity) return;
-
+  // TickTick Sync Methods
+  const getSyncStatus = useCallback(async () => {
     try {
-      await createActivity({
-        actionType: 'create',
-        itemType: 'note',
-        itemId: note.id,
-        itemTitle: note.title,
-        description: `Created note: ${note.title}`,
-        metadata: { tags: note.tags }
+      const status = await integrationsService.getTickTickSyncStatus(tickTickProjectId, 'notes'); // Added projectId and syncType
+      setSyncTaskCount({
+        local: status.taskCount.local, // Corrected
+        tickTick: status.taskCount.tickTick, // Corrected
+        mapped: status.taskCount.mapped // Corrected
       });
-    } catch (error) {
-      logActivityError(error, 'create note');
-    }
-  }, [createActivity]);
-
-  const updateNoteActivity = useCallback(async (note: Note, updates: Partial<Note>) => {
-    if (!createActivity) return;
-
-    try {
-      await createActivity({
-        actionType: 'edit',
-        itemType: 'note',
-        itemId: note.id,
-        itemTitle: note.title,
-        description: `Updated note: ${note.title}`,
-        metadata: { ...updates }
-      });
-    } catch (error) {
-      logActivityError(error, 'update note');
-    }
-  }, [createActivity]);
-
-  const clearArchivedNotes = useCallback(() => {
-    setArchivedNotes([]);
-    hasLoadedArchived.current = false;
-  }, []);
-
-  const addNote = useCallback(async (note: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'linkedNoteIds' | 'linkedNotes' | 'linkedTasks' | 'linkedReminders' | 'links'>): Promise<void> => {
-    try {
-      const noteWithSafeTags = {
-        ...note,
-        tags: Array.isArray(note.tags) ? note.tags : [],
+      // lastSynced is updated by syncWithTickTick
+      return {
+        lastSynced: lastSynced || localStorage.getItem('last_ticktick_sync_time'),
+        taskCount: {
+          local: status.taskCount.local, // Corrected
+          tickTick: status.taskCount.tickTick, // Corrected
+          mapped: status.taskCount.mapped // Corrected
+        }
       };
-
-      const newNote = await notesService.createNote(noteWithSafeTags);
-      if (newNote.isDeleted || newNote.isArchived) return;
-
-      const safeNewNote = createSafeNote(newNote);
-      setNotes(prev => sortNotes([safeNewNote, ...prev]));
-      await createNoteActivity(safeNewNote);
-
-      // Trigger user stats update through the backend
-      await notesService.triggerUserStatsUpdate();
     } catch (error) {
-      console.error('Failed to create note:', error);
+      logActivityError(error, 'get TickTick sync status');
       throw error;
     }
-  }, [createNoteActivity]);
+  }, [lastSynced, logActivityError, tickTickProjectId]);
 
-  const updateNote = useCallback(async (id: string, updates: Partial<Note>): Promise<Note> => {
+  const syncWithTickTick = useCallback(async (config: SyncConfig): Promise<SyncResult> => {
+    setIsSyncing(true);
+    setSyncError(null);
     try {
-      if (updates.isArchived !== undefined) {
-        throw new Error('Cannot update archive status directly');
-      }
-
-      const currentNote = notes.find(n => n.id === id);
-      if (!currentNote) throw new Error('Note not found');
-
-      const updatedNote = await notesService.updateNote(id, updates);
-      const safeUpdatedNote = {
-        ...updatedNote,
-        isArchived: false,
-        isDeleted: false,
-        tags: Array.isArray(updatedNote.tags) ? updatedNote.tags : [],
-        linkedNoteIds: currentNote.linkedNoteIds,
-        linkedNotes: currentNote.linkedNotes,
-        linkedTasks: currentNote.linkedTasks,
-        linkedReminders: currentNote.linkedReminders
-      };
-
-      setNotes(prevNotes => {
-        const updatedNotes = prevNotes
-          .map(note => (note.id === id ? safeUpdatedNote : note))
-          .filter(note => !note.isDeleted && !note.isArchived);
-        return sortNotes(updatedNotes);
-      });
-
-      await updateNoteActivity(safeUpdatedNote, updates);
-      return safeUpdatedNote;
-    } catch (error) {
-      console.error('Failed to update note:', error);
-      throw error;
-    }
-  }, [notes, updateNoteActivity]);
-
-  const deleteNote = useCallback(async (id: string) => {
-    try {
-      const noteToDelete = notes.find(note => note.id === id);
-      if (!noteToDelete) return;
-
-      // Remove from notes list immediately
-      setNotes(prev => prev.filter(note => note.id !== id));
-
-      // Mark as deleted in backend
-      const updateData: Partial<UpdateNoteData> = {
-        isDeleted: true,
-        deletedAt: new Date().toISOString(),
-        title: noteToDelete.title,
-        content: noteToDelete.content,
-        tags: noteToDelete.tags,
-        isFavorite: noteToDelete.isFavorite,
-        linkedNoteIds: noteToDelete.linkedNoteIds
-      };
-
-      await notesService.updateNote(id, updateData);
-
-      // Move to trash
-      await moveToTrash({
-        id: noteToDelete.id,
-        type: 'note',
-        title: noteToDelete.title,
-        content: noteToDelete.content,
-        metadata: {
-          tags: noteToDelete.tags,
-          linkedItems: noteToDelete.linkedNoteIds,
-          isFavorite: noteToDelete.isFavorite
-        }
-      });
-
-      createActivity({
-        actionType: 'delete',
-        itemType: 'note',
-        itemId: id,
-        itemTitle: noteToDelete.title,
-        description: `Moved note to trash: ${noteToDelete.title}`,
-        metadata: {
-          noteId: id,
-          noteTitle: noteToDelete.title,
-          noteTags: noteToDelete.tags,
-          deletedAt: new Date().toISOString()
-        }
-      });
-    } catch (error) {
-      console.error('Failed to delete note:', error);
-      // Rollback the state change if the API call fails
-      const noteToDelete = notes.find(note => note.id === id);
-      if (noteToDelete) {
-        setNotes(prev => [...prev, noteToDelete]);
-      }
-      throw error;
-    }
-  }, [notes, moveToTrash, createActivity]);
-
-  const togglePinNote = useCallback(async (id: string) => {
-    try {
-      const note = notes.find(n => n.id === id);
-      if (!note) return;
-
-      const updatedNote = await notesService.updateNote(id, {
-        isPinned: !note.isPinned
-      });
-
-      setNotes(prevNotes =>
-        prevNotes.map(note => (note.id === id ? { ...note, ...updatedNote } : note))
-      );
-
-      createActivity({
-        actionType: 'update',
-        itemType: 'note',
-        itemId: id,
-        itemTitle: note.title,
-        description: `${note.isPinned ? 'Unpinned' : 'Pinned'} note: ${note.title}`,
-        metadata: {
-          isPinned: !note.isPinned
-        }
-      });
-    } catch (error) {
-      console.error('Failed to toggle pin status:', error);
-    }
-  }, [notes, createActivity]);
-
-  const toggleFavoriteNote = useCallback(async (id: string) => {
-    try {
-      const note = notes.find(n => n.id === id);
-      if (!note) return;
-
-      const updatedNote = await notesService.updateNote(id, {
-        isFavorite: !note.isFavorite
-      });
-
-      setNotes(prevNotes =>
-        prevNotes.map(note => (note.id === id ? { ...note, ...updatedNote } : note))
-      );
-
-      createActivity({
-        actionType: 'update',
-        itemType: 'note',
-        itemId: id,
-        itemTitle: note.title,
-        description: `${note.isFavorite ? 'Removed from' : 'Added to'} favorites: ${note.title}`,
-        metadata: {
-          isFavorite: !note.isFavorite
-        }
-      });
-    } catch (error) {
-      console.error('Failed to toggle favorite status:', error);
-    }
-  }, [notes, createActivity]);
-
-  const archiveNote = useCallback(async (id: string) => {
-    try {
-      const noteToArchive = notes.find(n => n.id === id);
-      if (!noteToArchive) return;
-
-      const updateData: Partial<UpdateNoteData> = {
-        isArchived: true,
-        archivedAt: new Date().toISOString()
-      };
-
-      await notesService.updateNote(id, updateData);
-
-      setNotes(prevNotes => prevNotes.filter(note => note.id !== id));
-
-      createActivity({
-        actionType: 'archive',
-        itemType: 'note',
-        itemId: id,
-        itemTitle: noteToArchive.title,
-        description: `Archived note: ${noteToArchive.title}`,
-        metadata: {
-          isArchived: true,
-          archivedAt: new Date().toISOString()
-        }
-      });
-    } catch (error) {
-      console.error('Failed to archive note:', error);
-      throw error;
-    }
-  }, [notes, createActivity]);
-
-  const unarchiveNote = useCallback(async (id: string): Promise<Note> => {
-    try {
-      const noteToUnarchive = archivedNotes.find(n => n.id === id);
-      if (!noteToUnarchive) throw new Error('Note not found in archived notes');
-
-      const updatedNote = await notesService.unarchiveNote(id);
-      if (!updatedNote) throw new Error('Failed to unarchive note');
-
-      const restoredNote: Note = {
-        ...noteToUnarchive,
-        ...updatedNote,
-        isArchived: false,
-      };
-
-      // Update both states atomically
-      setNotes(prevNotes => sortNotes([...prevNotes, restoredNote]));
-      setArchivedNotes(prevNotes => prevNotes.filter(note => note.id !== id));
-
-      // Add activity logging for unarchiving
-      createActivity({
-        actionType: 'restore',
-        itemType: 'note',
-        itemId: restoredNote.id,
-        itemTitle: restoredNote.title,
-        description: `Restored note from archive: ${restoredNote.title}`,
-        metadata: {
-          tags: restoredNote.tags,
-          restoredAt: new Date().toISOString()
-        }
-      });
-
-      return restoredNote;
-    } catch (error) {
-      console.error('Error unarchiving note:', error);
-      throw error;
-    }
-  }, [archivedNotes, createActivity]);
-
-  const addLink = useCallback(async (sourceId: string, targetId: string, linkType = 'default') => {
-    try {
-      // Get updated notes from the backend after linking
-      const { sourceNote, targetNote } = await notesService.addLink(sourceId, targetId, linkType);
-
-      // Update notes state with the fresh data from backend
-      setNotes(prev => {
-        const updatedNotes = prev.map(note => {
-          if (note.id === sourceId) {
-            // Use the fresh source note data
-            return {
-              ...note,
-              ...sourceNote,
-              linkedNoteIds: sourceNote.linkedNoteIds,
-              links: sourceNote.links || [],
-              linkedNotes: sourceNote.linkedNotes || []
-            };
-          }
-          if (note.id === targetId) {
-            // Use the fresh target note data
-            return {
-              ...note,
-              ...targetNote,
-              linkedNoteIds: targetNote.linkedNoteIds,
-              links: targetNote.links || [],
-              linkedNotes: targetNote.linkedNotes || []
-            };
-          }
-          return note;
-        });
-
-        // Return a new array to ensure React detects the change
-        return [...updatedNotes];
-      });
-
-      // Create activity if available
-      if (createActivity) {
-        createActivity({
-          actionType: 'link',
-          itemType: 'note',
-          itemId: targetId,
-          itemTitle: targetNote.title,
-          description: `Linked note "${targetNote.title}" to "${sourceNote.title}"`,
-          metadata: {
-            sourceNoteId: sourceId,
-            targetNoteId: targetId,
-            linkType
-          }
-        });
-      }
-    } catch (error) {
-      console.error('Failed to add link:', error);
-      throw error;
-    }
-  }, [createActivity]);
-
-  const removeLink = useCallback(async (sourceId: string, targetId: string) => {
-    try {
-      // Get updated notes from the backend after unlinking
-      const { sourceNote, targetNote } = await notesService.removeLink(sourceId, targetId);
-
-      // Update notes state with the fresh data from backend
-      setNotes(prev => {
-        const updatedNotes = prev.map(note => {
-          if (note.id === sourceId) {
-            // Use the fresh source note data
-            return {
-              ...note,
-              ...sourceNote,
-              linkedNoteIds: sourceNote.linkedNoteIds,
-              links: sourceNote.links || [],
-              linkedNotes: sourceNote.linkedNotes || []
-            };
-          }
-          if (note.id === targetId) {
-            // Use the fresh target note data
-            return {
-              ...note,
-              ...targetNote,
-              linkedNoteIds: targetNote.linkedNoteIds,
-              links: targetNote.links || [],
-              linkedNotes: targetNote.linkedNotes || []
-            };
-          }
-          return note;
-        });
-
-        // Return a new array to ensure React detects the change
-        return [...updatedNotes];
-      });
-
-      // Create activity if available
-      if (createActivity) {
-        createActivity({
-          actionType: 'unlink',
-          itemType: 'note',
-          itemId: targetId,
-          itemTitle: targetNote.title,
-          description: `Unlinked note "${targetNote.title}" from "${sourceNote.title}"`,
-          metadata: {
-            sourceNoteId: sourceId,
-            targetNoteId: targetId
-          }
-        });
-      }
-    } catch (error) {
-      console.error('Failed to remove link:', error);
-      throw error;
-    }
-  }, [createActivity]);
-
-  const linkReminder = useCallback(async (noteId: string, reminderId: string) => {
-    try {
-      await notesService.linkReminder(noteId, reminderId);
-
-      // Refresh all notes to get the latest state
+      // Ensure syncType is 'notes' for this context
+      const notesSyncConfig: SyncConfig = { ...config, syncType: 'notes' };
+      const result = await integrationsService.syncTickTickTasks(notesSyncConfig); // Changed to syncTickTickTasks
+      setLastSynced(new Date().toISOString());
+      localStorage.setItem('last_ticktick_sync_time', new Date().toISOString());
       await fetchNotes();
-
-      if (createActivity) {
-        const note = notes.find(n => n.id === noteId);
-        createActivity({
-          actionType: 'link',
-          itemType: 'reminder',
-          itemId: reminderId,
-          itemTitle: note?.title ?? '',
-          description: `Linked reminder to note: ${note?.title}`,
-          metadata: {
-            noteId,
-            reminderId
-          }
-        });
-      }
-
-      const updatedNote = notes.find(n => n.id === noteId);
-      if (!updatedNote) {
-        throw new Error('Note not found after linking reminder');
-      }
-
-      return updatedNote;
-    } catch (error) {
-      console.error('Failed to link reminder:', error);
-      if (error instanceof Error) {
-        console.error('Error details:', error.message);
-      }
-      throw error;
-    }
-  }, [notes, createActivity, fetchNotes]);
-
-  const unlinkReminder = useCallback(async (noteId: string, reminderId: string) => {
-    try {
-      await notesService.unlinkReminder(noteId, reminderId);
-
-      // Refresh all notes to get the latest state
-      await fetchNotes();
-
-      const updatedNote = notes.find(n => n.id === noteId);
-      if (!updatedNote) {
-        throw new Error('Note not found after unlinking reminder');
-      }
-
-      return updatedNote;
-    } catch (error) {
-      console.error('Failed to unlink reminder:', error);
-      throw error;
-    }
-  }, [fetchNotes, notes]);
-
-  const createBulkRestoreActivity = useCallback((restoredNotes: Note[], totalResults: number) => {
-    createActivity({
-      actionType: 'restore_multiple',
-      itemType: 'notes',
-      itemId: 'bulk',
-      itemTitle: `${restoredNotes.length} notes`,
-      description: `Restored ${restoredNotes.length} notes from archive`,
-      metadata: {
-        totalNotes: totalResults,
-        successfulRestores: restoredNotes.length,
-        failedRestores: totalResults - restoredNotes.length,
-        restoredNoteIds: restoredNotes.map(note => note.id),
-        restoredNoteTitles: restoredNotes.map(note => note.title),
-        restoredAt: new Date().toISOString()
-      }
-    });
-  }, [createActivity]);
-
-  const restoreMultipleNotes = useCallback(async (ids: string[]) => {
-    try {
-      const results = await Promise.allSettled(
-        ids.map(id => unarchiveNote(id))
-      );
-
-      if (results.length > 1) {
-        const successfulRestores = results.filter(
-          (result): result is PromiseFulfilledResult<Note> =>
-            result.status === 'fulfilled' && result.value !== undefined
-        );
-
-        const restoredNotes = successfulRestores.map(result => result.value);
-        createBulkRestoreActivity(restoredNotes, results.length);
-      }
-
-      return results;
-    } catch (error) {
-      console.error('Failed to restore multiple notes:', error);
-      throw error;
-    }
-  }, [unarchiveNote, createBulkRestoreActivity]);
-
-  const restoreNote = useCallback(async (restoredNote: Note) => {
-    try {
-      // Check if note already exists in state
-      setNotes(prevNotes => {
-        if (prevNotes.some(note => note.id === restoredNote.id)) {
-          return prevNotes; // Note already exists, don't add it again
-        }
-        return [...prevNotes, restoredNote];
-      });
-
-      // Add activity
+      await fetchTickTickNotes();
+      await getSyncStatus();
       createActivity({
-        actionType: 'restore',
-        itemType: 'note',
-        itemId: restoredNote.id,
-        itemTitle: restoredNote.title,
-        description: `Restored note from trash: ${restoredNote.title}`,
-        metadata: {
-          tags: restoredNote.tags
-        }
+        actionType: 'sync',
+        itemType: 'ticktick_notes',
+        itemId: 'ticktick_sync',
+        itemTitle: 'TickTick Sync',
+        description: `Synced ${result.created + result.updated} notes with TickTick. Created: ${result.created}, Updated: ${result.updated}, Failed: ${result.errors}`,
       });
+      return result;
     } catch (error) {
-      console.error('Failed to restore note:', error);
+      logActivityError(error, 'sync with TickTick');
+      setSyncError(error instanceof Error ? error.message : 'Unknown sync error');
       throw error;
+    } finally {
+      setIsSyncing(false);
     }
-  }, [createActivity]);
+  }, [fetchNotes, fetchTickTickNotes, getSyncStatus, createActivity, logActivityError]);
 
-  const addReminderToNote = useCallback(async (noteId: string, reminderId: string) => {
+  const resetSyncData = useCallback(async (): Promise<boolean> => {
+    setIsSyncing(true);
+    setSyncError(null);
     try {
-      const updatedNote = await notesService.linkReminder(noteId, reminderId);
-
-      // Update the notes state with the new reminder link
-      setNotes(prevNotes =>
-        prevNotes.map(note =>
-          note.id === noteId
-            ? {
-              ...note,
-              linkedReminders: updatedNote.linkedReminders || []
-            }
-            : note
-        )
-      );
-
-      await createActivity({
-        actionType: 'link',
-        itemType: 'note',
-        itemId: noteId,
-        itemTitle: updatedNote.title,
-        description: `Linked reminder to note: ${updatedNote.title}`,
-        metadata: {
-          reminderId,
-        },
-      });
-    } catch (error) {
-      console.error('Failed to add reminder to note:', error);
-      throw error;
-    }
-  }, [createActivity]);
-
-  const removeReminderFromNote = useCallback(async (noteId: string, reminderId: string) => {
-    try {
-      const updatedNote = await notesService.unlinkReminder(noteId, reminderId);
-
-      // Update the notes state by removing the reminder link
-      setNotes(prevNotes =>
-        prevNotes.map(note =>
-          note.id === noteId
-            ? {
-              ...note,
-              linkedReminders: updatedNote.linkedReminders || []
-            }
-            : note
-        )
-      );
-
-      const note = notes.find(n => n.id === noteId);
-      if (note) {
-        await createActivity({
-          actionType: 'unlink',
-          itemType: 'note',
-          itemId: noteId,
-          itemTitle: note.title,
-          description: `Unlinked reminder from note: ${note.title}`,
-          metadata: {
-            reminderId,
-          },
-        });
-      }
-    } catch (error) {
-      console.error('Failed to remove reminder from note:', error);
-      throw error;
-    }
-  }, [notes, createActivity]);
-
-  // Add duplicateNote function
-  const duplicateNote = useCallback(async (id: string): Promise<Note> => {
-    try {
-      const duplicatedNote = await notesService.duplicateNote(id);
-
-      // Add to the notes state
-      setNotes(prev => sortNotes([duplicatedNote, ...prev]));
-
-      // Create activity
-      createActivity({
-        actionType: 'create',
-        itemType: 'note',
-        itemId: duplicatedNote.id,
-        itemTitle: duplicatedNote.title,
-        description: `Duplicated note: ${duplicatedNote.title}`,
-        metadata: { tags: duplicatedNote.tags }
-      });
-
-      // Trigger user stats update
-      await notesService.triggerUserStatsUpdate();
-
-      return duplicatedNote;
-    } catch (error) {
-      console.error('Failed to duplicate note:', error);
-      throw error;
-    }
-  }, [createActivity]);
-
-  // Add duplicateNotes function
-  const duplicateNotes = useCallback(async (ids: string[]): Promise<Note[]> => {
-    try {
-      const duplicatedNotes = await notesService.duplicateNotes(ids);
-
-      // Add to the notes state
-      setNotes(prev => sortNotes([...duplicatedNotes, ...prev]));
-
-      // Create activities for each duplicated note
-      for (const note of duplicatedNotes) {
-        createActivity({
-          actionType: 'create',
-          itemType: 'note',
-          itemId: note.id,
-          itemTitle: note.title,
-          description: `Duplicated note: ${note.title}`,
-          metadata: { tags: note.tags }
-        });
-      }
-
-      // Trigger user stats update
-      await notesService.triggerUserStatsUpdate();
-
-      return duplicatedNotes;
-    } catch (error) {
-      console.error('Failed to duplicate notes:', error);
-      throw error;
-    }
-  }, [createActivity]);
-
-  const contextValue = useMemo(() => ({
-    notes,
-    archivedNotes,
-    isLoading,
-    // TickTick related values
-    tickTickNotes,
-    isTickTickLoading,
-    tickTickError,
-    fetchTickTickNotes,
-    isTickTickConnected,
-    refreshTickTickConnection: checkTickTickStatus,
-    tickTickProjectId,
-    updateTickTickProjectId,
-    getTickTickNote,
-    updateTickTickNote,
-    deleteTickTickNote,
-    createTickTickNote,
-    // Add the following sync methods
-    syncWithTickTick: async (config: SyncConfig): Promise<SyncResult> => {
-      if (!user) {
-        throw new Error("User must be authenticated to sync notes");
-      }
-
-      if (!isTickTickConnected) {
-        throw new Error("TickTick must be connected to sync notes");
-      }
-
-      // Ensure we have a project ID to sync with
-      if (!config.projectId) {
-        throw new Error("No TickTick project selected for synchronization");
-      }
-
-      setIsTickTickLoading(true);
-      setTickTickError(null);
-
-      try {
-        // Add syncType to the config
-        const syncConfig = {
-          ...config,
-          syncType: 'notes' as const // Explicitly set syncType for notes synchronization
-        };
-
-        const result = await integrationsService.syncTickTickTasks(syncConfig);
-
-        // After successful sync, refresh both local and TickTick notes
-        await fetchNotes();
-        if (config.projectId) {
-          await fetchTickTickNotes();
-        }
-
-        return result;
-      } catch (error) {
-        console.error("Error syncing notes with TickTick:", error);
-        let errorMessage = "Unknown error during sync";
-
-        if (error instanceof Error) {
-          errorMessage = error.message;
-          console.error("Error details:", error.message);
-        }
-
-        setTickTickError(errorMessage);
-        throw new Error(errorMessage);
-      } finally {
-        setIsTickTickLoading(false);
-      }
-    },
-
-    getSyncStatus: async (projectId?: string): Promise<{
-      lastSynced: string | null;
-      taskCount: { local: number; tickTick: number; mapped: number };
-    }> => {
-      if (!user || !isTickTickConnected) {
-        return {
-          lastSynced: null,
-          taskCount: { local: 0, tickTick: 0, mapped: 0 }
-        };
-      }
-
-      try {
-        const effectiveProjectId = projectId || tickTickProjectId;
-        return await integrationsService.getTickTickSyncStatus(effectiveProjectId, 'notes');
-      } catch (error) {
-        console.error("Error getting sync status:", error);
-        return {
-          lastSynced: null,
-          // Use local state as fallback
-          taskCount: {
-            local: notes.length,
-            tickTick: tickTickNotes.length,
-            mapped: 0
-          }
-        };
-      }
-    },
-
-    resetSyncData: async (): Promise<boolean> => {
-      if (!user || !isTickTickConnected) {
-        return false;
-      }
-
-      try {
-        return await integrationsService.resetSyncData();
-      } catch (error) {
-        console.error("Error resetting sync data:", error);
-        return false;
-      }
-    },
-
-    isSyncing: isTickTickLoading,
-    syncError: tickTickError,
-    // Original methods
-    addNote,
-    updateNote,
-    deleteNote,
-    togglePinNote,
-    toggleFavoriteNote,
-    archiveNote,
-    unarchiveNote,
-    addLink,
-    removeLink,
-    linkReminder,
-    unlinkReminder,
-    loadArchivedNotes,
-    clearArchivedNotes,
-    restoreMultipleNotes,
-    restoreNote,
-    fetchNotes,
-    addReminderToNote,
-    removeReminderFromNote,
-    duplicateNote,
-    duplicateNotes
-  }), [
-    notes,
-    archivedNotes,
-    isLoading,
-    // TickTick related dependencies
-    tickTickNotes,
-    isTickTickLoading,
-    tickTickError,
-    fetchTickTickNotes,
-    isTickTickConnected,
-    checkTickTickStatus,
-    tickTickProjectId,
-    updateTickTickProjectId,
-    getTickTickNote,
-    updateTickTickNote,
-    deleteTickTickNote,
-    createTickTickNote,
-    user, // Add user to dependencies
-    fetchNotes, // Add fetchNotes to dependencies
-    // Original dependencies
-    addNote,
-    updateNote,
-    deleteNote,
-    togglePinNote,
-    toggleFavoriteNote,
-    archiveNote,
-    unarchiveNote,
-    addLink,
-    removeLink,
-    linkReminder,
-    unlinkReminder,
-    loadArchivedNotes,
-    clearArchivedNotes,
-    restoreMultipleNotes,
-    restoreNote,
-    addReminderToNote,
-    removeReminderFromNote,
-    duplicateNote,
-    duplicateNotes
-  ]);
-
-  // Add a subscription to task changes
-  useEffect(() => {
-    const handleTaskChange = async () => {
-      // Refresh notes to get updated task links
+      await integrationsService.resetSyncData(); // Changed to resetSyncData
+      setLastSynced(null);
+      localStorage.removeItem('last_ticktick_sync_time');
+      await getSyncStatus(); // This will use the updated projectId and syncType
       await fetchNotes();
-    };
+      await fetchTickTickNotes();
+      createActivity({
+        actionType: 'reset_sync',
+        itemType: 'ticktick_notes',
+        itemId: 'ticktick_reset',
+        itemTitle: 'TickTick Reset Sync',
+        description: 'Reset TickTick notes synchronization data.',
+      });
+      return true;
+    } catch (error) {
+      logActivityError(error, 'reset TickTick sync data');
+      setSyncError(error instanceof Error ? error.message : 'Unknown reset error');
+      throw error;
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [fetchNotes, fetchTickTickNotes, getSyncStatus, createActivity, logActivityError]);
 
-    // Subscribe to task changes
-    window.addEventListener('taskChange', handleTaskChange);
-
-    return () => {
-      window.removeEventListener('taskChange', handleTaskChange);
-    };
-  }, [fetchNotes]);
-
-  return (
-    <NotesContext.Provider value={contextValue}>
-      {children}
-    </NotesContext.Provider>
+  const contextValue = useMemo(
+    () => ({
+      notes,
+      archivedNotes,
+      isLoading,
+      addNote,
+      updateNote,
+      deleteNote,
+      togglePinNote,
+      toggleFavoriteNote,
+      archiveNote,
+      unarchiveNote,
+      addLink,
+      removeLink,
+      linkReminder,
+      unlinkReminder,
+      loadArchivedNotes,
+      clearArchivedNotes,
+      restoreMultipleNotes,
+      restoreNote,
+      fetchNotes,
+      addReminderToNote,
+      removeReminderFromNote,
+      duplicateNote,
+      duplicateNotes,
+      // TickTick specific state and functions
+      tickTickNotes,
+      isTickTickLoading,
+      tickTickError,
+      fetchTickTickNotes,
+      isTickTickConnected,
+      refreshTickTickConnection: checkTickTickStatus,
+      tickTickProjectId,
+      updateTickTickProjectId,
+      getTickTickNote,
+      updateTickTickNote,
+      deleteTickTickNote,
+      createTickTickNote,
+      syncWithTickTick,
+      getSyncStatus,
+      resetSyncData,
+      isSyncing,
+      syncError,
+      lastSynced,
+      syncTaskCount
+    }),
+    [
+      notes,
+      archivedNotes,
+      isLoading,
+      addNote,
+      updateNote,
+      deleteNote,
+      togglePinNote,
+      toggleFavoriteNote,
+      archiveNote,
+      unarchiveNote,
+      addLink,
+      removeLink,
+      linkReminder,
+      unlinkReminder,
+      loadArchivedNotes,
+      clearArchivedNotes,
+      restoreMultipleNotes,
+      restoreNote,
+      fetchNotes,
+      addReminderToNote,
+      removeReminderFromNote,
+      duplicateNote,
+      duplicateNotes,
+      // TickTick dependencies
+      tickTickNotes,
+      isTickTickLoading,
+      tickTickError,
+      fetchTickTickNotes,
+      isTickTickConnected,
+      checkTickTickStatus,
+      tickTickProjectId,
+      updateTickTickProjectId,
+      getTickTickNote,
+      updateTickTickNote,
+      deleteTickTickNote,
+      createTickTickNote,
+      syncWithTickTick,
+      getSyncStatus,
+      resetSyncData,
+      isSyncing,
+      syncError,
+      lastSynced,
+      syncTaskCount
+    ]
   );
+
+  return <NotesContext.Provider value={contextValue}>{children}</NotesContext.Provider>;
 }
 
-// Create a wrapper component that handles reminder state updates
 export function NotesWithRemindersProvider({ children }: { children: React.ReactNode }) {
-  return (
-    <NotesProvider>
-      <NotesRemindersSync>
-        {children}
-      </NotesRemindersSync>
-    </NotesProvider>
-  );
-}
-
-// Component to handle reminder state synchronization
-function NotesRemindersSync({ children }: { children: React.ReactNode }) {
-  const { notes } = useNotes();
-  const { fetchReminders } = useReminders();
-
-  useEffect(() => {
-    // Always refresh reminders when notes change, since we can't reliably
-    // track when reminder links are added or removed just by looking at the current state
-    fetchReminders();
-  }, [notes, fetchReminders]);
-
-  return <>{children}</>;
+  return <NotesProvider>{children}</NotesProvider>;
 }

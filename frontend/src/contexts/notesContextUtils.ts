@@ -35,8 +35,8 @@ export interface NotesContextType {
   toggleFavoriteNote: (id: string) => Promise<void>;
   archiveNote: (id: string) => Promise<void>;
   unarchiveNote: (id: string) => Promise<Note>;
-  addLink: (sourceId: string, targetId: string, linkType?: string) => Promise<void>;
-  removeLink: (sourceId: string, targetId: string) => Promise<void>;
+  addLink: (noteId: string, linkedItemId: string, linkedItemType: 'Note' | 'Idea' | 'Task' | 'Reminder', linkType?: string) => Promise<void>;
+  removeLink: (noteId: string, linkedItemId: string, linkedItemType: string) => Promise<void>;
   linkReminder: (noteId: string, reminderId: string) => Promise<Note>;
   unlinkReminder: (noteId: string, reminderId: string) => Promise<Note>;
   loadArchivedNotes: (force?: boolean) => Promise<void>;
@@ -44,8 +44,8 @@ export interface NotesContextType {
   restoreMultipleNotes: (ids: string[]) => Promise<PromiseSettledResult<Note>[]>;
   restoreNote: (restoredNote: Note) => Promise<void>;
   fetchNotes: () => Promise<void>;
-  addReminderToNote: (noteId: string, reminderId: string) => Promise<void>;
-  removeReminderFromNote: (noteId: string, reminderId: string) => Promise<void>;
+  addReminderToNote: (noteId: string, reminderId: string) => Promise<Note>;
+  removeReminderFromNote: (noteId: string, reminderId: string) => Promise<Note>;
   duplicateNote: (noteId: string) => Promise<Note>;
   duplicateNotes: (noteIds: string[]) => Promise<Note[]>;
 }

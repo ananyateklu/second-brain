@@ -11,7 +11,7 @@ import { MainContent } from './MainContent';
 import { LinkedNotesPanel } from './LinkedNotesPanel';
 import { IdeaAddLinkModal } from './IdeaAddLinkModal';
 import { IdeaAddTaskLinkModal } from './IdeaAddTaskLinkModal';
-import { AddReminderLinkModal } from '../../Notes/EditNoteModal/AddReminderLinkModal';
+import { IdeaAddReminderLinkModal } from './IdeaAddReminderLinkModal';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../../../contexts/themeContextUtils';
@@ -165,33 +165,14 @@ export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaMo
     const hasReminders = allReminders.length > 0;
 
     if (!hasNotes && !hasIdeas && !hasTasks && !hasReminders) {
-      console.log("Skipping suggestions: no content to compare against");
       return;
     }
 
     try {
       setSuggestionState(prev => ({ ...prev, isLoading: true, error: null }));
-      console.log("Loading all content suggestions for:", currentIdea.title);
 
       // Get IDs of already linked items
       const linkedIds = currentIdea.linkedItems?.map(item => item.id) || [];
-
-      // Log content availability for debugging
-      console.log("Available items for suggestions:", {
-        notes: notes.length,
-        ideas: ideasState.ideas.length - 1, // Minus current idea
-        tasks: tasks.length,
-        reminders: allReminders.length,
-        alreadyLinked: linkedIds.length
-      });
-
-      // Log reminder details for debugging
-      if (hasReminders) {
-        console.log("Available reminders:", allReminders.map(r => ({
-          id: r.id,
-          title: r.title
-        })));
-      }
 
       // Make a single call to the similarContentService with all content types
       const results = await similarContentService.findSimilarContent(
@@ -209,9 +190,6 @@ export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaMo
         12 // Increased to get enough results for all types
       );
 
-      console.log("Successfully received all suggestions:", results.length);
-      console.log("Raw AI results:", JSON.stringify(results));
-
       // Separate suggestions by type
       const rawNoteResults = results.filter(item => item.type === 'note');
       const rawIdeaResults = results.filter(item => item.type === 'idea');
@@ -228,44 +206,6 @@ export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaMo
       const taskResults = rawTaskResults.filter(suggestedTask =>
         tasks.some(localTask => localTask.id === suggestedTask.id)
       );
-
-      // Log if any suggestions were filtered out
-      if (rawNoteResults.length !== noteResults.length) {
-        console.log(`Filtered ${rawNoteResults.length - noteResults.length} note suggestions that don't exist locally.`);
-      }
-      if (rawIdeaResults.length !== ideaResults.length) {
-        console.log(`Filtered ${rawIdeaResults.length - ideaResults.length} idea suggestions that don't exist locally.`);
-      }
-      if (rawTaskResults.length !== taskResults.length) {
-        console.log(`Filtered ${rawTaskResults.length - taskResults.length} task suggestions that don't exist locally.`);
-      }
-
-      // Log result distribution
-      console.log("Suggestion distribution (after filtering):", {
-        notes: noteResults.length,
-        ideas: ideaResults.length,
-        tasks: taskResults.length,
-        reminders: reminderResults.length
-      });
-
-      // Log specific reminder results for debugging
-      if (reminderResults.length > 0) {
-        console.log("Reminder suggestion details:", reminderResults.map(r => ({
-          id: r.id,
-          title: r.title,
-          similarity: r.similarity,
-          type: r.type
-        })));
-
-        // Verify reminder IDs exist in the system
-        const foundReminderCount = reminderResults.filter(r =>
-          allReminders.some(ar => ar.id === r.id)
-        ).length;
-
-        console.log(`Found ${foundReminderCount} out of ${reminderResults.length} reminders in context`);
-      } else {
-        console.log("No reminder suggestions were found");
-      }
 
       // Update our centralized suggestion state
       setSuggestionState({
@@ -297,19 +237,6 @@ export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaMo
     }
   }, [isOpen, currentIdea, refreshSuggestions, loadAllSuggestions]);
 
-  // Add a debug logger for reminder suggestions
-  useEffect(() => {
-    if (suggestionState.suggestions.reminders.length > 0) {
-      console.log("EditIdeaModal: Found reminder suggestions:",
-        suggestionState.suggestions.reminders.map(r => ({
-          id: r.id,
-          title: r.title,
-          type: r.type,
-          similarity: r.similarity
-        }))
-      );
-    }
-  }, [suggestionState.suggestions.reminders]);
 
   if (!isOpen || !currentIdea) return null;
 
@@ -491,9 +418,7 @@ export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaMo
                   }}
                   onLinkTask={async (taskId) => {
                     try {
-                      console.log(`EditIdeaModal: Attempting to link task ID: ${taskId} to idea ID: ${currentIdea.id}`);
                       await addLink(currentIdea.id, taskId, 'Task');
-                      console.log(`EditIdeaModal: Successfully linked task ID: ${taskId} to idea ID: ${currentIdea.id}`);
                       triggerRefreshSuggestions();
                     } catch (error) {
                       console.error('EditIdeaModal: Failed to link task:', error);
@@ -571,7 +496,7 @@ export function EditIdeaModal({ isOpen, onClose, idea: initialIdea }: EditIdeaMo
         )}
 
         {showAddReminderModal && (
-          <AddReminderLinkModal
+          <IdeaAddReminderLinkModal
             isOpen={showAddReminderModal}
             onClose={() => setShowAddReminderModal(false)}
             onSelect={handleLinkReminder}

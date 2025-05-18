@@ -1,41 +1,38 @@
 import { Bell, Clock, Check, X, Plus, Loader, Sparkles } from 'lucide-react';
 import { LinkedReminder } from '../../../../types/note';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceStrict } from 'date-fns';
 import { useReminders } from '../../../../contexts/remindersContextUtils';
 import { EditReminderModal } from '../../Reminders/EditReminderModal';
 import { useState, useEffect } from 'react';
 import type { Reminder } from '../../../../contexts/remindersContextUtils';
 import { useTheme } from '../../../../contexts/themeContextUtils';
-import { similarContentService } from '../../../../services/ai/similarContentService';
 import { motion } from 'framer-motion';
-import { Note } from '../../../../types/note';
+import { GenericSuggestionSkeleton } from './GenericSuggestionSkeleton';
+
+// Define SuggestionItem interface (copied from Ideas version for consistency)
+interface SuggestionItem {
+  id: string;
+  title: string;
+  similarity: number;
+  type: 'note' | 'idea' | 'task' | 'reminder'; // Ensure 'reminder' is a valid type
+  status?: string;
+  dueDate?: string | null;
+}
 
 interface MiniReminderCardProps {
   reminder: Reminder;
   onUnlink?: (reminderId: string) => void;
   onClick: () => void;
+  consistentBorderColor: string;
 }
 
-function MiniReminderCard({ reminder, onUnlink, onClick }: MiniReminderCardProps) {
-  const { theme } = useTheme();
-
-  const getItemBackground = () => {
-    if (theme === 'dark') return 'bg-[#111827]';
-    if (theme === 'midnight') return 'bg-[#1e293b]';
-    return 'bg-[var(--color-surface)]';
-  };
-
-  const getBorderStyle = () => {
-    if (theme === 'midnight') return 'border-white/5';
-    return 'border-[var(--color-border)]';
-  };
-
+function MiniReminderCard({ reminder, onUnlink, onClick, consistentBorderColor }: MiniReminderCardProps) {
   return (
     <div
       onClick={onClick}
-      className={`relative flex items-center gap-1.5 p-1.5 ${getItemBackground()} rounded-lg border ${getBorderStyle()} group hover:bg-purple-400/5 transition-colors cursor-pointer`}
+      className={`relative flex items-center gap-1.5 p-1.5 bg-[var(--color-surface)] rounded-lg border ${consistentBorderColor} group hover:bg-[var(--color-surfaceHover)] transition-colors cursor-pointer`}
     >
-      <div className="shrink-0 p-1 bg-purple-400/10 rounded-lg">
+      <div className="shrink-0 p-1 bg-[var(--color-surface)] rounded-lg">
         <Bell className="w-3 h-3 text-purple-500" />
       </div>
 
@@ -46,7 +43,7 @@ function MiniReminderCard({ reminder, onUnlink, onClick }: MiniReminderCardProps
         <div className="flex items-center gap-1.5">
           <span className="flex items-center gap-0.5 text-xs text-[var(--color-textSecondary)]">
             <Clock className="w-2.5 h-2.5" />
-            {formatDistanceToNow(new Date(reminder.dueDateTime), { addSuffix: true })}
+            {formatDistanceStrict(new Date(reminder.dueDateTime), new Date(), { addSuffix: true })}
           </span>
           {reminder.isCompleted && (
             <span className="inline-flex items-center gap-0.5 px-1 py-0.5 text-xs font-medium bg-green-900/20 text-green-400 rounded">
@@ -63,7 +60,7 @@ function MiniReminderCard({ reminder, onUnlink, onClick }: MiniReminderCardProps
             e.stopPropagation();
             onUnlink(reminder.id);
           }}
-          className={`absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 p-0.5 ${getItemBackground()} text-[var(--color-textSecondary)] hover:text-purple-500 hover:bg-purple-400/10 rounded-full border ${getBorderStyle()} transition-all z-10`}
+          className={`absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 p-0.5 bg-[var(--color-surface)] text-purple-500 hover:text-purple-600 hover:bg-[var(--color-surfaceHover)] rounded-full border ${consistentBorderColor} transition-all z-10`}
         >
           <X className="w-2.5 h-2.5" />
         </button>
@@ -77,16 +74,10 @@ interface SuggestedReminderCardProps {
   reminder: Reminder & { similarity: number };
   onLink: (reminderId: string) => void;
   isLinking?: boolean;
+  consistentBorderColor: string;
 }
 
-function SuggestedReminderCard({ reminder, onLink, isLinking = false }: SuggestedReminderCardProps) {
-  const { theme } = useTheme();
-
-  const getBorderStyle = () => {
-    if (theme === 'midnight') return 'border-white/5';
-    return 'border-[var(--color-border)]';
-  };
-
+function SuggestedReminderCard({ reminder, onLink, isLinking = false, consistentBorderColor }: SuggestedReminderCardProps) {
   const formatSimilarity = (score: number) => {
     return `${Math.round(score * 100)}%`;
   };
@@ -95,10 +86,10 @@ function SuggestedReminderCard({ reminder, onLink, isLinking = false }: Suggeste
     <motion.div
       initial={{ opacity: 0, y: 5 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`relative flex items-center gap-1.5 p-1.5 bg-purple-50 dark:bg-purple-900/10 rounded-lg border border-purple-200 dark:border-purple-800/30 group hover:bg-purple-100 dark:hover:bg-purple-900/20 transition-colors cursor-pointer`}
+      className={`relative flex items-center gap-1.5 p-1.5 bg-[var(--color-surface)] rounded-lg border ${consistentBorderColor} group hover:bg-[var(--color-surfaceHover)] transition-colors cursor-pointer`}
       onClick={() => !isLinking && onLink(reminder.id)}
     >
-      <div className="shrink-0 p-1 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+      <div className="shrink-0 p-1 bg-[var(--color-surface)] rounded-lg">
         <Bell className="w-3 h-3 text-purple-500" />
       </div>
 
@@ -110,9 +101,9 @@ function SuggestedReminderCard({ reminder, onLink, isLinking = false }: Suggeste
         <div className="flex items-center gap-1.5">
           <span className="flex items-center gap-0.5 text-xs text-[var(--color-textSecondary)]">
             <Clock className="w-2.5 h-2.5" />
-            {formatDistanceToNow(new Date(reminder.dueDateTime), { addSuffix: true })}
+            {formatDistanceStrict(new Date(reminder.dueDateTime), new Date(), { addSuffix: true })}
           </span>
-          <span className="inline-flex items-center px-1 py-0.5 text-[8px] font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-500 rounded">
+          <span className="inline-flex items-center px-1 py-0.5 text-[8px] font-medium bg-[var(--color-surface)] text-purple-500 rounded">
             Match: {formatSimilarity(reminder.similarity)}
           </span>
         </div>
@@ -124,7 +115,7 @@ function SuggestedReminderCard({ reminder, onLink, isLinking = false }: Suggeste
           e.stopPropagation();
           onLink(reminder.id);
         }}
-        className={`absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 p-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-500 hover:text-purple-600 rounded-full border ${getBorderStyle()} transition-all z-10`}
+        className={`absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 p-0.5 bg-[var(--color-surface)] text-purple-500 hover:text-purple-600 hover:bg-[var(--color-surfaceHover)] rounded-full border ${consistentBorderColor} transition-all z-10`}
         disabled={isLinking}
       >
         <Plus className="w-2.5 h-2.5" />
@@ -137,21 +128,36 @@ interface LinkedRemindersPanelProps {
   reminders: LinkedReminder[];
   onUnlink?: (reminderId: string) => void;
   onLink?: (reminderId: string) => Promise<void>;
-  currentNote?: Note;
+  suggestedReminders?: SuggestionItem[];
+  isLoadingSuggestions?: boolean;
 }
 
 export function LinkedRemindersPanel({
   reminders,
   onUnlink,
   onLink,
-  currentNote
+  suggestedReminders = [],
+  isLoadingSuggestions = false
 }: LinkedRemindersPanelProps) {
   const { reminders: allReminders } = useReminders();
   const { theme } = useTheme();
   const [selectedReminder, setSelectedReminder] = useState<Reminder | null>(null);
-  const [suggestedReminders, setSuggestedReminders] = useState<Array<Reminder & { similarity: number }>>([]);
-  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [linkingReminderId, setLinkingReminderId] = useState<string | null>(null);
+  const [processedSuggestions, setProcessedSuggestions] = useState<Array<Reminder & { similarity: number }>>([]);
+
+  const consistentBorderColor = (() => {
+    switch (theme) {
+      case 'midnight':
+        return 'border-white/10';
+      case 'dark':
+        return 'border-gray-700/30';
+      case 'full-dark':
+        return 'border-white/10';
+      case 'light':
+      default:
+        return 'border-[var(--color-border)]';
+    }
+  })();
 
   const getContainerBackground = () => {
     if (theme === 'dark') return 'bg-[#111827]';
@@ -161,51 +167,28 @@ export function LinkedRemindersPanel({
 
   // Load suggested reminders when there are no linked reminders
   useEffect(() => {
-    if (!currentNote || !allReminders.length || !onLink) return;
+    if (!allReminders.length || !onLink) {
+      setProcessedSuggestions([]);
+      return;
+    }
 
-    const loadSuggestedReminders = async () => {
-      setIsLoadingSuggestions(true);
-      try {
-        const linkedReminderIds = reminders.map(r => r.id);
-        const suggestions = await similarContentService.findSimilarContent(
-          {
-            id: currentNote.id,
-            title: currentNote.title,
-            content: currentNote.content,
-            tags: currentNote.tags
-          },
-          [], // No notes needed
-          [], // No tasks needed
-          [], // No ideas needed
-          allReminders,
-          linkedReminderIds,
-          3 // Show max 3 suggestions
-        );
+    const reminderSuggestionsFromProp = suggestedReminders.filter(s => s.type === 'reminder');
 
-        // Filter to only reminder type suggestions
-        const reminderSuggestions = suggestions
-          .filter(s => s.type === 'reminder' && s.similarity > 0.3)
-          .map(s => {
-            const fullReminder = allReminders.find(r => r.id === s.id);
-            if (!fullReminder) return null;
-            return {
-              ...fullReminder,
-              similarity: s.similarity
-            };
-          })
-          .filter(Boolean) // Remove nulls
-          .sort((a, b) => b!.similarity - a!.similarity) as Array<Reminder & { similarity: number }>;
+    const newProcessedSuggestions = reminderSuggestionsFromProp
+      .map(s => {
+        const fullReminder = allReminders.find(r => r.id === s.id);
+        if (!fullReminder) return null;
+        return {
+          ...fullReminder,
+          similarity: s.similarity
+        };
+      })
+      .filter(Boolean) // Remove nulls
+      .sort((a, b) => b!.similarity - a!.similarity) as Array<Reminder & { similarity: number }>;
 
-        setSuggestedReminders(reminderSuggestions);
-      } catch (err) {
-        console.error('Failed to get suggested reminders:', err);
-      } finally {
-        setIsLoadingSuggestions(false);
-      }
-    };
+    setProcessedSuggestions(newProcessedSuggestions);
 
-    loadSuggestedReminders();
-  }, [currentNote, allReminders, onLink, reminders]);
+  }, [suggestedReminders, allReminders, onLink]);
 
   const handleLinkReminder = async (reminderId: string) => {
     if (!onLink) return;
@@ -213,8 +196,6 @@ export function LinkedRemindersPanel({
     setLinkingReminderId(reminderId);
     try {
       await onLink(reminderId);
-      // After successful linking, remove from suggestions
-      setSuggestedReminders(prev => prev.filter(r => r.id !== reminderId));
     } catch (error) {
       console.error('Failed to link reminder:', error);
     } finally {
@@ -222,78 +203,87 @@ export function LinkedRemindersPanel({
     }
   };
 
-  if (reminders.length === 0) {
-    return (
-      <div className={`p-3 ${getContainerBackground()}`}>
-        {suggestedReminders.length > 0 || isLoadingSuggestions ? (
-          <div className="space-y-2">
-            <div className="flex items-center gap-1.5 mb-2">
-              <Sparkles className="w-3 h-3 text-purple-500" />
-              <p className="text-xs font-medium text-[var(--color-text)]">Suggested Reminders</p>
-              {isLoadingSuggestions && <Loader className="w-2.5 h-2.5 text-purple-500 animate-spin ml-auto" />}
-            </div>
+  const hasActualSuggestions = processedSuggestions && processedSuggestions.length > 0;
+  const hasLinkedReminders = reminders && reminders.length > 0;
 
-            <div className="flex flex-wrap gap-1.5">
-              {suggestedReminders.map(reminder => (
-                <SuggestedReminderCard
-                  key={reminder.id}
-                  reminder={reminder}
-                  onLink={handleLinkReminder}
-                  isLinking={linkingReminderId === reminder.id}
-                />
-              ))}
-            </div>
-          </div>
-        ) : (
-          <p className="text-xs text-[var(--color-textSecondary)] text-center">No linked reminders</p>
-        )}
+  // Determine if this section should render at all (if no linked and no suggested and not loading)
+  if (!hasLinkedReminders && !hasActualSuggestions && !isLoadingSuggestions) {
+    return (
+      <div className={`p-3 ${getContainerBackground()} rounded-lg border ${consistentBorderColor}`}>
+        <p className="text-xs text-center text-[var(--color-textSecondary)]">
+          No reminders linked or suggested yet.
+        </p>
       </div>
     );
   }
 
   return (
-    <>
-      <div className={`p-1.5 ${getContainerBackground()}`}>
-        <div className="flex flex-wrap gap-1.5">
-          {reminders.map(linkedReminder => {
-            // Find the full reminder object from the reminders context
-            const fullReminder = allReminders.find(r => r.id === linkedReminder.id);
-            if (!fullReminder) return null;
-
-            return (
-              <MiniReminderCard
-                key={linkedReminder.id}
-                reminder={fullReminder}
-                onUnlink={onUnlink}
-                onClick={() => setSelectedReminder(fullReminder)}
-              />
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Show suggestions below linked reminders if available */}
-      {(suggestedReminders.length > 0 || isLoadingSuggestions) && (
-        <div className={`px-1.5 pb-1.5 ${getContainerBackground()}`}>
-          <div className="border-t border-[var(--color-border)]/10 dark:border-white/5 midnight:border-white/5 pt-1.5 mt-1">
-            <div className="flex items-center gap-1.5 mb-2">
-              <Sparkles className="w-3 h-3 text-purple-500" />
-              <p className="text-xs font-medium text-[var(--color-text)]">Suggested Reminders</p>
-              {isLoadingSuggestions && <Loader className="w-2.5 h-2.5 text-purple-500 animate-spin ml-auto" />}
-            </div>
-
-            <div className="flex flex-wrap gap-1.5">
-              {suggestedReminders.map(reminder => (
-                <SuggestedReminderCard
+    <div className={`p-3 ${getContainerBackground()} rounded-lg border ${consistentBorderColor} space-y-3`}>
+      {/* Linked Reminders Section */}
+      {hasLinkedReminders && (
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-[var(--color-text)]">Linked Reminders</p>
+          <div className="flex flex-wrap gap-1.5">
+            {reminders.map((reminder) => {
+              // Find the full reminder details from allReminders or fetch if necessary
+              const fullReminderDetails = allReminders.find(r => r.id === reminder.id);
+              if (!fullReminderDetails) {
+                // Optionally, show a placeholder or fetch the reminder
+                // For now, skipping if not found in allReminders to prevent errors
+                return null;
+              }
+              return (
+                <MiniReminderCard
                   key={reminder.id}
-                  reminder={reminder}
-                  onLink={handleLinkReminder}
-                  isLinking={linkingReminderId === reminder.id}
+                  reminder={fullReminderDetails}
+                  onClick={() => setSelectedReminder(fullReminderDetails)}
+                  onUnlink={onUnlink ? () => onUnlink(reminder.id) : undefined}
+                  consistentBorderColor={consistentBorderColor}
                 />
-              ))}
-            </div>
+              );
+            })}
           </div>
         </div>
+      )}
+
+      {/* Suggested Reminders Section */}
+      {(hasActualSuggestions || isLoadingSuggestions) && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-1.5 mb-1">
+            <Sparkles className="w-3 h-3 text-purple-500" />
+            <p className="text-xs font-medium text-[var(--color-text)]">Suggested Reminders</p>
+          </div>
+
+          <div className="flex flex-wrap gap-1.5">
+            {isLoadingSuggestions && !hasActualSuggestions ? (
+              <>
+                <GenericSuggestionSkeleton type="reminder" />
+                <GenericSuggestionSkeleton type="reminder" />
+              </>
+            ) : hasActualSuggestions ? (
+              processedSuggestions.map((suggestion) => (
+                <SuggestedReminderCard
+                  key={suggestion.id}
+                  reminder={suggestion}
+                  onLink={handleLinkReminder}
+                  isLinking={linkingReminderId === suggestion.id}
+                  consistentBorderColor={consistentBorderColor}
+                />
+              ))
+            ) : (
+              <p className="text-xs text-[var(--color-textSecondary)] w-full text-center py-2">
+                No relevant reminders found to suggest.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Empty state for the whole panel if absolutely nothing to show */}
+      {!hasLinkedReminders && !hasActualSuggestions && !isLoadingSuggestions && (
+        <p className="text-xs text-center text-[var(--color-textSecondary)] py-4">
+          No reminders linked or suggested yet.
+        </p>
       )}
 
       {selectedReminder && (
@@ -303,6 +293,6 @@ export function LinkedRemindersPanel({
           reminder={selectedReminder}
         />
       )}
-    </>
+    </div>
   );
 } 

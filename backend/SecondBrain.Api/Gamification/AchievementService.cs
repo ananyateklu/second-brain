@@ -168,7 +168,7 @@ namespace SecondBrain.Api.Gamification
         {
             var unlockedAchievements = new List<UnlockedAchievement>();
             var linkCount = await _context.NoteLinks
-                .CountAsync(nl => nl.Note.UserId == user.Id && !nl.IsDeleted);
+                .CountAsync(nl => nl.Note != null && nl.Note.UserId == user.Id && !nl.IsDeleted);
 
             // Check First Link Achievement
             if (linkCount == 1)

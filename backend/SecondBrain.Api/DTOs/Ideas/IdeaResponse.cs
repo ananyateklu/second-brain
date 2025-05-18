@@ -22,5 +22,6 @@ namespace SecondBrain.Api.DTOs.Ideas
         public required string Id { get; set; }
         public required string Type { get; set; }
         public required string Title { get; set; }
+        public string? LinkType { get; set; }
     }
 }

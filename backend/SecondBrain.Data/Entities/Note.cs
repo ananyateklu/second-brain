@@ -40,10 +40,7 @@ namespace SecondBrain.Data.Entities
         [ForeignKey("UserId")]
         public User User { get; set; } = null!;
 
-        // Navigation Properties
+        // Navigation Properties for generalized links originating from this Note
         public ICollection<NoteLink> NoteLinks { get; set; } = new List<NoteLink>();
-        public ICollection<TaskLink> TaskLinks { get; set; } = new List<TaskLink>();
-        public ICollection<TaskItemNote> TaskItemNotes { get; set; } = new List<TaskItemNote>();
-        public ICollection<ReminderLink> ReminderLinks { get; set; } = new List<ReminderLink>();
     }
 }

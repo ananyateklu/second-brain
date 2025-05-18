@@ -9,6 +9,8 @@ using SecondBrain.Api.Gamification;
 using System.Text.Json;
 using SecondBrain.Api.Enums;
 using SecondBrain.Services.Gamification;
+using SecondBrain.Api.DTOs.Ideas;
+using SecondBrain.Api.Services;
 
 namespace SecondBrain.Api.Controllers
 {
@@ -34,57 +36,105 @@ namespace SecondBrain.Api.Controllers
         private readonly IXPService _xpService;
         private readonly IAchievementService _achievementService;
         private readonly ILogger<NotesController> _logger;
+        private readonly IActivityLogger _activityLogger;
         private const string USER_ID_NOT_FOUND_ERROR = "User ID not found in token.";
         private const string NOTE_NOT_FOUND_ERROR = "Note not found.";
 
-        public NotesController(DataContext context, IXPService xpService, IAchievementService achievementService, ILogger<NotesController> logger)
+        public NotesController(DataContext context, IXPService xpService, IAchievementService achievementService, ILogger<NotesController> logger, IActivityLogger activityLogger)
         {
             _context = context;
             _xpService = xpService;
             _achievementService = achievementService;
             _logger = logger;
+            _activityLogger = activityLogger;
         }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<NoteResponse>>> GetNotes()
         {
-            var userId = GetUserId();
-            var notes = await _context.Notes
-                .Include(n => n.NoteLinks)
-                    .ThenInclude(nl => nl.LinkedNote)
-                .Include(n => n.TaskLinks.Where(tl => !tl.IsDeleted))
-                    .ThenInclude(tl => tl.Task)
-                .Include(n => n.ReminderLinks.Where(rl => !rl.IsDeleted))
-                    .ThenInclude(rl => rl.Reminder)
-                .Where(n => n.UserId == userId && !n.IsDeleted)
-                .ToListAsync();
-
-            var reminderLinks = await _context.ReminderLinks
-                .Where(rl => !rl.IsDeleted && notes.Select(n => n.Id).Contains(rl.LinkedItemId))
-                .Include(rl => rl.Reminder)
-                .ToListAsync();
-
-            var responses = notes.Select(note =>
+            try
             {
-                var response = NoteResponse.FromEntity(note);
-                response.LinkedReminders = reminderLinks
-                    .Where(rl => rl.LinkedItemId == note.Id && !rl.IsDeleted)
-                    .Select(rl => new LinkedReminderDto
-                    {
-                        Id = rl.ReminderId,
-                        Title = rl.Reminder.Title,
-                        Description = rl.Reminder.Description ?? string.Empty,
-                        DueDateTime = rl.Reminder.DueDateTime,
-                        IsCompleted = rl.Reminder.IsCompleted,
-                        IsSnoozed = rl.Reminder.IsSnoozed,
-                        CreatedAt = rl.Reminder.CreatedAt,
-                        UpdatedAt = rl.Reminder.UpdatedAt
-                    })
-                    .ToList();
-                return response;
-            });
+                var userId = GetUserId();
 
-            return Ok(responses);
+                var notes = await _context.Notes
+                    .Where(n => n.UserId == userId && !n.IsArchived && !n.IsDeleted)
+                    .ToListAsync(); // Step 1: Get all relevant notes first
+
+                var noteIds = notes.Select(n => n.Id).ToList();
+
+                // Step 2: Get all links for these notes
+                var allLinksForNotes = await _context.NoteLinks
+                    .Where(link => noteIds.Contains(link.NoteId) && !link.IsDeleted)
+                    .ToListAsync();
+
+                // Step 3: Collect all unique LinkedItemIds and their types
+                var allLinkedItemIds = allLinksForNotes
+                    .Select(link => link.LinkedItemId)
+                    .Distinct()
+                    .ToList();
+
+                // Step 4: Fetch all linked items from their respective tables
+                var linkedNotesFromDb = await _context.Notes
+                    .Where(n => allLinkedItemIds.Contains(n.Id) && n.UserId == userId && !n.IsDeleted && !n.IsArchived)
+                    .Select(n => new { n.Id, n.Title, Type = "Note" })
+                    .ToListAsync();
+
+                var linkedIdeasFromDb = await _context.Ideas
+                    .Where(i => allLinkedItemIds.Contains(i.Id) && i.UserId == userId && !i.IsDeleted && !i.IsArchived)
+                    .Select(i => new { i.Id, i.Title, Type = "Idea" })
+                    .ToListAsync();
+                
+                var linkedTasksFromDb = await _context.Tasks
+                    .Where(t => allLinkedItemIds.Contains(t.Id) && t.UserId == userId && !t.IsDeleted)
+                    .Select(t => new { t.Id, t.Title, Type = "Task" })
+                    .ToListAsync();
+
+                var linkedRemindersFromDb = await _context.Reminders
+                    .Where(r => allLinkedItemIds.Contains(r.Id) && r.UserId == userId && !r.IsDeleted)
+                    .Select(r => new { r.Id, r.Title, Type = "Reminder" })
+                    .ToListAsync();
+
+                var linkedItemsLookup = linkedNotesFromDb
+                    .Cast<dynamic>()
+                    .Concat(linkedIdeasFromDb)
+                    .Concat(linkedTasksFromDb)
+                    .Concat(linkedRemindersFromDb)
+                    .ToDictionary(item => (string)item.Id, item => new { Type = (string)item.Type, Title = (string)item.Title });
+
+                // Step 5: Construct the response
+                var responses = notes.Select(note =>
+                {
+                    var noteSpecificLinks = allLinksForNotes.Where(l => l.NoteId == note.Id).ToList();
+                    var linkedItemsForThisNote = noteSpecificLinks
+                        .Select(link => {
+                            if (linkedItemsLookup.TryGetValue(link.LinkedItemId, out var itemDetails)) {
+                                // Ensure itemDetails.Type matches link.LinkedItemType if necessary for stricter validation
+                                // For now, we trust the ID lookup is sufficient if IDs are globally unique across these types
+                                // or that the link.LinkedItemType was correctly stored.
+                                return new DTOs.Ideas.LinkedItemResponse // Using Ideas.LinkedItemResponse for consistency
+                                {
+                                    Id = link.LinkedItemId,
+                                    Type = itemDetails.Type, // Or link.LinkedItemType if preferred for source of truth
+                                    Title = itemDetails.Title,
+                                    LinkType = link.LinkType
+                                };
+                            }
+                            _logger.LogWarning("Could not find details for linked item {LinkedItemId} of type {LinkedItemType} for note {NoteId}", link.LinkedItemId, link.LinkedItemType, note.Id);
+                            return null;
+                        })
+                        .Where(x => x != null)
+                        .Select(x => x!)
+                        .ToList();
+                    return NoteResponse.FromEntity(note, linkedItemsForThisNote);
+                }).ToList();
+
+                return Ok(responses);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving notes");
+                return StatusCode(500, new { error = "An error occurred while retrieving notes." });
+            }
         }
 
         [HttpPost]
@@ -92,19 +142,14 @@ namespace SecondBrain.Api.Controllers
         {
             try
             {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-                if (string.IsNullOrEmpty(userId))
-                {
-                    return Unauthorized(new { error = USER_ID_NOT_FOUND_ERROR });
-                }
+                var userId = GetUserId();
 
                 var note = new Note
                 {
                     Id = Guid.NewGuid().ToString(),
                     Title = request.Title,
                     Content = request.Content,
-                    Tags = string.Join(",", request.Tags ?? new List<string>()),
+                    Tags = request.Tags != null && request.Tags.Any() ? string.Join(",", request.Tags) : null,
                     IsPinned = request.IsPinned,
                     IsFavorite = request.IsFavorite,
                     IsArchived = false,
@@ -116,40 +161,21 @@ namespace SecondBrain.Api.Controllers
                 _context.Notes.Add(note);
                 await _context.SaveChangesAsync();
 
-                // Award XP for creating a note
-                var (newXP, newLevel, leveledUp) = await _xpService.AwardXPAsync(userId, "createnote");
-
-                // Check for achievements
-                var unlockedAchievements = await _achievementService.CheckAndUnlockAchievementsAsync(userId, "createnote");
-
-                _logger.LogInformation(
-                    "Note created: {NoteId}, XP awarded: {XP}, Level: {Level}, Achievements: {AchievementCount}",
-                    note.Id, newXP, newLevel, unlockedAchievements.Count
+                await _activityLogger.LogActivityAsync(
+                    userId,
+                    ActivityActionType.CREATE.ToString(),
+                    ActivityItemType.NOTE.ToString(),
+                    note.Id,
+                    note.Title,
+                    $"Created note '{note.Title}'"
                 );
 
-                var response = new NoteResponse
-                {
-                    Id = note.Id,
-                    Title = note.Title,
-                    Content = note.Content,
-                    Tags = !string.IsNullOrEmpty(note.Tags)
-                        ? note.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList()
-                        : new List<string>(),
-                    IsPinned = note.IsPinned,
-                    IsFavorite = note.IsFavorite,
-                    IsArchived = note.IsArchived,
-                    ArchivedAt = note.ArchivedAt,
-                    CreatedAt = note.CreatedAt,
-                    UpdatedAt = note.UpdatedAt,
-                    LinkedNoteIds = new List<string>(),
-                    XPAwarded = XPValues.CreateNote,
-                    NewTotalXP = newXP,
-                    LeveledUp = leveledUp,
-                    NewLevel = newLevel,
-                    UnlockedAchievements = unlockedAchievements
-                };
+                var (newXP, newLevel, leveledUp) = await _xpService.AwardXPAsync(userId, "createnote");
+                var unlockedAchievements = await _achievementService.CheckAndUnlockAchievementsAsync(userId, "createnote");
+                
+                var noteResponse = NoteResponse.FromEntity(note, new List<LinkedItemResponse>(), XPValues.CreateNote, newXP, leveledUp, newLevel, unlockedAchievements ?? new List<UnlockedAchievement>());
 
-                return CreatedAtAction(nameof(GetNoteById), new { id = note.Id }, response);
+                return CreatedAtAction(nameof(GetNoteById), new { id = note.Id }, noteResponse);
             }
             catch (Exception ex)
             {
@@ -162,252 +188,355 @@ namespace SecondBrain.Api.Controllers
         public async Task<ActionResult<NoteResponse>> GetNoteById(string id)
         {
             var userId = GetUserId();
+            // Use the internal helper method
+            var noteResponse = await GetNoteByIdInternal(id, userId);
+
+            if (noteResponse == null)
+            {
+                return NotFound(new { error = NOTE_NOT_FOUND_ERROR });
+            }
+            return Ok(noteResponse);
+        }
+
+        [HttpPost("{noteId}/links")]
+        public async Task<ActionResult<NoteResponse>> AddLink(string noteId, [FromBody] AddNoteLinkRequest request)
+        {
+            var userId = GetUserId();
             var note = await _context.Notes
                 .Include(n => n.NoteLinks)
-                    .ThenInclude(nl => nl.LinkedNote)
-                .Include(n => n.TaskLinks.Where(tl => !tl.IsDeleted))
-                    .ThenInclude(tl => tl.Task)
-                .Include(n => n.ReminderLinks.Where(rl => !rl.IsDeleted))
-                    .ThenInclude(rl => rl.Reminder)
+                .FirstOrDefaultAsync(n => n.Id == noteId && n.UserId == userId && !n.IsDeleted && !n.IsArchived);
+
+            if (note == null)
+            {
+                return NotFound(new { error = "Source note not found or is deleted/archived." });
+            }
+
+            bool targetExists = false;
+            string targetTitle = "Unknown Item";
+            string linkedItemTypeNormalized = request.LinkedItemType.ToLower();
+
+            switch (linkedItemTypeNormalized)
+            {
+                case "note":
+                    var linkedNote = await _context.Notes.FirstOrDefaultAsync(n => n.Id == request.LinkedItemId && n.UserId == userId && !n.IsDeleted && !n.IsArchived);
+                    if (linkedNote != null) { targetExists = true; targetTitle = linkedNote.Title; }
+                    break;
+                case "idea":
+                    var linkedIdea = await _context.Ideas.FirstOrDefaultAsync(i => i.Id == request.LinkedItemId && i.UserId == userId && !i.IsDeleted && !i.IsArchived);
+                     if (linkedIdea != null) { targetExists = true; targetTitle = linkedIdea.Title; }
+                    break;
+                case "task":
+                    var linkedTask = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == request.LinkedItemId && t.UserId == userId && !t.IsDeleted);
+                    if (linkedTask != null) { targetExists = true; targetTitle = linkedTask.Title; }
+                    break;
+                case "reminder":
+                    var linkedReminder = await _context.Reminders.FirstOrDefaultAsync(r => r.Id == request.LinkedItemId && r.UserId == userId && !r.IsDeleted);
+                    if (linkedReminder != null) { targetExists = true; targetTitle = linkedReminder.Title; }
+                    break;
+                default:
+                    return BadRequest(new { error = "Invalid LinkedItemType." });
+            }
+
+            if (!targetExists)
+            {
+                return NotFound(new { error = $"Target {request.LinkedItemType} not found, or it is deleted/archived." });
+            }
+
+            if (noteId == request.LinkedItemId && linkedItemTypeNormalized == "note") {
+                 return BadRequest(new { error = "Cannot link a note to itself." });
+            }
+            
+            // Check if an active link already exists
+            var existingActiveLink = await _context.NoteLinks
+                .FirstOrDefaultAsync(nl => 
+                    nl.NoteId == noteId && 
+                    nl.LinkedItemId == request.LinkedItemId && 
+                    nl.LinkedItemType == request.LinkedItemType && 
+                    !nl.IsDeleted);
+
+            if (existingActiveLink != null)
+            {
+                return BadRequest(new { error = "Link already exists." });
+            }
+
+            // Check for a soft-deleted link that we can reactivate
+            var existingSoftDeletedLink = await _context.NoteLinks
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(nl => 
+                    nl.NoteId == noteId && 
+                    nl.LinkedItemId == request.LinkedItemId && 
+                    nl.LinkedItemType == request.LinkedItemType && 
+                    nl.IsDeleted);
+
+            if (existingSoftDeletedLink != null)
+            {
+                // Reactivate the soft-deleted link
+                existingSoftDeletedLink.IsDeleted = false;
+                existingSoftDeletedLink.DeletedAt = null;
+                existingSoftDeletedLink.LinkType = request.LinkType;
+                existingSoftDeletedLink.CreatedAt = DateTime.UtcNow;
+                _logger.LogInformation("Reactivated link from Note {NoteId} to {LinkedItemType} {LinkedItemId}", noteId, request.LinkedItemType, request.LinkedItemId);
+            }
+            else
+            {
+                // Create a new link if no existing link (active or deleted) was found
+                var newLink = new NoteLink
+                {
+                    NoteId = noteId,
+                    LinkedItemId = request.LinkedItemId,
+                    LinkedItemType = request.LinkedItemType,
+                    LinkType = request.LinkType,
+                    CreatedBy = userId,
+                    CreatedAt = DateTime.UtcNow
+                };
+                _context.NoteLinks.Add(newLink);
+                _logger.LogInformation("Created link from Note {NoteId} to {LinkedItemType} {LinkedItemId}", noteId, request.LinkedItemType, request.LinkedItemId);
+            }
+
+            await _context.SaveChangesAsync();
+            await _activityLogger.LogActivityAsync(
+                userId,
+                ActivityActionType.LINK.ToString(),
+                ActivityItemType.NOTE.ToString(),
+                note.Id,
+                note.Title,
+                $"Linked note '{note.Title}' to {request.LinkedItemType} '{targetTitle}'"
+            );
+
+            var (newXP, newLevel, leveledUp) = await _xpService.AwardXPAsync(userId, "createlink");
+            var unlockedAchievements = await _achievementService.CheckAndUnlockAchievementsAsync(userId, "createlink");
+
+            var updatedNote = await _context.Notes
+                .Include(n => n.NoteLinks.Where(link => !link.IsDeleted))
+                .FirstOrDefaultAsync(n => n.Id == noteId && n.UserId == userId);
+
+            if (updatedNote == null)
+            {
+                 return NotFound(new { error = "Note not found after update." });
+            }
+            
+            var updatedNoteLinks = updatedNote.NoteLinks ?? new List<NoteLink>();
+            var currentLinkedItemIds = updatedNoteLinks
+                .Select(link => link.LinkedItemId)
+                .Distinct()
+                .ToList();
+
+            var currentLinkedNotes = await _context.Notes
+                .Where(n => currentLinkedItemIds.Contains(n.Id) && n.UserId == userId && !n.IsDeleted && !n.IsArchived)
+                .Select(n => new { n.Id, n.Title, Type = "Note" })
+                .ToListAsync();
+            var currentLinkedIdeas = await _context.Ideas
+                .Where(i => currentLinkedItemIds.Contains(i.Id) && i.UserId == userId && !i.IsDeleted && !i.IsArchived)
+                .Select(i => new { i.Id, i.Title, Type = "Idea" })
+                .ToListAsync();
+            var currentLinkedTasks = await _context.Tasks
+                .Where(t => currentLinkedItemIds.Contains(t.Id) && t.UserId == userId && !t.IsDeleted)
+                .Select(t => new { t.Id, t.Title, Type = "Task" })
+                .ToListAsync();
+            var currentLinkedReminders = await _context.Reminders
+                .Where(r => currentLinkedItemIds.Contains(r.Id) && r.UserId == userId && !r.IsDeleted)
+                .Select(r => new { r.Id, r.Title, Type = "Reminder" })
+                .ToListAsync();
+
+            var currentLinkedItemsLookup = currentLinkedNotes
+                .Cast<dynamic>()
+                .Concat(currentLinkedIdeas)
+                .Concat(currentLinkedTasks)
+                .Concat(currentLinkedReminders)
+                .ToDictionary(item => (string)item.Id, item => new { Type = (string)item.Type, Title = (string)item.Title });
+
+            var linkedItemsForResponse = updatedNoteLinks
+                .Select(link => {
+                    if (currentLinkedItemsLookup.TryGetValue(link.LinkedItemId, out var itemDetails))
+                    {
+                        return new LinkedItemResponse
+                        {
+                            Id = link.LinkedItemId,
+                            Type = itemDetails.Type,
+                            Title = itemDetails.Title,
+                            LinkType = link.LinkType 
+                        };
+                    }
+                    return null;
+                })
+                .Where(x => x != null)
+                .Select(x => x!)
+                .ToList();
+            
+            var response = NoteResponse.FromEntity(updatedNote, linkedItemsForResponse, XPValues.CreateLink, newXP, leveledUp, newLevel, unlockedAchievements ?? new List<UnlockedAchievement>());
+
+            return Ok(response);
+        }
+
+        [HttpDelete("{noteId}/links/{linkedItemType}/{linkedItemId}")]
+        public async Task<ActionResult<NoteResponse>> RemoveLink(string noteId, string linkedItemType, string linkedItemId)
+        {
+            var userId = GetUserId();
+            var note = await _context.Notes
+                .Include(n => n.NoteLinks)
+                .FirstOrDefaultAsync(n => n.Id == noteId && n.UserId == userId && !n.IsDeleted && !n.IsArchived);
+
+            if (note == null)
+            {
+                return NotFound(new { error = "Source note not found or is deleted/archived." });
+            }
+
+            var linkToRemove = await _context.NoteLinks.FirstOrDefaultAsync(nl =>
+                nl.NoteId == noteId &&
+                nl.LinkedItemId == linkedItemId &&
+                nl.LinkedItemType == linkedItemType &&
+                !nl.IsDeleted);
+
+            if (linkToRemove == null)
+            {
+                return NotFound(new { error = "Link not found." });
+            }
+
+            linkToRemove.IsDeleted = true;
+            linkToRemove.DeletedAt = DateTime.UtcNow;
+            _logger.LogInformation("Soft deleted link from Note {NoteId} to {LinkedItemType} {LinkedItemId}", noteId, linkedItemType, linkedItemId);
+            
+            string targetTitle = "Unknown Item";
+            string linkedItemTypeNormalized = linkedItemType.ToLower();
+             switch (linkedItemTypeNormalized)
+            {
+                case "note":
+                    var linkedNote = await _context.Notes.FirstOrDefaultAsync(n => n.Id == linkedItemId);
+                    if (linkedNote != null) targetTitle = linkedNote.Title;
+                    break;
+                case "idea":
+                    var linkedIdea = await _context.Ideas.FirstOrDefaultAsync(i => i.Id == linkedItemId);
+                    if (linkedIdea != null) targetTitle = linkedIdea.Title;
+                    break;
+                case "task":
+                    var linkedTask = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == linkedItemId);
+                     if (linkedTask != null) targetTitle = linkedTask.Title;
+                    break;
+                case "reminder":
+                    var linkedReminder = await _context.Reminders.FirstOrDefaultAsync(r => r.Id == linkedItemId);
+                    if (linkedReminder != null) targetTitle = linkedReminder.Title;
+                    break;
+            }
+
+            await _context.SaveChangesAsync();
+            await _activityLogger.LogActivityAsync(
+                userId,
+                ActivityActionType.UNLINK.ToString(),
+                ActivityItemType.NOTE.ToString(),
+                note.Id,
+                note.Title,
+                $"Unlinked note '{note.Title}' from {linkedItemType} '{targetTitle}'"
+            );
+
+            // Fetch the main note entity for the response. Using AsNoTracking to ensure we get DB state if needed,
+            // though for the note's own properties, it might not be strictly necessary if no other changes were made.
+            var noteEntityForResponse = await _context.Notes
+                                             .AsNoTracking() 
+                                             .FirstOrDefaultAsync(n => n.Id == noteId && n.UserId == userId && !n.IsDeleted);
+
+            if (noteEntityForResponse == null)
+            {
+                _logger.LogError("[NotesController] RemoveLink: Note {NoteId} not found after attempting to remove link for response generation.", noteId);
+                // It's unlikely the note itself would disappear, but good to check.
+                // If the original 'note' variable is still in scope and valid, we could potentially use it.
+                // However, to ensure consistency with potential (though not current) updates to the note itself, re-fetching is safer.
+                // For now, let's assume 'note' (the initially fetched one) is sufficient if noteEntityForResponse is null,
+                // or handle as a more critical error if the note is truly gone.
+                // Reverting to use the initially fetched 'note' if 'noteEntityForResponse' is null,
+                // as the primary goal is to fix the linked items.
+                // For now, let's assume 'note' (the initially fetched one) is sufficient if noteEntityForResponse is null,
+                // or handle as a more critical error if the note is truly gone.
+                noteEntityForResponse = note; 
+                if (noteEntityForResponse == null) // Double check if initial note was somehow also null (should not happen if NotFound wasn't hit earlier)
+                {
+                     _logger.LogError("[NotesController] RemoveLink: Critical error - Original note instance for {NoteId} is also null.", noteId);
+                     return StatusCode(500, new { error = "Critical error retrieving note for response after link removal." });
+                }
+            }
+            
+            var freshlyQueriedNoteLinks = await _context.NoteLinks
+                .Where(nl => nl.NoteId == noteId && !nl.IsDeleted) // Key filter: !nl.IsDeleted
+                .ToListAsync();
+
+            List<LinkedItemResponse> finalLinkedItemsForResponse;
+
+            if (freshlyQueriedNoteLinks.Any())
+            {
+                var currentLinkedItemIds = freshlyQueriedNoteLinks
+                    .Select(link => link.LinkedItemId)
+                    .Distinct()
+                    .ToList();
+            
+                var currentLinkedNotes = await _context.Notes
+                    .Where(n => currentLinkedItemIds.Contains(n.Id) && n.UserId == userId && !n.IsDeleted && !n.IsArchived)
+                    .Select(n => new { n.Id, n.Title, Type = "Note" })
+                    .ToListAsync();
+                var currentLinkedIdeas = await _context.Ideas
+                    .Where(i => currentLinkedItemIds.Contains(i.Id) && i.UserId == userId && !i.IsDeleted && !i.IsArchived)
+                    .Select(i => new { i.Id, i.Title, Type = "Idea" })
+                    .ToListAsync();
+                 var currentLinkedTasks = await _context.Tasks
+                    .Where(t => currentLinkedItemIds.Contains(t.Id) && t.UserId == userId && !t.IsDeleted)
+                    .Select(t => new { t.Id, t.Title, Type = "Task" })
+                    .ToListAsync();
+                var currentLinkedReminders = await _context.Reminders
+                    .Where(r => currentLinkedItemIds.Contains(r.Id) && r.UserId == userId && !r.IsDeleted)
+                    .Select(r => new { r.Id, r.Title, Type = "Reminder" })
+                    .ToListAsync();
+
+                var currentLinkedItemsLookup = currentLinkedNotes
+                    .Cast<dynamic>()
+                    .Concat(currentLinkedIdeas)
+                    .Concat(currentLinkedTasks)
+                    .Concat(currentLinkedReminders)
+                    .ToDictionary(item => (string)item.Id, item => new { Type = (string)item.Type, Title = (string)item.Title });
+
+                finalLinkedItemsForResponse = freshlyQueriedNoteLinks
+                    .Select(link => {
+                        if (currentLinkedItemsLookup.TryGetValue(link.LinkedItemId, out var itemDetails))
+                        {
+                            // Ensure the LinkedItemType from the link record is used if it's more reliable,
+                            // though itemDetails.Type should ideally match.
+                            return new LinkedItemResponse
+                            {
+                                Id = link.LinkedItemId,
+                                Type = link.LinkedItemType, // Prefer link's type for accuracy
+                                Title = itemDetails.Title,
+                                LinkType = link.LinkType
+                            };
+                        }
+                        _logger.LogWarning("[NotesController] RemoveLink: Details for linked item {LinkedItemId} (Type: {LinkedItemType}) for Note {NoteId} not found in lookup during response generation.", link.LinkedItemId, link.LinkedItemType, noteId);
+                        return null;
+                    })
+                    .Where(x => x != null)
+                    .Select(x => x!)
+                    .ToList();
+            }
+            else
+            {
+                finalLinkedItemsForResponse = new List<LinkedItemResponse>();
+            }
+            
+            var response = NoteResponse.FromEntity(noteEntityForResponse, finalLinkedItemsForResponse);
+
+            return Ok(response);
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteNote(string id)
+        {
+            var userId = GetUserId();
+            var note = await _context.Notes
                 .FirstOrDefaultAsync(n => n.Id == id && n.UserId == userId);
 
             if (note == null)
             {
                 return NotFound(new { error = NOTE_NOT_FOUND_ERROR });
             }
-
-            var reminderLinks = await _context.ReminderLinks
-                .Where(rl => !rl.IsDeleted && rl.LinkedItemId == id)
-                .Include(rl => rl.Reminder)
-                .ToListAsync();
-
-            var response = NoteResponse.FromEntity(note);
-            response.LinkedReminders = reminderLinks
-                .Select(rl => new LinkedReminderDto
-                {
-                    Id = rl.ReminderId,
-                    Title = rl.Reminder.Title,
-                    Description = rl.Reminder.Description ?? string.Empty,
-                    DueDateTime = rl.Reminder.DueDateTime,
-                    IsCompleted = rl.Reminder.IsCompleted,
-                    IsSnoozed = rl.Reminder.IsSnoozed,
-                    CreatedAt = rl.Reminder.CreatedAt,
-                    UpdatedAt = rl.Reminder.UpdatedAt
-                })
-                .ToList();
-
-            return Ok(response);
-        }
-
-        [HttpDelete("{id}/links/{targetNoteId}")]
-        public async Task<IActionResult> RemoveLink(string id, string targetNoteId)
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            // Soft delete approach for links
-            var links = await _context.NoteLinks
-                .Where(nl => ((nl.NoteId == id && nl.LinkedNoteId == targetNoteId) ||
-                              (nl.NoteId == targetNoteId && nl.LinkedNoteId == id)) &&
-                              !nl.IsDeleted)
-                .ToListAsync();
-
-            if (!links.Any())
-            {
-                return NotFound(new { error = "Link not found." });
-            }
-
-            // Soft delete the links instead of removing them
-            foreach (var link in links)
-            {
-                link.IsDeleted = true;
-                link.DeletedAt = DateTime.UtcNow;
-            }
             
-            await _context.SaveChangesAsync();
-
-            // Return both updated notes with their active links
-            var updatedNotes = await _context.Notes
-                .Include(n => n.NoteLinks.Where(nl => !nl.IsDeleted))
-                .ThenInclude(nl => nl.LinkedNote)
-                .Where(n => n.Id == id || n.Id == targetNoteId)
-                .ToListAsync();
-
-            // Transform to API response format
-            var responses = updatedNotes.Select(n => new NoteResponse
+            if (note.IsDeleted)
             {
-                Id = n.Id,
-                Title = n.Title,
-                Content = n.Content,
-                Tags = (n.Tags ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries).ToList(),
-                IsPinned = n.IsPinned,
-                IsFavorite = n.IsFavorite,
-                IsArchived = n.IsArchived,
-                ArchivedAt = n.ArchivedAt,
-                CreatedAt = n.CreatedAt,
-                UpdatedAt = n.UpdatedAt,
-                LinkedNoteIds = n.NoteLinks
-                    .Where(nl => !nl.IsDeleted)
-                    .Select(nl => nl.LinkedNoteId)
-                    .ToList(),
-                Links = n.NoteLinks
-                    .Where(nl => !nl.IsDeleted)
-                    .Select(nl => new NoteLinkDto
-                    {
-                        Source = n.Id,
-                        Target = nl.LinkedNoteId,
-                        Type = nl.LinkType,
-                        CreatedAt = nl.CreatedAt
-                    })
-                    .ToList()
-            }).ToList();
-
-            return Ok(new
-            {
-                sourceNote = responses.First(n => n.Id == id),
-                targetNote = responses.First(n => n.Id == targetNoteId)
-            });
-        }
-
-        [HttpPost("{id}/links")]
-        public async Task<IActionResult> AddLink(string id, [FromBody] SecondBrain.Api.DTOs.Notes.AddLinkRequest request)
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            var sourceNote = await _context.Notes.FindAsync(id);
-            var targetNote = await _context.Notes.FindAsync(request.TargetNoteId);
-
-            if (sourceNote == null || targetNote == null || sourceNote.UserId != userId || targetNote.UserId != userId)
-            {
-                return NotFound(new { error = "Note not found." });
-            }
-
-            // Check if either note is deleted
-            if (sourceNote.IsDeleted || targetNote.IsDeleted)
-            {
-                return BadRequest(new { error = "Cannot link to a deleted note." });
-            }
-
-            // Check if link already exists (active links only)
-            var existingActiveLink = await _context.NoteLinks
-                .AnyAsync(nl =>
-                    ((nl.NoteId == id && nl.LinkedNoteId == request.TargetNoteId) ||
-                    (nl.NoteId == request.TargetNoteId && nl.LinkedNoteId == id)) && 
-                    !nl.IsDeleted);
-
-            if (existingActiveLink)
-            {
-                return BadRequest(new { error = "Notes are already linked." });
-            }
-
-            // Check for soft-deleted links that can be reactivated
-            var existingDeletedLinks = await _context.NoteLinks
-                .Where(nl => 
-                    ((nl.NoteId == id && nl.LinkedNoteId == request.TargetNoteId) ||
-                    (nl.NoteId == request.TargetNoteId && nl.LinkedNoteId == id)) && 
-                    nl.IsDeleted)
-                .ToListAsync();
-
-            var linkType = request.LinkType ?? "default";
-            var timestamp = DateTime.UtcNow;
-
-            if (existingDeletedLinks.Any())
-            {
-                // Reactivate existing soft-deleted links
-                foreach (var link in existingDeletedLinks)
-                {
-                    link.IsDeleted = false;
-                    link.DeletedAt = null;
-                    link.LinkType = linkType;
-                    link.CreatedAt = timestamp;
-                    link.CreatedBy = userId;
-                }
-            }
-            else
-            {
-                // Create new links if no soft-deleted links exist
-                var noteLink = new NoteLink { 
-                    NoteId = id, 
-                    LinkedNoteId = request.TargetNoteId,
-                    LinkType = linkType,
-                    CreatedAt = timestamp,
-                    CreatedBy = userId
-                };
-                
-                var reverseLink = new NoteLink { 
-                    NoteId = request.TargetNoteId, 
-                    LinkedNoteId = id,
-                    LinkType = linkType,
-                    CreatedAt = timestamp,
-                    CreatedBy = userId
-                };
-
-                _context.NoteLinks.AddRange(noteLink, reverseLink);
-            }
-
-            await _context.SaveChangesAsync();
-
-            // Award XP for creating a link
-            await _xpService.AwardXPAsync(userId, "createlink");
-
-            // Return both updated notes with their links
-            var updatedNotes = await _context.Notes
-                .Include(n => n.NoteLinks.Where(nl => !nl.IsDeleted))
-                .ThenInclude(nl => nl.LinkedNote)
-                .Where(n => n.Id == id || n.Id == request.TargetNoteId)
-                .ToListAsync();
-
-            // Transform to API response format
-            var responses = updatedNotes.Select(n => new NoteResponse
-            {
-                Id = n.Id,
-                Title = n.Title,
-                Content = n.Content,
-                Tags = (n.Tags ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries).ToList(),
-                IsPinned = n.IsPinned,
-                IsFavorite = n.IsFavorite,
-                IsArchived = n.IsArchived,
-                ArchivedAt = n.ArchivedAt,
-                CreatedAt = n.CreatedAt,
-                UpdatedAt = n.UpdatedAt,
-                LinkedNoteIds = n.NoteLinks
-                    .Where(nl => !nl.IsDeleted)
-                    .Select(nl => nl.LinkedNoteId)
-                    .ToList(),
-                Links = n.NoteLinks
-                    .Where(nl => !nl.IsDeleted)
-                    .Select(nl => new NoteLinkDto
-                    {
-                        Source = n.Id,
-                        Target = nl.LinkedNoteId,
-                        Type = nl.LinkType,
-                        CreatedAt = nl.CreatedAt
-                    })
-                    .ToList()
-            }).ToList();
-
-            return Ok(new
-            {
-                sourceNote = responses.First(n => n.Id == id),
-                targetNote = responses.First(n => n.Id == request.TargetNoteId)
-            });
-        }
-
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteNote(string id)
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { error = USER_ID_NOT_FOUND_ERROR });
-            }
-
-            var note = await _context.Notes
-                .Where(n => n.Id == id && n.UserId == userId)
-                .FirstOrDefaultAsync();
-
-            if (note == null)
-            {
-                return NotFound(new { error = NOTE_NOT_FOUND_ERROR });
+                return BadRequest(new { error = "Note is already deleted." });
             }
 
             note.IsDeleted = true;
@@ -415,36 +544,38 @@ namespace SecondBrain.Api.Controllers
             note.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
-            return NoContent();
+            await _activityLogger.LogActivityAsync(
+                userId,
+                ActivityActionType.DELETE.ToString(),
+                ActivityItemType.NOTE.ToString(),
+                note.Id,
+                note.Title,
+                $"Moved note '{note.Title}' to trash"
+            );
+
+            return Ok(new { message = "Note moved to trash successfully." });
         }
 
         [HttpGet("deleted")]
         public async Task<ActionResult<IEnumerable<NoteResponse>>> GetDeletedNotes()
         {
             var userId = GetUserId();
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { error = USER_ID_NOT_FOUND_ERROR });
-            }
-
-            // Use IgnoreQueryFilters to bypass the global query filter for soft deleted items
             var notes = await _context.Notes
                 .IgnoreQueryFilters()
-                .Include(n => n.NoteLinks.Where(nl => !nl.IsDeleted))
-                    .ThenInclude(nl => nl.LinkedNote)
-                .Include(n => n.TaskLinks.Where(tl => !tl.IsDeleted))
-                    .ThenInclude(tl => tl.Task)
-                .Include(n => n.ReminderLinks.Where(rl => !rl.IsDeleted))
-                    .ThenInclude(rl => rl.Reminder)
+                .Include(n => n.NoteLinks.Where(link => !link.IsDeleted))
                 .Where(n => n.UserId == userId && n.IsDeleted)
                 .ToListAsync();
-
-            var reminderLinks = await _context.ReminderLinks
-                .Where(rl => !rl.IsDeleted && notes.Select(n => n.Id).Contains(rl.LinkedItemId))
-                .Include(rl => rl.Reminder)
-                .ToListAsync();
-
-            var responses = notes.Select(note => NoteResponse.FromEntity(note)).ToList();
+            
+            var responses = notes.Select(note => {
+                 var noteLinks = note.NoteLinks ?? new List<NoteLink>();
+                 var linkedItems = noteLinks.Select(link => new LinkedItemResponse {
+                     Id = link.LinkedItemId,
+                     Type = link.LinkedItemType,
+                     Title = "Linked Item (details not loaded for deleted notes)",
+                     LinkType = link.LinkType
+                 }).ToList();
+                 return NoteResponse.FromEntity(note, linkedItems);
+            }).ToList();
             
             return Ok(responses);
         }
@@ -452,19 +583,14 @@ namespace SecondBrain.Api.Controllers
         [HttpPost("{id}/restore")]
         public async Task<IActionResult> RestoreNote(string id)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { error = USER_ID_NOT_FOUND_ERROR });
-            }
-
+            var userId = GetUserId();
             var note = await _context.Notes
-                .Where(n => n.Id == id && n.UserId == userId && n.IsDeleted)
-                .FirstOrDefaultAsync();
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(n => n.Id == id && n.UserId == userId && n.IsDeleted);
 
             if (note == null)
             {
-                return NotFound(new { error = NOTE_NOT_FOUND_ERROR });
+                return NotFound(new { error = "Deleted note not found." });
             }
 
             note.IsDeleted = false;
@@ -472,24 +598,30 @@ namespace SecondBrain.Api.Controllers
             note.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
-            return Ok(NoteResponse.FromEntity(note));
+            await _activityLogger.LogActivityAsync(
+                userId,
+                ActivityActionType.RESTORE.ToString(),
+                ActivityItemType.NOTE.ToString(),
+                note.Id,
+                note.Title,
+                $"Restored note '{note.Title}' from trash"
+            );
+            
+            var restoredNoteWithLinks = await GetNoteByIdInternal(id, userId);
+            if (restoredNoteWithLinks == null)
+            {
+                return NotFound(new { error = "Restored note could not be retrieved." });
+            }
+            return Ok(restoredNoteWithLinks);
         }
 
         [HttpDelete("{id}/permanent")]
         public async Task<IActionResult> DeleteNotePermanently(string id)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { error = USER_ID_NOT_FOUND_ERROR });
-            }
-
-            // Find the note and include all its links
+            var userId = GetUserId();
             var note = await _context.Notes
+                .IgnoreQueryFilters()
                 .Include(n => n.NoteLinks)
-                    .ThenInclude(nl => nl.LinkedNote)
-                .Include(n => n.ReminderLinks)
-                .Include(n => n.TaskLinks)
                 .FirstOrDefaultAsync(n => n.Id == id && n.UserId == userId);
 
             if (note == null)
@@ -500,71 +632,31 @@ namespace SecondBrain.Api.Controllers
             try
             {
                 using var transaction = await _context.Database.BeginTransactionAsync();
-
                 try
                 {
-                    // 1. Track unlink activities
-                    var unlinkActivities = note.NoteLinks.Select(link => new Activity
+                    if (note.NoteLinks != null && note.NoteLinks.Any())
                     {
-                        UserId = userId,
-                        ActionType = ActivityActionType.UNLINK.ToString(),
-                        ItemType = ActivityItemType.NOTELINK.ToString(),
-                        ItemId = note.Id,
-                        ItemTitle = note.Title,
-                        Description = $"Unlinked from '{link.LinkedNote.Title}' (due to deletion)",
-                        MetadataJson = JsonSerializer.Serialize(new
-                        {
-                            sourceNoteId = note.Id,
-                            targetNoteId = link.LinkedNote.Id,
-                            sourceNoteTitle = note.Title,
-                            targetNoteTitle = link.LinkedNote.Title,
-                            reason = "deletion"
-                        })
-                    });
-                    _context.Activities.AddRange(unlinkActivities);
-
-                    // 2. Remove all task links (soft delete approach)
-                    var taskLinks = await _context.TaskLinks
-                        .Where(tl => tl.LinkedItemId == id)
-                        .ToListAsync();
-                    // Soft delete instead of remove
-                    foreach (var link in taskLinks)
-                    {
-                        link.IsDeleted = true;
-                        link.DeletedAt = DateTime.UtcNow;
+                        _context.NoteLinks.RemoveRange(note.NoteLinks);
                     }
-
-                    // 3. Remove all reminder links (soft delete approach)
-                    var reminderLinks = await _context.ReminderLinks
-                        .Where(rl => rl.LinkedItemId == id)
-                        .ToListAsync();
-                    // Soft delete instead of remove
-                    foreach (var link in reminderLinks)
-                    {
-                        link.IsDeleted = true;
-                        link.DeletedAt = DateTime.UtcNow;
-                    }
-
-                    // 4. Remove all note links
-                    var noteLinks = await _context.NoteLinks
-                        .Where(nl => nl.NoteId == id || nl.LinkedNoteId == id)
-                        .ToListAsync();
-                    _context.NoteLinks.RemoveRange(noteLinks);
-
-                    // 5. Delete the note itself
+                    
                     _context.Notes.Remove(note);
-
-                    // 6. Save all changes
                     await _context.SaveChangesAsync();
-
-                    // 7. Commit transaction
                     await transaction.CommitAsync();
 
-                    return Ok(new { message = "Note permanently deleted" });
+                    await _activityLogger.LogActivityAsync(
+                        userId,
+                        ActivityActionType.PERMANENT_DELETE.ToString(),
+                        ActivityItemType.NOTE.ToString(),
+                        id, 
+                        note.Title, 
+                        $"Permanently deleted note '{note.Title}'"
+                    );
+                    return Ok(new { message = "Note permanently deleted successfully." });
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
                     await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Failed to permanently delete note {NoteId} during transaction.", id);
                     throw;
                 }
             }
@@ -578,132 +670,145 @@ namespace SecondBrain.Api.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateNote(string id, [FromBody] UpdateNoteRequest request)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { error = USER_ID_NOT_FOUND_ERROR });
-            }
-
+            var userId = GetUserId();
             var note = await _context.Notes
-                .Include(n => n.NoteLinks)
-                .Include(n => n.TaskLinks.Where(tl => !tl.IsDeleted))
-                    .ThenInclude(tl => tl.Task)
-                .FirstOrDefaultAsync(n => n.Id == id && n.UserId == userId);
+                .FirstOrDefaultAsync(n => n.Id == id && n.UserId == userId && !n.IsDeleted);
 
             if (note == null)
             {
                 return NotFound(new { error = NOTE_NOT_FOUND_ERROR });
             }
 
-            // Check if archiving a note
-            bool isArchiving = request.IsArchived.HasValue && request.IsArchived.Value && !note.IsArchived;
+            bool wasArchived = note.IsArchived;
+            string oldTitle = note.Title;
 
-            // Update properties if provided
             if (request.Title != null) note.Title = request.Title;
             if (request.Content != null) note.Content = request.Content;
             if (request.Tags != null) note.Tags = string.Join(",", request.Tags);
+            else if (request.Tags == null) note.Tags = null;
+            
             if (request.IsPinned.HasValue) note.IsPinned = request.IsPinned.Value;
             if (request.IsFavorite.HasValue) note.IsFavorite = request.IsFavorite.Value;
+            
             if (request.IsArchived.HasValue) 
             {
                 note.IsArchived = request.IsArchived.Value;
-                if (request.IsArchived.Value) 
-                {
-                    note.ArchivedAt = DateTime.UtcNow;
-                }
-                else
-                {
-                    note.ArchivedAt = null;
-                }
-            }
-            if (request.IsDeleted.HasValue)
-            {
-                note.IsDeleted = request.IsDeleted.Value;
-                note.DeletedAt = request.IsDeleted.Value ? DateTime.UtcNow : null;
+                note.ArchivedAt = request.IsArchived.Value ? DateTime.UtcNow : null;
             }
 
             note.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
+            
+            string description = $"Updated note '{oldTitle}'";
+            if (oldTitle != note.Title) description += $" Title changed to '{note.Title}'.";
+            if (request.IsArchived.HasValue && request.IsArchived.Value && !wasArchived) description += " Note archived.";
+            if (request.IsArchived.HasValue && !request.IsArchived.Value && wasArchived) description += " Note unarchived.";
 
-            // Award XP if note is being archived
-            if (isArchiving)
+            await _activityLogger.LogActivityAsync(
+                userId,
+                ActivityActionType.UPDATE.ToString(),
+                ActivityItemType.NOTE.ToString(),
+                note.Id,
+                note.Title,
+                description
+            );
+
+            if (request.IsArchived.HasValue && request.IsArchived.Value && !wasArchived)
             {
-                string actionType = "archivenote";
-                await _xpService.AwardXPAsync(
-                    userId,
-                    actionType,
-                    null,
-                    note.Id,
-                    note.Title
-                );
+                await _xpService.AwardXPAsync(userId, "archivenote", null, note.Id, note.Title);
             }
-
-            var response = NoteResponse.FromEntity(note);
-            return Ok(response);
+            
+            var updatedNoteWithLinks = await GetNoteByIdInternal(id, userId);
+             if (updatedNoteWithLinks == null)
+            {
+                return NotFound(new { error = "Updated note could not be retrieved with links." });
+            }
+            return Ok(updatedNoteWithLinks);
         }
 
         [HttpGet("archived")]
-        public async Task<IActionResult> GetArchivedNotes()
+        public async Task<ActionResult<IEnumerable<NoteResponse>>> GetArchivedNotes()
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { error = USER_ID_NOT_FOUND_ERROR });
-            }
-
-            // Add logging to check the userId and query
+            var userId = GetUserId();
             _logger.LogInformation("Fetching archived notes for user: {UserId}", userId);
 
-            // Get the archived notes with more detailed logging
             var archivedNotes = await _context.Notes
-                .Where(n => n.UserId == userId && n.IsArchived)
-                .Include(n => n.NoteLinks)
-                .AsNoTracking() // Add this to improve performance for read-only operations
+                .Where(n => n.UserId == userId && n.IsArchived && !n.IsDeleted)
                 .ToListAsync();
-
+            
             _logger.LogInformation("Retrieved {Count} archived notes", archivedNotes.Count);
 
-            // Map to response
-            var response = archivedNotes.Select(n => new NoteResponse
+            var noteIds = archivedNotes.Select(n => n.Id).ToList();
+
+            var allLinksForArchivedNotes = await _context.NoteLinks
+                .Where(link => noteIds.Contains(link.NoteId) && !link.IsDeleted)
+                .ToListAsync();
+
+            var allLinkedItemIds = allLinksForArchivedNotes
+                .Select(link => link.LinkedItemId)
+                .Distinct()
+                .ToList();
+
+            var linkedNotesFromDb = await _context.Notes
+                .Where(n => allLinkedItemIds.Contains(n.Id) && n.UserId == userId && !n.IsDeleted && !n.IsArchived)
+                .Select(n => new { n.Id, n.Title, Type = "Note" })
+                .ToListAsync();
+            var linkedIdeasFromDb = await _context.Ideas
+                .Where(i => allLinkedItemIds.Contains(i.Id) && i.UserId == userId && !i.IsDeleted && !i.IsArchived)
+                .Select(i => new { i.Id, i.Title, Type = "Idea" })
+                .ToListAsync();
+             var linkedTasksFromDb = await _context.Tasks
+                .Where(t => allLinkedItemIds.Contains(t.Id) && t.UserId == userId && !t.IsDeleted)
+                .Select(t => new { t.Id, t.Title, Type = "Task" })
+                .ToListAsync();
+            var linkedRemindersFromDb = await _context.Reminders
+                .Where(r => allLinkedItemIds.Contains(r.Id) && r.UserId == userId && !r.IsDeleted)
+                .Select(r => new { r.Id, r.Title, Type = "Reminder" })
+                .ToListAsync();
+
+            var globalLinkedItemsLookup = linkedNotesFromDb
+                .Cast<dynamic>()
+                .Concat(linkedIdeasFromDb)
+                .Concat(linkedTasksFromDb)
+                .Concat(linkedRemindersFromDb)
+                .ToDictionary(item => (string)item.Id, item => new { Type = (string)item.Type, Title = (string)item.Title });
+
+            var responses = archivedNotes.Select(note =>
             {
-                Id = n.Id,
-                Title = n.Title,
-                Content = n.Content,
-                Tags = !string.IsNullOrEmpty(n.Tags)
-                    ? n.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList()
-                    : new List<string>(),
-                IsPinned = n.IsPinned,
-                IsFavorite = n.IsFavorite,
-                IsArchived = n.IsArchived,
-                ArchivedAt = n.ArchivedAt,
-                CreatedAt = n.CreatedAt,
-                UpdatedAt = n.UpdatedAt,
-                LinkedNoteIds = n.NoteLinks
-                    .Where(nl => !nl.IsDeleted)
-                    .Select(nl => nl.LinkedNoteId)
-                    .ToList()
+                 var noteSpecificLinks = allLinksForArchivedNotes.Where(l => l.NoteId == note.Id).ToList();
+                 var linkedItems = noteSpecificLinks
+                    .Select(link => {
+                        if (globalLinkedItemsLookup.TryGetValue(link.LinkedItemId, out var itemDetails)) {
+                             return new DTOs.Ideas.LinkedItemResponse // Using Ideas.LinkedItemResponse for consistency
+                            {
+                                Id = link.LinkedItemId,
+                                Type = itemDetails.Type, // Or link.LinkedItemType
+                                Title = itemDetails.Title,
+                                LinkType = link.LinkType
+                            };
+                        }
+                        _logger.LogWarning("Could not find details for linked item {LinkedItemId} of type {LinkedItemType} for archived note {NoteId}", link.LinkedItemId, link.LinkedItemType, note.Id);
+                        return null;
+                    })
+                    .Where(x => x != null)
+                    .Select(x => x!)
+                    .ToList();
+                return NoteResponse.FromEntity(note, linkedItems);
             }).ToList();
 
-            return Ok(response);
+            return Ok(responses);
         }
 
         [HttpPost("{id}/unarchive")]
         public async Task<IActionResult> UnarchiveNote(string id)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { error = USER_ID_NOT_FOUND_ERROR });
-            }
-
+            var userId = GetUserId();
             var note = await _context.Notes
-                .Where(n => n.Id == id && n.UserId == userId && n.IsArchived)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(n => n.Id == id && n.UserId == userId && n.IsArchived && !n.IsDeleted);
 
             if (note == null)
             {
-                return NotFound(new { error = NOTE_NOT_FOUND_ERROR });
+                return NotFound(new { error = "Archived note not found." });
             }
 
             note.IsArchived = false;
@@ -711,121 +816,88 @@ namespace SecondBrain.Api.Controllers
             note.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
-            return Ok(NoteResponse.FromEntity(note));
+            await _activityLogger.LogActivityAsync(
+                userId,
+                ActivityActionType.UNARCHIVE.ToString(),
+                ActivityItemType.NOTE.ToString(),
+                note.Id,
+                note.Title,
+                $"Unarchived note '{note.Title}'"
+            );
+            
+            var unarchivedNoteWithLinks = await GetNoteByIdInternal(id, userId);
+             if (unarchivedNoteWithLinks == null)
+            {
+                return NotFound(new { error = "Unarchived note could not be retrieved with links." });
+            }
+            return Ok(unarchivedNoteWithLinks);
         }
 
-        [HttpPost("{id}/reminders")]
-        public async Task<ActionResult<NoteResponse>> LinkReminder(string id, [FromBody] LinkReminderRequest request)
+        private async Task<NoteResponse?> GetNoteByIdInternal(string noteId, string userId)
         {
-            try
-            {
-                _logger.LogInformation("Attempting to link reminder {ReminderId} to note {NoteId}", request.ReminderId, id);
-
-                var userId = GetUserId();
-                var note = await _context.Notes
-                    .Include(n => n.NoteLinks)
-                    .Include(n => n.TaskLinks)
-                    .Include(n => n.ReminderLinks)
-                    .FirstOrDefaultAsync(n => n.Id == id && n.UserId == userId);
-
-                if (note == null)
-                {
-                    _logger.LogWarning("Note {NoteId} not found", id);
-                    return NotFound(new { error = NOTE_NOT_FOUND_ERROR });
-                }
-
-                var reminder = await _context.Reminders
-                    .FirstOrDefaultAsync(r => r.Id == request.ReminderId && r.UserId == userId);
-
-                if (reminder == null)
-                {
-                    _logger.LogWarning("Reminder {ReminderId} not found", request.ReminderId);
-                    return NotFound(new { error = "Reminder not found." });
-                }
-
-                // Check for existing soft-deleted link
-                var existingLink = await _context.ReminderLinks
-                    .FirstOrDefaultAsync(rl => rl.ReminderId == request.ReminderId &&
-                                             rl.LinkedItemId == id);
-
-                if (existingLink != null)
-                {
-                    // Update existing link instead of creating new one
-                    existingLink.IsDeleted = false;
-                    existingLink.DeletedAt = null;
-                    existingLink.CreatedAt = DateTime.UtcNow;
-                    existingLink.CreatedBy = userId;
-                }
-                else
-                {
-                    // Create new link
-                    var reminderLink = new ReminderLink
-                    {
-                        ReminderId = request.ReminderId,
-                        LinkedItemId = id,
-                        CreatedAt = DateTime.UtcNow,
-                        CreatedBy = userId,
-                        LinkType = "note"
-                    };
-                    _context.ReminderLinks.Add(reminderLink);
-                }
-
-                await _context.SaveChangesAsync();
-
-                // Reload the note with all its relationships
-                note = await _context.Notes
-                    .Include(n => n.NoteLinks)
-                        .ThenInclude(nl => nl.LinkedNote)
-                    .Include(n => n.TaskLinks.Where(tl => !tl.IsDeleted))
-                        .ThenInclude(tl => tl.Task)
-                    .Include(n => n.ReminderLinks.Where(rl => !rl.IsDeleted))
-                        .ThenInclude(rl => rl.Reminder)
-                    .FirstOrDefaultAsync(n => n.Id == id);
-
-                _logger.LogInformation("Successfully linked reminder {ReminderId} to note {NoteId}", request.ReminderId, id);
-                return Ok(NoteResponse.FromEntity(note!));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error linking reminder to note {NoteId}", id);
-                return StatusCode(500, new { error = "An error occurred while linking the reminder." });
-            }
-        }
-
-        public class LinkReminderRequest
-        {
-            public string ReminderId { get; set; } = string.Empty;
-        }
-
-        [HttpDelete("{id}/reminders/{reminderId}")]
-        public async Task<ActionResult<NoteResponse>> UnlinkReminder(string id, string reminderId)
-        {
-            var reminderLink = await _context.ReminderLinks
-                .FirstOrDefaultAsync(rl => rl.ReminderId == reminderId &&
-                                         rl.LinkedItemId == id);
-
-            if (reminderLink == null)
-            {
-                return NotFound(new { error = "Reminder link not found." });
-            }
-
-            // Soft delete the link instead of removing it permanently
-            reminderLink.IsDeleted = true;
-            reminderLink.DeletedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
-
-            // Reload the note with remaining active links
             var note = await _context.Notes
-                .Include(n => n.NoteLinks)
-                    .ThenInclude(nl => nl.LinkedNote)
-                .Include(n => n.TaskLinks.Where(tl => !tl.IsDeleted))
-                    .ThenInclude(tl => tl.Task)
-                .Include(n => n.ReminderLinks.Where(rl => !rl.IsDeleted))
-                    .ThenInclude(rl => rl.Reminder)
-                .FirstOrDefaultAsync(n => n.Id == id);
+                .FirstOrDefaultAsync(n => n.Id == noteId && n.UserId == userId && !n.IsDeleted);
 
-            return Ok(NoteResponse.FromEntity(note!));
+            if (note == null)
+            {
+                return null;
+            }
+            
+            var noteSpecificLinks = await _context.NoteLinks
+                .Where(link => link.NoteId == noteId && !link.IsDeleted)
+                .ToListAsync();
+
+            var linkedItemIds = noteSpecificLinks
+                .Select(link => link.LinkedItemId)
+                .Distinct()
+                .ToList();
+
+            var linkedNotesFromDb = await _context.Notes
+                .Where(n => linkedItemIds.Contains(n.Id) && n.UserId == userId && !n.IsDeleted && !n.IsArchived)
+                .Select(n => new { n.Id, n.Title, Type = "Note" })
+                .ToListAsync();
+            
+            var linkedIdeasFromDb = await _context.Ideas
+                .Where(i => linkedItemIds.Contains(i.Id) && i.UserId == userId && !i.IsDeleted && !i.IsArchived)
+                .Select(i => new { i.Id, i.Title, Type = "Idea" })
+                .ToListAsync();
+            
+            var linkedTasksFromDb = await _context.Tasks
+                .Where(t => linkedItemIds.Contains(t.Id) && t.UserId == userId && !t.IsDeleted)
+                .Select(t => new { t.Id, t.Title, Type = "Task" })
+                .ToListAsync();
+
+            var linkedRemindersFromDb = await _context.Reminders
+                .Where(r => linkedItemIds.Contains(r.Id) && r.UserId == userId && !r.IsDeleted)
+                .Select(r => new { r.Id, r.Title, Type = "Reminder" })
+                .ToListAsync();
+
+            var linkedItemsLookup = linkedNotesFromDb
+                .Cast<dynamic>()
+                .Concat(linkedIdeasFromDb)
+                .Concat(linkedTasksFromDb)
+                .Concat(linkedRemindersFromDb)
+                .ToDictionary(item => (string)item.Id, item => new { Type = (string)item.Type, Title = (string)item.Title });
+
+            var linkedItemsForResponse = noteSpecificLinks
+                .Select(link => {
+                    if (linkedItemsLookup.TryGetValue(link.LinkedItemId, out var itemDetails)) {
+                         return new DTOs.Ideas.LinkedItemResponse // Using Ideas.LinkedItemResponse for consistency
+                        {
+                            Id = link.LinkedItemId,
+                            Type = itemDetails.Type, // Or link.LinkedItemType
+                            Title = itemDetails.Title,
+                            LinkType = link.LinkType
+                        };
+                    }
+                    _logger.LogWarning("Linked item with ID {LinkedItemId} for note {NoteId} not found in lookup table.", link.LinkedItemId, noteId);
+                    return null; 
+                })
+                .Where(x => x != null)
+                .Select(x => x!)
+                .ToList();
+            
+            return NoteResponse.FromEntity(note, linkedItemsForResponse);
         }
-
     }
 }

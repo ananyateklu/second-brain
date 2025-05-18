@@ -66,18 +66,6 @@ export function MainContent({
   suggestionsLoading = false,
 }: MainContentProps) {
 
-  // Add logging for debugging
-  if (suggestedReminders.length > 0) {
-    console.log("MainContent: Received reminder suggestions:",
-      suggestedReminders.map(r => ({
-        id: r.id,
-        title: r.title,
-        type: r.type,
-        similarity: r.similarity
-      }))
-    );
-  }
-
   return (
     <div className="flex-1 overflow-y-auto bg-[var(--color-surface)]">
       <div className="p-4 space-y-4">
