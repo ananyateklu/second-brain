@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SecondBrain.Api.DTOs.OpenAI;
 using SecondBrain.Api.Services;
+using SecondBrain.Api.Exceptions;
 
 namespace SecondBrain.Api.Controllers
 {
@@ -115,6 +116,33 @@ namespace SecondBrain.Api.Controllers
             {
                 _logger.LogError(ex, "Error converting text to speech");
                 return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Retrieves a list of available OpenAI models.
+        /// </summary>
+        /// <returns>A list of available OpenAI models.</returns>
+        [HttpGet("models")]
+        [Authorize] // Ensure endpoint is secured if needed, consistent with Anthropic
+        public async Task<IActionResult> GetAvailableModels()
+        {
+            try
+            {
+                _logger.LogInformation("Attempting to fetch available OpenAI models.");
+                var modelsResponse = await _openAIService.GetModelsAsync();
+                _logger.LogInformation("Successfully fetched {ModelCount} OpenAI models.", modelsResponse.Data.Count);
+                return Ok(modelsResponse); // Return the full DTO for now
+            }
+            catch (OpenAIException ex)
+            {
+                _logger.LogError(ex, "OpenAI API Error while fetching models: {Message}", ex.Message);
+                return BadRequest(new { error = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected Error while fetching OpenAI models: {Message}", ex.Message);
+                return StatusCode(500, new { error = "Internal server error while fetching OpenAI models." });
             }
         }
     }

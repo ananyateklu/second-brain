@@ -431,5 +431,85 @@ namespace SecondBrain.Api.Services
                 $"https://example.com/{topic}-resources"
             };
         }
+
+        // Helper to get the base URI for Anthropic API (e.g., https://api.anthropic.com/v1)
+        private string GetApiBaseUri()
+        {
+            // Assuming _requestUri is like "https://api.anthropic.com/v1/messages"
+            var messagesSegment = "/messages";
+            if (_requestUri.EndsWith(messagesSegment))
+            {
+                return _requestUri.Substring(0, _requestUri.Length - messagesSegment.Length);
+            }
+            // Fallback or error if the URI format is unexpected
+            _logger.LogWarning("Anthropic API endpoint URI '{RequestUri}' does not end with '/messages'. Using it as base URI, which might be incorrect for models endpoint.", _requestUri);
+            return _requestUri; // Or throw an exception if this is critical
+        }
+
+        public async Task<AnthropicModelsResponse> GetModelsAsync()
+        {
+            var baseUri = GetApiBaseUri();
+            var modelsRequestUri = $"{baseUri}/models";
+
+            _logger.LogInformation("Fetching models from Anthropic API at {ModelsRequestUri}", modelsRequestUri);
+
+            var request = new HttpRequestMessage(HttpMethod.Get, modelsRequestUri);
+
+            _httpClient.DefaultRequestHeaders.Clear();
+            if (string.IsNullOrEmpty(_apiKey))
+            {
+                throw new InvalidOperationException("Anthropic API key not configured.");
+            }
+            _httpClient.DefaultRequestHeaders.Add("x-api-key", _apiKey);
+            _httpClient.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01"); // Or a more recent version if available
+
+            try
+            {
+                var response = await _httpClient.SendAsync(request);
+                var responseString = await response.Content.ReadAsStringAsync();
+
+                _logger.LogInformation("Received model list response from Anthropic API.");
+                _logger.LogDebug("Models Response Content: {ResponseContent}", responseString);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var modelsResponse = JsonSerializer.Deserialize<AnthropicModelsResponse>(responseString, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+                    if (modelsResponse == null)
+                    {
+                        _logger.LogError("Failed to deserialize Anthropic models response. Response string was: {ResponseContent}", responseString);
+                        throw new AnthropicException("Failed to deserialize models response from Anthropic API.");
+                    }
+                    return modelsResponse;
+                }
+                else
+                {
+                    var errorResponse = JsonSerializer.Deserialize<AnthropicErrorResponse>(responseString, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+                    var errorMessage = errorResponse?.Error?.Message ?? "Unknown error";
+                    _logger.LogError("Anthropic API Error while fetching models: {StatusCode} - {ErrorMessage}", response.StatusCode, errorMessage);
+                    throw new AnthropicException($"Anthropic API Error fetching models: {response.StatusCode} - {errorMessage}");
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogError(ex, "HTTP Request Exception while fetching models from Anthropic API.");
+                throw new AnthropicException($"Failed to communicate with Anthropic API to fetch models: {ex.Message}", ex);
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError(ex, "JSON Deserialization Exception while fetching models from Anthropic API.");
+                throw new AnthropicException($"Failed to parse models response from Anthropic API: {ex.Message}", ex);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected Exception while fetching models from Anthropic API.");
+                throw new AnthropicException($"Unexpected error while fetching Anthropic models: {ex.Message}", ex);
+            }
+        }
     }
 }

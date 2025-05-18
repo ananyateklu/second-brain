@@ -13,5 +13,6 @@ namespace SecondBrain.Api.Services
         Task<AudioTranscriptionResponse> TranscribeAudioAsync(IFormFile file);
         Task<TextToSpeechResponse> TextToSpeechAsync(TextToSpeechRequest request);
         Stream GetAudioStream(TextToSpeechResponse response);
+        Task<OpenAIModelsResponse> GetModelsAsync();
     }
 } 

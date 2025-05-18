@@ -13,7 +13,7 @@ import { LoadingContent } from '../../Messages/LoadingContent';
 
 export function AIAgentsPage() {
     const { theme } = useTheme();
-    const { availableModels, isOpenAIConfigured, isAnthropicConfigured, isGeminiConfigured, isOllamaConfigured, sendMessage } = useAI();
+    const { availableModels, isOpenAIConfigured, isAnthropicConfigured, isGeminiConfigured, isOllamaConfigured, isGrokConfigured, sendMessage } = useAI();
     const {
         isLoading,
         currentMessage,
@@ -142,7 +142,7 @@ export function AIAgentsPage() {
         );
     }
 
-    if (!isOpenAIConfigured && !isGeminiConfigured && !isAnthropicConfigured && !isOllamaConfigured) {
+    if (!isOpenAIConfigured && !isAnthropicConfigured && !isGeminiConfigured && !isOllamaConfigured && !isGrokConfigured) {
         return (
             <div className="flex flex-col items-center justify-center h-[calc(100vh-13rem)] gap-4">
                 <Bot className="w-16 h-16 text-[var(--color-textSecondary)]" />

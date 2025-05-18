@@ -327,5 +327,57 @@ namespace SecondBrain.Api.Services
                 throw new OpenAIException("Failed to get audio stream", ex);
             }
         }
+
+        public async Task<OpenAIModelsResponse> GetModelsAsync()
+        {
+            var modelsRequestUri = $"{ApiEndpoint}/models";
+            _logger.LogInformation("Fetching models from OpenAI API at {ModelsRequestUri}", modelsRequestUri);
+
+            var request = new HttpRequestMessage(HttpMethod.Get, modelsRequestUri);
+            // Authorization header is already set in the HttpClient's DefaultRequestHeaders by the constructor
+
+            try
+            {
+                var response = await _httpClient.SendAsync(request);
+                var responseString = await response.Content.ReadAsStringAsync();
+
+                _logger.LogInformation("Received model list response from OpenAI API.");
+                _logger.LogDebug("OpenAI Models Response Content: {ResponseContent}", responseString);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                    var modelsResponse = JsonSerializer.Deserialize<OpenAIModelsResponse>(responseString, jsonOptions);
+                    if (modelsResponse == null)
+                    {
+                        _logger.LogError("Failed to deserialize OpenAI models response. Response string was: {ResponseContent}", responseString);
+                        throw new OpenAIException("Failed to deserialize models response from OpenAI API.");
+                    }
+                    return modelsResponse;
+                }
+                else
+                {
+                    var errorResponse = JsonSerializer.Deserialize<OpenAIErrorResponse>(responseString);
+                    var errorMessage = errorResponse?.Error?.Message ?? "Unknown error";
+                    _logger.LogError("OpenAI API Error while fetching models: {StatusCode} - {ErrorMessage}", response.StatusCode, errorMessage);
+                    throw new OpenAIException($"OpenAI API Error fetching models: {response.StatusCode} - {errorMessage}");
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogError(ex, "HTTP Request Exception while fetching models from OpenAI API.");
+                throw new OpenAIException($"Failed to communicate with OpenAI API to fetch models: {ex.Message}", ex);
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogError(ex, "JSON Deserialization Exception while fetching models from OpenAI API.");
+                throw new OpenAIException($"Failed to parse models response from OpenAI API: {ex.Message}", ex);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected Exception while fetching models from OpenAI API.");
+                throw new OpenAIException($"Unexpected error while fetching OpenAI models: {ex.Message}", ex);
+            }
+        }
     }
 }
