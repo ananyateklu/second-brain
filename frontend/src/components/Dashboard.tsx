@@ -49,8 +49,8 @@ export function Dashboard() {
       {/* Main Content Area */}
       <div className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarOpen ? 'lg:pl-60' : 'pl-0'} relative`}>
         {/* Scrollable Content */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden pt-0 relative">
-          <div className={`max-w-[1920px] mx-auto transition-all duration-300 ${isSidebarOpen ? 'px-4 sm:px-6 lg:px-12' : 'px-6 sm:px-12 lg:px-16'} py-8`}>
+        <main className="flex-1 overflow-y-auto overflow-x-hidden pt-2 pb-0 relative">
+          <div className={`max-w-[1920px] mx-auto transition-all duration-300 ${isSidebarOpen ? 'px-4 sm:px-6 lg:px-12' : 'px-6 sm:px-12 lg:px-16'} pt-2 pb-8`}>
             <Header
               isSidebarOpen={isSidebarOpen}
               toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
