@@ -301,11 +301,6 @@ export function EditNoteModal({ isOpen, onClose, note: initialNote }: EditNoteMo
         }
     };
 
-    // Wrapper for MainContent's onLinkReminder prop
-    const handleMainContentLinkReminder = async (reminderId: string): Promise<void> => {
-        await handleLinkReminder(reminderId); // Call the original, ignore boolean return for void type
-    };
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -357,7 +352,7 @@ export function EditNoteModal({ isOpen, onClose, note: initialNote }: EditNoteMo
             await removeLink(currentNote.id, itemId, itemType);
             triggerRefreshSuggestions();
         } catch (error) {
-            console.error(`Failed to unlink ${itemType.toLowerCase()}:`, error);
+            console.error('Failed to unlink item:', { type: itemType.toLowerCase(), error });
             setError(`Failed to unlink ${itemType.toLowerCase()}. Please try again.`);
         }
     };
@@ -396,7 +391,7 @@ export function EditNoteModal({ isOpen, onClose, note: initialNote }: EditNoteMo
                             onRemoveTag={(tag) => setTags(tags.filter(t => t !== tag))}
                             onShowAddReminder={() => setShowAddReminderModal(true)}
                             onUnlinkReminder={handleUnlinkReminder}
-                            onLinkReminder={handleMainContentLinkReminder}
+                            onLinkReminder={handleLinkReminder}
                             setError={setError}
                             suggestedReminders={suggestionState.suggestions.reminders}
                             suggestionsLoading={suggestionState.isLoading}

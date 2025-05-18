@@ -4,7 +4,7 @@ import { formatDistanceStrict } from 'date-fns';
 import { useReminders } from '../../../../contexts/remindersContextUtils';
 import { EditReminderModal } from '../../Reminders/EditReminderModal';
 import { useState, useEffect } from 'react';
-import type { Reminder } from '../../../../contexts/remindersContextUtils';
+import type { Reminder as ReminderType } from '../../../../contexts/remindersContextUtils';
 import { useTheme } from '../../../../contexts/themeContextUtils';
 import { motion } from 'framer-motion';
 import { GenericSuggestionSkeleton } from './GenericSuggestionSkeleton';
@@ -20,7 +20,7 @@ interface SuggestionItem {
 }
 
 interface MiniReminderCardProps {
-  reminder: Reminder;
+  reminder: ReminderType;
   onUnlink?: (reminderId: string) => void;
   onClick: () => void;
   consistentBorderColor: string;
@@ -69,9 +69,9 @@ function MiniReminderCard({ reminder, onUnlink, onClick, consistentBorderColor }
   );
 }
 
-// New component for suggested reminders
+// New component for suggested reminders (aligning with Ideas version)
 interface SuggestedReminderCardProps {
-  reminder: Reminder & { similarity: number };
+  reminder: ReminderType & { similarity: number };
   onLink: (reminderId: string) => void;
   isLinking?: boolean;
   consistentBorderColor: string;
@@ -127,23 +127,23 @@ function SuggestedReminderCard({ reminder, onLink, isLinking = false, consistent
 interface LinkedRemindersPanelProps {
   reminders: LinkedReminder[];
   onUnlink?: (reminderId: string) => void;
-  onLink?: (reminderId: string) => Promise<void>;
+  onLink?: (reminderId: string) => Promise<boolean | void>;
   suggestedReminders?: SuggestionItem[];
   isLoadingSuggestions?: boolean;
 }
 
 export function LinkedRemindersPanel({
-  reminders,
+  reminders: linkedRemindersFromProp,
   onUnlink,
   onLink,
   suggestedReminders = [],
   isLoadingSuggestions = false
 }: LinkedRemindersPanelProps) {
-  const { reminders: allReminders } = useReminders();
+  const { reminders: allRemindersFromContext } = useReminders();
   const { theme } = useTheme();
-  const [selectedReminder, setSelectedReminder] = useState<Reminder | null>(null);
+  const [selectedReminder, setSelectedReminder] = useState<ReminderType | null>(null);
   const [linkingReminderId, setLinkingReminderId] = useState<string | null>(null);
-  const [processedSuggestions, setProcessedSuggestions] = useState<Array<Reminder & { similarity: number }>>([]);
+  const [processedSuggestions, setProcessedSuggestions] = useState<Array<ReminderType & { similarity: number }>>([]);
 
   const consistentBorderColor = (() => {
     switch (theme) {
@@ -165,30 +165,30 @@ export function LinkedRemindersPanel({
     return 'bg-[var(--color-surface)]';
   };
 
-  // Load suggested reminders when there are no linked reminders
+  // Process suggestion items into full reminder objects (aligning with Ideas version)
   useEffect(() => {
-    if (!allReminders.length || !onLink) {
+    if (!suggestedReminders?.length) {
       setProcessedSuggestions([]);
       return;
     }
 
-    const reminderSuggestionsFromProp = suggestedReminders.filter(s => s.type === 'reminder');
+    const reminderSuggestions = suggestedReminders.filter(s => s.type === 'reminder');
 
-    const newProcessedSuggestions = reminderSuggestionsFromProp
-      .map(s => {
-        const fullReminder = allReminders.find(r => r.id === s.id);
-        if (!fullReminder) return null;
-        return {
-          ...fullReminder,
-          similarity: s.similarity
-        };
+    if (reminderSuggestions.length === 0) {
+      setProcessedSuggestions([]);
+      return;
+    }
+
+    const processed = reminderSuggestions
+      .map(suggestion => {
+        const fullReminder = allRemindersFromContext.find(r => r.id === suggestion.id);
+        // Ensure fullReminder is found before spreading, and add similarity
+        return fullReminder ? { ...fullReminder, similarity: suggestion.similarity } : null;
       })
-      .filter(Boolean) // Remove nulls
-      .sort((a, b) => b!.similarity - a!.similarity) as Array<Reminder & { similarity: number }>;
+      .filter(Boolean) as Array<ReminderType & { similarity: number }>; // Filter out nulls and assert type
 
-    setProcessedSuggestions(newProcessedSuggestions);
-
-  }, [suggestedReminders, allReminders, onLink]);
+    setProcessedSuggestions(processed);
+  }, [suggestedReminders, allRemindersFromContext]);
 
   const handleLinkReminder = async (reminderId: string) => {
     if (!onLink) return;
@@ -196,18 +196,26 @@ export function LinkedRemindersPanel({
     setLinkingReminderId(reminderId);
     try {
       await onLink(reminderId);
+      // No need to manually remove from suggestions here, parent should refresh suggestions
     } catch (error) {
       console.error('Failed to link reminder:', error);
+      // Potentially show an error to the user
     } finally {
       setLinkingReminderId(null);
     }
   };
 
-  const hasActualSuggestions = processedSuggestions && processedSuggestions.length > 0;
-  const hasLinkedReminders = reminders && reminders.length > 0;
+  // Use allRemindersFromContext to find full reminder details for display
+  // The `linkedRemindersFromProp` are of type `LinkedReminder` from `note.ts`
+  const displayableLinkedReminders = linkedRemindersFromProp.map(linkedReminder => {
+    return allRemindersFromContext.find(r => r.id === linkedReminder.id);
+  }).filter(Boolean) as ReminderType[];
 
-  // Determine if this section should render at all (if no linked and no suggested and not loading)
-  if (!hasLinkedReminders && !hasActualSuggestions && !isLoadingSuggestions) {
+
+  const showSuggestionsSection = isLoadingSuggestions || processedSuggestions.length > 0 || (suggestedReminders && suggestedReminders.length > 0 && !isLoadingSuggestions && processedSuggestions.length === 0);
+
+  // Combined empty state check
+  if (displayableLinkedReminders.length === 0 && !showSuggestionsSection) {
     return (
       <div className={`p-3 ${getContainerBackground()} rounded-lg border ${consistentBorderColor}`}>
         <p className="text-xs text-center text-[var(--color-textSecondary)]">
@@ -220,34 +228,26 @@ export function LinkedRemindersPanel({
   return (
     <div className={`p-3 ${getContainerBackground()} rounded-lg border ${consistentBorderColor} space-y-3`}>
       {/* Linked Reminders Section */}
-      {hasLinkedReminders && (
+      {displayableLinkedReminders.length > 0 && (
         <div className="space-y-2">
           <p className="text-xs font-medium text-[var(--color-text)]">Linked Reminders</p>
           <div className="flex flex-wrap gap-1.5">
-            {reminders.map((reminder) => {
-              // Find the full reminder details from allReminders or fetch if necessary
-              const fullReminderDetails = allReminders.find(r => r.id === reminder.id);
-              if (!fullReminderDetails) {
-                // Optionally, show a placeholder or fetch the reminder
-                // For now, skipping if not found in allReminders to prevent errors
-                return null;
-              }
-              return (
-                <MiniReminderCard
-                  key={reminder.id}
-                  reminder={fullReminderDetails}
-                  onClick={() => setSelectedReminder(fullReminderDetails)}
-                  onUnlink={onUnlink ? () => onUnlink(reminder.id) : undefined}
-                  consistentBorderColor={consistentBorderColor}
-                />
-              );
-            })}
+            {displayableLinkedReminders.map(reminder => (
+              // MiniReminderCard expects a full ReminderType
+              <MiniReminderCard
+                key={reminder.id}
+                reminder={reminder}
+                onUnlink={onUnlink ? () => onUnlink(reminder.id) : undefined}
+                onClick={() => setSelectedReminder(reminder)}
+                consistentBorderColor={consistentBorderColor}
+              />
+            ))}
           </div>
         </div>
       )}
 
       {/* Suggested Reminders Section */}
-      {(hasActualSuggestions || isLoadingSuggestions) && (
+      {showSuggestionsSection && (
         <div className="space-y-2">
           <div className="flex items-center gap-1.5 mb-1">
             <Sparkles className="w-3 h-3 text-purple-500" />
@@ -255,15 +255,16 @@ export function LinkedRemindersPanel({
           </div>
 
           <div className="flex flex-wrap gap-1.5">
-            {isLoadingSuggestions && !hasActualSuggestions ? (
+            {isLoadingSuggestions ? (
               <>
                 <GenericSuggestionSkeleton type="reminder" />
                 <GenericSuggestionSkeleton type="reminder" />
               </>
-            ) : hasActualSuggestions ? (
-              processedSuggestions.map((suggestion) => (
+            ) : processedSuggestions.length > 0 ? (
+              processedSuggestions.map(suggestion => (
                 <SuggestedReminderCard
                   key={suggestion.id}
+                  // The `suggestion` here is already a `ReminderType & { similarity: number }`
                   reminder={suggestion}
                   onLink={handleLinkReminder}
                   isLinking={linkingReminderId === suggestion.id}
@@ -272,18 +273,13 @@ export function LinkedRemindersPanel({
               ))
             ) : (
               <p className="text-xs text-[var(--color-textSecondary)] w-full text-center py-2">
-                No relevant reminders found to suggest.
+                {suggestedReminders && suggestedReminders.filter(s => s.type === 'reminder').length > 0
+                  ? "Could not process reminder suggestions at this time."
+                  : "No relevant reminders found to suggest."}
               </p>
             )}
           </div>
         </div>
-      )}
-
-      {/* Empty state for the whole panel if absolutely nothing to show */}
-      {!hasLinkedReminders && !hasActualSuggestions && !isLoadingSuggestions && (
-        <p className="text-xs text-center text-[var(--color-textSecondary)] py-4">
-          No reminders linked or suggested yet.
-        </p>
       )}
 
       {selectedReminder && (

@@ -42,7 +42,7 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
   }, [tickTickProjectId]);
 
   const logActivityError = useCallback((error: unknown, context: string) => {
-    console.error(`[NotesContext Error - ${context}]:`, error);
+    console.error('NotesContext Error:', { context, error });
     // Potentially add user-facing notification here via a notification context
   }, []);
 
