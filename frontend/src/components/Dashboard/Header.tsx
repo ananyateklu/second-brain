@@ -52,7 +52,7 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
       initial="hidden"
       animate="visible"
       variants={cardVariants}
-      className={`sticky top-8 z-40 
+      className={`sticky top-0 z-40 
         max-w-[1800px] mx-auto 
         bg-[var(--header-background)] 
         backdrop-blur-xl 
@@ -64,7 +64,7 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
         ring-1 ring-white/5
         mb-6`}
     >
-      <div className="w-full h-16 pl-1 pr-6 sm:pl-3 sm:pr-8 md:px-10 lg:px-5 flex items-center gap-4">
+      <div className="w-full h-14 pl-1 pr-6 sm:pl-3 sm:pr-8 md:px-10 lg:px-5 flex items-center gap-4">
         <div className="w-10">
           <button
             onClick={toggleSidebar}
@@ -88,7 +88,7 @@ export function Header({ isSidebarOpen, toggleSidebar, searchQuery, setSearchQue
               placeholder="Search notes..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="!h-11"
+              className="!h-9 !text-s"
             />
           </div>
         </div>
