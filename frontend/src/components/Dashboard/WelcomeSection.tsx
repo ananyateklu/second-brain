@@ -93,7 +93,6 @@ export const WelcomeSection = React.memo(({ user, onNewNote, onNavigate }: Welco
         duration-300 
         px-5
         py-6
-        -mt-4
         w-full
         z-10
       `}

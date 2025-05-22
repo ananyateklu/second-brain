@@ -103,7 +103,7 @@ export function RecentPage() {
     <div className="min-h-screen overflow-x-hidden bg-fixed">
       <div className={`fixed inset-0 bg-fixed bg-gradient-to-br ${getBackgroundGradient(theme)} -z-10`} />
 
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 relative">
+      <div className="w-full py-8 space-y-8 relative">
         {/* Header */}
         <motion.div
           initial="hidden"

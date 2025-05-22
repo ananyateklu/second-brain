@@ -346,11 +346,11 @@ export function LinkedNotesPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-11rem)] overflow-visible bg-fixed p-3">
+    <div className="h-[calc(100vh-11rem)] overflow-visible bg-fixed">
       {/* Background gradient */}
       <div className="fixed inset-0 bg-fixed dark:bg-gradient-to-br dark:from-gray-900 dark:via-slate-900 dark:to-slate-800 bg-gradient-to-br from-white to-gray-100 -z-10" />
 
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col h-full w-full py-4">
         {/* Integrated Container - single outer container with shared border */}
         <div className={`
           flex-1

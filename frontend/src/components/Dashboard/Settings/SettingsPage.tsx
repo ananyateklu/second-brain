@@ -304,7 +304,7 @@ export function SettingsPage() {
       {/* Background */}
       <div className="fixed inset-0 bg-[var(--color-background)] -z-10" />
 
-      <div className="container mx-auto px-4 py-6 max-w-7xl  flex flex-col overflow-hidden">
+      <div className="w-full py-6 flex flex-col overflow-hidden space-y-8 md:space-y-6">
         {/* Page Header */}
         <motion.div
           initial="hidden"

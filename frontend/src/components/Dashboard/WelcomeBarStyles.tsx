@@ -36,7 +36,6 @@ export const StyledWelcomeBarContainer = ({ children, className = '' }: StyledWe
     transition-all 
     duration-300 
     p-6 
-    mb-6
     ${className}
   `;
 
