@@ -204,7 +204,6 @@ export function LinkedNotesPage() {
   const [showTooltip, setShowTooltip] = useState(shouldShowTooltip());
 
   const handleNodeSelect = (itemId: string, itemType: 'note' | 'idea' | 'task') => {
-    console.log('[LinkedItemsGraphPage] handleNodeSelect called with:', itemId, itemType);
     setSelectedItemId(itemId);
     setSelectedItemType(itemType);
   };
@@ -493,7 +492,6 @@ export function LinkedNotesPage() {
                 {renderContent(viewMode, notes, ideas, tasks, handleNodeSelect, selectedItemId)}
               </div>
               {((): JSX.Element | null => {
-                console.log('[LinkedItemsGraphPage] Checking panel render. Selected ID:', selectedItemId, 'Type:', selectedItemType);
                 if (selectedItemId) {
                   if (selectedItemType === 'note' || selectedItemType === 'idea') {
                     return (
@@ -522,7 +520,7 @@ export function LinkedNotesPage() {
                     );
                   }
                   console.warn('[LinkedItemsGraphPage] selectedItemId is set, but selectedItemType is unexpected:', selectedItemType);
-                  return null; // Or some fallback UI if type is wrong but ID is set
+                  return null;
                 }
                 return null;
               })()}

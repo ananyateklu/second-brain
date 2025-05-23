@@ -27,7 +27,7 @@ export function AddLinkModal({ isOpen, onClose, sourceId, onLinkAdded, sourceTyp
     const filteredNotes = notes
         .filter(note => {
             if (sourceType === 'note') {
-                return note.id !== sourceId && !note.linkedNoteIds?.includes(sourceId);
+                return note.id !== sourceId && !note.linkedItems?.some(item => item.id === sourceId);
             }
             return true;
         })
@@ -62,10 +62,13 @@ export function AddLinkModal({ isOpen, onClose, sourceId, onLinkAdded, sourceTyp
         try {
             if (sourceType === 'note') {
                 if (targetType === 'note') {
-                    // Link note to note
-                    await addLink(sourceId, targetId, linkType);
+                    // Link note to note - this should create bidirectional links
+                    await addLink(sourceId, targetId, 'Note', linkType);
                 } else {
-                    // Link note to idea
+                    // Link note to idea - create bidirectional links
+                    // First link from note to idea (via notes API)
+                    await addLink(sourceId, targetId, 'Idea', linkType);
+                    // Then link from idea to note (via ideas API) 
                     await addIdeaLink(targetId, sourceId, 'Note', linkType);
                 }
             } else if (sourceType === 'task') {
@@ -76,13 +79,23 @@ export function AddLinkModal({ isOpen, onClose, sourceId, onLinkAdded, sourceTyp
                     itemType: targetType,
                     description: ''
                 });
+
+                // Create reverse link so the target item also shows in graph
+                if (targetType === 'note') {
+                    // Link note back to task
+                    await addLink(targetId, sourceId, 'Task', linkType);
+                } else {
+                    // Link idea back to task
+                    await addIdeaLink(targetId, sourceId, 'Task', linkType);
+                }
             } else {
                 // Source is an idea
                 if (targetType === 'note') {
-                    // Link idea to note
+                    // Link idea to note and note to idea
                     await addIdeaLink(sourceId, targetId, 'Note', linkType);
+                    await addLink(targetId, sourceId, 'Idea', linkType);
                 } else {
-                    // Link idea to idea
+                    // Link idea to idea - this should create bidirectional links
                     await addIdeaLink(sourceId, targetId, 'Idea', linkType);
                 }
             }

@@ -11,8 +11,8 @@ interface IdeaAddLinkModalProps {
 }
 
 export function IdeaAddLinkModal({ isOpen, onClose, ideaId, onLinkAdded }: IdeaAddLinkModalProps) {
-    const { notes } = useNotes();
-    const { addLink, state: { ideas } } = useIdeas();
+    const { notes, addLink: addNoteLink } = useNotes();
+    const { state: { ideas }, addLink: addIdeaLink } = useIdeas();
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
@@ -64,8 +64,19 @@ export function IdeaAddLinkModal({ isOpen, onClose, ideaId, onLinkAdded }: IdeaA
         setError('');
 
         try {
-            // Use ideas context addLink with the correct item type
-            await addLink(ideaId, targetItemId, itemType === 'note' ? 'Note' : 'Idea');
+            if (itemType === 'note') {
+                // Idea to Note: Create bidirectional links
+                // First link from idea to note
+                await addIdeaLink(ideaId, targetItemId, 'Note');
+                // Then link from note back to idea
+                await addNoteLink(targetItemId, ideaId, 'Idea');
+            } else {
+                // Idea to Idea: Create bidirectional links
+                await addIdeaLink(ideaId, targetItemId, 'Idea');
+                // Also link the target idea back to this idea
+                await addIdeaLink(targetItemId, ideaId, 'Idea');
+            }
+
             onLinkAdded();
             onClose();
         } catch (err) {

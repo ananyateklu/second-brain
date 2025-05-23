@@ -51,13 +51,11 @@ namespace SecondBrain.Api.Controllers
                 }
                 else if (link.LinkType.ToLower() == "idea")
                 {
-                    var note = await _context.Notes
-                        .FirstOrDefaultAsync(n => n.Id == link.LinkedItemId && 
-                            (n.Tags != null && n.Tags.Contains("idea")) && 
-                            !n.IsDeleted);
-                    if (note != null)
+                    var idea = await _context.Ideas
+                        .FirstOrDefaultAsync(i => i.Id == link.LinkedItemId && !i.IsDeleted);
+                    if (idea != null)
                     {
-                        items[link.LinkedItemId] = note;
+                        items[link.LinkedItemId] = idea;
                         validLinks.Add(link);
                     }
                 }
@@ -415,12 +413,30 @@ namespace SecondBrain.Api.Controllers
                 return NotFound(new { error = REMINDER_NOT_FOUND });
             }
 
-            var linkedItem = await _context.Notes
-                .FirstOrDefaultAsync(n => n.Id == request.LinkedItemId && n.UserId == userId);
-
-            if (linkedItem == null)
+            // Check if the linked item exists based on the link type
+            bool linkedItemExists = false;
+            if (request.LinkType.ToLower() == "note")
             {
-                _logger.LogWarning("Linked item not found. LinkedItemId: {LinkedItemId}, UserId: {UserId}", request.LinkedItemId, userId);
+                var note = await _context.Notes
+                    .FirstOrDefaultAsync(n => n.Id == request.LinkedItemId && n.UserId == userId && !n.IsDeleted);
+                linkedItemExists = note != null;
+            }
+            else if (request.LinkType.ToLower() == "idea")
+            {
+                var idea = await _context.Ideas
+                    .FirstOrDefaultAsync(i => i.Id == request.LinkedItemId && i.UserId == userId && !i.IsDeleted);
+                linkedItemExists = idea != null;
+            }
+            else
+            {
+                _logger.LogWarning("Unsupported link type. LinkType: {LinkType}", request.LinkType);
+                return BadRequest(new { error = "Unsupported link type" });
+            }
+
+            if (!linkedItemExists)
+            {
+                _logger.LogWarning("Linked item not found. LinkedItemId: {LinkedItemId}, LinkType: {LinkType}, UserId: {UserId}", 
+                    request.LinkedItemId, request.LinkType, userId);
                 return NotFound("Linked item not found");
             }
 

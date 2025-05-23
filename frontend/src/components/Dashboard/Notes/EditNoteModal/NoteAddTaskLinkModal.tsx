@@ -11,7 +11,7 @@ interface AddTaskLinkModalProps {
 }
 
 export function AddTaskLinkModal({ isOpen, onClose, noteId, onLinkAdded }: AddTaskLinkModalProps) {
-    const { tasks } = useTasks();
+    const { tasks, addTaskLink } = useTasks();
     const { addLink: addLinkFromNotes } = useNotes();
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -31,7 +31,16 @@ export function AddTaskLinkModal({ isOpen, onClose, noteId, onLinkAdded }: AddTa
         setError('');
 
         try {
+            // Create bidirectional links
+            // First link from note to task
             await addLinkFromNotes(noteId, taskId, 'Task');
+            // Then link from task back to note
+            await addTaskLink({
+                taskId: taskId,
+                linkedItemId: noteId,
+                itemType: 'note'
+            });
+
             onLinkAdded();
             onClose();
         } catch (err) {
