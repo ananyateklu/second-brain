@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Search, X, Lightbulb, Type, CheckCircle } from 'lucide-react';
-import { useNotes } from '../../../../hooks/useNotes';
+import { useNotes } from '../../../../contexts/notesContextUtils';
 import { useTasks } from '../../../../contexts/tasksContextUtils';
 import { useIdeas } from '../../../../contexts/ideasContextUtils';
 import { Note } from '../../../../types/note';
@@ -14,8 +14,8 @@ interface AddLinkModalProps {
 }
 
 export function AddLinkModal({ isOpen, onClose, currentTaskId, onLinkAdded }: AddLinkModalProps) {
-  const { notes } = useNotes();
-  const { state: { ideas } } = useIdeas();
+  const { notes, addLink: addNoteLink } = useNotes();
+  const { state: { ideas }, addLink: addIdeaLink } = useIdeas();
   const { tasks, addTaskLink } = useTasks();
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -58,12 +58,20 @@ export function AddLinkModal({ isOpen, onClose, currentTaskId, onLinkAdded }: Ad
         // If parent component provided a callback, use it
         await onLinkAdded(linkedItemId, itemType);
       } else {
-        // Otherwise, handle directly
+        // Create bidirectional links
+        // First link from task to note/idea
         await addTaskLink({
           taskId: currentTaskId,
           linkedItemId,
           itemType
         });
+
+        // Then create reverse link from note/idea back to task
+        if (itemType === 'note') {
+          await addNoteLink(linkedItemId, currentTaskId, 'Task');
+        } else {
+          await addIdeaLink(linkedItemId, currentTaskId, 'Task');
+        }
       }
 
       // Show success message instead of closing

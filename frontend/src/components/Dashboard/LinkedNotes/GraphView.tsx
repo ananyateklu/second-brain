@@ -56,27 +56,54 @@ const prepareEdges = (notes: Note[], ideas: Idea[], tasks: Task[]): Edge[] => {
   const processedPairs = new Set<string>();
 
   const addItemEdges = (sourceItem: Note | Idea | Task, itemType: 'note' | 'idea' | 'task') => {
+    if (!sourceItem.linkedItems || sourceItem.linkedItems.length === 0) {
+      return;
+    }
+
     sourceItem.linkedItems?.forEach(linkedItem => {
       const targetId = linkedItem.id;
-      const targetType = linkedItem.type.toLowerCase() as 'note' | 'idea' | 'task' | 'reminder';
 
-      if (targetType !== 'note' && targetType !== 'idea' && targetType !== 'task') {
+      if (!targetId) {
+        console.warn('[GraphView] Linked item missing ID:', linkedItem);
+        return;
+      }
+
+      // Handle different linkedItems structures between Note/Idea and Task
+      let targetType: string;
+      if (itemType === 'task') {
+        // For tasks, the type might be different structure
+        targetType = linkedItem.type || '';
+      } else {
+        // For notes and ideas, convert from capitalized to lowercase
+        targetType = linkedItem.type || '';
+      }
+
+      // Normalize the target type to match our expected values
+      // Handle both capitalized (Note, Idea, Task) and lowercase (note, idea, task) formats
+      const normalizedTargetType = targetType.toLowerCase();
+
+      // Check if the target type is valid for graph display
+      // Accept note, idea, task (and potentially capitalized versions that get normalized)
+      if (normalizedTargetType !== 'note' && normalizedTargetType !== 'idea' && normalizedTargetType !== 'task') {
         return;
       }
 
       const pairId = [sourceItem.id, targetId].sort().join('-');
       if (!processedPairs.has(pairId)) {
         processedPairs.add(pairId);
-        edges.push({
+
+        const edge = {
           id: `${sourceItem.id}-${targetId}`,
           source: sourceItem.id,
           target: targetId,
           data: {
             sourceType: itemType,
-            targetType: targetType,
+            targetType: normalizedTargetType as 'note' | 'idea' | 'task',
           },
           markerEnd: { type: MarkerType.ArrowClosed },
-        });
+        };
+
+        edges.push(edge);
       }
     });
   };
@@ -288,9 +315,12 @@ function GraphViewContent({ onNodeSelect, selectedItemId }: GraphViewProps) {
     (idea.linkedItems?.length ?? 0) > 0
   ), [ideas]);
 
-  const tasksWithLinks = useMemo(() => tasks.filter(task =>
-    (task.linkedItems?.length ?? 0) > 0
-  ), [tasks]);
+  const tasksWithLinks = useMemo(() => {
+    const filtered = tasks.filter(task =>
+      (task.linkedItems?.length ?? 0) > 0
+    );
+    return filtered;
+  }, [tasks]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges] = useEdgesState<Edge>([]);
@@ -314,8 +344,6 @@ function GraphViewContent({ onNodeSelect, selectedItemId }: GraphViewProps) {
 
   // Initialize layout
   useEffect(() => {
-    if (isLoading) return; // Wait until positions are loaded
-
     // Create nodes for notes
     const noteNodes = notesWithLinks.map((note) => ({
       id: note.id,
@@ -366,7 +394,7 @@ function GraphViewContent({ onNodeSelect, selectedItemId }: GraphViewProps) {
 
     setNodes(layoutedNodes);
     setEdges(layoutedEdges as Edge[]);
-  }, [notesWithLinks, ideasWithLinks, tasksWithLinks, selectedItemId, setNodes, setEdges, savedPositions, isLoading]);
+  }, [notesWithLinks, ideasWithLinks, tasksWithLinks, selectedItemId, setNodes, setEdges, savedPositions]);
 
   // Handle node drag end to save positions
   const onNodeDragStop: NodeDragHandler = useCallback(() => {
@@ -410,7 +438,6 @@ function GraphViewContent({ onNodeSelect, selectedItemId }: GraphViewProps) {
   }, [nodes.length, fitView, isInitialLoad, isLoading]);
 
   const onNodeClick = useCallback((_event: React.MouseEvent, node: Node<CustomNodeType['data']>) => {
-    console.log('[GraphView] Node clicked:', node.id, 'Type from data:', node.data?.itemType);
     if (node.data && node.data.itemType) {
       onNodeSelect(node.id, node.data.itemType);
     } else {

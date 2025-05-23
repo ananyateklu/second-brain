@@ -1,15 +1,16 @@
 import { useState } from 'react';
+import { Save } from 'lucide-react';
 import { useReminders } from '../../../../contexts/remindersContextUtils';
 import { useNotes } from '../../../../contexts/notesContextUtils';
-import { Reminder } from '../../../../types/reminder';
+import { useIdeas } from '../../../../contexts/ideasContextUtils';
+import { useTheme } from '../../../../contexts/themeContextUtils';
 import { reminderService } from '../../../../services/api/reminders.service';
-import { Save } from 'lucide-react';
+import { Reminder } from '../../../../types/reminder';
 import { Header } from './Header';
 import { MainContent } from './MainContent';
 import { LinkedItemsPanel } from './LinkedItemsPanel';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
 import { AddLinkModal } from './AddLinkModal';
-import { useTheme } from '../../../../contexts/themeContextUtils';
 
 interface EditReminderModalProps {
   reminder: Reminder;
@@ -19,7 +20,8 @@ interface EditReminderModalProps {
 
 export function EditReminderModal({ reminder: initialReminder, isOpen, onClose }: EditReminderModalProps) {
   const { updateReminder, deleteReminder, addReminderLink, removeReminderLink } = useReminders();
-  const { notes } = useNotes();
+  const { notes, addLink: addNoteLink } = useNotes();
+  const { state: { ideas }, addLink: addIdeaLink } = useIdeas();
   const { theme } = useTheme();
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isAddLinkOpen, setIsAddLinkOpen] = useState(false);
@@ -78,11 +80,25 @@ export function EditReminderModal({ reminder: initialReminder, isOpen, onClose }
       // Save current linked items to ensure we don't lose any
       const currentLinkedItems = [...reminder.linkedItems];
 
-      // Call the API to add the link
+      // Call the API to add the link from reminder to item
       await addReminderLink(reminder.id, itemId, itemType);
 
+      // Create the reverse link from item back to reminder
+      try {
+        if (itemType === 'note') {
+          await addNoteLink(itemId, reminder.id, 'Reminder');
+        } else {
+          await addIdeaLink(itemId, reminder.id, 'Reminder');
+        }
+      } catch (reverseError) {
+        console.warn('Failed to create reverse link (item may not support it):', reverseError);
+        // Continue even if reverse link fails - the main link was created successfully
+      }
+
       // Find the note or idea to get its title
-      const linkedItem = notes.find(note => note.id === itemId);
+      const linkedItem = itemType === 'note'
+        ? notes.find(note => note.id === itemId)
+        : ideas.find(idea => idea.id === itemId);
 
       // Get latest data with fresh reminders
       const latestReminders = await reminderService.getReminders();
@@ -124,6 +140,7 @@ export function EditReminderModal({ reminder: initialReminder, isOpen, onClose }
       setIsAddLinkOpen(false);
     } catch (error) {
       console.error('Failed to add link:', error);
+      throw error;
     }
   };
 

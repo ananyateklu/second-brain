@@ -11,7 +11,7 @@ interface IdeaAddTaskLinkModalProps {
 }
 
 export function IdeaAddTaskLinkModal({ isOpen, onClose, ideaId, onLinkAdded }: IdeaAddTaskLinkModalProps) {
-    const { tasks } = useTasks();
+    const { tasks, addTaskLink } = useTasks();
     const { addLink, state: { ideas } } = useIdeas();
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -37,7 +37,16 @@ export function IdeaAddTaskLinkModal({ isOpen, onClose, ideaId, onLinkAdded }: I
         setError('');
 
         try {
+            // Create bidirectional links
+            // First link from idea to task
             await addLink(ideaId, taskId, 'Task');
+            // Then link from task back to idea
+            await addTaskLink({
+                taskId: taskId,
+                linkedItemId: ideaId,
+                itemType: 'idea'
+            });
+
             onLinkAdded();
             onClose();
         } catch (err) {

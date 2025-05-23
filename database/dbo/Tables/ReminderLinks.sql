@@ -12,7 +12,6 @@ CREATE TABLE [dbo].[ReminderLinks] (
     CONSTRAINT [PK_ReminderLinks] PRIMARY KEY CLUSTERED ([ReminderId] ASC, [LinkedItemId] ASC),
     CONSTRAINT [FK_ReminderLinks_Reminders] FOREIGN KEY ([ReminderId]) REFERENCES [dbo].[Reminders] ([Id]) ON DELETE CASCADE,
     CONSTRAINT [FK_ReminderLinks_Users] FOREIGN KEY ([CreatedBy]) REFERENCES [dbo].[Users] ([Id]),
-    CONSTRAINT [FK_ReminderLinks_Notes] FOREIGN KEY ([LinkedItemId]) REFERENCES [dbo].[Notes] ([Id]),
     CONSTRAINT [CK_ReminderLinks_LinkType] CHECK ([LinkType] IN ('note', 'idea'))
 );
 
