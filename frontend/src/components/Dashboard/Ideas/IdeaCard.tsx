@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, memo } from 'react';
-import { Star, Link2, Tag as TagIcon, Lightbulb, Archive, Pin, Clock } from 'lucide-react';
+import { Star, Tag as TagIcon, Lightbulb, Archive, Pin, Clock } from 'lucide-react';
 import type { Idea } from '../../../types/idea';
 import { formatDate } from '../../../utils/dateUtils';
 import { useIdeas } from '../../../contexts/ideasContextUtils';
@@ -7,6 +7,10 @@ import { formatTimeAgo } from '../Recent/utils';
 import { useTheme } from '../../../contexts/themeContextUtils';
 import { getIconBg } from '../../../utils/dashboardUtils';
 import { WarningModal } from '../../shared/WarningModal';
+import { ReminderBadge } from '../../shared/ReminderBadge';
+import { TaskBadge } from '../../shared/TaskBadge';
+import { NoteBadge } from '../../shared/NoteBadge';
+import { IdeaBadge } from '../../shared/IdeaBadge';
 
 interface IdeaCardProps {
   idea: Idea;
@@ -105,6 +109,30 @@ export function IdeaCard({
   const visibleTags = useMemo(() => tags.slice(0, MAX_VISIBLE_ITEMS), [tags, MAX_VISIBLE_ITEMS]);
   const remainingCount = useMemo(() => Math.max(0, tags.length - MAX_VISIBLE_ITEMS), [tags.length, MAX_VISIBLE_ITEMS]);
 
+  // Calculate linked reminders count for the badge
+  const linkedRemindersCount = useMemo(() =>
+    (idea.linkedItems || []).filter(item => item.type === 'Reminder').length,
+    [idea.linkedItems]
+  );
+
+  // Calculate linked tasks count for the badge
+  const linkedTasksCount = useMemo(() =>
+    (idea.linkedItems || []).filter(item => item.type === 'Task').length,
+    [idea.linkedItems]
+  );
+
+  // Calculate linked notes count for the badge
+  const linkedNotesCount = useMemo(() =>
+    (idea.linkedItems || []).filter(item => item.type === 'Note').length,
+    [idea.linkedItems]
+  );
+
+  // Calculate linked ideas count for the badge
+  const linkedIdeasCount = useMemo(() =>
+    (idea.linkedItems || []).filter(item => item.type === 'Idea').length,
+    [idea.linkedItems]
+  );
+
   const tagClasses = useMemo(() => (
     isDark
       ? 'bg-[var(--color-idea)]/20 text-[var(--color-idea)] ring-1 ring-white/10 opacity-60'
@@ -133,8 +161,8 @@ export function IdeaCard({
   ), [idea]);
 
   const smallMetadataMemo = useMemo(() => (
-    <MemoizedSmallMetadata idea={idea} />
-  ), [idea]);
+    <MemoizedSmallMetadata />
+  ), []);
 
   const tagsMemo = useMemo(() => (
     <TagList
@@ -171,8 +199,9 @@ export function IdeaCard({
     return (
       <div
         onClick={handleCardClick}
-        className={`${containerClasses} w-[160px] min-h-[90px] max-h-[90px]`}
+        className={`${containerClasses} w-[160px] min-h-[90px] max-h-[90px] overflow-visible`}
       >
+        <ReminderBadge count={linkedRemindersCount} />
         <div className="p-2 h-full flex flex-col gap-1.5 relative">
           <div className="flex items-start justify-between gap-1.5">
             <div className="flex items-start gap-1.5 flex-1 min-w-0">
@@ -210,8 +239,10 @@ export function IdeaCard({
         className={`
           ${containerClasses}
           ${viewMode === 'list' ? 'min-h-[64px]' : 'h-[180px]'}
+          overflow-visible
         `}
       >
+        <ReminderBadge count={linkedRemindersCount} />
         {viewMode === 'list' ? (
           <div className="px-3 py-2.5 h-full flex gap-3 items-start">
             {context === 'trash' && onSelect && (
@@ -249,7 +280,10 @@ export function IdeaCard({
                 <div className="min-w-0 flex-1">
                   {tagsMemo}
                 </div>
-                <div className="flex-shrink-0 ml-4">
+                <div className="flex-shrink-0 ml-4 flex items-center gap-2">
+                  {linkedNotesCount > 0 && <NoteBadge count={linkedNotesCount} />}
+                  {linkedIdeasCount > 0 && <IdeaBadge count={linkedIdeasCount} />}
+                  {linkedTasksCount > 0 && <TaskBadge count={linkedTasksCount} />}
                   {metadataMemo}
                 </div>
               </div>
@@ -287,8 +321,15 @@ export function IdeaCard({
 
             <div className="flex-1 flex flex-col justify-end space-y-2">
               {tagsMemo}
-              <div className="pt-2 border-t border-gray-700/10">
-                {metadataMemo}
+              <div className="pt-2 border-t border-gray-700/10 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {linkedNotesCount > 0 && <NoteBadge count={linkedNotesCount} />}
+                  {linkedIdeasCount > 0 && <IdeaBadge count={linkedIdeasCount} />}
+                  {linkedTasksCount > 0 && <TaskBadge count={linkedTasksCount} />}
+                </div>
+                <div className="ml-auto">
+                  {metadataMemo}
+                </div>
               </div>
             </div>
           </div>
@@ -373,15 +414,10 @@ function Metadata({ idea }: { idea: Idea }) {
         <Clock className="w-3 h-3" />
         <span>{formatDate(idea.updatedAt)}</span>
       </div>
-      {idea.linkedItems && idea.linkedItems.length > 0 && (
-        <div className="flex items-center gap-1">
-          <Link2 className="w-3 h-3" />
-          <span>{idea.linkedItems.length} linked</span>
-        </div>
-      )}
     </div>
   );
 }
+
 const MemoizedMetadata = memo(Metadata);
 
 interface ActionsProps {
@@ -433,16 +469,12 @@ const Actions = memo(function Actions({
   );
 });
 
-function SmallMetadata({ idea }: { idea: Idea }) {
+function SmallMetadata() {
   return (
     <>
-      {(idea.linkedItems?.length ?? 0) > 0 && (
-        <div className="flex items-center gap-1">
-          <Link2 className="w-2.5 h-2.5" />
-          <span>{idea.linkedItems.length}</span>
-        </div>
-      )}
+      {/* Only show reminders count for mindMap view - other links are not shown in mindMap */}
     </>
   );
 }
+
 const MemoizedSmallMetadata = memo(SmallMetadata);
