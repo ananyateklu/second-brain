@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, memo } from 'react';
-import { Clock, Tag as TagIcon, Star, Pin, FileText, Archive, Link2, CheckSquare } from 'lucide-react';
+import { Clock, Tag as TagIcon, Star, Pin, FileText, Archive } from 'lucide-react';
 import { useNotes } from '../../contexts/notesContextUtils';
 import { formatDate } from '../../utils/dateUtils';
 import { Note } from '../../types/note';
@@ -7,6 +7,10 @@ import { formatTimeAgo } from './Recent/utils';
 import { useTheme } from '../../contexts/themeContextUtils';
 import { getIconBg } from '../../utils/dashboardUtils';
 import { WarningModal } from '../shared/WarningModal';
+import { ReminderBadge } from '../shared/ReminderBadge';
+import { TaskBadge } from '../shared/TaskBadge';
+import { NoteBadge } from '../shared/NoteBadge';
+import { IdeaBadge } from '../shared/IdeaBadge';
 
 interface NoteCardProps {
   note: Note;
@@ -117,6 +121,30 @@ export function NoteCard({
       : 'bg-[var(--color-note)]/10 text-[var(--color-note)] ring-1 ring-black/5'
   ), [isDark]);
 
+  // Calculate linked reminders count for the badge
+  const linkedRemindersCount = useMemo(() =>
+    (note.linkedItems || []).filter(item => item.type === 'Reminder').length,
+    [note.linkedItems]
+  );
+
+  // Calculate linked tasks count for the badge
+  const linkedTasksCount = useMemo(() =>
+    (note.linkedItems || []).filter(item => item.type === 'Task').length,
+    [note.linkedItems]
+  );
+
+  // Calculate linked notes count for the badge
+  const linkedNotesCount = useMemo(() =>
+    (note.linkedItems || []).filter(item => item.type === 'Note').length,
+    [note.linkedItems]
+  );
+
+  // Calculate linked ideas count for the badge
+  const linkedIdeasCount = useMemo(() =>
+    (note.linkedItems || []).filter(item => item.type === 'Idea').length,
+    [note.linkedItems]
+  );
+
   const pinButtonClasses = useMemo(() => {
     if (note.isPinned) {
       return isDark ? 'bg-[#64AB6F]/10 text-[#64AB6F]' : 'bg-[#059669]/10 text-[#059669]';
@@ -146,8 +174,8 @@ export function NoteCard({
   ), [note]);
 
   const smallMetadataMemo = useMemo(() => (
-    <MemoizedSmallMetadata note={note} />
-  ), [note]);
+    <MemoizedSmallMetadata />
+  ), []);
 
   const tagsMemo = useMemo(() => (
     <TagList
@@ -174,8 +202,9 @@ export function NoteCard({
     return (
       <div
         onClick={handleCardClick}
-        className={`${containerClasses} w-[160px] min-h-[90px] max-h-[90px]`}
+        className={`${containerClasses} w-[160px] min-h-[90px] max-h-[90px] overflow-visible`}
       >
+        <ReminderBadge count={linkedRemindersCount} />
         <div className="p-2 h-full flex flex-col gap-1.5 relative">
           <div className="flex items-start justify-between gap-1.5">
             <div className="flex items-start gap-1.5 flex-1 min-w-0">
@@ -213,8 +242,10 @@ export function NoteCard({
         className={`
           ${containerClasses}
           ${viewMode === 'list' ? 'min-h-[64px]' : 'h-[180px]'}
+          overflow-visible
         `}
       >
+        <ReminderBadge count={linkedRemindersCount} />
         {viewMode === 'list' ? (
           <div className="px-3 py-2.5 h-full flex gap-3 items-start">
             {context === 'trash' && onSelect && (
@@ -249,7 +280,10 @@ export function NoteCard({
                 <div className="min-w-0 flex-1">
                   {tagsMemo}
                 </div>
-                <div className="flex-shrink-0 ml-4">
+                <div className="flex-shrink-0 ml-4 flex items-center gap-2">
+                  {linkedNotesCount > 0 && <NoteBadge count={linkedNotesCount} />}
+                  {linkedIdeasCount > 0 && <IdeaBadge count={linkedIdeasCount} />}
+                  {linkedTasksCount > 0 && <TaskBadge count={linkedTasksCount} />}
                   {metadataMemo}
                 </div>
               </div>
@@ -284,8 +318,15 @@ export function NoteCard({
             </div>
             <div className="flex-1 flex flex-col justify-end space-y-2">
               {tagsMemo}
-              <div className="pt-2 border-t border-gray-700/10">
-                {metadataMemo}
+              <div className="pt-2 border-t border-gray-700/10 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {linkedNotesCount > 0 && <NoteBadge count={linkedNotesCount} />}
+                  {linkedIdeasCount > 0 && <IdeaBadge count={linkedIdeasCount} />}
+                  {linkedTasksCount > 0 && <TaskBadge count={linkedTasksCount} />}
+                </div>
+                <div className="ml-auto">
+                  {metadataMemo}
+                </div>
               </div>
             </div>
           </div>
@@ -413,103 +454,22 @@ const Actions = memo(function Actions({
 });
 
 function Metadata({ note }: { note: Note }) {
-  const linkedNotesCount = useMemo(() =>
-    (note.linkedItems || []).filter(item => item.type === 'Note').length,
-    [note.linkedItems]
-  );
-  const linkedTasksCount = useMemo(() =>
-    (note.linkedItems || []).filter(item => item.type === 'Task').length,
-    [note.linkedItems]
-  );
-  const linkedRemindersCount = useMemo(() =>
-    (note.linkedItems || []).filter(item => item.type === 'Reminder').length,
-    [note.linkedItems]
-  );
-  const linkedIdeasCount = useMemo(() =>
-    (note.linkedItems || []).filter(item => item.type === 'Idea').length,
-    [note.linkedItems]
-  );
-
   return (
     <div className="flex items-center gap-2 text-[11px] text-[var(--color-textSecondary)]">
       <div className="flex items-center gap-1">
         <Clock className="w-3 h-3" />
         <span>{formatDate(note.updatedAt)}</span>
       </div>
-      {(linkedNotesCount > 0) && (
-        <div className="flex items-center gap-1" title={`${linkedNotesCount} linked notes`}>
-          <FileText className="w-3 h-3" />
-          <span>{linkedNotesCount}</span>
-        </div>
-      )}
-      {(linkedIdeasCount > 0) && (
-        <div className="flex items-center gap-1" title={`${linkedIdeasCount} linked ideas`}>
-          <Link2 className="w-3 h-3" />
-          <span>{linkedIdeasCount}</span>
-        </div>
-      )}
-      {(linkedTasksCount > 0) && (
-        <div className="flex items-center gap-1" title={`${linkedTasksCount} linked tasks`}>
-          <CheckSquare className="w-3 h-3" />
-          <span>{linkedTasksCount}</span>
-        </div>
-      )}
-      {(linkedRemindersCount > 0) && (
-        <div className="flex items-center gap-1" title={`${linkedRemindersCount} linked reminders`}>
-          <Clock className="w-3 h-3" />
-          <span>{linkedRemindersCount}</span>
-        </div>
-      )}
     </div>
   );
 }
 const MemoizedMetadata = memo(Metadata);
 
 // Smaller metadata variant for mindMap view
-function SmallMetadata({ note }: { note: Note }) {
-  const linkedNotesCount = useMemo(() =>
-    (note.linkedItems || []).filter(item => item.type === 'Note').length,
-    [note.linkedItems]
-  );
-  const linkedTasksCount = useMemo(() =>
-    (note.linkedItems || []).filter(item => item.type === 'Task').length,
-    [note.linkedItems]
-  );
-  const linkedRemindersCount = useMemo(() =>
-    (note.linkedItems || []).filter(item => item.type === 'Reminder').length,
-    [note.linkedItems]
-  );
-  const linkedIdeasCount = useMemo(() =>
-    (note.linkedItems || []).filter(item => item.type === 'Idea').length,
-    [note.linkedItems]
-  );
-
+function SmallMetadata() {
   return (
     <>
-      {(linkedNotesCount > 0) && (
-        <div className="flex items-center gap-1" title={`${linkedNotesCount} linked notes`}>
-          <FileText className="w-2.5 h-2.5" />
-          <span>{linkedNotesCount}</span>
-        </div>
-      )}
-      {(linkedIdeasCount > 0) && (
-        <div className="flex items-center gap-1" title={`${linkedIdeasCount} linked ideas`}>
-          <Link2 className="w-2.5 h-2.5" />
-          <span>{linkedIdeasCount}</span>
-        </div>
-      )}
-      {(linkedTasksCount > 0) && (
-        <div className="flex items-center gap-1" title={`${linkedTasksCount} linked tasks`}>
-          <CheckSquare className="w-2.5 h-2.5" />
-          <span>{linkedTasksCount}</span>
-        </div>
-      )}
-      {(linkedRemindersCount > 0) && (
-        <div className="flex items-center gap-1" title={`${linkedRemindersCount} linked reminders`}>
-          <Clock className="w-2.5 h-2.5" />
-          <span>{linkedRemindersCount}</span>
-        </div>
-      )}
+      {/* Only show reminders count for mindMap view - other links are not shown in mindMap */}
     </>
   );
 }
