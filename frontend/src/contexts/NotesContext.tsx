@@ -317,29 +317,42 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
   const removeLink = useCallback(
     async (noteId: string, linkedItemId: string, linkedItemType: string) => {
       try {
-        // Optimistically find the note to log its state before update
-        // originalNoteState = notes.find(n => n.id === noteId); // Variable no longer needed
-
         const updatedNote = await notesService.removeLink(noteId, linkedItemId, linkedItemType);
         const safeUpdatedNote = createSafeNote(updatedNote);
 
+        // Update the primary note
         setNotes(prevNotes => {
           const newNotes = prevNotes.map(n => (n.id === noteId ? safeUpdatedNote : n));
           return sortNotes(newNotes);
         });
 
+        // Handle two-way updates for different linked item types
         if (linkedItemType === 'Note') {
-          // If a note was unlinked from another note, the other note's linkedItems also change.
-          // We need to ensure that other note is also updated in our local state if it's present.
-          const unlinkedNoteDetails = await notesService.getNoteById(linkedItemId); // This fetches the other note
-          if (unlinkedNoteDetails) {
-            const safeUnlinkedNoteDetails = createSafeNote(unlinkedNoteDetails);
-            setNotes(prevNotes => {
-              const newNotes = prevNotes.map(n => (n.id === linkedItemId ? safeUnlinkedNoteDetails : n));
-              return sortNotes(newNotes);
-            });
+          // If a note was unlinked from another note, refresh the other note's data
+          try {
+            const unlinkedNoteDetails = await notesService.getNoteById(linkedItemId);
+            if (unlinkedNoteDetails) {
+              const safeUnlinkedNoteDetails = createSafeNote(unlinkedNoteDetails);
+              setNotes(prevNotes => {
+                const newNotes = prevNotes.map(n => (n.id === linkedItemId ? safeUnlinkedNoteDetails : n));
+                return sortNotes(newNotes);
+              });
+            }
+          } catch (error) {
+            // If we can't fetch the other note, it might be archived/deleted, which is fine
+            console.warn(`Could not refresh linked note ${linkedItemId} after unlinking:`, error);
           }
         }
+
+        // Dispatch events to notify other contexts about the unlink
+        if (linkedItemType === 'Idea') {
+          window.dispatchEvent(new CustomEvent('ideaLinkChanged', { detail: { ideaId: linkedItemId } }));
+        } else if (linkedItemType === 'Task') {
+          window.dispatchEvent(new CustomEvent('taskLinkChanged', { detail: { taskId: linkedItemId } }));
+        } else if (linkedItemType === 'Reminder') {
+          window.dispatchEvent(new CustomEvent('reminderLinkChanged', { detail: { reminderId: linkedItemId } }));
+        }
+
         createActivity({
           actionType: 'unlink_note',
           itemType: 'note',
@@ -347,7 +360,6 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
           itemTitle: updatedNote.title,
           description: `Unlinked note '${updatedNote.title}' from ${linkedItemType} '${linkedItemId}'`
         });
-        // To match NotesContextType, this should be Promise<void>
       } catch (error) {
         logActivityError(error, `unlink note ${noteId} from ${linkedItemType} ${linkedItemId}`);
         throw error;
@@ -600,6 +612,20 @@ export function NotesProvider({ children }: { children: React.ReactNode }) {
       fetchNotes();
     }
   }, [user, fetchNotes]);
+
+  // Listen for link changes from other contexts
+  useEffect(() => {
+    const handleNoteLinkChanged = () => {
+      // Refresh notes to get updated link information when an idea/task/reminder is unlinked from a note
+      fetchNotes();
+    };
+
+    window.addEventListener('noteLinkChanged', handleNoteLinkChanged as EventListener);
+
+    return () => {
+      window.removeEventListener('noteLinkChanged', handleNoteLinkChanged as EventListener);
+    };
+  }, [fetchNotes]);
 
   useEffect(() => {
     if (isTickTickConnected && tickTickProjectId) {

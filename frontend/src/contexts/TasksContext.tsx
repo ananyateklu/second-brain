@@ -123,6 +123,20 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user, checkTickTickStatus]);
 
+  // Add event listener for cross-context communication
+  useEffect(() => {
+    const handleTaskLinkChanged = () => {
+      // Refresh tasks when other contexts modify task links
+      fetchTasks();
+    };
+
+    window.addEventListener('taskLinkChanged', handleTaskLinkChanged);
+
+    return () => {
+      window.removeEventListener('taskLinkChanged', handleTaskLinkChanged);
+    };
+  }, [fetchTasks]);
+
   const addTask = useCallback(async (taskData: CreateTaskData) => {
     try {
       const newTask = await tasksService.createTask(taskData);
@@ -202,6 +216,10 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
       const updatedTask = await tasksService.removeTaskLink(taskId, linkedItemId);
       setTasks(prev => prev.map(task => task.id === taskId ? updatedTask : task));
 
+      // Dispatch events to notify other contexts
+      window.dispatchEvent(new CustomEvent('taskLinkChanged', {
+        detail: { taskId, linkedItemId, action: 'removed' }
+      }));
       window.dispatchEvent(new Event('taskChange'));
     } catch (error) {
       console.error('Failed to remove task link:', error);

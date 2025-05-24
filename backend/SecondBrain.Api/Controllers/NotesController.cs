@@ -392,29 +392,102 @@ namespace SecondBrain.Api.Controllers
                 return NotFound(new { error = "Link not found." });
             }
 
+            // Soft delete the primary link
             linkToRemove.IsDeleted = true;
             linkToRemove.DeletedAt = DateTime.UtcNow;
             _logger.LogInformation("Soft deleted link from Note {NoteId} to {LinkedItemType} {LinkedItemId}", noteId, linkedItemType, linkedItemId);
             
+            // Handle two-way unlinking based on the linked item type
             string targetTitle = "Unknown Item";
             string linkedItemTypeNormalized = linkedItemType.ToLower();
-             switch (linkedItemTypeNormalized)
+            
+            switch (linkedItemTypeNormalized)
             {
                 case "note":
-                    var linkedNote = await _context.Notes.FirstOrDefaultAsync(n => n.Id == linkedItemId);
-                    if (linkedNote != null) targetTitle = linkedNote.Title;
+                    var linkedNote = await _context.Notes.FirstOrDefaultAsync(n => n.Id == linkedItemId && n.UserId == userId);
+                    if (linkedNote != null) 
+                    {
+                        targetTitle = linkedNote.Title;
+                        
+                        // Remove the reverse link from the other note
+                        var reverseLink = await _context.NoteLinks.FirstOrDefaultAsync(nl =>
+                            nl.NoteId == linkedItemId &&
+                            nl.LinkedItemId == noteId &&
+                            nl.LinkedItemType == "Note" &&
+                            !nl.IsDeleted);
+                        
+                        if (reverseLink != null)
+                        {
+                            reverseLink.IsDeleted = true;
+                            reverseLink.DeletedAt = DateTime.UtcNow;
+                            _logger.LogInformation("Soft deleted reverse link from Note {LinkedItemId} to Note {NoteId}", linkedItemId, noteId);
+                        }
+                    }
                     break;
+                    
                 case "idea":
-                    var linkedIdea = await _context.Ideas.FirstOrDefaultAsync(i => i.Id == linkedItemId);
-                    if (linkedIdea != null) targetTitle = linkedIdea.Title;
+                    var linkedIdea = await _context.Ideas.FirstOrDefaultAsync(i => i.Id == linkedItemId && i.UserId == userId);
+                    if (linkedIdea != null) 
+                    {
+                        targetTitle = linkedIdea.Title;
+                        
+                        // Remove the corresponding link from the idea
+                        var ideaLink = await _context.IdeaLinks.FirstOrDefaultAsync(il =>
+                            il.IdeaId == linkedItemId &&
+                            il.LinkedItemId == noteId &&
+                            il.LinkedItemType == "Note" &&
+                            !il.IsDeleted);
+                        
+                        if (ideaLink != null)
+                        {
+                            ideaLink.IsDeleted = true;
+                            _logger.LogInformation("Soft deleted corresponding link from Idea {LinkedItemId} to Note {NoteId}", linkedItemId, noteId);
+                        }
+                    }
                     break;
+                    
                 case "task":
-                    var linkedTask = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == linkedItemId);
-                     if (linkedTask != null) targetTitle = linkedTask.Title;
+                    var linkedTask = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == linkedItemId && t.UserId == userId);
+                    if (linkedTask != null) 
+                    {
+                        targetTitle = linkedTask.Title;
+                        
+                        // Remove the corresponding link from the task
+                        var taskLink = await _context.TaskLinks.FirstOrDefaultAsync(tl =>
+                            tl.TaskId == linkedItemId &&
+                            tl.LinkedItemId == noteId &&
+                            tl.LinkType == "note" &&
+                            !tl.IsDeleted);
+                        
+                        if (taskLink != null)
+                        {
+                            taskLink.IsDeleted = true;
+                            taskLink.DeletedAt = DateTime.UtcNow;
+                            _logger.LogInformation("Soft deleted corresponding link from Task {LinkedItemId} to Note {NoteId}", linkedItemId, noteId);
+                        }
+                    }
                     break;
+                    
                 case "reminder":
-                    var linkedReminder = await _context.Reminders.FirstOrDefaultAsync(r => r.Id == linkedItemId);
-                    if (linkedReminder != null) targetTitle = linkedReminder.Title;
+                    var linkedReminder = await _context.Reminders.FirstOrDefaultAsync(r => r.Id == linkedItemId && r.UserId == userId);
+                    if (linkedReminder != null) 
+                    {
+                        targetTitle = linkedReminder.Title;
+                        
+                        // Remove the corresponding link from the reminder
+                        var reminderLink = await _context.ReminderLinks.FirstOrDefaultAsync(rl =>
+                            rl.ReminderId == linkedItemId &&
+                            rl.LinkedItemId == noteId &&
+                            rl.LinkType == "note" &&
+                            !rl.IsDeleted);
+                        
+                        if (reminderLink != null)
+                        {
+                            reminderLink.IsDeleted = true;
+                            reminderLink.DeletedAt = DateTime.UtcNow;
+                            _logger.LogInformation("Soft deleted corresponding link from Reminder {LinkedItemId} to Note {NoteId}", linkedItemId, noteId);
+                        }
+                    }
                     break;
             }
 

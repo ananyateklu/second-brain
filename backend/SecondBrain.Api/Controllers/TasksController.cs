@@ -273,57 +273,68 @@ namespace SecondBrain.Api.Controllers
         public async Task<IActionResult> AddTaskLink(string taskId, [FromBody] TaskLinkRequest request)
         {
             var userId = User.GetUserId();
-            _logger.LogInformation("Adding task link. TaskId: {TaskId}, LinkedItemId: {LinkedItemId}, UserId: {UserId}", taskId, request.LinkedItemId, userId);
+            _logger.LogInformation("Adding task link. TaskId: {TaskId}, LinkedItemId: {LinkedItemId}, LinkType: {LinkType}, UserId: {UserId}", taskId, request.LinkedItemId, request.LinkType, userId);
 
-            var (task, linkedItem) = await GetTaskAndLinkedItem(taskId, request.LinkedItemId, userId);
+            var (task, linkedItem) = await GetTaskAndLinkedItem(taskId, request.LinkedItemId, userId, request.LinkType);
             if (task == null) return NotFound();
             if (linkedItem == null) return NotFound("Linked item not found");
 
+            // Use IgnoreQueryFilters to find soft-deleted links that can be reactivated
             var existingLink = await _context.TaskLinks
+                .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(tl => tl.TaskId == taskId && tl.LinkedItemId == request.LinkedItemId);
 
             if (existingLink != null)
             {
                 if (!existingLink.IsDeleted) return BadRequest("Task is already linked to this item");
-                await ReactivateLink(existingLink, linkedItem, request.Description);
+                await ReactivateLink(existingLink, request.LinkType, request.Description);
             }
             else
             {
-                await CreateNewLink(task, linkedItem, userId, request.Description);
+                await CreateNewLink(task, request.LinkedItemId, request.LinkType, userId, request.Description);
             }
 
             return await GetUpdatedTaskResponse(taskId);
         }
 
-        private async Task<(TaskItem? task, Note? linkedItem)> GetTaskAndLinkedItem(string taskId, string linkedItemId, string userId)
+        private async Task<(TaskItem? task, object? linkedItem)> GetTaskAndLinkedItem(string taskId, string linkedItemId, string userId, string linkType)
         {
             var task = await _context.Tasks
                 .Include(t => t.TaskLinks)
                 .FirstOrDefaultAsync(t => t.Id == taskId && t.UserId == userId);
 
-            var linkedItem = await _context.Notes
-                .FirstOrDefaultAsync(n => n.Id == linkedItemId && n.UserId == userId);
+            object? linkedItem = null;
+            if (linkType == "note")
+            {
+                linkedItem = await _context.Notes
+                    .FirstOrDefaultAsync(n => n.Id == linkedItemId && n.UserId == userId);
+            }
+            else if (linkType == "idea")
+            {
+                linkedItem = await _context.Ideas
+                    .FirstOrDefaultAsync(i => i.Id == linkedItemId && i.UserId == userId);
+            }
 
             return (task, linkedItem);
         }
 
-        private async Task ReactivateLink(TaskLink link, Note linkedItem, string? description)
+        private async Task ReactivateLink(TaskLink link, string linkType, string? description)
         {
             link.IsDeleted = false;
             link.DeletedAt = null;
             link.Description = description;
             link.CreatedAt = DateTime.UtcNow;
-            link.LinkType = "note"; // Hard-code as "note" since this is a Note, not an Idea
+            link.LinkType = linkType;
             await _context.SaveChangesAsync();
         }
 
-        private async Task CreateNewLink(TaskItem task, Note linkedItem, string userId, string? description)
+        private async Task CreateNewLink(TaskItem task, string linkedItemId, string linkType, string userId, string? description)
         {
             var taskLink = new TaskLink
             {
                 TaskId = task.Id,
-                LinkedItemId = linkedItem.Id,
-                LinkType = "note", // Hard-code as "note" since this is a Note, not an Idea
+                LinkedItemId = linkedItemId,
+                LinkType = linkType,
                 Description = description,
                 CreatedAt = DateTime.UtcNow,
                 CreatedBy = userId,
@@ -352,17 +363,70 @@ namespace SecondBrain.Api.Controllers
         public async Task<IActionResult> RemoveTaskLink(string taskId, string linkedItemId)
         {
             var userId = User.GetUserId();
+            
+            // Find the task link first to check if it exists and get the link type
+            // Use IgnoreQueryFilters to ensure we can find links even if they're soft-deleted
             var link = await _context.TaskLinks
+                .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(tl =>
                     tl.TaskId == taskId &&
                     tl.LinkedItemId == linkedItemId &&
                     tl.Task.UserId == userId);
 
             if (link == null)
+            {
+                _logger.LogWarning("Task link not found. TaskId: {TaskId}, LinkedItemId: {LinkedItemId}, UserId: {UserId}", taskId, linkedItemId, userId);
                 return NotFound();
+            }
 
+            // If the link is already soft-deleted, consider it a no-op or return appropriate response
+            if (link.IsDeleted)
+            {
+                _logger.LogInformation("Task link already deleted. TaskId: {TaskId}, LinkedItemId: {LinkedItemId}, UserId: {UserId}", taskId, linkedItemId, userId);
+                return NoContent(); // or return success as it's already in the desired state
+            }
+
+            // Store link type for removing corresponding link
+            var linkType = link.LinkType;
+            
+            // Soft delete the task link
             link.IsDeleted = true;
             link.DeletedAt = DateTime.UtcNow;
+            
+            _logger.LogInformation("Soft deleted task link. TaskId: {TaskId}, LinkedItemId: {LinkedItemId}, LinkType: {LinkType}, UserId: {UserId}", taskId, linkedItemId, linkType, userId);
+
+            // Remove the corresponding link from the linked item
+            switch (linkType)
+            {
+                case "note":
+                    var noteLink = await _context.NoteLinks.FirstOrDefaultAsync(nl =>
+                        nl.NoteId == linkedItemId &&
+                        nl.LinkedItemId == taskId &&
+                        nl.LinkType == "task" &&
+                        !nl.IsDeleted);
+                    
+                    if (noteLink != null)
+                    {
+                        noteLink.IsDeleted = true;
+                        noteLink.DeletedAt = DateTime.UtcNow;
+                        _logger.LogInformation("Soft deleted corresponding link from Note {LinkedItemId} to Task {TaskId}", linkedItemId, taskId);
+                    }
+                    break;
+                    
+                case "idea":
+                    var ideaLink = await _context.IdeaLinks.FirstOrDefaultAsync(il =>
+                        il.IdeaId == linkedItemId &&
+                        il.LinkedItemId == taskId &&
+                        il.LinkedItemType == "Task" &&
+                        !il.IsDeleted);
+                    
+                    if (ideaLink != null)
+                    {
+                        ideaLink.IsDeleted = true;
+                        _logger.LogInformation("Soft deleted corresponding link from Idea {LinkedItemId} to Task {TaskId}", linkedItemId, taskId);
+                    }
+                    break;
+            }
 
             await _context.SaveChangesAsync();
 
