@@ -911,33 +911,105 @@ namespace SecondBrain.Api.Controllers
                     return NotFound(new { error = "Link not found." });
                 }
 
-                // Soft delete the link
+                // Soft delete the primary link
                 ideaLink.IsDeleted = true;
+                _logger.LogInformation("Soft deleted link from Idea {IdeaId} to {LinkedItemType} {LinkedItemId}", ideaId, linkedItemType, linkedItemId);
+
+                // Handle two-way unlinking based on the linked item type
+                string targetItemTitle = "Unknown Item";
+                
+                switch (linkedItemType)
+                {
+                    case "Note":
+                        var linkedNote = await _context.Notes.FirstOrDefaultAsync(n => n.Id == linkedItemId && n.UserId == userId);
+                        if (linkedNote != null)
+                        {
+                            targetItemTitle = linkedNote.Title;
+                            
+                            // Remove the corresponding link from the note
+                            var noteLink = await _context.NoteLinks.FirstOrDefaultAsync(nl =>
+                                nl.NoteId == linkedItemId &&
+                                nl.LinkedItemId == ideaId &&
+                                nl.LinkedItemType == "Idea" &&
+                                !nl.IsDeleted);
+                            
+                            if (noteLink != null)
+                            {
+                                noteLink.IsDeleted = true;
+                                noteLink.DeletedAt = DateTime.UtcNow;
+                                _logger.LogInformation("Soft deleted corresponding link from Note {LinkedItemId} to Idea {IdeaId}", linkedItemId, ideaId);
+                            }
+                        }
+                        break;
+                        
+                    case "Idea":
+                        var linkedIdea = await _context.Ideas.FirstOrDefaultAsync(i => i.Id == linkedItemId && i.UserId == userId);
+                        if (linkedIdea != null)
+                        {
+                            targetItemTitle = linkedIdea.Title;
+                            
+                            // Remove the reverse link from the other idea
+                            var reverseIdeaLink = await _context.IdeaLinks.FirstOrDefaultAsync(il =>
+                                il.IdeaId == linkedItemId &&
+                                il.LinkedItemId == ideaId &&
+                                il.LinkedItemType == "Idea" &&
+                                !il.IsDeleted);
+                            
+                            if (reverseIdeaLink != null)
+                            {
+                                reverseIdeaLink.IsDeleted = true;
+                                _logger.LogInformation("Soft deleted reverse link from Idea {LinkedItemId} to Idea {IdeaId}", linkedItemId, ideaId);
+                            }
+                        }
+                        break;
+                        
+                    case "Task":
+                        var linkedTask = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == linkedItemId && t.UserId == userId);
+                        if (linkedTask != null)
+                        {
+                            targetItemTitle = linkedTask.Title;
+                            
+                            // Remove the corresponding link from the task
+                            var taskLink = await _context.TaskLinks.FirstOrDefaultAsync(tl =>
+                                tl.TaskId == linkedItemId &&
+                                tl.LinkedItemId == ideaId &&
+                                tl.LinkType == "idea" &&
+                                !tl.IsDeleted);
+                            
+                            if (taskLink != null)
+                            {
+                                taskLink.IsDeleted = true;
+                                taskLink.DeletedAt = DateTime.UtcNow;
+                                _logger.LogInformation("Soft deleted corresponding link from Task {LinkedItemId} to Idea {IdeaId}", linkedItemId, ideaId);
+                            }
+                        }
+                        break;
+                        
+                    case "Reminder":
+                        var linkedReminder = await _context.Reminders.FirstOrDefaultAsync(r => r.Id == linkedItemId && r.UserId == userId);
+                        if (linkedReminder != null)
+                        {
+                            targetItemTitle = linkedReminder.Title;
+                            
+                                                    // Remove the corresponding link from the reminder
+                        var reminderLink = await _context.ReminderLinks.FirstOrDefaultAsync(rl =>
+                            rl.ReminderId == linkedItemId &&
+                            rl.LinkedItemId == ideaId &&
+                            rl.LinkType == "idea" &&
+                            !rl.IsDeleted);
+                        
+                        if (reminderLink != null)
+                        {
+                            reminderLink.IsDeleted = true;
+                            reminderLink.DeletedAt = DateTime.UtcNow;
+                            _logger.LogInformation("Soft deleted corresponding link from Reminder {LinkedItemId} to Idea {IdeaId}", linkedItemId, ideaId);
+                        }
+                        }
+                        break;
+                }
 
                 await _context.SaveChangesAsync();
 
-                // Log activity
-                // Need to fetch the target item title for a better description
-                string targetItemTitle = "Linked Item"; // Default
-                switch(linkedItemType)
-                {
-                    case "Note":
-                        var linkedNote = await _context.Notes.FindAsync(linkedItemId);
-                        if (linkedNote != null) targetItemTitle = linkedNote.Title;
-                        break;
-                    case "Idea":
-                        var linkedIdea = await _context.Ideas.FindAsync(linkedItemId);
-                        if (linkedIdea != null) targetItemTitle = linkedIdea.Title;
-                        break;
-                    case "Task":
-                        var linkedTask = await _context.Tasks.FindAsync(linkedItemId);
-                        if (linkedTask != null) targetItemTitle = linkedTask.Title;
-                        break;
-                    case "Reminder":
-                        var linkedReminder = await _context.Reminders.FindAsync(linkedItemId);
-                        if (linkedReminder != null) targetItemTitle = linkedReminder.Title;
-                        break;
-                }
                 await _activityLogger.LogActivityAsync(
                     userId,
                     ActivityActionType.UNLINK.ToString(),

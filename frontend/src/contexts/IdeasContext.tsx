@@ -134,6 +134,20 @@ export const IdeasProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [auth.user, fetchIdeas]);
 
+  // Listen for link changes from other contexts
+  useEffect(() => {
+    const handleIdeaLinkChanged = () => {
+      // Refresh ideas to get updated link information when a note is unlinked from an idea
+      fetchIdeas(); // For simplicity, refresh all ideas. Could optimize to refresh just the specific idea
+    };
+
+    window.addEventListener('ideaLinkChanged', handleIdeaLinkChanged as EventListener);
+
+    return () => {
+      window.removeEventListener('ideaLinkChanged', handleIdeaLinkChanged as EventListener);
+    };
+  }, [fetchIdeas]);
+
   const createIdea = useCallback(
     async (title: string, content: string, tags: string[] = [], isFavorite = false) => {
       try {
@@ -245,6 +259,19 @@ export const IdeasProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       const updatedIdea = await ideasService.removeLink(ideaId, linkedItemId, linkedItemType);
       dispatch({ type: 'REMOVE_LINK_SUCCESS', payload: updatedIdea });
+
+      // Dispatch events to notify other contexts about the unlink
+      if (linkedItemType === 'Note') {
+        window.dispatchEvent(new CustomEvent('noteLinkChanged', { detail: { noteId: linkedItemId } }));
+      } else if (linkedItemType === 'Idea') {
+        // Refresh all ideas to ensure both sides of the idea-to-idea link are updated
+        fetchIdeas();
+      } else if (linkedItemType === 'Task') {
+        window.dispatchEvent(new CustomEvent('taskLinkChanged', { detail: { taskId: linkedItemId } }));
+      } else if (linkedItemType === 'Reminder') {
+        window.dispatchEvent(new CustomEvent('reminderLinkChanged', { detail: { reminderId: linkedItemId } }));
+      }
+
       return updatedIdea;
     } catch (err) {
       const specificError = err as AxiosError<{ error?: string }>;
@@ -253,7 +280,7 @@ export const IdeasProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       dispatch({ type: 'FETCH_IDEAS_FAILURE', payload: backendError });
       throw err;
     }
-  }, []);
+  }, [fetchIdeas]);
 
   // Context value
   const value: IdeasContextType = {
