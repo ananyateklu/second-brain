@@ -39,13 +39,46 @@ namespace SecondBrain.Api.Controllers
 
             var tasks = await _context.Tasks
                 .Include(t => t.TaskLinks.Where(tl => !tl.IsDeleted))
-                    .ThenInclude(tl => tl.LinkedItem)
                 .Where(t => t.UserId == userId && !t.IsDeleted)
                 .OrderByDescending(t => t.CreatedAt)
                 .ToListAsync();
 
+            // Get all linked item IDs across all tasks
+            var allLinkedItemIds = tasks
+                .SelectMany(t => t.TaskLinks.Where(tl => !tl.IsDeleted))
+                .Select(tl => tl.LinkedItemId)
+                .Distinct()
+                .ToList();
+
+            var linkedItemsLookup = new Dictionary<string, (string Type, string Title)>();
+
+            if (allLinkedItemIds.Any())
+            {
+                // Get linked notes
+                var linkedNotes = await _context.Notes
+                    .Where(n => allLinkedItemIds.Contains(n.Id) && !n.IsDeleted)
+                    .Select(n => new { n.Id, n.Title, Type = "note" })
+                    .ToListAsync();
+
+                // Get linked ideas
+                var linkedIdeas = await _context.Ideas
+                    .Where(i => allLinkedItemIds.Contains(i.Id) && !i.IsDeleted)
+                    .Select(i => new { i.Id, i.Title, Type = "idea" })
+                    .ToListAsync();
+
+                // Populate lookup dictionary
+                foreach (var note in linkedNotes)
+                {
+                    linkedItemsLookup[note.Id] = (note.Type, note.Title);
+                }
+                foreach (var idea in linkedIdeas)
+                {
+                    linkedItemsLookup[idea.Id] = (idea.Type, idea.Title);
+                }
+            }
+
             _logger.LogInformation("Retrieved {Count} tasks for user {UserId}", tasks.Count, userId);
-            return Ok(tasks.Select(TaskResponse.FromEntity));
+            return Ok(tasks.Select(task => TaskResponse.FromEntity(task, linkedItemsLookup)));
         }
 
         [HttpGet("{id}")]
@@ -54,13 +87,46 @@ namespace SecondBrain.Api.Controllers
             var userId = GetUserId();
             var task = await _context.Tasks
                 .Include(t => t.TaskLinks.Where(tl => !tl.IsDeleted))
-                    .ThenInclude(tl => tl.LinkedItem)
                 .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
 
             if (task == null)
                 return NotFound();
 
-            return Ok(TaskResponse.FromEntity(task));
+            // Get linked item details
+            var linkedItemIds = task.TaskLinks
+                .Where(tl => !tl.IsDeleted)
+                .Select(tl => tl.LinkedItemId)
+                .Distinct()
+                .ToList();
+
+            var linkedItemsLookup = new Dictionary<string, (string Type, string Title)>();
+
+            if (linkedItemIds.Any())
+            {
+                // Get linked notes
+                var linkedNotes = await _context.Notes
+                    .Where(n => linkedItemIds.Contains(n.Id) && !n.IsDeleted)
+                    .Select(n => new { n.Id, n.Title, Type = "note" })
+                    .ToListAsync();
+
+                // Get linked ideas
+                var linkedIdeas = await _context.Ideas
+                    .Where(i => linkedItemIds.Contains(i.Id) && !i.IsDeleted)
+                    .Select(i => new { i.Id, i.Title, Type = "idea" })
+                    .ToListAsync();
+
+                // Populate lookup dictionary
+                foreach (var note in linkedNotes)
+                {
+                    linkedItemsLookup[note.Id] = (note.Type, note.Title);
+                }
+                foreach (var idea in linkedIdeas)
+                {
+                    linkedItemsLookup[idea.Id] = (idea.Type, idea.Title);
+                }
+            }
+
+            return Ok(TaskResponse.FromEntity(task, linkedItemsLookup));
         }
 
         [HttpPost]
@@ -87,7 +153,7 @@ namespace SecondBrain.Api.Controllers
             // Award XP for creating a task
             await _xpService.AwardXPAsync(userId, "createtask", null, task.Id, task.Title);
 
-            var response = TaskResponse.FromEntity(task);
+            var response = TaskResponse.FromEntity(task); // No linked items for new task
             return CreatedAtAction(nameof(GetTaskById), new { id = task.Id }, response);
         }
 
@@ -103,11 +169,44 @@ namespace SecondBrain.Api.Controllers
             var deletedTasks = await _context.Tasks
                 .IgnoreQueryFilters()
                 .Include(t => t.TaskLinks.Where(tl => !tl.IsDeleted))
-                    .ThenInclude(tl => tl.LinkedItem)
                 .Where(t => t.UserId == userId && t.IsDeleted)
                 .ToListAsync();
 
-            var response = deletedTasks.Select(TaskResponse.FromEntity);
+            // Get all linked item IDs across all deleted tasks
+            var allLinkedItemIds = deletedTasks
+                .SelectMany(t => t.TaskLinks.Where(tl => !tl.IsDeleted))
+                .Select(tl => tl.LinkedItemId)
+                .Distinct()
+                .ToList();
+
+            var linkedItemsLookup = new Dictionary<string, (string Type, string Title)>();
+
+            if (allLinkedItemIds.Any())
+            {
+                // Get linked notes
+                var linkedNotes = await _context.Notes
+                    .Where(n => allLinkedItemIds.Contains(n.Id) && !n.IsDeleted)
+                    .Select(n => new { n.Id, n.Title, Type = "note" })
+                    .ToListAsync();
+
+                // Get linked ideas
+                var linkedIdeas = await _context.Ideas
+                    .Where(i => allLinkedItemIds.Contains(i.Id) && !i.IsDeleted)
+                    .Select(i => new { i.Id, i.Title, Type = "idea" })
+                    .ToListAsync();
+
+                // Populate lookup dictionary
+                foreach (var note in linkedNotes)
+                {
+                    linkedItemsLookup[note.Id] = (note.Type, note.Title);
+                }
+                foreach (var idea in linkedIdeas)
+                {
+                    linkedItemsLookup[idea.Id] = (idea.Type, idea.Title);
+                }
+            }
+
+            var response = deletedTasks.Select(task => TaskResponse.FromEntity(task, linkedItemsLookup));
             return Ok(response);
         }
 
@@ -171,7 +270,7 @@ namespace SecondBrain.Api.Controllers
                 await _xpService.AwardXPAsync(userId, "completetask", null, task.Id, task.Title);
             }
 
-            var response = TaskResponse.FromEntity(task);
+            var response = TaskResponse.FromEntity(task); // No linked items needed for update response
             return Ok(response);
         }
 
@@ -225,7 +324,7 @@ namespace SecondBrain.Api.Controllers
 
             await _context.SaveChangesAsync();
 
-            var response = TaskResponse.FromEntity(task);
+            var response = TaskResponse.FromEntity(task); // No linked items needed for restore response
             return Ok(response);
         }
 
@@ -350,10 +449,43 @@ namespace SecondBrain.Api.Controllers
         {
             var task = await _context.Tasks
                 .Include(t => t.TaskLinks.Where(tl => !tl.IsDeleted))
-                    .ThenInclude(tl => tl.LinkedItem)
                 .FirstAsync(t => t.Id == taskId);
 
-            var response = TaskResponse.FromEntity(task);
+            // Get linked item details
+            var linkedItemIds = task.TaskLinks
+                .Where(tl => !tl.IsDeleted)
+                .Select(tl => tl.LinkedItemId)
+                .Distinct()
+                .ToList();
+
+            var linkedItemsLookup = new Dictionary<string, (string Type, string Title)>();
+
+            if (linkedItemIds.Any())
+            {
+                // Get linked notes
+                var linkedNotes = await _context.Notes
+                    .Where(n => linkedItemIds.Contains(n.Id) && !n.IsDeleted)
+                    .Select(n => new { n.Id, n.Title, Type = "note" })
+                    .ToListAsync();
+
+                // Get linked ideas
+                var linkedIdeas = await _context.Ideas
+                    .Where(i => linkedItemIds.Contains(i.Id) && !i.IsDeleted)
+                    .Select(i => new { i.Id, i.Title, Type = "idea" })
+                    .ToListAsync();
+
+                // Populate lookup dictionary
+                foreach (var note in linkedNotes)
+                {
+                    linkedItemsLookup[note.Id] = (note.Type, note.Title);
+                }
+                foreach (var idea in linkedIdeas)
+                {
+                    linkedItemsLookup[idea.Id] = (idea.Type, idea.Title);
+                }
+            }
+
+            var response = TaskResponse.FromEntity(task, linkedItemsLookup);
             return Ok(response);
         }
 
@@ -430,12 +562,7 @@ namespace SecondBrain.Api.Controllers
 
             await _context.SaveChangesAsync();
 
-            var task = await _context.Tasks
-                .Include(t => t.TaskLinks.Where(tl => !tl.IsDeleted))
-                .ThenInclude(tl => tl.LinkedItem)
-                .FirstAsync(t => t.Id == taskId);
-
-            return Ok(TaskResponse.FromEntity(task));
+            return await GetUpdatedTaskResponse(taskId);
         }
     }
 }

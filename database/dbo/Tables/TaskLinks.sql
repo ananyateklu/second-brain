@@ -10,8 +10,8 @@ CREATE TABLE [dbo].[TaskLinks] (
     
     CONSTRAINT [PK_TaskLinks] PRIMARY KEY CLUSTERED ([TaskId] ASC, [LinkedItemId] ASC),
     CONSTRAINT [FK_TaskLinks_Tasks] FOREIGN KEY ([TaskId]) REFERENCES [dbo].[Tasks] ([Id]),
-    CONSTRAINT [FK_TaskLinks_Notes] FOREIGN KEY ([LinkedItemId]) REFERENCES [dbo].[Notes] ([Id]),
     CONSTRAINT [FK_TaskLinks_Users] FOREIGN KEY ([CreatedBy]) REFERENCES [dbo].[Users] ([Id])
+    -- Note: No foreign key constraint on LinkedItemId since it can reference multiple entity types (Notes, Ideas, etc.)
 );
 
 GO
