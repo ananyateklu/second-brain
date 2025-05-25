@@ -256,10 +256,9 @@ namespace SecondBrain.Data
                     .HasForeignKey(e => e.TaskId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                entity.HasOne(e => e.LinkedItem)
-                    .WithMany()
-                    .HasForeignKey(e => e.LinkedItemId)
-                    .OnDelete(DeleteBehavior.Restrict);
+                // Note: No relationship configured for LinkedItem since LinkedItemId can reference
+                // multiple entity types (Notes, Ideas, etc.) based on LinkType
+                // This follows the same pattern as IdeaLinks table
 
                 entity.HasOne(e => e.Creator)
                     .WithMany()

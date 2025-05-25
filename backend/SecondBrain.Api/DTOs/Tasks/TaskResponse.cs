@@ -29,7 +29,7 @@ namespace SecondBrain.Api.DTOs.Tasks
         public bool IsDeleted { get; set; }
         public DateTime? DeletedAt { get; set; }
 
-        public static TaskResponse FromEntity(TaskItem task)
+        public static TaskResponse FromEntity(TaskItem task, Dictionary<string, (string Type, string Title)>? linkedItemsLookup = null)
         {
             return new TaskResponse
             {
@@ -43,16 +43,18 @@ namespace SecondBrain.Api.DTOs.Tasks
                 UpdatedAt = task.UpdatedAt,
                 UserId = task.UserId,
                 Tags = string.IsNullOrEmpty(task.Tags) ? new List<string>() : task.Tags.Split(',').ToList(),
-                LinkedItems = task.TaskLinks
-                    .Where(tl => !tl.IsDeleted)
-                    .Select(tl => new LinkedItemDto
-                    {
-                        Id = tl.LinkedItemId,
-                        Title = tl.LinkedItem.Title,
-                        Type = tl.LinkType,
-                        CreatedAt = tl.CreatedAt
-                    })
-                    .ToList(),
+                LinkedItems = linkedItemsLookup != null 
+                    ? task.TaskLinks
+                        .Where(tl => !tl.IsDeleted && linkedItemsLookup.ContainsKey(tl.LinkedItemId))
+                        .Select(tl => new LinkedItemDto
+                        {
+                            Id = tl.LinkedItemId,
+                            Title = linkedItemsLookup[tl.LinkedItemId].Title,
+                            Type = tl.LinkType,
+                            CreatedAt = tl.CreatedAt
+                        })
+                        .ToList()
+                    : new List<LinkedItemDto>(), // Return empty list if no lookup provided
                 IsDeleted = task.IsDeleted,
                 DeletedAt = task.DeletedAt
             };

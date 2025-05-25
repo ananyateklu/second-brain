@@ -37,8 +37,9 @@ namespace SecondBrain.Data.Entities
         [ForeignKey("TaskId")]
         public TaskItem Task { get; set; } = null!;
 
-        [ForeignKey("LinkedItemId")]
-        public Note LinkedItem { get; set; } = null!;
+        // Note: LinkedItem navigation property removed since LinkedItemId can reference 
+        // multiple entity types (Notes, Ideas, etc.) based on LinkType
+        // Use LinkType to determine the actual entity type and query accordingly
 
         [ForeignKey("CreatedBy")]
         public User Creator { get; set; } = null!;
