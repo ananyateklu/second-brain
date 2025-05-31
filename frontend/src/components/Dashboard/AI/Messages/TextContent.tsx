@@ -8,16 +8,36 @@ import { useTheme } from '../../../../contexts/themeContextUtils';
 interface TextContentProps {
   message: Message;
   themeColor: string;
+  isStreaming?: boolean;
+  streamingCursorColor?: string;
 }
 
-export function TextContent({ message, themeColor }: TextContentProps) {
+export function TextContent({ message, themeColor, isStreaming, streamingCursorColor }: TextContentProps) {
   const { theme } = useTheme();
 
   // Ensure content is a string and handle potential nested structures
   const messageContent = message.content as { content?: string } | string;
-  const content = typeof messageContent === 'string'
+  let content = typeof messageContent === 'string'
     ? messageContent
     : messageContent?.content || '';
+
+  // Add streaming cursor marker to content if actively streaming
+  if (isStreaming && streamingCursorColor) {
+    content = content + ' {{STREAMING_CURSOR}}';
+  }
+
+  // Custom component to render the streaming cursor
+  const StreamingCursor = () => (
+    <span
+      className="inline-block ml-1 animate-pulse"
+      style={{
+        color: streamingCursorColor,
+        fontWeight: 'bold'
+      }}
+    >
+      ▋
+    </span>
+  );
 
   if (message.model?.isReasoner &&
     content &&
@@ -55,7 +75,26 @@ export function TextContent({ message, themeColor }: TextContentProps) {
           </div>
         </div>
         <div className="prose prose-sm dark:prose-invert max-w-none">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              p: ({ children }) => {
+                // Check if this paragraph contains the streaming cursor marker
+                const childrenString = children?.toString() || '';
+                if (childrenString.includes('{{STREAMING_CURSOR}}')) {
+                  const parts = childrenString.split('{{STREAMING_CURSOR}}');
+                  return (
+                    <p>
+                      {parts[0]}
+                      {isStreaming && streamingCursorColor && <StreamingCursor />}
+                      {parts[1]}
+                    </p>
+                  );
+                }
+                return <p>{children}</p>;
+              }
+            }}
+          >
             {extractOutput(content)}
           </ReactMarkdown>
         </div>
@@ -68,6 +107,21 @@ export function TextContent({ message, themeColor }: TextContentProps) {
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
+          p: ({ children }) => {
+            // Check if this paragraph contains the streaming cursor marker
+            const childrenString = children?.toString() || '';
+            if (childrenString.includes('{{STREAMING_CURSOR}}')) {
+              const parts = childrenString.split('{{STREAMING_CURSOR}}');
+              return (
+                <p>
+                  {parts[0]}
+                  {isStreaming && streamingCursorColor && <StreamingCursor />}
+                  {parts[1]}
+                </p>
+              );
+            }
+            return <p>{children}</p>;
+          },
           code(props: ComponentPropsWithoutRef<'code'>) {
             const { children, className, ...rest } = props;
             const match = /language-(\w+)/.exec(className || '');
