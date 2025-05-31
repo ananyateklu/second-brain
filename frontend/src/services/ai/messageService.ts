@@ -13,6 +13,7 @@ interface MessageParameters {
     maxTokens?: number;
     temperature?: number;
     tools?: Tool[];
+    onStreamUpdate?: (content: string, stats?: { tokenCount: number, tokensPerSecond: string, elapsedSeconds: number }) => void;
 }
 
 export class MessageService {
@@ -86,6 +87,12 @@ export class MessageService {
             }
 
             case 'gemini': {
+                // Use streaming if onStreamUpdate callback is provided
+                if (parameters?.onStreamUpdate) {
+                    return this.sendGeminiStreamingMessage(message, model, parameters);
+                }
+
+                // Fallback to regular chat for backward compatibility
                 response = await api.post(`/api/${endpoint}/chat`, {
                     message,
                     modelId: model.id,
@@ -263,16 +270,143 @@ export class MessageService {
 
         return {
             content: JSON.stringify(embedding),
-            type: 'embedding',
+            type: 'text',
             metadata: {
                 model: model.id,
                 usage: response.data.usage,
                 parameters: {
-                    dimensions: embedding.length
+                    dimensions: embedding.length,
+                    responseType: 'embedding'
                 }
             },
             executionSteps: []
         };
+    }
+
+    private async sendGeminiStreamingMessage(
+        message: string,
+        model: AIModel,
+        parameters: MessageParameters
+    ): Promise<AIResponse> {
+        const startTime = Date.now();
+        let accumulatedContent = '';
+        let tokenCount = 0;
+
+        try {
+            const request = {
+                message,
+                modelId: model.id,
+                generationConfig: {
+                    maxOutputTokens: parameters.maxTokens || 2048,
+                    temperature: parameters.temperature || 0.7,
+                    topP: 0.8,
+                    topK: 40,
+                    stopSequences: []
+                },
+                safetySettings: []
+            };
+
+            // Get the authorization token - try multiple sources
+            let authHeader = api.defaults.headers.common?.Authorization as string;
+
+            // Fallback to getting token from localStorage if not in api headers
+            if (!authHeader) {
+                const token = localStorage.getItem('access_token');
+                if (token) {
+                    authHeader = `Bearer ${token}`;
+                }
+            }
+
+            if (!authHeader) {
+                throw new Error('No authentication token available');
+            }
+
+            const response = await fetch(`${api.defaults.baseURL}/api/gemini/stream-chat`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': authHeader
+                },
+                body: JSON.stringify(request)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const reader = response.body?.getReader();
+            if (!reader) {
+                throw new Error('Response body is not readable');
+            }
+
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            try {
+                while (true) {
+                    const { value, done } = await reader.read();
+
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+
+                    // Keep the last incomplete line in the buffer
+                    buffer = lines.pop() || '';
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = line.slice(6);
+
+                            if (data === '[DONE]') {
+                                break;
+                            }
+
+                            try {
+                                const update = JSON.parse(data);
+                                if (update.Content) {
+                                    accumulatedContent += update.Content;
+                                    tokenCount++;
+
+                                    const elapsedSeconds = (Date.now() - startTime) / 1000;
+                                    const tokensPerSecond = (tokenCount / elapsedSeconds).toFixed(1);
+
+                                    // Call the streaming update callback
+                                    parameters.onStreamUpdate?.(accumulatedContent, {
+                                        tokenCount,
+                                        tokensPerSecond,
+                                        elapsedSeconds
+                                    });
+                                }
+                            } catch (parseError) {
+                                console.error('Error parsing SSE data:', parseError);
+                            }
+                        }
+                    }
+                }
+            } finally {
+                reader.releaseLock();
+            }
+
+            return {
+                content: accumulatedContent,
+                type: 'text',
+                metadata: {
+                    model: model.id,
+                    stats: {
+                        tokenCount,
+                        totalTimeSeconds: (Date.now() - startTime) / 1000,
+                        tokensPerSecond: (tokenCount / ((Date.now() - startTime) / 1000)).toFixed(1),
+                        startTime,
+                        endTime: Date.now()
+                    }
+                },
+                executionSteps: []
+            };
+        } catch (error) {
+            console.error('Error in streaming request:', error);
+            throw error;
+        }
     }
 
     private getProviderEndpoint(provider: string): string {

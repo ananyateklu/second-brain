@@ -163,43 +163,6 @@ namespace SecondBrain.Api.Services
         {
             modelId = modelId.Replace("models/", "");
             
-            List<GeminiUpdate> results;
-            
-            try
-            {
-                // Get all updates from helper method
-                results = await GetStreamedUpdatesAsync(request, modelId);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error in StreamGenerateContentAsync for model {ModelId}", modelId);
-                
-                // Create a single error update
-                results = new List<GeminiUpdate>
-                {
-                    new GeminiUpdate(
-                        "error",
-                        $"I encountered an error while generating content: {ex.Message}",
-                        new Dictionary<string, object> 
-                        { 
-                            { "error", ex.Message },
-                            { "model", modelId }
-                        }
-                    )
-                };
-            }
-            
-            // Now yield the results outside any try-catch block
-            foreach (var update in results)
-            {
-                yield return update;
-            }
-        }
-
-        private async Task<List<GeminiUpdate>> GetStreamedUpdatesAsync(GeminiRequest request, string modelId)
-        {
-            List<GeminiUpdate> results = new List<GeminiUpdate>();
-            
             // Create HTTP request message with SSE query parameter
             var requestMessage = new HttpRequestMessage(HttpMethod.Post, $"models/{modelId}:streamGenerateContent?key={_apiKey}&alt=sse");
             requestMessage.Content = new StringContent(
@@ -208,18 +171,75 @@ namespace SecondBrain.Api.Services
                 "application/json"
             );
             
-            using var response = await _httpClient.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead);
+            HttpResponseMessage? response = null;
+            Stream? stream = null;
+            StreamReader? reader = null;
             
-            if (!response.IsSuccessStatusCode)
+            // Handle the request outside of any yield context
+            bool hasError = false;
+            string? errorMessage = null;
+            
+            try
             {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                _logger.LogError("Gemini streaming error: {StatusCode} - {Error}", response.StatusCode, errorContent);
-                throw new HttpRequestException($"Gemini API error: {response.StatusCode} - {errorContent}");
+                response = await _httpClient.SendAsync(requestMessage, HttpCompletionOption.ResponseHeadersRead);
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogError("Gemini streaming error: {StatusCode} - {Error}", response.StatusCode, errorContent);
+                    hasError = true;
+                    errorMessage = $"Gemini API error: {response.StatusCode} - {errorContent}";
+                }
+                else
+                {
+                    stream = await response.Content.ReadAsStreamAsync();
+                    reader = new StreamReader(stream);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("Error setting up streaming: {Error}", ex.Message);
+                hasError = true;
+                errorMessage = $"I encountered an error while setting up streaming: {ex.Message}";
             }
             
-            using var stream = await response.Content.ReadAsStreamAsync();
-            using var reader = new StreamReader(stream);
+            // If there was an error during setup, yield error and exit
+            if (hasError)
+            {
+                yield return new GeminiUpdate(
+                    "error",
+                    errorMessage ?? "Unknown error occurred",
+                    new Dictionary<string, object> 
+                    { 
+                        { "error", errorMessage ?? "Unknown error" },
+                        { "model", modelId }
+                    }
+                );
+                
+                // Clean up and exit
+                reader?.Dispose();
+                stream?.Dispose();
+                response?.Dispose();
+                yield break;
+            }
             
+            // Now we can safely stream without try-catch around yields
+            if (reader != null)
+            {
+                await foreach (var update in ReadStreamSafely(reader, modelId))
+                {
+                    yield return update;
+                }
+            }
+            
+            // Clean up
+            reader?.Dispose();
+            stream?.Dispose();
+            response?.Dispose();
+        }
+        
+        private async IAsyncEnumerable<GeminiUpdate> ReadStreamSafely(StreamReader reader, string modelId)
+        {
             string? line;
             while ((line = await reader.ReadLineAsync()) != null)
             {
@@ -233,24 +253,11 @@ namespace SecondBrain.Api.Services
                         break;
                     }
                     
-                    try
+                    // Parse the data safely
+                    var update = ParseStreamData(data, modelId);
+                    if (update != null)
                     {
-                        var streamResponse = JsonSerializer.Deserialize<GeminiResponse>(data);
-                        var textContent = streamResponse?.Candidates?.FirstOrDefault()?.Content?.Parts?.FirstOrDefault()?.Text;
-                        
-                        if (!string.IsNullOrEmpty(textContent))
-                        {
-                            results.Add(new GeminiUpdate("gemini", textContent, new Dictionary<string, object> 
-                            { 
-                                { "model", modelId },
-                                { "isStreaming", true },
-                                { "finishReason", streamResponse?.Candidates?.FirstOrDefault()?.FinishReason ?? "null" }
-                            }));
-                        }
-                    }
-                    catch (JsonException jsonEx)
-                    {
-                        _logger.LogError(jsonEx, "Failed to parse SSE data: {Data}", data);
+                        yield return update;
                     }
                 }
                 else if (line.StartsWith("event: ") && line.Contains("done"))
@@ -258,9 +265,35 @@ namespace SecondBrain.Api.Services
                     break;
                 }
             }
-            
-            return results;
         }
+        
+        private GeminiUpdate? ParseStreamData(string data, string modelId)
+        {
+            try
+            {
+                var streamResponse = JsonSerializer.Deserialize<GeminiResponse>(data);
+                var textContent = streamResponse?.Candidates?.FirstOrDefault()?.Content?.Parts?.FirstOrDefault()?.Text;
+                
+                if (!string.IsNullOrEmpty(textContent))
+                {
+                    return new GeminiUpdate("gemini", textContent, new Dictionary<string, object> 
+                    { 
+                        { "model", modelId },
+                        { "isStreaming", true },
+                        { "finishReason", streamResponse?.Candidates?.FirstOrDefault()?.FinishReason ?? "null" }
+                    });
+                }
+            }
+            catch (JsonException jsonEx)
+            {
+                _logger.LogError("Failed to parse SSE data: {Data} - {Error}", data, jsonEx.Message);
+            }
+            
+            return null;
+        }
+        
+
+
         
         public async Task<List<ModelInfo>> ListModelsAsync(int? pageSize = null, string? pageToken = null)
         {

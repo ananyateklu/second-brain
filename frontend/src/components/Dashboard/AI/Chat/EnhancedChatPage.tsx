@@ -288,8 +288,8 @@ export function EnhancedChatPage() {
         const assistantMessage: Message = {
             id: assistantMessageId,
             role: 'assistant',
-            // For Ollama models, start with a non-empty content to avoid showing the loading animation
-            content: selectedModel.provider === 'ollama' ? ' ' : '',
+            // For streaming models, start with a non-empty content to avoid showing the loading animation
+            content: (selectedModel.provider === 'ollama' || selectedModel.provider === 'gemini') ? ' ' : '',
             type: 'text',
             timestamp: new Date().toISOString(),
             model: selectedModel,
@@ -302,9 +302,9 @@ export function EnhancedChatPage() {
             // Save user message to backend
             await saveMessage(validChatId, 'user', input);
 
-            // Different handling for Ollama models (streaming) vs other models
-            if (selectedModel.provider === 'ollama') {
-                // For Ollama models, use streaming - we don't need a loading indicator
+            // Different handling for streaming models (Ollama, Gemini) vs other models
+            if (selectedModel.provider === 'ollama' || selectedModel.provider === 'gemini') {
+                // For streaming models, use streaming - we don't need a loading indicator
                 // because we'll show content as it streams
                 let streamedContent = '';
 
