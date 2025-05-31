@@ -159,10 +159,12 @@ export function AIMessage({
                 } : undefined}
             >
                 <div className="overflow-x-auto custom-scrollbar">
-                    <MessageContent message={message} themeColor={themeColor} />
-                    {isStreaming && (
-                        <span className="inline-block ml-1 animate-pulse text-[var(--color-accent)]" style={{ fontWeight: 'bold' }}>▋</span>
-                    )}
+                    <MessageContent
+                        message={message}
+                        themeColor={themeColor}
+                        isStreaming={isStreaming}
+                        streamingCursorColor={message.model?.color || themeColor || 'var(--color-accent)'}
+                    />
                     {message.isLoading && !isStreaming && (
                         <div className="mt-2 flex items-center gap-2">
                             <div className="w-3 h-3 relative animate-spin rounded-full border-2 border-current border-t-transparent text-[var(--color-accent)]"></div>
@@ -217,7 +219,10 @@ export function AIMessage({
 
                             {/* Display token statistics for Ollama models */}
                             {!isUser && message.model?.provider === 'ollama' && message.metadata?.stats && (
-                                <span className="flex items-center font-medium text-[var(--color-accent)]">
+                                <span
+                                    className="flex items-center font-medium"
+                                    style={{ color: message.model?.color || themeColor || 'var(--color-accent)' }}
+                                >
                                     <svg className="w-3 h-3 mr-1 opacity-70" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                         <path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"></path>
                                         <line x1="16" y1="8" x2="2" y2="22"></line>

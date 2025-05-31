@@ -8,9 +8,11 @@ import { LoadingContent } from './LoadingContent';
 interface MessageContentProps {
     message: Message;
     themeColor: string;
+    isStreaming?: boolean;
+    streamingCursorColor?: string;
 }
 
-export function MessageContent({ message, themeColor }: MessageContentProps) {
+export function MessageContent({ message, themeColor, isStreaming, streamingCursorColor }: MessageContentProps) {
     if (message.type === 'audio' && message.role === 'user') {
         return <AudioContent message={message} />;
     }
@@ -51,6 +53,6 @@ export function MessageContent({ message, themeColor }: MessageContentProps) {
             return <EmbeddingContent message={message} />;
         case 'text':
         default:
-            return <TextContent message={message} themeColor={themeColor} />;
+            return <TextContent message={message} themeColor={themeColor} isStreaming={isStreaming} streamingCursorColor={streamingCursorColor} />;
     }
 } 
