@@ -17,20 +17,20 @@ export function MessageContent({ message, themeColor, isStreaming, streamingCurs
         return <AudioContent message={message} />;
     }
 
-    // Check if the message is from Ollama - if so, we don't need a loading indicator
+    // Check if the message is from a streaming model - if so, we don't need a loading indicator
     // as we're already showing the streaming content
-    const isOllamaModel = message.model?.provider === 'ollama';
+    const isStreamingModel = message.model?.provider === 'ollama' || message.model?.provider === 'gemini';
 
     // Debug log to track message state
     console.log('Message loading state:', {
         isLoading: message.isLoading,
         content: message.content,
         modelProvider: message.model?.provider,
-        shouldShowLoading: message.isLoading && (!isOllamaModel || (typeof message.content === 'string' && message.content.trim() === ''))
+        shouldShowLoading: message.isLoading && (!isStreamingModel || (typeof message.content === 'string' && message.content.trim() === ''))
     });
 
-    // Never show loading for Ollama, and show loading for other providers only if content is empty
-    if (message.isLoading && !isOllamaModel) {
+    // Never show loading for streaming models, and show loading for other providers only if content is empty
+    if (message.isLoading && !isStreamingModel) {
         switch (message.type) {
             case 'image':
                 return <ImageContent message={message} />;

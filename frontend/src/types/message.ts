@@ -4,7 +4,7 @@ export interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system' | 'function';
   content: string | Blob | File;
-  type: 'text' | 'image' | 'audio' | 'embedding' | 'code' | 'function';
+  type: 'text' | 'image' | 'audio' | 'embedding' | 'code' | 'function' | 'function_call' | 'step' | 'error';
   timestamp: string;
   model?: AIModel;
   isLoading?: boolean;

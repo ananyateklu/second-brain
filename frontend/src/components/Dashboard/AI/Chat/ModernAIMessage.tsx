@@ -54,7 +54,8 @@ export function AIMessage({
     if (isStreaming) {
         console.log('Streaming message:', {
             id: message.id,
-            isOllama: message.model?.provider === 'ollama',
+            provider: message.model?.provider,
+            isStreamingModel: message.model?.provider === 'ollama' || message.model?.provider === 'gemini',
             contentLength: typeof message.content === 'string' ? message.content.length : 'non-string'
         });
     }

@@ -353,8 +353,13 @@ export function AIProvider({ children }: { children: React.ReactNode }) {
         return await agentService.ollama.sendMessage(input, modelId, options);
       }
 
-      // Use messageService for non-streaming chat or other providers
-      return await messageService.sendMessage(input, model);
+      // Use messageService for all chat providers (including streaming support)
+      return await messageService.sendMessage(input, model, {
+        maxTokens: options?.max_tokens,
+        temperature: options?.temperature,
+        tools: options?.tools,
+        onStreamUpdate: options?.onStreamUpdate
+      });
     } catch (error) {
       console.error('Error in sendMessage:', error);
       throw error;
