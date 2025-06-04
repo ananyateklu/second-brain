@@ -113,7 +113,7 @@ Configure the `.env` file with the appropriate API URLs and TickTick credentials
 ```plaintext
 # Example .env entries
 VITE_TICKTICK_CLIENT_ID=your_ticktick_client_id
-VITE_TICKTICK_REDIRECT_URI=http://localhost:5173/dashboard/callback/ticktick
+VITE_TICKTICK_REDIRECT_URI=http://localhost:5173/callback/ticktick
 ```
 
 ### Backend Setup
