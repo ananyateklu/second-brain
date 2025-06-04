@@ -104,11 +104,11 @@ Second Brain is a knowledge management and note-taking system that unifies your 
 git clone https://github.com/yourusername/second-brain.git
 cd second-brain/frontend
 npm install
-# Configure .env with API URLs and TickTick credentials (see .env.example if available)
+# Copy `frontend/.env.example` to `.env` and update API URLs and TickTick credentials
 npm run dev
 ```
 
-Configure the `.env` file with the appropriate API URLs and TickTick credentials before running `npm run dev`:
+Configure the `.env` file (see `frontend/.env.example`) with the appropriate API URLs and TickTick credentials before running `npm run dev`:
 
 ```plaintext
 # Example .env entries
