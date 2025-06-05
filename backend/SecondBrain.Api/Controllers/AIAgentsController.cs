@@ -31,7 +31,7 @@ namespace SecondBrain.Api.Controllers
         {
             _httpClient = httpClient;
             _logger = logger;
-            _aiServiceUrl = configuration["AIService:BaseUrl"] ?? "http://localhost:8000";
+            _aiServiceUrl = configuration["AIService:BaseUrl"] ?? "http://localhost:8001";
 
             _jsonOptions = new JsonSerializerOptions
             {
