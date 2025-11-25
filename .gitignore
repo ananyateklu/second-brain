@@ -1,41 +1,76 @@
-backend/SecondBrain.Api/appsettings.Development.json
-backend/SecondBrain.Api/appsettings.json
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
 
-# Python
-*.py[cod]
-__pycache__/
-*.so
-.Python
-env/
-venv/
-.env
-build/
-develop-eggs/
+# Testing
+coverage/
+
+# Production builds
 dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-*.egg-info/
-.installed.cfg
-*.egg
+build/
+out/
 
-# IDE
-.idea/
+# .NET
+bin/
+obj/
+backend/credentials/
+backend/secondbrain-db.json
+backend/scripts/
+*.user
+*.suo
+*.cache
+*.dll
+*.exe
+*.pdb
+*.cache
+project.lock.json
+project.fragment.lock.json
+artifacts/
+*.db
+*.db-shm
+*.db-wal
+
+# Misc
+.DS_Store
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Next.js
+.next/
+.turbo/
+
+# Environment variables
+.env
+.env*.local
+.env.development
+.env.production
+!.env.example
+
+# Google Cloud / Firebase credentials
+*-credentials.json
+*firebase*.json
+service-account*.json
+gcloud-key*.json
+
+# IDEs
 .vscode/
+.idea/
 *.swp
 *.swo
+*~
 
-# Jupyter Notebook
-.ipynb_checkpoints
+# SSL Certificates
+frontend/certs/*.crt
+frontend/certs/*.key
+frontend/certs/*.pem
+frontend/nginx.conf
 
-# Python virtual environment
-ai_service/venv/
-ai_service/.env
-ai_service/src/__pycache__/
-ai_service/src/**/__pycache__/
-.cursorrules
+# OS
+Thumbs.db
+backend/src/SecondBrain.API/secondbrain-db.json
+

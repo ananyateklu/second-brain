@@ -1,0 +1,49 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Pgvector;
+
+namespace SecondBrain.Core.Entities;
+
+[Table("note_embeddings")]
+public class NoteEmbedding
+{
+    [Key]
+    [Column("id")]
+    public string Id { get; set; } = string.Empty;
+
+    [Column("note_id")]
+    [MaxLength(128)]
+    public string NoteId { get; set; } = string.Empty;
+
+    [Column("user_id")]
+    [MaxLength(128)]
+    public string UserId { get; set; } = string.Empty;
+
+    [Column("chunk_index")]
+    public int ChunkIndex { get; set; }
+
+    [Column("content")]
+    public string Content { get; set; } = string.Empty;
+
+    [Column("embedding", TypeName = "vector(1536)")]
+    public Vector? Embedding { get; set; }
+
+    [Column("embedding_provider")]
+    [MaxLength(50)]
+    public string EmbeddingProvider { get; set; } = string.Empty;
+
+    [Column("embedding_model")]
+    [MaxLength(100)]
+    public string EmbeddingModel { get; set; } = string.Empty;
+
+    [Column("created_at")]
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    // Metadata for better retrieval
+    [Column("note_title")]
+    [MaxLength(500)]
+    public string NoteTitle { get; set; } = string.Empty;
+
+    [Column("note_tags", TypeName = "text[]")]
+    public List<string> NoteTags { get; set; } = new();
+}

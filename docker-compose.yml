@@ -1,0 +1,136 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: secondbrain-postgres
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+      - POSTGRES_DB=${POSTGRES_DB:-secondbrain}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    networks:
+      - secondbrain-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-secondbrain}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: secondbrain-backend
+    expose:
+      - "8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Production}
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=${POSTGRES_DB:-secondbrain};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
+      - Firebase__CredentialsPath=/app/credentials/firestore-credentials.json
+      - FirebaseConfig__apiKey=${FIREBASE_API_KEY}
+      - FirebaseConfig__authDomain=${FIREBASE_AUTH_DOMAIN}
+      - FirebaseConfig__projectId=${FIREBASE_PROJECT_ID}
+      - FirebaseConfig__storageBucket=${FIREBASE_STORAGE_BUCKET}
+      - FirebaseConfig__messagingSenderId=${FIREBASE_MESSAGING_SENDER_ID}
+      - FirebaseConfig__appId=${FIREBASE_APP_ID}
+      - FirebaseConfig__measurementId=${FIREBASE_MEASUREMENT_ID}
+      - AIProviders__OpenAI__ApiKey=${OPENAI_API_KEY}
+      - AIProviders__Gemini__ApiKey=${GEMINI_API_KEY}
+      - AIProviders__Anthropic__ApiKey=${ANTHROPIC_API_KEY}
+      - AIProviders__XAI__ApiKey=${XAI_API_KEY}
+      - AIProviders__Ollama__BaseUrl=${OLLAMA_BASE_URL:-http://localhost:11434}
+      - EmbeddingProviders__OpenAI__ApiKey=${OPENAI_API_KEY}
+      - EmbeddingProviders__Gemini__ApiKey=${GEMINI_API_KEY}
+      - RAG__VectorStoreProvider=${VECTOR_STORE_PROVIDER:-PostgreSQL}
+      - Pinecone__ApiKey=${PINECONE_API_KEY}
+      - Pinecone__Environment=${PINECONE_ENVIRONMENT:-us-east-1-aws}
+      - Pinecone__IndexName=${PINECONE_INDEX_NAME:-second-brain-index}
+      - Cors__AllowedOrigins__0=${CORS_ALLOWED_ORIGINS}
+      - Cors__AllowLocalNetworkIps=${CORS_ALLOW_LOCAL_NETWORK:-false}
+    volumes:
+      - ./backend/credentials:/app/credentials:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - secondbrain-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=
+        - VITE_FIREBASE_API_KEY=${FIREBASE_API_KEY}
+        - VITE_FIREBASE_AUTH_DOMAIN=${FIREBASE_AUTH_DOMAIN}
+        - VITE_FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+        - VITE_FIREBASE_STORAGE_BUCKET=${FIREBASE_STORAGE_BUCKET}
+        - VITE_FIREBASE_MESSAGING_SENDER_ID=${FIREBASE_MESSAGING_SENDER_ID}
+        - VITE_FIREBASE_APP_ID=${FIREBASE_APP_ID}
+        - VITE_FIREBASE_MEASUREMENT_ID=${FIREBASE_MEASUREMENT_ID}
+    container_name: secondbrain-frontend
+    ports:
+      - "3000:8080"
+      - "443:8443"
+    volumes:
+      - ./frontend/certs:/etc/nginx/certs:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - secondbrain-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  secondbrain-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

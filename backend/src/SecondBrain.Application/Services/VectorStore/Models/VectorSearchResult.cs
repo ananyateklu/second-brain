@@ -1,0 +1,23 @@
+namespace SecondBrain.Application.Services.VectorStore.Models;
+
+public class VectorSearchResult
+{
+    public string Id { get; set; } = string.Empty;
+    public string NoteId { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty;
+    public string NoteTitle { get; set; } = string.Empty;
+    public List<string> NoteTags { get; set; } = new();
+    public int ChunkIndex { get; set; }
+    public float SimilarityScore { get; set; }
+    public Dictionary<string, object> Metadata { get; set; } = new();
+}
+
+public class IndexStats
+{
+    public string UserId { get; set; } = string.Empty;
+    public int TotalEmbeddings { get; set; }
+    public int UniqueNotes { get; set; }
+    public DateTime? LastIndexedAt { get; set; }
+    public string EmbeddingProvider { get; set; } = string.Empty;
+    public string VectorStoreProvider { get; set; } = string.Empty;
+}
