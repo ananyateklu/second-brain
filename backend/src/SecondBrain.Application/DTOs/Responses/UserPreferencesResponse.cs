@@ -4,7 +4,7 @@ public class UserPreferencesResponse
 {
     public string? ChatProvider { get; set; }
     public string? ChatModel { get; set; }
-    public string VectorStoreProvider { get; set; } = "Firestore";
+    public string VectorStoreProvider { get; set; } = "PostgreSQL";
     public string DefaultNoteView { get; set; } = "list";
     public int ItemsPerPage { get; set; } = 20;
     public string FontSize { get; set; } = "medium";

@@ -312,18 +312,23 @@ export function ChatPage() {
     }
   }, [conversations, conversationId, isNewChat]);
 
-  // Get available providers from health data, mapping to ensure availableModels is always an array
-  const availableProviders = (healthData?.providers
-    .filter((p) => p.isHealthy)
-    .map((p) => ({
-      ...p,
-      availableModels: p.availableModels || [],
-    })) || []);
+  // Get available providers from health data, mapping to ensure availableModels is always an array of strings
+  const availableProviders = useMemo(() => (Array.isArray(healthData?.providers) 
+    ? healthData.providers
+        .filter((p) => p && p.isHealthy)
+        .map((p) => ({
+          ...p,
+          provider: typeof p.provider === 'string' ? p.provider : String(p.provider || ''),
+          availableModels: Array.isArray(p.availableModels) 
+            ? p.availableModels.filter((m): m is string => typeof m === 'string')
+            : [],
+        }))
+    : []), [healthData?.providers]);
 
   // Get available models for selected provider
-  const availableModels =
+  const availableModels = useMemo(() =>
     availableProviders.find((p) => p.provider === selectedProvider)?.availableModels ||
-    [];
+    [], [availableProviders, selectedProvider]);
 
   // Auto-select first provider and model (only if no saved preferences)
   // NOTE: Do NOT sync to backend here - this is auto-initialization, not user action

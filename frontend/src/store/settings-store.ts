@@ -125,26 +125,56 @@ export const useSettingsStore = create<SettingsStore>()(
           const preferences = await apiClient.get<{
             chatProvider: string | null;
             chatModel: string | null;
-            vectorStoreProvider: VectorStoreProvider;
-            defaultNoteView: NoteView;
+            vectorStoreProvider: string;
+            defaultNoteView: string;
             itemsPerPage: number;
-            fontSize: 'small' | 'medium' | 'large';
+            fontSize: string;
             enableNotifications: boolean;
           }>(`/userpreferences/${userId}`);
 
           console.log('Loaded preferences from backend:', preferences);
 
+          // Validate and sanitize incoming data to prevent rendering issues
+          const currentState = get();
+          
+          // Validate vectorStoreProvider
+          let validatedVectorStore: VectorStoreProvider = currentState.vectorStoreProvider;
+          if (preferences.vectorStoreProvider === 'PostgreSQL' || preferences.vectorStoreProvider === 'Pinecone') {
+            validatedVectorStore = preferences.vectorStoreProvider;
+          } else if (preferences.vectorStoreProvider === 'Firestore') {
+            // Migration from old value
+            validatedVectorStore = 'PostgreSQL';
+          }
+
+          // Validate defaultNoteView
+          const validatedNoteView: NoteView = 
+            preferences.defaultNoteView === 'grid' ? 'grid' : 'list';
+
+          // Validate fontSize
+          const validatedFontSize: 'small' | 'medium' | 'large' = 
+            ['small', 'medium', 'large'].includes(preferences.fontSize) 
+              ? (preferences.fontSize as 'small' | 'medium' | 'large')
+              : currentState.fontSize;
+
+          // Validate itemsPerPage
+          const validatedItemsPerPage = 
+            typeof preferences.itemsPerPage === 'number' && preferences.itemsPerPage > 0
+              ? preferences.itemsPerPage
+              : currentState.itemsPerPage;
+
           set({
-            chatProvider: preferences.chatProvider,
-            chatModel: preferences.chatModel,
-            vectorStoreProvider: preferences.vectorStoreProvider,
-            defaultNoteView: preferences.defaultNoteView,
-            itemsPerPage: preferences.itemsPerPage,
-            fontSize: preferences.fontSize,
-            enableNotifications: preferences.enableNotifications,
+            chatProvider: preferences.chatProvider ?? null,
+            chatModel: preferences.chatModel ?? null,
+            vectorStoreProvider: validatedVectorStore,
+            defaultNoteView: validatedNoteView,
+            itemsPerPage: validatedItemsPerPage,
+            fontSize: validatedFontSize,
+            enableNotifications: typeof preferences.enableNotifications === 'boolean' 
+              ? preferences.enableNotifications 
+              : currentState.enableNotifications,
           });
         } catch (error) {
-          console.error('Failed to load preferences from backend:', error);
+          console.error('Failed to load preferences from backend:', { error });
         }
       },
 

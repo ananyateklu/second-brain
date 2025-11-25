@@ -60,7 +60,7 @@ public class UserPreferences
 
     [Column("vector_store_provider")]
     [MaxLength(50)]
-    public string VectorStoreProvider { get; set; } = "Pinecone";
+    public string VectorStoreProvider { get; set; } = "PostgreSQL";
 
     [Column("default_note_view")]
     [MaxLength(20)]

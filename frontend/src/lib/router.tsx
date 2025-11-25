@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AppLayout } from '../components/layout/AppLayout';
 import { ProtectedRoute } from '../components/auth/ProtectedRoute';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import { LoginPage } from '../pages/LoginPage';
 import { DashboardPage } from '../pages/DashboardPage';
 import { NotesPage } from '../pages/NotesPage';
@@ -13,15 +14,21 @@ import { NotFoundPage } from '../pages/NotFoundPage';
 export const router = createBrowserRouter([
   {
     path: '/login',
-    element: <LoginPage />,
+    element: (
+      <ErrorBoundary>
+        <LoginPage />
+      </ErrorBoundary>
+    ),
   },
   {
     path: '/',
     element: (
       <ProtectedRoute>
-        <AppLayout>
-          <DashboardPage />
-        </AppLayout>
+        <ErrorBoundary>
+          <AppLayout>
+            <DashboardPage />
+          </AppLayout>
+        </ErrorBoundary>
       </ProtectedRoute>
     ),
   },
@@ -29,9 +36,11 @@ export const router = createBrowserRouter([
     path: '/notes',
     element: (
       <ProtectedRoute>
-        <AppLayout>
-          <NotesPage />
-        </AppLayout>
+        <ErrorBoundary>
+          <AppLayout>
+            <NotesPage />
+          </AppLayout>
+        </ErrorBoundary>
       </ProtectedRoute>
     ),
   },
@@ -39,9 +48,11 @@ export const router = createBrowserRouter([
     path: '/chat',
     element: (
       <ProtectedRoute>
-        <AppLayout>
-          <ChatPage />
-        </AppLayout>
+        <ErrorBoundary>
+          <AppLayout>
+            <ChatPage />
+          </AppLayout>
+        </ErrorBoundary>
       </ProtectedRoute>
     ),
   },
@@ -53,9 +64,11 @@ export const router = createBrowserRouter([
     path: '/settings/general',
     element: (
       <ProtectedRoute>
-        <AppLayout>
-          <GeneralSettings />
-        </AppLayout>
+        <ErrorBoundary>
+          <AppLayout>
+            <GeneralSettings />
+          </AppLayout>
+        </ErrorBoundary>
       </ProtectedRoute>
     ),
   },
@@ -63,9 +76,11 @@ export const router = createBrowserRouter([
     path: '/settings/ai',
     element: (
       <ProtectedRoute>
-        <AppLayout>
-          <AISettings />
-        </AppLayout>
+        <ErrorBoundary>
+          <AppLayout>
+            <AISettings />
+          </AppLayout>
+        </ErrorBoundary>
       </ProtectedRoute>
     ),
   },
@@ -73,9 +88,11 @@ export const router = createBrowserRouter([
     path: '/settings/rag',
     element: (
       <ProtectedRoute>
-        <AppLayout>
-          <RAGSettings />
-        </AppLayout>
+        <ErrorBoundary>
+          <AppLayout>
+            <RAGSettings />
+          </AppLayout>
+        </ErrorBoundary>
       </ProtectedRoute>
     ),
   },
