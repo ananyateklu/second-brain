@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { chatApi } from '../api/chat-api';
 import { SendMessageRequest } from '../types/chat';
+import { estimateTokenCount } from '../../../utils/token-utils';
 
 export interface StreamingState {
   isStreaming: boolean;
@@ -12,12 +13,6 @@ export interface StreamingState {
   outputTokens?: number;
   streamDuration?: number; // Duration in milliseconds
 }
-
-// Token estimation utility (1 token ≈ 3.5 characters)
-const estimateTokenCount = (text: string): number => {
-  if (!text) return 0;
-  return Math.ceil(text.length / 3.5);
-};
 
 export function useChatStream() {
   const queryClient = useQueryClient();

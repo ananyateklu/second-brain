@@ -2,12 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../../store/auth-store';
 import { ToolExecution, ThinkingStep, AgentMessageRequest } from '../types/agent-types';
-
-// Token estimation utility (1 token ≈ 3.5 characters)
-const estimateTokenCount = (text: string): number => {
-  if (!text) return 0;
-  return Math.ceil(text.length / 3.5);
-};
+import { estimateTokenCount } from '../../../utils/token-utils';
 
 // Parse thinking blocks from streaming message
 // Returns array of thinking steps, including incomplete ones (without closing tag)
