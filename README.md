@@ -1,7 +1,8 @@
 # Second Brain
 
-![Second Brain Logo - Light Mode](frontend/src/assets/second-brain-logo-light-mode.png)
-![Second Brain Logo - Dark Mode](frontend/src/assets/second-brain-logo-dark-mode.png)
+| Light Mode | Dark Mode |
+|:----------:|:---------:|
+| ![Second Brain Logo - Light Mode](frontend/src/assets/second-brain-logo-light-mode.png) | ![Second Brain Logo - Dark Mode](frontend/src/assets/second-brain-logo-dark-mode.png) |
 
 Intelligent knowledge management with AI-powered chat, smart notes, AI agents, and RAG (Retrieval-Augmented Generation) capabilities.
 
