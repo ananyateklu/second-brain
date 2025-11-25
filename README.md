@@ -2,7 +2,7 @@
 
 <div align="center">
 
-[Second Brain Logo - Dark Mode](frontend/src/assets/second-brain-logo-dark-mode.png) 
+![Second Brain Logo - Dark Mode](frontend/src/assets/second-brain-logo-dark-mode.png)
 
 </div>
 
