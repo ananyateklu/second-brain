@@ -8,6 +8,13 @@ services:
       - POSTGRES_DB=${POSTGRES_DB:-secondbrain}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./database/00_extensions.sql:/docker-entrypoint-initdb.d/00_extensions.sql:ro
+      - ./database/01_users.sql:/docker-entrypoint-initdb.d/01_users.sql:ro
+      - ./database/02_notes.sql:/docker-entrypoint-initdb.d/02_notes.sql:ro
+      - ./database/03_note_embeddings.sql:/docker-entrypoint-initdb.d/03_note_embeddings.sql:ro
+      - ./database/04_chat.sql:/docker-entrypoint-initdb.d/04_chat.sql:ro
+      - ./database/05_indexing_jobs.sql:/docker-entrypoint-initdb.d/05_indexing_jobs.sql:ro
+      - ./database/06_indexes.sql:/docker-entrypoint-initdb.d/06_indexes.sql:ro
     ports:
       - "5432:5432"
     restart: unless-stopped
@@ -36,14 +43,10 @@ services:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Production}
       - ASPNETCORE_URLS=http://+:8080
       - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=${POSTGRES_DB:-secondbrain};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
-      - Firebase__CredentialsPath=/app/credentials/firestore-credentials.json
-      - FirebaseConfig__apiKey=${FIREBASE_API_KEY}
-      - FirebaseConfig__authDomain=${FIREBASE_AUTH_DOMAIN}
-      - FirebaseConfig__projectId=${FIREBASE_PROJECT_ID}
-      - FirebaseConfig__storageBucket=${FIREBASE_STORAGE_BUCKET}
-      - FirebaseConfig__messagingSenderId=${FIREBASE_MESSAGING_SENDER_ID}
-      - FirebaseConfig__appId=${FIREBASE_APP_ID}
-      - FirebaseConfig__measurementId=${FIREBASE_MEASUREMENT_ID}
+      - Jwt__SecretKey=${JWT_SECRET_KEY}
+      - Jwt__Issuer=${JWT_ISSUER}
+      - Jwt__Audience=${JWT_AUDIENCE}
+      - Jwt__ExpiryMinutes=${JWT_EXPIRY_MINUTES}
       - AIProviders__OpenAI__ApiKey=${OPENAI_API_KEY}
       - AIProviders__Gemini__ApiKey=${GEMINI_API_KEY}
       - AIProviders__Anthropic__ApiKey=${ANTHROPIC_API_KEY}
@@ -91,13 +94,6 @@ services:
       dockerfile: Dockerfile
       args:
         - VITE_API_URL=
-        - VITE_FIREBASE_API_KEY=${FIREBASE_API_KEY}
-        - VITE_FIREBASE_AUTH_DOMAIN=${FIREBASE_AUTH_DOMAIN}
-        - VITE_FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
-        - VITE_FIREBASE_STORAGE_BUCKET=${FIREBASE_STORAGE_BUCKET}
-        - VITE_FIREBASE_MESSAGING_SENDER_ID=${FIREBASE_MESSAGING_SENDER_ID}
-        - VITE_FIREBASE_APP_ID=${FIREBASE_APP_ID}
-        - VITE_FIREBASE_MEASUREMENT_ID=${FIREBASE_MEASUREMENT_ID}
     container_name: secondbrain-frontend
     ports:
       - "3000:8080"
