@@ -1,0 +1,217 @@
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+
+type NoteView = 'list' | 'grid';
+type VectorStoreProvider = 'PostgreSQL' | 'Pinecone';
+
+interface SettingsState {
+  // General Preferences
+  defaultNoteView: NoteView;
+  itemsPerPage: number;
+  autoSaveInterval: number; // in milliseconds
+  enableNotifications: boolean;
+  fontSize: 'small' | 'medium' | 'large';
+  // RAG Settings
+  vectorStoreProvider: VectorStoreProvider;
+  // Chat Preferences
+  chatProvider: string | null;
+  chatModel: string | null;
+}
+
+interface SettingsActions {
+  setDefaultNoteView: (view: NoteView) => void;
+  setItemsPerPage: (count: number) => void;
+  setAutoSaveInterval: (interval: number) => void;
+  setEnableNotifications: (enabled: boolean) => void;
+  setFontSize: (size: 'small' | 'medium' | 'large') => void;
+  setVectorStoreProvider: (provider: VectorStoreProvider, syncToBackend?: boolean) => Promise<void>;
+  setChatProvider: (provider: string | null) => void;
+  setChatModel: (model: string | null) => void;
+  loadPreferencesFromBackend: (userId: string) => Promise<void>;
+  syncPreferencesToBackend: (userId: string) => Promise<void>;
+  resetSettings: () => void;
+}
+
+type SettingsStore = SettingsState & SettingsActions;
+
+const SETTINGS_STORAGE_KEY = 'second-brain-settings';
+
+const DEFAULT_SETTINGS: SettingsState = {
+  defaultNoteView: 'list',
+  itemsPerPage: 20,
+  autoSaveInterval: 2000, // 2 seconds
+  enableNotifications: true,
+  fontSize: 'medium',
+  vectorStoreProvider: 'PostgreSQL',
+  chatProvider: null,
+  chatModel: null,
+};
+
+// Helper function to get userId from auth store
+const getUserId = (): string | null => {
+  try {
+    const authState = localStorage.getItem('auth-store');
+    if (!authState) return null;
+    const parsed = JSON.parse(authState);
+    return parsed?.state?.user?.userId || null;
+  } catch {
+    return null;
+  }
+};
+
+export const useSettingsStore = create<SettingsStore>()(
+  persist(
+    (set, get) => ({
+      ...DEFAULT_SETTINGS,
+
+      setDefaultNoteView: (view) => {
+        set({ defaultNoteView: view });
+        const userId = getUserId();
+        if (userId) {
+          get().syncPreferencesToBackend(userId).catch(console.error);
+        }
+      },
+
+      setItemsPerPage: (count) => {
+        set({ itemsPerPage: count });
+        const userId = getUserId();
+        if (userId) {
+          get().syncPreferencesToBackend(userId).catch(console.error);
+        }
+      },
+
+      setAutoSaveInterval: (interval) => set({ autoSaveInterval: interval }),
+
+      setEnableNotifications: (enabled) => {
+        set({ enableNotifications: enabled });
+        const userId = getUserId();
+        if (userId) {
+          get().syncPreferencesToBackend(userId).catch(console.error);
+        }
+      },
+
+      setFontSize: (size) => {
+        set({ fontSize: size });
+        const userId = getUserId();
+        if (userId) {
+          get().syncPreferencesToBackend(userId).catch(console.error);
+        }
+      },
+
+      setVectorStoreProvider: async (provider, syncToBackend = true) => {
+        set({ vectorStoreProvider: provider });
+
+        // Sync to backend if requested
+        if (syncToBackend) {
+          const { syncPreferencesToBackend } = get();
+          const userId = getUserId();
+          if (userId) {
+            try {
+              await syncPreferencesToBackend(userId);
+            } catch (error) {
+              console.error('Failed to sync vector store provider to backend:', error);
+            }
+          }
+        }
+      },
+
+      setChatProvider: (provider) => set({ chatProvider: provider }),
+      setChatModel: (model) => set({ chatModel: model }),
+
+      loadPreferencesFromBackend: async (userId: string) => {
+        try {
+          const { apiClient } = await import('../lib/api-client');
+          console.log('Loading preferences from backend for user:', userId);
+          const preferences = await apiClient.get<{
+            chatProvider: string | null;
+            chatModel: string | null;
+            vectorStoreProvider: VectorStoreProvider;
+            defaultNoteView: NoteView;
+            itemsPerPage: number;
+            fontSize: 'small' | 'medium' | 'large';
+            enableNotifications: boolean;
+          }>(`/userpreferences/${userId}`);
+
+          console.log('Loaded preferences from backend:', preferences);
+
+          set({
+            chatProvider: preferences.chatProvider,
+            chatModel: preferences.chatModel,
+            vectorStoreProvider: preferences.vectorStoreProvider,
+            defaultNoteView: preferences.defaultNoteView,
+            itemsPerPage: preferences.itemsPerPage,
+            fontSize: preferences.fontSize,
+            enableNotifications: preferences.enableNotifications,
+          });
+        } catch (error) {
+          console.error('Failed to load preferences from backend:', error);
+        }
+      },
+
+      syncPreferencesToBackend: async (userId: string) => {
+        try {
+          const { apiClient } = await import('../lib/api-client');
+          const state = get();
+          const payload = {
+            chatProvider: state.chatProvider,
+            chatModel: state.chatModel,
+            vectorStoreProvider: state.vectorStoreProvider,
+            defaultNoteView: state.defaultNoteView,
+            itemsPerPage: state.itemsPerPage,
+            fontSize: state.fontSize,
+            enableNotifications: state.enableNotifications,
+          };
+
+          console.log('Syncing preferences to backend:', payload);
+          const response = await apiClient.put(`/userpreferences/${userId}`, payload);
+          console.log('Preferences synced successfully:', response);
+        } catch (error) {
+          console.error('Failed to sync preferences to backend:', error);
+          throw error;
+        }
+      },
+
+      resetSettings: () => set(DEFAULT_SETTINGS),
+    }),
+    {
+      name: SETTINGS_STORAGE_KEY,
+      merge: (persistedState, currentState) => {
+        const parsed = persistedState as Partial<SettingsState>;
+        // Migration: convert old 'Firestore' value to 'PostgreSQL'
+        let vectorStoreProvider = parsed.vectorStoreProvider;
+        if (vectorStoreProvider === 'Firestore' as unknown as VectorStoreProvider) {
+          vectorStoreProvider = 'PostgreSQL';
+        }
+        return {
+          ...currentState,
+          ...parsed,
+          // Ensure valid values (migration/validation logic)
+          defaultNoteView: parsed.defaultNoteView === 'grid' ? 'grid' : 'list',
+          itemsPerPage:
+            typeof parsed.itemsPerPage === 'number' && parsed.itemsPerPage > 0
+              ? parsed.itemsPerPage
+              : currentState.itemsPerPage,
+          autoSaveInterval:
+            typeof parsed.autoSaveInterval === 'number' &&
+              parsed.autoSaveInterval > 0
+              ? parsed.autoSaveInterval
+              : currentState.autoSaveInterval,
+          enableNotifications:
+            typeof parsed.enableNotifications === 'boolean'
+              ? parsed.enableNotifications
+              : currentState.enableNotifications,
+          fontSize:
+            parsed.fontSize && ['small', 'medium', 'large'].includes(parsed.fontSize)
+              ? (parsed.fontSize as 'small' | 'medium' | 'large')
+              : currentState.fontSize,
+          vectorStoreProvider:
+            vectorStoreProvider === 'Pinecone' || vectorStoreProvider === 'PostgreSQL'
+              ? vectorStoreProvider
+              : currentState.vectorStoreProvider,
+          chatProvider: parsed.chatProvider ?? null,
+          chatModel: parsed.chatModel ?? null,
+        };
+      },
+    }
+  )
+);

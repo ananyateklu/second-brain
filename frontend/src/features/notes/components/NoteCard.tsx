@@ -1,0 +1,353 @@
+import { Note } from '../types/note';
+import { useUIStore } from '../../../store/ui-store';
+import { useDeleteNote } from '../hooks/use-notes-query';
+import { toast } from '../../../hooks/use-toast';
+import { formatRelativeDate } from '../../../utils/date-utils';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { useState, memo, useMemo } from 'react';
+import { useThemeStore } from '../../../store/theme-store';
+
+interface NoteCardProps {
+  note: Note;
+  variant?: 'full' | 'compact';
+  relevanceScore?: number;
+  chunkIndex?: number;
+  chunkContent?: string;
+  content?: string;
+  createdOn?: string | null;
+  modifiedOn?: string | null;
+  showDeleteButton?: boolean;
+}
+
+// Regex-based HTML stripping (safer than innerHTML and faster)
+const stripHtmlTags = (html: string): string => {
+  if (!html) return '';
+
+  // Replace block-level closing tags with newlines to preserve structure
+  let text = html
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<\/div>/gi, '\n')
+    .replace(/<\/li>/gi, '\n')
+    .replace(/<\/h[1-6]>/gi, '\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    // Remove all HTML tags
+    .replace(/<[^>]*>/g, '')
+    // Decode common HTML entities
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    // Clean up multiple spaces and newlines
+    .replace(/\n\s*\n/g, '\n')
+    .trim();
+
+  return text;
+};
+
+// Relevance score color logic - using brand colors based on score
+const getRelevanceColor = (score: number) => {
+  if (score >= 0.8) return 'var(--color-brand-700)';
+  if (score >= 0.5) return 'var(--color-brand-600)';
+  return 'var(--color-brand-500)';
+};
+
+const getRelevanceBg = (score: number) => {
+  if (score >= 0.8) return 'var(--color-brand-200)';
+  if (score >= 0.5) return 'var(--color-brand-100)';
+  return 'var(--color-brand-50)';
+};
+
+export const NoteCard = memo(function NoteCard({
+  note,
+  variant = 'full',
+  relevanceScore,
+  chunkIndex,
+  chunkContent,
+  content,
+  createdOn,
+  showDeleteButton = true,
+}: NoteCardProps) {
+  const openEditModal = useUIStore((state) => state.openEditModal);
+  const deleteNoteMutation = useDeleteNote();
+  const isCompact = variant === 'compact';
+  const [isHovered, setIsHovered] = useState(false);
+  const theme = useThemeStore((state) => state.theme);
+  const isDarkMode = theme === 'dark' || theme === 'blue';
+
+  const handleCardClick = () => {
+    openEditModal(note);
+  };
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click when clicking delete button
+    const confirmed = await toast.confirm({
+      title: 'Delete Note',
+      description: 'Are you sure you want to delete this note?',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+    });
+
+    if (confirmed) {
+      deleteNoteMutation.mutate(note.id);
+    }
+  };
+
+  // Use parsed content if provided (preferred), otherwise fall back to chunkContent or note content
+  const displayContent = isCompact
+    ? (content || chunkContent || note.content)
+    : note.content;
+
+  // Use parsed dates if provided, otherwise fall back to note dates
+  const displayCreatedOn = createdOn || note.createdAt;
+  const contentLineClamp = isCompact ? 'line-clamp-3' : 'line-clamp-4';
+
+  // Check if content is HTML - more robust check that looks for actual HTML tags
+  // This avoids false positives from text like "a < b" or "AT&T"
+  const isHtml = displayContent && /<[a-z][\s\S]*>/i.test(displayContent);
+
+  // Memoize content processing only if it's HTML (most notes aren't HTML)
+  const previewContent = useMemo(() => {
+    if (!displayContent || !isHtml) return displayContent;
+    return stripHtmlTags(displayContent);
+  }, [displayContent, isHtml]);
+
+  // Extract tags from content if note.tags is empty (fallback for imported notes)
+  const displayTags = useMemo(() => {
+    // Use note.tags if available
+    if (note.tags && note.tags.length > 0) {
+      return note.tags;
+    }
+
+    // Fallback: extract tags from content
+    if (displayContent) {
+      const tagPattern = /#([a-zA-Z0-9_-]+)/g;
+      const tags: string[] = [];
+      let match;
+
+      while ((match = tagPattern.exec(displayContent)) !== null) {
+        const tag = match[1];
+        if (tag && !tags.includes(tag)) {
+          tags.push(tag);
+        }
+      }
+
+      return tags;
+    }
+
+    return [];
+  }, [note.tags, displayContent]);
+
+  return (
+    <div
+      className={`group relative border transition-all duration-300 cursor-pointer overflow-hidden backdrop-blur-md flex flex-col ${isCompact ? 'rounded-3xl p-4' : 'rounded-3xl p-5'
+        }`}
+      style={{
+        backgroundColor: 'var(--surface-card)',
+        borderColor: isHovered
+          ? (relevanceScore && relevanceScore > 0.8 && isCompact ? 'var(--color-brand-400)' : 'var(--color-brand-500)')
+          : 'var(--border)',
+        boxShadow: isHovered
+          ? 'var(--shadow-lg), 0 0 40px -15px var(--color-primary-alpha)'
+          : (isCompact ? 'var(--shadow-sm)' : 'var(--shadow-card), 0 0 30px -20px var(--color-primary-alpha)'),
+        transform: isHovered && !isCompact ? 'translateY(-4px) scale-[1.02]' : (isHovered && isCompact ? 'scale-[1.02]' : 'none'),
+      }}
+      onClick={handleCardClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {/* Ambient glow effect */}
+      <div
+        className="absolute -top-20 -right-20 w-40 h-40 rounded-full opacity-15 blur-2xl pointer-events-none transition-opacity duration-1000"
+        style={{
+          background: `radial-gradient(circle, var(--color-primary), transparent)`,
+          opacity: isHovered ? 0.25 : 0.15,
+        }}
+      />
+      {/* Relevance Indicator Strip (only for high relevance compact cards) */}
+      {isCompact && relevanceScore && relevanceScore > 0.8 && (
+        <div
+          className="absolute left-0 top-0 bottom-0 w-1 z-10"
+          style={{ backgroundColor: getRelevanceColor(relevanceScore) }}
+        />
+      )}
+
+      {/* Content wrapper with relative positioning */}
+      <div className="relative z-10 flex flex-col h-full">
+        {/* Header */}
+        <div className={`flex items-start justify-between gap-3 ${isCompact ? 'mb-2' : 'mb-3'}`}>
+          <h2
+            className={`${isCompact ? 'text-sm' : 'text-lg'} font-semibold line-clamp-1 flex-1 tracking-tight`}
+            style={{ color: 'var(--text-primary)' }}
+            title={note.title}
+          >
+            {note.title}
+          </h2>
+
+          {/* Actions & Meta */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {isCompact && relevanceScore !== undefined && (
+              <div
+                className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                style={{
+                  backgroundColor: getRelevanceBg(relevanceScore),
+                  color: getRelevanceColor(relevanceScore)
+                }}
+              >
+                {(relevanceScore * 100).toFixed(0)}% Match
+              </div>
+            )}
+
+            {showDeleteButton && !isCompact && (
+              <div
+                className={`flex items-center gap-1.5 transition-all duration-200 ${isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2'}`}
+              >
+                <button
+                  onClick={handleDelete}
+                  className="flex items-center justify-center w-7 h-7 rounded-full transition-colors"
+                  style={{
+                    backgroundColor: 'var(--surface-hover)',
+                    color: 'var(--text-tertiary)',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!deleteNoteMutation.isPending) {
+                      e.currentTarget.style.backgroundColor = 'var(--color-error-light)';
+                      e.currentTarget.style.color = 'var(--color-error-text)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+                    e.currentTarget.style.color = 'var(--text-tertiary)';
+                  }}
+                  aria-label="Delete note"
+                  disabled={deleteNoteMutation.isPending}
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Content */}
+        <div
+          className={`${isCompact ? 'mb-3 text-xs' : 'mb-4 text-sm'} ${contentLineClamp} leading-relaxed`}
+          style={{ color: 'var(--text-secondary)' }}
+        >
+          {isHtml ? (
+            // For HTML content, show stripped plain text
+            <p className="whitespace-pre-wrap font-normal">{previewContent}</p>
+          ) : (
+            // For markdown/plain text, render with ReactMarkdown
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                // Simplified components for preview
+                p: ({ node, ...props }) => (
+                  <p className="mb-2 last:mb-0" {...props} />
+                ),
+                h1: ({ node, ...props }) => (
+                  <strong className="block mb-1 mt-1" {...props} />
+                ),
+                h2: ({ node, ...props }) => (
+                  <strong className="block mb-1 mt-1" {...props} />
+                ),
+                h3: ({ node, ...props }) => (
+                  <strong className="block mb-1 mt-1" {...props} />
+                ),
+                ul: ({ node, ...props }) => (
+                  <ul className="list-disc ml-4 mb-1 space-y-0.5" {...props} />
+                ),
+                ol: ({ node, ...props }) => (
+                  <ol className="list-decimal ml-4 mb-1 space-y-0.5" {...props} />
+                ),
+                li: ({ node, ...props }) => (
+                  <li className="" {...props} />
+                ),
+                strong: ({ node, ...props }) => (
+                  <strong className="font-semibold" style={{ color: 'var(--text-primary)' }} {...props} />
+                ),
+                em: ({ node, ...props }) => (
+                  <em className="italic" {...props} />
+                ),
+                code: ({ node, ...props }) => (
+                  <code className="px-1 py-0.5 rounded text-[0.9em]" style={{ backgroundColor: 'var(--surface-elevated)' }} {...props} />
+                ),
+                blockquote: ({ node, ...props }) => (
+                  <blockquote className="border-l-2 pl-2 italic my-1" style={{ borderColor: 'var(--border)' }} {...props} />
+                ),
+                // Hide complex elements in preview
+                table: () => null,
+                img: () => null,
+                hr: () => null,
+              }}
+            >
+              {displayContent}
+            </ReactMarkdown>
+          )}
+        </div>
+
+        {/* Spacer to push footer to bottom */}
+        <div className="flex-grow" />
+
+        {/* Footer Info */}
+        <div className={`flex items-end justify-between ${!isCompact ? 'mt-2' : 'mt-auto'}`}>
+          {/* Tags */}
+          {displayTags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {displayTags.slice(0, isCompact ? 2 : 3).map((tag, index) => (
+                <span
+                  key={`${tag}-${index}`}
+                  className={`inline-flex items-center rounded-md font-medium ${isCompact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-0.5 text-[10px]'
+                    }`}
+                  style={{
+                    backgroundColor: isDarkMode
+                      ? 'color-mix(in srgb, var(--color-brand-100) 5%, transparent)'
+                      : 'color-mix(in srgb, var(--color-brand-100) 30%, transparent)',
+                    color: isDarkMode ? 'var(--color-brand-300)' : 'var(--color-brand-600)',
+                    opacity: isDarkMode ? 1 : 0.7,
+                  }}
+                >
+                  <span className="opacity-50 mr-0.5">#</span>{tag}
+                </span>
+              ))}
+              {displayTags.length > (isCompact ? 2 : 3) && (
+                <span
+                  className={`inline-flex items-center rounded-md font-medium ${isCompact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-0.5 text-[10px]'
+                    }`}
+                  style={{
+                    backgroundColor: isDarkMode
+                      ? 'color-mix(in srgb, var(--color-brand-100) 5%, transparent)'
+                      : 'color-mix(in srgb, var(--color-brand-100) 30%, transparent)',
+                    color: isDarkMode ? 'var(--color-brand-300)' : 'var(--color-brand-600)',
+                    opacity: isDarkMode ? 1 : 0.7,
+                  }}
+                >
+                  +{displayTags.length - (isCompact ? 2 : 3)}
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Metadata / Date */}
+          <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
+            {isCompact && chunkIndex !== undefined ? (
+              <span className="text-[9px] font-medium px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--surface-hover)', color: 'var(--text-tertiary)' }}>
+                Chunk {chunkIndex + 1}
+              </span>
+            ) : !isCompact ? (
+              <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+                {formatRelativeDate(displayCreatedOn)}
+              </span>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+});

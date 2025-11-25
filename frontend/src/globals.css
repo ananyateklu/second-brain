@@ -1,0 +1,1066 @@
+:root {
+  /* Brand color palette based on #36693d */
+  --color-brand-950: #0f1a11; /* Darkest - almost black with green tint */
+  --color-brand-900: #1a2e1e; /* Very dark green */
+  --color-brand-800: #25422b; /* Dark green */
+  --color-brand-700: #2f5638; /* Medium-dark green */
+  --color-brand-600: #36693d; /* Base color - primary green */
+  --color-brand-500: #4a7d52; /* Medium green */
+  --color-brand-400: #5e9167; /* Medium-light green */
+  --color-brand-300: #7aa884; /* Light green */
+  --color-brand-200: #a3c4ab; /* Very light green */
+  --color-brand-100: #cce0d1; /* Pale green */
+  --color-brand-50: #f0f7f2; /* Lightest - almost white with green tint */
+
+  /* Semantic color tokens */
+  --color-primary: var(--color-brand-600);
+  --color-primary-alpha: color-mix(
+    in srgb,
+    var(--color-brand-600) 15%,
+    transparent
+  );
+  --color-surface: var(--background);
+  --color-surface-elevated: color-mix(
+    in srgb,
+    var(--background) 90%,
+    transparent
+  );
+  --color-border-subtle: color-mix(
+    in srgb,
+    var(--color-brand-600) 25%,
+    transparent
+  );
+  --color-text-muted: color-mix(in srgb, var(--foreground) 70%, transparent);
+
+  /* Surface and border variables for components */
+  --surface: color-mix(in srgb, var(--background) 60%, transparent);
+  --surface-elevated: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--background) 95%, white) 70%,
+    transparent
+  );
+  --surface-card: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--background) 90%, white) 60%,
+    transparent
+  );
+
+  /* Solid (non-transparent) background colors for components that need opaque backgrounds */
+  --background-solid: var(--background);
+  --surface-solid: var(--background);
+  --surface-elevated-solid: var(--background);
+  --surface-card-solid: var(--background);
+
+  --border: color-mix(in srgb, var(--foreground) 15%, transparent);
+  --border-strong: color-mix(in srgb, var(--foreground) 25%, transparent);
+  --text-primary: var(--foreground);
+  --text-secondary: color-mix(in srgb, var(--foreground) 70%, transparent);
+  --text-tertiary: color-mix(in srgb, var(--foreground) 50%, transparent);
+
+  /* Default theme (dark) - before JS sets [data-theme] */
+  --background: #050805; /* Almost black with green tint */
+  --foreground: var(--color-brand-50);
+  --link: var(--color-brand-300);
+  --link-hover: var(--color-brand-200);
+
+  /* Button defaults (dark) */
+  --btn-primary-bg: var(--color-brand-700);
+  --btn-primary-hover-bg: var(--color-brand-800);
+  --btn-primary-text: #ffffff;
+  --btn-primary-border: transparent;
+  --btn-primary-shadow: 0 10px 24px -12px rgba(94, 145, 103, 0.55);
+  --btn-primary-hover-border: var(--color-brand-400);
+  --btn-primary-hover-shadow: 0 16px 32px -16px rgba(37, 66, 43, 0.6);
+  --btn-secondary-text: var(--color-brand-200);
+  --btn-secondary-border: rgba(54, 105, 61, 0.3);
+  --btn-secondary-hover-bg: var(--color-brand-50);
+  --btn-secondary-hover-text: var(--color-brand-800);
+  --btn-secondary-hover-border: var(--color-brand-700);
+  --btn-secondary-shadow: 0 8px 20px -16px rgba(94, 145, 103, 0.35);
+  --btn-secondary-hover-shadow: 0 16px 34px -20px rgba(163, 196, 171, 0.45);
+
+  /* Error colors */
+  --color-error: #ef4444;
+  --color-error-light: rgba(239, 68, 68, 0.1);
+  --color-error-border: rgba(239, 68, 68, 0.3);
+  --color-error-text: #dc2626;
+  --color-error-text-light: #f87171;
+
+  /* Notes capability colors (lighter shade of brand green) */
+  --color-notes: var(--color-brand-300); /* Light green from brand palette */
+  --color-notes-alpha: color-mix(in srgb, var(--color-brand-300) 15%, transparent);
+  --color-notes-text: var(--color-brand-300);
+  --color-notes-border: var(--color-brand-300);
+  --color-notes-dot: var(--color-brand-300);
+
+  /* Web search capability colors (blue accent) */
+  --color-accent-blue: #5d7dac; /* Medium-light blue */
+  --color-accent-blue-alpha: color-mix(in srgb, #5d7dac 15%, transparent);
+  --color-accent-blue-text: #5d7dac;
+  --color-accent-blue-border: #5d7dac;
+  --color-accent-blue-dot: #5d7dac;
+
+  /* Shadow variables */
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+
+  /* Card shadow variables */
+  --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  --shadow-card-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+
+  /* Icon background variables */
+  --icon-bg-light: var(--color-brand-50);
+  --icon-bg-dark: color-mix(in srgb, var(--color-brand-900) 30%, transparent);
+  --icon-text-light: var(--color-brand-700);
+  --icon-text-dark: var(--color-brand-400);
+  --icon-hover-bg-light: var(--color-brand-100);
+  --icon-hover-bg-dark: color-mix(
+    in srgb,
+    var(--color-brand-900) 50%,
+    transparent
+  );
+  --icon-hover-text-light: var(--color-brand-800);
+  --icon-hover-text-dark: var(--color-brand-300);
+
+  /* Gradient backgrounds */
+  --gradient-brand-start: var(--color-brand-100);
+  --gradient-brand-end: var(--color-brand-200);
+  --gradient-brand-start-dark: color-mix(
+    in srgb,
+    var(--color-brand-900) 40%,
+    transparent
+  );
+  --gradient-brand-end-dark: color-mix(
+    in srgb,
+    var(--color-brand-800) 40%,
+    transparent
+  );
+
+  /* Modal overlay */
+  --modal-overlay: rgba(0, 0, 0, 0.6);
+
+  /* Blue theme indicator */
+  --blue-indicator: #4a6d99;
+
+  /* Input focus colors */
+  --input-focus-border: var(--color-brand-500);
+  --input-focus-ring: color-mix(
+    in srgb,
+    var(--color-brand-600) 20%,
+    transparent
+  );
+
+  /* Page background gradient */
+  --page-background: radial-gradient(
+    circle at top left,
+    var(--color-brand-900),
+    #050805 40%
+  );
+}
+
+/* Light theme colors */
+[data-theme="light"] {
+  --background: var(--color-brand-50);
+  --page-background: radial-gradient(
+    circle at top left,
+    var(--color-brand-100),
+    var(--color-brand-50) 30%,
+    #ffffff 100%
+  );
+  --foreground: var(--color-brand-950);
+  --link: var(--color-brand-700);
+  --link-hover: var(--color-brand-800);
+  --color-primary-alpha: color-mix(
+    in srgb,
+    var(--color-brand-600) 15%,
+    transparent
+  );
+
+  /* Surface and border variables */
+  --surface: color-mix(in srgb, var(--color-brand-50) 50%, transparent);
+  --surface-elevated: color-mix(in srgb, #ffffff 60%, transparent);
+  --surface-card: color-mix(in srgb, #ffffff 70%, transparent);
+
+  /* Solid (non-transparent) background colors for light theme */
+  --background-solid: #ffffff;
+  --surface-solid: #ffffff;
+  --surface-elevated-solid: #ffffff;
+  --surface-card-solid: #ffffff;
+
+  --border: color-mix(in srgb, var(--color-brand-950) 15%, transparent);
+  --border-strong: color-mix(in srgb, var(--color-brand-950) 25%, transparent);
+  --text-primary: var(--color-brand-950);
+  --text-secondary: color-mix(in srgb, var(--color-brand-950) 70%, transparent);
+  --text-tertiary: color-mix(in srgb, var(--color-brand-950) 50%, transparent);
+
+  /* Button colors for light mode */
+  --btn-primary-bg: var(--color-brand-600);
+  --btn-primary-hover-bg: var(--color-brand-700);
+  --btn-primary-text: #ffffff;
+  --btn-primary-border: transparent;
+  --btn-primary-shadow: 0 8px 20px -12px rgba(54, 105, 61, 0.4);
+  --btn-primary-hover-border: var(--color-brand-700);
+  --btn-primary-hover-shadow: 0 14px 28px -16px rgba(47, 86, 56, 0.45);
+
+  --btn-secondary-text: var(--color-brand-800);
+  --btn-secondary-border: rgba(54, 105, 61, 0.3);
+  --btn-secondary-hover-bg: var(--color-brand-100);
+  --btn-secondary-hover-text: var(--color-brand-800);
+  --btn-secondary-hover-border: var(--color-brand-700);
+  --btn-secondary-shadow: 0 6px 16px -14px rgba(54, 105, 61, 0.3);
+  --btn-secondary-hover-shadow: 0 14px 32px -20px rgba(47, 86, 56, 0.4);
+
+  /* Error colors for light theme */
+  --color-error: #dc2626;
+  --color-error-light: rgba(239, 68, 68, 0.1);
+  --color-error-border: rgba(239, 68, 68, 0.3);
+  --color-error-text: #b91c1c;
+  --color-error-text-light: #dc2626;
+
+  /* Notes capability colors for light theme */
+  --color-notes: var(--color-brand-400); /* Medium-light green for better contrast in light mode */
+  --color-notes-alpha: color-mix(in srgb, var(--color-brand-400) 15%, transparent);
+  --color-notes-text: var(--color-brand-400);
+  --color-notes-border: var(--color-brand-400);
+  --color-notes-dot: var(--color-brand-400);
+
+  /* Web search capability colors for light theme */
+  --color-accent-blue: #4a6d99; /* Medium blue for better contrast in light mode */
+  --color-accent-blue-alpha: color-mix(in srgb, #4a6d99 15%, transparent);
+  --color-accent-blue-text: #4a6d99;
+  --color-accent-blue-border: #4a6d99;
+  --color-accent-blue-dot: #4a6d99;
+
+  /* Input focus colors for light theme */
+  --input-focus-border: var(--color-brand-500);
+  --input-focus-ring: color-mix(
+    in srgb,
+    var(--color-brand-600) 20%,
+    transparent
+  );
+
+  color-scheme: light;
+}
+
+/* Dark theme colors */
+[data-theme="dark"] {
+  /* Black with subtle green tint */
+  --background: #050805; /* Almost black with green tint */
+  --foreground: var(--color-brand-50);
+  --link: var(--color-brand-300);
+  --link-hover: var(--color-brand-200);
+  --color-primary-alpha: color-mix(
+    in srgb,
+    var(--color-brand-600) 20%,
+    transparent
+  );
+
+  /* Surface and border variables */
+  --surface: color-mix(in srgb, #050805 60%, transparent);
+  --surface-elevated: color-mix(
+    in srgb,
+    color-mix(in srgb, #050805 95%, var(--color-brand-900)) 70%,
+    transparent
+  );
+  --surface-card: color-mix(
+    in srgb,
+    color-mix(in srgb, #050805 90%, var(--color-brand-900)) 70%,
+    transparent
+  );
+
+  /* Solid (non-transparent) background colors for dark theme - darker neutral tint with subtle green tint and frosted glass effect */
+  --background-solid: rgba(3, 5, 3, 0.98);
+  --surface-solid: rgba(5, 8, 5, 0.95);
+  --surface-elevated-solid: rgba(8, 12, 8, 0.98);
+  --surface-card-solid: rgba(6, 10, 6, 0.99);
+
+  --border: color-mix(in srgb, var(--color-brand-50) 15%, transparent);
+  --border-strong: color-mix(in srgb, var(--color-brand-50) 25%, transparent);
+  --text-primary: var(--color-brand-50);
+  --text-secondary: color-mix(in srgb, var(--color-brand-50) 70%, transparent);
+  --text-tertiary: color-mix(in srgb, var(--color-brand-50) 50%, transparent);
+
+  /* Button colors for dark mode */
+  --btn-primary-bg: var(--color-brand-700);
+  --btn-primary-hover-bg: var(--color-brand-800);
+  --btn-primary-text: #ffffff;
+  --btn-primary-border: transparent;
+  --btn-primary-shadow: 0 10px 24px -12px rgba(94, 145, 103, 0.55);
+  --btn-primary-hover-border: var(--color-brand-400);
+  --btn-primary-hover-shadow: 0 16px 32px -16px rgba(37, 66, 43, 0.6);
+
+  --btn-secondary-text: var(--color-brand-200);
+  --btn-secondary-border: rgba(54, 105, 61, 0.3);
+  --btn-secondary-hover-bg: var(--color-brand-50);
+  --btn-secondary-hover-text: var(--color-brand-800);
+  --btn-secondary-hover-border: var(--color-brand-700);
+  --btn-secondary-shadow: 0 8px 20px -16px rgba(94, 145, 103, 0.35);
+  --btn-secondary-hover-shadow: 0 16px 34px -20px rgba(163, 196, 171, 0.45);
+
+  /* Error colors for dark theme */
+  --color-error: #f87171;
+  --color-error-light: rgba(239, 68, 68, 0.1);
+  --color-error-border: rgba(239, 68, 68, 0.3);
+  --color-error-text: #f87171;
+  --color-error-text-light: #fca5a5;
+
+  /* Notes capability colors for dark theme */
+  --color-notes: var(--color-brand-300); /* Light green from brand palette */
+  --color-notes-alpha: color-mix(in srgb, var(--color-brand-300) 15%, transparent);
+  --color-notes-text: var(--color-brand-300);
+  --color-notes-border: var(--color-brand-300);
+  --color-notes-dot: var(--color-brand-300);
+
+  /* Web search capability colors for dark theme */
+  --color-accent-blue: #5d7dac; /* Light blue from blue palette */
+  --color-accent-blue-alpha: color-mix(in srgb, #5d7dac 15%, transparent);
+  --color-accent-blue-text: #5d7dac;
+  --color-accent-blue-border: #5d7dac;
+  --color-accent-blue-dot: #5d7dac;
+
+  /* Input focus colors for dark theme */
+  --input-focus-border: var(--color-brand-400);
+  --input-focus-ring: color-mix(
+    in srgb,
+    var(--color-brand-500) 25%,
+    transparent
+  );
+
+  --page-background: radial-gradient(
+    circle at top left,
+    var(--color-brand-900),
+    #050805 40%
+  );
+
+  color-scheme: dark;
+}
+
+/* Blue theme colors (dark blue background) */
+[data-theme="blue"] {
+  /* Blue color palette for blue theme */
+  --color-blue-950: #0a1628; /* Darkest blue - almost black */
+  --color-blue-900: #0f1e3a; /* Very dark blue */
+  --color-blue-800: #1a2d4d; /* Dark blue */
+  --color-blue-700: #253d60; /* Medium-dark blue */
+  --color-blue-600: #304d73; /* Base blue */
+  --color-blue-500: #3b5d86; /* Medium blue */
+  --color-blue-400: #4a6d99; /* Medium-light blue */
+  --color-blue-300: #5d7dac; /* Light blue */
+  --color-blue-200: #8fa3c4; /* Very light blue */
+  --color-blue-100: #b8c7db; /* Pale blue */
+  --color-blue-50: #e8edf3; /* Lightest - almost white with blue tint */
+
+  /* Darker background for blue theme */
+  --background: var(--color-blue-900);
+  --foreground: var(--color-blue-50);
+  --link: var(--color-blue-300);
+  --link-hover: var(--color-blue-200);
+  --color-primary-alpha: color-mix(
+    in srgb,
+    var(--color-brand-600) 20%,
+    transparent
+  );
+
+  /* Surface and border variables - darker components */
+  --surface: color-mix(in srgb, var(--color-blue-900) 60%, transparent);
+  --surface-elevated: color-mix(
+    in srgb,
+    var(--color-blue-950) 70%,
+    transparent
+  );
+  --surface-card: color-mix(in srgb, var(--color-blue-950) 70%, transparent);
+
+  /* Solid (non-transparent) background colors for blue theme */
+  --background-solid: var(--color-blue-900);
+  --surface-solid: var(--color-blue-950);
+  --surface-elevated-solid: var(--color-blue-950);
+  --surface-card-solid: var(--color-blue-950);
+
+  --border: color-mix(in srgb, var(--color-blue-50) 15%, transparent);
+  --border-strong: color-mix(in srgb, var(--color-blue-50) 25%, transparent);
+  --text-primary: var(--color-blue-50);
+  --text-secondary: color-mix(in srgb, var(--color-blue-50) 70%, transparent);
+  --text-tertiary: color-mix(in srgb, var(--color-blue-50) 50%, transparent);
+
+  /* Button colors for blue mode - keep primary buttons green */
+  --btn-primary-bg: var(--color-brand-700);
+  --btn-primary-hover-bg: var(--color-brand-800);
+  --btn-primary-text: #ffffff;
+  --btn-primary-border: transparent;
+  --btn-primary-shadow: 0 10px 24px -12px rgba(94, 145, 103, 0.55);
+  --btn-primary-hover-border: var(--color-brand-400);
+  --btn-primary-hover-shadow: 0 16px 32px -16px rgba(37, 66, 43, 0.6);
+
+  --btn-secondary-text: var(--color-blue-200);
+  --btn-secondary-border: rgba(48, 77, 115, 0.3);
+  --btn-secondary-hover-bg: var(--color-blue-50);
+  --btn-secondary-hover-text: var(--color-blue-800);
+  --btn-secondary-hover-border: var(--color-blue-700);
+  --btn-secondary-shadow: 0 8px 20px -16px rgba(77, 109, 153, 0.35);
+  --btn-secondary-hover-shadow: 0 16px 34px -20px rgba(143, 163, 196, 0.45);
+
+  /* Error colors for blue theme */
+  --color-error: #f87171;
+  --color-error-light: rgba(239, 68, 68, 0.1);
+  --color-error-border: rgba(239, 68, 68, 0.3);
+  --color-error-text: #f87171;
+  --color-error-text-light: #fca5a5;
+
+  /* Notes capability colors for blue theme */
+  --color-notes: var(--color-brand-300); /* Light green from brand palette */
+  --color-notes-alpha: color-mix(in srgb, var(--color-brand-300) 15%, transparent);
+  --color-notes-text: var(--color-brand-300);
+  --color-notes-border: var(--color-brand-300);
+  --color-notes-dot: var(--color-brand-300);
+
+  /* Web search capability colors for blue theme */
+  --color-accent-blue: var(--color-blue-300); /* Light blue from blue palette */
+  --color-accent-blue-alpha: color-mix(in srgb, var(--color-blue-300) 15%, transparent);
+  --color-accent-blue-text: var(--color-blue-300);
+  --color-accent-blue-border: var(--color-blue-300);
+  --color-accent-blue-dot: var(--color-blue-300);
+
+  /* Input focus colors for blue theme */
+  --input-focus-border: var(--color-brand-400);
+  --input-focus-ring: color-mix(
+    in srgb,
+    var(--color-brand-500) 25%,
+    transparent
+  );
+
+  /* Blue theme indicator */
+  --blue-indicator: var(--color-blue-400);
+
+  --page-background: radial-gradient(
+    circle at top left,
+    var(--color-blue-800),
+    var(--color-blue-900) 40%,
+    var(--color-blue-950) 100%
+  );
+
+  color-scheme: dark;
+}
+
+/* Animations */
+@keyframes fadeInSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes rotate-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Toast Notification Styles - Sonner */
+/* Default theme (dark) toast colors */
+:root {
+  --success-bg: var(--color-brand-700);
+  --success-border: var(--color-brand-500);
+  --success-text: #ffffff;
+  --info-bg: var(--color-brand-800);
+  --info-border: var(--color-brand-600);
+  --info-text: var(--color-brand-100);
+  --warning-bg: color-mix(in srgb, #f59e0b 20%, var(--color-brand-900));
+  --warning-border: #f59e0b;
+  --warning-text: #fbbf24;
+  --error-bg: color-mix(
+    in srgb,
+    var(--color-error) 20%,
+    var(--color-brand-900)
+  );
+  --error-border: var(--color-error);
+  --error-text: var(--color-error-text);
+}
+
+/* Light theme toast colors */
+[data-theme="light"] {
+  --success-bg: var(--color-brand-600);
+  --success-border: var(--color-brand-500);
+  --success-text: #ffffff;
+  --info-bg: var(--color-brand-100);
+  --info-border: var(--color-brand-400);
+  --info-text: var(--color-brand-800);
+  --warning-bg: color-mix(in srgb, #f59e0b 15%, var(--color-brand-50));
+  --warning-border: #f59e0b;
+  --warning-text: #d97706;
+  --error-bg: color-mix(in srgb, var(--color-error) 15%, var(--color-brand-50));
+  --error-border: var(--color-error);
+  --error-text: var(--color-error-text);
+}
+
+/* Blue theme toast colors */
+[data-theme="blue"] {
+  --success-bg: var(--color-brand-700);
+  --success-border: var(--color-brand-500);
+  --success-text: #ffffff;
+  --info-bg: var(--color-blue-800);
+  --info-border: var(--color-blue-600);
+  --info-text: var(--color-blue-100);
+  --warning-bg: color-mix(in srgb, #f59e0b 20%, var(--color-blue-950));
+  --warning-border: #f59e0b;
+  --warning-text: #fbbf24;
+  --error-bg: color-mix(in srgb, var(--color-error) 20%, var(--color-blue-950));
+  --error-border: var(--color-error);
+  --error-text: var(--color-error-text);
+}
+
+/* Base toast styling */
+[data-sonner-toast] {
+  background: var(--surface-elevated) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-primary) !important;
+  box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.3),
+    0 4px 8px -2px rgba(0, 0, 0, 0.1) !important;
+  backdrop-filter: blur(8px);
+  border-radius: 8px !important;
+}
+
+/* Success toast - dark green theme */
+[data-sonner-toast][data-type="success"],
+[data-sonner-toast].success {
+  background: var(--success-bg) !important;
+  border-color: var(--success-border) !important;
+  color: var(--success-text) !important;
+  box-shadow: 0 10px 24px -12px rgba(47, 86, 56, 0.55),
+    0 4px 8px -2px rgba(47, 86, 56, 0.2) !important;
+}
+
+[data-sonner-toast][data-type="success"] [data-title],
+[data-sonner-toast][data-type="success"] [data-description],
+[data-sonner-toast].success [data-title],
+[data-sonner-toast].success [data-description] {
+  color: var(--success-text) !important;
+}
+
+/* Info toast */
+[data-sonner-toast][data-type="info"],
+[data-sonner-toast].info {
+  background: var(--info-bg) !important;
+  border-color: var(--info-border) !important;
+  color: var(--info-text) !important;
+  box-shadow: 0 10px 24px -12px rgba(54, 105, 61, 0.4),
+    0 4px 8px -2px rgba(54, 105, 61, 0.15) !important;
+}
+
+[data-sonner-toast][data-type="info"] [data-title],
+[data-sonner-toast][data-type="info"] [data-description],
+[data-sonner-toast].info [data-title],
+[data-sonner-toast].info [data-description] {
+  color: var(--info-text) !important;
+}
+
+/* Warning toast */
+[data-sonner-toast][data-type="warning"],
+[data-sonner-toast].warning {
+  background: var(--warning-bg) !important;
+  border-color: var(--warning-border) !important;
+  color: var(--warning-text) !important;
+  box-shadow: 0 10px 24px -12px rgba(245, 158, 11, 0.4),
+    0 4px 8px -2px rgba(245, 158, 11, 0.15) !important;
+}
+
+[data-sonner-toast][data-type="warning"] [data-title],
+[data-sonner-toast][data-type="warning"] [data-description],
+[data-sonner-toast].warning [data-title],
+[data-sonner-toast].warning [data-description] {
+  color: var(--warning-text) !important;
+}
+
+/* Error toast */
+[data-sonner-toast][data-type="error"],
+[data-sonner-toast].error {
+  background: var(--error-bg) !important;
+  border-color: var(--error-border) !important;
+  color: var(--error-text) !important;
+  box-shadow: 0 10px 24px -12px rgba(239, 68, 68, 0.4),
+    0 4px 8px -2px rgba(239, 68, 68, 0.15) !important;
+}
+
+[data-sonner-toast][data-type="error"] [data-title],
+[data-sonner-toast][data-type="error"] [data-description],
+[data-sonner-toast].error [data-title],
+[data-sonner-toast].error [data-description] {
+  color: var(--error-text) !important;
+}
+
+/* Loading toast */
+[data-sonner-toast][data-type="loading"],
+[data-sonner-toast].loading {
+  background: var(--surface-elevated) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Default toast (for confirm dialogs) */
+[data-sonner-toast]:not([data-type]) {
+  background: var(--surface-elevated) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Toast action buttons */
+[data-sonner-toast] [data-button],
+[data-sonner-toast] button[data-button] {
+  background: var(--btn-primary-bg) !important;
+  color: var(--btn-primary-text) !important;
+  border-color: var(--btn-primary-border) !important;
+  border-radius: 6px !important;
+  font-weight: 500 !important;
+  padding: 0.5rem 1rem !important;
+  transition: all 0.2s ease !important;
+}
+
+[data-sonner-toast] [data-button]:hover,
+[data-sonner-toast] button[data-button]:hover {
+  background: var(--btn-primary-hover-bg) !important;
+  border-color: var(--btn-primary-hover-border) !important;
+  box-shadow: var(--btn-primary-hover-shadow) !important;
+}
+
+/* Toast cancel button */
+[data-sonner-toast] [data-cancel],
+[data-sonner-toast] button[data-cancel] {
+  background: transparent !important;
+  color: var(--text-secondary) !important;
+  border-color: var(--border) !important;
+  border-radius: 6px !important;
+  font-weight: 500 !important;
+  padding: 0.5rem 1rem !important;
+  transition: all 0.2s ease !important;
+}
+
+[data-sonner-toast] [data-cancel]:hover,
+[data-sonner-toast] button[data-cancel]:hover {
+  background: var(--btn-secondary-hover-bg) !important;
+  color: var(--btn-secondary-hover-text) !important;
+  border-color: var(--btn-secondary-hover-border) !important;
+}
+
+/* Toast close button */
+[data-sonner-toast] [data-close-button],
+[data-sonner-toast] button[data-close-button] {
+  color: var(--text-secondary) !important;
+  opacity: 0.7 !important;
+  transition: opacity 0.2s ease, color 0.2s ease !important;
+}
+
+[data-sonner-toast] [data-close-button]:hover,
+[data-sonner-toast] button[data-close-button]:hover {
+  opacity: 1 !important;
+  color: var(--text-primary) !important;
+}
+
+/* Toast icon styling */
+[data-sonner-toast] [data-icon] {
+  color: inherit !important;
+}
+
+/* Ensure text elements inherit colors */
+[data-sonner-toast] [data-title] {
+  color: inherit !important;
+  font-weight: 600 !important;
+}
+
+[data-sonner-toast] [data-description] {
+  color: inherit !important;
+  opacity: 0.9 !important;
+}
+
+/* TipTap Editor Styles */
+.ProseMirror {
+  outline: none !important;
+  min-height: 300px;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--text-tertiary);
+  pointer-events: none;
+  float: left;
+  height: 0;
+}
+
+.mention {
+  color: var(--color-brand-600);
+  background-color: var(--color-brand-100);
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.4rem;
+  box-decoration-break: clone;
+  font-weight: 500;
+  font-size: 0.9em;
+  margin: 0 1px;
+}
+
+[data-theme="dark"] .mention,
+[data-theme="blue"] .mention {
+  color: var(--color-brand-300);
+  background-color: color-mix(in srgb, var(--color-brand-900) 80%, transparent);
+}
+
+/* Typography for editor */
+.ProseMirror h1 {
+  font-size: 1.75em;
+  font-weight: 700;
+  margin-bottom: 0.5em;
+  margin-top: 1em;
+}
+
+.ProseMirror h2 {
+  font-size: 1.4em;
+  font-weight: 600;
+  margin-bottom: 0.5em;
+  margin-top: 1em;
+}
+
+.ProseMirror h3 {
+  font-size: 1.2em;
+  font-weight: 600;
+  margin-bottom: 0.5em;
+  margin-top: 1em;
+}
+
+.ProseMirror ul,
+.ProseMirror ol {
+  padding-left: 1.5em;
+  margin-bottom: 1em;
+}
+
+.ProseMirror ul {
+  list-style-type: disc;
+}
+
+.ProseMirror ol {
+  list-style-type: decimal;
+}
+
+.ProseMirror blockquote {
+  border-left: 3px solid var(--border-strong);
+  padding-left: 1em;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.ProseMirror pre {
+  background: var(--surface-card);
+  border-radius: 0.5rem;
+  color: var(--text-primary);
+  font-family: monospace;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1em;
+}
+
+.ProseMirror code {
+  background: var(--surface-card);
+  border-radius: 0.25rem;
+  font-family: monospace;
+  padding: 0.2rem 0.3rem;
+  font-size: 0.9em;
+}
+
+/* Enhanced spacing for RichTextEditor to match NoteCard formatting */
+.ProseMirror p {
+  margin-bottom: 1em;
+  line-height: 1.75;
+  white-space: pre-wrap;
+}
+
+.ProseMirror p:last-child {
+  margin-bottom: 0;
+}
+
+.ProseMirror h1,
+.ProseMirror h2,
+.ProseMirror h3,
+.ProseMirror h4,
+.ProseMirror h5,
+.ProseMirror h6 {
+  margin-top: 1.5em;
+  margin-bottom: 0.75em;
+  line-height: 1.5;
+}
+
+.ProseMirror h1:first-child,
+.ProseMirror h2:first-child,
+.ProseMirror h3:first-child,
+.ProseMirror h4:first-child,
+.ProseMirror h5:first-child,
+.ProseMirror h6:first-child {
+  margin-top: 0;
+}
+
+.ProseMirror ul,
+.ProseMirror ol {
+  margin-top: 0.5em;
+  margin-bottom: 1em;
+  line-height: 1.75;
+}
+
+.ProseMirror li {
+  margin-bottom: 0.5em;
+}
+
+.ProseMirror blockquote {
+  margin-top: 1em;
+  margin-bottom: 1em;
+  line-height: 1.75;
+}
+
+.ProseMirror pre {
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+.ProseMirror hr {
+  margin-top: 2em;
+  margin-bottom: 2em;
+}
+
+/* Modal backgrounds for light mode - use solid white */
+[data-theme="light"] .modal-container {
+  background-color: #ffffff !important;
+}
+
+[data-theme="light"] .modal-header,
+[data-theme="light"] .modal-content {
+  background-color: #ffffff !important;
+}
+
+/* Task Lists (Checkboxes) - Apple Notes style */
+.ProseMirror ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+  margin-top: 0.5em;
+  margin-bottom: 1em;
+}
+
+.ProseMirror ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 0.5em;
+}
+
+.ProseMirror ul[data-type="taskList"] li > label {
+  flex: 0 0 auto;
+  margin-right: 0.5rem;
+  user-select: none;
+  cursor: pointer;
+}
+
+.ProseMirror ul[data-type="taskList"] li > div {
+  flex: 1 1 auto;
+}
+
+.ProseMirror ul[data-type="taskList"] input[type="checkbox"] {
+  cursor: pointer;
+  width: 1.2em;
+  height: 1.2em;
+  margin-top: 0.2em;
+  accent-color: var(--color-brand-600);
+}
+
+.ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+/* Tables - Apple Notes style */
+.ProseMirror table {
+  border-collapse: collapse;
+  margin: 1em 0;
+  width: 100%;
+  table-layout: auto;
+  border: 1px solid var(--border);
+}
+
+.ProseMirror table td,
+.ProseMirror table th {
+  min-width: 1em;
+  border: 1px solid var(--border);
+  padding: 0.5em 0.75em;
+  vertical-align: top;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.ProseMirror table th {
+  font-weight: 600;
+  text-align: left;
+  background-color: var(--surface-card);
+  color: var(--text-primary);
+}
+
+.ProseMirror table .selectedCell:after {
+  z-index: 2;
+  position: absolute;
+  content: "";
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: color-mix(in srgb, var(--color-brand-600) 10%, transparent);
+  pointer-events: none;
+}
+
+.ProseMirror table .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: -2px;
+  width: 4px;
+  background-color: var(--color-brand-600);
+  pointer-events: none;
+}
+
+/* Links */
+.ProseMirror a {
+  color: var(--color-brand-400);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ProseMirror a:hover {
+  text-decoration: none;
+}
+
+/* Highlight */
+.ProseMirror mark {
+  background-color: #fef08a;
+  color: inherit;
+  border-radius: 0.25rem;
+  padding: 0.1em 0.2em;
+}
+
+/* Images */
+.ProseMirror img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 1em 0;
+}
+
+.ProseMirror img.ProseMirror-selectednode {
+  outline: 2px solid var(--color-brand-600);
+  outline-offset: 2px;
+}
+
+/* Underline */
+.ProseMirror u {
+  text-decoration: underline;
+}
+
+/* Sidebar enhancements */
+aside::-webkit-scrollbar {
+  width: 6px;
+}
+
+aside::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+aside::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+aside::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
+}
+
+/* Smooth transitions for all interactive elements */
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Enhanced focus visible styles for accessibility */
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* Prevent text selection on buttons */
+button {
+  user-select: none;
+  -webkit-user-select: none;
+}
