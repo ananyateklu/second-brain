@@ -8,6 +8,35 @@
 
 Intelligent knowledge management with AI-powered chat, smart notes, AI agents, and RAG (Retrieval-Augmented Generation) capabilities.
 
+## Screenshots
+
+<div align="center">
+
+<table>
+<tr>
+<td align="center">
+<img src="frontend/src/assets/dashboard-screenshot.png" alt="Dashboard" width="400"/>
+<br><strong>Dashboard</strong>
+</td>
+<td align="center">
+<img src="frontend/src/assets/chat-screenshot.png" alt="AI Chat" width="400"/>
+<br><strong>AI Chat</strong>
+</td>
+</tr>
+<tr>
+<td align="center">
+<img src="frontend/src/assets/aisettings-screenshot.png" alt="AI Settings" width="400"/>
+<br><strong>AI Integration Settings</strong>
+</td>
+<td align="center">
+<img src="frontend/src/assets/indexing-screenshot.png" alt="Indexing" width="400"/>
+<br><strong>RAG Indexing</strong>
+</td>
+</tr>
+</table>
+
+</div>
+
 ## Features
 
 - **Email/Password Authentication**: Secure registration and login with JWT tokens

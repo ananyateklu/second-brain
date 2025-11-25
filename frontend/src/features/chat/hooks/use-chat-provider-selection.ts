@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAIHealth } from '../../ai/hooks/use-ai-health';
 import { useSettingsStore } from '../../../store/settings-store';
 import { useAuthStore } from '../../../store/auth-store';
+import { getDefaultModelForProvider } from '../../../utils/default-models';
 
 export interface ProviderInfo {
   provider: string;
@@ -82,12 +83,13 @@ export function useChatProviderSelection(): ProviderSelectionState & ProviderSel
     [availableProviders, selectedProvider]
   );
 
-  // Auto-select first provider and model (only if no saved preferences)
+  // Auto-select first provider and preferred default model (only if no saved preferences)
   useEffect(() => {
     if (availableProviders.length > 0 && !selectedProvider) {
       const firstProvider = availableProviders[0];
       const newProvider = firstProvider.provider;
-      const newModel = firstProvider.availableModels?.[0] || '';
+      const availableModels = firstProvider.availableModels || [];
+      const newModel = getDefaultModelForProvider(newProvider, availableModels);
 
       setSelectedProvider(newProvider);
       setSelectedModel(newModel);
@@ -101,7 +103,8 @@ export function useChatProviderSelection(): ProviderSelectionState & ProviderSel
   // Update model when provider changes
   useEffect(() => {
     if (availableModels.length > 0 && !availableModels.includes(selectedModel)) {
-      const newModel = availableModels[0];
+      // Use preferred default model for the provider, fallback to first available
+      const newModel = getDefaultModelForProvider(selectedProvider, availableModels);
       setSelectedModel(newModel);
 
       // Save to settings store (local only, no backend sync for auto-correction)

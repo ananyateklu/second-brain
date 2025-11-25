@@ -26,7 +26,24 @@ export interface UseChatSettingsOptions {
 }
 
 /**
+ * Helper to parse agent capabilities from JSON string stored per conversation.
+ */
+function parseAgentCapabilities(capabilitiesJson: string | null | undefined): string[] {
+  if (!capabilitiesJson) return [];
+  try {
+    const parsed = JSON.parse(capabilitiesJson);
+    if (Array.isArray(parsed) && parsed.every((item) => typeof item === 'string')) {
+      return parsed;
+    }
+  } catch {
+    // Invalid JSON, return empty array
+  }
+  return [];
+}
+
+/**
  * Manages chat settings state (RAG, vector store, agent mode, capabilities).
+ * Agent settings are stored per-conversation, not per-user.
  */
 export function useChatSettings(options: UseChatSettingsOptions): ChatSettingsState & ChatSettingsActions {
   const { conversationId, conversation, isNewChat } = options;
@@ -35,16 +52,20 @@ export function useChatSettings(options: UseChatSettingsOptions): ChatSettingsSt
 
   const [ragEnabled, setRagEnabledLocal] = useState<boolean>(false);
   const [selectedVectorStore, setSelectedVectorStoreLocal] = useState<'PostgreSQL' | 'Pinecone'>(defaultVectorStore);
-  const [agentModeEnabled, setAgentModeEnabled] = useState<boolean>(false);
-  const [notesCapabilityEnabled, setNotesCapabilityEnabled] = useState<boolean>(true);
+  const [agentModeEnabled, setAgentModeEnabledLocal] = useState<boolean>(false);
+  const [notesCapabilityEnabled, setNotesCapabilityEnabledLocal] = useState<boolean>(false);
 
-  // Load RAG settings from selected conversation
+  // Load settings from selected conversation
   useEffect(() => {
     if (conversation) {
       setRagEnabledLocal(conversation.ragEnabled);
       if (conversation.vectorStoreProvider) {
         setSelectedVectorStoreLocal(conversation.vectorStoreProvider as 'PostgreSQL' | 'Pinecone');
       }
+      // Load agent settings from conversation
+      setAgentModeEnabledLocal(conversation.agentEnabled);
+      const capabilities = parseAgentCapabilities(conversation.agentCapabilities);
+      setNotesCapabilityEnabledLocal(capabilities.includes('notes'));
     }
   }, [conversation]);
 
@@ -53,8 +74,49 @@ export function useChatSettings(options: UseChatSettingsOptions): ChatSettingsSt
     if (!conversationId && isNewChat) {
       setRagEnabledLocal(false);
       setSelectedVectorStoreLocal(defaultVectorStore);
+      setAgentModeEnabledLocal(false);
+      setNotesCapabilityEnabledLocal(false);
     }
   }, [conversationId, isNewChat, defaultVectorStore]);
+
+  // Handle agent mode enabled change - save to conversation
+  const setAgentModeEnabled = useCallback(async (enabled: boolean) => {
+    setAgentModeEnabledLocal(enabled);
+
+    if (conversationId) {
+      try {
+        await updateConversationSettings.mutateAsync({
+          conversationId,
+          request: { agentEnabled: enabled },
+        });
+      } catch (error) {
+        console.error('Failed to update agent mode for conversation:', { error });
+      }
+    }
+  }, [conversationId, updateConversationSettings]);
+
+  // Handle notes capability change - save to conversation
+  const setNotesCapabilityEnabled = useCallback(async (enabled: boolean) => {
+    setNotesCapabilityEnabledLocal(enabled);
+
+    if (conversationId) {
+      // Build new capabilities array
+      const currentCapabilities = parseAgentCapabilities(conversation?.agentCapabilities);
+      const filteredCapabilities = currentCapabilities.filter((cap) => cap !== 'notes');
+      const newCapabilities = enabled
+        ? [...filteredCapabilities, 'notes']
+        : filteredCapabilities;
+
+      try {
+        await updateConversationSettings.mutateAsync({
+          conversationId,
+          request: { agentCapabilities: JSON.stringify(newCapabilities) },
+        });
+      } catch (error) {
+        console.error('Failed to update agent capabilities for conversation:', { error });
+      }
+    }
+  }, [conversationId, conversation?.agentCapabilities, updateConversationSettings]);
 
   // Handle RAG toggle change - save to conversation
   const handleRagToggle = useCallback(async (enabled: boolean) => {
@@ -104,4 +166,3 @@ export function useChatSettings(options: UseChatSettingsOptions): ChatSettingsSt
     handleVectorStoreChange,
   };
 }
-

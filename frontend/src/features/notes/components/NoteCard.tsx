@@ -10,7 +10,7 @@ import { useThemeStore } from '../../../store/theme-store';
 
 interface NoteCardProps {
   note: Note;
-  variant?: 'full' | 'compact';
+  variant?: 'full' | 'compact' | 'micro';
   relevanceScore?: number;
   chunkIndex?: number;
   chunkContent?: string;
@@ -74,6 +74,9 @@ export const NoteCard = memo(function NoteCard({
   const openEditModal = useUIStore((state) => state.openEditModal);
   const deleteNoteMutation = useDeleteNote();
   const isCompact = variant === 'compact';
+  const isMicro = variant === 'micro';
+  const isSmall = isCompact || isMicro;
+
   const [isHovered, setIsHovered] = useState(false);
   const theme = useThemeStore((state) => state.theme);
   const isDarkMode = theme === 'dark' || theme === 'blue';
@@ -97,13 +100,15 @@ export const NoteCard = memo(function NoteCard({
   };
 
   // Use parsed content if provided (preferred), otherwise fall back to chunkContent or note content
-  const displayContent = isCompact
+  const displayContent = isSmall
     ? (content || chunkContent || note.content)
     : note.content;
 
   // Use parsed dates if provided, otherwise fall back to note dates
   const displayCreatedOn = createdOn || note.createdAt;
-  const contentLineClamp = isCompact ? 'line-clamp-3' : 'line-clamp-4';
+
+  // Adjust line clamp based on variant
+  const contentLineClamp = isMicro ? 'line-clamp-2' : (isCompact ? 'line-clamp-3' : 'line-clamp-4');
 
   // Check if content is HTML - more robust check that looks for actual HTML tags
   // This avoids false positives from text like "a < b" or "AT&T"
@@ -141,19 +146,25 @@ export const NoteCard = memo(function NoteCard({
     return [];
   }, [note.tags, displayContent]);
 
+  // Styles based on variant
+  const containerPadding = isMicro ? 'p-3 rounded-2xl' : (isCompact ? 'p-4 rounded-3xl' : 'p-5 rounded-3xl');
+  const titleSize = isMicro ? 'text-xs' : (isCompact ? 'text-sm' : 'text-lg');
+  const contentFontSize = isMicro ? '12px' : (isCompact ? '0.75rem' : '0.875rem'); // Inline style for font size
+  const headerMargin = isMicro ? 'mb-1.5' : (isCompact ? 'mb-2' : 'mb-3');
+  const contentMargin = isMicro ? 'mb-2' : (isCompact ? 'mb-3' : 'mb-4');
+
   return (
     <div
-      className={`group relative border transition-all duration-300 cursor-pointer overflow-hidden backdrop-blur-md flex flex-col ${isCompact ? 'rounded-3xl p-4' : 'rounded-3xl p-5'
-        }`}
+      className={`group relative border transition-all duration-300 cursor-pointer overflow-hidden backdrop-blur-md flex flex-col ${containerPadding}`}
       style={{
         backgroundColor: 'var(--surface-card)',
         borderColor: isHovered
-          ? (relevanceScore && relevanceScore > 0.8 && isCompact ? 'var(--color-brand-400)' : 'var(--color-brand-500)')
+          ? (relevanceScore && relevanceScore > 0.8 && isSmall ? 'var(--color-brand-400)' : 'var(--color-brand-500)')
           : 'var(--border)',
         boxShadow: isHovered
           ? 'var(--shadow-lg), 0 0 40px -15px var(--color-primary-alpha)'
-          : (isCompact ? 'var(--shadow-sm)' : 'var(--shadow-card), 0 0 30px -20px var(--color-primary-alpha)'),
-        transform: isHovered && !isCompact ? 'translateY(-4px) scale-[1.02]' : (isHovered && isCompact ? 'scale-[1.02]' : 'none'),
+          : (isSmall ? 'var(--shadow-sm)' : 'var(--shadow-card), 0 0 30px -20px var(--color-primary-alpha)'),
+        transform: isHovered && !isSmall ? 'translateY(-4px) scale-[1.02]' : (isHovered && isSmall ? 'scale-[1.01]' : 'none'),
       }}
       onClick={handleCardClick}
       onMouseEnter={() => setIsHovered(true)}
@@ -167,8 +178,8 @@ export const NoteCard = memo(function NoteCard({
           opacity: isHovered ? 0.25 : 0.15,
         }}
       />
-      {/* Relevance Indicator Strip (only for high relevance compact cards) */}
-      {isCompact && relevanceScore && relevanceScore > 0.8 && (
+      {/* Relevance Indicator Strip (only for high relevance compact/micro cards) */}
+      {isSmall && relevanceScore && relevanceScore > 0.8 && (
         <div
           className="absolute left-0 top-0 bottom-0 w-1 z-10"
           style={{ backgroundColor: getRelevanceColor(relevanceScore) }}
@@ -178,9 +189,9 @@ export const NoteCard = memo(function NoteCard({
       {/* Content wrapper with relative positioning */}
       <div className="relative z-10 flex flex-col h-full">
         {/* Header */}
-        <div className={`flex items-start justify-between gap-3 ${isCompact ? 'mb-2' : 'mb-3'}`}>
+        <div className={`flex items-start justify-between gap-2 ${headerMargin}`}>
           <h2
-            className={`${isCompact ? 'text-sm' : 'text-lg'} font-semibold line-clamp-1 flex-1 tracking-tight`}
+            className={`${titleSize} font-semibold line-clamp-1 flex-1 tracking-tight`}
             style={{ color: 'var(--text-primary)' }}
             title={note.title}
           >
@@ -188,20 +199,21 @@ export const NoteCard = memo(function NoteCard({
           </h2>
 
           {/* Actions & Meta */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {isCompact && relevanceScore !== undefined && (
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {isSmall && relevanceScore !== undefined && (
               <div
-                className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                className={`flex items-center gap-1 rounded-full font-bold uppercase tracking-wider ${isMicro ? 'px-1.5 py-0.5 text-[8px]' : 'px-2 py-0.5 text-[10px]'
+                  }`}
                 style={{
                   backgroundColor: getRelevanceBg(relevanceScore),
                   color: getRelevanceColor(relevanceScore)
                 }}
               >
-                {(relevanceScore * 100).toFixed(0)}% Match
+                {(relevanceScore * 100).toFixed(0)}%
               </div>
             )}
 
-            {showDeleteButton && !isCompact && (
+            {showDeleteButton && !isSmall && (
               <div
                 className={`flex items-center gap-1.5 transition-all duration-200 ${isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2'}`}
               >
@@ -236,12 +248,16 @@ export const NoteCard = memo(function NoteCard({
 
         {/* Content */}
         <div
-          className={`${isCompact ? 'mb-3 text-xs' : 'mb-4 text-sm'} ${contentLineClamp} leading-relaxed`}
-          style={{ color: 'var(--text-secondary)' }}
+          className={`${contentMargin} ${contentLineClamp} leading-tight`}
+          style={{
+            color: 'var(--text-secondary)',
+            fontSize: contentFontSize,
+            lineHeight: isMicro ? '1.3' : '1.5'
+          }}
         >
           {isHtml ? (
             // For HTML content, show stripped plain text
-            <p className="whitespace-pre-wrap font-normal">{previewContent}</p>
+            <p className="whitespace-pre-wrap font-normal" style={{ fontSize: contentFontSize, margin: 0 }}>{previewContent}</p>
           ) : (
             // For markdown/plain text, render with ReactMarkdown
             <ReactMarkdown
@@ -249,37 +265,37 @@ export const NoteCard = memo(function NoteCard({
               components={{
                 // Simplified components for preview
                 p: ({ node, ...props }) => (
-                  <p className="mb-2 last:mb-0" {...props} />
+                  <p className="mb-1 last:mb-0" style={{ fontSize: contentFontSize, margin: 0, lineHeight: isMicro ? '1.3' : '1.5' }} {...props} />
                 ),
                 h1: ({ node, ...props }) => (
-                  <strong className="block mb-1 mt-1" {...props} />
+                  <strong className="block mb-0.5 mt-1" style={{ fontSize: contentFontSize }} {...props} />
                 ),
                 h2: ({ node, ...props }) => (
-                  <strong className="block mb-1 mt-1" {...props} />
+                  <strong className="block mb-0.5 mt-1" style={{ fontSize: contentFontSize }} {...props} />
                 ),
                 h3: ({ node, ...props }) => (
-                  <strong className="block mb-1 mt-1" {...props} />
+                  <strong className="block mb-0.5 mt-1" style={{ fontSize: contentFontSize }} {...props} />
                 ),
                 ul: ({ node, ...props }) => (
-                  <ul className="list-disc ml-4 mb-1 space-y-0.5" {...props} />
+                  <ul className="list-disc ml-3 mb-0.5 space-y-0" style={{ fontSize: contentFontSize }} {...props} />
                 ),
                 ol: ({ node, ...props }) => (
-                  <ol className="list-decimal ml-4 mb-1 space-y-0.5" {...props} />
+                  <ol className="list-decimal ml-3 mb-0.5 space-y-0" style={{ fontSize: contentFontSize }} {...props} />
                 ),
                 li: ({ node, ...props }) => (
-                  <li className="" {...props} />
+                  <li style={{ fontSize: contentFontSize }} {...props} />
                 ),
                 strong: ({ node, ...props }) => (
-                  <strong className="font-semibold" style={{ color: 'var(--text-primary)' }} {...props} />
+                  <strong className="font-semibold" style={{ fontSize: contentFontSize, color: 'var(--text-primary)' }} {...props} />
                 ),
                 em: ({ node, ...props }) => (
-                  <em className="italic" {...props} />
+                  <em className="italic" style={{ fontSize: contentFontSize }} {...props} />
                 ),
                 code: ({ node, ...props }) => (
-                  <code className="px-1 py-0.5 rounded text-[0.9em]" style={{ backgroundColor: 'var(--surface-elevated)' }} {...props} />
+                  <code className="px-1 py-0.5 rounded" style={{ fontSize: contentFontSize, backgroundColor: 'var(--surface-elevated)' }} {...props} />
                 ),
                 blockquote: ({ node, ...props }) => (
-                  <blockquote className="border-l-2 pl-2 italic my-1" style={{ borderColor: 'var(--border)' }} {...props} />
+                  <blockquote className="border-l-2 pl-2 italic my-0.5" style={{ fontSize: contentFontSize, borderColor: 'var(--border)' }} {...props} />
                 ),
                 // Hide complex elements in preview
                 table: () => null,
@@ -296,14 +312,14 @@ export const NoteCard = memo(function NoteCard({
         <div className="flex-grow" />
 
         {/* Footer Info */}
-        <div className={`flex items-end justify-between ${!isCompact ? 'mt-2' : 'mt-auto'}`}>
+        <div className={`flex items-end justify-between ${!isSmall ? 'mt-2' : 'mt-auto'}`}>
           {/* Tags */}
           {displayTags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {displayTags.slice(0, isCompact ? 2 : 3).map((tag, index) => (
+            <div className="flex flex-wrap gap-1">
+              {displayTags.slice(0, isMicro ? 2 : (isCompact ? 2 : 3)).map((tag, index) => (
                 <span
                   key={`${tag}-${index}`}
-                  className={`inline-flex items-center rounded-md font-medium ${isCompact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-0.5 text-[10px]'
+                  className={`inline-flex items-center rounded-md font-medium ${isMicro ? 'px-1 py-0 text-[8px]' : (isCompact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-0.5 text-[10px]')
                     }`}
                   style={{
                     backgroundColor: isDarkMode
@@ -316,9 +332,9 @@ export const NoteCard = memo(function NoteCard({
                   <span className="opacity-50 mr-0.5">#</span>{tag}
                 </span>
               ))}
-              {displayTags.length > (isCompact ? 2 : 3) && (
+              {displayTags.length > (isMicro ? 2 : (isCompact ? 2 : 3)) && (
                 <span
-                  className={`inline-flex items-center rounded-md font-medium ${isCompact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-0.5 text-[10px]'
+                  className={`inline-flex items-center rounded-md font-medium ${isMicro ? 'px-1 py-0 text-[8px]' : (isCompact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-0.5 text-[10px]')
                     }`}
                   style={{
                     backgroundColor: isDarkMode
@@ -328,7 +344,7 @@ export const NoteCard = memo(function NoteCard({
                     opacity: isDarkMode ? 1 : 0.7,
                   }}
                 >
-                  +{displayTags.length - (isCompact ? 2 : 3)}
+                  +{displayTags.length - (isMicro ? 2 : (isCompact ? 2 : 3))}
                 </span>
               )}
             </div>
@@ -336,11 +352,14 @@ export const NoteCard = memo(function NoteCard({
 
           {/* Metadata / Date */}
           <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
-            {isCompact && chunkIndex !== undefined ? (
-              <span className="text-[9px] font-medium px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--surface-hover)', color: 'var(--text-tertiary)' }}>
+            {isSmall && chunkIndex !== undefined ? (
+              <span
+                className={`${isMicro ? 'text-[8px] px-1' : 'text-[9px] px-1.5'} font-medium py-0.5 rounded`}
+                style={{ backgroundColor: 'var(--surface-hover)', color: 'var(--text-tertiary)' }}
+              >
                 Chunk {chunkIndex + 1}
               </span>
-            ) : !isCompact ? (
+            ) : !isSmall ? (
               <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
                 {formatRelativeDate(displayCreatedOn)}
               </span>

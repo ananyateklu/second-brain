@@ -141,6 +141,7 @@ public class ChatController : ControllerBase
                 Model = request.Model,
                 RagEnabled = request.RagEnabled,
                 AgentEnabled = request.AgentEnabled,
+                AgentCapabilities = request.AgentCapabilities,
                 VectorStoreProvider = request.VectorStoreProvider,
                 UserId = userId,
                 Messages = new List<Core.Entities.ChatMessage>()
@@ -624,6 +625,16 @@ public class ChatController : ControllerBase
                 conversation.VectorStoreProvider = request.VectorStoreProvider;
             }
 
+            if (request.AgentEnabled.HasValue)
+            {
+                conversation.AgentEnabled = request.AgentEnabled.Value;
+            }
+
+            if (request.AgentCapabilities != null)
+            {
+                conversation.AgentCapabilities = request.AgentCapabilities;
+            }
+
             conversation.UpdatedAt = DateTime.UtcNow;
 
             var updated = await _chatRepository.UpdateAsync(id, conversation);
@@ -701,6 +712,7 @@ public class CreateConversationRequest
     public string Model { get; set; } = string.Empty;
     public bool RagEnabled { get; set; } = false;
     public bool AgentEnabled { get; set; } = false;
+    public string? AgentCapabilities { get; set; }
     public string? VectorStoreProvider { get; set; }
 }
 
@@ -717,6 +729,8 @@ public class UpdateConversationSettingsRequest
 {
     public bool? RagEnabled { get; set; }
     public string? VectorStoreProvider { get; set; }
+    public bool? AgentEnabled { get; set; }
+    public string? AgentCapabilities { get; set; }
 }
 
 public class ChatResponseWithRag

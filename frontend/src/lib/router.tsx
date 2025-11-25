@@ -1,15 +1,27 @@
+import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AppLayout } from '../components/layout/AppLayout';
 import { ProtectedRoute } from '../components/auth/ProtectedRoute';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { LoginPage } from '../pages/LoginPage';
-import { DashboardPage } from '../pages/DashboardPage';
 import { NotesPage } from '../pages/NotesPage';
 import { ChatPage } from '../pages/ChatPage';
 import { GeneralSettings } from '../pages/settings/GeneralSettings';
 import { AISettings } from '../pages/settings/AISettings';
 import { RAGSettings } from '../pages/settings/RAGSettings';
 import { NotFoundPage } from '../pages/NotFoundPage';
+
+// Lazy load Dashboard (includes recharts) to reduce initial bundle size
+const DashboardPage = lazy(() => import('../pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
+
+// Loading fallback for lazy-loaded pages
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center h-full min-h-[400px]">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--btn-primary-bg)]" />
+    </div>
+  );
+}
 
 export const router = createBrowserRouter([
   {
@@ -26,7 +38,9 @@ export const router = createBrowserRouter([
       <ProtectedRoute>
         <ErrorBoundary>
           <AppLayout>
-            <DashboardPage />
+            <Suspense fallback={<PageLoader />}>
+              <DashboardPage />
+            </Suspense>
           </AppLayout>
         </ErrorBoundary>
       </ProtectedRoute>

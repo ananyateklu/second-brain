@@ -1,11 +1,58 @@
 import { useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
+// Import only the languages you need (reduces bundle size significantly)
+import javascript from 'react-syntax-highlighter/dist/esm/languages/prism/javascript';
+import typescript from 'react-syntax-highlighter/dist/esm/languages/prism/typescript';
+import jsx from 'react-syntax-highlighter/dist/esm/languages/prism/jsx';
+import tsx from 'react-syntax-highlighter/dist/esm/languages/prism/tsx';
+import python from 'react-syntax-highlighter/dist/esm/languages/prism/python';
+import bash from 'react-syntax-highlighter/dist/esm/languages/prism/bash';
+import json from 'react-syntax-highlighter/dist/esm/languages/prism/json';
+import yaml from 'react-syntax-highlighter/dist/esm/languages/prism/yaml';
+import markdown from 'react-syntax-highlighter/dist/esm/languages/prism/markdown';
+import sql from 'react-syntax-highlighter/dist/esm/languages/prism/sql';
+import css from 'react-syntax-highlighter/dist/esm/languages/prism/css';
+import markup from 'react-syntax-highlighter/dist/esm/languages/prism/markup';
+import java from 'react-syntax-highlighter/dist/esm/languages/prism/java';
+import csharp from 'react-syntax-highlighter/dist/esm/languages/prism/csharp';
+import go from 'react-syntax-highlighter/dist/esm/languages/prism/go';
+import rust from 'react-syntax-highlighter/dist/esm/languages/prism/rust';
+import diff from 'react-syntax-highlighter/dist/esm/languages/prism/diff';
 import { useThemeStore } from '../store/theme-store';
 import { useNotes } from '../features/notes/hooks/use-notes-query';
 import { useUIStore } from '../store/ui-store';
+
+// Register languages
+SyntaxHighlighter.registerLanguage('javascript', javascript);
+SyntaxHighlighter.registerLanguage('js', javascript);
+SyntaxHighlighter.registerLanguage('typescript', typescript);
+SyntaxHighlighter.registerLanguage('ts', typescript);
+SyntaxHighlighter.registerLanguage('jsx', jsx);
+SyntaxHighlighter.registerLanguage('tsx', tsx);
+SyntaxHighlighter.registerLanguage('python', python);
+SyntaxHighlighter.registerLanguage('py', python);
+SyntaxHighlighter.registerLanguage('bash', bash);
+SyntaxHighlighter.registerLanguage('shell', bash);
+SyntaxHighlighter.registerLanguage('sh', bash);
+SyntaxHighlighter.registerLanguage('zsh', bash);
+SyntaxHighlighter.registerLanguage('json', json);
+SyntaxHighlighter.registerLanguage('yaml', yaml);
+SyntaxHighlighter.registerLanguage('yml', yaml);
+SyntaxHighlighter.registerLanguage('markdown', markdown);
+SyntaxHighlighter.registerLanguage('md', markdown);
+SyntaxHighlighter.registerLanguage('sql', sql);
+SyntaxHighlighter.registerLanguage('css', css);
+SyntaxHighlighter.registerLanguage('html', markup);
+SyntaxHighlighter.registerLanguage('xml', markup);
+SyntaxHighlighter.registerLanguage('java', java);
+SyntaxHighlighter.registerLanguage('csharp', csharp);
+SyntaxHighlighter.registerLanguage('cs', csharp);
+SyntaxHighlighter.registerLanguage('go', go);
+SyntaxHighlighter.registerLanguage('rust', rust);
+SyntaxHighlighter.registerLanguage('diff', diff);
 
 interface MarkdownMessageProps {
   content: string;
@@ -18,8 +65,14 @@ export function MarkdownMessage({ content }: MarkdownMessageProps) {
   const openEditModal = useUIStore((state) => state.openEditModal);
 
   const processedContent = useMemo(() => {
+    // Decode Unicode escape sequences (e.g., \uD83D\uDC4B -> 👋)
+    // Replace all \uXXXX patterns with their actual Unicode characters
+    let decoded = content.replace(/\\u([0-9A-Fa-f]{4})/g, (_match, code) => {
+      return String.fromCharCode(parseInt(code, 16));
+    });
+    
     // Replace [Note Name] with custom link, avoiding checkboxes [x] [ ] and existing links
-    return content.replace(/\[([^\]]+)\](?!\()/g, (match, name) => {
+    return decoded.replace(/\[([^\]]+)\](?!\()/g, (match, name) => {
       const trimmed = name.trim();
       // Avoid matching checkboxes
       if (trimmed === 'x' || trimmed === 'X' || trimmed === '') return match;

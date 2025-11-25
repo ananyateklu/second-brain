@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { apiClient } from '../lib/api-client';
 
 type NoteView = 'list' | 'grid';
 type VectorStoreProvider = 'PostgreSQL' | 'Pinecone';
@@ -120,7 +121,6 @@ export const useSettingsStore = create<SettingsStore>()(
 
       loadPreferencesFromBackend: async (userId: string) => {
         try {
-          const { apiClient } = await import('../lib/api-client');
           console.log('Loading preferences from backend for user:', userId);
           const preferences = await apiClient.get<{
             chatProvider: string | null;
@@ -180,7 +180,6 @@ export const useSettingsStore = create<SettingsStore>()(
 
       syncPreferencesToBackend: async (userId: string) => {
         try {
-          const { apiClient } = await import('../lib/api-client');
           const state = get();
           const payload = {
             chatProvider: state.chatProvider,

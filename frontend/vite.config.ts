@@ -14,4 +14,34 @@ export default defineConfig({
       }
     }
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            // React core
+            if (id.includes('/react-dom/') || id.includes('/react/') || id.includes('/scheduler/')) {
+              return 'vendor-react';
+            }
+            // React Router
+            if (id.includes('react-router')) {
+              return 'vendor-router';
+            }
+            // State management
+            if (id.includes('zustand') || id.includes('@tanstack/react-query')) {
+              return 'vendor-state';
+            }
+            // TipTap editor
+            if (id.includes('@tiptap') || id.includes('prosemirror') || id.includes('tippy')) {
+              return 'vendor-editor';
+            }
+            // Markdown
+            if (id.includes('react-markdown') || id.includes('marked') || id.includes('remark') || id.includes('react-syntax-highlighter') || id.includes('refractor') || id.includes('prismjs')) {
+              return 'vendor-markdown';
+            }
+          }
+        },
+      },
+    },
+  },
 })

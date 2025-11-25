@@ -31,6 +31,10 @@ namespace SecondBrain.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("id");
 
+                    b.Property<string>("AgentCapabilities")
+                        .HasColumnType("text")
+                        .HasColumnName("agent_capabilities");
+
                     b.Property<bool>("AgentEnabled")
                         .HasColumnType("boolean")
                         .HasColumnName("agent_enabled");

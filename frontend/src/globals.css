@@ -32,24 +32,24 @@
   );
   --color-text-muted: color-mix(in srgb, var(--foreground) 70%, transparent);
 
-  /* Surface and border variables for components */
-  --surface: color-mix(in srgb, var(--background) 60%, transparent);
+  /* Surface and border variables for components - higher opacity for darker appearance */
+  --surface: color-mix(in srgb, var(--background) 92%, transparent);
   --surface-elevated: color-mix(
     in srgb,
-    color-mix(in srgb, var(--background) 95%, white) 70%,
+    color-mix(in srgb, var(--background) 95%, white) 94%,
     transparent
   );
   --surface-card: color-mix(
     in srgb,
-    color-mix(in srgb, var(--background) 90%, white) 60%,
+    color-mix(in srgb, var(--background) 92%, white) 95%,
     transparent
   );
 
   /* Solid (non-transparent) background colors for components that need opaque backgrounds */
-  --background-solid: var(--background);
-  --surface-solid: var(--background);
-  --surface-elevated-solid: var(--background);
-  --surface-card-solid: var(--background);
+  --background-solid: #030503;
+  --surface-solid: #050805;
+  --surface-elevated-solid: #080c08;
+  --surface-card-solid: #060a06;
 
   --border: color-mix(in srgb, var(--foreground) 15%, transparent);
   --border-strong: color-mix(in srgb, var(--foreground) 25%, transparent);
@@ -88,7 +88,11 @@
 
   /* Notes capability colors (lighter shade of brand green) */
   --color-notes: var(--color-brand-300); /* Light green from brand palette */
-  --color-notes-alpha: color-mix(in srgb, var(--color-brand-300) 15%, transparent);
+  --color-notes-alpha: color-mix(
+    in srgb,
+    var(--color-brand-300) 15%,
+    transparent
+  );
   --color-notes-text: var(--color-brand-300);
   --color-notes-border: var(--color-brand-300);
   --color-notes-dot: var(--color-brand-300);
@@ -221,8 +225,14 @@
   --color-error-text-light: #dc2626;
 
   /* Notes capability colors for light theme */
-  --color-notes: var(--color-brand-400); /* Medium-light green for better contrast in light mode */
-  --color-notes-alpha: color-mix(in srgb, var(--color-brand-400) 15%, transparent);
+  --color-notes: var(
+    --color-brand-400
+  ); /* Medium-light green for better contrast in light mode */
+  --color-notes-alpha: color-mix(
+    in srgb,
+    var(--color-brand-400) 15%,
+    transparent
+  );
   --color-notes-text: var(--color-brand-400);
   --color-notes-border: var(--color-brand-400);
   --color-notes-dot: var(--color-brand-400);
@@ -258,24 +268,24 @@
     transparent
   );
 
-  /* Surface and border variables */
-  --surface: color-mix(in srgb, #050805 60%, transparent);
+  /* Surface and border variables - increased opacity for darker appearance */
+  --surface: color-mix(in srgb, #050805 92%, transparent);
   --surface-elevated: color-mix(
     in srgb,
-    color-mix(in srgb, #050805 95%, var(--color-brand-900)) 70%,
+    color-mix(in srgb, #050805 95%, var(--color-brand-900)) 94%,
     transparent
   );
   --surface-card: color-mix(
     in srgb,
-    color-mix(in srgb, #050805 90%, var(--color-brand-900)) 70%,
+    color-mix(in srgb, #050805 92%, var(--color-brand-900)) 95%,
     transparent
   );
 
-  /* Solid (non-transparent) background colors for dark theme - darker neutral tint with subtle green tint and frosted glass effect */
-  --background-solid: rgba(3, 5, 3, 0.98);
-  --surface-solid: rgba(5, 8, 5, 0.95);
-  --surface-elevated-solid: rgba(8, 12, 8, 0.98);
-  --surface-card-solid: rgba(6, 10, 6, 0.99);
+  /* Solid (non-transparent) background colors for dark theme - fully opaque for maximum darkness */
+  --background-solid: #030503;
+  --surface-solid: #050805;
+  --surface-elevated-solid: #080c08;
+  --surface-card-solid: #060a06;
 
   --border: color-mix(in srgb, var(--color-brand-50) 15%, transparent);
   --border-strong: color-mix(in srgb, var(--color-brand-50) 25%, transparent);
@@ -309,7 +319,11 @@
 
   /* Notes capability colors for dark theme */
   --color-notes: var(--color-brand-300); /* Light green from brand palette */
-  --color-notes-alpha: color-mix(in srgb, var(--color-brand-300) 15%, transparent);
+  --color-notes-alpha: color-mix(
+    in srgb,
+    var(--color-brand-300) 15%,
+    transparent
+  );
   --color-notes-text: var(--color-brand-300);
   --color-notes-border: var(--color-brand-300);
   --color-notes-dot: var(--color-brand-300);
@@ -411,14 +425,22 @@
 
   /* Notes capability colors for blue theme */
   --color-notes: var(--color-brand-300); /* Light green from brand palette */
-  --color-notes-alpha: color-mix(in srgb, var(--color-brand-300) 15%, transparent);
+  --color-notes-alpha: color-mix(
+    in srgb,
+    var(--color-brand-300) 15%,
+    transparent
+  );
   --color-notes-text: var(--color-brand-300);
   --color-notes-border: var(--color-brand-300);
   --color-notes-dot: var(--color-brand-300);
 
   /* Web search capability colors for blue theme */
   --color-accent-blue: var(--color-blue-300); /* Light blue from blue palette */
-  --color-accent-blue-alpha: color-mix(in srgb, var(--color-blue-300) 15%, transparent);
+  --color-accent-blue-alpha: color-mix(
+    in srgb,
+    var(--color-blue-300) 15%,
+    transparent
+  );
   --color-accent-blue-text: var(--color-blue-300);
   --color-accent-blue-border: var(--color-blue-300);
   --color-accent-blue-dot: var(--color-blue-300);
@@ -777,21 +799,18 @@
 
 /* Typography for editor */
 .ProseMirror h1 {
-  font-size: 1.75em;
   font-weight: 700;
   margin-bottom: 0.5em;
   margin-top: 1em;
 }
 
 .ProseMirror h2 {
-  font-size: 1.4em;
   font-weight: 600;
   margin-bottom: 0.5em;
   margin-top: 1em;
 }
 
 .ProseMirror h3 {
-  font-size: 1.2em;
   font-weight: 600;
   margin-bottom: 0.5em;
   margin-top: 1em;

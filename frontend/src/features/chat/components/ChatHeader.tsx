@@ -5,6 +5,7 @@ import { SelectorSkeleton } from '../../../components/ui/SelectorSkeleton';
 import { RagToggle } from '../../../components/ui/RagToggle';
 import { VectorStoreSelector } from '../../../components/ui/VectorStoreSelector';
 import { AgentControlsGroup } from '../../../components/ui/AgentControlsGroup';
+import { UserMenu } from '../../../components/ui/UserMenu';
 
 export interface ProviderInfo {
   provider: string;
@@ -29,7 +30,6 @@ export interface AgentCapability {
 export interface ChatHeaderProps {
   showSidebar: boolean;
   onToggleSidebar: () => void;
-  onNewChat: () => void;
   // Provider/Model selection
   isHealthLoading: boolean;
   availableProviders: ProviderInfo[];
@@ -56,7 +56,6 @@ export interface ChatHeaderProps {
 export function ChatHeader({
   showSidebar,
   onToggleSidebar,
-  onNewChat,
   isHealthLoading,
   availableProviders,
   selectedProvider,
@@ -159,18 +158,10 @@ export function ChatHeader({
       {/* Spacer */}
       <div className="flex-1 min-w-0" />
 
-      {/* New Chat Button */}
-      <button
-        onClick={onNewChat}
-        className="px-4 py-2 rounded-xl font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
-        style={{
-          backgroundColor: 'var(--btn-primary-bg)',
-          color: 'var(--btn-primary-text)',
-          border: '1px solid var(--btn-primary-border)',
-        }}
-      >
-        New Chat
-      </button>
+      {/* User Menu */}
+      <div className="flex-shrink-0">
+        <UserMenu />
+      </div>
     </div>
   );
 }

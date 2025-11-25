@@ -27,7 +27,7 @@ export interface ConversationManagerActions {
   handleSelectConversation: (id: string, onSelect?: (conv: ChatConversation) => void) => void;
   handleDeleteConversation: (id: string) => Promise<void>;
   createConversation: (request: CreateConversationRequest) => Promise<ChatConversation>;
-  clearPendingIfMatched: (content: string, isStreaming: boolean, streamingMessage: string) => void;
+  clearPendingIfMatched: (isStreaming: boolean, streamingMessage: string) => void;
 }
 
 export interface UseConversationManagerOptions {
@@ -142,13 +142,30 @@ export function useChatConversationManager(
     });
 
     if (confirmed) {
+      // Determine next conversation to select before deletion
+      // Select the most recently updated conversation (matching auto-load behavior)
+      const remainingConversations = conversations?.filter((c) => c.id !== id) || [];
+      const nextConversation = remainingConversations.length > 0
+        ? remainingConversations.reduce((prev, current) =>
+          new Date(current.updatedAt) > new Date(prev.updatedAt) ? current : prev
+        )
+        : null;
+
       await deleteConversationMutation.mutateAsync(id);
+
       if (conversationId === id) {
-        setConversationIdState(null);
-        setIsNewChat(true);
+        if (nextConversation) {
+          // Select the next available conversation (most recently updated)
+          setConversationIdState(nextConversation.id);
+          setIsNewChat(false);
+        } else {
+          // No conversations left, show new chat state
+          setConversationIdState(null);
+          setIsNewChat(true);
+        }
       }
     }
-  }, [conversationId, deleteConversationMutation]);
+  }, [conversationId, conversations, deleteConversationMutation]);
 
   // Create a new conversation
   const createConversation = useCallback(async (request: CreateConversationRequest) => {
@@ -160,7 +177,6 @@ export function useChatConversationManager(
 
   // Clear pending message if it matches a message in the conversation
   const clearPendingIfMatched = useCallback((
-    content: string,
     isStreaming: boolean,
     streamingMessage: string
   ) => {

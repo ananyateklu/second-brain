@@ -29,6 +29,9 @@ public class ChatConversation
     [Column("agent_enabled")]
     public bool AgentEnabled { get; set; } = false;
 
+    [Column("agent_capabilities")]
+    public string? AgentCapabilities { get; set; }
+
     [Column("vector_store_provider")]
     [MaxLength(50)]
     public string? VectorStoreProvider { get; set; }

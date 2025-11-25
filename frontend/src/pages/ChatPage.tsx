@@ -100,35 +100,43 @@ export function ChatPage() {
   // Loading state
   const isLoading = sendMessage.isPending || isCreating || isStreaming;
 
-  // Check for duplicate messages (streaming message already persisted)
-  const lastMessage = conversation?.messages?.[conversation.messages.length - 1];
-  const isLastMessageDuplicate =
-    !!(!isStreaming &&
-      streamingMessage &&
-      lastMessage?.role === 'assistant' &&
-      (lastMessage.content === streamingMessage ||
-        lastMessage.content.trim() === streamingMessage.trim()));
-
   // Clear pending message when it appears in the conversation
+  // This should happen immediately when the message is persisted, regardless of streaming state
   useEffect(() => {
     if (pendingMessage && conversation?.messages) {
       const hasPendingMessage = conversation.messages.some(
-        (msg) => msg.role === 'user' && msg.content === pendingMessage
+        (msg) => msg.role === 'user' && (msg.content === pendingMessage || msg.content.trim() === pendingMessage.trim())
       );
 
-      if (hasPendingMessage && !isStreaming && !streamingMessage) {
+      // Clear immediately when found, don't wait for streaming to complete
+      if (hasPendingMessage) {
         setPendingMessage(null);
       }
     }
-  }, [pendingMessage, conversation?.messages, isStreaming, streamingMessage, setPendingMessage]);
+  }, [pendingMessage, conversation?.messages, setPendingMessage]);
 
   // Cleanup streaming state once message is persisted
+  // This effect runs whenever the conversation updates and detects if the streaming message has been persisted
   useEffect(() => {
-    if (isLastMessageDuplicate) {
-      setPendingMessage(null);
-      resetStream();
+    if (!isStreaming && streamingMessage && conversation?.messages) {
+      // Check if any assistant message matches the streaming message
+      const hasMatchingMessage = conversation.messages.some(
+        (msg) =>
+          msg.role === 'assistant' &&
+          (msg.content === streamingMessage ||
+            msg.content.trim() === streamingMessage.trim() ||
+            // Check if the persisted message starts with or contains a significant portion of the streaming message
+            (streamingMessage.trim().length > 20 &&
+              (msg.content.trim().startsWith(streamingMessage.trim().substring(0, Math.min(100, streamingMessage.trim().length))) ||
+                msg.content.trim().includes(streamingMessage.trim().substring(0, Math.min(50, streamingMessage.trim().length))))))
+      );
+
+      if (hasMatchingMessage) {
+        setPendingMessage(null);
+        resetStream();
+      }
     }
-  }, [isLastMessageDuplicate, resetStream, setPendingMessage]);
+  }, [conversation?.messages, isStreaming, streamingMessage, resetStream, setPendingMessage]);
 
   // Handle sending a message
   const handleSendMessage = useCallback(async () => {
@@ -141,6 +149,12 @@ export function ChatPage() {
     try {
       let currentConversationId = conversationId;
 
+      // Build capabilities array for agent mode
+      const capabilities: string[] = [];
+      if (agentModeEnabled && notesCapabilityEnabled) {
+        capabilities.push('notes');
+      }
+
       // Create conversation if needed
       if (!currentConversationId) {
         const newConversation = await createConversation({
@@ -149,15 +163,10 @@ export function ChatPage() {
           title: messageToSend.slice(0, 50),
           ragEnabled: ragEnabled,
           agentEnabled: agentModeEnabled,
+          agentCapabilities: capabilities.length > 0 ? JSON.stringify(capabilities) : undefined,
           vectorStoreProvider: ragEnabled ? selectedVectorStore : undefined,
         });
         currentConversationId = newConversation.id;
-      }
-
-      // Build capabilities array for agent mode
-      const capabilities: string[] = [];
-      if (agentModeEnabled && notesCapabilityEnabled) {
-        capabilities.push('notes');
       }
 
       // Send message via streaming
@@ -265,7 +274,6 @@ export function ChatPage() {
         <ChatHeader
           showSidebar={showSidebar}
           onToggleSidebar={() => setShowSidebar(!showSidebar)}
-          onNewChat={handleNewChat}
           isHealthLoading={isHealthLoading}
           availableProviders={availableProviders}
           selectedProvider={selectedProvider}

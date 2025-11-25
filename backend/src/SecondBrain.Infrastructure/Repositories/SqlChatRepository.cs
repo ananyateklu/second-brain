@@ -151,6 +151,7 @@ public class SqlChatRepository : IChatRepository
             existingConversation.Model = conversation.Model;
             existingConversation.RagEnabled = conversation.RagEnabled;
             existingConversation.AgentEnabled = conversation.AgentEnabled;
+            existingConversation.AgentCapabilities = conversation.AgentCapabilities;
             existingConversation.VectorStoreProvider = conversation.VectorStoreProvider;
             existingConversation.UpdatedAt = DateTime.UtcNow;
 

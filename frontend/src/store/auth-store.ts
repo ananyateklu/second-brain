@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useSettingsStore } from './settings-store';
 
 export interface User {
   userId: string;
@@ -89,7 +90,6 @@ export const useAuthStore = create<AuthState>()(
 
           // Load user preferences from backend
           try {
-            const { useSettingsStore } = await import('./settings-store');
             await useSettingsStore.getState().loadPreferencesFromBackend(response.userId);
           } catch (prefError) {
             console.error('Error loading user preferences:', { error: prefError });
@@ -132,7 +132,6 @@ export const useAuthStore = create<AuthState>()(
 
           // Load user preferences from backend
           try {
-            const { useSettingsStore } = await import('./settings-store');
             await useSettingsStore.getState().loadPreferencesFromBackend(response.userId);
           } catch (prefError) {
             console.error('Error loading user preferences:', { error: prefError });

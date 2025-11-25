@@ -110,18 +110,6 @@ export function ConversationListItem({
         <div className="flex items-center justify-between gap-1.5">
           <div className="flex items-center gap-1 flex-1 min-w-0">
             <span
-              className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium flex-shrink-0"
-              style={{
-                backgroundColor: isDarkMode
-                  ? 'color-mix(in srgb, var(--color-brand-100) 5%, transparent)'
-                  : 'color-mix(in srgb, var(--color-brand-100) 30%, transparent)',
-                color: isDarkMode ? 'var(--color-brand-300)' : 'var(--color-brand-600)',
-                opacity: isDarkMode ? 1 : 0.7,
-              }}
-            >
-              {conversation.provider}
-            </span>
-            <span
               className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium truncate"
               style={{
                 backgroundColor: isDarkMode
@@ -155,7 +143,34 @@ export function ConversationListItem({
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </span>
+            )}
+            {conversation.agentEnabled && (
+              <span
+                className="inline-flex items-center justify-center w-4 h-4 rounded flex-shrink-0"
+                style={{
+                  backgroundColor: isDarkMode
+                    ? 'color-mix(in srgb, var(--color-brand-100) 15%, transparent)'
+                    : 'color-mix(in srgb, var(--color-brand-100) 30%, transparent)',
+                  color: isDarkMode ? 'var(--color-brand-300)' : 'var(--color-brand-600)',
+                  opacity: isDarkMode ? 1 : 0.7,
+                }}
+                title="Agent mode enabled"
+              >
+                <svg
+                  className="w-2.5 h-2.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
                   />
                 </svg>
               </span>
@@ -175,20 +190,7 @@ export function ConversationListItem({
                 }}
                 title={`${totalTokens.toLocaleString()} total tokens`}
               >
-                <svg
-                  className="w-2.5 h-2.5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"
-                  />
-                </svg>
-                {formatTokenCount(totalTokens)}
+                {formatTokenCount(totalTokens)} tokens
               </span>
             )}
             {/* Date */}

@@ -1,4 +1,4 @@
-import { RefObject } from 'react';
+import { RefObject, useMemo } from 'react';
 import { ChatConversation, ChatMessage, ToolCall } from '../types/chat';
 import { ToolExecution, ThinkingStep } from '../../agents/types/agent-types';
 import { RagContextNote } from '../../rag/types';
@@ -7,6 +7,7 @@ import { StreamingIndicator, LoadingMessageSkeleton } from './StreamingIndicator
 import { ChatWelcomeScreen } from './ChatWelcomeScreen';
 import { ThinkingStepCard } from '../../agents/components/ThinkingStepCard';
 import { ToolExecutionCard } from '../../agents/components/ToolExecutionCard';
+import { ProcessTimeline } from './ProcessTimeline';
 import { RetrievedNotes } from '../../../components/ui/RetrievedNotes';
 import { TokenUsageDisplay } from '../../../components/TokenUsageDisplay';
 import { extractThinkingContent } from '../../../utils/thinking-utils';
@@ -59,15 +60,40 @@ export function ChatMessageList({
   messagesContainerRef,
   messagesEndRef,
 }: ChatMessageListProps) {
-  // Check if the latest message in the conversation matches the streaming message
+  // Check if any assistant message in the conversation matches the streaming message
   // This is used to prevent double rendering
-  const lastMessage = conversation?.messages?.[conversation.messages.length - 1];
-  const isLastMessageDuplicate =
-    !!(!isStreaming &&
-      streamingMessage &&
-      lastMessage?.role === 'assistant' &&
-      (lastMessage.content === streamingMessage ||
-        lastMessage.content.trim() === streamingMessage.trim()));
+  const hasMatchingPersistedMessage = useMemo(() => {
+    if (isStreaming || !streamingMessage || !conversation?.messages) {
+      return false;
+    }
+
+    // Check if any assistant message matches the streaming message
+    return conversation.messages.some(
+      (msg) =>
+        msg.role === 'assistant' &&
+        (msg.content === streamingMessage ||
+          msg.content.trim() === streamingMessage.trim() ||
+          // More lenient check: if streaming message is substantial, check if persisted message contains it
+          (streamingMessage.trim().length > 20 &&
+           (msg.content.trim().startsWith(streamingMessage.trim().substring(0, Math.min(100, streamingMessage.trim().length))) ||
+            msg.content.trim().includes(streamingMessage.trim().substring(0, Math.min(50, streamingMessage.trim().length))))))
+    );
+  }, [isStreaming, streamingMessage, conversation?.messages]);
+
+  // Check if the pending user message already exists in the persisted messages
+  // This prevents showing duplicate user messages
+  const hasMatchingPendingUserMessage = useMemo(() => {
+    if (!pendingMessage || !conversation?.messages) {
+      return false;
+    }
+
+    // Check if any user message matches the pending message
+    return conversation.messages.some(
+      (msg) =>
+        msg.role === 'user' &&
+        (msg.content === pendingMessage || msg.content.trim() === pendingMessage.trim())
+    );
+  }, [pendingMessage, conversation?.messages]);
 
   const hasNoMessages =
     !conversation ||
@@ -101,7 +127,7 @@ export function ChatMessageList({
             ))}
 
             {/* Show pending user message */}
-            {pendingMessage && !isLastMessageDuplicate && (
+            {pendingMessage && !hasMatchingPersistedMessage && !hasMatchingPendingUserMessage && (
               <div className="flex justify-end">
                 <div
                   className="max-w-[80%] rounded-2xl px-5 py-3 rounded-br-md"
@@ -123,7 +149,7 @@ export function ChatMessageList({
             )}
 
             {/* Show streaming message */}
-            {(isStreaming || (streamingMessage && !isLastMessageDuplicate)) && (
+            {(isStreaming || (streamingMessage && !hasMatchingPersistedMessage)) && (
               <StreamingIndicator
                 isStreaming={isStreaming}
                 streamingMessage={streamingMessage}
@@ -200,34 +226,30 @@ function MessageWithContext({
   const shouldShowPersistedToolExecutions =
     hasToolCalls && !(isLastMessage && (streamingMessage || isStreaming));
 
+  const hasProcessContent = shouldShowPersistedThinking || shouldShowPersistedToolExecutions;
+
   return (
     <div>
-      {/* Show reasoning above the final assistant reply */}
-      {shouldShowPersistedThinking && (
-        <div className="space-y-2 mb-3">
-          {persistedThinkingSteps.map((thinkingContent, thinkingIndex) => (
-            <ThinkingStepCard
-              key={`${index}-thinking-${thinkingIndex}`}
-              step={{
-                content: thinkingContent,
-                timestamp: new Date(message.timestamp || Date.now()),
-              }}
-            />
-          ))}
-        </div>
-      )}
+      {/* Use ProcessTimeline to wrap reasoning and tool executions */}
+      <ProcessTimeline hasContent={hasProcessContent}>
+        {shouldShowPersistedThinking && persistedThinkingSteps.map((thinkingContent, thinkingIndex) => (
+          <ThinkingStepCard
+            key={`${index}-thinking-${thinkingIndex}`}
+            step={{
+              content: thinkingContent,
+              timestamp: new Date(message.timestamp || Date.now()),
+            }}
+          />
+        ))}
 
-      {/* Show tool executions */}
-      {shouldShowPersistedToolExecutions && (
-        <div className="space-y-2 mb-3">
-          {message.toolCalls!.map((toolCall: ToolCall, toolIndex: number) => (
-            <ToolExecutionCard
-              key={`${index}-tool-${toolIndex}`}
-              execution={convertToolCallToExecution(toolCall)}
-            />
-          ))}
-        </div>
-      )}
+        {shouldShowPersistedToolExecutions && message.toolCalls!.map((toolCall: ToolCall, toolIndex: number) => (
+          <ToolExecutionCard
+            key={`${index}-tool-${toolIndex}`}
+            execution={convertToolCallToExecution(toolCall)}
+            isLast={toolIndex === message.toolCalls!.length - 1}
+          />
+        ))}
+      </ProcessTimeline>
 
       {/* Show the message bubble */}
       {!isLastAssistantMessageDuringStream && (
@@ -251,4 +273,3 @@ function MessageWithContext({
     </div>
   );
 }
-

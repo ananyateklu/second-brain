@@ -118,12 +118,12 @@ export function RetrievedNotes({ notes }: RetrievedNotesProps) {
               Note data not available
             </div>
           ) : (
-            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+            <div className="grid gap-2 grid-cols-1 sm:grid-cols-2">
               {notesWithData.map(({ note, relevanceScore, chunkIndex, content, createdOn }, index) => (
                 <NoteCard
                   key={`${note.id}-${index}`}
                   note={note}
-                  variant="compact"
+                  variant="micro"
                   relevanceScore={relevanceScore}
                   chunkIndex={chunkIndex}
                   content={content}

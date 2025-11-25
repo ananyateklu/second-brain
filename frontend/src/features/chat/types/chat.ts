@@ -26,6 +26,7 @@ export interface ChatConversation {
   model: string;
   ragEnabled: boolean;
   agentEnabled: boolean;
+  agentCapabilities?: string;
   vectorStoreProvider?: string;
   messages: ChatMessage[];
   userId: string;
@@ -39,6 +40,7 @@ export interface CreateConversationRequest {
   model: string;
   ragEnabled?: boolean;
   agentEnabled?: boolean;
+  agentCapabilities?: string;
   vectorStoreProvider?: string;
   userId?: string;
 }
@@ -46,6 +48,8 @@ export interface CreateConversationRequest {
 export interface UpdateConversationSettingsRequest {
   ragEnabled?: boolean;
   vectorStoreProvider?: string;
+  agentEnabled?: boolean;
+  agentCapabilities?: string;
 }
 
 export interface SendMessageRequest {

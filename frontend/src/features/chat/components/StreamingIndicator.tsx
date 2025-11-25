@@ -2,6 +2,7 @@ import { MarkdownMessage } from '../../../components/MarkdownMessage';
 import { TokenUsageDisplay } from '../../../components/TokenUsageDisplay';
 import { ThinkingStepCard } from '../../agents/components/ThinkingStepCard';
 import { ToolExecutionCard } from '../../agents/components/ToolExecutionCard';
+import { ProcessTimeline } from './ProcessTimeline';
 import { RetrievedNotes } from '../../../components/ui/RetrievedNotes';
 import { ToolExecution, ThinkingStep } from '../../agents/types/agent-types';
 import { RagContextNote } from '../../rag/types';
@@ -35,30 +36,28 @@ export function StreamingIndicator({
   toolExecutions = [],
   retrievedNotes = [],
 }: StreamingIndicatorProps) {
-  const hasContent = streamingMessage || thinkingSteps.length > 0 || toolExecutions.length > 0;
+  const hasSteps = thinkingSteps.length > 0 || toolExecutions.length > 0;
 
   return (
     <div>
-      {/* Show thinking steps during agent streaming */}
-      {agentModeEnabled && thinkingSteps.length > 0 && (
-        <div className="space-y-2">
+      {/* Show thinking steps and tool executions in timeline */}
+      {agentModeEnabled && (
+        <ProcessTimeline
+          isStreaming={isStreaming}
+          hasContent={hasSteps}
+        >
           {thinkingSteps.map((step, index) => (
             <ThinkingStepCard key={`thinking-${index}`} step={step} />
           ))}
-        </div>
-      )}
 
-      {/* Show tool executions during agent streaming */}
-      {agentModeEnabled && toolExecutions.length > 0 && (
-        <div className="space-y-2">
           {toolExecutions.map((execution, index) => (
             <ToolExecutionCard key={`streaming-${index}`} execution={execution} />
           ))}
-        </div>
+        </ProcessTimeline>
       )}
 
       {/* Show thinking/loading indicator only when streaming but no message content yet (agent mode only) */}
-      {agentModeEnabled && isStreaming && !streamingMessage && !hasContent && (
+      {agentModeEnabled && isStreaming && !streamingMessage && !hasSteps && (
         <div className="flex justify-start">
           <div
             className="w-full rounded-2xl rounded-bl-md px-5 py-3"
@@ -229,4 +228,3 @@ export function LoadingMessageSkeleton() {
     </div>
   );
 }
-
