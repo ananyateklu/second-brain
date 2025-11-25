@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Second Brain Logo - Dark Mode](frontend/src/assets/second-brain-logo-dark-mode.png)
+<img src="frontend/src/assets/second-brain-logo-dark-mode.png" alt="Second Brain Logo - Dark Mode" width="200"/>
 
 </div>
 
