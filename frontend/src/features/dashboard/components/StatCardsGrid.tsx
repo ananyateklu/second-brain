@@ -151,15 +151,16 @@ export function StatCardsGrid({ stats, aiStats, totalTokens }: StatCardsGridProp
     <div
       className="flex gap-2"
       style={{
-        flexWrap: 'nowrap',
+        flexWrap: 'wrap',
       }}
     >
       {statsConfig.map((stat, index) => (
         <div
           key={index}
           style={{
-            flex: '0 0 176px',
-            minWidth: 0,
+            flex: '1 1 0',
+            minWidth: '150px',
+            maxWidth: '100%',
           }}
         >
           <StatCard
