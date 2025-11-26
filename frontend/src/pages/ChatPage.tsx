@@ -13,6 +13,7 @@ import { EditNoteModal } from '../features/notes/components/EditNoteModal';
 import { toast } from '../hooks/use-toast';
 import { useAuthStore } from '../store/auth-store';
 import { DEFAULT_USER_ID } from '../lib/constants';
+import { MessageImage } from '../features/chat/types/chat';
 
 export function ChatPage() {
   const [inputValue, setInputValue] = useState('');
@@ -105,7 +106,7 @@ export function ChatPage() {
   useEffect(() => {
     if (pendingMessage && conversation?.messages) {
       const hasPendingMessage = conversation.messages.some(
-        (msg) => msg.role === 'user' && (msg.content === pendingMessage || msg.content.trim() === pendingMessage.trim())
+        (msg) => msg.role === 'user' && (msg.content === pendingMessage.content || msg.content.trim() === pendingMessage.content.trim())
       );
 
       // Clear immediately when found, don't wait for streaming to complete
@@ -138,12 +139,12 @@ export function ChatPage() {
     }
   }, [conversation?.messages, isStreaming, streamingMessage, resetStream, setPendingMessage]);
 
-  // Handle sending a message
-  const handleSendMessage = useCallback(async () => {
-    if (!inputValue.trim()) return;
+  // Handle sending a message with optional images
+  const handleSendMessage = useCallback(async (images?: MessageImage[]) => {
+    if (!inputValue.trim() && (!images || images.length === 0)) return;
 
     const messageToSend = inputValue.trim();
-    setPendingMessage(messageToSend);
+    setPendingMessage({ content: messageToSend, images });
     setInputValue('');
 
     try {
@@ -177,6 +178,7 @@ export function ChatPage() {
         userId: user?.userId || DEFAULT_USER_ID,
         vectorStoreProvider: ragEnabled ? selectedVectorStore : undefined,
         capabilities: capabilities.length > 0 ? capabilities : undefined,
+        images,
       });
     } catch (error) {
       console.error('Error sending message:', { error });
@@ -320,6 +322,8 @@ export function ChatPage() {
           isStreaming={isStreaming}
           isLoading={isLoading}
           disabled={!selectedProvider || !selectedModel}
+          provider={selectedProvider}
+          model={selectedModel}
         />
       </div>
 

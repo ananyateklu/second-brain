@@ -8,6 +8,18 @@ export interface ToolCall {
   success: boolean;
 }
 
+/**
+ * Image content for multimodal messages
+ */
+export interface MessageImage {
+  /** Base64-encoded image data (without data URL prefix) */
+  base64Data: string;
+  /** MIME type of the image (e.g., 'image/jpeg', 'image/png') */
+  mediaType: string;
+  /** Original filename (optional) */
+  fileName?: string;
+}
+
 export interface ChatMessage {
   role: string; // 'user' or 'assistant'
   content: string;
@@ -17,6 +29,8 @@ export interface ChatMessage {
   outputTokens?: number;
   durationMs?: number;
   toolCalls?: ToolCall[];
+  /** Attached images for multimodal messages */
+  images?: MessageImage[];
 }
 
 export interface ChatConversation {
@@ -59,6 +73,8 @@ export interface SendMessageRequest {
   useRag?: boolean;
   userId?: string;
   vectorStoreProvider?: string;
+  /** Attached images for multimodal messages */
+  images?: MessageImage[];
 }
 
 export interface ChatResponseWithRag {

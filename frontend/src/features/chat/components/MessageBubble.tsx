@@ -48,6 +48,23 @@ export function MessageBubble({
       >
         {isUser ? (
           <>
+            {message.images && message.images.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {message.images.map((image, index) => (
+                  <div
+                    key={index}
+                    className="relative rounded-lg overflow-hidden border border-white/20"
+                    style={{ width: '80px', height: '80px' }}
+                  >
+                    <img
+                      src={`data:${image.mediaType};base64,${image.base64Data}`}
+                      alt={image.fileName || 'Attached image'}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
             <p className="whitespace-pre-wrap break-words">{message.content}</p>
             <TokenUsageDisplay
               inputTokens={message.inputTokens}

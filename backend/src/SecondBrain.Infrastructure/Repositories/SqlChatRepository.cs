@@ -28,6 +28,8 @@ public class SqlChatRepository : IChatRepository
                     .ThenInclude(m => m.RetrievedNotes)
                 .Include(c => c.Messages)
                     .ThenInclude(m => m.ToolCalls)
+                .Include(c => c.Messages)
+                    .ThenInclude(m => m.Images)
                 .AsNoTracking()
                 .Where(c => c.UserId == userId)
                 .OrderByDescending(c => c.UpdatedAt)
@@ -53,6 +55,8 @@ public class SqlChatRepository : IChatRepository
                     .ThenInclude(m => m.RetrievedNotes)
                 .Include(c => c.Messages)
                     .ThenInclude(m => m.ToolCalls)
+                .Include(c => c.Messages)
+                    .ThenInclude(m => m.Images)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Id == id);
 
@@ -104,6 +108,15 @@ public class SqlChatRepository : IChatRepository
                     toolCall.MessageId = message.Id;
                 }
 
+                foreach (var toolCall in message.ToolCalls)
+                {
+                    if (string.IsNullOrEmpty(toolCall.Id))
+                    {
+                        toolCall.Id = Guid.NewGuid().ToString();
+                    }
+                    toolCall.MessageId = message.Id;
+                }
+
                 foreach (var retrievedNote in message.RetrievedNotes)
                 {
                     if (string.IsNullOrEmpty(retrievedNote.Id))
@@ -111,6 +124,15 @@ public class SqlChatRepository : IChatRepository
                         retrievedNote.Id = Guid.NewGuid().ToString();
                     }
                     retrievedNote.MessageId = message.Id;
+                }
+
+                foreach (var image in message.Images)
+                {
+                    if (string.IsNullOrEmpty(image.Id))
+                    {
+                        image.Id = Guid.NewGuid().ToString();
+                    }
+                    image.MessageId = message.Id;
                 }
             }
 
@@ -137,6 +159,8 @@ public class SqlChatRepository : IChatRepository
                     .ThenInclude(m => m.RetrievedNotes)
                 .Include(c => c.Messages)
                     .ThenInclude(m => m.ToolCalls)
+                .Include(c => c.Messages)
+                    .ThenInclude(m => m.Images)
                 .FirstOrDefaultAsync(c => c.Id == id);
 
             if (existingConversation == null)
@@ -175,6 +199,15 @@ public class SqlChatRepository : IChatRepository
                     toolCall.MessageId = message.Id;
                 }
 
+                foreach (var toolCall in message.ToolCalls)
+                {
+                    if (string.IsNullOrEmpty(toolCall.Id))
+                    {
+                        toolCall.Id = Guid.NewGuid().ToString();
+                    }
+                    toolCall.MessageId = message.Id;
+                }
+
                 foreach (var retrievedNote in message.RetrievedNotes)
                 {
                     if (string.IsNullOrEmpty(retrievedNote.Id))
@@ -182,6 +215,15 @@ public class SqlChatRepository : IChatRepository
                         retrievedNote.Id = Guid.NewGuid().ToString();
                     }
                     retrievedNote.MessageId = message.Id;
+                }
+
+                foreach (var image in message.Images)
+                {
+                    if (string.IsNullOrEmpty(image.Id))
+                    {
+                        image.Id = Guid.NewGuid().ToString();
+                    }
+                    image.MessageId = message.Id;
                 }
 
                 existingConversation.Messages.Add(message);
@@ -237,6 +279,8 @@ public class SqlChatRepository : IChatRepository
                     .ThenInclude(m => m.RetrievedNotes)
                 .Include(c => c.Messages)
                     .ThenInclude(m => m.ToolCalls)
+                .Include(c => c.Messages)
+                    .ThenInclude(m => m.Images)
                 .FirstOrDefaultAsync(c => c.Id == id);
 
             if (conversation == null)
@@ -261,6 +305,15 @@ public class SqlChatRepository : IChatRepository
                 toolCall.MessageId = message.Id;
             }
 
+            foreach (var toolCall in message.ToolCalls)
+            {
+                if (string.IsNullOrEmpty(toolCall.Id))
+                {
+                    toolCall.Id = Guid.NewGuid().ToString();
+                }
+                toolCall.MessageId = message.Id;
+            }
+
             foreach (var retrievedNote in message.RetrievedNotes)
             {
                 if (string.IsNullOrEmpty(retrievedNote.Id))
@@ -268,6 +321,15 @@ public class SqlChatRepository : IChatRepository
                     retrievedNote.Id = Guid.NewGuid().ToString();
                 }
                 retrievedNote.MessageId = message.Id;
+            }
+
+            foreach (var image in message.Images)
+            {
+                if (string.IsNullOrEmpty(image.Id))
+                {
+                    image.Id = Guid.NewGuid().ToString();
+                }
+                image.MessageId = message.Id;
             }
 
             conversation.Messages.Add(message);

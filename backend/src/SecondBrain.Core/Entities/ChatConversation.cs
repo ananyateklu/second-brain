@@ -88,6 +88,35 @@ public class ChatMessage
     // Navigation properties for related data
     public List<RetrievedNote> RetrievedNotes { get; set; } = new();
     public List<ToolCall> ToolCalls { get; set; } = new();
+    public List<MessageImage> Images { get; set; } = new();
+}
+
+[Table("message_images")]
+public class MessageImage
+{
+    [Key]
+    [Column("id")]
+    public string Id { get; set; } = string.Empty;
+
+    [Column("message_id")]
+    [MaxLength(128)]
+    public string MessageId { get; set; } = string.Empty;
+
+    [Column("base64_data")]
+    public string Base64Data { get; set; } = string.Empty;
+
+    [Column("media_type")]
+    [MaxLength(100)]
+    public string MediaType { get; set; } = string.Empty;
+
+    [Column("file_name")]
+    [MaxLength(255)]
+    public string? FileName { get; set; }
+
+    // Navigation property back to message (ignored to prevent circular serialization)
+    [ForeignKey("MessageId")]
+    [JsonIgnore]
+    public ChatMessage? Message { get; set; }
 }
 
 [Table("tool_calls")]

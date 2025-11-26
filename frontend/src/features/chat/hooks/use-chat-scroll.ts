@@ -1,4 +1,5 @@
 import { useRef, useEffect } from 'react';
+import { PendingMessage } from '../hooks/use-chat-conversation-manager';
 
 export interface ChatScrollRefs {
   messagesEndRef: React.RefObject<HTMLDivElement>;
@@ -8,7 +9,7 @@ export interface ChatScrollRefs {
 export interface ChatScrollOptions {
   isStreaming: boolean;
   streamingMessage: string;
-  pendingMessage: string | null;
+  pendingMessage: PendingMessage | null;
   messagesLength: number;
 }
 

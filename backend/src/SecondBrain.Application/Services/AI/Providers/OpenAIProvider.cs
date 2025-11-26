@@ -166,12 +166,7 @@ public class OpenAIProvider : IAIProvider
 
         try
         {
-            var chatMessages = messages.Select(m => m.Role.ToLower() switch
-            {
-                "system" => (OpenAIChatMessage)new SystemChatMessage(m.Content),
-                "assistant" => new AssistantChatMessage(m.Content),
-                _ => new UserChatMessage(m.Content)
-            }).ToList();
+            var chatMessages = messages.Select(m => ConvertToOpenAIMessage(m)).ToList();
 
             var chatOptions = new ChatCompletionOptions
             {
@@ -326,12 +321,7 @@ public class OpenAIProvider : IAIProvider
         if (_client == null)
             yield break;
 
-        var chatMessages = messages.Select(m => m.Role.ToLower() switch
-        {
-            "system" => (OpenAIChatMessage)new SystemChatMessage(m.Content),
-            "assistant" => new AssistantChatMessage(m.Content),
-            _ => new UserChatMessage(m.Content)
-        }).ToList();
+        var chatMessages = messages.Select(m => ConvertToOpenAIMessage(m)).ToList();
 
         var chatOptions = new ChatCompletionOptions
         {
@@ -353,6 +343,44 @@ public class OpenAIProvider : IAIProvider
                 yield return contentPart.Text;
             }
         }
+    }
+
+    /// <summary>
+    /// Convert a ChatMessage to OpenAI format, handling multimodal content
+    /// </summary>
+    private static OpenAIChatMessage ConvertToOpenAIMessage(Models.ChatMessage message)
+    {
+        var role = message.Role.ToLower();
+
+        // System and assistant messages don't support images
+        if (role == "system")
+            return new SystemChatMessage(message.Content);
+
+        if (role == "assistant")
+            return new AssistantChatMessage(message.Content);
+
+        // User message - check for images
+        if (message.Images == null || message.Images.Count == 0)
+            return new UserChatMessage(message.Content);
+
+        // Build multimodal content parts
+        var contentParts = new List<ChatMessageContentPart>();
+
+        // Add text content first (if any)
+        if (!string.IsNullOrEmpty(message.Content))
+        {
+            contentParts.Add(ChatMessageContentPart.CreateTextPart(message.Content));
+        }
+
+        // Add image content
+        foreach (var image in message.Images)
+        {
+            // OpenAI expects images as data URLs: data:{mediaType};base64,{base64Data}
+            var dataUrl = $"data:{image.MediaType};base64,{image.Base64Data}";
+            contentParts.Add(ChatMessageContentPart.CreateImagePart(new Uri(dataUrl)));
+        }
+
+        return new UserChatMessage(contentParts);
     }
 
     public async Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)

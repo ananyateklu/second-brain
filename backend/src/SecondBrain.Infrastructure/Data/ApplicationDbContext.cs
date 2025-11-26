@@ -15,6 +15,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<UserPreferences> UserPreferences { get; set; } = null!;
     public DbSet<ChatConversation> ChatConversations { get; set; } = null!;
     public DbSet<ChatMessage> ChatMessages { get; set; } = null!;
+    public DbSet<MessageImage> MessageImages { get; set; } = null!;
     public DbSet<ToolCall> ToolCalls { get; set; } = null!;
     public DbSet<RetrievedNote> RetrievedNotes { get; set; } = null!;
     public DbSet<IndexingJob> IndexingJobs { get; set; } = null!;
@@ -84,6 +85,12 @@ public class ApplicationDbContext : DbContext
                 .WithOne(r => r.Message)
                 .HasForeignKey(r => r.MessageId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // One-to-many relationship with MessageImages
+            entity.HasMany(m => m.Images)
+                .WithOne(i => i.Message)
+                .HasForeignKey(i => i.MessageId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // Configure ToolCall entity
@@ -96,6 +103,12 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<RetrievedNote>(entity =>
         {
             entity.HasIndex(e => e.MessageId).HasDatabaseName("ix_retrieved_notes_message_id");
+        });
+
+        // Configure MessageImage entity
+        modelBuilder.Entity<MessageImage>(entity =>
+        {
+            entity.HasIndex(e => e.MessageId).HasDatabaseName("ix_message_images_message_id");
         });
 
         // Configure IndexingJob entity

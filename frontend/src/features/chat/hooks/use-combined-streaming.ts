@@ -3,6 +3,7 @@ import { useChatStream } from './use-chat-stream';
 import { useAgentStream } from '../../agents/hooks/use-agent-stream';
 import { ToolExecution, ThinkingStep } from '../../agents/types/agent-types';
 import { RagContextNote } from '../../rag/types';
+import { MessageImage } from '../types/chat';
 
 export interface CombinedStreamingState {
   isStreaming: boolean;
@@ -28,6 +29,8 @@ export interface SendMessageOptions {
   userId: string;
   vectorStoreProvider?: string;
   capabilities?: string[];
+  /** Attached images for multimodal messages */
+  images?: MessageImage[];
 }
 
 /**
@@ -85,6 +88,7 @@ export function useCombinedStreaming(agentModeEnabled: boolean) {
         useRag: options.ragEnabled,
         userId: options.userId,
         vectorStoreProvider: options.vectorStoreProvider,
+        images: options.images,
       });
     }
   };

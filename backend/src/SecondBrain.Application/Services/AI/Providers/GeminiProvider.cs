@@ -133,27 +133,45 @@ public class GeminiProvider : IAIProvider
                 throw new InvalidOperationException("No conversation messages found");
             }
 
-            // Build a properly formatted conversation history
-            var conversationBuilder = new System.Text.StringBuilder();
+            // Check if the last message has images (multimodal)
+            var lastMessage = conversationMessages.LastOrDefault();
+            GenerateContentResponse? response;
 
-            if (systemMessage != null)
+            if (lastMessage?.Images != null && lastMessage.Images.Count > 0)
             {
-                conversationBuilder.AppendLine($"System: {systemMessage.Content}");
-                conversationBuilder.AppendLine();
+                // Build multimodal prompt for Gemini with images
+                var textPrompt = BuildGeminiTextPrompt(conversationMessages, systemMessage);
+                
+                // Generate content with text and images using Parts
+                var parts = new List<IPart> { new TextData { Text = textPrompt } };
+                foreach (var image in lastMessage.Images)
+                {
+                    // Add inline image data as Part
+                    parts.Add(new InlineData { MimeType = image.MediaType, Data = image.Base64Data });
+                }
+                response = await model.GenerateContent(parts, generationConfig: generationConfig);
             }
-
-            // Add all previous conversation turns
-            foreach (var msg in conversationMessages)
+            else
             {
-                var roleLabel = msg.Role.ToLower() == "assistant" ? "Assistant" : "User";
-                conversationBuilder.AppendLine($"{roleLabel}: {msg.Content}");
-                conversationBuilder.AppendLine();
+                // Text-only conversation
+                var conversationBuilder = new System.Text.StringBuilder();
+
+                if (systemMessage != null)
+                {
+                    conversationBuilder.AppendLine($"System: {systemMessage.Content}");
+                    conversationBuilder.AppendLine();
+                }
+
+                foreach (var msg in conversationMessages)
+                {
+                    var roleLabel = msg.Role.ToLower() == "assistant" ? "Assistant" : "User";
+                    conversationBuilder.AppendLine($"{roleLabel}: {msg.Content}");
+                    conversationBuilder.AppendLine();
+                }
+
+                var fullPrompt = conversationBuilder.ToString().TrimEnd();
+                response = await model.GenerateContent(fullPrompt, generationConfig: generationConfig);
             }
-
-            // Remove the last newlines and get the final prompt
-            var fullPrompt = conversationBuilder.ToString().TrimEnd();
-
-            var response = await model.GenerateContent(fullPrompt, generationConfig: generationConfig);
 
             return new AIResponse
             {
@@ -259,35 +277,88 @@ public class GeminiProvider : IAIProvider
         if (conversationMessages.Count == 0)
             yield break;
 
-        // Build a properly formatted conversation history
-        var conversationBuilder = new System.Text.StringBuilder();
+        // Check if the last message has images (multimodal)
+        var lastMessage = conversationMessages.LastOrDefault();
+        if (lastMessage?.Images != null && lastMessage.Images.Count > 0)
+        {
+            // Build multimodal prompt for Gemini with images
+            var textPrompt = BuildGeminiTextPrompt(conversationMessages, systemMessage);
+            
+            // Generate content with text and images using Parts
+            var parts = new List<IPart> { new TextData { Text = textPrompt } };
+            foreach (var image in lastMessage.Images)
+            {
+                // Add inline image data as Part
+                parts.Add(new InlineData { MimeType = image.MediaType, Data = image.Base64Data });
+            }
+            
+            await foreach (var chunk in model.GenerateContentStream(
+                parts,
+                generationConfig: generationConfig))
+            {
+                if (!string.IsNullOrEmpty(chunk?.Text))
+                {
+                    yield return chunk.Text;
+                }
+            }
+        }
+        else
+        {
+            // Text-only conversation
+            var conversationBuilder = new System.Text.StringBuilder();
 
+            if (systemMessage != null)
+            {
+                conversationBuilder.AppendLine($"System: {systemMessage.Content}");
+                conversationBuilder.AppendLine();
+            }
+
+            foreach (var msg in conversationMessages)
+            {
+                var roleLabel = msg.Role.ToLower() == "assistant" ? "Assistant" : "User";
+                conversationBuilder.AppendLine($"{roleLabel}: {msg.Content}");
+                conversationBuilder.AppendLine();
+            }
+
+            var fullPrompt = conversationBuilder.ToString().TrimEnd();
+
+            await foreach (var chunk in model.GenerateContentStream(
+                fullPrompt,
+                generationConfig: generationConfig))
+            {
+                if (!string.IsNullOrEmpty(chunk?.Text))
+                {
+                    yield return chunk.Text;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Build text prompt for Gemini from conversation history
+    /// </summary>
+    private static string BuildGeminiTextPrompt(
+        List<Models.ChatMessage> conversationMessages,
+        Models.ChatMessage? systemMessage)
+    {
+        var fullText = new System.Text.StringBuilder();
+
+        // Add system context if present
         if (systemMessage != null)
         {
-            conversationBuilder.AppendLine($"System: {systemMessage.Content}");
-            conversationBuilder.AppendLine();
+            fullText.AppendLine($"System: {systemMessage.Content}");
+            fullText.AppendLine();
         }
 
-        // Add all previous conversation turns
+        // Add all messages
         foreach (var msg in conversationMessages)
         {
             var roleLabel = msg.Role.ToLower() == "assistant" ? "Assistant" : "User";
-            conversationBuilder.AppendLine($"{roleLabel}: {msg.Content}");
-            conversationBuilder.AppendLine();
+            fullText.AppendLine($"{roleLabel}: {msg.Content}");
+            fullText.AppendLine();
         }
 
-        // Remove the last newlines and get the final prompt
-        var fullPrompt = conversationBuilder.ToString().TrimEnd();
-
-        await foreach (var chunk in model.GenerateContentStream(
-            fullPrompt,
-            generationConfig: generationConfig))
-        {
-            if (!string.IsNullOrEmpty(chunk?.Text))
-            {
-                yield return chunk.Text;
-            }
-        }
+        return fullText.ToString().TrimEnd();
     }
 
     public async Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)

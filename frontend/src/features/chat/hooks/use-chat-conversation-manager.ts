@@ -9,6 +9,12 @@ import { toast } from '../../../hooks/use-toast';
 import { useAuthStore } from '../../../store/auth-store';
 import { DEFAULT_USER_ID } from '../../../lib/constants';
 import { ChatConversation, CreateConversationRequest } from '../types/chat';
+import { MessageImage } from '../types/chat';
+
+export interface PendingMessage {
+  content: string;
+  images?: MessageImage[];
+}
 
 export interface ConversationManagerState {
   conversationId: string | null;
@@ -16,13 +22,13 @@ export interface ConversationManagerState {
   conversations: ChatConversation[] | undefined;
   displayConversations: ChatConversation[];
   isNewChat: boolean;
-  pendingMessage: string | null;
+  pendingMessage: PendingMessage | null;
   isCreating: boolean;
 }
 
 export interface ConversationManagerActions {
   setConversationId: (id: string | null) => void;
-  setPendingMessage: (message: string | null) => void;
+  setPendingMessage: (message: PendingMessage | null) => void;
   handleNewChat: () => void;
   handleSelectConversation: (id: string, onSelect?: (conv: ChatConversation) => void) => void;
   handleDeleteConversation: (id: string) => Promise<void>;
@@ -47,7 +53,7 @@ export function useChatConversationManager(
 
   const [conversationId, setConversationIdState] = useState<string | null>(null);
   const [isNewChat, setIsNewChat] = useState(false);
-  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
+  const [pendingMessage, setPendingMessage] = useState<PendingMessage | null>(null);
 
   const user = useAuthStore((state) => state.user);
   const { data: conversations } = useChatConversations();
@@ -182,7 +188,7 @@ export function useChatConversationManager(
   ) => {
     if (pendingMessage && conversation?.messages) {
       const hasPendingMessage = conversation.messages.some(
-        (msg) => msg.role === 'user' && msg.content === pendingMessage
+        (msg) => msg.role === 'user' && msg.content === pendingMessage.content
       );
 
       // Clear pending message once it's in the conversation and streaming is done

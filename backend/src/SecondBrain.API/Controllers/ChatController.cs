@@ -266,18 +266,6 @@ public class ChatController : ControllerBase
                 }
             }
 
-            // Add user message
-            var inputTokens = TokenEstimator.EstimateTokenCount(request.Content);
-            var userMessage = new Core.Entities.ChatMessage
-            {
-                Role = "user",
-                Content = request.Content,
-                Timestamp = DateTime.UtcNow,
-                InputTokens = inputTokens
-            };
-            conversation.Messages.Add(userMessage);
-            conversation.UpdatedAt = DateTime.UtcNow;
-
             // Get AI provider
             var aiProvider = _providerFactory.GetProvider(conversation.Provider);
             if (!aiProvider.IsEnabled)
@@ -287,6 +275,55 @@ public class ChatController : ControllerBase
                 return;
             }
 
+            // Check if the model supports vision and we have images
+            var hasImages = request.Images != null && request.Images.Count > 0;
+            var isVisionModel = Application.Services.AI.Models.MultimodalConfig.IsMultimodalModel(conversation.Provider, conversation.Model);
+
+            if (hasImages && !isVisionModel)
+            {
+                await Response.WriteAsync($"event: error\ndata: {{\"error\":\"Model {conversation.Model} does not support image inputs\"}}\n\n");
+                await Response.Body.FlushAsync(cancellationToken);
+                return;
+            }
+
+            // Validate image formats if present
+            if (hasImages)
+            {
+                foreach (var image in request.Images!)
+                {
+                    if (!Application.Services.AI.Models.MultimodalConfig.IsImageFormatSupported(conversation.Provider, image.MediaType))
+                    {
+                        await Response.WriteAsync($"event: error\ndata: {{\"error\":\"Image format {image.MediaType} is not supported by {conversation.Provider}\"}}\n\n");
+                        await Response.Body.FlushAsync(cancellationToken);
+                        return;
+                    }
+                }
+            }
+
+            // Add user message
+            var inputTokens = TokenEstimator.EstimateTokenCount(request.Content);
+            var userMessage = new Core.Entities.ChatMessage
+            {
+                Role = "user",
+                Content = request.Content,
+                Timestamp = DateTime.UtcNow,
+                InputTokens = inputTokens
+            };
+
+            // Map images to domain entity if present
+            if (hasImages)
+            {
+                userMessage.Images = request.Images!.Select(img => new Core.Entities.MessageImage
+                {
+                    Base64Data = img.Base64Data,
+                    MediaType = img.MediaType,
+                    FileName = img.FileName
+                }).ToList();
+            }
+
+            conversation.Messages.Add(userMessage);
+            conversation.UpdatedAt = DateTime.UtcNow;
+
             // Convert conversation messages to AI provider format
             var aiMessages = conversation.Messages.Select(m => new Application.Services.AI.Models.ChatMessage
             {
@@ -294,10 +331,22 @@ public class ChatController : ControllerBase
                 Content = m.Content
             }).ToList();
 
-            // For the last message, use the enhanced content if RAG is enabled
-            if (request.UseRag && aiMessages.Any())
+            // For the last user message, add images and use enhanced content if RAG is enabled
+            if (aiMessages.Any())
             {
-                aiMessages[aiMessages.Count - 1].Content = messageContent;
+                var lastMessage = aiMessages[aiMessages.Count - 1];
+                
+                // Add images to the last message
+                if (hasImages)
+                {
+                    lastMessage.Images = request.Images;
+                }
+
+                // Use enhanced content if RAG is enabled
+                if (request.UseRag)
+                {
+                    lastMessage.Content = messageContent;
+                }
             }
 
             // Generate AI streaming response
@@ -486,6 +535,27 @@ public class ChatController : ControllerBase
                     id, userId);
             }
 
+            // Check if the model supports vision and we have images
+            var hasImages = request.Images != null && request.Images.Count > 0;
+            var isVisionModel = Application.Services.AI.Models.MultimodalConfig.IsMultimodalModel(conversation.Provider, conversation.Model);
+
+            if (hasImages && !isVisionModel)
+            {
+                return BadRequest(new { error = $"Model {conversation.Model} does not support image inputs" });
+            }
+
+            // Validate image formats if present
+            if (hasImages)
+            {
+                foreach (var image in request.Images!)
+                {
+                    if (!Application.Services.AI.Models.MultimodalConfig.IsImageFormatSupported(conversation.Provider, image.MediaType))
+                    {
+                        return BadRequest(new { error = $"Image format {image.MediaType} is not supported by {conversation.Provider}" });
+                    }
+                }
+            }
+
             // Add user message (original content, not enhanced)
             var userMessage = new Core.Entities.ChatMessage
             {
@@ -493,6 +563,18 @@ public class ChatController : ControllerBase
                 Content = request.Content,
                 Timestamp = DateTime.UtcNow
             };
+
+            // Map images to domain entity if present
+            if (hasImages)
+            {
+                userMessage.Images = request.Images!.Select(img => new Core.Entities.MessageImage
+                {
+                    Base64Data = img.Base64Data,
+                    MediaType = img.MediaType,
+                    FileName = img.FileName
+                }).ToList();
+            }
+
             conversation.Messages.Add(userMessage);
             conversation.UpdatedAt = DateTime.UtcNow;
 
@@ -509,6 +591,12 @@ public class ChatController : ControllerBase
                 Role = m.Role,
                 Content = m.Content
             }).ToList();
+
+            // Add images to the last user message
+            if (hasImages)
+            {
+                aiMessages[aiMessages.Count - 1].Images = request.Images;
+            }
 
             // For the last message, use the enhanced content if RAG is enabled
             if (request.UseRag && aiMessages.Any())
@@ -723,6 +811,10 @@ public class SendMessageRequest
     public int? MaxTokens { get; set; }
     public bool UseRag { get; set; }
     public string? VectorStoreProvider { get; set; }
+    /// <summary>
+    /// Attached images for multimodal messages
+    /// </summary>
+    public List<Application.Services.AI.Models.MessageImage>? Images { get; set; }
 }
 
 public class UpdateConversationSettingsRequest

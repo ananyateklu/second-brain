@@ -152,11 +152,7 @@ public class OllamaProvider : IAIProvider
 
         try
         {
-            var chatMessages = messages.Select(m => new Message
-            {
-                Role = m.Role.ToLower(),
-                Content = m.Content
-            }).ToList();
+            var chatMessages = messages.Select(m => ConvertToOllamaMessage(m)).ToList();
 
             var chatRequest = new ChatRequest
             {
@@ -327,11 +323,7 @@ public class OllamaProvider : IAIProvider
         if (_client == null)
             yield break;
 
-        var chatMessages = messages.Select(m => new Message
-        {
-            Role = m.Role.ToLower(),
-            Content = m.Content
-        }).ToList();
+        var chatMessages = messages.Select(m => ConvertToOllamaMessage(m)).ToList();
 
         var chatRequest = new ChatRequest
         {
@@ -381,6 +373,28 @@ public class OllamaProvider : IAIProvider
                 yield return chunk.Message.Content;
             }
         }
+    }
+
+    /// <summary>
+    /// Convert a ChatMessage to Ollama format, handling multimodal content
+    /// </summary>
+    private static Message ConvertToOllamaMessage(Models.ChatMessage message)
+    {
+        var ollamaMessage = new Message
+        {
+            Role = message.Role.ToLower(),
+            Content = message.Content
+        };
+
+        // Add images if present (Ollama uses 'images' array with base64 data)
+        if (message.Images != null && message.Images.Count > 0)
+        {
+            ollamaMessage.Images = message.Images
+                .Select(img => img.Base64Data)
+                .ToArray();
+        }
+
+        return ollamaMessage;
     }
 
     public async Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)

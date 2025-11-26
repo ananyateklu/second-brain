@@ -121,9 +121,7 @@ public class ClaudeProvider : IAIProvider
         {
             var claudeMessages = messages
                 .Where(m => m.Role.ToLower() != "system")
-                .Select(m => new Message(
-                    m.Role.ToLower() == "assistant" ? RoleType.Assistant : RoleType.User,
-                    m.Content))
+                .Select(m => ConvertToClaudeMessage(m))
                 .ToList();
 
             var systemMessage = messages.FirstOrDefault(m => m.Role.ToLower() == "system");
@@ -240,9 +238,7 @@ public class ClaudeProvider : IAIProvider
 
         var claudeMessages = messages
             .Where(m => m.Role.ToLower() != "system")
-            .Select(m => new Message(
-                m.Role.ToLower() == "assistant" ? RoleType.Assistant : RoleType.User,
-                m.Content))
+            .Select(m => ConvertToClaudeMessage(m))
             .ToList();
 
         var systemMessage = messages.FirstOrDefault(m => m.Role.ToLower() == "system");
@@ -273,6 +269,52 @@ public class ClaudeProvider : IAIProvider
                 yield return messageChunk.Delta.Text;
             }
         }
+    }
+
+    /// <summary>
+    /// Convert a ChatMessage to Claude format, handling multimodal content
+    /// </summary>
+    private static Message ConvertToClaudeMessage(Models.ChatMessage message)
+    {
+        var role = message.Role.ToLower() == "assistant" ? RoleType.Assistant : RoleType.User;
+
+        // Check for images - use multimodal format
+        if (message.Images != null && message.Images.Count > 0)
+        {
+            // Build multimodal content for Claude using ContentBase list
+            var contentBlocks = new List<ContentBase>();
+
+            // Add images first (Claude prefers images before text)
+            foreach (var image in message.Images)
+            {
+                // Create ImageContent with ImageSource directly
+                var imageContent = new ImageContent
+                {
+                    Source = new ImageSource
+                    {
+                        MediaType = image.MediaType,
+                        Data = image.Base64Data
+                    }
+                };
+                contentBlocks.Add(imageContent);
+            }
+
+            // Add text content after images
+            if (!string.IsNullOrEmpty(message.Content))
+            {
+                contentBlocks.Add(new Anthropic.SDK.Messaging.TextContent { Text = message.Content });
+            }
+
+            // Create message with content blocks
+            return new Message
+            {
+                Role = role,
+                Content = contentBlocks
+            };
+        }
+
+        // Simple text message
+        return new Message(role, message.Content);
     }
 
     public async Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)

@@ -124,12 +124,7 @@ public class GrokProvider : IAIProvider
 
         try
         {
-            var chatMessages = messages.Select(m => m.Role.ToLower() switch
-            {
-                "system" => (OpenAIChatMessage)new SystemChatMessage(m.Content),
-                "assistant" => new AssistantChatMessage(m.Content),
-                _ => new UserChatMessage(m.Content)
-            }).ToList();
+            var chatMessages = messages.Select(m => ConvertToGrokMessage(m)).ToList();
 
             var chatOptions = new ChatCompletionOptions
             {
@@ -148,6 +143,16 @@ public class GrokProvider : IAIProvider
                 Content = response.Value.Content[0].Text,
                 Model = _settings.DefaultModel,
                 TokensUsed = response.Value.Usage.TotalTokenCount,
+                Provider = ProviderName
+            };
+        }
+        catch (ClientResultException ex)
+        {
+            _logger.LogError(ex, "Error generating chat completion from Grok. Status: {Status}", ex.Status);
+            return new AIResponse
+            {
+                Success = false,
+                Error = $"Grok API Error ({ex.Status}): {ex.Message}",
                 Provider = ProviderName
             };
         }
@@ -226,12 +231,7 @@ public class GrokProvider : IAIProvider
         if (_client == null)
             yield break;
 
-        var chatMessages = messages.Select(m => m.Role.ToLower() switch
-        {
-            "system" => (OpenAIChatMessage)new SystemChatMessage(m.Content),
-            "assistant" => new AssistantChatMessage(m.Content),
-            _ => new UserChatMessage(m.Content)
-        }).ToList();
+        var chatMessages = messages.Select(m => ConvertToGrokMessage(m)).ToList();
 
         var chatOptions = new ChatCompletionOptions
         {
@@ -249,6 +249,44 @@ public class GrokProvider : IAIProvider
                 yield return contentPart.Text;
             }
         }
+    }
+
+    /// <summary>
+    /// Convert a ChatMessage to Grok/xAI format (OpenAI-compatible), handling multimodal content
+    /// </summary>
+    private static OpenAIChatMessage ConvertToGrokMessage(Models.ChatMessage message)
+    {
+        var role = message.Role.ToLower();
+
+        // System and assistant messages don't support images
+        if (role == "system")
+            return new SystemChatMessage(message.Content);
+
+        if (role == "assistant")
+            return new AssistantChatMessage(message.Content);
+
+        // User message - check for images
+        if (message.Images == null || message.Images.Count == 0)
+            return new UserChatMessage(message.Content);
+
+        // Build multimodal content parts (same as OpenAI)
+        var contentParts = new List<ChatMessageContentPart>();
+
+        // Add text content first (if any)
+        if (!string.IsNullOrEmpty(message.Content))
+        {
+            contentParts.Add(ChatMessageContentPart.CreateTextPart(message.Content));
+        }
+
+        // Add image content
+        foreach (var image in message.Images)
+        {
+            // Grok uses OpenAI-compatible format: data URL
+            var dataUrl = $"data:{image.MediaType};base64,{image.Base64Data}";
+            contentParts.Add(ChatMessageContentPart.CreateImagePart(new Uri(dataUrl)));
+        }
+
+        return new UserChatMessage(contentParts);
     }
 
     public async Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)

@@ -13,9 +13,11 @@ import { TokenUsageDisplay } from '../../../components/TokenUsageDisplay';
 import { extractThinkingContent } from '../../../utils/thinking-utils';
 import { convertToolCallToExecution } from '../utils/tool-utils';
 
+import { PendingMessage } from '../hooks/use-chat-conversation-manager';
+
 export interface ChatMessageListProps {
   conversation: ChatConversation | undefined;
-  pendingMessage: string | null;
+  pendingMessage: PendingMessage | null;
   // Streaming state
   isStreaming: boolean;
   streamingMessage: string;
@@ -91,7 +93,7 @@ export function ChatMessageList({
     return conversation.messages.some(
       (msg) =>
         msg.role === 'user' &&
-        (msg.content === pendingMessage || msg.content.trim() === pendingMessage.trim())
+        (msg.content === pendingMessage.content || msg.content.trim() === pendingMessage.content.trim())
     );
   }, [pendingMessage, conversation?.messages]);
 
@@ -137,7 +139,24 @@ export function ChatMessageList({
                     border: '1px solid var(--btn-primary-border)',
                   }}
                 >
-                  <p className="whitespace-pre-wrap break-words">{pendingMessage}</p>
+                  {pendingMessage.images && pendingMessage.images.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {pendingMessage.images.map((image, index) => (
+                        <div
+                          key={index}
+                          className="relative rounded-lg overflow-hidden border border-white/20"
+                          style={{ width: '80px', height: '80px' }}
+                        >
+                          <img
+                            src={`data:${image.mediaType};base64,${image.base64Data}`}
+                            alt={image.fileName || 'Attached image'}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <p className="whitespace-pre-wrap break-words">{pendingMessage.content}</p>
                   <TokenUsageDisplay
                     inputTokens={inputTokens}
                     outputTokens={undefined}
