@@ -86,6 +86,12 @@ public class UserPreferencesService : IUserPreferencesService
         if (request.EnableNotifications.HasValue)
             user.Preferences.EnableNotifications = request.EnableNotifications.Value;
 
+        if (request.OllamaRemoteUrl != null)
+            user.Preferences.OllamaRemoteUrl = request.OllamaRemoteUrl;
+
+        if (request.UseRemoteOllama.HasValue)
+            user.Preferences.UseRemoteOllama = request.UseRemoteOllama.Value;
+
         user.UpdatedAt = DateTime.UtcNow;
 
         var updatedUser = await _userRepository.UpdateAsync(userId, user);
@@ -117,7 +123,9 @@ public class UserPreferencesService : IUserPreferencesService
             DefaultNoteView = preferences.DefaultNoteView,
             ItemsPerPage = preferences.ItemsPerPage,
             FontSize = preferences.FontSize,
-            EnableNotifications = preferences.EnableNotifications
+            EnableNotifications = preferences.EnableNotifications,
+            OllamaRemoteUrl = preferences.OllamaRemoteUrl,
+            UseRemoteOllama = preferences.UseRemoteOllama
         };
     }
 }

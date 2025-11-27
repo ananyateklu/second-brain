@@ -9,5 +9,7 @@ public class UpdateUserPreferencesRequest
     public int? ItemsPerPage { get; set; }
     public string? FontSize { get; set; }
     public bool? EnableNotifications { get; set; }
+    public string? OllamaRemoteUrl { get; set; }
+    public bool? UseRemoteOllama { get; set; }
 }
 

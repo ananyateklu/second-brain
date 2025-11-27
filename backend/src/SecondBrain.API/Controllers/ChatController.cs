@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using SecondBrain.Application.DTOs.Responses;
+using SecondBrain.Application.Services;
 using SecondBrain.Application.Services.AI;
 using SecondBrain.Application.Services.AI.Interfaces;
 using SecondBrain.Application.Services.AI.Models;
@@ -18,17 +19,20 @@ public class ChatController : ControllerBase
     private readonly IChatRepository _chatRepository;
     private readonly IAIProviderFactory _providerFactory;
     private readonly IRagService _ragService;
+    private readonly IUserPreferencesService _userPreferencesService;
     private readonly ILogger<ChatController> _logger;
 
     public ChatController(
         IChatRepository chatRepository,
         IAIProviderFactory providerFactory,
         IRagService ragService,
+        IUserPreferencesService userPreferencesService,
         ILogger<ChatController> logger)
     {
         _chatRepository = chatRepository;
         _providerFactory = providerFactory;
         _ragService = ragService;
+        _userPreferencesService = userPreferencesService;
         _logger = logger;
     }
 
@@ -335,7 +339,7 @@ public class ChatController : ControllerBase
             if (aiMessages.Any())
             {
                 var lastMessage = aiMessages[aiMessages.Count - 1];
-                
+
                 // Add images to the last message
                 if (hasImages)
                 {
@@ -356,6 +360,24 @@ public class ChatController : ControllerBase
                 Temperature = request.Temperature.HasValue ? (float?)request.Temperature.Value : null,
                 MaxTokens = request.MaxTokens
             };
+
+            // Set Ollama remote URL if configured for this user
+            if (conversation.Provider.Equals("Ollama", StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    var userPrefs = await _userPreferencesService.GetPreferencesAsync(userId);
+                    if (userPrefs.UseRemoteOllama && !string.IsNullOrWhiteSpace(userPrefs.OllamaRemoteUrl))
+                    {
+                        aiRequest.OllamaBaseUrl = userPrefs.OllamaRemoteUrl;
+                        _logger.LogInformation("Using remote Ollama URL for user {UserId}: {Url}", userId, userPrefs.OllamaRemoteUrl);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to fetch user preferences for Ollama URL override");
+                }
+            }
 
             // Send start event
             await Response.WriteAsync("event: start\ndata: {\"status\":\"streaming\"}\n\n");
@@ -392,14 +414,14 @@ public class ChatController : ControllerBase
                 OutputTokens = outputTokens,
                 DurationMs = durationMs,
                 RetrievedNotes = retrievedNotes.Select(n => new Core.Entities.RetrievedNote
-                    {
-                        NoteId = n.NoteId,
-                        Title = n.Title,
-                        Tags = n.Tags,
-                        RelevanceScore = n.RelevanceScore,
-                        ChunkContent = n.ChunkContent,
-                        ChunkIndex = n.ChunkIndex
-                    }).ToList()
+                {
+                    NoteId = n.NoteId,
+                    Title = n.Title,
+                    Tags = n.Tags,
+                    RelevanceScore = n.RelevanceScore,
+                    ChunkContent = n.ChunkContent,
+                    ChunkIndex = n.ChunkIndex
+                }).ToList()
             };
             conversation.Messages.Add(assistantMessage);
             conversation.UpdatedAt = DateTime.UtcNow;
@@ -408,9 +430,9 @@ public class ChatController : ControllerBase
             await _chatRepository.UpdateAsync(id, conversation);
 
             // Send end event with conversation ID and token usage
-            var endData = System.Text.Json.JsonSerializer.Serialize(new 
-            { 
-                conversationId = id, 
+            var endData = System.Text.Json.JsonSerializer.Serialize(new
+            {
+                conversationId = id,
                 messageId = conversation.Messages.Count - 1,
                 inputTokens = inputTokens,
                 outputTokens = outputTokens
@@ -627,14 +649,14 @@ public class ChatController : ControllerBase
                 OutputTokens = aiResponse.TokensUsed,
                 DurationMs = durationMs,
                 RetrievedNotes = retrievedNotes.Select(n => new Core.Entities.RetrievedNote
-                    {
-                        NoteId = n.NoteId,
-                        Title = n.Title,
-                        Tags = n.Tags,
-                        RelevanceScore = n.RelevanceScore,
-                        ChunkContent = n.ChunkContent,
-                        ChunkIndex = n.ChunkIndex
-                    }).ToList()
+                {
+                    NoteId = n.NoteId,
+                    Title = n.Title,
+                    Tags = n.Tags,
+                    RelevanceScore = n.RelevanceScore,
+                    ChunkContent = n.ChunkContent,
+                    ChunkIndex = n.ChunkIndex
+                }).ToList()
             };
             conversation.Messages.Add(assistantMessage);
             conversation.UpdatedAt = DateTime.UtcNow;

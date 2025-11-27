@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useThemeStore } from '../../store/theme-store';
 import { useSettingsStore } from '../../store/settings-store';
 import { useAuthStore } from '../../store/auth-store';
@@ -94,11 +94,26 @@ const VECTOR_STORE_OPTIONS: Array<{
 
 export function AISettings() {
     const { theme } = useThemeStore();
-    const { vectorStoreProvider, setVectorStoreProvider, syncPreferencesToBackend } = useSettingsStore();
+    const {
+        vectorStoreProvider,
+        setVectorStoreProvider,
+        syncPreferencesToBackend,
+        ollamaRemoteUrl,
+        useRemoteOllama,
+        setOllamaRemoteUrl,
+        setUseRemoteOllama,
+    } = useSettingsStore();
     const user = useAuthStore((state) => state.user);
-    const { data: healthData, isLoading: isHealthLoading } = useAIHealth();
+    const { data: healthData, isLoading: isHealthLoading, refetch: refetchHealth } = useAIHealth();
     const [selectedProvider, setSelectedProvider] = useState<{ id: string; name: string } | null>(null);
     const [isSavingVectorStore, setIsSavingVectorStore] = useState(false);
+    const [isSavingOllama, setIsSavingOllama] = useState(false);
+    const [localOllamaUrl, setLocalOllamaUrl] = useState(ollamaRemoteUrl || '');
+
+    // Sync localOllamaUrl with store value when it changes
+    useEffect(() => {
+        setLocalOllamaUrl(ollamaRemoteUrl || '');
+    }, [ollamaRemoteUrl]);
 
     const isDarkMode = theme === 'dark' || theme === 'blue';
 
@@ -579,6 +594,220 @@ export function AISettings() {
                                     </button>
                                 );
                             })}
+                        </div>
+                    </section>
+
+                    {/* Ollama Configuration Section */}
+                    <section
+                        className="rounded-3xl border p-6 transition-all duration-200 hover:shadow-xl"
+                        style={{
+                            backgroundColor: 'var(--surface-card)',
+                            borderColor: 'var(--border)',
+                            boxShadow: 'var(--shadow-lg)',
+                        }}
+                    >
+                        <div className="flex flex-wrap items-start justify-between gap-4">
+                            <div className="flex items-start gap-3">
+                                <div
+                                    className="flex h-10 w-10 items-center justify-center rounded-xl border flex-shrink-0"
+                                    style={{
+                                        backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
+                                        borderColor: 'color-mix(in srgb, var(--color-brand-600) 30%, transparent)',
+                                    }}
+                                >
+                                    <img src={ollamaLogo} alt="Ollama" className="h-6 w-6 object-contain" />
+                                </div>
+                                <div>
+                                    <span className="text-xs uppercase tracking-[0.35em]" style={{ color: 'var(--text-secondary)' }}>
+                                        Ollama Configuration
+                                    </span>
+                                    <h3 className="text-xl font-semibold mt-2" style={{ color: 'var(--text-primary)' }}>
+                                        Remote Ollama Instance
+                                    </h3>
+                                    <p className="text-sm mt-1.5" style={{ color: 'var(--text-secondary)' }}>
+                                        Connect to an Ollama instance running on another device on your network.
+                                    </p>
+                                </div>
+                            </div>
+                            <span
+                                className="px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5"
+                                style={{
+                                    border: '1px solid color-mix(in srgb, var(--color-brand-500) 30%, transparent)',
+                                    backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
+                                    color: 'var(--color-brand-600)',
+                                }}
+                            >
+                                {isSavingOllama ? (
+                                    <>
+                                        <svg className="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        Saving...
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d={useRemoteOllama
+                                                ? "M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
+                                                : "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                                            } />
+                                        </svg>
+                                        {useRemoteOllama ? 'Remote Mode' : 'Local Mode'}
+                                    </>
+                                )}
+                            </span>
+                        </div>
+
+                        <div className="mt-6 space-y-4">
+                            {/* Toggle Switch */}
+                            <div className="flex items-center justify-between p-4 rounded-2xl border" style={{
+                                backgroundColor: 'var(--surface-elevated)',
+                                borderColor: 'var(--border)',
+                            }}>
+                                <div className="flex items-center gap-3">
+                                    <div
+                                        className="flex h-10 w-10 items-center justify-center rounded-xl border flex-shrink-0"
+                                        style={{
+                                            backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 8%, transparent)',
+                                            borderColor: 'color-mix(in srgb, var(--color-brand-600) 30%, transparent)',
+                                        }}
+                                    >
+                                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--text-secondary)' }}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                                            Use Remote Ollama
+                                        </p>
+                                        <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                                            {useRemoteOllama
+                                                ? 'Connected to remote instance'
+                                                : 'Using local Ollama (localhost:11434)'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={async () => {
+                                        if (!user?.userId) return;
+                                        setIsSavingOllama(true);
+                                        try {
+                                            setUseRemoteOllama(!useRemoteOllama);
+                                            // Refetch health data after a short delay to allow state to update
+                                            setTimeout(() => {
+                                                refetchHealth();
+                                            }, 100);
+                                        } catch (error) {
+                                            console.error('Failed to toggle remote Ollama:', { error });
+                                            toast.error('Failed to save setting', 'Please try again.');
+                                        } finally {
+                                            setIsSavingOllama(false);
+                                        }
+                                    }}
+                                    disabled={isSavingOllama}
+                                    className="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50"
+                                    style={{
+                                        backgroundColor: useRemoteOllama ? 'var(--color-brand-600)' : 'var(--border)',
+                                    }}
+                                >
+                                    <span
+                                        className="pointer-events-none inline-block h-5 w-5 transform rounded-full shadow ring-0 transition duration-200 ease-in-out"
+                                        style={{
+                                            backgroundColor: 'white',
+                                            transform: useRemoteOllama ? 'translateX(20px)' : 'translateX(0)',
+                                        }}
+                                    />
+                                </button>
+                            </div>
+
+                            {/* Remote URL Input - Only shown when remote is enabled */}
+                            {useRemoteOllama && (
+                                <div className="p-4 rounded-2xl border space-y-3" style={{
+                                    backgroundColor: 'var(--surface-elevated)',
+                                    borderColor: 'var(--border)',
+                                }}>
+                                    <div className="flex items-center gap-2">
+                                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--color-brand-600)' }}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                        </svg>
+                                        <label className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                                            Remote Ollama URL
+                                        </label>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={localOllamaUrl}
+                                            onChange={(e) => setLocalOllamaUrl(e.target.value)}
+                                            placeholder="http://192.168.1.100:11434"
+                                            className="flex-1 px-4 py-2.5 rounded-xl border text-sm transition-all duration-200 focus:outline-none focus:ring-2"
+                                            style={{
+                                                backgroundColor: 'var(--surface-card)',
+                                                borderColor: 'var(--border)',
+                                                color: 'var(--text-primary)',
+                                            }}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={async () => {
+                                                if (!user?.userId) return;
+                                                setIsSavingOllama(true);
+                                                try {
+                                                    setOllamaRemoteUrl(localOllamaUrl || null);
+                                                    toast.success('Ollama URL saved', 'Your remote Ollama URL has been updated.');
+                                                    // Refetch health data after a short delay to allow state to update
+                                                    setTimeout(() => {
+                                                        refetchHealth();
+                                                    }, 100);
+                                                } catch (error) {
+                                                    console.error('Failed to save Ollama URL:', { error });
+                                                    toast.error('Failed to save URL', 'Please try again.');
+                                                } finally {
+                                                    setIsSavingOllama(false);
+                                                }
+                                            }}
+                                            disabled={isSavingOllama || localOllamaUrl === (ollamaRemoteUrl || '')}
+                                            className="px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            style={{
+                                                backgroundColor: localOllamaUrl !== (ollamaRemoteUrl || '') ? 'var(--color-brand-600)' : 'var(--surface-card)',
+                                                color: localOllamaUrl !== (ollamaRemoteUrl || '') ? 'white' : 'var(--text-secondary)',
+                                                borderColor: 'var(--border)',
+                                                border: '1px solid',
+                                            }}
+                                        >
+                                            Save
+                                        </button>
+                                    </div>
+                                    <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                                        Enter the IP address and port of your remote Ollama server (e.g., http://192.168.1.100:11434)
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Info Box */}
+                            <div
+                                className="p-4 rounded-xl border-l-4 flex gap-3"
+                                style={{
+                                    backgroundColor: 'var(--surface-elevated)',
+                                    borderLeftColor: 'var(--color-brand-600)',
+                                }}
+                            >
+                                <svg className="h-5 w-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--color-brand-600)' }}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <div>
+                                    <p className="text-xs font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
+                                        {useRemoteOllama ? 'Remote Connection' : 'Local Mode'}
+                                    </p>
+                                    <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                                        {useRemoteOllama
+                                            ? 'Requests will be sent to your remote Ollama instance. Make sure the remote server is running and accessible on your network.'
+                                            : 'Using the default local Ollama installation. Enable remote mode to connect to Ollama running on another device.'}
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </section>
                 </div>

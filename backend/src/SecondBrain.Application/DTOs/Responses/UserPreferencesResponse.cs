@@ -9,5 +9,7 @@ public class UserPreferencesResponse
     public int ItemsPerPage { get; set; } = 20;
     public string FontSize { get; set; } = "medium";
     public bool EnableNotifications { get; set; } = true;
+    public string? OllamaRemoteUrl { get; set; }
+    public bool UseRemoteOllama { get; set; } = false;
 }
 

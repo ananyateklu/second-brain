@@ -25,9 +25,14 @@ public class AIController : ControllerBase
     /// <summary>
     /// Get health status for all AI providers
     /// </summary>
+    /// <param name="ollamaBaseUrl">Optional remote Ollama URL (e.g., http://192.168.1.100:11434)</param>
+    /// <param name="useRemoteOllama">Whether to use the remote Ollama URL</param>
+    /// <param name="cancellationToken">Cancellation token</param>
     [HttpGet("health")]
     [ProducesResponseType(typeof(AIHealthResponse), StatusCodes.Status200OK)]
     public async Task<ActionResult<AIHealthResponse>> GetAllProvidersHealth(
+        [FromQuery] string? ollamaBaseUrl = null,
+        [FromQuery] bool useRemoteOllama = false,
         CancellationToken cancellationToken = default)
     {
         try
@@ -35,11 +40,32 @@ public class AIController : ControllerBase
             var providers = _providerFactory.GetAllProviders();
             var healthChecks = new List<AIProviderHealth>();
 
+            // Build config overrides for Ollama if remote URL is provided
+            Dictionary<string, string>? ollamaConfigOverrides = null;
+            if (useRemoteOllama && !string.IsNullOrWhiteSpace(ollamaBaseUrl))
+            {
+                ollamaConfigOverrides = new Dictionary<string, string>
+                {
+                    { "ollamaBaseUrl", ollamaBaseUrl }
+                };
+            }
+
             foreach (var provider in providers)
             {
                 try
                 {
-                    var health = await provider.GetHealthStatusAsync(cancellationToken);
+                    AIProviderHealth health;
+                    
+                    // For Ollama, use the overload that accepts config overrides
+                    if (provider.ProviderName == "Ollama" && ollamaConfigOverrides != null)
+                    {
+                        health = await provider.GetHealthStatusAsync(ollamaConfigOverrides, cancellationToken);
+                    }
+                    else
+                    {
+                        health = await provider.GetHealthStatusAsync(cancellationToken);
+                    }
+                    
                     healthChecks.Add(health);
                 }
                 catch (HttpRequestException ex) when (ex.InnerException is SocketException)
@@ -87,17 +113,39 @@ public class AIController : ControllerBase
     /// <summary>
     /// Get health status for a specific AI provider
     /// </summary>
+    /// <param name="provider">Provider name</param>
+    /// <param name="ollamaBaseUrl">Optional remote Ollama URL (e.g., http://192.168.1.100:11434)</param>
+    /// <param name="useRemoteOllama">Whether to use the remote Ollama URL</param>
+    /// <param name="cancellationToken">Cancellation token</param>
     [HttpGet("health/{provider}")]
     [ProducesResponseType(typeof(AIProviderHealth), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<AIProviderHealth>> GetProviderHealth(
         string provider,
+        [FromQuery] string? ollamaBaseUrl = null,
+        [FromQuery] bool useRemoteOllama = false,
         CancellationToken cancellationToken = default)
     {
         try
         {
             var aiProvider = _providerFactory.GetProvider(provider);
-            var health = await aiProvider.GetHealthStatusAsync(cancellationToken);
+            
+            AIProviderHealth health;
+            
+            // For Ollama, use the overload that accepts config overrides
+            if (aiProvider.ProviderName == "Ollama" && useRemoteOllama && !string.IsNullOrWhiteSpace(ollamaBaseUrl))
+            {
+                var configOverrides = new Dictionary<string, string>
+                {
+                    { "ollamaBaseUrl", ollamaBaseUrl }
+                };
+                health = await aiProvider.GetHealthStatusAsync(configOverrides, cancellationToken);
+            }
+            else
+            {
+                health = await aiProvider.GetHealthStatusAsync(cancellationToken);
+            }
+            
             return Ok(health);
         }
         catch (ArgumentException)

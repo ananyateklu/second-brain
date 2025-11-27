@@ -6,6 +6,7 @@ using OllamaSharp.Models.Chat;
 using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.AI.Interfaces;
 using SecondBrain.Application.Services.AI.Models;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
@@ -16,7 +17,8 @@ public class OllamaProvider : IAIProvider
 {
     private readonly OllamaSettings _settings;
     private readonly ILogger<OllamaProvider> _logger;
-    private readonly OllamaApiClient? _client;
+    private readonly OllamaApiClient? _defaultClient;
+    private readonly ConcurrentDictionary<string, OllamaApiClient> _clientCache = new();
 
     public string ProviderName => "Ollama";
     public bool IsEnabled => _settings.Enabled;
@@ -32,10 +34,12 @@ public class OllamaProvider : IAIProvider
         {
             try
             {
-                _client = new OllamaApiClient(new Uri(_settings.BaseUrl))
+                _defaultClient = new OllamaApiClient(new Uri(_settings.BaseUrl))
                 {
                     SelectedModel = _settings.DefaultModel
                 };
+                // Cache the default client
+                _clientCache[_settings.BaseUrl] = _defaultClient;
             }
             catch (Exception ex)
             {
@@ -44,11 +48,48 @@ public class OllamaProvider : IAIProvider
         }
     }
 
+    /// <summary>
+    /// Gets or creates an Ollama client for the specified base URL.
+    /// Returns the default client if no override URL is specified.
+    /// </summary>
+    private OllamaApiClient? GetClientForUrl(string? overrideUrl)
+    {
+        // If no override, use default client
+        if (string.IsNullOrWhiteSpace(overrideUrl))
+        {
+            return _defaultClient;
+        }
+
+        // Normalize URL
+        var normalizedUrl = overrideUrl.TrimEnd('/');
+
+        // Try to get from cache, or create new client
+        return _clientCache.GetOrAdd(normalizedUrl, url =>
+        {
+            _logger.LogInformation("Creating new Ollama client for remote URL: {Url}", url);
+            return new OllamaApiClient(new Uri(url))
+            {
+                SelectedModel = _settings.DefaultModel
+            };
+        });
+    }
+
+    /// <summary>
+    /// Gets the effective base URL for error messages
+    /// </summary>
+    private string GetEffectiveBaseUrl(string? overrideUrl)
+    {
+        return string.IsNullOrWhiteSpace(overrideUrl) ? _settings.BaseUrl : overrideUrl.TrimEnd('/');
+    }
+
     public async Task<AIResponse> GenerateCompletionAsync(
         AIRequest request,
         CancellationToken cancellationToken = default)
     {
-        if (!IsEnabled || _client == null)
+        var client = GetClientForUrl(request.OllamaBaseUrl);
+        var effectiveUrl = GetEffectiveBaseUrl(request.OllamaBaseUrl);
+
+        if (!IsEnabled || client == null)
         {
             return new AIResponse
             {
@@ -74,7 +115,7 @@ public class OllamaProvider : IAIProvider
 
             // Consume the async enumerable to get the final response
             GenerateResponseStream? response = null;
-            await foreach (var stream in _client.Generate(generateRequest))
+            await foreach (var stream in client.Generate(generateRequest))
             {
                 response = stream;
             }
@@ -99,7 +140,7 @@ public class OllamaProvider : IAIProvider
             return new AIResponse
             {
                 Success = false,
-                Error = $"Cannot connect to Ollama at {_settings.BaseUrl}. Ensure Ollama is running.",
+                Error = $"Cannot connect to Ollama at {effectiveUrl}. Ensure Ollama is running.",
                 Provider = ProviderName
             };
         }
@@ -109,7 +150,7 @@ public class OllamaProvider : IAIProvider
             return new AIResponse
             {
                 Success = false,
-                Error = $"Cannot connect to Ollama at {_settings.BaseUrl}. Ensure Ollama is running.",
+                Error = $"Cannot connect to Ollama at {effectiveUrl}. Ensure Ollama is running.",
                 Provider = ProviderName
             };
         }
@@ -119,7 +160,7 @@ public class OllamaProvider : IAIProvider
             return new AIResponse
             {
                 Success = false,
-                Error = $"Cannot connect to Ollama at {_settings.BaseUrl}. Ensure Ollama is running.",
+                Error = $"Cannot connect to Ollama at {effectiveUrl}. Ensure Ollama is running.",
                 Provider = ProviderName
             };
         }
@@ -140,7 +181,10 @@ public class OllamaProvider : IAIProvider
         AIRequest? settings = null,
         CancellationToken cancellationToken = default)
     {
-        if (!IsEnabled || _client == null)
+        var client = GetClientForUrl(settings?.OllamaBaseUrl);
+        var effectiveUrl = GetEffectiveBaseUrl(settings?.OllamaBaseUrl);
+
+        if (!IsEnabled || client == null)
         {
             return new AIResponse
             {
@@ -168,7 +212,7 @@ public class OllamaProvider : IAIProvider
 
             // Consume the async enumerable to get the final response
             ChatResponseStream? response = null;
-            await foreach (var stream in _client.Chat(chatRequest))
+            await foreach (var stream in client.Chat(chatRequest))
             {
                 response = stream;
             }
@@ -193,7 +237,7 @@ public class OllamaProvider : IAIProvider
             return new AIResponse
             {
                 Success = false,
-                Error = $"Cannot connect to Ollama at {_settings.BaseUrl}. Ensure Ollama is running.",
+                Error = $"Cannot connect to Ollama at {effectiveUrl}. Ensure Ollama is running.",
                 Provider = ProviderName
             };
         }
@@ -203,7 +247,7 @@ public class OllamaProvider : IAIProvider
             return new AIResponse
             {
                 Success = false,
-                Error = $"Cannot connect to Ollama at {_settings.BaseUrl}. Ensure Ollama is running.",
+                Error = $"Cannot connect to Ollama at {effectiveUrl}. Ensure Ollama is running.",
                 Provider = ProviderName
             };
         }
@@ -213,7 +257,7 @@ public class OllamaProvider : IAIProvider
             return new AIResponse
             {
                 Success = false,
-                Error = $"Cannot connect to Ollama at {_settings.BaseUrl}. Ensure Ollama is running.",
+                Error = $"Cannot connect to Ollama at {effectiveUrl}. Ensure Ollama is running.",
                 Provider = ProviderName
             };
         }
@@ -233,23 +277,23 @@ public class OllamaProvider : IAIProvider
         AIRequest request,
         CancellationToken cancellationToken = default)
     {
-        if (!IsEnabled || _client == null || !_settings.StreamingEnabled)
+        var client = GetClientForUrl(request.OllamaBaseUrl);
+
+        if (!IsEnabled || client == null || !_settings.StreamingEnabled)
         {
             return Task.FromResult(EmptyAsyncEnumerable());
         }
 
         return Task.FromResult(WrapStreamWithErrorHandling(
-            StreamCompletionInternalAsync(request, cancellationToken),
+            StreamCompletionInternalAsync(request, client, cancellationToken),
             "Ollama streaming"));
     }
 
     private async IAsyncEnumerable<string> StreamCompletionInternalAsync(
         AIRequest request,
+        OllamaApiClient client,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        if (_client == null)
-            yield break;
-
         var generateRequest = new GenerateRequest
         {
             Model = request.Model ?? _settings.DefaultModel,
@@ -265,7 +309,7 @@ public class OllamaProvider : IAIProvider
         IAsyncEnumerable<GenerateResponseStream?>? stream = null;
         try
         {
-            stream = _client.Generate(generateRequest);
+            stream = client.Generate(generateRequest);
         }
         catch (HttpRequestException ex) when (ex.InnerException is SocketException)
         {
@@ -305,24 +349,24 @@ public class OllamaProvider : IAIProvider
         AIRequest? settings = null,
         CancellationToken cancellationToken = default)
     {
-        if (!IsEnabled || _client == null || !_settings.StreamingEnabled)
+        var client = GetClientForUrl(settings?.OllamaBaseUrl);
+
+        if (!IsEnabled || client == null || !_settings.StreamingEnabled)
         {
             return Task.FromResult(EmptyAsyncEnumerable());
         }
 
         return Task.FromResult(WrapStreamWithErrorHandling(
-            StreamChatCompletionInternalAsync(messages, settings, cancellationToken),
+            StreamChatCompletionInternalAsync(messages, settings, client, cancellationToken),
             "Ollama chat streaming"));
     }
 
     private async IAsyncEnumerable<string> StreamChatCompletionInternalAsync(
         IEnumerable<Models.ChatMessage> messages,
         AIRequest? settings,
+        OllamaApiClient client,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        if (_client == null)
-            yield break;
-
         var chatMessages = messages.Select(m => ConvertToOllamaMessage(m)).ToList();
 
         var chatRequest = new ChatRequest
@@ -340,7 +384,7 @@ public class OllamaProvider : IAIProvider
         IAsyncEnumerable<ChatResponseStream?>? stream = null;
         try
         {
-            stream = _client.Chat(chatRequest);
+            stream = client.Chat(chatRequest);
         }
         catch (HttpRequestException ex) when (ex.InnerException is SocketException)
         {
@@ -399,12 +443,12 @@ public class OllamaProvider : IAIProvider
 
     public async Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
     {
-        if (!IsEnabled || _client == null)
+        if (!IsEnabled || _defaultClient == null)
             return false;
 
         try
         {
-            var models = await _client.ListLocalModels(cancellationToken);
+            var models = await _defaultClient.ListLocalModels(cancellationToken);
             return models != null && models.Any();
         }
         catch (HttpRequestException ex) when (ex.InnerException is SocketException)
@@ -429,9 +473,26 @@ public class OllamaProvider : IAIProvider
         }
     }
 
-    public async Task<AIProviderHealth> GetHealthStatusAsync(
+    public Task<AIProviderHealth> GetHealthStatusAsync(
         CancellationToken cancellationToken = default)
     {
+        return GetHealthStatusAsync(null, cancellationToken);
+    }
+
+    public async Task<AIProviderHealth> GetHealthStatusAsync(
+        Dictionary<string, string>? configOverrides,
+        CancellationToken cancellationToken = default)
+    {
+        // Check for remote URL override
+        string? remoteUrl = null;
+        if (configOverrides != null)
+        {
+            configOverrides.TryGetValue("ollamaBaseUrl", out remoteUrl);
+        }
+
+        var client = GetClientForUrl(remoteUrl);
+        var effectiveUrl = GetEffectiveBaseUrl(remoteUrl);
+
         var stopwatch = Stopwatch.StartNew();
         var health = new AIProviderHealth
         {
@@ -447,7 +508,7 @@ public class OllamaProvider : IAIProvider
             return health;
         }
 
-        if (_client == null)
+        if (client == null)
         {
             health.IsHealthy = false;
             health.Status = "Not Configured";
@@ -462,7 +523,7 @@ public class OllamaProvider : IAIProvider
 
         try
         {
-            var models = await _client.ListLocalModels(linkedCts.Token);
+            var models = await client.ListLocalModels(linkedCts.Token);
             stopwatch.Stop();
 
             var isHealthy = models != null && models.Any();
@@ -484,8 +545,8 @@ public class OllamaProvider : IAIProvider
             health.IsHealthy = false;
             health.Status = "Unreachable";
             health.ResponseTimeMs = (int)stopwatch.ElapsedMilliseconds;
-            health.ErrorMessage = $"Connection to Ollama at {_settings.BaseUrl} timed out. Ensure Ollama is running and accessible.";
-            _logger.LogDebug("Ollama health check timed out at {BaseUrl} - service may be unreachable", _settings.BaseUrl);
+            health.ErrorMessage = $"Connection to Ollama at {effectiveUrl} timed out. Ensure Ollama is running and accessible.";
+            _logger.LogDebug("Ollama health check timed out at {BaseUrl} - service may be unreachable", effectiveUrl);
         }
         catch (HttpRequestException ex) when (ex.InnerException is SocketException)
         {
@@ -493,8 +554,8 @@ public class OllamaProvider : IAIProvider
             health.IsHealthy = false;
             health.Status = "Unreachable";
             health.ResponseTimeMs = (int)stopwatch.ElapsedMilliseconds;
-            health.ErrorMessage = $"Cannot connect to Ollama at {_settings.BaseUrl}. Ensure Ollama is running.";
-            _logger.LogDebug("Ollama health check failed - service unreachable at {BaseUrl} (connection refused)", _settings.BaseUrl);
+            health.ErrorMessage = $"Cannot connect to Ollama at {effectiveUrl}. Ensure Ollama is running.";
+            _logger.LogDebug("Ollama health check failed - service unreachable at {BaseUrl} (connection refused)", effectiveUrl);
         }
         catch (HttpRequestException)
         {
@@ -502,8 +563,8 @@ public class OllamaProvider : IAIProvider
             health.IsHealthy = false;
             health.Status = "Unreachable";
             health.ResponseTimeMs = (int)stopwatch.ElapsedMilliseconds;
-            health.ErrorMessage = $"Cannot connect to Ollama at {_settings.BaseUrl}. Ensure Ollama is running.";
-            _logger.LogDebug("Ollama health check failed - service unreachable at {BaseUrl}", _settings.BaseUrl);
+            health.ErrorMessage = $"Cannot connect to Ollama at {effectiveUrl}. Ensure Ollama is running.";
+            _logger.LogDebug("Ollama health check failed - service unreachable at {BaseUrl}", effectiveUrl);
         }
         catch (SocketException)
         {
@@ -511,8 +572,8 @@ public class OllamaProvider : IAIProvider
             health.IsHealthy = false;
             health.Status = "Unreachable";
             health.ResponseTimeMs = (int)stopwatch.ElapsedMilliseconds;
-            health.ErrorMessage = $"Cannot connect to Ollama at {_settings.BaseUrl}. Ensure Ollama is running.";
-            _logger.LogDebug("Ollama health check failed - socket connection refused at {BaseUrl}", _settings.BaseUrl);
+            health.ErrorMessage = $"Cannot connect to Ollama at {effectiveUrl}. Ensure Ollama is running.";
+            _logger.LogDebug("Ollama health check failed - socket connection refused at {BaseUrl}", effectiveUrl);
         }
         catch (Exception ex)
         {

@@ -111,7 +111,7 @@ public class AgentService : IAgentService
 
         try
         {
-            kernel = BuildKernel(request.Provider, request.Model, request.UserId, request.Capabilities);
+            kernel = BuildKernel(request.Provider, request.Model, request.UserId, request.Capabilities, request.OllamaBaseUrl);
         }
         catch (Exception ex)
         {
@@ -702,7 +702,7 @@ public class AgentService : IAgentService
         }
     }
 
-    private Kernel BuildKernel(string provider, string model, string userId, List<string>? capabilities)
+    private Kernel BuildKernel(string provider, string model, string userId, List<string>? capabilities, string? ollamaBaseUrl = null)
     {
         var builder = Kernel.CreateBuilder();
 
@@ -750,11 +750,16 @@ public class AgentService : IAgentService
                 if (!_settings.Ollama.Enabled)
                     throw new InvalidOperationException("Ollama provider is not enabled");
 
+                // Use override URL if provided, otherwise use default from settings
+                var effectiveOllamaUrl = !string.IsNullOrWhiteSpace(ollamaBaseUrl) 
+                    ? ollamaBaseUrl.TrimEnd('/') 
+                    : _settings.Ollama.BaseUrl;
+
                 // Ollama can use OpenAI-compatible endpoint
                 builder.AddOpenAIChatCompletion(
                     modelId: model,
                     apiKey: "ollama", // Ollama doesn't need a real key
-                    endpoint: new Uri($"{_settings.Ollama.BaseUrl}/v1"));
+                    endpoint: new Uri($"{effectiveOllamaUrl}/v1"));
                 break;
 
             default:

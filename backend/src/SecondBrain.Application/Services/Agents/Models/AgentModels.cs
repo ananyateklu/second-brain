@@ -14,6 +14,11 @@ public class AgentRequest
     /// If empty or null, the agent runs as a general assistant without tools.
     /// </summary>
     public List<string>? Capabilities { get; set; }
+
+    /// <summary>
+    /// Optional override for Ollama base URL (for remote Ollama support)
+    /// </summary>
+    public string? OllamaBaseUrl { get; set; }
 }
 
 /// <summary>

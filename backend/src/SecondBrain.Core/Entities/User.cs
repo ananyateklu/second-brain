@@ -76,6 +76,13 @@ public class UserPreferences
     [Column("enable_notifications")]
     public bool EnableNotifications { get; set; } = true;
 
+    [Column("ollama_remote_url")]
+    [MaxLength(256)]
+    public string? OllamaRemoteUrl { get; set; }
+
+    [Column("use_remote_ollama")]
+    public bool UseRemoteOllama { get; set; } = false;
+
     // Navigation property back to User
     [ForeignKey("UserId")]
     public User? User { get; set; }

@@ -28,4 +28,15 @@ public interface IAIProvider
     Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default);
 
     Task<AIProviderHealth> GetHealthStatusAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets health status with optional configuration overrides (e.g., remote URL for Ollama)
+    /// </summary>
+    Task<AIProviderHealth> GetHealthStatusAsync(
+        Dictionary<string, string>? configOverrides,
+        CancellationToken cancellationToken = default)
+    {
+        // Default implementation ignores config overrides
+        return GetHealthStatusAsync(cancellationToken);
+    }
 }

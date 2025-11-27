@@ -17,6 +17,9 @@ interface SettingsState {
   // Chat Preferences
   chatProvider: string | null;
   chatModel: string | null;
+  // Ollama Settings
+  ollamaRemoteUrl: string | null;
+  useRemoteOllama: boolean;
 }
 
 interface SettingsActions {
@@ -28,6 +31,8 @@ interface SettingsActions {
   setVectorStoreProvider: (provider: VectorStoreProvider, syncToBackend?: boolean) => Promise<void>;
   setChatProvider: (provider: string | null) => void;
   setChatModel: (model: string | null) => void;
+  setOllamaRemoteUrl: (url: string | null) => void;
+  setUseRemoteOllama: (enabled: boolean) => void;
   loadPreferencesFromBackend: (userId: string) => Promise<void>;
   syncPreferencesToBackend: (userId: string) => Promise<void>;
   resetSettings: () => void;
@@ -46,12 +51,14 @@ const DEFAULT_SETTINGS: SettingsState = {
   vectorStoreProvider: 'PostgreSQL',
   chatProvider: null,
   chatModel: null,
+  ollamaRemoteUrl: null,
+  useRemoteOllama: false,
 };
 
 // Helper function to get userId from auth store
 const getUserId = (): string | null => {
   try {
-    const authState = localStorage.getItem('auth-store');
+    const authState = localStorage.getItem('auth-storage');
     if (!authState) return null;
     const parsed = JSON.parse(authState);
     return parsed?.state?.user?.userId || null;
@@ -119,6 +126,22 @@ export const useSettingsStore = create<SettingsStore>()(
       setChatProvider: (provider) => set({ chatProvider: provider }),
       setChatModel: (model) => set({ chatModel: model }),
 
+      setOllamaRemoteUrl: (url) => {
+        set({ ollamaRemoteUrl: url });
+        const userId = getUserId();
+        if (userId) {
+          get().syncPreferencesToBackend(userId).catch(console.error);
+        }
+      },
+
+      setUseRemoteOllama: (enabled) => {
+        set({ useRemoteOllama: enabled });
+        const userId = getUserId();
+        if (userId) {
+          get().syncPreferencesToBackend(userId).catch(console.error);
+        }
+      },
+
       loadPreferencesFromBackend: async (userId: string) => {
         try {
           console.log('Loading preferences from backend for user:', userId);
@@ -130,6 +153,8 @@ export const useSettingsStore = create<SettingsStore>()(
             itemsPerPage: number;
             fontSize: string;
             enableNotifications: boolean;
+            ollamaRemoteUrl: string | null;
+            useRemoteOllama: boolean;
           }>(`/userpreferences/${userId}`);
 
           console.log('Loaded preferences from backend:', preferences);
@@ -172,6 +197,10 @@ export const useSettingsStore = create<SettingsStore>()(
             enableNotifications: typeof preferences.enableNotifications === 'boolean' 
               ? preferences.enableNotifications 
               : currentState.enableNotifications,
+            ollamaRemoteUrl: preferences.ollamaRemoteUrl ?? null,
+            useRemoteOllama: typeof preferences.useRemoteOllama === 'boolean'
+              ? preferences.useRemoteOllama
+              : currentState.useRemoteOllama,
           });
         } catch (error) {
           console.error('Failed to load preferences from backend:', { error });
@@ -189,6 +218,8 @@ export const useSettingsStore = create<SettingsStore>()(
             itemsPerPage: state.itemsPerPage,
             fontSize: state.fontSize,
             enableNotifications: state.enableNotifications,
+            ollamaRemoteUrl: state.ollamaRemoteUrl,
+            useRemoteOllama: state.useRemoteOllama,
           };
 
           console.log('Syncing preferences to backend:', payload);
@@ -239,6 +270,11 @@ export const useSettingsStore = create<SettingsStore>()(
               : currentState.vectorStoreProvider,
           chatProvider: parsed.chatProvider ?? null,
           chatModel: parsed.chatModel ?? null,
+          ollamaRemoteUrl: parsed.ollamaRemoteUrl ?? null,
+          useRemoteOllama:
+            typeof parsed.useRemoteOllama === 'boolean'
+              ? parsed.useRemoteOllama
+              : currentState.useRemoteOllama,
         };
       },
     }

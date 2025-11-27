@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using SecondBrain.Application.Services;
 using SecondBrain.Application.Services.Agents;
 using SecondBrain.Application.Services.Agents.Models;
 using SecondBrain.Core.Entities;
@@ -15,15 +16,18 @@ public class AgentController : ControllerBase
 {
     private readonly IAgentService _agentService;
     private readonly IChatRepository _chatRepository;
+    private readonly IUserPreferencesService _userPreferencesService;
     private readonly ILogger<AgentController> _logger;
 
     public AgentController(
         IAgentService agentService,
         IChatRepository chatRepository,
+        IUserPreferencesService userPreferencesService,
         ILogger<AgentController> logger)
     {
         _agentService = agentService;
         _chatRepository = chatRepository;
+        _userPreferencesService = userPreferencesService;
         _logger = logger;
     }
 
@@ -108,6 +112,24 @@ public class AgentController : ControllerBase
                 MaxTokens = request.MaxTokens,
                 Capabilities = request.Capabilities
             };
+
+            // Set Ollama remote URL if configured for this user
+            if (conversation.Provider.Equals("Ollama", StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    var userPrefs = await _userPreferencesService.GetPreferencesAsync(userId);
+                    if (userPrefs.UseRemoteOllama && !string.IsNullOrWhiteSpace(userPrefs.OllamaRemoteUrl))
+                    {
+                        agentRequest.OllamaBaseUrl = userPrefs.OllamaRemoteUrl;
+                        _logger.LogInformation("Using remote Ollama URL for agent. UserId: {UserId}, Url: {Url}", userId, userPrefs.OllamaRemoteUrl);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to fetch user preferences for Ollama URL override");
+                }
+            }
 
             // Add the new user message
             agentRequest.Messages.Add(new Application.Services.Agents.Models.AgentMessage
