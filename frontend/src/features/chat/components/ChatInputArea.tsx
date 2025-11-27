@@ -3,11 +3,17 @@ import { estimateTokenCount } from '../../../utils/token-utils';
 import {
   isMultimodalModel,
   validateImageForProvider,
-  createImageAttachment,
   getMultimodalConfig,
-  type ImageAttachment,
+  type FileAttachment,
+  createFileAttachment,
+  validateFileForAttachment,
+  formatFileSize,
+  isImageFile,
+  getAllSupportedExtensions,
 } from '../../../utils/multimodal-models';
 import { MessageImage } from '../types/chat';
+import { useNotes } from '../../notes/hooks/use-notes-query';
+import { Note } from '../../notes/types/note';
 
 export interface ChatInputAreaProps {
   value: string;
@@ -21,10 +27,80 @@ export interface ChatInputAreaProps {
   provider?: string;
   /** Current model for multimodal detection */
   model?: string;
+  /** Whether agent mode is enabled */
+  agentModeEnabled?: boolean;
+  /** Whether notes capability is enabled in agent mode */
+  notesCapabilityEnabled?: boolean;
 }
 
+// Suggested prompts configuration
+const SUGGESTED_PROMPTS = [
+  {
+    id: 'summarize',
+    label: 'Summarize my notes',
+    icon: (
+      <svg className="w-3.5 h-3.5" style={{ color: 'var(--color-brand-400)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+    )
+  },
+  {
+    id: 'connections',
+    label: 'Find connections',
+    icon: (
+      <svg className="w-3.5 h-3.5" style={{ color: 'var(--color-brand-400)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+      </svg>
+    )
+  },
+  {
+    id: 'ideas',
+    label: 'Generate ideas',
+    icon: (
+      <svg className="w-3.5 h-3.5" style={{ color: 'var(--color-brand-400)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+      </svg>
+    )
+  },
+  {
+    id: 'questions',
+    label: 'Ask questions',
+    icon: (
+      <svg className="w-3.5 h-3.5" style={{ color: 'var(--color-brand-400)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    )
+  },
+];
+
+// File type icons
+const FILE_ICONS: Record<string, JSX.Element> = {
+  pdf: (
+    <svg className="w-6 h-6 file-icon-pdf" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 13h6M9 17h4" />
+    </svg>
+  ),
+  document: (
+    <svg className="w-6 h-6 file-icon-doc" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+  ),
+  text: (
+    <svg className="w-6 h-6 file-icon-txt" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+  ),
+  other: (
+    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+    </svg>
+  ),
+};
+
 /**
- * Chat input area with textarea, image upload, token count, and send/cancel button.
+ * Chat input area with glassmorphism styling, enhanced animations,
+ * file attachments, @mentions, and suggested prompts.
  */
 export function ChatInputArea({
   value,
@@ -36,12 +112,35 @@ export function ChatInputArea({
   disabled,
   provider,
   model,
+  agentModeEnabled = false,
+  notesCapabilityEnabled = false,
 }: ChatInputAreaProps) {
   const inputTokenCount = useMemo(() => estimateTokenCount(value), [value]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [attachedImages, setAttachedImages] = useState<ImageAttachment[]>([]);
-  const [imageError, setImageError] = useState<string | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [attachedFiles, setAttachedFiles] = useState<FileAttachment[]>([]);
+  const [fileError, setFileError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [showToolbar, setShowToolbar] = useState(false);
+  const [lightboxImage, setLightboxImage] = useState<FileAttachment | null>(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Mentions state
+  const [showMentions, setShowMentions] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState('');
+  const [mentionIndex, setMentionIndex] = useState(0);
+  const [mentionStartPos, setMentionStartPos] = useState<number | null>(null);
+  const { data: notes = [] } = useNotes();
+
+  // Filter notes for mentions
+  const filteredNotes = useMemo(() => {
+    if (!mentionQuery) return notes.slice(0, 5);
+    const query = mentionQuery.toLowerCase();
+    return notes
+      .filter((note: Note) => note.title.toLowerCase().includes(query))
+      .slice(0, 5);
+  }, [notes, mentionQuery]);
 
   // Check if current model supports vision
   const supportsVision = useMemo(() => {
@@ -56,16 +155,115 @@ export function ChatInputArea({
     return config?.maxImages || 4;
   }, [provider]);
 
+  // Count attached images
+  const imageCount = useMemo(() =>
+    attachedFiles.filter(f => f.isImage).length,
+    [attachedFiles]
+  );
+
   // Clear images when model changes to non-multimodal
   useEffect(() => {
-    if (!supportsVision && attachedImages.length > 0) {
-      setAttachedImages([]);
-      setImageError('Images cleared: current model does not support vision');
-      setTimeout(() => setImageError(null), 3000);
+    if (!supportsVision && attachedFiles.some(f => f.isImage)) {
+      setAttachedFiles(prev => prev.filter(f => !f.isImage));
+      setFileError('Images cleared: current model does not support vision');
+      setTimeout(() => setFileError(null), 3000);
     }
-  }, [supportsVision, attachedImages.length]);
+  }, [supportsVision, attachedFiles]);
+
+  // Handle typing indicator
+  useEffect(() => {
+    if (value.trim()) {
+      setIsTyping(true);
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      typingTimeoutRef.current = setTimeout(() => {
+        setIsTyping(false);
+      }, 1000);
+    } else {
+      setIsTyping(false);
+    }
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, [value]);
+
+  // Handle mention detection
+  const handleInputChange = useCallback((newValue: string) => {
+    onChange(newValue);
+
+    // Check for @ mentions
+    const cursorPos = textareaRef.current?.selectionStart ?? newValue.length;
+    const textBeforeCursor = newValue.slice(0, cursorPos);
+    const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+
+    if (lastAtIndex !== -1) {
+      const textAfterAt = textBeforeCursor.slice(lastAtIndex + 1);
+      // Check if there's a space before @ or it's at the start
+      const charBeforeAt = lastAtIndex > 0 ? textBeforeCursor[lastAtIndex - 1] : ' ';
+
+      if ((charBeforeAt === ' ' || charBeforeAt === '\n' || lastAtIndex === 0) &&
+        !textAfterAt.includes(' ') && !textAfterAt.includes('\n')) {
+        setShowMentions(true);
+        setMentionQuery(textAfterAt);
+        setMentionStartPos(lastAtIndex);
+        setMentionIndex(0);
+        return;
+      }
+    }
+
+    setShowMentions(false);
+    setMentionQuery('');
+    setMentionStartPos(null);
+  }, [onChange]);
+
+  // Insert mention
+  const insertMention = useCallback((note: Note) => {
+    if (mentionStartPos === null) return;
+
+    const beforeMention = value.slice(0, mentionStartPos);
+    const afterMention = value.slice(
+      mentionStartPos + mentionQuery.length + 1
+    );
+    const mentionText = `@[${note.title}](note:${note.id}) `;
+
+    onChange(beforeMention + mentionText + afterMention);
+    setShowMentions(false);
+    setMentionQuery('');
+    setMentionStartPos(null);
+
+    // Focus back on textarea
+    setTimeout(() => textareaRef.current?.focus(), 0);
+  }, [value, mentionStartPos, mentionQuery, onChange]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Handle mentions navigation
+    if (showMentions && filteredNotes.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setMentionIndex(prev => (prev + 1) % filteredNotes.length);
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setMentionIndex(prev => (prev - 1 + filteredNotes.length) % filteredNotes.length);
+        return;
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        insertMention(filteredNotes[mentionIndex]);
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setShowMentions(false);
+        return;
+      }
+    }
+
+    // Normal send behavior
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -73,90 +271,92 @@ export function ChatInputArea({
   };
 
   const handleSend = useCallback(() => {
-    if (!value.trim() && attachedImages.length === 0) return;
+    if (!value.trim() && attachedFiles.length === 0) return;
 
-    // Convert attachments to MessageImage format
+    // Convert image attachments to MessageImage format
     const images: MessageImage[] | undefined =
-      attachedImages.length > 0
-        ? attachedImages.map((img) => {
-            // Extract base64 data from data URL
-            const base64Match = img.dataUrl.match(/^data:([^;]+);base64,(.+)$/);
-            return {
-              base64Data: base64Match ? base64Match[2] : img.dataUrl,
-              mediaType: img.type,
-              fileName: img.name,
-            };
-          })
+      attachedFiles.filter(f => f.isImage).length > 0
+        ? attachedFiles.filter(f => f.isImage).map((img) => {
+          const base64Match = img.dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+          return {
+            base64Data: base64Match ? base64Match[2] : img.dataUrl,
+            mediaType: img.type,
+            fileName: img.name,
+          };
+        })
         : undefined;
 
     onSend(images);
-    setAttachedImages([]);
-    setImageError(null);
-  }, [value, attachedImages, onSend]);
+    setAttachedFiles([]);
+    setFileError(null);
+    setShowToolbar(false);
+  }, [value, attachedFiles, onSend]);
 
   const handleFileSelect = useCallback(
     async (files: FileList | null) => {
       if (!files || files.length === 0) return;
 
-      // Create array copy immediately so we can reset input
       const fileArray = Array.from(files);
 
-      // Reset file input value to allow selecting the same file again
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
 
-      if (!provider) {
-        setImageError('Please select a provider first');
-        return;
-      }
+      setFileError(null);
 
-      if (!supportsVision) {
-        setImageError(`${model} does not support image inputs`);
-        return;
-      }
-
-      const remainingSlots = maxImages - attachedImages.length;
-      if (remainingSlots <= 0) {
-        setImageError(`Maximum ${maxImages} images allowed`);
-        return;
-      }
-
-      setImageError(null);
-      const filesToProcess = fileArray.slice(0, remainingSlots);
-
-      for (const file of filesToProcess) {
-        // Validate file
-        const validation = validateImageForProvider(file, provider);
-        if (!validation.valid) {
-          setImageError(validation.error || 'Invalid image');
-          continue;
+      for (const file of fileArray) {
+        // Check if it's an image and validate for provider
+        if (isImageFile(file.type)) {
+          if (!provider) {
+            setFileError('Please select a provider first');
+            continue;
+          }
+          if (!supportsVision) {
+            setFileError(`${model} does not support image inputs`);
+            continue;
+          }
+          if (imageCount >= maxImages) {
+            setFileError(`Maximum ${maxImages} images allowed`);
+            continue;
+          }
+          const validation = validateImageForProvider(file, provider);
+          if (!validation.valid) {
+            setFileError(validation.error || 'Invalid image');
+            continue;
+          }
+        } else {
+          // Validate non-image files
+          const validation = validateFileForAttachment(file);
+          if (!validation.valid) {
+            setFileError(validation.error || 'Invalid file');
+            continue;
+          }
         }
 
         try {
-          const attachment = await createImageAttachment(file);
-          setAttachedImages((prev) => [...prev, attachment]);
+          const attachment = await createFileAttachment(file);
+          setAttachedFiles((prev) => [...prev, attachment]);
         } catch {
-          setImageError('Failed to process image');
+          setFileError('Failed to process file');
         }
       }
     },
-    [provider, model, supportsVision, maxImages, attachedImages.length]
+    [provider, model, supportsVision, maxImages, imageCount]
   );
 
-  const handleRemoveImage = useCallback((imageId: string) => {
-    setAttachedImages((prev) => prev.filter((img) => img.id !== imageId));
-    setImageError(null);
+  const handleRemoveFile = useCallback((fileId: string) => {
+    setAttachedFiles((prev) => prev.filter((f) => f.id !== fileId));
+    setFileError(null);
   }, []);
 
   const handleDragOver = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
-      if (supportsVision && !disabled) {
+      if (!disabled) {
         setIsDragging(true);
       }
     },
-    [supportsVision, disabled]
+    [disabled]
   );
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
@@ -169,144 +369,230 @@ export function ChatInputArea({
       e.preventDefault();
       setIsDragging(false);
 
-      if (!supportsVision || disabled) return;
+      if (disabled) return;
 
       const files = e.dataTransfer.files;
-      const imageFiles = Array.from(files).filter((f) =>
-        f.type.startsWith('image/')
-      );
-
-      if (imageFiles.length > 0) {
-        const dataTransfer = new DataTransfer();
-        imageFiles.forEach((f) => dataTransfer.items.add(f));
-        handleFileSelect(dataTransfer.files);
-      }
+      handleFileSelect(files);
     },
-    [supportsVision, disabled, handleFileSelect]
+    [disabled, handleFileSelect]
   );
 
   const handlePaste = useCallback(
     (e: React.ClipboardEvent) => {
-      if (!supportsVision || disabled) return;
+      if (disabled) return;
 
       const items = e.clipboardData.items;
-      const imageItems: File[] = [];
+      const files: File[] = [];
 
       for (const item of items) {
-        if (item.type.startsWith('image/')) {
+        if (item.kind === 'file') {
           const file = item.getAsFile();
-          if (file) imageItems.push(file);
+          if (file) files.push(file);
         }
       }
 
-      if (imageItems.length > 0) {
+      if (files.length > 0) {
         e.preventDefault();
         const dataTransfer = new DataTransfer();
-        imageItems.forEach((f) => dataTransfer.items.add(f));
+        files.forEach((f) => dataTransfer.items.add(f));
         handleFileSelect(dataTransfer.files);
       }
     },
-    [supportsVision, disabled, handleFileSelect]
+    [disabled, handleFileSelect]
   );
+
+  // Insert formatting
+  const insertFormatting = useCallback((before: string, after: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = value.slice(start, end);
+    const newValue = value.slice(0, start) + before + selectedText + after + value.slice(end);
+
+    onChange(newValue);
+
+    // Restore cursor position
+    setTimeout(() => {
+      textarea.focus();
+      const newPos = start + before.length + selectedText.length;
+      textarea.setSelectionRange(newPos, newPos);
+    }, 0);
+  }, [value, onChange]);
+
+  // Handle suggested prompt click
+  const handlePromptClick = useCallback((promptId: string) => {
+    const prompts: Record<string, string> = {
+      summarize: 'Please summarize my notes on ',
+      connections: 'What connections can you find between my notes about ',
+      ideas: 'Based on my notes, can you generate some ideas for ',
+      questions: 'What questions should I explore based on my notes about ',
+    };
+    onChange(prompts[promptId] || '');
+    textareaRef.current?.focus();
+  }, [onChange]);
+
+  const hasContent = value.trim() || attachedFiles.length > 0;
+  const wordCount = value.trim() ? value.trim().split(/\s+/).length : 0;
+  const charCount = value.length;
 
   return (
     <div
-      className="absolute bottom-0 left-0 right-0 px-6 py-6 z-20 overflow-hidden [scrollbar-gutter:stable]"
+      className="absolute bottom-0 left-0 right-0 px-6 py-6 z-20"
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
       <div className="max-w-3xl mx-auto">
-        {/* Image Attachments Preview */}
-        {attachedImages.length > 0 && (
+        {/* Suggested Prompts - Only show when input is empty AND agent mode + notes capability are enabled */}
+        {!value.trim() && !attachedFiles.length && !disabled && agentModeEnabled && notesCapabilityEnabled && (
+          <div className="mb-3 flex flex-wrap gap-2 justify-center">
+            {SUGGESTED_PROMPTS.map((prompt, index) => (
+              <button
+                key={prompt.id}
+                onClick={() => handlePromptClick(prompt.id)}
+                className="prompt-chip px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-1.5"
+                style={{
+                  '--chip-index': index,
+                  backgroundColor: 'var(--surface-elevated)',
+                  color: 'var(--text-secondary)',
+                  border: '1px solid var(--border)',
+                } as React.CSSProperties}
+              >
+                {prompt.icon}
+                {prompt.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Attachment Gallery */}
+        {attachedFiles.length > 0 && (
           <div
-            className="mb-3 flex flex-wrap gap-2 p-2 rounded-xl transition-all duration-200"
+            className="mb-3 flex flex-wrap gap-3 p-3 rounded-2xl transition-all duration-200"
             style={{
-              backgroundColor: 'var(--surface-secondary)',
+              backgroundColor: 'var(--surface-elevated)',
               border: '1px solid var(--border)',
             }}
           >
-            {attachedImages.map((img) => (
+            {attachedFiles.map((file, index) => (
               <div
-                key={img.id}
-                className="relative group rounded-lg overflow-hidden"
-                style={{ width: '80px', height: '80px' }}
+                key={file.id}
+                className="attachment-item relative group rounded-xl overflow-hidden cursor-pointer transition-transform duration-200 hover:scale-105"
+                style={{
+                  width: '100px',
+                  height: '100px',
+                  animationDelay: `${index * 0.05}s`,
+                }}
+                onClick={() => file.isImage && setLightboxImage(file)}
               >
-                <img
-                  src={img.dataUrl}
-                  alt={img.name}
-                  className="w-full h-full object-cover"
-                />
+                {file.isImage ? (
+                  <img
+                    src={file.dataUrl}
+                    alt={file.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div
+                    className="w-full h-full flex flex-col items-center justify-center p-2"
+                    style={{ backgroundColor: 'var(--surface-card)' }}
+                  >
+                    {FILE_ICONS[file.fileCategory] || FILE_ICONS.other}
+                    <span
+                      className="mt-1 text-[10px] text-center truncate w-full"
+                      style={{ color: 'var(--text-tertiary)' }}
+                    >
+                      {file.name}
+                    </span>
+                  </div>
+                )}
+
+                {/* Hover overlay */}
+                <div
+                  className="absolute inset-0 flex flex-col justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                  style={{
+                    background: 'linear-gradient(transparent, rgba(0,0,0,0.7))',
+                  }}
+                >
+                  <div className="p-2 text-white text-[10px]">
+                    <div className="truncate font-medium">{file.name}</div>
+                    <div className="opacity-70">{formatFileSize(file.size)}</div>
+                  </div>
+                </div>
+
+                {/* Remove button */}
                 <button
-                  onClick={() => handleRemoveImage(img.id)}
-                  className="absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemoveFile(file.id);
+                  }}
+                  className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-150 hover:scale-110"
                   style={{
                     backgroundColor: 'rgba(0,0,0,0.7)',
                     color: 'white',
                   }}
-                  title="Remove image"
+                  title="Remove file"
                 >
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
-                <div
-                  className="absolute bottom-0 left-0 right-0 px-1 py-0.5 text-[9px] truncate"
-                  style={{
-                    backgroundColor: 'rgba(0,0,0,0.6)',
-                    color: 'white',
-                  }}
-                >
-                  {img.name}
-                </div>
               </div>
             ))}
-            {attachedImages.length < maxImages && (
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center justify-center rounded-lg transition-all duration-150 hover:scale-105"
-                style={{
-                  width: '80px',
-                  height: '80px',
-                  border: '2px dashed var(--border)',
-                  color: 'var(--text-tertiary)',
-                }}
-                title="Add more images"
-              >
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-              </button>
-            )}
+
+            {/* Add more button */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex flex-col items-center justify-center rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
+              style={{
+                width: '100px',
+                height: '100px',
+                border: '2px dashed var(--border)',
+                color: 'var(--text-tertiary)',
+              }}
+              title="Add more files"
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              <span className="text-[10px] mt-1">Add file</span>
+            </button>
           </div>
         )}
 
-        {/* Image Error Message */}
-        {imageError && (
+        {/* Error Message */}
+        {fileError && (
           <div
-            className="mb-2 px-3 py-2 rounded-lg text-sm animate-in fade-in duration-200"
+            className="mb-2 px-4 py-2.5 rounded-xl text-sm animate-in fade-in duration-200"
             style={{
               backgroundColor: 'var(--error-bg)',
               color: 'var(--error-text)',
               border: '1px solid var(--error-border)',
             }}
           >
-            {imageError}
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {fileError}
+            </div>
           </div>
         )}
 
         {/* Drag Overlay */}
-        {isDragging && supportsVision && (
+        {isDragging && (
           <div
             className="absolute inset-0 flex items-center justify-center rounded-3xl z-30 animate-in fade-in duration-150"
             style={{
               backgroundColor: 'rgba(var(--primary-rgb), 0.1)',
               border: '3px dashed var(--primary)',
+              backdropFilter: 'blur(4px)',
             }}
           >
             <div className="text-center">
               <svg
-                className="w-12 h-12 mx-auto mb-2"
+                className="w-14 h-14 mx-auto mb-3"
                 style={{ color: 'var(--primary)' }}
                 fill="none"
                 viewBox="0 0 24 24"
@@ -315,205 +601,277 @@ export function ChatInputArea({
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  strokeWidth={1.5}
+                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                 />
               </svg>
-              <p style={{ color: 'var(--primary)' }} className="font-medium">
-                Drop images here
+              <p style={{ color: 'var(--primary)' }} className="font-medium text-lg">
+                Drop files here
+              </p>
+              <p className="text-sm mt-1" style={{ color: 'var(--text-tertiary)' }}>
+                Images, PDFs, documents supported
               </p>
             </div>
           </div>
         )}
 
-        {/* Unified Input Bar */}
+        {/* Formatting Toolbar */}
+        {showToolbar && (
+          <div
+            className="formatting-toolbar mb-2 flex items-center gap-1 px-3 py-2 rounded-xl"
+            style={{
+              backgroundColor: 'var(--surface-elevated)',
+              border: '1px solid var(--border)',
+            }}
+          >
+            <button
+              onClick={() => insertFormatting('**', '**')}
+              className="p-1.5 rounded-lg transition-colors hover:bg-white/10"
+              title="Bold (Ctrl+B)"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6z" />
+                <path d="M6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z" />
+              </svg>
+            </button>
+            <button
+              onClick={() => insertFormatting('*', '*')}
+              className="p-1.5 rounded-lg transition-colors hover:bg-white/10"
+              title="Italic (Ctrl+I)"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path d="M10 4h4M14 4l-4 16M6 20h4" />
+              </svg>
+            </button>
+            <button
+              onClick={() => insertFormatting('`', '`')}
+              className="p-1.5 rounded-lg transition-colors hover:bg-white/10"
+              title="Code"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+              </svg>
+            </button>
+            <button
+              onClick={() => insertFormatting('[', '](url)')}
+              className="p-1.5 rounded-lg transition-colors hover:bg-white/10"
+              title="Link"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              </svg>
+            </button>
+            <div className="w-px h-4 mx-1" style={{ backgroundColor: 'var(--border)' }} />
+            <button
+              onClick={() => insertFormatting('```\n', '\n```')}
+              className="p-1.5 rounded-lg transition-colors hover:bg-white/10"
+              title="Code block"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+              </svg>
+            </button>
+            <button
+              onClick={() => insertFormatting('- ', '')}
+              className="p-1.5 rounded-lg transition-colors hover:bg-white/10"
+              title="List"
+              style={{ color: 'var(--text-secondary)' }}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+              </svg>
+            </button>
+          </div>
+        )}
+
+        {/* Main Input Container - Glassmorphism */}
         <div
-          className="relative flex items-end gap-3 rounded-3xl px-4 py-3 transition-all duration-200"
-          style={{
-            backgroundColor: 'var(--surface-card-solid)',
-            border: '1px solid var(--border)',
-            boxShadow: 'var(--shadow-md)',
-          }}
-          onFocus={(e) => {
-            if (e.currentTarget === e.target || e.currentTarget.contains(e.target as Node)) {
-              e.currentTarget.style.borderColor = 'var(--input-focus-border)';
-              e.currentTarget.style.boxShadow = `0 0 0 3px var(--input-focus-ring), var(--shadow-lg)`;
-            }
-          }}
-          onBlur={(e) => {
-            if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-              e.currentTarget.style.borderColor = 'var(--border)';
-              e.currentTarget.style.boxShadow = 'var(--shadow-md)';
-            }
-          }}
+          className={`chat-input-glass relative flex flex-col rounded-3xl px-4 py-3 transition-all duration-300 ${isTyping ? 'is-typing' : ''}`}
         >
           {/* Hidden file input */}
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
+            accept={getAllSupportedExtensions().join(',')}
             multiple
             className="hidden"
             onChange={(e) => handleFileSelect(e.target.files)}
           />
 
-          {/* Image Upload Button */}
-          {supportsVision && (
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isLoading || disabled || attachedImages.length >= maxImages}
-              className="flex-shrink-0 p-2 rounded-lg transition-all duration-150 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-              style={{
-                color: attachedImages.length > 0 ? 'var(--primary)' : 'var(--text-tertiary)',
-              }}
-              title={`Attach images (${attachedImages.length}/${maxImages})`}
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-              </svg>
-            </button>
-          )}
-
-          {/* Textarea */}
-          <textarea
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onPaste={handlePaste}
-            placeholder={
-              supportsVision
-                ? 'Type your message... (Paste or drop images)'
-                : 'Type your message... (Shift+Enter for new line)'
-            }
-            disabled={isLoading || disabled}
-            rows={1}
-            className="flex-1 resize-none outline-none text-sm leading-relaxed placeholder:opacity-50"
-            style={{
-              backgroundColor: 'transparent',
-              color: 'var(--text-primary)',
-              minHeight: '24px',
-              maxHeight: '200px',
-              paddingRight: value.trim() || attachedImages.length > 0 ? '72px' : '0',
-              transition: 'padding-right 0.2s ease',
-            }}
-            onInput={(e) => {
-              const target = e.target as HTMLTextAreaElement;
-              target.style.height = 'auto';
-              target.style.height = `${target.scrollHeight}px`;
-            }}
-          />
-
-          {/* Token Count - Bottom Right */}
-          {(value.trim() || attachedImages.length > 0) && (
+          {/* Mentions Dropdown */}
+          {showMentions && filteredNotes.length > 0 && (
             <div
-              className="absolute bottom-2.5 right-16 pointer-events-none select-none animate-in fade-in duration-200 flex items-center gap-2"
+              className="mentions-dropdown absolute bottom-full left-4 right-4 mb-2 rounded-xl overflow-hidden z-50"
               style={{
-                color: 'var(--text-tertiary)',
-                fontSize: '10.5px',
-                fontFeatureSettings: '"tnum"',
-                letterSpacing: '0.01em',
-                opacity: 0.7,
+                backgroundColor: 'var(--surface-elevated)',
+                border: '1px solid var(--border)',
+                boxShadow: 'var(--shadow-lg)',
               }}
             >
-              {attachedImages.length > 0 && (
-                <span className="flex items-center gap-1">
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    />
+              <div className="px-3 py-2 text-xs font-medium" style={{ color: 'var(--text-tertiary)', borderBottom: '1px solid var(--border)' }}>
+                Notes
+              </div>
+              {filteredNotes.map((note: Note, index: number) => (
+                <button
+                  key={note.id}
+                  onClick={() => insertMention(note)}
+                  className={`w-full px-3 py-2.5 text-left text-sm transition-colors flex items-center gap-2 ${index === mentionIndex ? 'bg-white/10' : ''
+                    }`}
+                  style={{
+                    color: 'var(--text-primary)',
+                    backgroundColor: index === mentionIndex ? 'var(--color-primary-alpha)' : 'transparent',
+                  }}
+                >
+                  <svg className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--color-brand-400)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  {attachedImages.length}
-                </span>
-              )}
-              {value.trim() && (
-                <span>
-                  {inputTokenCount.toLocaleString()} {inputTokenCount === 1 ? 'token' : 'tokens'}
-                </span>
-              )}
+                  <span className="truncate">{note.title}</span>
+                  {note.tags.length > 0 && (
+                    <span className="text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--surface-card)', color: 'var(--text-tertiary)' }}>
+                      {note.tags[0]}
+                    </span>
+                  )}
+                </button>
+              ))}
             </div>
           )}
 
-          {/* Send/Cancel Button */}
-          <button
-            onClick={isStreaming ? onCancel : handleSend}
-            disabled={!isStreaming && (isLoading || (!value.trim() && attachedImages.length === 0) || disabled)}
-            className="flex-shrink-0 p-2.5 rounded-xl transition-all duration-200 hover:scale-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-            style={{
-              backgroundColor: isStreaming ? 'var(--error-bg)' : 'var(--btn-primary-bg)',
-              color: isStreaming ? 'var(--error-text)' : 'var(--btn-primary-text)',
-              border: isStreaming
-                ? '1px solid var(--error-border)'
-                : '1px solid var(--btn-primary-border)',
-              boxShadow: 'var(--btn-primary-shadow)',
-            }}
-            onMouseEnter={(e) => {
-              if (!e.currentTarget.disabled) {
-                if (isStreaming) {
-                  e.currentTarget.style.opacity = '0.9';
-                } else {
-                  e.currentTarget.style.backgroundColor = 'var(--btn-primary-hover-bg)';
-                  e.currentTarget.style.borderColor = 'var(--btn-primary-hover-border)';
-                  e.currentTarget.style.boxShadow = 'var(--btn-primary-hover-shadow)';
-                }
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!e.currentTarget.disabled) {
-                if (isStreaming) {
-                  e.currentTarget.style.opacity = '1';
-                } else {
-                  e.currentTarget.style.backgroundColor = 'var(--btn-primary-bg)';
-                  e.currentTarget.style.borderColor = 'var(--btn-primary-border)';
-                  e.currentTarget.style.boxShadow = 'var(--btn-primary-shadow)';
-                }
-              }
-            }}
-            title={isStreaming ? 'Cancel streaming' : isLoading ? 'Sending...' : 'Send message'}
-          >
-            {isStreaming ? (
+          {/* Input Row */}
+          <div className="flex items-end gap-3">
+            {/* Attachment Button */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isLoading || disabled}
+              className="flex-shrink-0 p-2 rounded-xl transition-all duration-200 hover:scale-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{
+                color: attachedFiles.length > 0 ? 'var(--color-brand-400)' : 'var(--text-tertiary)',
+                backgroundColor: attachedFiles.length > 0 ? 'var(--color-primary-alpha)' : 'transparent',
+              }}
+              title={`Attach files (${attachedFiles.length})`}
+            >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
+                  d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
                 />
               </svg>
-            ) : isLoading ? (
-              <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-            ) : (
+            </button>
+
+            {/* Formatting Toggle */}
+            <button
+              onClick={() => setShowToolbar(!showToolbar)}
+              disabled={isLoading || disabled}
+              className="flex-shrink-0 p-2 rounded-xl transition-all duration-200 hover:scale-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{
+                color: showToolbar ? 'var(--color-brand-400)' : 'var(--text-tertiary)',
+                backgroundColor: showToolbar ? 'var(--color-primary-alpha)' : 'transparent',
+              }}
+              title="Formatting options"
+            >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 7l5 5m0 0l-5 5m5-5H6"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h8m-8 6h16" />
               </svg>
-            )}
-          </button>
+            </button>
+
+            {/* Textarea */}
+            <div className="flex-1 relative">
+              <textarea
+                ref={textareaRef}
+                value={value}
+                onChange={(e) => handleInputChange(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onPaste={handlePaste}
+                placeholder={
+                  supportsVision
+                    ? 'Type a message... (@ to mention notes, paste/drop files)'
+                    : 'Type a message... (@ to mention notes, Shift+Enter for new line)'
+                }
+                disabled={isLoading || disabled}
+                rows={1}
+                className="w-full resize-none outline-none text-sm leading-relaxed placeholder:opacity-50"
+                style={{
+                  backgroundColor: 'transparent',
+                  color: 'var(--text-primary)',
+                  minHeight: '24px',
+                  maxHeight: '200px',
+                }}
+                onInput={(e) => {
+                  const target = e.target as HTMLTextAreaElement;
+                  target.style.height = 'auto';
+                  target.style.height = `${target.scrollHeight}px`;
+                }}
+                onFocus={() => setShowToolbar(false)}
+              />
+            </div>
+
+            {/* Send/Cancel Button */}
+            <button
+              onClick={isStreaming ? onCancel : handleSend}
+              disabled={!isStreaming && (isLoading || !hasContent || disabled)}
+              className={`send-button-animated flex-shrink-0 p-2.5 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${hasContent && !isStreaming ? 'has-content' : ''
+                }`}
+              style={{
+                backgroundColor: isStreaming ? 'var(--error-bg)' : 'var(--btn-primary-bg)',
+                color: isStreaming ? 'var(--error-text)' : 'var(--btn-primary-text)',
+                border: isStreaming
+                  ? '1px solid var(--error-border)'
+                  : '1px solid var(--btn-primary-border)',
+                boxShadow: 'var(--btn-primary-shadow)',
+              }}
+              title={isStreaming ? 'Cancel streaming' : isLoading ? 'Sending...' : 'Send message'}
+            >
+              {isStreaming ? (
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : isLoading ? (
+                <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+              )}
+            </button>
+          </div>
+
+          {/* Input Metrics */}
+          {hasContent && (
+            <div
+              className="flex items-center justify-end gap-3 mt-2 pt-2 animate-in fade-in duration-200"
+              style={{
+                borderTop: '1px solid var(--border)',
+                color: 'var(--text-tertiary)',
+                fontSize: '10.5px',
+                fontFeatureSettings: '"tnum"',
+              }}
+            >
+              {attachedFiles.length > 0 && (
+                <span className="flex items-center gap-1">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                  </svg>
+                  {attachedFiles.length} {attachedFiles.length === 1 ? 'file' : 'files'}
+                </span>
+              )}
+              {value.trim() && (
+                <>
+                  <span>{charCount.toLocaleString()} chars</span>
+                  <span>{wordCount.toLocaleString()} {wordCount === 1 ? 'word' : 'words'}</span>
+                  <span>{inputTokenCount.toLocaleString()} {inputTokenCount === 1 ? 'token' : 'tokens'}</span>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Vision support indicator */}
@@ -524,18 +882,45 @@ export function ChatInputArea({
           >
             <span className="inline-flex items-center gap-1">
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               {model} doesn&apos;t support image inputs
             </span>
           </div>
         )}
       </div>
+
+      {/* Lightbox Modal */}
+      {lightboxImage && (
+        <div
+          className="lightbox-overlay fixed inset-0 z-50 flex items-center justify-center p-8"
+          style={{ backgroundColor: 'rgba(0,0,0,0.9)' }}
+          onClick={() => setLightboxImage(null)}
+        >
+          <button
+            className="absolute top-4 right-4 p-2 rounded-full transition-colors hover:bg-white/10"
+            style={{ color: 'white' }}
+            onClick={() => setLightboxImage(null)}
+          >
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <img
+            src={lightboxImage.dataUrl}
+            alt={lightboxImage.name}
+            className="lightbox-image max-w-full max-h-full object-contain rounded-lg"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <div
+            className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg"
+            style={{ backgroundColor: 'rgba(0,0,0,0.7)', color: 'white' }}
+          >
+            <div className="text-sm font-medium">{lightboxImage.name}</div>
+            <div className="text-xs opacity-70">{formatFileSize(lightboxImage.size)}</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

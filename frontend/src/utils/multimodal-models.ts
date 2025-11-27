@@ -304,6 +304,138 @@ export interface ImageAttachment {
 }
 
 /**
+ * File attachment type for the frontend (extends beyond images)
+ */
+export interface FileAttachment {
+  id: string;
+  file: File;
+  dataUrl: string;
+  name: string;
+  size: number;
+  type: string;
+  isImage: boolean;
+  fileCategory: 'image' | 'pdf' | 'document' | 'text' | 'other';
+}
+
+/**
+ * File type configuration
+ */
+export interface FileTypeConfig {
+  mimeTypes: string[];
+  extensions: string[];
+  maxSizeBytes: number;
+  category: FileAttachment['fileCategory'];
+  icon: string;
+}
+
+/**
+ * Supported file types configuration
+ */
+export const FILE_TYPE_CONFIGS: Record<string, FileTypeConfig> = {
+  image: {
+    mimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif'],
+    extensions: ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.heif'],
+    maxSizeBytes: 20 * 1024 * 1024, // 20MB
+    category: 'image',
+    icon: 'image',
+  },
+  pdf: {
+    mimeTypes: ['application/pdf'],
+    extensions: ['.pdf'],
+    maxSizeBytes: 25 * 1024 * 1024, // 25MB
+    category: 'pdf',
+    icon: 'file-text',
+  },
+  document: {
+    mimeTypes: [
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    ],
+    extensions: ['.doc', '.docx', '.xls', '.xlsx'],
+    maxSizeBytes: 25 * 1024 * 1024, // 25MB
+    category: 'document',
+    icon: 'file',
+  },
+  text: {
+    mimeTypes: ['text/plain', 'text/markdown', 'text/csv', 'application/json'],
+    extensions: ['.txt', '.md', '.csv', '.json'],
+    maxSizeBytes: 5 * 1024 * 1024, // 5MB
+    category: 'text',
+    icon: 'file-text',
+  },
+};
+
+/**
+ * Get file category from MIME type
+ */
+export function getFileCategory(mimeType: string): FileAttachment['fileCategory'] {
+  for (const [, config] of Object.entries(FILE_TYPE_CONFIGS)) {
+    if (config.mimeTypes.includes(mimeType)) {
+      return config.category;
+    }
+  }
+  return 'other';
+}
+
+/**
+ * Check if a file type is an image
+ */
+export function isImageFile(mimeType: string): boolean {
+  return FILE_TYPE_CONFIGS.image.mimeTypes.includes(mimeType);
+}
+
+/**
+ * Get all supported MIME types
+ */
+export function getAllSupportedMimeTypes(): string[] {
+  return Object.values(FILE_TYPE_CONFIGS).flatMap(config => config.mimeTypes);
+}
+
+/**
+ * Get all supported file extensions
+ */
+export function getAllSupportedExtensions(): string[] {
+  return Object.values(FILE_TYPE_CONFIGS).flatMap(config => config.extensions);
+}
+
+/**
+ * Validate a file for attachment
+ */
+export function validateFileForAttachment(file: File): { valid: boolean; error?: string } {
+  const category = getFileCategory(file.type);
+  
+  if (category === 'other') {
+    const supportedTypes = getAllSupportedExtensions().join(', ');
+    return {
+      valid: false,
+      error: `Unsupported file type. Supported: ${supportedTypes}`,
+    };
+  }
+
+  const config = Object.values(FILE_TYPE_CONFIGS).find(c => c.category === category);
+  if (config && file.size > config.maxSizeBytes) {
+    const maxMB = Math.round(config.maxSizeBytes / (1024 * 1024));
+    return {
+      valid: false,
+      error: `File too large. Maximum size for ${category} files: ${maxMB}MB`,
+    };
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Format file size for display
+ */
+export function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/**
  * Create an image attachment from a file
  */
 export async function createImageAttachment(file: File): Promise<ImageAttachment> {
@@ -317,6 +449,26 @@ export async function createImageAttachment(file: File): Promise<ImageAttachment
     name: file.name,
     size: file.size,
     type: file.type,
+  };
+}
+
+/**
+ * Create a file attachment from a file (supports all file types)
+ */
+export async function createFileAttachment(file: File): Promise<FileAttachment> {
+  const isImage = isImageFile(file.type);
+  const dataUrl = await fileToBase64(file);
+  const finalDataUrl = isImage ? await resizeImageIfNeeded(dataUrl) : dataUrl;
+
+  return {
+    id: `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    file,
+    dataUrl: finalDataUrl,
+    name: file.name,
+    size: file.size,
+    type: file.type,
+    isImage,
+    fileCategory: getFileCategory(file.type),
   };
 }
 

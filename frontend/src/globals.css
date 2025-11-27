@@ -1083,3 +1083,269 @@ button {
   user-select: none;
   -webkit-user-select: none;
 }
+
+/* ========================================
+   Chat Input Glassmorphism & Animations
+   ======================================== */
+
+/* Glassmorphism variables */
+:root {
+  --glass-bg: rgba(6, 10, 6, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border-focus: rgba(122, 168, 132, 0.4);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2);
+  --glass-shadow-focus: 0 12px 48px rgba(54, 105, 61, 0.25), 0 4px 16px rgba(0, 0, 0, 0.3);
+  --glass-blur: 16px;
+  --gradient-border-angle: 135deg;
+}
+
+[data-theme="light"] {
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-border-focus: rgba(54, 105, 61, 0.4);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+  --glass-shadow-focus: 0 12px 48px rgba(54, 105, 61, 0.15), 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="blue"] {
+  --glass-bg: rgba(10, 22, 40, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.06);
+  --glass-border-focus: rgba(93, 125, 172, 0.4);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.25);
+  --glass-shadow-focus: 0 12px 48px rgba(74, 109, 153, 0.2), 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* Chat Input Animations */
+@keyframes borderGlow {
+  0%, 100% {
+    border-color: var(--glass-border);
+    box-shadow: var(--glass-shadow);
+  }
+  50% {
+    border-color: var(--glass-border-focus);
+    box-shadow: var(--glass-shadow-focus);
+  }
+}
+
+@keyframes sendPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(54, 105, 61, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 8px rgba(54, 105, 61, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(54, 105, 61, 0);
+  }
+}
+
+@keyframes sendClick {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+  30% {
+    transform: scale(0.9) rotate(-5deg);
+  }
+  60% {
+    transform: scale(1.1) rotate(3deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes attachmentSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes attachmentSlideOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
+
+@keyframes toolbarSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 50px;
+  }
+}
+
+@keyframes promptChipFade {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes mentionDropdownFade {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes typingGlow {
+  0%, 100% {
+    box-shadow: var(--glass-shadow);
+  }
+  50% {
+    box-shadow: var(--glass-shadow-focus), 0 0 20px rgba(54, 105, 61, 0.1);
+  }
+}
+
+@keyframes lightboxFadeIn {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0);
+  }
+  to {
+    opacity: 1;
+    backdrop-filter: blur(8px);
+  }
+}
+
+@keyframes lightboxImageZoom {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Chat Input Glassmorphism Container */
+.chat-input-glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chat-input-glass:focus-within {
+  border-color: var(--glass-border-focus);
+  box-shadow: var(--glass-shadow-focus);
+}
+
+.chat-input-glass.is-typing {
+  animation: typingGlow 2s ease-in-out infinite;
+}
+
+/* Gradient border effect on focus */
+.chat-input-glass::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    var(--gradient-border-angle),
+    transparent,
+    transparent
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.chat-input-glass:focus-within::before {
+  background: linear-gradient(
+    var(--gradient-border-angle),
+    var(--color-brand-400),
+    var(--color-brand-600),
+    var(--color-brand-400)
+  );
+  opacity: 0.5;
+}
+
+/* Send button animations */
+.send-button-animated {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.send-button-animated:not(:disabled).has-content {
+  animation: sendPulse 2s ease-in-out infinite;
+}
+
+.send-button-animated:not(:disabled):active {
+  animation: sendClick 0.3s ease-out;
+}
+
+/* Attachment animations */
+.attachment-item {
+  animation: attachmentSlideIn 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.attachment-item.removing {
+  animation: attachmentSlideOut 0.2s ease-out forwards;
+}
+
+/* Formatting toolbar */
+.formatting-toolbar {
+  animation: toolbarSlideDown 0.2s ease-out forwards;
+  overflow: hidden;
+}
+
+/* Suggested prompt chips */
+.prompt-chip {
+  animation: promptChipFade 0.3s ease-out forwards;
+  animation-delay: calc(var(--chip-index, 0) * 0.05s);
+  opacity: 0;
+}
+
+/* Mentions dropdown */
+.mentions-dropdown {
+  animation: mentionDropdownFade 0.2s ease-out forwards;
+}
+
+/* Lightbox */
+.lightbox-overlay {
+  animation: lightboxFadeIn 0.2s ease-out forwards;
+}
+
+.lightbox-image {
+  animation: lightboxImageZoom 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* File type icon colors */
+.file-icon-pdf { color: #ef4444; }
+.file-icon-doc { color: #3b82f6; }
+.file-icon-txt { color: #6b7280; }
+.file-icon-image { color: #10b981; }

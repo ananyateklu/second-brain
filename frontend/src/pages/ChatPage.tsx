@@ -324,6 +324,8 @@ export function ChatPage() {
           disabled={!selectedProvider || !selectedModel}
           provider={selectedProvider}
           model={selectedModel}
+          agentModeEnabled={agentModeEnabled}
+          notesCapabilityEnabled={notesCapabilityEnabled}
         />
       </div>
 
