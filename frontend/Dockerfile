@@ -15,7 +15,7 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 
 # Accept build arguments for environment variables
-ARG VITE_API_URL=http://10.0.0.35:5001
+ARG VITE_API_URL=http://your-server-ip:5001
 
 
 # Set environment variables for Vite build
