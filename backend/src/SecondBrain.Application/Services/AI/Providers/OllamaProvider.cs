@@ -640,4 +640,202 @@ public class OllamaProvider : IAIProvider
             await enumerator.DisposeAsync();
         }
     }
+
+    /// <summary>
+    /// Pull (download) a model from the Ollama library to the local or remote Ollama instance.
+    /// Returns an async enumerable of progress updates for real-time feedback.
+    /// </summary>
+    /// <param name="modelName">Name of the model to pull (e.g., "llama3:8b")</param>
+    /// <param name="remoteOllamaUrl">Optional remote Ollama server URL</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Async enumerable of pull progress updates</returns>
+    public async IAsyncEnumerable<OllamaPullProgress> PullModelAsync(
+        string modelName,
+        string? remoteOllamaUrl = null,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var client = GetClientForUrl(remoteOllamaUrl);
+        var effectiveUrl = GetEffectiveBaseUrl(remoteOllamaUrl);
+
+        if (!IsEnabled)
+        {
+            yield return new OllamaPullProgress
+            {
+                Status = "Error",
+                IsError = true,
+                ErrorMessage = "Ollama provider is not enabled"
+            };
+            yield break;
+        }
+
+        if (client == null)
+        {
+            yield return new OllamaPullProgress
+            {
+                Status = "Error",
+                IsError = true,
+                ErrorMessage = "Ollama client not initialized"
+            };
+            yield break;
+        }
+
+        _logger.LogInformation("Starting model pull: {ModelName} from {Url}", modelName, effectiveUrl);
+
+        // Track timing for speed calculation
+        long lastCompletedBytes = 0;
+        DateTime lastProgressTime = DateTime.UtcNow;
+
+        // Get the pull stream - note: PullModel doesn't throw on call, it throws on enumeration
+        var pullStream = client.PullModel(modelName, cancellationToken);
+
+        // Use a separate enumerator to handle errors during enumeration
+        var enumerator = pullStream.GetAsyncEnumerator(cancellationToken);
+        OllamaPullProgress? errorProgress = null;
+        
+        try
+        {
+            while (true)
+            {
+                bool hasNext;
+                try
+                {
+                    hasNext = await enumerator.MoveNextAsync();
+                }
+                catch (HttpRequestException ex) when (ex.InnerException is SocketException)
+                {
+                    _logger.LogWarning(ex, "Model pull failed - service unreachable at {Url}", effectiveUrl);
+                    errorProgress = new OllamaPullProgress
+                    {
+                        Status = "Error",
+                        IsError = true,
+                        ErrorMessage = $"Cannot connect to Ollama at {effectiveUrl}. Ensure Ollama is running."
+                    };
+                    break;
+                }
+                catch (HttpRequestException ex)
+                {
+                    _logger.LogWarning(ex, "Model pull failed - HTTP error at {Url}", effectiveUrl);
+                    errorProgress = new OllamaPullProgress
+                    {
+                        Status = "Error",
+                        IsError = true,
+                        ErrorMessage = $"HTTP error connecting to Ollama: {ex.Message}"
+                    };
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Model pull failed for {ModelName}", modelName);
+                    errorProgress = new OllamaPullProgress
+                    {
+                        Status = "Error",
+                        IsError = true,
+                        ErrorMessage = ex.Message
+                    };
+                    break;
+                }
+
+                if (!hasNext)
+                    break;
+
+                var response = enumerator.Current;
+                if (response == null) continue;
+
+                var now = DateTime.UtcNow;
+                var progress = new OllamaPullProgress
+                {
+                    Status = response.Status ?? "Unknown",
+                    Digest = response.Digest,
+                    TotalBytes = response.Total,
+                    CompletedBytes = response.Completed,
+                    Timestamp = now
+                };
+
+                // Calculate percentage
+                if (response.Total > 0 && response.Completed > 0)
+                {
+                    progress.Percentage = (double)response.Completed / response.Total * 100;
+                }
+
+                // Calculate download speed (bytes per second)
+                if (response.Completed > lastCompletedBytes)
+                {
+                    var timeDelta = (now - lastProgressTime).TotalSeconds;
+                    if (timeDelta > 0.1) // Only calculate if enough time has passed
+                    {
+                        var bytesDelta = response.Completed - lastCompletedBytes;
+                        progress.BytesPerSecond = bytesDelta / timeDelta;
+
+                        // Calculate estimated time remaining
+                        if (response.Total > 0 && progress.BytesPerSecond > 0)
+                        {
+                            var remainingBytes = response.Total - response.Completed;
+                            progress.EstimatedSecondsRemaining = remainingBytes / progress.BytesPerSecond;
+                        }
+
+                        lastCompletedBytes = response.Completed;
+                        lastProgressTime = now;
+                    }
+                }
+
+                // Check if this is the final success message
+                if (response.Status?.Equals("success", StringComparison.OrdinalIgnoreCase) == true)
+                {
+                    progress.IsComplete = true;
+                    _logger.LogInformation("Model pull completed: {ModelName}", modelName);
+                }
+
+                yield return progress;
+            }
+        }
+        finally
+        {
+            await enumerator.DisposeAsync();
+        }
+
+        // Yield error after the try-finally block
+        if (errorProgress != null)
+        {
+            yield return errorProgress;
+        }
+    }
+
+    /// <summary>
+    /// Delete a model from the local or remote Ollama instance.
+    /// </summary>
+    /// <param name="modelName">Name of the model to delete</param>
+    /// <param name="remoteOllamaUrl">Optional remote Ollama server URL</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>True if successful, false otherwise</returns>
+    public async Task<(bool Success, string? ErrorMessage)> DeleteModelAsync(
+        string modelName,
+        string? remoteOllamaUrl = null,
+        CancellationToken cancellationToken = default)
+    {
+        var client = GetClientForUrl(remoteOllamaUrl);
+        var effectiveUrl = GetEffectiveBaseUrl(remoteOllamaUrl);
+
+        if (!IsEnabled || client == null)
+        {
+            return (false, "Ollama provider is not enabled or configured");
+        }
+
+        try
+        {
+            _logger.LogInformation("Deleting model: {ModelName} from {Url}", modelName, effectiveUrl);
+            await client.DeleteModel(modelName, cancellationToken);
+            _logger.LogInformation("Model deleted: {ModelName}", modelName);
+            return (true, null);
+        }
+        catch (HttpRequestException ex) when (ex.InnerException is SocketException)
+        {
+            _logger.LogWarning(ex, "Model delete failed - service unreachable at {Url}", effectiveUrl);
+            return (false, $"Cannot connect to Ollama at {effectiveUrl}. Ensure Ollama is running.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to delete model {ModelName}", modelName);
+            return (false, ex.Message);
+        }
+    }
 }

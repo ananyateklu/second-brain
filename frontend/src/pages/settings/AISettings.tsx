@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useThemeStore } from '../../store/theme-store';
 import { useSettingsStore } from '../../store/settings-store';
 import { useAuthStore } from '../../store/auth-store';
+import { useOllamaDownloadStore, formatBytes, formatSpeed, formatTimeRemaining } from '../../store/ollama-download-store';
 import { Modal } from '../../components/ui/Modal';
 import { useAIHealth } from '../../features/ai/hooks/use-ai-health';
 import { formatModelName } from '../../utils/model-name-formatter';
@@ -92,6 +93,50 @@ const VECTOR_STORE_OPTIONS: Array<{
         },
     ];
 
+// Curated list of popular Ollama models
+const POPULAR_OLLAMA_MODELS: Array<{
+    name: string;
+    tag: string;
+    description: string;
+    size: string;
+    category: 'language' | 'code' | 'vision' | 'embedding';
+}> = [
+        // Language Models
+        { name: 'llama3.2', tag: '3b', description: 'Latest Llama model, great for general use', size: '2.0 GB', category: 'language' },
+        { name: 'llama3.2', tag: '1b', description: 'Compact Llama model for quick responses', size: '1.3 GB', category: 'language' },
+        { name: 'qwen2.5', tag: '7b', description: 'Strong multilingual model from Alibaba', size: '4.7 GB', category: 'language' },
+        { name: 'qwen2.5', tag: '3b', description: 'Efficient multilingual model', size: '1.9 GB', category: 'language' },
+        { name: 'gemma2', tag: '9b', description: 'Google DeepMind model for text generation', size: '5.4 GB', category: 'language' },
+        { name: 'gemma2', tag: '2b', description: 'Lightweight Google model', size: '1.6 GB', category: 'language' },
+        { name: 'mistral', tag: '7b', description: 'Fast and efficient open model', size: '4.1 GB', category: 'language' },
+        { name: 'phi3', tag: 'mini', description: 'Microsoft small language model', size: '2.3 GB', category: 'language' },
+        { name: 'deepseek-r1', tag: '8b', description: 'Reasoning-focused model', size: '4.9 GB', category: 'language' },
+
+        // Code Models
+        { name: 'qwen2.5-coder', tag: '7b', description: 'Specialized for code generation', size: '4.7 GB', category: 'code' },
+        { name: 'qwen2.5-coder', tag: '3b', description: 'Compact code assistant', size: '1.9 GB', category: 'code' },
+        { name: 'codellama', tag: '7b', description: 'Meta code generation model', size: '3.8 GB', category: 'code' },
+        { name: 'deepseek-coder-v2', tag: '16b', description: 'Advanced coding model', size: '8.9 GB', category: 'code' },
+        { name: 'starcoder2', tag: '7b', description: 'Open-source code model', size: '4.0 GB', category: 'code' },
+
+        // Vision Models
+        { name: 'llava', tag: '7b', description: 'Vision-language model for image understanding', size: '4.7 GB', category: 'vision' },
+        { name: 'llama3.2-vision', tag: '11b', description: 'Meta vision model for image analysis', size: '7.9 GB', category: 'vision' },
+        { name: 'moondream', tag: '1.8b', description: 'Tiny vision model, fast inference', size: '1.7 GB', category: 'vision' },
+
+        // Embedding Models
+        { name: 'nomic-embed-text', tag: 'latest', description: 'High-quality text embeddings', size: '274 MB', category: 'embedding' },
+        { name: 'mxbai-embed-large', tag: 'latest', description: 'Large embedding model', size: '670 MB', category: 'embedding' },
+        { name: 'all-minilm', tag: 'latest', description: 'Fast sentence embeddings', size: '46 MB', category: 'embedding' },
+    ];
+
+const MODEL_CATEGORY_LABELS: Record<string, { label: string; icon: string }> = {
+    language: { label: 'Language', icon: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z' },
+    code: { label: 'Code', icon: 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4' },
+    vision: { label: 'Vision', icon: 'M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z' },
+    embedding: { label: 'Embedding', icon: 'M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4' },
+};
+
 export function AISettings() {
     const { theme } = useThemeStore();
     const {
@@ -109,6 +154,18 @@ export function AISettings() {
     const [isSavingVectorStore, setIsSavingVectorStore] = useState(false);
     const [isSavingOllama, setIsSavingOllama] = useState(false);
     const [localOllamaUrl, setLocalOllamaUrl] = useState(ollamaRemoteUrl || '');
+    const [modelToDownload, setModelToDownload] = useState('');
+    const [showPopularModels, setShowPopularModels] = useState(false);
+    const [selectedModelCategory, setSelectedModelCategory] = useState<string | null>(null);
+
+    // Ollama download store
+    const { downloads, startDownload, cancelDownload, clearDownload, clearCompletedDownloads } = useOllamaDownloadStore();
+    const activeDownloads = Object.values(downloads).filter(d => d.status === 'downloading' || d.status === 'pending');
+    const completedDownloads = Object.values(downloads).filter(d => d.status === 'completed' || d.status === 'error' || d.status === 'cancelled');
+
+    // Get Ollama health data to check which models are already downloaded
+    const ollamaHealth = healthData?.providers?.find(p => p.provider === 'Ollama');
+    const downloadedModels = ollamaHealth?.availableModels || [];
 
     // Sync localOllamaUrl with store value when it changes
     useEffect(() => {
@@ -596,220 +653,6 @@ export function AISettings() {
                             })}
                         </div>
                     </section>
-
-                    {/* Ollama Configuration Section */}
-                    <section
-                        className="rounded-3xl border p-6 transition-all duration-200 hover:shadow-xl"
-                        style={{
-                            backgroundColor: 'var(--surface-card)',
-                            borderColor: 'var(--border)',
-                            boxShadow: 'var(--shadow-lg)',
-                        }}
-                    >
-                        <div className="flex flex-wrap items-start justify-between gap-4">
-                            <div className="flex items-start gap-3">
-                                <div
-                                    className="flex h-10 w-10 items-center justify-center rounded-xl border flex-shrink-0"
-                                    style={{
-                                        backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
-                                        borderColor: 'color-mix(in srgb, var(--color-brand-600) 30%, transparent)',
-                                    }}
-                                >
-                                    <img src={ollamaLogo} alt="Ollama" className="h-6 w-6 object-contain" />
-                                </div>
-                                <div>
-                                    <span className="text-xs uppercase tracking-[0.35em]" style={{ color: 'var(--text-secondary)' }}>
-                                        Ollama Configuration
-                                    </span>
-                                    <h3 className="text-xl font-semibold mt-2" style={{ color: 'var(--text-primary)' }}>
-                                        Remote Ollama Instance
-                                    </h3>
-                                    <p className="text-sm mt-1.5" style={{ color: 'var(--text-secondary)' }}>
-                                        Connect to an Ollama instance running on another device on your network.
-                                    </p>
-                                </div>
-                            </div>
-                            <span
-                                className="px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5"
-                                style={{
-                                    border: '1px solid color-mix(in srgb, var(--color-brand-500) 30%, transparent)',
-                                    backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 12%, transparent)',
-                                    color: 'var(--color-brand-600)',
-                                }}
-                            >
-                                {isSavingOllama ? (
-                                    <>
-                                        <svg className="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                        Saving...
-                                    </>
-                                ) : (
-                                    <>
-                                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d={useRemoteOllama
-                                                ? "M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
-                                                : "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-                                            } />
-                                        </svg>
-                                        {useRemoteOllama ? 'Remote Mode' : 'Local Mode'}
-                                    </>
-                                )}
-                            </span>
-                        </div>
-
-                        <div className="mt-6 space-y-4">
-                            {/* Toggle Switch */}
-                            <div className="flex items-center justify-between p-4 rounded-2xl border" style={{
-                                backgroundColor: 'var(--surface-elevated)',
-                                borderColor: 'var(--border)',
-                            }}>
-                                <div className="flex items-center gap-3">
-                                    <div
-                                        className="flex h-10 w-10 items-center justify-center rounded-xl border flex-shrink-0"
-                                        style={{
-                                            backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 8%, transparent)',
-                                            borderColor: 'color-mix(in srgb, var(--color-brand-600) 30%, transparent)',
-                                        }}
-                                    >
-                                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--text-secondary)' }}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                                            Use Remote Ollama
-                                        </p>
-                                        <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-                                            {useRemoteOllama
-                                                ? 'Connected to remote instance'
-                                                : 'Using local Ollama (localhost:11434)'}
-                                        </p>
-                                    </div>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={async () => {
-                                        if (!user?.userId) return;
-                                        setIsSavingOllama(true);
-                                        try {
-                                            setUseRemoteOllama(!useRemoteOllama);
-                                            // Refetch health data after a short delay to allow state to update
-                                            setTimeout(() => {
-                                                refetchHealth();
-                                            }, 100);
-                                        } catch (error) {
-                                            console.error('Failed to toggle remote Ollama:', { error });
-                                            toast.error('Failed to save setting', 'Please try again.');
-                                        } finally {
-                                            setIsSavingOllama(false);
-                                        }
-                                    }}
-                                    disabled={isSavingOllama}
-                                    className="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50"
-                                    style={{
-                                        backgroundColor: useRemoteOllama ? 'var(--color-brand-600)' : 'var(--border)',
-                                    }}
-                                >
-                                    <span
-                                        className="pointer-events-none inline-block h-5 w-5 transform rounded-full shadow ring-0 transition duration-200 ease-in-out"
-                                        style={{
-                                            backgroundColor: 'white',
-                                            transform: useRemoteOllama ? 'translateX(20px)' : 'translateX(0)',
-                                        }}
-                                    />
-                                </button>
-                            </div>
-
-                            {/* Remote URL Input - Only shown when remote is enabled */}
-                            {useRemoteOllama && (
-                                <div className="p-4 rounded-2xl border space-y-3" style={{
-                                    backgroundColor: 'var(--surface-elevated)',
-                                    borderColor: 'var(--border)',
-                                }}>
-                                    <div className="flex items-center gap-2">
-                                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--color-brand-600)' }}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                                        </svg>
-                                        <label className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                                            Remote Ollama URL
-                                        </label>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="text"
-                                            value={localOllamaUrl}
-                                            onChange={(e) => setLocalOllamaUrl(e.target.value)}
-                                            placeholder="http://192.168.1.100:11434"
-                                            className="flex-1 px-4 py-2.5 rounded-xl border text-sm transition-all duration-200 focus:outline-none focus:ring-2"
-                                            style={{
-                                                backgroundColor: 'var(--surface-card)',
-                                                borderColor: 'var(--border)',
-                                                color: 'var(--text-primary)',
-                                            }}
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={async () => {
-                                                if (!user?.userId) return;
-                                                setIsSavingOllama(true);
-                                                try {
-                                                    setOllamaRemoteUrl(localOllamaUrl || null);
-                                                    toast.success('Ollama URL saved', 'Your remote Ollama URL has been updated.');
-                                                    // Refetch health data after a short delay to allow state to update
-                                                    setTimeout(() => {
-                                                        refetchHealth();
-                                                    }, 100);
-                                                } catch (error) {
-                                                    console.error('Failed to save Ollama URL:', { error });
-                                                    toast.error('Failed to save URL', 'Please try again.');
-                                                } finally {
-                                                    setIsSavingOllama(false);
-                                                }
-                                            }}
-                                            disabled={isSavingOllama || localOllamaUrl === (ollamaRemoteUrl || '')}
-                                            className="px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                                            style={{
-                                                backgroundColor: localOllamaUrl !== (ollamaRemoteUrl || '') ? 'var(--color-brand-600)' : 'var(--surface-card)',
-                                                color: localOllamaUrl !== (ollamaRemoteUrl || '') ? 'white' : 'var(--text-secondary)',
-                                                borderColor: 'var(--border)',
-                                                border: '1px solid',
-                                            }}
-                                        >
-                                            Save
-                                        </button>
-                                    </div>
-                                    <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                                        Enter the IP address and port of your remote Ollama server (e.g., http://192.168.1.100:11434)
-                                    </p>
-                                </div>
-                            )}
-
-                            {/* Info Box */}
-                            <div
-                                className="p-4 rounded-xl border-l-4 flex gap-3"
-                                style={{
-                                    backgroundColor: 'var(--surface-elevated)',
-                                    borderLeftColor: 'var(--color-brand-600)',
-                                }}
-                            >
-                                <svg className="h-5 w-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--color-brand-600)' }}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <div>
-                                    <p className="text-xs font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
-                                        {useRemoteOllama ? 'Remote Connection' : 'Local Mode'}
-                                    </p>
-                                    <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                                        {useRemoteOllama
-                                            ? 'Requests will be sent to your remote Ollama instance. Make sure the remote server is running and accessible on your network.'
-                                            : 'Using the default local Ollama installation. Enable remote mode to connect to Ollama running on another device.'}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
                 </div>
             </div>
 
@@ -840,31 +683,31 @@ export function AISettings() {
                                 <>
                                     {providerDetails && (
                                         <div
-                                            className="rounded-xl border p-5 space-y-4"
+                                            className="rounded-xl border p-3 space-y-3"
                                             style={{
                                                 backgroundColor: 'var(--surface-elevated)',
                                                 borderColor: 'var(--border)',
                                             }}
                                         >
-                                            <div className="flex flex-wrap items-start justify-between gap-3">
-                                                <div className="flex items-start gap-3">
+                                            <div className="flex flex-wrap items-start justify-between gap-2">
+                                                <div className="flex items-start gap-2">
                                                     {(() => {
                                                         const logo = getProviderLogo(selectedProvider.id);
                                                         return logo ? (
-                                                            <div className="flex h-10 w-10 items-center justify-center rounded-xl border flex-shrink-0" style={{ backgroundColor: 'var(--surface-card)', borderColor: 'var(--border)' }}>
+                                                            <div className="flex h-8 w-8 items-center justify-center rounded-lg border flex-shrink-0" style={{ backgroundColor: 'var(--surface-card)', borderColor: 'var(--border)' }}>
                                                                 {selectedProvider.id === 'ollama' ? (
-                                                                    <img src={logo ?? undefined} alt={selectedProvider.name} className="h-6 w-6 object-contain" />
+                                                                    <img src={logo ?? undefined} alt={selectedProvider.name} className="h-5 w-5 object-contain" />
                                                                 ) : (
-                                                                    <img src={logo ?? undefined} alt={selectedProvider.name} className="h-5 w-auto object-contain" />
+                                                                    <img src={logo ?? undefined} alt={selectedProvider.name} className="h-4 w-auto object-contain" />
                                                                 )}
                                                             </div>
                                                         ) : null;
                                                     })()}
                                                     <div>
-                                                        <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                                                        <p className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>
                                                             {selectedProvider.name}
                                                         </p>
-                                                        <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+                                                        <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-secondary)' }}>
                                                             {providerDetails.tagline}
                                                         </p>
                                                     </div>
@@ -874,7 +717,7 @@ export function AISettings() {
                                                         href={providerDetails.docsUrl}
                                                         target="_blank"
                                                         rel="noreferrer"
-                                                        className="text-xs font-semibold whitespace-nowrap px-3 py-1.5 rounded-full border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:scale-105 flex items-center gap-1.5"
+                                                        className="text-[10px] font-semibold whitespace-nowrap px-2.5 py-1 rounded-full border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:scale-105 flex items-center gap-1"
                                                         style={{
                                                             borderColor: 'color-mix(in srgb, var(--color-brand-500) 35%, transparent)',
                                                             color: 'var(--color-brand-600)',
@@ -891,27 +734,27 @@ export function AISettings() {
                                                         }}
                                                     >
                                                         View docs
-                                                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                        <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                                             <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                                                         </svg>
                                                     </a>
                                                 )}
                                             </div>
-                                            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                                            <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                                                 {providerDetails.description}
                                             </p>
-                                            <div className="flex flex-wrap gap-2">
+                                            <div className="flex flex-wrap gap-1.5">
                                                 {providerDetails.highlights.map((highlight) => (
                                                     <span
                                                         key={highlight}
-                                                        className="text-[11px] font-medium px-2.5 py-1 rounded-full border flex items-center gap-1.5"
+                                                        className="text-[10px] font-medium px-2 py-0.5 rounded-full border flex items-center gap-1"
                                                         style={{
                                                             borderColor: 'color-mix(in srgb, var(--border) 70%, transparent)',
                                                             backgroundColor: 'var(--surface-card)',
                                                             color: 'var(--text-primary)',
                                                         }}
                                                     >
-                                                        <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                        <svg className="h-2 w-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                                                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                                                         </svg>
                                                         {highlight}
@@ -919,11 +762,11 @@ export function AISettings() {
                                                 ))}
                                             </div>
                                             {providerDetails.billingNote && (
-                                                <div className="pt-3 border-t flex items-start gap-2" style={{ borderColor: 'var(--border)' }}>
-                                                    <svg className="h-4 w-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--text-secondary)' }}>
+                                                <div className="pt-2 border-t flex items-start gap-1.5" style={{ borderColor: 'var(--border)' }}>
+                                                    <svg className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--text-secondary)' }}>
                                                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                     </svg>
-                                                    <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                                                    <p className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>
                                                         {providerDetails.billingNote}
                                                     </p>
                                                 </div>
@@ -931,67 +774,54 @@ export function AISettings() {
                                         </div>
                                     )}
 
-                                    {/* Status Info */}
+                                    {/* Health Status & Available Models - For all providers */}
                                     <div
-                                        className="p-4 rounded-xl border"
+                                        className="p-2.5 rounded-xl border"
                                         style={{
                                             backgroundColor: 'var(--surface-elevated)',
                                             borderColor: 'var(--border)',
                                         }}
                                     >
-                                        <div className="flex items-center gap-3 mb-2">
-                                            <div
-                                                className="w-3 h-3 rounded-full flex-shrink-0"
-                                                style={{
-                                                    backgroundColor: isDisabled ? '#f59e0b' : health?.isHealthy ? '#10b981' : '#ef4444',
-                                                    boxShadow: `0 0 0 3px ${isDisabled ? 'rgba(245, 158, 11, 0.2)' : health?.isHealthy ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`,
-                                                }}
-                                            />
-                                            <div className="flex-1">
-                                                <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                                                    Status: {health?.status || 'Unknown'}
+                                        <div className="flex items-center justify-between gap-2 mb-2">
+                                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                <div
+                                                    className="w-2 h-2 rounded-full flex-shrink-0"
+                                                    style={{
+                                                        backgroundColor: isDisabled ? '#f59e0b' : health?.isHealthy ? '#10b981' : '#ef4444',
+                                                        boxShadow: `0 0 0 2px ${isDisabled ? 'rgba(245, 158, 11, 0.2)' : health?.isHealthy ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`,
+                                                    }}
+                                                />
+                                                <p className="text-[10px] font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
+                                                    {health?.status || 'Unknown'}
                                                 </p>
                                                 {health?.responseTimeMs && health.responseTimeMs > 0 && (
-                                                    <p className="text-xs mt-1 flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
-                                                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                    <p className="text-[9px] flex items-center gap-0.5" style={{ color: 'var(--text-secondary)' }}>
+                                                        <svg className="h-2 w-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                                             <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                                                         </svg>
-                                                        Response Time: {health.responseTimeMs}ms
+                                                        {health.responseTimeMs}ms
                                                     </p>
                                                 )}
                                             </div>
+                                            {health?.availableModels && health.availableModels.length > 0 && (
+                                                <div className="flex items-center gap-1">
+                                                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--color-brand-600)' }}>
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                    </svg>
+                                                    <p className="text-[10px] font-semibold" style={{ color: 'var(--text-primary)' }}>
+                                                        {health.availableModels.length} models
+                                                    </p>
+                                                </div>
+                                            )}
                                         </div>
                                         {health?.errorMessage && (
-                                            <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--border)' }}>
-                                                <p className="text-xs flex items-start gap-2" style={{ color: '#ef4444' }}>
-                                                    <svg className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                    </svg>
-                                                    {health.errorMessage}
-                                                </p>
-                                            </div>
+                                            <p className="text-[9px] truncate mb-2" style={{ color: '#ef4444' }}>
+                                                {health.errorMessage}
+                                            </p>
                                         )}
-                                    </div>
-
-                                    {/* Available Models */}
-                                    {health?.availableModels && health.availableModels.length > 0 && (
-                                        <div
-                                            className="p-4 rounded-xl border"
-                                            style={{
-                                                backgroundColor: 'var(--surface-elevated)',
-                                                borderColor: 'var(--border)',
-                                            }}
-                                        >
-                                            <div className="flex items-center gap-2 mb-3">
-                                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--color-brand-600)' }}>
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                </svg>
-                                                <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                                                    Available Models ({health.availableModels.length})
-                                                </p>
-                                            </div>
+                                        {health?.availableModels && health.availableModels.length > 0 && (
                                             <div
-                                                className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2 max-h-64 overflow-y-auto pr-2"
+                                                className="flex flex-wrap gap-1 max-h-16 overflow-y-auto pr-1"
                                                 style={{
                                                     scrollbarWidth: 'thin',
                                                     scrollbarColor: 'var(--border) transparent',
@@ -1000,19 +830,490 @@ export function AISettings() {
                                                 {health.availableModels.map((model) => (
                                                     <code
                                                         key={model}
-                                                        className="px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5"
+                                                        className="px-1.5 py-0.5 rounded text-[9px] font-medium whitespace-nowrap"
                                                         style={{
                                                             backgroundColor: 'var(--surface-card)',
                                                             color: 'var(--text-primary)',
                                                             border: '1px solid var(--border)',
                                                         }}
                                                     >
-                                                        <svg className="h-3 w-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                                                        </svg>
-                                                        <span className="truncate">{formatModelName(model)}</span>
+                                                        {formatModelName(model)}
                                                     </code>
                                                 ))}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Ollama Configuration - Only shown for Ollama provider */}
+                                    {selectedProvider.id === 'ollama' && (
+                                        <div className="space-y-3">
+                                            {/* Toggle Switch */}
+                                            <div className="flex items-center justify-between p-3 rounded-xl border" style={{
+                                                backgroundColor: 'var(--surface-elevated)',
+                                                borderColor: 'var(--border)',
+                                            }}>
+                                                <div className="flex items-center gap-2.5">
+                                                    <div
+                                                        className="flex h-8 w-8 items-center justify-center rounded-lg border flex-shrink-0"
+                                                        style={{
+                                                            backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 8%, transparent)',
+                                                            borderColor: 'color-mix(in srgb, var(--color-brand-600) 30%, transparent)',
+                                                        }}
+                                                    >
+                                                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--text-secondary)' }}>
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+                                                        </svg>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>
+                                                            Use Remote Ollama
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={async () => {
+                                                        if (!user?.userId) return;
+                                                        setIsSavingOllama(true);
+                                                        try {
+                                                            setUseRemoteOllama(!useRemoteOllama);
+                                                            setTimeout(() => {
+                                                                refetchHealth();
+                                                            }, 100);
+                                                        } catch (error) {
+                                                            console.error('Failed to toggle remote Ollama:', { error });
+                                                            toast.error('Failed to save setting', 'Please try again.');
+                                                        } finally {
+                                                            setIsSavingOllama(false);
+                                                        }
+                                                    }}
+                                                    disabled={isSavingOllama}
+                                                    className="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50"
+                                                    style={{
+                                                        backgroundColor: useRemoteOllama ? 'var(--color-brand-600)' : 'var(--border)',
+                                                    }}
+                                                >
+                                                    <span
+                                                        className="pointer-events-none inline-block h-5 w-5 transform rounded-full shadow ring-0 transition duration-200 ease-in-out"
+                                                        style={{
+                                                            backgroundColor: 'white',
+                                                            transform: useRemoteOllama ? 'translateX(20px)' : 'translateX(0)',
+                                                        }}
+                                                    />
+                                                </button>
+                                            </div>
+
+                                            {/* Remote URL Input and Model Download - Side by Side */}
+                                            <div className="flex gap-3 flex-col sm:flex-row">
+                                                {/* Remote URL Input - Only shown when remote is enabled */}
+                                                {useRemoteOllama && (
+                                                    <div className="flex-1 p-3 rounded-xl border space-y-2" style={{
+                                                        backgroundColor: 'var(--surface-elevated)',
+                                                        borderColor: 'var(--border)',
+                                                    }}>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--color-brand-600)' }}>
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                                            </svg>
+                                                            <label className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>
+                                                                Remote Ollama URL
+                                                            </label>
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            <input
+                                                                type="text"
+                                                                value={localOllamaUrl}
+                                                                onChange={(e) => setLocalOllamaUrl(e.target.value)}
+                                                                placeholder="http://192.168.1.100:11434"
+                                                                className="flex-1 px-3 py-2 rounded-xl border text-xs transition-all duration-200 focus:outline-none focus:ring-2"
+                                                                style={{
+                                                                    backgroundColor: 'var(--surface-card)',
+                                                                    borderColor: 'var(--border)',
+                                                                    color: 'var(--text-primary)',
+                                                                }}
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                onClick={async () => {
+                                                                    if (!user?.userId) return;
+                                                                    setIsSavingOllama(true);
+                                                                    try {
+                                                                        setOllamaRemoteUrl(localOllamaUrl || null);
+                                                                        toast.success('Ollama URL saved', 'Your remote Ollama URL has been updated.');
+                                                                        setTimeout(() => {
+                                                                            refetchHealth();
+                                                                        }, 100);
+                                                                    } catch (error) {
+                                                                        console.error('Failed to save Ollama URL:', { error });
+                                                                        toast.error('Failed to save URL', 'Please try again.');
+                                                                    } finally {
+                                                                        setIsSavingOllama(false);
+                                                                    }
+                                                                }}
+                                                                disabled={isSavingOllama || localOllamaUrl === (ollamaRemoteUrl || '')}
+                                                                className="px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-200 focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                style={{
+                                                                    backgroundColor: localOllamaUrl !== (ollamaRemoteUrl || '') ? 'var(--color-brand-600)' : 'var(--surface-card)',
+                                                                    color: localOllamaUrl !== (ollamaRemoteUrl || '') ? 'white' : 'var(--text-secondary)',
+                                                                    borderColor: 'var(--border)',
+                                                                    border: '1px solid',
+                                                                }}
+                                                            >
+                                                                Save
+                                                            </button>
+                                                        </div>
+                                                        <p className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>
+                                                            Enter the IP and port (e.g., http://192.168.1.100:11434)
+                                                        </p>
+                                                    </div>
+                                                )}
+
+                                                {/* Model Download Section */}
+                                                <div className={`p-3 rounded-xl border space-y-2.5 ${useRemoteOllama ? 'flex-1' : ''}`} style={{
+                                                    backgroundColor: 'var(--surface-elevated)',
+                                                    borderColor: 'var(--border)',
+                                                }}>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--color-brand-600)' }}>
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                                        </svg>
+                                                        <label className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>
+                                                            Download Model
+                                                        </label>
+                                                    </div>
+
+                                                    {/* Model Input */}
+                                                    <div className="flex gap-2">
+                                                        <input
+                                                            type="text"
+                                                            value={modelToDownload}
+                                                            onChange={(e) => setModelToDownload(e.target.value)}
+                                                            placeholder="e.g., llama3:8b, codellama:13b"
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter' && modelToDownload.trim()) {
+                                                                    startDownload({
+                                                                        modelName: modelToDownload.trim(),
+                                                                        ollamaBaseUrl: useRemoteOllama ? ollamaRemoteUrl : null,
+                                                                    });
+                                                                    toast.success('Download started', `Downloading ${modelToDownload.trim()}...`);
+                                                                    setModelToDownload('');
+                                                                }
+                                                            }}
+                                                            className="flex-1 px-3 py-2 rounded-xl border text-xs transition-all duration-200 focus:outline-none focus:ring-2"
+                                                            style={{
+                                                                backgroundColor: 'var(--surface-card)',
+                                                                borderColor: 'var(--border)',
+                                                                color: 'var(--text-primary)',
+                                                            }}
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                if (!modelToDownload.trim()) return;
+                                                                startDownload({
+                                                                    modelName: modelToDownload.trim(),
+                                                                    ollamaBaseUrl: useRemoteOllama ? ollamaRemoteUrl : null,
+                                                                });
+                                                                toast.success('Download started', `Downloading ${modelToDownload.trim()}...`);
+                                                                setModelToDownload('');
+                                                            }}
+                                                            disabled={!modelToDownload.trim()}
+                                                            className="px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-200 focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                                                            style={{
+                                                                backgroundColor: modelToDownload.trim() ? 'var(--color-brand-600)' : 'var(--surface-card)',
+                                                                color: modelToDownload.trim() ? 'white' : 'var(--text-secondary)',
+                                                                borderColor: 'var(--border)',
+                                                                border: '1px solid',
+                                                            }}
+                                                        >
+                                                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                                            </svg>
+                                                            Download
+                                                        </button>
+                                                    </div>
+
+                                                    <p className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>
+                                                        Enter model from <a href="https://ollama.com/library" target="_blank" rel="noopener noreferrer" className="underline hover:no-underline" style={{ color: 'var(--color-brand-600)' }}>Ollama Library</a>. Downloads run in background.
+                                                    </p>
+
+                                                    {/* Popular Models Toggle */}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowPopularModels(!showPopularModels)}
+                                                        className="w-full flex items-center justify-between p-2 rounded-xl border transition-all duration-200 hover:border-opacity-60"
+                                                        style={{
+                                                            backgroundColor: 'var(--surface-card)',
+                                                            borderColor: 'var(--border)',
+                                                        }}
+                                                    >
+                                                        <div className="flex items-center gap-1.5">
+                                                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--color-brand-600)' }}>
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                                            </svg>
+                                                            <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
+                                                                Browse Popular Models
+                                                            </span>
+                                                        </div>
+                                                        <svg
+                                                            className={`h-3.5 w-3.5 transition-transform duration-200 ${showPopularModels ? 'rotate-180' : ''}`}
+                                                            fill="none"
+                                                            viewBox="0 0 24 24"
+                                                            stroke="currentColor"
+                                                            strokeWidth={2}
+                                                            style={{ color: 'var(--text-secondary)' }}
+                                                        >
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                                                        </svg>
+                                                    </button>
+
+                                                    {/* Popular Models List */}
+                                                    {showPopularModels && (
+                                                        <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                                                            {/* Category Tabs */}
+                                                            <div className="flex flex-wrap gap-1.5">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setSelectedModelCategory(null)}
+                                                                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 border-2 ${selectedModelCategory === null ? 'border-current' : 'border-transparent'}`}
+                                                                    style={{
+                                                                        backgroundColor: selectedModelCategory === null ? 'var(--color-brand-600)' : 'var(--surface-card)',
+                                                                        color: selectedModelCategory === null ? 'white' : 'var(--text-secondary)',
+                                                                    }}
+                                                                >
+                                                                    All
+                                                                </button>
+                                                                {Object.entries(MODEL_CATEGORY_LABELS).map(([key, { label }]) => (
+                                                                    <button
+                                                                        key={key}
+                                                                        type="button"
+                                                                        onClick={() => setSelectedModelCategory(key)}
+                                                                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 border-2 ${selectedModelCategory === key ? 'border-current' : 'border-transparent'}`}
+                                                                        style={{
+                                                                            backgroundColor: selectedModelCategory === key ? 'var(--color-brand-600)' : 'var(--surface-card)',
+                                                                            color: selectedModelCategory === key ? 'white' : 'var(--text-secondary)',
+                                                                        }}
+                                                                    >
+                                                                        {label}
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+
+                                                            {/* Models Grid */}
+                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-48 overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
+                                                                {POPULAR_OLLAMA_MODELS
+                                                                    .filter(model => selectedModelCategory === null || model.category === selectedModelCategory)
+                                                                    .map((model) => {
+                                                                        const fullName = `${model.name}:${model.tag}`;
+                                                                        const isDownloaded = downloadedModels.some(m =>
+                                                                            m.toLowerCase().includes(model.name.toLowerCase()) &&
+                                                                            m.toLowerCase().includes(model.tag.toLowerCase())
+                                                                        );
+                                                                        const isDownloading = downloads[fullName]?.status === 'downloading' || downloads[fullName]?.status === 'pending';
+
+                                                                        return (
+                                                                            <div
+                                                                                key={fullName}
+                                                                                className="flex items-center justify-between p-2.5 rounded-lg border transition-all duration-200 hover:border-opacity-80"
+                                                                                style={{
+                                                                                    backgroundColor: isDownloaded ? 'color-mix(in srgb, #10b981 8%, var(--surface-card))' : 'var(--surface-card)',
+                                                                                    borderColor: isDownloaded ? 'color-mix(in srgb, #10b981 30%, var(--border))' : 'var(--border)',
+                                                                                }}
+                                                                            >
+                                                                                <div className="flex-1 min-w-0 mr-2">
+                                                                                    <div className="flex items-center gap-1.5">
+                                                                                        <span className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+                                                                                            {model.name}
+                                                                                        </span>
+                                                                                        <span className="text-[10px] px-1.5 py-0.5 rounded" style={{
+                                                                                            backgroundColor: 'var(--surface-elevated)',
+                                                                                            color: 'var(--text-secondary)'
+                                                                                        }}>
+                                                                                            {model.tag}
+                                                                                        </span>
+                                                                                        {isDownloaded && (
+                                                                                            <svg className="h-3 w-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="#10b981" strokeWidth={2.5}>
+                                                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                                                            </svg>
+                                                                                        )}
+                                                                                    </div>
+                                                                                    <p className="text-[10px] truncate mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                                                                                        {model.description} • {model.size}
+                                                                                    </p>
+                                                                                </div>
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => {
+                                                                                        if (isDownloaded || isDownloading) return;
+                                                                                        startDownload({
+                                                                                            modelName: fullName,
+                                                                                            ollamaBaseUrl: useRemoteOllama ? ollamaRemoteUrl : null,
+                                                                                        });
+                                                                                        toast.success('Download started', `Downloading ${fullName}...`);
+                                                                                    }}
+                                                                                    disabled={isDownloaded || isDownloading}
+                                                                                    className="flex-shrink-0 p-1.5 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                                    style={{
+                                                                                        backgroundColor: isDownloaded ? 'transparent' : 'var(--color-brand-600)',
+                                                                                        color: isDownloaded ? '#10b981' : 'white',
+                                                                                    }}
+                                                                                    title={isDownloaded ? 'Already downloaded' : isDownloading ? 'Downloading...' : `Download ${fullName}`}
+                                                                                >
+                                                                                    {isDownloading ? (
+                                                                                        <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                                                        </svg>
+                                                                                    ) : isDownloaded ? (
+                                                                                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                                                        </svg>
+                                                                                    ) : (
+                                                                                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                                                                        </svg>
+                                                                                    )}
+                                                                                </button>
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Active Downloads */}
+                                                    {activeDownloads.length > 0 && (
+                                                        <div className="space-y-3 pt-2">
+                                                            <div className="flex items-center justify-between">
+                                                                <p className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>
+                                                                    Active Downloads ({activeDownloads.length})
+                                                                </p>
+                                                            </div>
+                                                            {activeDownloads.map((download) => (
+                                                                <div
+                                                                    key={download.modelName}
+                                                                    className="p-3 rounded-xl border space-y-2"
+                                                                    style={{
+                                                                        backgroundColor: 'var(--surface-card)',
+                                                                        borderColor: 'var(--border)',
+                                                                    }}
+                                                                >
+                                                                    <div className="flex items-center justify-between">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <div className="h-2 w-2 rounded-full animate-pulse" style={{ backgroundColor: 'var(--color-brand-600)' }} />
+                                                                            <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                                                                                {download.modelName}
+                                                                            </span>
+                                                                        </div>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => cancelDownload(download.modelName)}
+                                                                            className="text-xs px-2 py-1 rounded-lg transition-colors hover:bg-red-500/10"
+                                                                            style={{ color: '#ef4444' }}
+                                                                        >
+                                                                            Cancel
+                                                                        </button>
+                                                                    </div>
+
+                                                                    {/* Progress Bar */}
+                                                                    {download.progress && (
+                                                                        <>
+                                                                            <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--border)' }}>
+                                                                                <div
+                                                                                    className="h-full rounded-full transition-all duration-300"
+                                                                                    style={{
+                                                                                        backgroundColor: 'var(--color-brand-600)',
+                                                                                        width: `${download.progress.percentage || 0}%`,
+                                                                                    }}
+                                                                                />
+                                                                            </div>
+
+                                                                            {/* Progress Details */}
+                                                                            <div className="flex items-center justify-between text-xs" style={{ color: 'var(--text-secondary)' }}>
+                                                                                <div className="flex items-center gap-3">
+                                                                                    <span>{download.progress.percentage?.toFixed(1) || 0}%</span>
+                                                                                    {download.progress.completedBytes !== undefined && download.progress.totalBytes !== undefined && (
+                                                                                        <span>
+                                                                                            {formatBytes(download.progress.completedBytes)} / {formatBytes(download.progress.totalBytes)}
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
+                                                                                <div className="flex items-center gap-3">
+                                                                                    {download.progress.bytesPerSecond !== undefined && download.progress.bytesPerSecond > 0 && (
+                                                                                        <span>{formatSpeed(download.progress.bytesPerSecond)}</span>
+                                                                                    )}
+                                                                                    {download.progress.estimatedSecondsRemaining !== undefined && download.progress.estimatedSecondsRemaining > 0 && (
+                                                                                        <span>ETA: {formatTimeRemaining(download.progress.estimatedSecondsRemaining)}</span>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+
+                                                                            {/* Status */}
+                                                                            <p className="text-xs truncate" style={{ color: 'var(--text-secondary)' }}>
+                                                                                {download.progress.status}
+                                                                            </p>
+                                                                        </>
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Completed Downloads */}
+                                                    {completedDownloads.length > 0 && (
+                                                        <div className="space-y-3 pt-2">
+                                                            <div className="flex items-center justify-between">
+                                                                <p className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>
+                                                                    Recent Downloads
+                                                                </p>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => clearCompletedDownloads()}
+                                                                    className="text-xs px-2 py-1 rounded-lg transition-colors"
+                                                                    style={{ color: 'var(--text-secondary)' }}
+                                                                >
+                                                                    Clear
+                                                                </button>
+                                                            </div>
+                                                            {completedDownloads.slice(0, 3).map((download) => (
+                                                                <div
+                                                                    key={download.modelName}
+                                                                    className="flex items-center justify-between p-2 rounded-lg"
+                                                                    style={{
+                                                                        backgroundColor: download.status === 'completed'
+                                                                            ? 'color-mix(in srgb, #10b981 10%, transparent)'
+                                                                            : 'color-mix(in srgb, #ef4444 10%, transparent)',
+                                                                    }}
+                                                                >
+                                                                    <div className="flex items-center gap-2">
+                                                                        {download.status === 'completed' ? (
+                                                                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="#10b981" strokeWidth={2}>
+                                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                                            </svg>
+                                                                        ) : (
+                                                                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="#ef4444" strokeWidth={2}>
+                                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                                            </svg>
+                                                                        )}
+                                                                        <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
+                                                                            {download.modelName}
+                                                                        </span>
+                                                                    </div>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => clearDownload(download.modelName)}
+                                                                        className="text-xs px-2 py-1 rounded transition-colors hover:opacity-70"
+                                                                        style={{ color: 'var(--text-secondary)' }}
+                                                                    >
+                                                                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                                        </svg>
+                                                                    </button>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     )}

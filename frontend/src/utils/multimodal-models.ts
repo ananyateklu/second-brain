@@ -105,6 +105,7 @@ export const MULTIMODAL_CONFIGS: Record<string, MultimodalModelConfig> = {
       'llama-3.2-vision*',
       'nanollava*',
       'obsidian*',
+      'qwen3-vl*',
     ],
     maxImages: 4,
     maxImageSizeBytes: 10 * 1024 * 1024, // 10MB for local models
@@ -405,7 +406,7 @@ export function getAllSupportedExtensions(): string[] {
  */
 export function validateFileForAttachment(file: File): { valid: boolean; error?: string } {
   const category = getFileCategory(file.type);
-  
+
   if (category === 'other') {
     const supportedTypes = getAllSupportedExtensions().join(', ');
     return {

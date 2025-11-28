@@ -51,7 +51,7 @@ RUN mkdir -p /var/cache/nginx /var/run /var/log/nginx && \
 # Update nginx.conf to run as non-root
 RUN sed -i 's/listen 80;/listen 8080;/' /etc/nginx/conf.d/default.conf
 
-EXPOSE 8080
+EXPOSE 8080 8443
 
 # Switch to non-root user
 USER appuser
