@@ -15,6 +15,7 @@ services:
       - ./database/04_chat.sql:/docker-entrypoint-initdb.d/04_chat.sql:ro
       - ./database/05_indexing_jobs.sql:/docker-entrypoint-initdb.d/05_indexing_jobs.sql:ro
       - ./database/06_indexes.sql:/docker-entrypoint-initdb.d/06_indexes.sql:ro
+      - ./database/07_generated_images.sql:/docker-entrypoint-initdb.d/07_generated_images.sql:ro
     ports:
       - "5432:5432"
     restart: unless-stopped
