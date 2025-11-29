@@ -7,7 +7,6 @@ import {
   getThemeColors,
   getRagChartColor,
   getRegularChartColor,
-  getProviderFromModelName,
 } from '../utils/dashboard-utils';
 
 interface ModelUsageEntry {
@@ -15,10 +14,6 @@ interface ModelUsageEntry {
   originalName: string;
   value: number;
   tokens: number;
-}
-
-interface ModelWithColor extends ModelUsageEntry {
-  color: string;
 }
 
 interface ChartDataPoint {
@@ -60,7 +55,6 @@ interface DashboardData {
   
   // Model usage
   modelUsageData: ModelUsageEntry[];
-  modelsByProvider: Record<string, ModelWithColor[]>;
   
   // Colors
   colors: string[];
@@ -73,6 +67,7 @@ interface DashboardData {
   getChatUsageData: (timeRange: number) => ChatUsageDataPoint[];
   getFilteredModelUsageData: (timeRange: number, aggregateThreshold?: number) => {
     data: AggregatedModelUsageEntry[];
+    allFilteredModels: ModelUsageEntry[];
     totalConversations: number;
     totalTokens: number;
     modelDataMap: Map<string, { conversations: number; tokens: number }>;
@@ -120,38 +115,6 @@ export function useDashboardData(): DashboardData {
     return Object.values(aiStats.modelTokenUsageCounts).reduce((sum, tokens) => sum + tokens, 0);
   }, [aiStats]);
 
-  // Group models by provider
-  const modelsByProvider = useMemo<Record<string, ModelWithColor[]>>(() => {
-    if (!modelUsageData.length) return {};
-
-    const grouped: Record<string, ModelWithColor[]> = {};
-
-    modelUsageData.forEach((entry, index) => {
-      const provider = getProviderFromModelName(entry.originalName);
-      if (!grouped[provider]) {
-        grouped[provider] = [];
-      }
-      grouped[provider].push({
-        ...entry,
-        color: colors[index % colors.length],
-      });
-    });
-
-    // Sort providers by total usage
-    const sortedProviders = Object.entries(grouped).sort((a, b) => {
-      const totalA = a[1].reduce((sum, m) => sum + m.value, 0);
-      const totalB = b[1].reduce((sum, m) => sum + m.value, 0);
-      return totalB - totalA;
-    });
-
-    // Sort models within each provider by usage
-    sortedProviders.forEach(([, models]) => {
-      models.sort((a, b) => b.value - a.value);
-    });
-
-    return Object.fromEntries(sortedProviders);
-  }, [modelUsageData, colors]);
-
   // Chat usage data generator
   const getChatUsageData = useMemo(() => {
     return (timeRange: number): ChatUsageDataPoint[] => {
@@ -172,19 +135,54 @@ export function useDashboardData(): DashboardData {
 
   // Filtered and aggregated model usage data generator
   const getFilteredModelUsageData = useMemo(() => {
-    return (_timeRange: number, aggregateThreshold: number = 0.05): {
+    return (timeRange: number, aggregateThreshold: number = 0.05): {
       data: AggregatedModelUsageEntry[];
+      allFilteredModels: ModelUsageEntry[];
       totalConversations: number;
       totalTokens: number;
       modelDataMap: Map<string, { conversations: number; tokens: number }>;
     } => {
-      // Note: Backend doesn't currently provide time-filtered model usage data,
-      // so we show all-time data. This function is structured to support time filtering
-      // when backend adds support for it.
-      
-      if (!modelUsageData.length) {
+      // Filter model usage data by time range using daily data from backend
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - timeRange);
+      const cutoffDateStr = cutoffDate.toISOString().split('T')[0];
+
+      // Aggregate daily model usage counts within the time range
+      const filteredModelCounts: Record<string, number> = {};
+      const filteredModelTokens: Record<string, number> = {};
+
+      if (aiStats?.dailyModelUsageCounts) {
+        Object.entries(aiStats.dailyModelUsageCounts).forEach(([date, modelCounts]) => {
+          if (date >= cutoffDateStr) {
+            Object.entries(modelCounts).forEach(([model, count]) => {
+              filteredModelCounts[model] = (filteredModelCounts[model] || 0) + count;
+            });
+          }
+        });
+      }
+
+      if (aiStats?.dailyModelTokenUsageCounts) {
+        Object.entries(aiStats.dailyModelTokenUsageCounts).forEach(([date, modelTokens]) => {
+          if (date >= cutoffDateStr) {
+            Object.entries(modelTokens).forEach(([model, tokens]) => {
+              filteredModelTokens[model] = (filteredModelTokens[model] || 0) + tokens;
+            });
+          }
+        });
+      }
+
+      // Convert to model usage entries
+      const filteredData: ModelUsageEntry[] = Object.entries(filteredModelCounts).map(([name, value]) => ({
+        name: formatModelName(name),
+        originalName: name,
+        value,
+        tokens: filteredModelTokens[name] || 0,
+      }));
+
+      if (!filteredData.length) {
         return {
           data: [],
+          allFilteredModels: [],
           totalConversations: 0,
           totalTokens: 0,
           modelDataMap: new Map(),
@@ -192,12 +190,12 @@ export function useDashboardData(): DashboardData {
       }
 
       // Calculate totals
-      const totalConversations = modelUsageData.reduce((sum, m) => sum + m.value, 0);
-      const totalTokens = modelUsageData.reduce((sum, m) => sum + m.tokens, 0);
+      const totalConversations = filteredData.reduce((sum, m) => sum + m.value, 0);
+      const totalTokens = filteredData.reduce((sum, m) => sum + m.tokens, 0);
 
       // Create model data map for tooltips
       const modelDataMap = new Map<string, { conversations: number; tokens: number }>();
-      modelUsageData.forEach((entry) => {
+      filteredData.forEach((entry) => {
         modelDataMap.set(entry.name, {
           conversations: entry.value,
           tokens: entry.tokens,
@@ -205,7 +203,7 @@ export function useDashboardData(): DashboardData {
       });
 
       // Sort by value (conversations) descending
-      const sorted = [...modelUsageData].sort((a, b) => b.value - a.value);
+      const sorted = [...filteredData].sort((a, b) => b.value - a.value);
 
       // Aggregate small slices
       const mainSlices: AggregatedModelUsageEntry[] = [];
@@ -241,12 +239,13 @@ export function useDashboardData(): DashboardData {
 
       return {
         data: mainSlices,
+        allFilteredModels: sorted,
         totalConversations,
         totalTokens,
         modelDataMap,
       };
     };
-  }, [modelUsageData]);
+  }, [aiStats]);
 
   return {
     isLoading: isNotesLoading || isAIStatsLoading,
@@ -256,7 +255,6 @@ export function useDashboardData(): DashboardData {
     aiStats,
     totalTokens,
     modelUsageData,
-    modelsByProvider,
     colors,
     ragChartColor,
     regularChartColor,

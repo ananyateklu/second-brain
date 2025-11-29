@@ -24,7 +24,6 @@ export function DashboardPage() {
     aiStats,
     totalTokens,
     modelUsageData,
-    modelsByProvider,
     colors,
     ragChartColor,
     regularChartColor,
@@ -124,7 +123,6 @@ export function DashboardPage() {
       {aiStats && (
         <ModelUsageSection
           modelUsageData={modelUsageData}
-          modelsByProvider={modelsByProvider}
           colors={colors}
           getFilteredModelUsageData={getFilteredModelUsageData}
         />

@@ -19,6 +19,8 @@ export interface AIUsageStats {
   dailyNonRagConversationCounts: Record<string, number>;
   dailyAgentConversationCounts: Record<string, number>;
   dailyNonAgentConversationCounts: Record<string, number>;
+  dailyModelUsageCounts: Record<string, Record<string, number>>;
+  dailyModelTokenUsageCounts: Record<string, Record<string, number>>;
 }
 
 /**

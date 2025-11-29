@@ -14,5 +14,7 @@ public class AIUsageStatsResponse
     public Dictionary<string, int> DailyNonRagConversationCounts { get; set; } = new();
     public Dictionary<string, int> DailyAgentConversationCounts { get; set; } = new();
     public Dictionary<string, int> DailyNonAgentConversationCounts { get; set; } = new();
+    public Dictionary<string, Dictionary<string, int>> DailyModelUsageCounts { get; set; } = new();
+    public Dictionary<string, Dictionary<string, long>> DailyModelTokenUsageCounts { get; set; } = new();
 }
 

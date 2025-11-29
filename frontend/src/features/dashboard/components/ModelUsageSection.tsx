@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { PieChartTooltip } from './PieChartTooltip';
-import { formatTokenCount, TIME_RANGE_OPTIONS, TimeRangeOption } from '../utils/dashboard-utils';
+import { formatTokenCount, TIME_RANGE_OPTIONS, TimeRangeOption, getProviderFromModelName } from '../utils/dashboard-utils';
 
 interface ModelUsageEntry {
   name: string;
@@ -21,10 +21,10 @@ interface ModelWithColor extends ModelUsageEntry {
 
 interface ModelUsageSectionProps {
   modelUsageData: ModelUsageEntry[];
-  modelsByProvider: Record<string, ModelWithColor[]>;
   colors: string[];
   getFilteredModelUsageData: (timeRange: number, aggregateThreshold?: number) => {
     data: AggregatedModelUsageEntry[];
+    allFilteredModels: ModelUsageEntry[];
     totalConversations: number;
     totalTokens: number;
     modelDataMap: Map<string, { conversations: number; tokens: number }>;
@@ -33,7 +33,6 @@ interface ModelUsageSectionProps {
 
 export function ModelUsageSection({ 
   modelUsageData, 
-  modelsByProvider, 
   colors,
   getFilteredModelUsageData,
 }: ModelUsageSectionProps) {
@@ -41,10 +40,42 @@ export function ModelUsageSection({
   const [hiddenModels, setHiddenModels] = useState<Set<string>>(new Set());
 
   // Get filtered and aggregated data
-  const { data: filteredData, modelDataMap } = useMemo(
+  const { data: filteredData, allFilteredModels, modelDataMap } = useMemo(
     () => getFilteredModelUsageData(selectedTimeRange, 0.05),
     [getFilteredModelUsageData, selectedTimeRange]
   );
+
+  // Compute modelsByProvider from filtered data (respects time range)
+  const filteredModelsByProvider = useMemo(() => {
+    if (!allFilteredModels.length) return {};
+
+    const grouped: Record<string, ModelWithColor[]> = {};
+
+    allFilteredModels.forEach((entry, index) => {
+      const provider = getProviderFromModelName(entry.originalName);
+      if (!grouped[provider]) {
+        grouped[provider] = [];
+      }
+      grouped[provider].push({
+        ...entry,
+        color: colors[index % colors.length],
+      });
+    });
+
+    // Sort providers by total usage
+    const sortedProviders = Object.entries(grouped).sort((a, b) => {
+      const totalA = a[1].reduce((sum, m) => sum + m.value, 0);
+      const totalB = b[1].reduce((sum, m) => sum + m.value, 0);
+      return totalB - totalA;
+    });
+
+    // Sort models within each provider by usage
+    sortedProviders.forEach(([, models]) => {
+      models.sort((a, b) => b.value - a.value);
+    });
+
+    return Object.fromEntries(sortedProviders);
+  }, [allFilteredModels, colors]);
 
   // Filter out hidden models
   const visibleData = useMemo(
@@ -224,7 +255,7 @@ export function ModelUsageSection({
                   }}
                 >
                   <div className="space-y-4">
-                    {Object.entries(modelsByProvider).map(([provider, models]) => {
+                    {Object.entries(filteredModelsByProvider).map(([provider, models]) => {
                       const totalUsage = models.reduce((sum, m) => sum + m.value, 0);
                       return (
                         <div key={provider} className="space-y-2">

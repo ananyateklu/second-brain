@@ -58,7 +58,25 @@ public class StatsService : IStatsService
                 .Where(c => !c.AgentEnabled)
                 .GroupBy(c => c.CreatedAt.Date)
                 .OrderBy(g => g.Key)
-                .ToDictionary(g => g.Key.ToString("yyyy-MM-dd"), g => g.Count())
+                .ToDictionary(g => g.Key.ToString("yyyy-MM-dd"), g => g.Count()),
+            DailyModelUsageCounts = conversationsList
+                .Where(c => !string.IsNullOrEmpty(c.Model))
+                .GroupBy(c => c.CreatedAt.Date)
+                .OrderBy(g => g.Key)
+                .ToDictionary(
+                    g => g.Key.ToString("yyyy-MM-dd"),
+                    g => g.GroupBy(c => c.Model)
+                        .ToDictionary(mg => mg.Key, mg => mg.Count())
+                ),
+            DailyModelTokenUsageCounts = conversationsList
+                .Where(c => !string.IsNullOrEmpty(c.Model))
+                .GroupBy(c => c.CreatedAt.Date)
+                .OrderBy(g => g.Key)
+                .ToDictionary(
+                    g => g.Key.ToString("yyyy-MM-dd"),
+                    g => g.GroupBy(c => c.Model)
+                        .ToDictionary(mg => mg.Key, mg => mg.Sum(c => c.Messages.Sum(m => (long)((m.InputTokens ?? 0) + (m.OutputTokens ?? 0)))))
+                )
         };
 
         return stats;
