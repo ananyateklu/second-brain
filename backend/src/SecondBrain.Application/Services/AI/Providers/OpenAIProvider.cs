@@ -15,21 +15,24 @@ namespace SecondBrain.Application.Services.AI.Providers;
 
 public class OpenAIProvider : IAIProvider
 {
+    public const string HttpClientName = "OpenAI";
+
     private readonly OpenAISettings _settings;
     private readonly ILogger<OpenAIProvider> _logger;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly ChatClient? _client;
-    private readonly HttpClient _httpClient;
 
     public string ProviderName => "OpenAI";
     public bool IsEnabled => _settings.Enabled;
 
     public OpenAIProvider(
         IOptions<AIProvidersSettings> settings,
+        IHttpClientFactory httpClientFactory,
         ILogger<OpenAIProvider> logger)
     {
         _settings = settings.Value.OpenAI;
+        _httpClientFactory = httpClientFactory;
         _logger = logger;
-        _httpClient = new HttpClient();
 
         if (_settings.Enabled && !string.IsNullOrWhiteSpace(_settings.ApiKey))
         {
@@ -38,14 +41,23 @@ public class OpenAIProvider : IAIProvider
                 _client = new ChatClient(
                     _settings.DefaultModel,
                     _settings.ApiKey);
-
-                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_settings.ApiKey}");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to initialize OpenAI client");
             }
         }
+    }
+
+    private HttpClient CreateHttpClient()
+    {
+        var client = _httpClientFactory.CreateClient(HttpClientName);
+        if (!string.IsNullOrWhiteSpace(_settings.ApiKey) &&
+            !client.DefaultRequestHeaders.Contains("Authorization"))
+        {
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {_settings.ApiKey}");
+        }
+        return client;
     }
 
     public async Task<AIResponse> GenerateCompletionAsync(
@@ -418,7 +430,8 @@ public class OpenAIProvider : IAIProvider
     {
         try
         {
-            var response = await _httpClient.GetAsync("https://api.openai.com/v1/models", cancellationToken);
+            using var httpClient = CreateHttpClient();
+            var response = await httpClient.GetAsync("https://api.openai.com/v1/models", cancellationToken);
             if (response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync(cancellationToken);

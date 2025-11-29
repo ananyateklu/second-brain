@@ -1,8 +1,11 @@
-using SecondBrain.Application.Services.VectorStore.Models;
 using SecondBrain.Core.Entities;
+using SecondBrain.Core.Models;
 
-namespace SecondBrain.Application.Services.VectorStore;
+namespace SecondBrain.Core.Interfaces;
 
+/// <summary>
+/// Interface for vector store operations supporting semantic search
+/// </summary>
 public interface IVectorStore
 {
     Task<bool> UpsertAsync(

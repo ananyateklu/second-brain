@@ -6,7 +6,7 @@ using SecondBrain.Core.Entities;
 
 namespace SecondBrain.Application.Services.RAG;
 
-public class ChunkingService
+public class ChunkingService : IChunkingService
 {
     private readonly RagSettings _settings;
     private readonly ILogger<ChunkingService> _logger;

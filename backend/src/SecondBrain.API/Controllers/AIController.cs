@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using SecondBrain.Application.DTOs.Requests;
+using SecondBrain.Application.DTOs.Responses;
 using SecondBrain.Application.Services.AI.Interfaces;
 using SecondBrain.Application.Services.AI.Models;
 using SecondBrain.Application.Services.AI.Providers;
@@ -420,23 +422,4 @@ public class AIController : ControllerBase
             return StatusCode(500, new { error = "Failed to delete model" });
         }
     }
-}
-
-// DTOs for API responses
-public class AIHealthResponse
-{
-    public DateTime CheckedAt { get; set; }
-    public IEnumerable<AIProviderHealth> Providers { get; set; } = new List<AIProviderHealth>();
-}
-
-public class ChatCompletionRequest
-{
-    public IEnumerable<ChatMessage> Messages { get; set; } = new List<ChatMessage>();
-    public AIRequest? Settings { get; set; }
-}
-
-public class ProviderInfo
-{
-    public string Name { get; set; } = string.Empty;
-    public bool IsEnabled { get; set; }
 }

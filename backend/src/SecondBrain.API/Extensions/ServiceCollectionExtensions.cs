@@ -8,6 +8,8 @@ using SecondBrain.API.HealthChecks;
 using SecondBrain.API.Middleware;
 using SecondBrain.API.Services;
 using SecondBrain.Application.Services;
+using SecondBrain.Application.Services.Chat;
+using SecondBrain.Application.Services.Notes;
 using SecondBrain.Application.Services.Stats;
 using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.AI;
@@ -37,6 +39,8 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
         services.AddHttpClient();
+        services.AddScoped<INoteService, NoteService>();
+        services.AddScoped<IChatConversationService, ChatConversationService>();
         services.AddScoped<INotesImportService, NotesImportService>();
         services.AddScoped<IUserPreferencesService, UserPreferencesService>();
         services.AddScoped<IStatsService, StatsService>();
@@ -279,7 +283,7 @@ public static class ServiceCollectionExtensions
         });
 
         // Register RAG services
-        services.AddScoped<ChunkingService>();
+        services.AddScoped<IChunkingService, ChunkingService>();
         services.AddScoped<IIndexingService, IndexingService>();
         services.AddScoped<IRagService, RagService>();
 

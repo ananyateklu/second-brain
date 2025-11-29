@@ -1,5 +1,8 @@
-namespace SecondBrain.Application.Services.VectorStore.Models;
+namespace SecondBrain.Core.Models;
 
+/// <summary>
+/// Represents a result from a vector similarity search
+/// </summary>
 public class VectorSearchResult
 {
     public string Id { get; set; } = string.Empty;
@@ -12,6 +15,9 @@ public class VectorSearchResult
     public Dictionary<string, object> Metadata { get; set; } = new();
 }
 
+/// <summary>
+/// Statistics about the vector index
+/// </summary>
 public class IndexStats
 {
     public string UserId { get; set; } = string.Empty;
@@ -21,3 +27,4 @@ public class IndexStats
     public string EmbeddingProvider { get; set; } = string.Empty;
     public string VectorStoreProvider { get; set; } = string.Empty;
 }
+

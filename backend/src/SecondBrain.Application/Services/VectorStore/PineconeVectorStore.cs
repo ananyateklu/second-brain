@@ -2,8 +2,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Pinecone;
 using SecondBrain.Application.Configuration;
-using SecondBrain.Application.Services.VectorStore.Models;
 using SecondBrain.Core.Entities;
+using SecondBrain.Core.Interfaces;
+using SecondBrain.Core.Models;
 
 namespace SecondBrain.Application.Services.VectorStore;
 

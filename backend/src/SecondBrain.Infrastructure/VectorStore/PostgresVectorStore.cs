@@ -2,9 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Pgvector;
 using Pgvector.EntityFrameworkCore;
-using SecondBrain.Application.Services.VectorStore;
-using SecondBrain.Application.Services.VectorStore.Models;
 using SecondBrain.Core.Entities;
+using SecondBrain.Core.Interfaces;
+using SecondBrain.Core.Models;
 using SecondBrain.Infrastructure.Data;
 
 namespace SecondBrain.Infrastructure.VectorStore;

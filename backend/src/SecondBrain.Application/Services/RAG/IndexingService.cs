@@ -4,9 +4,9 @@ using Microsoft.Extensions.Options;
 using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.Embeddings;
 using SecondBrain.Application.Services.VectorStore;
-using SecondBrain.Application.Services.VectorStore.Models;
 using SecondBrain.Core.Entities;
 using SecondBrain.Core.Interfaces;
+using SecondBrain.Core.Models;
 
 namespace SecondBrain.Application.Services.RAG;
 
@@ -16,7 +16,7 @@ public class IndexingService : IIndexingService
     private readonly IIndexingJobRepository _indexingJobRepository;
     private readonly IEmbeddingProviderFactory _embeddingProviderFactory;
     private readonly IVectorStore _vectorStore;
-    private readonly ChunkingService _chunkingService;
+    private readonly IChunkingService _chunkingService;
     private readonly EmbeddingProvidersSettings _settings;
     private readonly ILogger<IndexingService> _logger;
     private readonly IServiceScopeFactory _serviceScopeFactory;
@@ -26,7 +26,7 @@ public class IndexingService : IIndexingService
         IIndexingJobRepository indexingJobRepository,
         IEmbeddingProviderFactory embeddingProviderFactory,
         IVectorStore vectorStore,
-        ChunkingService chunkingService,
+        IChunkingService chunkingService,
         IOptions<EmbeddingProvidersSettings> settings,
         ILogger<IndexingService> logger,
         IServiceScopeFactory serviceScopeFactory)

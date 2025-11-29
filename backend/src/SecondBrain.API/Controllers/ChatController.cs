@@ -1,9 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
+using SecondBrain.Application.DTOs.Requests;
 using SecondBrain.Application.DTOs.Responses;
+using SecondBrain.Application.Exceptions;
 using SecondBrain.Application.Services;
 using SecondBrain.Application.Services.AI;
 using SecondBrain.Application.Services.AI.Interfaces;
 using SecondBrain.Application.Services.AI.Models;
+using SecondBrain.Application.Services.Chat;
 using SecondBrain.Application.Services.RAG;
 using SecondBrain.Application.Utilities;
 using SecondBrain.Core.Entities;
@@ -16,6 +19,7 @@ namespace SecondBrain.API.Controllers;
 [Produces("application/json")]
 public class ChatController : ControllerBase
 {
+    private readonly IChatConversationService _chatService;
     private readonly IChatRepository _chatRepository;
     private readonly IAIProviderFactory _providerFactory;
     private readonly IImageGenerationProviderFactory _imageGenerationFactory;
@@ -24,6 +28,7 @@ public class ChatController : ControllerBase
     private readonly ILogger<ChatController> _logger;
 
     public ChatController(
+        IChatConversationService chatService,
         IChatRepository chatRepository,
         IAIProviderFactory providerFactory,
         IImageGenerationProviderFactory imageGenerationFactory,
@@ -31,6 +36,7 @@ public class ChatController : ControllerBase
         IUserPreferencesService userPreferencesService,
         ILogger<ChatController> logger)
     {
+        _chatService = chatService;
         _chatRepository = chatRepository;
         _providerFactory = providerFactory;
         _imageGenerationFactory = imageGenerationFactory;
@@ -57,7 +63,7 @@ public class ChatController : ControllerBase
 
         try
         {
-            var conversations = await _chatRepository.GetAllAsync(userId);
+            var conversations = await _chatService.GetAllConversationsAsync(userId, cancellationToken);
             return Ok(conversations);
         }
         catch (Exception ex)
@@ -88,21 +94,17 @@ public class ChatController : ControllerBase
 
         try
         {
-            var conversation = await _chatRepository.GetByIdAsync(id);
+            var conversation = await _chatService.GetConversationByIdAsync(id, userId, cancellationToken);
             if (conversation == null)
             {
                 return NotFound(new { error = $"Conversation '{id}' not found" });
             }
 
-            // Verify conversation belongs to user
-            if (conversation.UserId != userId)
-            {
-                _logger.LogWarning("User attempted to access conversation belonging to another user. UserId: {UserId}, ConversationId: {ConversationId}, ConversationUserId: {ConversationUserId}",
-                    userId, id, conversation.UserId);
-                return StatusCode(StatusCodes.Status403Forbidden, new { error = "Access denied" });
-            }
-
             return Ok(conversation);
+        }
+        catch (UnauthorizedException)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { error = "Access denied" });
         }
         catch (Exception ex)
         {
@@ -141,21 +143,18 @@ public class ChatController : ControllerBase
 
         try
         {
-            var conversation = new ChatConversation
-            {
-                Title = request.Title ?? "New Conversation",
-                Provider = request.Provider,
-                Model = request.Model,
-                RagEnabled = request.RagEnabled,
-                AgentEnabled = request.AgentEnabled,
-                AgentCapabilities = request.AgentCapabilities,
-                VectorStoreProvider = request.VectorStoreProvider,
-                UserId = userId,
-                Messages = new List<Core.Entities.ChatMessage>()
-            };
+            var conversation = await _chatService.CreateConversationAsync(
+                request.Title ?? "New Conversation",
+                request.Provider,
+                request.Model,
+                userId,
+                request.RagEnabled,
+                request.AgentEnabled,
+                request.AgentCapabilities,
+                request.VectorStoreProvider,
+                cancellationToken);
 
-            var created = await _chatRepository.CreateAsync(conversation);
-            return CreatedAtAction(nameof(GetConversation), new { id = created.Id }, created);
+            return CreatedAtAction(nameof(GetConversation), new { id = conversation.Id }, conversation);
         }
         catch (Exception ex)
         {
@@ -713,50 +712,25 @@ public class ChatController : ControllerBase
 
         try
         {
-            var conversation = await _chatRepository.GetByIdAsync(id);
-            if (conversation == null)
-            {
-                return NotFound(new { error = $"Conversation '{id}' not found" });
-            }
+            var updated = await _chatService.UpdateConversationSettingsAsync(
+                id,
+                userId,
+                request.RagEnabled,
+                request.VectorStoreProvider,
+                request.AgentEnabled,
+                request.AgentCapabilities,
+                cancellationToken);
 
-            // Verify conversation belongs to user
-            if (conversation.UserId != userId)
-            {
-                _logger.LogWarning("User attempted to update conversation belonging to another user. UserId: {UserId}, ConversationId: {ConversationId}, ConversationUserId: {ConversationUserId}",
-                    userId, id, conversation.UserId);
-                return StatusCode(StatusCodes.Status403Forbidden, new { error = "Access denied" });
-            }
-
-            // Update settings
-            if (request.RagEnabled.HasValue)
-            {
-                conversation.RagEnabled = request.RagEnabled.Value;
-            }
-
-            if (request.VectorStoreProvider != null)
-            {
-                conversation.VectorStoreProvider = request.VectorStoreProvider;
-            }
-
-            if (request.AgentEnabled.HasValue)
-            {
-                conversation.AgentEnabled = request.AgentEnabled.Value;
-            }
-
-            if (request.AgentCapabilities != null)
-            {
-                conversation.AgentCapabilities = request.AgentCapabilities;
-            }
-
-            conversation.UpdatedAt = DateTime.UtcNow;
-
-            var updated = await _chatRepository.UpdateAsync(id, conversation);
             if (updated == null)
             {
                 return NotFound(new { error = $"Conversation '{id}' not found" });
             }
 
             return Ok(updated);
+        }
+        catch (UnauthorizedException)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { error = "Access denied" });
         }
         catch (Exception ex)
         {
@@ -786,28 +760,17 @@ public class ChatController : ControllerBase
 
         try
         {
-            // First get the conversation to verify ownership
-            var conversation = await _chatRepository.GetByIdAsync(id);
-            if (conversation == null)
-            {
-                return NotFound(new { error = $"Conversation '{id}' not found" });
-            }
-
-            // Verify conversation belongs to user
-            if (conversation.UserId != userId)
-            {
-                _logger.LogWarning("User attempted to delete conversation belonging to another user. UserId: {UserId}, ConversationId: {ConversationId}, ConversationUserId: {ConversationUserId}",
-                    userId, id, conversation.UserId);
-                return StatusCode(StatusCodes.Status403Forbidden, new { error = "Access denied" });
-            }
-
-            var deleted = await _chatRepository.DeleteAsync(id);
+            var deleted = await _chatService.DeleteConversationAsync(id, userId, cancellationToken);
             if (!deleted)
             {
                 return NotFound(new { error = $"Conversation '{id}' not found" });
             }
 
             return NoContent();
+        }
+        catch (UnauthorizedException)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { error = "Access denied" });
         }
         catch (Exception ex)
         {
@@ -1015,110 +978,5 @@ public class ChatController : ControllerBase
 
         return Ok(sizes);
     }
-}
-
-// DTOs for API requests
-public class CreateConversationRequest
-{
-    public string? Title { get; set; }
-    public string Provider { get; set; } = string.Empty;
-    public string Model { get; set; } = string.Empty;
-    public bool RagEnabled { get; set; } = false;
-    public bool AgentEnabled { get; set; } = false;
-    public string? AgentCapabilities { get; set; }
-    public string? VectorStoreProvider { get; set; }
-}
-
-public class SendMessageRequest
-{
-    public string Content { get; set; } = string.Empty;
-    public double? Temperature { get; set; }
-    public int? MaxTokens { get; set; }
-    public bool UseRag { get; set; }
-    public string? VectorStoreProvider { get; set; }
-    /// <summary>
-    /// Attached images for multimodal messages
-    /// </summary>
-    public List<Application.Services.AI.Models.MessageImage>? Images { get; set; }
-}
-
-public class UpdateConversationSettingsRequest
-{
-    public bool? RagEnabled { get; set; }
-    public string? VectorStoreProvider { get; set; }
-    public bool? AgentEnabled { get; set; }
-    public string? AgentCapabilities { get; set; }
-}
-
-public class ChatResponseWithRag
-{
-    public ChatConversation Conversation { get; set; } = null!;
-    public List<RagContextResponse> RetrievedNotes { get; set; } = new();
-}
-
-// Image Generation DTOs
-public class GenerateImageRequest
-{
-    /// <summary>
-    /// The text prompt describing the image to generate
-    /// </summary>
-    public string Prompt { get; set; } = string.Empty;
-
-    /// <summary>
-    /// The AI provider to use (e.g., "OpenAI", "Gemini", "Grok")
-    /// </summary>
-    public string Provider { get; set; } = string.Empty;
-
-    /// <summary>
-    /// The model to use (e.g., "dall-e-3", "grok-2-image")
-    /// </summary>
-    public string? Model { get; set; }
-
-    /// <summary>
-    /// Size of the generated image (e.g., "1024x1024")
-    /// </summary>
-    public string? Size { get; set; }
-
-    /// <summary>
-    /// Quality level ("standard" or "hd")
-    /// </summary>
-    public string? Quality { get; set; }
-
-    /// <summary>
-    /// Style ("vivid" or "natural")
-    /// </summary>
-    public string? Style { get; set; }
-
-    /// <summary>
-    /// Number of images to generate
-    /// </summary>
-    public int? Count { get; set; }
-}
-
-public class ImageGenerationApiResponse
-{
-    public bool Success { get; set; }
-    public List<GeneratedImageDto> Images { get; set; } = new();
-    public string Model { get; set; } = string.Empty;
-    public string Provider { get; set; } = string.Empty;
-    public string? Error { get; set; }
-    public string ConversationId { get; set; } = string.Empty;
-}
-
-public class GeneratedImageDto
-{
-    public string? Base64Data { get; set; }
-    public string? Url { get; set; }
-    public string? RevisedPrompt { get; set; }
-    public string MediaType { get; set; } = "image/png";
-    public int? Width { get; set; }
-    public int? Height { get; set; }
-}
-
-public class ImageProviderInfo
-{
-    public string Provider { get; set; } = string.Empty;
-    public List<string> Models { get; set; } = new();
-    public bool IsEnabled { get; set; }
 }
 

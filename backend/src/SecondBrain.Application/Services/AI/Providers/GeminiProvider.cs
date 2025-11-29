@@ -12,21 +12,24 @@ namespace SecondBrain.Application.Services.AI.Providers;
 
 public class GeminiProvider : IAIProvider
 {
+    public const string HttpClientName = "Gemini";
+
     private readonly GeminiSettings _settings;
     private readonly ILogger<GeminiProvider> _logger;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly GoogleAI? _client;
-    private readonly HttpClient _httpClient;
 
     public string ProviderName => "Gemini";
     public bool IsEnabled => _settings.Enabled;
 
     public GeminiProvider(
         IOptions<AIProvidersSettings> settings,
+        IHttpClientFactory httpClientFactory,
         ILogger<GeminiProvider> logger)
     {
         _settings = settings.Value.Gemini;
+        _httpClientFactory = httpClientFactory;
         _logger = logger;
-        _httpClient = new HttpClient();
 
         if (_settings.Enabled && !string.IsNullOrWhiteSpace(_settings.ApiKey))
         {
@@ -39,6 +42,11 @@ public class GeminiProvider : IAIProvider
                 _logger.LogError(ex, "Failed to initialize Google Gemini client");
             }
         }
+    }
+
+    private HttpClient CreateHttpClient()
+    {
+        return _httpClientFactory.CreateClient(HttpClientName);
     }
 
     public async Task<AIResponse> GenerateCompletionAsync(
@@ -392,7 +400,8 @@ public class GeminiProvider : IAIProvider
     {
         try
         {
-            var response = await _httpClient.GetAsync(
+            using var httpClient = CreateHttpClient();
+            var response = await httpClient.GetAsync(
                 $"https://generativelanguage.googleapis.com/v1beta/models?key={_settings.ApiKey}",
                 cancellationToken);
 

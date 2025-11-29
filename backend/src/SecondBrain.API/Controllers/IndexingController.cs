@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using SecondBrain.Application.DTOs.Responses;
 using SecondBrain.Application.Services.RAG;
 using SecondBrain.Application.Services.VectorStore;
+using SecondBrain.Core.Interfaces;
 using SecondBrain.Infrastructure.VectorStore;
 
 namespace SecondBrain.API.Controllers;

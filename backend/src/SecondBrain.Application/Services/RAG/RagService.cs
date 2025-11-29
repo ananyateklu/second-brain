@@ -4,8 +4,9 @@ using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.Embeddings;
 using SecondBrain.Application.Services.RAG.Models;
 using SecondBrain.Application.Services.VectorStore;
-using SecondBrain.Application.Services.VectorStore.Models;
 using SecondBrain.Application.Utilities;
+using SecondBrain.Core.Interfaces;
+using SecondBrain.Core.Models;
 
 namespace SecondBrain.Application.Services.RAG;
 

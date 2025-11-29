@@ -15,21 +15,24 @@ namespace SecondBrain.Application.Services.AI.Providers;
 
 public class GrokProvider : IAIProvider
 {
+    public const string HttpClientName = "Grok";
+
     private readonly XAISettings _settings;
     private readonly ILogger<GrokProvider> _logger;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly ChatClient? _client;
-    private readonly HttpClient _httpClient;
 
     public string ProviderName => "Grok";
     public bool IsEnabled => _settings.Enabled;
 
     public GrokProvider(
         IOptions<AIProvidersSettings> settings,
+        IHttpClientFactory httpClientFactory,
         ILogger<GrokProvider> logger)
     {
         _settings = settings.Value.XAI;
+        _httpClientFactory = httpClientFactory;
         _logger = logger;
-        _httpClient = new HttpClient();
 
         if (_settings.Enabled && !string.IsNullOrWhiteSpace(_settings.ApiKey))
         {
@@ -44,14 +47,23 @@ public class GrokProvider : IAIProvider
 
                 var openAIClient = new OpenAIClient(apiKeyCredential, openAIClientOptions);
                 _client = openAIClient.GetChatClient(_settings.DefaultModel);
-
-                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_settings.ApiKey}");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to initialize xAI Grok client");
             }
         }
+    }
+
+    private HttpClient CreateHttpClient()
+    {
+        var client = _httpClientFactory.CreateClient(HttpClientName);
+        if (!string.IsNullOrWhiteSpace(_settings.ApiKey) &&
+            !client.DefaultRequestHeaders.Contains("Authorization"))
+        {
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {_settings.ApiKey}");
+        }
+        return client;
     }
 
     public async Task<AIResponse> GenerateCompletionAsync(
@@ -324,7 +336,8 @@ public class GrokProvider : IAIProvider
     {
         try
         {
-            var response = await _httpClient.GetAsync($"{_settings.BaseUrl}/models", cancellationToken);
+            using var httpClient = CreateHttpClient();
+            var response = await httpClient.GetAsync($"{_settings.BaseUrl}/models", cancellationToken);
             if (response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync(cancellationToken);

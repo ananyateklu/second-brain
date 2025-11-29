@@ -1,4 +1,4 @@
-using SecondBrain.Application.Services.VectorStore.Models;
+using SecondBrain.Core.Models;
 
 namespace SecondBrain.Application.Services.RAG.Models;
 

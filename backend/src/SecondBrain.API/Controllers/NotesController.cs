@@ -2,8 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using SecondBrain.Application.DTOs.Requests;
 using SecondBrain.Application.DTOs.Responses;
 using SecondBrain.Application.Exceptions;
-using SecondBrain.Application.Mappings;
-using SecondBrain.Core.Interfaces;
+using SecondBrain.Application.Services.Notes;
 
 namespace SecondBrain.API.Controllers;
 
@@ -15,12 +14,12 @@ namespace SecondBrain.API.Controllers;
 [Produces("application/json")]
 public class NotesController : ControllerBase
 {
-    private readonly INoteRepository _noteRepository;
+    private readonly INoteService _noteService;
     private readonly ILogger<NotesController> _logger;
 
-    public NotesController(INoteRepository noteRepository, ILogger<NotesController> logger)
+    public NotesController(INoteService noteService, ILogger<NotesController> logger)
     {
-        _noteRepository = noteRepository;
+        _noteService = noteService;
         _logger = logger;
     }
 
@@ -31,10 +30,10 @@ public class NotesController : ControllerBase
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<NoteResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<IEnumerable<NoteResponse>>> GetAllNotes()
+    public async Task<ActionResult<IEnumerable<NoteResponse>>> GetAllNotes(CancellationToken cancellationToken = default)
     {
         var userId = HttpContext.Items["UserId"]?.ToString();
-        
+
         if (string.IsNullOrEmpty(userId))
         {
             return Unauthorized(new { error = "Not authenticated" });
@@ -42,9 +41,8 @@ public class NotesController : ControllerBase
 
         try
         {
-            var notes = await _noteRepository.GetByUserIdAsync(userId);
-            var response = notes.Select(n => n.ToResponse());
-            return Ok(response);
+            var notes = await _noteService.GetAllNotesAsync(userId, cancellationToken);
+            return Ok(notes);
         }
         catch (Exception ex)
         {
@@ -57,16 +55,17 @@ public class NotesController : ControllerBase
     /// Get a specific note by ID (must belong to authenticated user)
     /// </summary>
     /// <param name="id">Note ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Note details</returns>
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(NoteResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<NoteResponse>> GetNoteById(string id)
+    public async Task<ActionResult<NoteResponse>> GetNoteById(string id, CancellationToken cancellationToken = default)
     {
         var userId = HttpContext.Items["UserId"]?.ToString();
-        
+
         if (string.IsNullOrEmpty(userId))
         {
             return Unauthorized(new { error = "Not authenticated" });
@@ -74,22 +73,18 @@ public class NotesController : ControllerBase
 
         try
         {
-            var note = await _noteRepository.GetByIdAsync(id);
-            
-            if (note is null)
+            var note = await _noteService.GetNoteByIdAsync(id, userId, cancellationToken);
+
+            if (note == null)
             {
                 throw new NotFoundException("Note", id);
             }
 
-            // Verify note belongs to user
-            if (note.UserId != userId)
-            {
-                _logger.LogWarning("User attempted to access note belonging to another user. UserId: {UserId}, NoteId: {NoteId}, NoteUserId: {NoteUserId}", 
-                    userId, id, note.UserId);
-                return StatusCode(StatusCodes.Status403Forbidden, new { error = "Access denied" });
-            }
-
-            return Ok(note.ToResponse());
+            return Ok(note);
+        }
+        catch (UnauthorizedException)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { error = "Access denied" });
         }
         catch (NotFoundException)
         {
@@ -106,15 +101,16 @@ public class NotesController : ControllerBase
     /// Create a new note
     /// </summary>
     /// <param name="request">Note creation details</param>
+    /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Created note</returns>
     [HttpPost]
     [ProducesResponseType(typeof(NoteResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<NoteResponse>> CreateNote([FromBody] CreateNoteRequest request)
+    public async Task<ActionResult<NoteResponse>> CreateNote([FromBody] CreateNoteRequest request, CancellationToken cancellationToken = default)
     {
         var userId = HttpContext.Items["UserId"]?.ToString();
-        
+
         if (string.IsNullOrEmpty(userId))
         {
             return Unauthorized(new { error = "Not authenticated" });
@@ -122,11 +118,8 @@ public class NotesController : ControllerBase
 
         try
         {
-            var note = request.ToEntity(userId);
-            var createdNote = await _noteRepository.CreateAsync(note);
-            
-            var response = createdNote.ToResponse();
-            return CreatedAtAction(nameof(GetNoteById), new { id = response.Id }, response);
+            var note = await _noteService.CreateNoteAsync(request, userId, cancellationToken);
+            return CreatedAtAction(nameof(GetNoteById), new { id = note.Id }, note);
         }
         catch (Exception ex)
         {
@@ -140,6 +133,7 @@ public class NotesController : ControllerBase
     /// </summary>
     /// <param name="id">Note ID</param>
     /// <param name="request">Updated note details</param>
+    /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Updated note</returns>
     [HttpPut("{id}")]
     [ProducesResponseType(typeof(NoteResponse), StatusCodes.Status200OK)]
@@ -147,10 +141,10 @@ public class NotesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<NoteResponse>> UpdateNote(string id, [FromBody] UpdateNoteRequest request)
+    public async Task<ActionResult<NoteResponse>> UpdateNote(string id, [FromBody] UpdateNoteRequest request, CancellationToken cancellationToken = default)
     {
         var userId = HttpContext.Items["UserId"]?.ToString();
-        
+
         if (string.IsNullOrEmpty(userId))
         {
             return Unauthorized(new { error = "Not authenticated" });
@@ -158,30 +152,18 @@ public class NotesController : ControllerBase
 
         try
         {
-            var existingNote = await _noteRepository.GetByIdAsync(id);
-            
-            if (existingNote is null)
+            var note = await _noteService.UpdateNoteAsync(id, request, userId, cancellationToken);
+
+            if (note == null)
             {
                 throw new NotFoundException("Note", id);
             }
 
-            // Verify note belongs to user
-            if (existingNote.UserId != userId)
-            {
-                _logger.LogWarning("User attempted to update note belonging to another user. UserId: {UserId}, NoteId: {NoteId}, NoteUserId: {NoteUserId}", 
-                    userId, id, existingNote.UserId);
-                return StatusCode(StatusCodes.Status403Forbidden, new { error = "Access denied" });
-            }
-
-            existingNote.UpdateFrom(request);
-            var updatedNote = await _noteRepository.UpdateAsync(id, existingNote);
-            
-            if (updatedNote is null)
-            {
-                throw new NotFoundException("Note", id);
-            }
-
-            return Ok(updatedNote.ToResponse());
+            return Ok(note);
+        }
+        catch (UnauthorizedException)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { error = "Access denied" });
         }
         catch (NotFoundException)
         {
@@ -198,16 +180,17 @@ public class NotesController : ControllerBase
     /// Delete a note (must belong to authenticated user)
     /// </summary>
     /// <param name="id">Note ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>No content</returns>
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> DeleteNote(string id)
+    public async Task<IActionResult> DeleteNote(string id, CancellationToken cancellationToken = default)
     {
         var userId = HttpContext.Items["UserId"]?.ToString();
-        
+
         if (string.IsNullOrEmpty(userId))
         {
             return Unauthorized(new { error = "Not authenticated" });
@@ -215,30 +198,18 @@ public class NotesController : ControllerBase
 
         try
         {
-            // First get the note to verify ownership
-            var existingNote = await _noteRepository.GetByIdAsync(id);
-            
-            if (existingNote is null)
-            {
-                throw new NotFoundException("Note", id);
-            }
+            var deleted = await _noteService.DeleteNoteAsync(id, userId, cancellationToken);
 
-            // Verify note belongs to user
-            if (existingNote.UserId != userId)
-            {
-                _logger.LogWarning("User attempted to delete note belonging to another user. UserId: {UserId}, NoteId: {NoteId}, NoteUserId: {NoteUserId}", 
-                    userId, id, existingNote.UserId);
-                return StatusCode(StatusCodes.Status403Forbidden, new { error = "Access denied" });
-            }
-
-            var deleted = await _noteRepository.DeleteAsync(id);
-            
             if (!deleted)
             {
                 throw new NotFoundException("Note", id);
             }
 
             return NoContent();
+        }
+        catch (UnauthorizedException)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { error = "Access denied" });
         }
         catch (NotFoundException)
         {
@@ -251,4 +222,3 @@ public class NotesController : ControllerBase
         }
     }
 }
-

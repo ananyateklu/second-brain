@@ -13,35 +13,53 @@ namespace SecondBrain.Application.Services.AI.Providers;
 
 public class ClaudeProvider : IAIProvider
 {
+    public const string HttpClientName = "Claude";
+
     private readonly AnthropicSettings _settings;
     private readonly ILogger<ClaudeProvider> _logger;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly AnthropicClient? _client;
-    private readonly HttpClient _httpClient;
 
     public string ProviderName => "Claude";
     public bool IsEnabled => _settings.Enabled;
 
     public ClaudeProvider(
         IOptions<AIProvidersSettings> settings,
+        IHttpClientFactory httpClientFactory,
         ILogger<ClaudeProvider> logger)
     {
         _settings = settings.Value.Anthropic;
+        _httpClientFactory = httpClientFactory;
         _logger = logger;
-        _httpClient = new HttpClient();
 
         if (_settings.Enabled && !string.IsNullOrWhiteSpace(_settings.ApiKey))
         {
             try
             {
                 _client = new AnthropicClient(new APIAuthentication(_settings.ApiKey));
-                _httpClient.DefaultRequestHeaders.Add("x-api-key", _settings.ApiKey);
-                _httpClient.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to initialize Anthropic Claude client");
             }
         }
+    }
+
+    private HttpClient CreateHttpClient()
+    {
+        var client = _httpClientFactory.CreateClient(HttpClientName);
+        if (!string.IsNullOrWhiteSpace(_settings.ApiKey))
+        {
+            if (!client.DefaultRequestHeaders.Contains("x-api-key"))
+            {
+                client.DefaultRequestHeaders.Add("x-api-key", _settings.ApiKey);
+            }
+            if (!client.DefaultRequestHeaders.Contains("anthropic-version"))
+            {
+                client.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
+            }
+        }
+        return client;
     }
 
     public async Task<AIResponse> GenerateCompletionAsync(
@@ -352,7 +370,8 @@ public class ClaudeProvider : IAIProvider
     {
         try
         {
-            var response = await _httpClient.GetAsync("https://api.anthropic.com/v1/models", cancellationToken);
+            using var httpClient = CreateHttpClient();
+            var response = await httpClient.GetAsync("https://api.anthropic.com/v1/models", cancellationToken);
             if (response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync(cancellationToken);
