@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/auth-store';
 import { useThemeStore } from '../../store/theme-store';
@@ -280,8 +281,8 @@ export function UserMenu() {
         )}
       </div>
 
-      {/* API Key Modal */}
-      {showApiKeyModal && (
+      {/* API Key Modal - Rendered via Portal to ensure proper centering */}
+      {showApiKeyModal && createPortal(
         <div 
           className="fixed inset-0 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200"
           style={{ 
@@ -486,7 +487,8 @@ export function UserMenu() {
               </>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
