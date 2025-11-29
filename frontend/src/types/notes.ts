@@ -1,0 +1,99 @@
+/**
+ * Notes Types
+ * Aligned with backend Note DTOs
+ */
+
+/**
+ * Note entity (aligned with backend NoteResponse)
+ */
+export interface Note {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  tags: string[];
+  isArchived: boolean;
+  userId?: string;
+  source?: string;
+  externalId?: string;
+  folder?: string;
+}
+
+/**
+ * Create note request (aligned with backend CreateNoteRequest)
+ */
+export interface CreateNoteRequest {
+  title: string;
+  content: string;
+  tags: string[];
+  isArchived: boolean;
+  folder?: string;
+}
+
+/**
+ * Update note request (aligned with backend UpdateNoteRequest)
+ */
+export interface UpdateNoteRequest {
+  title?: string;
+  content?: string;
+  tags?: string[];
+  isArchived?: boolean;
+  folder?: string;
+}
+
+/**
+ * Note response from API (same as Note, explicit for clarity)
+ */
+export type NoteResponse = Note;
+
+/**
+ * Import note request for bulk imports
+ */
+export interface ImportNoteRequest {
+  title: string;
+  content: string;
+  tags: string[];
+  folder?: string;
+  externalId?: string;
+  createdAt?: string;
+  modifiedAt?: string;
+}
+
+/**
+ * Import result for a single note
+ */
+export interface ImportNoteResult {
+  success: boolean;
+  noteId?: string;
+  error?: string;
+  externalId?: string;
+}
+
+/**
+ * Bulk import response
+ */
+export interface ImportNotesResponse {
+  totalProcessed: number;
+  successCount: number;
+  failureCount: number;
+  results: ImportNoteResult[];
+}
+
+/**
+ * Note filter state for UI
+ */
+export interface NotesFilterState {
+  dateFilter: string;
+  selectedTags: string[];
+  sortBy: 'newest' | 'oldest' | 'title-asc' | 'title-desc';
+  archiveFilter: 'all' | 'active' | 'archived';
+  customDateStart?: string;
+  customDateEnd?: string;
+}
+
+/**
+ * Note search mode
+ */
+export type NoteSearchMode = 'title' | 'content' | 'both';
+

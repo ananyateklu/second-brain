@@ -24,3 +24,6 @@ export type { StreamingIndicatorProps } from './StreamingIndicator';
 
 export { ImageGenerationPanel } from './ImageGenerationPanel';
 
+// Input sub-components
+export * from './input';
+

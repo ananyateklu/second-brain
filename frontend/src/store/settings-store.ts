@@ -1,136 +1,169 @@
+/**
+ * Settings Store
+ * Manages user preferences with service layer integration
+ */
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { apiClient } from '../lib/api-client';
+import { userPreferencesService, DEFAULT_PREFERENCES } from '../services';
+import { STORAGE_KEYS } from '../lib/constants';
+import type { UserPreferences } from '../types/auth';
+import type { VectorStoreProvider } from '../types/rag';
+
+// ============================================
+// Store Types
+// ============================================
 
 type NoteView = 'list' | 'grid';
-type VectorStoreProvider = 'PostgreSQL' | 'Pinecone';
+type FontSize = 'small' | 'medium' | 'large';
 
-interface SettingsState {
-  // General Preferences
-  defaultNoteView: NoteView;
-  itemsPerPage: number;
-  autoSaveInterval: number; // in milliseconds
-  enableNotifications: boolean;
-  fontSize: 'small' | 'medium' | 'large';
-  // RAG Settings
-  vectorStoreProvider: VectorStoreProvider;
-  // Chat Preferences
-  chatProvider: string | null;
-  chatModel: string | null;
-  // Ollama Settings
-  ollamaRemoteUrl: string | null;
-  useRemoteOllama: boolean;
+interface SettingsState extends UserPreferences {
+  // Additional local settings not synced to backend
+  autoSaveInterval: number;
 }
 
 interface SettingsActions {
+  // General preferences
   setDefaultNoteView: (view: NoteView) => void;
   setItemsPerPage: (count: number) => void;
   setAutoSaveInterval: (interval: number) => void;
   setEnableNotifications: (enabled: boolean) => void;
-  setFontSize: (size: 'small' | 'medium' | 'large') => void;
+  setFontSize: (size: FontSize) => void;
+  
+  // RAG settings
   setVectorStoreProvider: (provider: VectorStoreProvider, syncToBackend?: boolean) => Promise<void>;
+  
+  // Chat preferences
   setChatProvider: (provider: string | null) => void;
   setChatModel: (model: string | null) => void;
+  
+  // Ollama settings
   setOllamaRemoteUrl: (url: string | null) => void;
   setUseRemoteOllama: (enabled: boolean) => void;
+  
+  // Sync actions
   loadPreferencesFromBackend: (userId: string) => Promise<void>;
   syncPreferencesToBackend: (userId: string) => Promise<void>;
+  
+  // Reset
   resetSettings: () => void;
 }
 
 type SettingsStore = SettingsState & SettingsActions;
 
-const SETTINGS_STORAGE_KEY = 'second-brain-settings';
+// ============================================
+// Helper Functions
+// ============================================
 
-const DEFAULT_SETTINGS: SettingsState = {
-  defaultNoteView: 'list',
-  itemsPerPage: 20,
-  autoSaveInterval: 2000, // 2 seconds
-  enableNotifications: true,
-  fontSize: 'medium',
-  vectorStoreProvider: 'PostgreSQL',
-  chatProvider: null,
-  chatModel: null,
-  ollamaRemoteUrl: null,
-  useRemoteOllama: false,
-};
-
-// Helper function to get userId from auth store
+/**
+ * Get userId from auth storage
+ */
 const getUserId = (): string | null => {
-  try {
-    const authState = localStorage.getItem('auth-storage');
-    if (!authState) return null;
-    const parsed = JSON.parse(authState);
-    return parsed?.state?.user?.userId || null;
-  } catch {
-    return null;
-  }
+  return userPreferencesService.getUserIdFromStorage();
 };
+
+/**
+ * Create debounced sync function
+ */
+const debouncedSync = userPreferencesService.createDebouncedSync(1000);
+
+// ============================================
+// Store Implementation
+// ============================================
 
 export const useSettingsStore = create<SettingsStore>()(
   persist(
     (set, get) => ({
-      ...DEFAULT_SETTINGS,
+      // Initial state
+      ...DEFAULT_PREFERENCES,
+      autoSaveInterval: 2000,
+
+      // ============================================
+      // General Preferences
+      // ============================================
 
       setDefaultNoteView: (view) => {
         set({ defaultNoteView: view });
         const userId = getUserId();
         if (userId) {
-          get().syncPreferencesToBackend(userId).catch(console.error);
+          debouncedSync(userId, { ...get(), defaultNoteView: view });
         }
       },
 
       setItemsPerPage: (count) => {
-        set({ itemsPerPage: count });
+        const validCount = userPreferencesService.validateItemsPerPage(count);
+        set({ itemsPerPage: validCount });
         const userId = getUserId();
         if (userId) {
-          get().syncPreferencesToBackend(userId).catch(console.error);
+          debouncedSync(userId, { ...get(), itemsPerPage: validCount });
         }
       },
 
-      setAutoSaveInterval: (interval) => set({ autoSaveInterval: interval }),
+      setAutoSaveInterval: (interval) => {
+        set({ autoSaveInterval: interval });
+      },
 
       setEnableNotifications: (enabled) => {
         set({ enableNotifications: enabled });
         const userId = getUserId();
         if (userId) {
-          get().syncPreferencesToBackend(userId).catch(console.error);
+          debouncedSync(userId, { ...get(), enableNotifications: enabled });
         }
       },
 
       setFontSize: (size) => {
-        set({ fontSize: size });
+        const validSize = userPreferencesService.validateFontSize(size);
+        set({ fontSize: validSize });
         const userId = getUserId();
         if (userId) {
-          get().syncPreferencesToBackend(userId).catch(console.error);
+          debouncedSync(userId, { ...get(), fontSize: validSize });
         }
       },
 
-      setVectorStoreProvider: async (provider, syncToBackend = true) => {
-        set({ vectorStoreProvider: provider });
+      // ============================================
+      // RAG Settings
+      // ============================================
 
-        // Sync to backend if requested
+      setVectorStoreProvider: async (provider, syncToBackend = true) => {
+        const validProvider = userPreferencesService.validateVectorStoreProvider(provider);
+        set({ vectorStoreProvider: validProvider });
+
         if (syncToBackend) {
-          const { syncPreferencesToBackend } = get();
           const userId = getUserId();
           if (userId) {
             try {
-              await syncPreferencesToBackend(userId);
+              await userPreferencesService.syncToBackend(userId, {
+                ...get(),
+                vectorStoreProvider: validProvider,
+              });
             } catch (error) {
-              console.error('Failed to sync vector store provider to backend:', error);
+              console.error('Failed to sync vector store provider to backend:', { error });
             }
           }
         }
       },
 
-      setChatProvider: (provider) => set({ chatProvider: provider }),
-      setChatModel: (model) => set({ chatModel: model }),
+      // ============================================
+      // Chat Preferences
+      // ============================================
+
+      setChatProvider: (provider) => {
+        set({ chatProvider: provider });
+      },
+
+      setChatModel: (model) => {
+        set({ chatModel: model });
+      },
+
+      // ============================================
+      // Ollama Settings
+      // ============================================
 
       setOllamaRemoteUrl: (url) => {
         set({ ollamaRemoteUrl: url });
         const userId = getUserId();
         if (userId) {
-          get().syncPreferencesToBackend(userId).catch(console.error);
+          debouncedSync(userId, { ...get(), ollamaRemoteUrl: url });
         }
       },
 
@@ -138,145 +171,182 @@ export const useSettingsStore = create<SettingsStore>()(
         set({ useRemoteOllama: enabled });
         const userId = getUserId();
         if (userId) {
-          get().syncPreferencesToBackend(userId).catch(console.error);
+          debouncedSync(userId, { ...get(), useRemoteOllama: enabled });
         }
       },
+
+      // ============================================
+      // Sync Actions
+      // ============================================
 
       loadPreferencesFromBackend: async (userId: string) => {
         try {
           console.log('Loading preferences from backend for user:', userId);
-          const preferences = await apiClient.get<{
-            chatProvider: string | null;
-            chatModel: string | null;
-            vectorStoreProvider: string;
-            defaultNoteView: string;
-            itemsPerPage: number;
-            fontSize: string;
-            enableNotifications: boolean;
-            ollamaRemoteUrl: string | null;
-            useRemoteOllama: boolean;
-          }>(`/userpreferences/${userId}`);
-
-          console.log('Loaded preferences from backend:', preferences);
-
-          // Validate and sanitize incoming data to prevent rendering issues
-          const currentState = get();
+          const preferences = await userPreferencesService.loadAndMergePreferences(userId);
           
-          // Validate vectorStoreProvider
-          let validatedVectorStore: VectorStoreProvider = currentState.vectorStoreProvider;
-          if (preferences.vectorStoreProvider === 'PostgreSQL' || preferences.vectorStoreProvider === 'Pinecone') {
-            validatedVectorStore = preferences.vectorStoreProvider;
-          } else if (preferences.vectorStoreProvider === 'Firestore') {
-            // Migration from old value
-            validatedVectorStore = 'PostgreSQL';
-          }
-
-          // Validate defaultNoteView
-          const validatedNoteView: NoteView = 
-            preferences.defaultNoteView === 'grid' ? 'grid' : 'list';
-
-          // Validate fontSize
-          const validatedFontSize: 'small' | 'medium' | 'large' = 
-            ['small', 'medium', 'large'].includes(preferences.fontSize) 
-              ? (preferences.fontSize as 'small' | 'medium' | 'large')
-              : currentState.fontSize;
-
-          // Validate itemsPerPage
-          const validatedItemsPerPage = 
-            typeof preferences.itemsPerPage === 'number' && preferences.itemsPerPage > 0
-              ? preferences.itemsPerPage
-              : currentState.itemsPerPage;
-
           set({
-            chatProvider: preferences.chatProvider ?? null,
-            chatModel: preferences.chatModel ?? null,
-            vectorStoreProvider: validatedVectorStore,
-            defaultNoteView: validatedNoteView,
-            itemsPerPage: validatedItemsPerPage,
-            fontSize: validatedFontSize,
-            enableNotifications: typeof preferences.enableNotifications === 'boolean' 
-              ? preferences.enableNotifications 
-              : currentState.enableNotifications,
-            ollamaRemoteUrl: preferences.ollamaRemoteUrl ?? null,
-            useRemoteOllama: typeof preferences.useRemoteOllama === 'boolean'
-              ? preferences.useRemoteOllama
-              : currentState.useRemoteOllama,
+            chatProvider: preferences.chatProvider,
+            chatModel: preferences.chatModel,
+            vectorStoreProvider: preferences.vectorStoreProvider,
+            defaultNoteView: preferences.defaultNoteView,
+            itemsPerPage: preferences.itemsPerPage,
+            fontSize: preferences.fontSize,
+            enableNotifications: preferences.enableNotifications,
+            ollamaRemoteUrl: preferences.ollamaRemoteUrl,
+            useRemoteOllama: preferences.useRemoteOllama,
           });
+          
+          console.log('Loaded preferences:', preferences);
         } catch (error) {
           console.error('Failed to load preferences from backend:', { error });
         }
       },
 
       syncPreferencesToBackend: async (userId: string) => {
-        try {
-          const state = get();
-          const payload = {
-            chatProvider: state.chatProvider,
-            chatModel: state.chatModel,
-            vectorStoreProvider: state.vectorStoreProvider,
-            defaultNoteView: state.defaultNoteView,
-            itemsPerPage: state.itemsPerPage,
-            fontSize: state.fontSize,
-            enableNotifications: state.enableNotifications,
-            ollamaRemoteUrl: state.ollamaRemoteUrl,
-            useRemoteOllama: state.useRemoteOllama,
-          };
+        const state = get();
+        const preferences: UserPreferences = {
+          chatProvider: state.chatProvider,
+          chatModel: state.chatModel,
+          vectorStoreProvider: state.vectorStoreProvider,
+          defaultNoteView: state.defaultNoteView,
+          itemsPerPage: state.itemsPerPage,
+          fontSize: state.fontSize,
+          enableNotifications: state.enableNotifications,
+          ollamaRemoteUrl: state.ollamaRemoteUrl,
+          useRemoteOllama: state.useRemoteOllama,
+        };
 
-          console.log('Syncing preferences to backend:', payload);
-          const response = await apiClient.put(`/userpreferences/${userId}`, payload);
-          console.log('Preferences synced successfully:', response);
+        try {
+          console.log('Syncing preferences to backend:', preferences);
+          await userPreferencesService.syncToBackend(userId, preferences);
+          console.log('Preferences synced successfully');
         } catch (error) {
-          console.error('Failed to sync preferences to backend:', error);
+          console.error('Failed to sync preferences to backend:', { error });
           throw error;
         }
       },
 
-      resetSettings: () => set(DEFAULT_SETTINGS),
+      // ============================================
+      // Reset
+      // ============================================
+
+      resetSettings: () => {
+        set({
+          ...DEFAULT_PREFERENCES,
+          autoSaveInterval: 2000,
+        });
+      },
     }),
     {
-      name: SETTINGS_STORAGE_KEY,
+      name: STORAGE_KEYS.SETTINGS,
       merge: (persistedState, currentState) => {
         const parsed = persistedState as Partial<SettingsState>;
-        // Migration: convert old 'Firestore' value to 'PostgreSQL'
-        let vectorStoreProvider = parsed.vectorStoreProvider;
-        if (vectorStoreProvider === 'Firestore' as unknown as VectorStoreProvider) {
-          vectorStoreProvider = 'PostgreSQL';
-        }
-        return {
-          ...currentState,
-          ...parsed,
-          // Ensure valid values (migration/validation logic)
-          defaultNoteView: parsed.defaultNoteView === 'grid' ? 'grid' : 'list',
-          itemsPerPage:
-            typeof parsed.itemsPerPage === 'number' && parsed.itemsPerPage > 0
-              ? parsed.itemsPerPage
-              : currentState.itemsPerPage,
-          autoSaveInterval:
-            typeof parsed.autoSaveInterval === 'number' &&
-              parsed.autoSaveInterval > 0
-              ? parsed.autoSaveInterval
-              : currentState.autoSaveInterval,
-          enableNotifications:
-            typeof parsed.enableNotifications === 'boolean'
-              ? parsed.enableNotifications
-              : currentState.enableNotifications,
-          fontSize:
-            parsed.fontSize && ['small', 'medium', 'large'].includes(parsed.fontSize)
-              ? (parsed.fontSize as 'small' | 'medium' | 'large')
-              : currentState.fontSize,
-          vectorStoreProvider:
-            vectorStoreProvider === 'Pinecone' || vectorStoreProvider === 'PostgreSQL'
-              ? vectorStoreProvider
-              : currentState.vectorStoreProvider,
-          chatProvider: parsed.chatProvider ?? null,
-          chatModel: parsed.chatModel ?? null,
-          ollamaRemoteUrl: parsed.ollamaRemoteUrl ?? null,
-          useRemoteOllama:
-            typeof parsed.useRemoteOllama === 'boolean'
-              ? parsed.useRemoteOllama
-              : currentState.useRemoteOllama,
-        };
+        return userPreferencesService.validatePreferences(
+          {
+            ...currentState,
+            ...parsed,
+            autoSaveInterval: parsed.autoSaveInterval ?? currentState.autoSaveInterval,
+          },
+          DEFAULT_PREFERENCES
+        ) as SettingsState;
       },
     }
   )
 );
+
+// ============================================
+// Selectors
+// ============================================
+
+/**
+ * Select note view preference
+ */
+export const selectNoteView = (state: SettingsStore) => state.defaultNoteView;
+
+/**
+ * Select items per page
+ */
+export const selectItemsPerPage = (state: SettingsStore) => state.itemsPerPage;
+
+/**
+ * Select font size
+ */
+export const selectFontSize = (state: SettingsStore) => state.fontSize;
+
+/**
+ * Select vector store provider
+ */
+export const selectVectorStoreProvider = (state: SettingsStore) => state.vectorStoreProvider;
+
+/**
+ * Select chat provider
+ */
+export const selectChatProvider = (state: SettingsStore) => state.chatProvider;
+
+/**
+ * Select chat model
+ */
+export const selectChatModel = (state: SettingsStore) => state.chatModel;
+
+/**
+ * Select Ollama remote URL
+ */
+export const selectOllamaRemoteUrl = (state: SettingsStore) => state.ollamaRemoteUrl;
+
+/**
+ * Select use remote Ollama
+ */
+export const selectUseRemoteOllama = (state: SettingsStore) => state.useRemoteOllama;
+
+/**
+ * Select notifications enabled
+ */
+export const selectNotificationsEnabled = (state: SettingsStore) => state.enableNotifications;
+
+// ============================================
+// Selector Hooks
+// ============================================
+
+/**
+ * Hook to get note view setting
+ */
+export const useNoteView = () => useSettingsStore(selectNoteView);
+
+/**
+ * Hook to get vector store provider
+ */
+export const useVectorStoreProvider = () => useSettingsStore(selectVectorStoreProvider);
+
+/**
+ * Hook to get chat preferences
+ */
+export const useChatPreferences = () =>
+  useSettingsStore((state) => ({
+    provider: state.chatProvider,
+    model: state.chatModel,
+  }));
+
+/**
+ * Hook to get Ollama settings
+ */
+export const useOllamaSettings = () =>
+  useSettingsStore((state) => ({
+    remoteUrl: state.ollamaRemoteUrl,
+    useRemote: state.useRemoteOllama,
+  }));
+
+/**
+ * Hook to get settings actions only
+ */
+export const useSettingsActions = () =>
+  useSettingsStore((state) => ({
+    setDefaultNoteView: state.setDefaultNoteView,
+    setItemsPerPage: state.setItemsPerPage,
+    setFontSize: state.setFontSize,
+    setVectorStoreProvider: state.setVectorStoreProvider,
+    setChatProvider: state.setChatProvider,
+    setChatModel: state.setChatModel,
+    setOllamaRemoteUrl: state.setOllamaRemoteUrl,
+    setUseRemoteOllama: state.setUseRemoteOllama,
+    resetSettings: state.resetSettings,
+  }));

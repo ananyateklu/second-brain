@@ -1,87 +1,73 @@
+/**
+ * Authentication Store
+ * Manages user authentication state with service layer integration
+ */
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { useSettingsStore } from './settings-store';
+import { authService } from '../services';
+import { userPreferencesService } from '../services';
+import { STORAGE_KEYS } from '../lib/constants';
+import type { User, AuthState } from '../types/auth';
 
-export interface User {
-  userId: string;
-  email: string;
-  displayName: string;
-  apiKey?: string;
-}
+// ============================================
+// Store Interface
+// ============================================
 
-interface AuthState {
-  user: User | null;
-  token: string | null;
-  isLoading: boolean;
-  isAuthenticated: boolean;
-  error: string | null;
-  
-  // Actions
+interface AuthActions {
+  // Auth actions
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, displayName?: string) => Promise<void>;
   signOut: () => void;
+  
+  // User actions
   setUser: (user: User | null) => void;
   setToken: (token: string | null) => void;
-  clearError: () => void;
-}
-
-// Helper to make unauthenticated API calls (login/register)
-async function postAuth<T>(endpoint: string, body: unknown): Promise<T> {
-  const API_BASE_URL = import.meta.env.VITE_API_URL
-    ? `${import.meta.env.VITE_API_URL}`
-    : '/api';
   
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    let errorMessage = 'Request failed';
-    try {
-      const errorData = await response.json();
-      if (errorData.error) errorMessage = errorData.error;
-      else if (errorData.message) errorMessage = errorData.message;
-    } catch {
-      // ignore json parse error
-    }
-    throw new Error(errorMessage);
-  }
-
-  return response.json();
+  // Error handling
+  clearError: () => void;
+  setError: (error: string) => void;
+  
+  // Loading state
+  setLoading: (isLoading: boolean) => void;
 }
 
-export const useAuthStore = create<AuthState>()(
+type AuthStore = AuthState & AuthActions;
+
+// ============================================
+// Store Implementation
+// ============================================
+
+export const useAuthStore = create<AuthStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
+      // Initial state
       user: null,
       token: null,
       isLoading: false,
       isAuthenticated: false,
       error: null,
 
+      // ============================================
+      // Auth Actions
+      // ============================================
+
       login: async (email: string, password: string) => {
         set({ isLoading: true, error: null });
+        
         try {
-          const response = await postAuth<{
-            userId: string;
-            email: string;
-            displayName: string;
-            apiKey?: string;
-            token: string;
-            isNewUser: boolean;
-          }>('/auth/login', { email, password });
+          // Validate input
+          const validation = authService.validateLoginForm(email, password);
+          if (!validation.valid) {
+            throw new Error(validation.errors[0]);
+          }
+
+          // Call auth service
+          const response = await authService.login({ email, password });
+          const user = authService.extractUser(response);
 
           set({
-            user: {
-              userId: response.userId,
-              email: response.email,
-              displayName: response.displayName,
-              apiKey: response.apiKey,
-            },
+            user,
             token: response.token,
             isAuthenticated: true,
             isLoading: false,
@@ -90,7 +76,7 @@ export const useAuthStore = create<AuthState>()(
 
           // Load user preferences from backend
           try {
-            await useSettingsStore.getState().loadPreferencesFromBackend(response.userId);
+            await userPreferencesService.loadAndMergePreferences(response.userId);
           } catch (prefError) {
             console.error('Error loading user preferences:', { error: prefError });
             // Don't fail auth if preferences fail to load
@@ -107,23 +93,14 @@ export const useAuthStore = create<AuthState>()(
 
       register: async (email: string, password: string, displayName?: string) => {
         set({ isLoading: true, error: null });
+        
         try {
-          const response = await postAuth<{
-            userId: string;
-            email: string;
-            displayName: string;
-            apiKey?: string;
-            token: string;
-            isNewUser: boolean;
-          }>('/auth/register', { email, password, displayName });
+          // Call auth service
+          const response = await authService.register({ email, password, displayName });
+          const user = authService.extractUser(response);
 
           set({
-            user: {
-              userId: response.userId,
-              email: response.email,
-              displayName: response.displayName,
-              apiKey: response.apiKey,
-            },
+            user,
             token: response.token,
             isAuthenticated: true,
             isLoading: false,
@@ -132,7 +109,7 @@ export const useAuthStore = create<AuthState>()(
 
           // Load user preferences from backend
           try {
-            await useSettingsStore.getState().loadPreferencesFromBackend(response.userId);
+            await userPreferencesService.loadAndMergePreferences(response.userId);
           } catch (prefError) {
             console.error('Error loading user preferences:', { error: prefError });
             // Don't fail auth if preferences fail to load
@@ -154,7 +131,14 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: false,
           error: null,
         });
+        
+        // Clear local preferences
+        userPreferencesService.clearLocalPreferences();
       },
+
+      // ============================================
+      // User Actions
+      // ============================================
 
       setUser: (user) => {
         set({ user, isAuthenticated: !!user });
@@ -164,12 +148,28 @@ export const useAuthStore = create<AuthState>()(
         set({ token });
       },
 
+      // ============================================
+      // Error Handling
+      // ============================================
+
       clearError: () => {
         set({ error: null });
       },
+
+      setError: (error) => {
+        set({ error });
+      },
+
+      // ============================================
+      // Loading State
+      // ============================================
+
+      setLoading: (isLoading) => {
+        set({ isLoading });
+      },
     }),
     {
-      name: 'auth-storage',
+      name: STORAGE_KEYS.AUTH,
       partialize: (state) => ({
         user: state.user,
         token: state.token,
@@ -178,3 +178,87 @@ export const useAuthStore = create<AuthState>()(
     }
   )
 );
+
+// ============================================
+// Selectors
+// ============================================
+
+/**
+ * Select user from store
+ */
+export const selectUser = (state: AuthStore) => state.user;
+
+/**
+ * Select auth token
+ */
+export const selectToken = (state: AuthStore) => state.token;
+
+/**
+ * Select authentication status
+ */
+export const selectIsAuthenticated = (state: AuthStore) => state.isAuthenticated;
+
+/**
+ * Select loading status
+ */
+export const selectIsLoading = (state: AuthStore) => state.isLoading;
+
+/**
+ * Select error message
+ */
+export const selectError = (state: AuthStore) => state.error;
+
+/**
+ * Select user ID
+ */
+export const selectUserId = (state: AuthStore) => state.user?.userId ?? null;
+
+/**
+ * Select user email
+ */
+export const selectUserEmail = (state: AuthStore) => state.user?.email ?? null;
+
+/**
+ * Select user display name
+ */
+export const selectUserDisplayName = (state: AuthStore) => state.user?.displayName ?? null;
+
+// ============================================
+// Selector Hooks
+// ============================================
+
+/**
+ * Hook to get just the user
+ */
+export const useUser = () => useAuthStore(selectUser);
+
+/**
+ * Hook to get just the auth status
+ */
+export const useIsAuthenticated = () => useAuthStore(selectIsAuthenticated);
+
+/**
+ * Hook to get just the user ID
+ */
+export const useUserId = () => useAuthStore(selectUserId);
+
+/**
+ * Hook to get auth loading state
+ */
+export const useAuthLoading = () => useAuthStore(selectIsLoading);
+
+/**
+ * Hook to get auth error
+ */
+export const useAuthError = () => useAuthStore(selectError);
+
+/**
+ * Hook to get auth actions only (no re-renders on state changes)
+ */
+export const useAuthActions = () =>
+  useAuthStore((state) => ({
+    login: state.login,
+    register: state.register,
+    signOut: state.signOut,
+    clearError: state.clearError,
+  }));
