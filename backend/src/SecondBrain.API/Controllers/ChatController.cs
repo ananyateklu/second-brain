@@ -18,6 +18,7 @@ public class ChatController : ControllerBase
 {
     private readonly IChatRepository _chatRepository;
     private readonly IAIProviderFactory _providerFactory;
+    private readonly IImageGenerationProviderFactory _imageGenerationFactory;
     private readonly IRagService _ragService;
     private readonly IUserPreferencesService _userPreferencesService;
     private readonly ILogger<ChatController> _logger;
@@ -25,12 +26,14 @@ public class ChatController : ControllerBase
     public ChatController(
         IChatRepository chatRepository,
         IAIProviderFactory providerFactory,
+        IImageGenerationProviderFactory imageGenerationFactory,
         IRagService ragService,
         IUserPreferencesService userPreferencesService,
         ILogger<ChatController> logger)
     {
         _chatRepository = chatRepository;
         _providerFactory = providerFactory;
+        _imageGenerationFactory = imageGenerationFactory;
         _ragService = ragService;
         _userPreferencesService = userPreferencesService;
         _logger = logger;
@@ -812,6 +815,206 @@ public class ChatController : ControllerBase
             return StatusCode(500, new { error = "Failed to delete conversation" });
         }
     }
+
+    /// <summary>
+    /// Generate an image in a conversation
+    /// </summary>
+    [HttpPost("conversations/{id}/generate-image")]
+    [ProducesResponseType(typeof(ImageGenerationApiResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<ImageGenerationApiResponse>> GenerateImage(
+        string id,
+        [FromBody] GenerateImageRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = HttpContext.Items["UserId"]?.ToString();
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { error = "Not authenticated" });
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Prompt))
+        {
+            return BadRequest(new { error = "Prompt is required" });
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Provider))
+        {
+            return BadRequest(new { error = "Provider is required" });
+        }
+
+        try
+        {
+            _logger.LogInformation(
+                "Generating image. ConversationId: {ConversationId}, Provider: {Provider}, Model: {Model}, UserId: {UserId}",
+                id, request.Provider, request.Model, userId);
+
+            // Verify conversation exists and belongs to user
+            var conversation = await _chatRepository.GetByIdAsync(id);
+            if (conversation == null)
+            {
+                return NotFound(new { error = $"Conversation '{id}' not found" });
+            }
+
+            if (conversation.UserId != userId)
+            {
+                _logger.LogWarning(
+                    "User attempted to generate image in conversation belonging to another user. UserId: {UserId}, ConversationId: {ConversationId}",
+                    userId, id);
+                return StatusCode(StatusCodes.Status403Forbidden, new { error = "Access denied" });
+            }
+
+            // Get the image generation provider
+            if (!_imageGenerationFactory.HasProvider(request.Provider))
+            {
+                return BadRequest(new { error = $"Provider '{request.Provider}' not found or does not support image generation" });
+            }
+
+            var imageProvider = _imageGenerationFactory.GetProvider(request.Provider);
+            if (!imageProvider.IsEnabled)
+            {
+                return BadRequest(new { error = $"Provider '{request.Provider}' is not enabled" });
+            }
+
+            // Create the image generation request
+            var imageRequest = new ImageGenerationRequest
+            {
+                Prompt = request.Prompt,
+                Model = request.Model,
+                Size = request.Size ?? "1024x1024",
+                Quality = request.Quality ?? "standard",
+                Style = request.Style ?? "vivid",
+                Count = request.Count ?? 1,
+                ResponseFormat = "b64_json" // Always use base64 for consistent handling
+            };
+
+            // Generate the image
+            var result = await imageProvider.GenerateImageAsync(imageRequest, cancellationToken);
+
+            if (!result.Success)
+            {
+                _logger.LogWarning(
+                    "Image generation failed. ConversationId: {ConversationId}, Provider: {Provider}, Error: {Error}",
+                    id, request.Provider, result.Error);
+                return BadRequest(new { error = result.Error });
+            }
+
+            // Add user message for the prompt
+            var userMessage = new Core.Entities.ChatMessage
+            {
+                Id = Guid.NewGuid().ToString(),
+                Role = "user",
+                Content = $"[Image Generation Request]\n{request.Prompt}",
+                Timestamp = DateTime.UtcNow,
+                ConversationId = id
+            };
+            conversation.Messages.Add(userMessage);
+
+            // Add assistant message with the generated images
+            var assistantContent = result.Images.Any(i => !string.IsNullOrEmpty(i.RevisedPrompt))
+                ? $"[Generated Image]\nRevised prompt: {result.Images.First().RevisedPrompt}"
+                : "[Generated Image]";
+
+            var assistantMessageId = Guid.NewGuid().ToString();
+            var assistantMessage = new Core.Entities.ChatMessage
+            {
+                Id = assistantMessageId,
+                Role = "assistant",
+                Content = assistantContent,
+                Timestamp = DateTime.UtcNow,
+                ConversationId = id,
+                GeneratedImages = result.Images.Select(img => new Core.Entities.GeneratedImageData
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    MessageId = assistantMessageId,
+                    Base64Data = img.Base64Data,
+                    Url = img.Url,
+                    RevisedPrompt = img.RevisedPrompt,
+                    MediaType = img.MediaType,
+                    Width = img.Width,
+                    Height = img.Height
+                }).ToList()
+            };
+            conversation.Messages.Add(assistantMessage);
+            conversation.UpdatedAt = DateTime.UtcNow;
+
+            // Update conversation in database
+            await _chatRepository.UpdateAsync(id, conversation);
+
+            _logger.LogInformation(
+                "Successfully generated {Count} image(s). ConversationId: {ConversationId}, Provider: {Provider}",
+                result.Images.Count, id, request.Provider);
+
+            // Return the response
+            return Ok(new ImageGenerationApiResponse
+            {
+                Success = true,
+                Images = result.Images.Select(img => new GeneratedImageDto
+                {
+                    Base64Data = img.Base64Data,
+                    Url = img.Url,
+                    RevisedPrompt = img.RevisedPrompt,
+                    MediaType = img.MediaType,
+                    Width = img.Width,
+                    Height = img.Height
+                }).ToList(),
+                Model = result.Model,
+                Provider = result.Provider,
+                ConversationId = id
+            });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating image. ConversationId: {ConversationId}", id);
+            return StatusCode(500, new { error = "Failed to generate image" });
+        }
+    }
+
+    /// <summary>
+    /// Get available image generation providers and their models
+    /// </summary>
+    [HttpGet("image-generation/providers")]
+    [ProducesResponseType(typeof(IEnumerable<ImageProviderInfo>), StatusCodes.Status200OK)]
+    public ActionResult<IEnumerable<ImageProviderInfo>> GetImageGenerationProviders()
+    {
+        var providers = _imageGenerationFactory.GetEnabledProviders()
+            .Select(p => new ImageProviderInfo
+            {
+                Provider = p.ProviderName,
+                Models = p.GetSupportedModels().ToList(),
+                IsEnabled = p.IsEnabled
+            })
+            .ToList();
+
+        return Ok(providers);
+    }
+
+    /// <summary>
+    /// Get supported sizes for a specific provider and model
+    /// </summary>
+    [HttpGet("image-generation/providers/{provider}/sizes")]
+    [ProducesResponseType(typeof(IEnumerable<string>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public ActionResult<IEnumerable<string>> GetImageGenerationSizes(string provider, [FromQuery] string? model = null)
+    {
+        if (!_imageGenerationFactory.HasProvider(provider))
+        {
+            return NotFound(new { error = $"Provider '{provider}' not found" });
+        }
+
+        var imageProvider = _imageGenerationFactory.GetProvider(provider);
+        var sizes = imageProvider.GetSupportedSizes(model ?? string.Empty);
+
+        return Ok(sizes);
+    }
 }
 
 // DTOs for API requests
@@ -851,5 +1054,71 @@ public class ChatResponseWithRag
 {
     public ChatConversation Conversation { get; set; } = null!;
     public List<RagContextResponse> RetrievedNotes { get; set; } = new();
+}
+
+// Image Generation DTOs
+public class GenerateImageRequest
+{
+    /// <summary>
+    /// The text prompt describing the image to generate
+    /// </summary>
+    public string Prompt { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The AI provider to use (e.g., "OpenAI", "Gemini", "Grok")
+    /// </summary>
+    public string Provider { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The model to use (e.g., "dall-e-3", "grok-2-image")
+    /// </summary>
+    public string? Model { get; set; }
+
+    /// <summary>
+    /// Size of the generated image (e.g., "1024x1024")
+    /// </summary>
+    public string? Size { get; set; }
+
+    /// <summary>
+    /// Quality level ("standard" or "hd")
+    /// </summary>
+    public string? Quality { get; set; }
+
+    /// <summary>
+    /// Style ("vivid" or "natural")
+    /// </summary>
+    public string? Style { get; set; }
+
+    /// <summary>
+    /// Number of images to generate
+    /// </summary>
+    public int? Count { get; set; }
+}
+
+public class ImageGenerationApiResponse
+{
+    public bool Success { get; set; }
+    public List<GeneratedImageDto> Images { get; set; } = new();
+    public string Model { get; set; } = string.Empty;
+    public string Provider { get; set; } = string.Empty;
+    public string? Error { get; set; }
+    public string ConversationId { get; set; } = string.Empty;
+}
+
+public class GeneratedImageDto
+{
+    public string? Base64Data { get; set; }
+    public string? Url { get; set; }
+    public string? RevisedPrompt { get; set; }
+    public string MediaType { get; set; } = "image/png";
+    public int? Width { get; set; }
+    public int? Height { get; set; }
+}
+
+public class ImageProviderInfo
+{
+    public string Provider { get; set; } = string.Empty;
+    public List<string> Models { get; set; } = new();
+    public bool IsEnabled { get; set; }
 }
 

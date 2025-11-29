@@ -11,9 +11,25 @@ import {
   isImageFile,
   getAllSupportedExtensions,
 } from '../../../utils/multimodal-models';
-import { MessageImage } from '../types/chat';
+import {
+  isImageGenerationProvider,
+  getImageGenerationConfig,
+  getImageModelInfo,
+  formatSizeLabel,
+  QUALITY_OPTIONS,
+  STYLE_OPTIONS,
+} from '../../../utils/image-generation-models';
+import { MessageImage, ImageGenerationResponse } from '../types/chat';
 import { useNotes } from '../../notes/hooks/use-notes-query';
 import { Note } from '../../notes/types/note';
+import { ImageGenerationPanel } from './ImageGenerationPanel';
+
+export interface ImageGenerationParams {
+  prompt: string;
+  size: string;
+  quality?: string;
+  style?: string;
+}
 
 export interface ChatInputAreaProps {
   value: string;
@@ -31,6 +47,14 @@ export interface ChatInputAreaProps {
   agentModeEnabled?: boolean;
   /** Whether notes capability is enabled in agent mode */
   notesCapabilityEnabled?: boolean;
+  /** Current conversation ID for image generation */
+  conversationId?: string;
+  /** Callback when image generation completes */
+  onImageGenerated?: (response: ImageGenerationResponse) => void;
+  /** Whether we're in image generation mode (image model selected) */
+  isImageGenerationMode?: boolean;
+  /** Callback to generate an image (handles conversation creation) */
+  onGenerateImage?: (params: ImageGenerationParams) => Promise<void>;
 }
 
 // Suggested prompts configuration
@@ -114,6 +138,10 @@ export function ChatInputArea({
   model,
   agentModeEnabled = false,
   notesCapabilityEnabled = false,
+  conversationId,
+  onImageGenerated,
+  isImageGenerationMode = false,
+  onGenerateImage,
 }: ChatInputAreaProps) {
   const inputTokenCount = useMemo(() => estimateTokenCount(value), [value]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -125,6 +153,35 @@ export function ChatInputArea({
   const [lightboxImage, setLightboxImage] = useState<FileAttachment | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Image generation state
+  const [showImageGenPanel, setShowImageGenPanel] = useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [imageGenError, setImageGenError] = useState<string | null>(null);
+  
+  // Image generation settings (for inline mode)
+  const [imageSize, setImageSize] = useState('1024x1024');
+  const [imageQuality, setImageQuality] = useState('standard');
+  const [imageStyle, setImageStyle] = useState('vivid');
+
+  // Check if current provider supports image generation
+  const supportsImageGeneration = useMemo(() => {
+    if (!provider) return false;
+    return isImageGenerationProvider(provider);
+  }, [provider]);
+
+  // Get current image model info for inline settings
+  const currentImageModelInfo = useMemo(() => {
+    if (!isImageGenerationMode || !provider || !model) return null;
+    return getImageModelInfo(provider, model);
+  }, [isImageGenerationMode, provider, model]);
+
+  // Update image size when model changes
+  useEffect(() => {
+    if (currentImageModelInfo) {
+      setImageSize(currentImageModelInfo.defaultSize);
+    }
+  }, [currentImageModelInfo]);
 
   // Mentions state
   const [showMentions, setShowMentions] = useState(false);
@@ -270,7 +327,36 @@ export function ChatInputArea({
     }
   };
 
+  // Handle image generation when in image mode
+  const handleImageGeneration = useCallback(async () => {
+    if (!value.trim() || !onGenerateImage) return;
+
+    setIsGeneratingImage(true);
+    setImageGenError(null);
+
+    try {
+      await onGenerateImage({
+        prompt: value.trim(),
+        size: imageSize,
+        quality: currentImageModelInfo?.supportsQuality ? imageQuality : undefined,
+        style: currentImageModelInfo?.supportsStyle ? imageStyle : undefined,
+      });
+      onChange('');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to generate image';
+      setImageGenError(errorMessage);
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  }, [value, imageSize, imageQuality, imageStyle, currentImageModelInfo, onChange, onGenerateImage]);
+
   const handleSend = useCallback(() => {
+    // Handle image generation mode
+    if (isImageGenerationMode) {
+      handleImageGeneration();
+      return;
+    }
+
     if (!value.trim() && attachedFiles.length === 0) return;
 
     // Convert image attachments to MessageImage format
@@ -290,7 +376,7 @@ export function ChatInputArea({
     setAttachedFiles([]);
     setFileError(null);
     setShowToolbar(false);
-  }, [value, attachedFiles, onSend]);
+  }, [value, attachedFiles, onSend, isImageGenerationMode, handleImageGeneration]);
 
   const handleFileSelect = useCallback(
     async (files: FileList | null) => {
@@ -433,7 +519,24 @@ export function ChatInputArea({
     textareaRef.current?.focus();
   }, [onChange]);
 
-  const hasContent = value.trim() || attachedFiles.length > 0;
+  // Image generation handlers
+  const handleImageGenerateStart = useCallback(() => {
+    setIsGeneratingImage(true);
+    setImageGenError(null);
+  }, []);
+
+  const handleImageGenerateComplete = useCallback((response: ImageGenerationResponse | null, error?: string) => {
+    setIsGeneratingImage(false);
+    if (error) {
+      setImageGenError(error);
+    } else if (response) {
+      setShowImageGenPanel(false);
+      setImageGenError(null);
+      onImageGenerated?.(response);
+    }
+  }, [onImageGenerated]);
+
+  const hasContent = isImageGenerationMode ? value.trim().length > 0 : (value.trim() || attachedFiles.length > 0);
   const wordCount = value.trim() ? value.trim().split(/\s+/).length : 0;
   const charCount = value.length;
 
@@ -445,8 +548,8 @@ export function ChatInputArea({
       onDrop={handleDrop}
     >
       <div className="max-w-3xl mx-auto">
-        {/* Suggested Prompts - Only show when input is empty AND agent mode + notes capability are enabled */}
-        {!value.trim() && !attachedFiles.length && !disabled && agentModeEnabled && notesCapabilityEnabled && (
+        {/* Suggested Prompts - Only show when input is empty AND agent mode + notes capability are enabled AND not in image mode */}
+        {!isImageGenerationMode && !value.trim() && !attachedFiles.length && !disabled && agentModeEnabled && notesCapabilityEnabled && (
           <div className="mb-3 flex flex-wrap gap-2 justify-center">
             {SUGGESTED_PROMPTS.map((prompt, index) => (
               <button
@@ -467,8 +570,8 @@ export function ChatInputArea({
           </div>
         )}
 
-        {/* Attachment Gallery */}
-        {attachedFiles.length > 0 && (
+        {/* Attachment Gallery - hidden in image generation mode */}
+        {!isImageGenerationMode && attachedFiles.length > 0 && (
           <div
             className="mb-3 flex flex-wrap gap-3 p-3 rounded-2xl transition-all duration-200"
             style={{
@@ -689,6 +792,175 @@ export function ChatInputArea({
           </div>
         )}
 
+        {/* Image Generation Panel - only show when not in image generation mode (legacy toggle panel) */}
+        {!isImageGenerationMode && showImageGenPanel && conversationId && (
+          <div className="mb-3">
+            <ImageGenerationPanel
+              conversationId={conversationId}
+              isGenerating={isGeneratingImage}
+              onGenerateStart={handleImageGenerateStart}
+              onGenerateComplete={handleImageGenerateComplete}
+              onClose={() => setShowImageGenPanel(false)}
+              initialPrompt={value}
+            />
+          </div>
+        )}
+
+        {/* Image Generation Error */}
+        {imageGenError && (
+          <div
+            className="mb-2 px-4 py-2.5 rounded-xl text-sm animate-in fade-in duration-200"
+            style={{
+              backgroundColor: 'var(--error-bg)',
+              color: 'var(--error-text)',
+              border: '1px solid var(--error-border)',
+            }}
+          >
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {imageGenError}
+              <button
+                onClick={() => setImageGenError(null)}
+                className="ml-auto p-0.5 rounded hover:bg-white/10"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Image Generation Settings Bar - shown when in image mode */}
+        {isImageGenerationMode && currentImageModelInfo && (
+          <div
+            className="mb-3 flex items-center gap-3 p-3 rounded-2xl animate-in slide-in-from-bottom-2 duration-200"
+            style={{
+              backgroundColor: 'var(--surface-elevated)',
+              border: '1px solid var(--border)',
+            }}
+          >
+            {/* Icon */}
+            <div
+              className="p-2 rounded-lg flex-shrink-0"
+              style={{ backgroundColor: 'var(--color-primary-alpha)' }}
+            >
+              <svg
+                className="w-4 h-4"
+                style={{ color: 'var(--color-brand-400)' }}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+            </div>
+
+            {/* Size Selector */}
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                Size
+              </label>
+              <select
+                value={imageSize}
+                onChange={(e) => setImageSize(e.target.value)}
+                disabled={isGeneratingImage}
+                className="px-2.5 py-1.5 rounded-lg text-xs outline-none cursor-pointer"
+                style={{
+                  backgroundColor: 'var(--surface-card)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-primary)',
+                }}
+              >
+                {currentImageModelInfo.sizes.map((s) => (
+                  <option key={s} value={s}>
+                    {formatSizeLabel(s)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Quality Selector (if supported) */}
+            {currentImageModelInfo.supportsQuality && (
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                  Quality
+                </label>
+                <select
+                  value={imageQuality}
+                  onChange={(e) => setImageQuality(e.target.value)}
+                  disabled={isGeneratingImage}
+                  className="px-2.5 py-1.5 rounded-lg text-xs outline-none cursor-pointer"
+                  style={{
+                    backgroundColor: 'var(--surface-card)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text-primary)',
+                  }}
+                >
+                  {QUALITY_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Style Selector (if supported) */}
+            {currentImageModelInfo.supportsStyle && (
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                  Style
+                </label>
+                <select
+                  value={imageStyle}
+                  onChange={(e) => setImageStyle(e.target.value)}
+                  disabled={isGeneratingImage}
+                  className="px-2.5 py-1.5 rounded-lg text-xs outline-none cursor-pointer"
+                  style={{
+                    backgroundColor: 'var(--surface-card)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text-primary)',
+                  }}
+                >
+                  {STYLE_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Model description tooltip */}
+            {currentImageModelInfo.description && (
+              <div className="ml-auto" title={currentImageModelInfo.description}>
+                <svg
+                  className="w-4 h-4"
+                  style={{ color: 'var(--text-tertiary)' }}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Main Input Container - Glassmorphism */}
         <div
           className={`chat-input-glass relative flex flex-col rounded-3xl px-4 py-3 transition-all duration-300 ${isTyping ? 'is-typing' : ''}`}
@@ -743,42 +1015,72 @@ export function ChatInputArea({
 
           {/* Input Row */}
           <div className="flex items-end gap-3">
-            {/* Attachment Button */}
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isLoading || disabled}
-              className="flex-shrink-0 p-2 rounded-xl transition-all duration-200 hover:scale-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{
-                color: attachedFiles.length > 0 ? 'var(--color-brand-400)' : 'var(--text-tertiary)',
-                backgroundColor: attachedFiles.length > 0 ? 'var(--color-primary-alpha)' : 'transparent',
-              }}
-              title={`Attach files (${attachedFiles.length})`}
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
-                />
-              </svg>
-            </button>
+            {/* Attachment Button - hidden in image generation mode */}
+            {!isImageGenerationMode && (
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isLoading || disabled}
+                className="flex-shrink-0 p-2 rounded-xl transition-all duration-200 hover:scale-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  color: attachedFiles.length > 0 ? 'var(--color-brand-400)' : 'var(--text-tertiary)',
+                  backgroundColor: attachedFiles.length > 0 ? 'var(--color-primary-alpha)' : 'transparent',
+                }}
+                title={`Attach files (${attachedFiles.length})`}
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                  />
+                </svg>
+              </button>
+            )}
 
-            {/* Formatting Toggle */}
-            <button
-              onClick={() => setShowToolbar(!showToolbar)}
-              disabled={isLoading || disabled}
-              className="flex-shrink-0 p-2 rounded-xl transition-all duration-200 hover:scale-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{
-                color: showToolbar ? 'var(--color-brand-400)' : 'var(--text-tertiary)',
-                backgroundColor: showToolbar ? 'var(--color-primary-alpha)' : 'transparent',
-              }}
-              title="Formatting options"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h8m-8 6h16" />
-              </svg>
-            </button>
+            {/* Formatting Toggle - hidden in image generation mode */}
+            {!isImageGenerationMode && (
+              <button
+                onClick={() => setShowToolbar(!showToolbar)}
+                disabled={isLoading || disabled}
+                className="flex-shrink-0 p-2 rounded-xl transition-all duration-200 hover:scale-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  color: showToolbar ? 'var(--color-brand-400)' : 'var(--text-tertiary)',
+                  backgroundColor: showToolbar ? 'var(--color-primary-alpha)' : 'transparent',
+                }}
+                title="Formatting options"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h8m-8 6h16" />
+                </svg>
+              </button>
+            )}
+
+            {/* Image Generation Toggle - only show for providers that support it when NOT in image model mode */}
+            {!isImageGenerationMode && supportsImageGeneration && conversationId && (
+              <button
+                onClick={() => {
+                  setShowImageGenPanel(!showImageGenPanel);
+                  setShowToolbar(false);
+                }}
+                disabled={isLoading || disabled || isGeneratingImage}
+                className="flex-shrink-0 p-2 rounded-xl transition-all duration-200 hover:scale-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  color: showImageGenPanel ? 'var(--color-brand-400)' : 'var(--text-tertiary)',
+                  backgroundColor: showImageGenPanel ? 'var(--color-primary-alpha)' : 'transparent',
+                }}
+                title="Generate image"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+              </button>
+            )}
 
             {/* Textarea */}
             <div className="flex-1 relative">
@@ -787,13 +1089,15 @@ export function ChatInputArea({
                 value={value}
                 onChange={(e) => handleInputChange(e.target.value)}
                 onKeyDown={handleKeyDown}
-                onPaste={handlePaste}
+                onPaste={!isImageGenerationMode ? handlePaste : undefined}
                 placeholder={
-                  supportsVision
-                    ? 'Type a message... (@ to mention notes, paste/drop files)'
-                    : 'Type a message... (@ to mention notes, Shift+Enter for new line)'
+                  isImageGenerationMode
+                    ? 'Describe the image you want to create...'
+                    : supportsVision
+                      ? 'Type a message... (@ to mention notes, paste/drop files)'
+                      : 'Type a message... (@ to mention notes, Shift+Enter for new line)'
                 }
-                disabled={isLoading || disabled}
+                disabled={isLoading || disabled || isGeneratingImage}
                 rows={1}
                 className="w-full resize-none outline-none text-sm leading-relaxed placeholder:opacity-50"
                 style={{
@@ -814,8 +1118,8 @@ export function ChatInputArea({
             {/* Send/Cancel Button */}
             <button
               onClick={isStreaming ? onCancel : handleSend}
-              disabled={!isStreaming && (isLoading || !hasContent || disabled)}
-              className={`send-button-animated flex-shrink-0 p-2.5 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${hasContent && !isStreaming ? 'has-content' : ''
+              disabled={!isStreaming && (isLoading || isGeneratingImage || !hasContent || disabled)}
+              className={`send-button-animated flex-shrink-0 p-2.5 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${hasContent && !isStreaming && !isGeneratingImage ? 'has-content' : ''
                 }`}
               style={{
                 backgroundColor: isStreaming ? 'var(--error-bg)' : 'var(--btn-primary-bg)',
@@ -825,16 +1129,35 @@ export function ChatInputArea({
                   : '1px solid var(--btn-primary-border)',
                 boxShadow: 'var(--btn-primary-shadow)',
               }}
-              title={isStreaming ? 'Cancel streaming' : isLoading ? 'Sending...' : 'Send message'}
+              title={
+                isStreaming
+                  ? 'Cancel streaming'
+                  : isGeneratingImage
+                    ? 'Generating image...'
+                    : isImageGenerationMode
+                      ? 'Generate image'
+                      : isLoading
+                        ? 'Sending...'
+                        : 'Send message'
+              }
             >
               {isStreaming ? (
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
-              ) : isLoading ? (
+              ) : isLoading || isGeneratingImage ? (
                 <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+              ) : isImageGenerationMode ? (
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
                 </svg>
               ) : (
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -874,8 +1197,8 @@ export function ChatInputArea({
           )}
         </div>
 
-        {/* Vision support indicator */}
-        {provider && model && !supportsVision && (
+        {/* Vision support indicator - hidden in image generation mode */}
+        {!isImageGenerationMode && provider && model && !supportsVision && (
           <div
             className="mt-2 text-center text-xs"
             style={{ color: 'var(--text-tertiary)', opacity: 0.7 }}

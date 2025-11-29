@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useSendMessage } from '../features/chat/hooks/use-chat';
 import { useChatConversationManager } from '../features/chat/hooks/use-chat-conversation-manager';
 import { useChatProviderSelection } from '../features/chat/hooks/use-chat-provider-selection';
@@ -8,20 +8,25 @@ import { useCombinedStreaming } from '../features/chat/hooks/use-combined-stream
 import { ChatSidebar } from '../features/chat/components/ChatSidebar';
 import { ChatHeader, AgentCapability } from '../features/chat/components/ChatHeader';
 import { ChatMessageList } from '../features/chat/components/ChatMessageList';
-import { ChatInputArea } from '../features/chat/components/ChatInputArea';
+import { ChatInputArea, ImageGenerationParams } from '../features/chat/components/ChatInputArea';
+import { chatApi } from '../features/chat/api/chat-api';
 import { EditNoteModal } from '../features/notes/components/EditNoteModal';
 import { toast } from '../hooks/use-toast';
 import { useAuthStore } from '../store/auth-store';
 import { DEFAULT_USER_ID } from '../lib/constants';
-import { MessageImage } from '../features/chat/types/chat';
+import { MessageImage, ImageGenerationResponse } from '../features/chat/types/chat';
+import { useQueryClient } from '@tanstack/react-query';
+import { isImageGenerationModel } from '../utils/image-generation-models';
 
 export function ChatPage() {
   const [inputValue, setInputValue] = useState('');
   const [showSidebar, setShowSidebar] = useState(true);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const user = useAuthStore((state) => state.user);
   const sendMessage = useSendMessage();
+  const queryClient = useQueryClient();
 
   // Provider selection hook
   const providerSelection = useChatProviderSelection();
@@ -34,6 +39,12 @@ export function ChatPage() {
     handleModelChange,
     setProviderAndModel,
   } = providerSelection;
+
+  // Determine if current model is an image generation model
+  const isImageGenerationMode = useMemo(() => {
+    if (!selectedProvider || !selectedModel) return false;
+    return isImageGenerationModel(selectedProvider, selectedModel);
+  }, [selectedProvider, selectedModel]);
 
   // Conversation manager hook
   const conversationManager = useChatConversationManager({
@@ -73,6 +84,18 @@ export function ChatPage() {
     handleVectorStoreChange,
   } = settings;
 
+  // Disable RAG and Agent mode when switching to image generation model
+  useEffect(() => {
+    if (isImageGenerationMode) {
+      if (ragEnabled) {
+        handleRagToggle(false);
+      }
+      if (agentModeEnabled) {
+        setAgentModeEnabled(false);
+      }
+    }
+  }, [isImageGenerationMode, ragEnabled, agentModeEnabled, handleRagToggle, setAgentModeEnabled]);
+
   // Combined streaming hook
   const streaming = useCombinedStreaming(agentModeEnabled);
   const {
@@ -99,7 +122,7 @@ export function ChatPage() {
   });
 
   // Loading state
-  const isLoading = sendMessage.isPending || isCreating || isStreaming;
+  const isLoading = sendMessage.isPending || isCreating || isStreaming || isGeneratingImage;
 
   // Clear pending message when it appears in the conversation
   // This should happen immediately when the message is persisted, regardless of streaming state
@@ -220,6 +243,67 @@ export function ChatPage() {
     [handleSelectConversation, setProviderAndModel]
   );
 
+  // Handle image generation completion
+  const handleImageGenerated = useCallback((response: ImageGenerationResponse) => {
+    // Use the conversationId from the response (more reliable than closure)
+    const targetConversationId = response.conversationId || conversationId;
+    
+    // Refresh the conversation to show the new message with generated image
+    if (targetConversationId) {
+      // Force immediate refetch to show the generated image
+      queryClient.refetchQueries({ queryKey: ['conversation', targetConversationId] });
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+    }
+    toast.success(
+      'Image generated',
+      `Successfully generated ${response.images.length} image${response.images.length > 1 ? 's' : ''}`
+    );
+  }, [conversationId, queryClient]);
+
+  // Handle image generation with conversation creation if needed
+  const handleGenerateImage = useCallback(async (params: ImageGenerationParams) => {
+    // Show user message immediately and clear input
+    setPendingMessage({ content: `[Image Generation Request]\n${params.prompt}` });
+    setInputValue('');
+    setIsGeneratingImage(true);
+    
+    try {
+      let currentConversationId = conversationId;
+
+      // Create conversation if needed
+      if (!currentConversationId) {
+        const newConversation = await createConversation({
+          provider: selectedProvider,
+          model: selectedModel,
+          title: params.prompt.slice(0, 50),
+          ragEnabled: false,
+          agentEnabled: false,
+        });
+        currentConversationId = newConversation.id;
+      }
+
+      // Generate the image
+      const response = await chatApi.generateImage(currentConversationId, {
+        prompt: params.prompt,
+        provider: selectedProvider,
+        model: selectedModel,
+        size: params.size,
+        quality: params.quality,
+        style: params.style,
+        count: 1,
+      });
+
+      if (response.success) {
+        handleImageGenerated(response);
+      } else {
+        throw new Error(response.error || 'Failed to generate image');
+      }
+    } finally {
+      setPendingMessage(null);
+      setIsGeneratingImage(false);
+    }
+  }, [conversationId, selectedProvider, selectedModel, createConversation, handleImageGenerated, setPendingMessage]);
+
   // Agent capabilities configuration
   const agentCapabilities: AgentCapability[] = [
     {
@@ -290,6 +374,7 @@ export function ChatPage() {
           onAgentModeChange={setAgentModeEnabled}
           agentCapabilities={agentCapabilities}
           isLoading={isLoading}
+          isImageGenerationMode={isImageGenerationMode}
         />
 
         {/* Messages Area */}
@@ -309,6 +394,7 @@ export function ChatPage() {
           userName={user?.displayName}
           isSending={sendMessage.isPending}
           isCreating={isCreating}
+          isGeneratingImage={isGeneratingImage}
           messagesContainerRef={messagesContainerRef}
           messagesEndRef={messagesEndRef}
         />
@@ -326,6 +412,10 @@ export function ChatPage() {
           model={selectedModel}
           agentModeEnabled={agentModeEnabled}
           notesCapabilityEnabled={notesCapabilityEnabled}
+          conversationId={conversationId || undefined}
+          onImageGenerated={handleImageGenerated}
+          isImageGenerationMode={isImageGenerationMode}
+          onGenerateImage={handleGenerateImage}
         />
       </div>
 

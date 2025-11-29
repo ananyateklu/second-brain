@@ -3,7 +3,7 @@ import { ChatConversation, ChatMessage, ToolCall } from '../types/chat';
 import { ToolExecution, ThinkingStep } from '../../agents/types/agent-types';
 import { RagContextNote } from '../../rag/types';
 import { MessageBubble } from './MessageBubble';
-import { StreamingIndicator, LoadingMessageSkeleton } from './StreamingIndicator';
+import { StreamingIndicator, ImageGenerationLoadingSkeleton } from './StreamingIndicator';
 import { ChatWelcomeScreen } from './ChatWelcomeScreen';
 import { ThinkingStepCard } from '../../agents/components/ThinkingStepCard';
 import { ToolExecutionCard } from '../../agents/components/ToolExecutionCard';
@@ -35,6 +35,7 @@ export interface ChatMessageListProps {
   // Loading state
   isSending: boolean;
   isCreating: boolean;
+  isGeneratingImage?: boolean;
   // Refs for scrolling
   messagesContainerRef: RefObject<HTMLDivElement>;
   messagesEndRef: RefObject<HTMLDivElement>;
@@ -59,6 +60,7 @@ export function ChatMessageList({
   userName,
   isSending,
   isCreating,
+  isGeneratingImage,
   messagesContainerRef,
   messagesEndRef,
 }: ChatMessageListProps) {
@@ -77,8 +79,8 @@ export function ChatMessageList({
           msg.content.trim() === streamingMessage.trim() ||
           // More lenient check: if streaming message is substantial, check if persisted message contains it
           (streamingMessage.trim().length > 20 &&
-           (msg.content.trim().startsWith(streamingMessage.trim().substring(0, Math.min(100, streamingMessage.trim().length))) ||
-            msg.content.trim().includes(streamingMessage.trim().substring(0, Math.min(50, streamingMessage.trim().length))))))
+            (msg.content.trim().startsWith(streamingMessage.trim().substring(0, Math.min(100, streamingMessage.trim().length))) ||
+              msg.content.trim().includes(streamingMessage.trim().substring(0, Math.min(50, streamingMessage.trim().length))))))
     );
   }, [isStreaming, streamingMessage, conversation?.messages]);
 
@@ -130,41 +132,11 @@ export function ChatMessageList({
 
             {/* Show pending user message */}
             {pendingMessage && !hasMatchingPersistedMessage && !hasMatchingPendingUserMessage && (
-              <div className="flex justify-end">
-                <div
-                  className="max-w-[80%] rounded-2xl px-5 py-3 rounded-br-md"
-                  style={{
-                    backgroundColor: 'var(--btn-primary-bg)',
-                    color: 'var(--btn-primary-text)',
-                    border: '1px solid var(--btn-primary-border)',
-                  }}
-                >
-                  {pendingMessage.images && pendingMessage.images.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      {pendingMessage.images.map((image, index) => (
-                        <div
-                          key={index}
-                          className="relative rounded-lg overflow-hidden border border-white/20"
-                          style={{ width: '80px', height: '80px' }}
-                        >
-                          <img
-                            src={`data:${image.mediaType};base64,${image.base64Data}`}
-                            alt={image.fileName || 'Attached image'}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <p className="whitespace-pre-wrap break-words">{pendingMessage.content}</p>
-                  <TokenUsageDisplay
-                    inputTokens={inputTokens}
-                    outputTokens={undefined}
-                    role="user"
-                    userName={userName}
-                  />
-                </div>
-              </div>
+              <PendingUserMessage
+                pendingMessage={pendingMessage}
+                inputTokens={inputTokens}
+                userName={userName}
+              />
             )}
 
             {/* Show streaming message */}
@@ -183,8 +155,10 @@ export function ChatMessageList({
               />
             )}
 
-            {/* Show loading skeleton when sending but not streaming */}
-            {(isSending || isCreating) && !isStreaming && <LoadingMessageSkeleton />}
+            {/* Show loading skeleton when sending but not streaming, or when generating image */}
+            {((isSending || isCreating || isGeneratingImage) && !isStreaming) && (
+              <ImageGenerationLoadingSkeleton isGeneratingImage={isGeneratingImage} />
+            )}
           </>
         )}
         <div ref={messagesEndRef} className="h-16" />
@@ -226,24 +200,59 @@ function MessageWithContext({
   const isAssistantMessage = message.role === 'assistant';
   const isLastMessage = index === totalMessages - 1;
 
-  // Hide assistant messages that are still streaming
-  const isLastAssistantMessageDuringStream =
-    isAssistantMessage && isLastMessage && (streamingMessage || isStreaming);
+  // Only hide the last assistant message if it's a duplicate of what's currently streaming.
+  // This prevents hiding old assistant messages from previous exchanges when a new response is streaming.
+  // We check if the message content matches (or is a prefix/suffix of) the streaming message.
+  const isStreamingDuplicate = useMemo(() => {
+    if (!isAssistantMessage || !isLastMessage || !streamingMessage) {
+      return false;
+    }
+
+    const messageContent = message.content.trim();
+    const streamContent = streamingMessage.trim();
+
+    // Empty streaming content shouldn't hide anything
+    if (streamContent.length === 0) {
+      return false;
+    }
+
+    // Direct match
+    if (messageContent === streamContent) {
+      return true;
+    }
+
+    // Check if this persisted message is a duplicate of the streaming content
+    // This handles cases where the message is persisted while streaming is still in progress
+    if (streamContent.length > 20) {
+      const compareLength = Math.min(100, streamContent.length);
+      const streamPrefix = streamContent.substring(0, compareLength);
+      // Message content starts with or matches the beginning of streaming content
+      if (messageContent.startsWith(streamPrefix)) {
+        return true;
+      }
+      // Streaming content starts with or matches the beginning of message content
+      if (streamContent.startsWith(messageContent.substring(0, compareLength))) {
+        return true;
+      }
+    }
+
+    return false;
+  }, [isAssistantMessage, isLastMessage, streamingMessage, message.content]);
 
   const hasToolCalls = !!(isAssistantMessage && message.toolCalls && message.toolCalls.length > 0);
 
   // Extract thinking content from persisted messages
   const persistedThinkingSteps =
-    hasToolCalls && !isLastAssistantMessageDuringStream
+    hasToolCalls && !isStreamingDuplicate
       ? extractThinkingContent(message.content)
       : [];
 
+  // Only hide thinking/tool executions if this message is a duplicate of streaming content
   const shouldShowPersistedThinking =
-    persistedThinkingSteps.length > 0 &&
-    !(isLastMessage && (streamingMessage || isStreaming));
+    persistedThinkingSteps.length > 0 && !isStreamingDuplicate;
 
   const shouldShowPersistedToolExecutions =
-    hasToolCalls && !(isLastMessage && (streamingMessage || isStreaming));
+    hasToolCalls && !isStreamingDuplicate;
 
   const hasProcessContent = shouldShowPersistedThinking || shouldShowPersistedToolExecutions;
 
@@ -271,7 +280,7 @@ function MessageWithContext({
       </ProcessTimeline>
 
       {/* Show the message bubble */}
-      {!isLastAssistantMessageDuringStream && (
+      {!isStreamingDuplicate && (
         <MessageBubble
           message={message}
           modelName={conversation.model}
@@ -289,6 +298,119 @@ function MessageWithContext({
       {isAssistantMessage && message.retrievedNotes && message.retrievedNotes.length > 0 && (
         <RetrievedNotes notes={message.retrievedNotes} />
       )}
+    </div>
+  );
+}
+
+/**
+ * Helper to check if content is an image generation request
+ */
+function isImageGenerationRequest(content: string): boolean {
+  return content.startsWith('[Image Generation Request]');
+}
+
+/**
+ * Extract the prompt from an image generation request
+ */
+function extractImagePrompt(content: string): string {
+  return content.replace('[Image Generation Request]\n', '').replace('[Image Generation Request]', '').trim();
+}
+
+interface PendingUserMessageProps {
+  pendingMessage: PendingMessage;
+  inputTokens?: number;
+  userName?: string;
+}
+
+/**
+ * Renders the pending user message with special styling for image generation requests
+ */
+function PendingUserMessage({ pendingMessage, inputTokens, userName }: PendingUserMessageProps) {
+  const isImageRequest = isImageGenerationRequest(pendingMessage.content);
+  const prompt = isImageRequest ? extractImagePrompt(pendingMessage.content) : pendingMessage.content;
+
+  if (isImageRequest) {
+    return (
+      <div className="flex justify-end">
+        <div
+          className="max-w-[80%] rounded-2xl px-5 py-4 rounded-br-md"
+          style={{
+            backgroundColor: 'var(--btn-primary-bg)',
+            color: 'var(--btn-primary-text)',
+            border: '1px solid var(--btn-primary-border)',
+          }}
+        >
+          {/* Image generation badge */}
+          <div className="flex items-center gap-2 mb-3">
+            <div
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
+              style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                backdropFilter: 'blur(4px)',
+              }}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+              <span>Generate Image</span>
+            </div>
+          </div>
+          
+          {/* Prompt text */}
+          <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed">{prompt}</p>
+          
+          <TokenUsageDisplay
+            inputTokens={inputTokens}
+            outputTokens={undefined}
+            role="user"
+            userName={userName}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Regular message display
+  return (
+    <div className="flex justify-end">
+      <div
+        className="max-w-[80%] rounded-2xl px-5 py-3 rounded-br-md"
+        style={{
+          backgroundColor: 'var(--btn-primary-bg)',
+          color: 'var(--btn-primary-text)',
+          border: '1px solid var(--btn-primary-border)',
+        }}
+      >
+        {pendingMessage.images && pendingMessage.images.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-2">
+            {pendingMessage.images.map((image, index) => (
+              <div
+                key={index}
+                className="relative rounded-lg overflow-hidden border border-white/20"
+                style={{ width: '80px', height: '80px' }}
+              >
+                <img
+                  src={`data:${image.mediaType};base64,${image.base64Data}`}
+                  alt={image.fileName || 'Attached image'}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ))}
+          </div>
+        )}
+        <p className="whitespace-pre-wrap break-words">{pendingMessage.content}</p>
+        <TokenUsageDisplay
+          inputTokens={inputTokens}
+          outputTokens={undefined}
+          role="user"
+          userName={userName}
+        />
+      </div>
     </div>
   );
 }

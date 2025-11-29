@@ -7,6 +7,9 @@ import {
   CreateConversationRequest,
   SendMessageRequest,
   UpdateConversationSettingsRequest,
+  ImageGenerationRequest,
+  ImageGenerationResponse,
+  ImageProviderInfo,
 } from '../types/chat';
 
 export const chatApi = {
@@ -197,5 +200,25 @@ export const chatApi = {
 
   async deleteConversation(id: string): Promise<void> {
     return apiClient.delete<void>(`/chat/conversations/${id}`);
+  },
+
+  // Image Generation API
+  async generateImage(
+    conversationId: string,
+    request: ImageGenerationRequest
+  ): Promise<ImageGenerationResponse> {
+    return apiClient.post<ImageGenerationResponse>(
+      `/chat/conversations/${conversationId}/generate-image`,
+      request
+    );
+  },
+
+  async getImageGenerationProviders(): Promise<ImageProviderInfo[]> {
+    return apiClient.get<ImageProviderInfo[]>('/chat/image-generation/providers');
+  },
+
+  async getImageGenerationSizes(provider: string, model?: string): Promise<string[]> {
+    const queryParams = model ? `?model=${encodeURIComponent(model)}` : '';
+    return apiClient.get<string[]>(`/chat/image-generation/providers/${provider}/sizes${queryParams}`);
   },
 };

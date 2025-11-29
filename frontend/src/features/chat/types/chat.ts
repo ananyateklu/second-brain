@@ -31,6 +31,8 @@ export interface ChatMessage {
   toolCalls?: ToolCall[];
   /** Attached images for multimodal messages */
   images?: MessageImage[];
+  /** Generated images from image generation requests */
+  generatedImages?: GeneratedImage[];
 }
 
 export interface ChatConversation {
@@ -80,5 +82,53 @@ export interface SendMessageRequest {
 export interface ChatResponseWithRag {
   conversation: ChatConversation;
   retrievedNotes: RagContextNote[];
+}
+
+// Image Generation Types
+export interface GeneratedImage {
+  /** Base64-encoded image data */
+  base64Data?: string;
+  /** URL to the generated image */
+  url?: string;
+  /** Revised/enhanced prompt used by the model */
+  revisedPrompt?: string;
+  /** MIME type of the image */
+  mediaType: string;
+  /** Width in pixels */
+  width?: number;
+  /** Height in pixels */
+  height?: number;
+}
+
+export interface ImageGenerationRequest {
+  /** The text prompt describing the image to generate */
+  prompt: string;
+  /** The AI provider to use (e.g., "OpenAI", "Gemini", "Grok") */
+  provider: string;
+  /** The model to use (e.g., "dall-e-3", "grok-2-image") */
+  model?: string;
+  /** Size of the generated image (e.g., "1024x1024") */
+  size?: string;
+  /** Quality level ("standard" or "hd") */
+  quality?: string;
+  /** Style ("vivid" or "natural") */
+  style?: string;
+  /** Number of images to generate */
+  count?: number;
+}
+
+export interface ImageGenerationResponse {
+  success: boolean;
+  images: GeneratedImage[];
+  model: string;
+  provider: string;
+  error?: string;
+  conversationId: string;
+}
+
+export interface ImageProviderInfo {
+  provider: string;
+  models: string[];
+  isEnabled: boolean;
 }
 

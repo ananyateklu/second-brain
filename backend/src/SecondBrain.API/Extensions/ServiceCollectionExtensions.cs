@@ -106,6 +106,19 @@ public static class ServiceCollectionExtensions
         // Register the factory
         services.AddSingleton<IAIProviderFactory, AIProviderFactory>();
 
+        // Register image generation providers
+        services.AddSingleton<OpenAIImageProvider>();
+        services.AddSingleton<GeminiImageProvider>();
+        services.AddSingleton<GrokImageProvider>();
+
+        // Register image generation providers in the collection for factory
+        services.AddSingleton<IImageGenerationProvider, OpenAIImageProvider>(sp => sp.GetRequiredService<OpenAIImageProvider>());
+        services.AddSingleton<IImageGenerationProvider, GeminiImageProvider>(sp => sp.GetRequiredService<GeminiImageProvider>());
+        services.AddSingleton<IImageGenerationProvider, GrokImageProvider>(sp => sp.GetRequiredService<GrokImageProvider>());
+
+        // Register image generation factory
+        services.AddSingleton<IImageGenerationProviderFactory, ImageGenerationProviderFactory>();
+
         // Register Agent service for agent mode functionality
         services.AddScoped<IAgentService, AgentService>();
 

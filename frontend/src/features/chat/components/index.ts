@@ -9,7 +9,7 @@ export { ChatMessageList } from './ChatMessageList';
 export type { ChatMessageListProps } from './ChatMessageList';
 
 export { ChatInputArea } from './ChatInputArea';
-export type { ChatInputAreaProps } from './ChatInputArea';
+export type { ChatInputAreaProps, ImageGenerationParams } from './ChatInputArea';
 
 export { ChatWelcomeScreen } from './ChatWelcomeScreen';
 
@@ -19,6 +19,8 @@ export type { MessageBubbleProps } from './MessageBubble';
 export { ConversationListItem } from './ConversationListItem';
 export type { ConversationListItemProps } from './ConversationListItem';
 
-export { StreamingIndicator, LoadingMessageSkeleton } from './StreamingIndicator';
+export { StreamingIndicator, LoadingMessageSkeleton, ImageGenerationLoadingSkeleton } from './StreamingIndicator';
 export type { StreamingIndicatorProps } from './StreamingIndicator';
+
+export { ImageGenerationPanel } from './ImageGenerationPanel';
 

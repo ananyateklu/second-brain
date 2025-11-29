@@ -89,6 +89,7 @@ public class ChatMessage
     public List<RetrievedNote> RetrievedNotes { get; set; } = new();
     public List<ToolCall> ToolCalls { get; set; } = new();
     public List<MessageImage> Images { get; set; } = new();
+    public List<GeneratedImageData> GeneratedImages { get; set; } = new();
 }
 
 [Table("message_images")]
@@ -182,6 +183,43 @@ public class RetrievedNote
 
     [Column("chunk_index")]
     public int ChunkIndex { get; set; }
+
+    // Navigation property back to message (ignored to prevent circular serialization)
+    [ForeignKey("MessageId")]
+    [JsonIgnore]
+    public ChatMessage? Message { get; set; }
+}
+
+[Table("generated_images")]
+public class GeneratedImageData
+{
+    [Key]
+    [Column("id")]
+    public string Id { get; set; } = string.Empty;
+
+    [Column("message_id")]
+    [MaxLength(128)]
+    public string MessageId { get; set; } = string.Empty;
+
+    [Column("base64_data")]
+    public string? Base64Data { get; set; }
+
+    [Column("url")]
+    [MaxLength(2048)]
+    public string? Url { get; set; }
+
+    [Column("revised_prompt")]
+    public string? RevisedPrompt { get; set; }
+
+    [Column("media_type")]
+    [MaxLength(100)]
+    public string MediaType { get; set; } = "image/png";
+
+    [Column("width")]
+    public int? Width { get; set; }
+
+    [Column("height")]
+    public int? Height { get; set; }
 
     // Navigation property back to message (ignored to prevent circular serialization)
     [ForeignKey("MessageId")]

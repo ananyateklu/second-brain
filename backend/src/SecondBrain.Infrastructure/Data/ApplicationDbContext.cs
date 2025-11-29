@@ -18,6 +18,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<MessageImage> MessageImages { get; set; } = null!;
     public DbSet<ToolCall> ToolCalls { get; set; } = null!;
     public DbSet<RetrievedNote> RetrievedNotes { get; set; } = null!;
+    public DbSet<GeneratedImageData> GeneratedImages { get; set; } = null!;
     public DbSet<IndexingJob> IndexingJobs { get; set; } = null!;
     public DbSet<NoteEmbedding> NoteEmbeddings { get; set; } = null!;
 
@@ -91,6 +92,12 @@ public class ApplicationDbContext : DbContext
                 .WithOne(i => i.Message)
                 .HasForeignKey(i => i.MessageId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // One-to-many relationship with GeneratedImages
+            entity.HasMany(m => m.GeneratedImages)
+                .WithOne(g => g.Message)
+                .HasForeignKey(g => g.MessageId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // Configure ToolCall entity
@@ -109,6 +116,12 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<MessageImage>(entity =>
         {
             entity.HasIndex(e => e.MessageId).HasDatabaseName("ix_message_images_message_id");
+        });
+
+        // Configure GeneratedImageData entity
+        modelBuilder.Entity<GeneratedImageData>(entity =>
+        {
+            entity.HasIndex(e => e.MessageId).HasDatabaseName("ix_generated_images_message_id");
         });
 
         // Configure IndexingJob entity

@@ -25,7 +25,14 @@ export function categorizeModel(modelName: string): ModelCategory {
   const lower = modelName.toLowerCase();
 
   // Image Generation models
-  if (lower.includes('dall-e') || lower.includes('sora')) {
+  if (
+    lower.includes('dall-e') ||
+    lower.includes('sora') ||
+    lower.includes('grok-2-image') ||
+    lower.includes('grok-2-vision-image') ||
+    // Gemini image generation models
+    (lower.includes('gemini') && lower.includes('image') && !lower.includes('vision'))
+  ) {
     return 'image-gen';
   }
 

@@ -30,6 +30,8 @@ public class SqlChatRepository : IChatRepository
                     .ThenInclude(m => m.ToolCalls)
                 .Include(c => c.Messages)
                     .ThenInclude(m => m.Images)
+                .Include(c => c.Messages)
+                    .ThenInclude(m => m.GeneratedImages)
                 .AsNoTracking()
                 .Where(c => c.UserId == userId)
                 .OrderByDescending(c => c.UpdatedAt)
@@ -57,6 +59,8 @@ public class SqlChatRepository : IChatRepository
                     .ThenInclude(m => m.ToolCalls)
                 .Include(c => c.Messages)
                     .ThenInclude(m => m.Images)
+                .Include(c => c.Messages)
+                    .ThenInclude(m => m.GeneratedImages)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Id == id);
 
@@ -134,6 +138,15 @@ public class SqlChatRepository : IChatRepository
                     }
                     image.MessageId = message.Id;
                 }
+
+                foreach (var generatedImage in message.GeneratedImages)
+                {
+                    if (string.IsNullOrEmpty(generatedImage.Id))
+                    {
+                        generatedImage.Id = Guid.NewGuid().ToString();
+                    }
+                    generatedImage.MessageId = message.Id;
+                }
             }
 
             _context.ChatConversations.Add(conversation);
@@ -161,6 +174,8 @@ public class SqlChatRepository : IChatRepository
                     .ThenInclude(m => m.ToolCalls)
                 .Include(c => c.Messages)
                     .ThenInclude(m => m.Images)
+                .Include(c => c.Messages)
+                    .ThenInclude(m => m.GeneratedImages)
                 .FirstOrDefaultAsync(c => c.Id == id);
 
             if (existingConversation == null)
@@ -226,6 +241,15 @@ public class SqlChatRepository : IChatRepository
                     image.MessageId = message.Id;
                 }
 
+                foreach (var generatedImage in message.GeneratedImages)
+                {
+                    if (string.IsNullOrEmpty(generatedImage.Id))
+                    {
+                        generatedImage.Id = Guid.NewGuid().ToString();
+                    }
+                    generatedImage.MessageId = message.Id;
+                }
+
                 existingConversation.Messages.Add(message);
             }
 
@@ -281,6 +305,8 @@ public class SqlChatRepository : IChatRepository
                     .ThenInclude(m => m.ToolCalls)
                 .Include(c => c.Messages)
                     .ThenInclude(m => m.Images)
+                .Include(c => c.Messages)
+                    .ThenInclude(m => m.GeneratedImages)
                 .FirstOrDefaultAsync(c => c.Id == id);
 
             if (conversation == null)
@@ -330,6 +356,15 @@ public class SqlChatRepository : IChatRepository
                     image.Id = Guid.NewGuid().ToString();
                 }
                 image.MessageId = message.Id;
+            }
+
+            foreach (var generatedImage in message.GeneratedImages)
+            {
+                if (string.IsNullOrEmpty(generatedImage.Id))
+                {
+                    generatedImage.Id = Guid.NewGuid().ToString();
+                }
+                generatedImage.MessageId = message.Id;
             }
 
             conversation.Messages.Add(message);

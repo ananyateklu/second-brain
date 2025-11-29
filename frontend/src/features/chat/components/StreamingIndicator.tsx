@@ -228,3 +228,98 @@ export function LoadingMessageSkeleton() {
     </div>
   );
 }
+
+/**
+ * Loading skeleton shown when generating an image, with image-specific UI.
+ */
+export function ImageGenerationLoadingSkeleton({ isGeneratingImage }: { isGeneratingImage?: boolean }) {
+  if (isGeneratingImage) {
+    return (
+      <div className="flex justify-start">
+        <div
+          className="w-full rounded-2xl rounded-bl-md px-6 py-4"
+          style={{
+            backgroundColor: 'var(--surface-card)',
+            border: '1px solid var(--border)',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+          }}
+        >
+          <div className="flex flex-col gap-4">
+            {/* Image generation indicator */}
+            <div className="flex items-center gap-3">
+              <div
+                className="w-8 h-8 rounded-lg flex items-center justify-center"
+                style={{
+                  backgroundColor: 'var(--color-brand-alpha)',
+                  border: '1px solid var(--color-brand-border)',
+                }}
+              >
+                <svg
+                  className="w-4 h-4 animate-pulse"
+                  style={{ color: 'var(--color-brand-text)' }}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                  Generating image...
+                </p>
+                <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
+                  This may take a few moments
+                </p>
+              </div>
+            </div>
+
+            {/* Image placeholder with shimmer */}
+            <div
+              className="relative w-full aspect-square max-w-[320px] rounded-xl overflow-hidden"
+              style={{
+                backgroundColor: 'var(--border)',
+                opacity: 0.3,
+              }}
+            >
+              {/* Shimmer animation */}
+              <div
+                className="absolute inset-0 -translate-x-full"
+                style={{
+                  background:
+                    'linear-gradient(90deg, transparent, rgba(var(--btn-primary-bg-rgb, 59, 130, 246), 0.2), transparent)',
+                  animation: `shimmer 2s infinite`,
+                }}
+              />
+              {/* Centered image icon */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <svg
+                  className="w-12 h-12 opacity-30"
+                  style={{ color: 'var(--text-tertiary)' }}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Fall back to regular loading skeleton for non-image generation
+  return <LoadingMessageSkeleton />;
+}
