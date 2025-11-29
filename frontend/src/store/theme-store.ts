@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { resetDashboardColorCache } from '../pages/DashboardPage';
+import { resetThemeColorCache } from '../utils/theme-colors';
 
 type Theme = 'light' | 'dark' | 'blue';
 
@@ -46,8 +46,8 @@ export const useThemeStore = create<ThemeStore>((set, get) => ({
       document.documentElement.classList.remove('dark');
     }
     
-    // Reset dashboard color cache when theme changes
-    resetDashboardColorCache();
+    // Reset color cache when theme changes
+    resetThemeColorCache();
   },
   
   toggleTheme: () => {

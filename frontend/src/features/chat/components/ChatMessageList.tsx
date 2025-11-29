@@ -120,7 +120,6 @@ export function ChatMessageList({
                 index={index}
                 totalMessages={conversation.messages.length}
                 conversation={conversation}
-                isStreaming={isStreaming}
                 streamingMessage={streamingMessage}
                 agentModeEnabled={agentModeEnabled}
                 userName={userName}
@@ -172,7 +171,6 @@ interface MessageWithContextProps {
   index: number;
   totalMessages: number;
   conversation: ChatConversation;
-  isStreaming: boolean;
   streamingMessage: string;
   agentModeEnabled: boolean;
   userName?: string;
@@ -189,7 +187,6 @@ function MessageWithContext({
   index,
   totalMessages,
   conversation,
-  isStreaming,
   streamingMessage,
   agentModeEnabled,
   userName,

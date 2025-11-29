@@ -1,13 +1,16 @@
-export interface Note {
-  id: string;
-  title: string;
-  content: string;
-  createdAt: string;
-  updatedAt: string;
-  tags: string[];
-  isArchived: boolean;
-}
+/**
+ * Note Types - Re-export from centralized types
+ * @deprecated Import from '../../../types/notes' or '../../../types' instead
+ */
 
-export type CreateNoteInput = Omit<Note, 'id' | 'createdAt' | 'updatedAt'>;
-export type UpdateNoteInput = Partial<Omit<Note, 'id' | 'createdAt' | 'updatedAt'>>;
-
+export type {
+  Note,
+  CreateNoteRequest as CreateNoteInput,
+  UpdateNoteRequest as UpdateNoteInput,
+  NoteResponse,
+  ImportNoteRequest,
+  ImportNoteResult,
+  ImportNotesResponse,
+  NotesFilterState,
+  NoteSearchMode,
+} from '../../../types/notes';

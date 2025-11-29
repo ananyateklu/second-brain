@@ -51,7 +51,7 @@ export function useChatSettings(options: UseChatSettingsOptions): ChatSettingsSt
   const updateConversationSettings = useUpdateConversationSettings();
 
   const [ragEnabled, setRagEnabledLocal] = useState<boolean>(false);
-  const [selectedVectorStore, setSelectedVectorStoreLocal] = useState<'PostgreSQL' | 'Pinecone'>(defaultVectorStore);
+  const [selectedVectorStore, setSelectedVectorStoreLocal] = useState<'PostgreSQL' | 'Pinecone'>(defaultVectorStore as 'PostgreSQL' | 'Pinecone');
   const [agentModeEnabled, setAgentModeEnabledLocal] = useState<boolean>(false);
   const [notesCapabilityEnabled, setNotesCapabilityEnabledLocal] = useState<boolean>(false);
 
@@ -73,7 +73,7 @@ export function useChatSettings(options: UseChatSettingsOptions): ChatSettingsSt
   useEffect(() => {
     if (!conversationId && isNewChat) {
       setRagEnabledLocal(false);
-      setSelectedVectorStoreLocal(defaultVectorStore);
+      setSelectedVectorStoreLocal(defaultVectorStore as 'PostgreSQL' | 'Pinecone');
       setAgentModeEnabledLocal(false);
       setNotesCapabilityEnabledLocal(false);
     }

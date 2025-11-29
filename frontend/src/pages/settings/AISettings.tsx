@@ -540,8 +540,6 @@ export function AISettings() {
 
                                                 // Then sync to backend explicitly with userId
                                                 await syncPreferencesToBackend(user.userId);
-
-                                                console.log('Vector store provider changed:', { provider: option.id });
                                             } catch (error) {
                                                 console.error('Failed to update vector store provider:', { error });
                                                 toast.error('Failed to save vector store preference', 'Please try again.');

@@ -3,7 +3,6 @@
  * Displays attached files with preview, removal, and lightbox functionality
  */
 
-import React from 'react';
 import { type FileAttachment, formatFileSize } from '../../../../utils/multimodal-models';
 
 // File type icons

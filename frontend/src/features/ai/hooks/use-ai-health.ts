@@ -1,23 +1,19 @@
 import { useQuery } from '@tanstack/react-query';
-import { aiApi } from '../api/ai-api';
-import { AIHealthResponse } from '../types/ai-health';
+import { aiService } from '../../../services';
+import { AIHealthResponse } from '../../../types/ai';
 import { useSettingsStore } from '../../../store/settings-store';
+import { QUERY_KEYS } from '../../../lib/constants';
 
-// Query keys - include ollama settings in key to refetch when they change
-export const aiHealthKeys = {
-  all: (ollamaBaseUrl?: string | null, useRemoteOllama?: boolean) => 
-    ['ai', 'health', { ollamaBaseUrl, useRemoteOllama }] as const,
-  provider: (provider: string, ollamaBaseUrl?: string | null, useRemoteOllama?: boolean) => 
-    ['ai', 'health', provider, { ollamaBaseUrl, useRemoteOllama }] as const,
-};
+// Re-export query keys for backward compatibility
+export const aiHealthKeys = QUERY_KEYS.aiHealth;
 
 // Query: Get health status for all AI providers
 export function useAIHealth() {
   const { ollamaRemoteUrl, useRemoteOllama } = useSettingsStore();
   
   return useQuery<AIHealthResponse>({
-    queryKey: aiHealthKeys.all(ollamaRemoteUrl, useRemoteOllama),
-    queryFn: () => aiApi.getHealth({
+    queryKey: QUERY_KEYS.aiHealth.health(ollamaRemoteUrl, useRemoteOllama),
+    queryFn: () => aiService.getHealth({
       ollamaBaseUrl: ollamaRemoteUrl,
       useRemoteOllama,
     }),
@@ -33,8 +29,8 @@ export function useProviderHealth(provider: string) {
   const { ollamaRemoteUrl, useRemoteOllama } = useSettingsStore();
   
   return useQuery({
-    queryKey: aiHealthKeys.provider(provider, ollamaRemoteUrl, useRemoteOllama),
-    queryFn: () => aiApi.getProviderHealth(provider, {
+    queryKey: QUERY_KEYS.aiHealth.provider(provider, ollamaRemoteUrl, useRemoteOllama),
+    queryFn: () => aiService.getProviderHealth(provider, {
       ollamaBaseUrl: ollamaRemoteUrl,
       useRemoteOllama,
     }),

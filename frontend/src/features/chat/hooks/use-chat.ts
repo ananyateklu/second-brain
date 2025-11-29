@@ -1,20 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { chatApi } from '../api/chat-api';
-import { CreateConversationRequest, SendMessageRequest, UpdateConversationSettingsRequest } from '../types/chat';
-
-import { DEFAULT_USER_ID } from '../../../lib/constants';
+import { chatService } from '../../../services';
+import { CreateConversationRequest, SendMessageRequest, UpdateConversationSettingsRequest } from '../../../types/chat';
+import { DEFAULT_USER_ID, QUERY_KEYS } from '../../../lib/constants';
 
 export function useChatConversations(userId: string = DEFAULT_USER_ID) {
   return useQuery({
-    queryKey: ['conversations', userId],
-    queryFn: () => chatApi.getConversations(userId),
+    queryKey: QUERY_KEYS.conversations.list(userId),
+    queryFn: () => chatService.getConversations(userId),
   });
 }
 
 export function useChatConversation(id: string | null) {
   return useQuery({
-    queryKey: ['conversation', id],
-    queryFn: () => chatApi.getConversation(id!),
+    queryKey: QUERY_KEYS.conversation(id),
+    queryFn: () => chatService.getConversation(id!),
     enabled: !!id,
   });
 }
@@ -24,10 +23,10 @@ export function useCreateConversation() {
 
   return useMutation({
     mutationFn: (request: CreateConversationRequest) =>
-      chatApi.createConversation(request),
+      chatService.createConversation(request),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['conversations'] });
-      queryClient.setQueryData(['conversation', data.id], data);
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations.all });
+      queryClient.setQueryData(QUERY_KEYS.conversation(data.id), data);
     },
   });
 }
@@ -37,10 +36,10 @@ export function useSendMessage() {
 
   return useMutation({
     mutationFn: ({ conversationId, request }: { conversationId: string; request: SendMessageRequest }) =>
-      chatApi.sendMessage(conversationId, request),
+      chatService.sendMessage(conversationId, request),
     onSuccess: (data, variables) => {
-      queryClient.setQueryData(['conversation', variables.conversationId], data.conversation);
-      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      queryClient.setQueryData(QUERY_KEYS.conversation(variables.conversationId), data.conversation);
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations.all });
     },
   });
 }
@@ -50,10 +49,10 @@ export function useUpdateConversationSettings() {
 
   return useMutation({
     mutationFn: ({ conversationId, request }: { conversationId: string; request: UpdateConversationSettingsRequest }) =>
-      chatApi.updateConversationSettings(conversationId, request),
+      chatService.updateConversationSettings(conversationId, request),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['conversations'] });
-      queryClient.setQueryData(['conversation', data.id], data);
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations.all });
+      queryClient.setQueryData(QUERY_KEYS.conversation(data.id), data);
     },
   });
 }
@@ -62,9 +61,9 @@ export function useDeleteConversation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => chatApi.deleteConversation(id),
+    mutationFn: (id: string) => chatService.deleteConversation(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations.all });
     },
   });
 }

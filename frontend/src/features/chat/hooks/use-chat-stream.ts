@@ -1,8 +1,9 @@
 import { useState, useCallback, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { chatApi } from '../api/chat-api';
-import { SendMessageRequest } from '../types/chat';
+import { chatService } from '../../../services';
+import { SendMessageRequest } from '../../../types/chat';
 import { estimateTokenCount } from '../../../utils/token-utils';
+import { QUERY_KEYS } from '../../../lib/constants';
 
 export interface StreamingState {
   isStreaming: boolean;
@@ -46,12 +47,11 @@ export function useChatStream() {
       abortControllerRef.current = new AbortController();
 
       try {
-        await chatApi.streamMessage(
+        await chatService.streamMessage(
           conversationId,
           request,
           {
             onStart: () => {
-              console.log('Stream started');
               streamStartTimeRef.current = Date.now();
             },
             onToken: (token: string) => {
@@ -63,11 +63,9 @@ export function useChatStream() {
               });
             },
             onRag: (notes: any[]) => {
-              console.log('RAG notes received:', { count: notes.length });
               setRetrievedNotes(notes);
             },
-            onEnd: (data: any) => {
-              console.log('Stream ended:', data);
+            onEnd: (_data: unknown) => {
 
               // Calculate stream duration
               if (streamStartTimeRef.current) {
@@ -85,8 +83,8 @@ export function useChatStream() {
               // for clearing the streaming state once the new message appears in the conversation.
               setTimeout(() => {
                 // Invalidate queries to refresh with complete conversation data
-                queryClient.invalidateQueries({ queryKey: ['conversation', conversationId] });
-                queryClient.invalidateQueries({ queryKey: ['conversations'] });
+                queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversation(conversationId) });
+                queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations.all });
               }, 150);
             },
             onError: (error: Error) => {
@@ -97,8 +95,6 @@ export function useChatStream() {
                 (error.message.includes('network') ||
                   error.message.includes('fetch') ||
                   error.message.includes('timeout'))) {
-                console.log('Retrying stream...', { attempt: retryCount + 1 });
-
                 // Exponential backoff
                 const delay = Math.min(1000 * Math.pow(2, retryCount), 5000);
                 setTimeout(() => {
@@ -116,7 +112,7 @@ export function useChatStream() {
       } catch (error) {
         if (error instanceof Error) {
           if (error.name === 'AbortError') {
-            console.log('Stream aborted by user');
+            // Stream was cancelled by user - no action needed
           } else {
             console.error('Streaming failed:', { error, retryCount });
 
@@ -125,8 +121,6 @@ export function useChatStream() {
               (error.message.includes('network') ||
                 error.message.includes('fetch') ||
                 error.message.includes('Failed to fetch'))) {
-              console.log('Retrying stream after error...', { attempt: retryCount + 1 });
-
               // Exponential backoff
               const delay = Math.min(1000 * Math.pow(2, retryCount), 5000);
               setTimeout(() => {

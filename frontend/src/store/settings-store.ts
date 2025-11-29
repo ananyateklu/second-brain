@@ -181,7 +181,6 @@ export const useSettingsStore = create<SettingsStore>()(
 
       loadPreferencesFromBackend: async (userId: string) => {
         try {
-          console.log('Loading preferences from backend for user:', userId);
           const preferences = await userPreferencesService.loadAndMergePreferences(userId);
           
           set({
@@ -195,8 +194,6 @@ export const useSettingsStore = create<SettingsStore>()(
             ollamaRemoteUrl: preferences.ollamaRemoteUrl,
             useRemoteOllama: preferences.useRemoteOllama,
           });
-          
-          console.log('Loaded preferences:', preferences);
         } catch (error) {
           console.error('Failed to load preferences from backend:', { error });
         }
@@ -217,9 +214,7 @@ export const useSettingsStore = create<SettingsStore>()(
         };
 
         try {
-          console.log('Syncing preferences to backend:', preferences);
           await userPreferencesService.syncToBackend(userId, preferences);
-          console.log('Preferences synced successfully');
         } catch (error) {
           console.error('Failed to sync preferences to backend:', { error });
           throw error;
@@ -239,16 +234,20 @@ export const useSettingsStore = create<SettingsStore>()(
     }),
     {
       name: STORAGE_KEYS.SETTINGS,
-      merge: (persistedState, currentState) => {
+      merge: (persistedState, currentState): SettingsStore => {
         const parsed = persistedState as Partial<SettingsState>;
-        return userPreferencesService.validatePreferences(
+        const validatedState = userPreferencesService.validatePreferences(
           {
             ...currentState,
             ...parsed,
-            autoSaveInterval: parsed.autoSaveInterval ?? currentState.autoSaveInterval,
           },
           DEFAULT_PREFERENCES
-        ) as SettingsState;
+        );
+        return {
+          ...currentState,
+          ...validatedState,
+          autoSaveInterval: parsed.autoSaveInterval ?? currentState.autoSaveInterval,
+        };
       },
     }
   )

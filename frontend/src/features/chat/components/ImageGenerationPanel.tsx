@@ -7,8 +7,8 @@ import {
   QUALITY_OPTIONS,
   STYLE_OPTIONS,
 } from '../../../utils/image-generation-models';
-import { ImageGenerationRequest, ImageGenerationResponse } from '../types/chat';
-import { chatApi } from '../api/chat-api';
+import { ImageGenerationRequest, ImageGenerationResponse } from '../../../types/chat';
+import { chatService } from '../../../services';
 
 interface ImageGenerationPanelProps {
   /** Current conversation ID */
@@ -91,7 +91,7 @@ export function ImageGenerationPanel({
         count: 1,
       };
 
-      const response = await chatApi.generateImage(conversationId, request);
+      const response = await chatService.generateImage(conversationId, request);
 
       if (response.success) {
         onGenerateComplete(response);

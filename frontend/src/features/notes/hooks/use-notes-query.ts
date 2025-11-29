@@ -1,19 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { notesApi } from '../api/notes-api';
-import { Note, CreateNoteInput, UpdateNoteInput } from '../types/note';
+import { notesService } from '../../../services';
+import { Note, CreateNoteRequest, UpdateNoteRequest } from '../../../types/notes';
 import { toast } from '../../../hooks/use-toast';
+import { QUERY_KEYS } from '../../../lib/constants';
 
-// Query keys
-export const notesKeys = {
-  all: ['notes'] as const,
-  detail: (id: string) => ['notes', id] as const,
-};
+// Type aliases for backward compatibility
+type CreateNoteInput = CreateNoteRequest;
+type UpdateNoteInput = UpdateNoteRequest;
+
+// Re-export query keys for backward compatibility
+export const notesKeys = QUERY_KEYS.notes;
 
 // Query: Get all notes
 export function useNotes() {
   return useQuery({
     queryKey: notesKeys.all,
-    queryFn: notesApi.getAll,
+    queryFn: notesService.getAll,
   });
 }
 
@@ -21,7 +23,7 @@ export function useNotes() {
 export function useNote(id: string) {
   return useQuery({
     queryKey: notesKeys.detail(id),
-    queryFn: () => notesApi.getById(id),
+    queryFn: () => notesService.getById(id),
     enabled: !!id,
   });
 }
@@ -31,7 +33,7 @@ export function useCreateNote() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (note: CreateNoteInput) => notesApi.create(note),
+    mutationFn: (note: CreateNoteInput) => notesService.create(note),
     onMutate: async (newNote) => {
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: notesKeys.all });
@@ -74,7 +76,7 @@ export function useUpdateNote() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateNoteInput }) => notesApi.update(id, data),
+    mutationFn: ({ id, data }: { id: string; data: UpdateNoteInput }) => notesService.update(id, data),
     onMutate: async ({ id, data }) => {
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: notesKeys.all });
@@ -133,7 +135,7 @@ export function useDeleteNote() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => notesApi.delete(id),
+    mutationFn: (id: string) => notesService.delete(id),
     onMutate: async (id) => {
       // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: notesKeys.all });

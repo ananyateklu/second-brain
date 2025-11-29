@@ -36,8 +36,8 @@ export interface UseApiQueryOptions<TData, TError = ApiError>
 /**
  * Extended query result with additional helpers
  */
-export interface UseApiQueryResult<TData, TError = ApiError>
-  extends UseQueryResult<TData, TError> {
+export type UseApiQueryResult<TData, TError = ApiError> = 
+  UseQueryResult<TData, TError> & {
   /**
    * Check if the error is an API error
    */
@@ -57,7 +57,7 @@ export interface UseApiQueryResult<TData, TError = ApiError>
    * Check if error is a not found error
    */
   isNotFoundError: boolean;
-}
+};
 
 /**
  * Standardized API query hook with error handling

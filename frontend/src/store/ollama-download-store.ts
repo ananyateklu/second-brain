@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { aiApi, OllamaPullProgress, OllamaPullRequest } from '../features/ai/api/ai-api';
+import { aiService } from '../services';
+import type { OllamaPullProgress, OllamaPullRequest } from '../types/ai';
 
 export interface ModelDownload {
   modelName: string;
@@ -14,7 +15,7 @@ export interface ModelDownload {
 
 interface OllamaDownloadState {
   downloads: Record<string, ModelDownload>;
-  
+
   // Actions
   startDownload: (request: OllamaPullRequest) => void;
   cancelDownload: (modelName: string) => void;
@@ -25,13 +26,13 @@ interface OllamaDownloadState {
 // Helper to format bytes
 export function formatBytes(bytes: number, decimals = 2): string {
   if (bytes === 0) return '0 Bytes';
-  
+
   const k = 1024;
   const dm = decimals < 0 ? 0 : decimals;
   const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-  
+
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  
+
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
 }
 
@@ -60,7 +61,7 @@ export const useOllamaDownloadStore = create<OllamaDownloadState>((set, get) => 
 
   startDownload: (request: OllamaPullRequest) => {
     const key = request.modelName;
-    
+
     // Check if already downloading
     const existing = get().downloads[key];
     if (existing && existing.status === 'downloading') {
@@ -84,7 +85,7 @@ export const useOllamaDownloadStore = create<OllamaDownloadState>((set, get) => 
     }));
 
     // Start the pull operation
-    const abortController = aiApi.pullModel(request, {
+    const abortController = aiService.pullModel(request, {
       onProgress: (progress: OllamaPullProgress) => {
         set((state) => ({
           downloads: {
@@ -141,7 +142,7 @@ export const useOllamaDownloadStore = create<OllamaDownloadState>((set, get) => 
     if (download?.abortController) {
       download.abortController.abort();
     }
-    
+
     set((state) => ({
       downloads: {
         ...state.downloads,

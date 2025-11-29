@@ -13,6 +13,7 @@ import { ChatInputArea } from '../features/chat/components/ChatInputArea';
 import { EditNoteModal } from '../features/notes/components/EditNoteModal';
 import { useAuthStore } from '../store/auth-store';
 import { useSendMessage } from '../features/chat/hooks/use-chat';
+import type { VectorStoreProvider } from '../types/rag';
 
 export function ChatPage() {
   const user = useAuthStore((state) => state.user);
@@ -122,8 +123,8 @@ export function ChatPage() {
           onModelChange={handleModelChange}
           ragEnabled={ragEnabled}
           onRagToggle={handleRagToggle}
-          selectedVectorStore={selectedVectorStore}
-          onVectorStoreChange={handleVectorStoreChange}
+          selectedVectorStore={selectedVectorStore as 'PostgreSQL' | 'Pinecone'}
+          onVectorStoreChange={(provider) => handleVectorStoreChange(provider as VectorStoreProvider)}
           agentModeEnabled={agentModeEnabled}
           onAgentModeChange={setAgentModeEnabled}
           agentCapabilities={agentCapabilities}

@@ -1,16 +1,16 @@
-export interface AIProviderHealth {
-  provider: string;
-  isHealthy: boolean;
-  checkedAt: string;
-  status: string;
-  responseTimeMs: number;
-  version?: string;
-  availableModels?: string[];
-  errorMessage?: string;
-}
+/**
+ * AI Health Types - Re-export from centralized types
+ * @deprecated Import from '../../../types/ai' or '../../../types' instead
+ */
 
-export interface AIHealthResponse {
-  checkedAt: string;
-  providers: AIProviderHealth[];
-}
-
+export type {
+  AIProviderHealth,
+  AIHealthResponse,
+  OllamaHealthOptions,
+  OllamaPullRequest,
+  OllamaPullProgress,
+  OllamaPullCallbacks,
+  AIModel,
+  AIProviderConfig,
+  ChatCompletionOptions,
+} from '../../../types/ai';

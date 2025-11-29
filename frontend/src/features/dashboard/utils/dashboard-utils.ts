@@ -1,45 +1,15 @@
-// Cache theme colors - read once instead of on every render
-let cachedThemeColors: string[] | null = null;
-let cachedRagChartColor: string | null = null;
-let cachedRegularChartColor: string | null = null;
+/**
+ * Dashboard Utilities
+ * Re-exports theme color utilities and provides dashboard-specific helpers
+ */
 
-export const getThemeColors = (): string[] => {
-  if (cachedThemeColors) return cachedThemeColors;
-
-  const style = getComputedStyle(document.documentElement);
-  cachedThemeColors = [
-    style.getPropertyValue('--color-brand-600').trim() || '#36693d', // Primary green
-    style.getPropertyValue('--color-brand-500').trim() || '#4a7d52', // Medium green
-    style.getPropertyValue('--color-brand-700').trim() || '#2f5638', // Medium-dark green
-    style.getPropertyValue('--color-brand-400').trim() || '#5e9167', // Medium-light green
-    style.getPropertyValue('--color-brand-300').trim() || '#7aa884', // Light green
-    style.getPropertyValue('--color-brand-800').trim() || '#25422b', // Dark green
-  ];
-  return cachedThemeColors;
-};
-
-export const getRagChartColor = (): string => {
-  if (cachedRagChartColor) return cachedRagChartColor;
-
-  const style = getComputedStyle(document.documentElement);
-  cachedRagChartColor = style.getPropertyValue('--color-brand-600').trim() || '#36693d';
-  return cachedRagChartColor;
-};
-
-export const getRegularChartColor = (): string => {
-  if (cachedRegularChartColor) return cachedRegularChartColor;
-
-  const style = getComputedStyle(document.documentElement);
-  cachedRegularChartColor = style.getPropertyValue('--color-brand-400').trim() || '#5e9167';
-  return cachedRegularChartColor;
-};
-
-// Reset cache when theme changes (call this from your theme switcher)
-export const resetDashboardColorCache = (): void => {
-  cachedThemeColors = null;
-  cachedRagChartColor = null;
-  cachedRegularChartColor = null;
-};
+// Re-export theme color utilities from shared module
+export {
+  getThemeColors,
+  getRagChartColor,
+  getRegularChartColor,
+  resetThemeColorCache as resetDashboardColorCache,
+} from '../../../utils/theme-colors';
 
 export const formatTokenCount = (count: number): string => {
   if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
@@ -71,4 +41,3 @@ export const TIME_RANGE_OPTIONS = [
 ] as const;
 
 export type TimeRangeOption = typeof TIME_RANGE_OPTIONS[number];
-

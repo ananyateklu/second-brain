@@ -435,10 +435,10 @@ export const apiClient = {
     signal?: AbortSignal
   ): Promise<Response> {
     const authStore = useAuthStore.getState();
-    const requestHeaders: HeadersInit = {
+    const requestHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
       'Accept': 'text/event-stream',
-      ...headers,
+      ...(headers as Record<string, string>),
     };
 
     if (authStore.token) {

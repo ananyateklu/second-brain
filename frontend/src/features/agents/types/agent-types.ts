@@ -1,61 +1,22 @@
-export interface ToolExecution {
-  tool: string;
-  arguments?: string;
-  result: string;
-  status: 'executing' | 'completed';
-  timestamp: Date;
-}
+/**
+ * Agent Types - Re-export from centralized types
+ * @deprecated Import from '../../../types/agent' or '../../../types' instead
+ */
 
-export interface ThinkingStep {
-  content: string;
-  timestamp: Date;
-}
+export type {
+  ToolExecutionStatus,
+  ToolExecution,
+  ThinkingStep,
+  AgentStreamState,
+  AgentMessageRequest,
+  AgentCapability,
+  AgentToolCall,
+  AgentSupportedProvider,
+  AgentNoteResult,
+  AgentNotesResponse,
+  AgentStreamingCallbacks,
+  AgentEndData,
+} from '../../../types/agent';
 
-export interface AgentStreamState {
-  isStreaming: boolean;
-  streamingMessage: string;
-  toolExecutions: ToolExecution[];
-  error: Error | null;
-}
-
-export interface AgentMessageRequest {
-  content: string;
-  temperature?: number;
-  maxTokens?: number;
-  capabilities?: string[];
-}
-
-export interface AgentCapability {
-  id: string;
-  displayName: string;
-  description: string;
-}
-
-export interface ToolCall {
-  toolName: string;
-  arguments: string;
-  result: string;
-  executedAt: string;
-  success: boolean;
-}
-
-export interface AgentSupportedProvider {
-  name: string;
-  supported: boolean;
-  reason: string;
-}
-
-export interface AgentNoteResult {
-  id: string;
-  title: string;
-  content: string;
-  tags: string[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface AgentNotesResponse {
-  type: 'notes';
-  message: string;
-  notes: AgentNoteResult[];
-}
+// Re-export ToolCall from chat types for backward compatibility
+export type { ToolCall } from '../../../types/chat';

@@ -13,7 +13,6 @@ import {
 } from '../../../utils/multimodal-models';
 import {
   isImageGenerationProvider,
-  getImageGenerationConfig,
   getImageModelInfo,
   formatSizeLabel,
   QUALITY_OPTIONS,

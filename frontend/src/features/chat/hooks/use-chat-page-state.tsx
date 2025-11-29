@@ -18,6 +18,9 @@ import { DEFAULT_USER_ID, QUERY_KEYS } from '../../../lib/constants';
 import { isImageGenerationModel } from '../../../utils/image-generation-models';
 import type { MessageImage, ImageGenerationResponse, ChatConversation } from '../../../types/chat';
 import type { AgentCapability } from '../components/ChatHeader';
+import type { ProviderInfo } from './use-chat-provider-selection';
+import type { RagContextNote } from '../../rag/types';
+import type { ToolExecution, ThinkingStep } from '../../agents/types/agent-types';
 
 export interface ImageGenerationParams {
   prompt: string;
@@ -36,7 +39,7 @@ export interface ChatPageState {
   // Provider Selection
   selectedProvider: string;
   selectedModel: string;
-  availableProviders: Array<{ provider: string; models: string[] }>;
+  availableProviders: ProviderInfo[];
   isHealthLoading: boolean;
 
   // Conversation State
@@ -57,9 +60,9 @@ export interface ChatPageState {
   isStreaming: boolean;
   streamingMessage: string;
   streamingError: Error | null;
-  retrievedNotes: unknown[];
-  toolExecutions: unknown[];
-  thinkingSteps: unknown[];
+  retrievedNotes: RagContextNote[];
+  toolExecutions: ToolExecution[];
+  thinkingSteps: ThinkingStep[];
   inputTokens?: number;
   outputTokens?: number;
   streamDuration?: number;
@@ -91,7 +94,7 @@ export interface ChatPageActions {
 
   // Settings Actions
   handleRagToggle: (enabled: boolean) => void;
-  handleVectorStoreChange: (store: string) => void;
+  handleVectorStoreChange: (provider: 'PostgreSQL' | 'Pinecone') => Promise<void>;
   setAgentModeEnabled: (enabled: boolean) => void;
   setNotesCapabilityEnabled: (enabled: boolean) => void;
 

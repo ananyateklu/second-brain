@@ -126,7 +126,7 @@ export const toast = {
       error: string | ((error: Error) => string);
     }
   ): Promise<T> => {
-    return sonnerToast.promise(promise, {
+    sonnerToast.promise(promise, {
       loading,
       success,
       error: (err: Error) => {
@@ -137,6 +137,7 @@ export const toast = {
         return typeof error === 'function' ? error(err) : error;
       },
     });
+    return promise;
   },
 
   /**

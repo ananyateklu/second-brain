@@ -6,7 +6,7 @@ interface IndexingStatsProps {
   userId?: string;
 }
 
-function StatsCard({ title, stats, userId, vectorStoreProvider }: { title: string; stats: IndexStatsData | undefined; userId: string; vectorStoreProvider: string }) {
+function StatsCard({ title, stats, userId, vectorStoreProvider }: { title: string; stats: IndexStatsData | undefined; userId: string; vectorStoreProvider: import('../../types/rag').VectorStoreProvider }) {
   const deleteIndexedNotesMutation = useDeleteIndexedNotes();
   const isDeleting = deleteIndexedNotesMutation.isPending;
 

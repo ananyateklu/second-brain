@@ -1,15 +1,13 @@
-export interface AIUsageStats {
-    totalConversations: number;
-    totalMessages: number;
-    ragConversationsCount: number;
-    agentConversationsCount: number;
-    modelUsageCounts: Record<string, number>;
-    providerUsageCounts: Record<string, number>;
-    modelTokenUsageCounts: Record<string, number>;
-    dailyConversationCounts: Record<string, number>;
-    dailyRagConversationCounts: Record<string, number>;
-    dailyNonRagConversationCounts: Record<string, number>;
-    dailyAgentConversationCounts: Record<string, number>;
-    dailyNonAgentConversationCounts: Record<string, number>;
-}
+/**
+ * Stats Types - Re-export from centralized types
+ * @deprecated Import from '../../types/stats' or '../../types' instead
+ */
 
+export type {
+  AIUsageStats,
+  NotesStats,
+  DashboardStats,
+  ChartDataPoint,
+  PieChartData,
+  ModelUsageData,
+} from '../../types/stats';

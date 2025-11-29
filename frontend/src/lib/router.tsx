@@ -4,15 +4,17 @@ import { AppLayout } from '../components/layout/AppLayout';
 import { ProtectedRoute } from '../components/auth/ProtectedRoute';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { LoginPage } from '../pages/LoginPage';
-import { NotesPage } from '../pages/NotesPage';
-import { ChatPage } from '../pages/ChatPage';
-import { GeneralSettings } from '../pages/settings/GeneralSettings';
-import { AISettings } from '../pages/settings/AISettings';
-import { RAGSettings } from '../pages/settings/RAGSettings';
 import { NotFoundPage } from '../pages/NotFoundPage';
 
-// Lazy load Dashboard (includes recharts) to reduce initial bundle size
+// Lazy load heavy pages to reduce initial bundle size
 const DashboardPage = lazy(() => import('../pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
+const NotesPage = lazy(() => import('../pages/NotesPage').then(m => ({ default: m.NotesPage })));
+const ChatPage = lazy(() => import('../pages/ChatPage').then(m => ({ default: m.ChatPage })));
+
+// Lazy load settings pages (not frequently visited)
+const GeneralSettings = lazy(() => import('../pages/settings/GeneralSettings').then(m => ({ default: m.GeneralSettings })));
+const AISettings = lazy(() => import('../pages/settings/AISettings').then(m => ({ default: m.AISettings })));
+const RAGSettings = lazy(() => import('../pages/settings/RAGSettings').then(m => ({ default: m.RAGSettings })));
 
 // Loading fallback for lazy-loaded pages
 function PageLoader() {
@@ -52,7 +54,9 @@ export const router = createBrowserRouter([
       <ProtectedRoute>
         <ErrorBoundary>
           <AppLayout>
-            <NotesPage />
+            <Suspense fallback={<PageLoader />}>
+              <NotesPage />
+            </Suspense>
           </AppLayout>
         </ErrorBoundary>
       </ProtectedRoute>
@@ -64,7 +68,9 @@ export const router = createBrowserRouter([
       <ProtectedRoute>
         <ErrorBoundary>
           <AppLayout>
-            <ChatPage />
+            <Suspense fallback={<PageLoader />}>
+              <ChatPage />
+            </Suspense>
           </AppLayout>
         </ErrorBoundary>
       </ProtectedRoute>
@@ -80,7 +86,9 @@ export const router = createBrowserRouter([
       <ProtectedRoute>
         <ErrorBoundary>
           <AppLayout>
-            <GeneralSettings />
+            <Suspense fallback={<PageLoader />}>
+              <GeneralSettings />
+            </Suspense>
           </AppLayout>
         </ErrorBoundary>
       </ProtectedRoute>
@@ -92,7 +100,9 @@ export const router = createBrowserRouter([
       <ProtectedRoute>
         <ErrorBoundary>
           <AppLayout>
-            <AISettings />
+            <Suspense fallback={<PageLoader />}>
+              <AISettings />
+            </Suspense>
           </AppLayout>
         </ErrorBoundary>
       </ProtectedRoute>
@@ -104,7 +114,9 @@ export const router = createBrowserRouter([
       <ProtectedRoute>
         <ErrorBoundary>
           <AppLayout>
-            <RAGSettings />
+            <Suspense fallback={<PageLoader />}>
+              <RAGSettings />
+            </Suspense>
           </AppLayout>
         </ErrorBoundary>
       </ProtectedRoute>

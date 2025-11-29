@@ -3,7 +3,6 @@
  * Handles authentication business logic and API calls
  */
 
-import { apiClient } from '../lib/api-client';
 import { API_ENDPOINTS, getApiBaseUrl } from '../lib/constants';
 import type {
   LoginRequest,

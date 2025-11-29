@@ -72,8 +72,8 @@ export interface UseApiMutationOptions<TData, TVariables, TContext = unknown>
 /**
  * Extended mutation result with additional helpers
  */
-export interface UseApiMutationResult<TData, TVariables, TContext = unknown>
-  extends UseMutationResult<TData, ApiError, TVariables, TContext> {
+export type UseApiMutationResult<TData, TVariables, TContext = unknown> = 
+  UseMutationResult<TData, ApiError, TVariables, TContext> & {
   /**
    * Check if the error is an API error
    */
@@ -93,7 +93,7 @@ export interface UseApiMutationResult<TData, TVariables, TContext = unknown>
    * Check if error is a validation error
    */
   isValidationError: boolean;
-}
+};
 
 /**
  * Standardized API mutation hook with error handling and toast notifications
@@ -136,13 +136,15 @@ export function useApiMutation<TData, TVariables, TContext = unknown>(
         context = { previousData } as TContext;
       }
       
-      // Call original onMutate if provided
+      // Call original onMutate if provided (use simpler signature)
       if (onMutate) {
-        const userContext = await onMutate(variables);
-        context = { ...context, ...userContext } as TContext;
+        const userContext = await (onMutate as (variables: TVariables) => Promise<TContext | void>)(variables);
+        if (userContext !== undefined) {
+          context = { ...context, ...userContext } as TContext;
+        }
       }
       
-      return context;
+      return context as TContext;
     },
     
     onSuccess: (data, variables, context) => {
@@ -161,8 +163,10 @@ export function useApiMutation<TData, TVariables, TContext = unknown>(
         }
       }
       
-      // Call original onSuccess
-      onSuccess?.(data, variables, context);
+      // Call original onSuccess (use simpler 3-arg signature)
+      if (onSuccess) {
+        (onSuccess as (data: TData, variables: TVariables, context: TContext | undefined) => void)(data, variables, context);
+      }
     },
     
     onError: (error, variables, context) => {
@@ -186,8 +190,10 @@ export function useApiMutation<TData, TVariables, TContext = unknown>(
         toast.error('Error', message);
       }
       
-      // Call original onError
-      onError?.(error, variables, context);
+      // Call original onError (use simpler 3-arg signature)
+      if (onError) {
+        (onError as (error: ApiError, variables: TVariables, context: TContext | undefined) => void)(error, variables, context);
+      }
     },
     
     onSettled: (data, error, variables, context) => {
@@ -196,8 +202,10 @@ export function useApiMutation<TData, TVariables, TContext = unknown>(
         queryClient.invalidateQueries({ queryKey: optimisticUpdate.queryKey });
       }
       
-      // Call original onSettled
-      onSettled?.(data, error, variables, context);
+      // Call original onSettled (use simpler 4-arg signature)
+      if (onSettled) {
+        (onSettled as (data: TData | undefined, error: ApiError | null, variables: TVariables, context: TContext | undefined) => void)(data, error, variables, context);
+      }
     },
     
     ...mutationOptions,

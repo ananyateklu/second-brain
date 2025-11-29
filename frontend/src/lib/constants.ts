@@ -132,7 +132,10 @@ export const QUERY_KEYS = {
   // AI Health
   aiHealth: {
     all: ['ai-health'] as const,
-    provider: (provider: string) => [...QUERY_KEYS.aiHealth.all, provider] as const,
+    health: (ollamaBaseUrl?: string | null, useRemoteOllama?: boolean) => 
+      [...QUERY_KEYS.aiHealth.all, { ollamaBaseUrl, useRemoteOllama }] as const,
+    provider: (provider: string, ollamaBaseUrl?: string | null, useRemoteOllama?: boolean) => 
+      [...QUERY_KEYS.aiHealth.all, provider, { ollamaBaseUrl, useRemoteOllama }] as const,
   },
 
   // RAG / Indexing

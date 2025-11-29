@@ -63,8 +63,8 @@ export function IndexingButton({ userId = 'default-user', onComplete }: Indexing
 
       const job = await startIndexing.mutateAsync({
         userId,
-        embeddingProvider, // Pass selected embedding provider
-        vectorStoreProvider: vectorStore
+        embeddingProvider: embeddingProvider as import('../../types/rag').EmbeddingProvider, // Pass selected embedding provider
+        vectorStoreProvider: vectorStore as import('../../types/rag').VectorStoreProvider
       });
       setCurrentJobId(job.id);
       toast.info(
