@@ -4,10 +4,7 @@
  */
 
 import React from 'react';
-import { FORMATTING_ACTIONS } from './formatting-actions';
-
-// Re-export type for backward compatibility
-export type { FormattingAction } from './formatting-actions';
+import { FORMATTING_ACTIONS, type FormattingAction } from './formatting-actions';
 
 export interface ChatFormattingToolbarProps {
   onFormat: (before: string, after: string) => void;
