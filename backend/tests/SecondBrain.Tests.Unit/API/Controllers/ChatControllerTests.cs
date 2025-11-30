@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using SecondBrain.API.Controllers;
 using SecondBrain.Application.DTOs.Requests;
+using SecondBrain.Application.DTOs.Responses;
 using SecondBrain.Application.Exceptions;
 using SecondBrain.Application.Services;
 using SecondBrain.Application.Services.AI.Interfaces;
@@ -496,6 +497,238 @@ public class ChatControllerTests
 
         // Assert
         result.Should().BeOfType<UnauthorizedObjectResult>();
+    }
+
+    #endregion
+
+    #region SendMessage Tests
+
+    [Fact]
+    public async Task SendMessage_WhenNotAuthenticated_ReturnsUnauthorized()
+    {
+        // Arrange - user not authenticated
+        var request = new SendMessageRequest { Content = "Test message" };
+
+        // Act
+        var result = await _sut.SendMessage("conv-1", request);
+
+        // Assert
+        result.Result.Should().BeOfType<UnauthorizedObjectResult>();
+    }
+
+    [Fact]
+    public async Task SendMessage_WhenContentIsEmpty_ReturnsBadRequest()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedUser(userId);
+        var request = new SendMessageRequest { Content = "" };
+
+        // Act
+        var result = await _sut.SendMessage("conv-1", request);
+
+        // Assert
+        var badRequest = result.Result.Should().BeOfType<BadRequestObjectResult>().Subject;
+        badRequest.Value.Should().BeEquivalentTo(new { error = "Message content is required" });
+    }
+
+    [Fact]
+    public async Task SendMessage_WhenContentIsWhitespace_ReturnsBadRequest()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedUser(userId);
+        var request = new SendMessageRequest { Content = "   " };
+
+        // Act
+        var result = await _sut.SendMessage("conv-1", request);
+
+        // Assert
+        result.Result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public async Task SendMessage_WhenConversationNotFound_ReturnsNotFound()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedUser(userId);
+        var request = new SendMessageRequest { Content = "Test message" };
+
+        _mockChatRepository.Setup(r => r.GetByIdAsync("non-existent"))
+            .ReturnsAsync((ChatConversation?)null);
+
+        // Act
+        var result = await _sut.SendMessage("non-existent", request);
+
+        // Assert
+        result.Result.Should().BeOfType<NotFoundObjectResult>();
+    }
+
+    [Fact]
+    public async Task SendMessage_WhenConversationBelongsToOtherUser_ReturnsForbidden()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedUser(userId);
+        var request = new SendMessageRequest { Content = "Test message" };
+
+        var conversation = CreateTestConversation("conv-1", "other-user", "Test");
+        _mockChatRepository.Setup(r => r.GetByIdAsync("conv-1"))
+            .ReturnsAsync(conversation);
+
+        // Act
+        var result = await _sut.SendMessage("conv-1", request);
+
+        // Assert
+        var forbiddenResult = result.Result.Should().BeOfType<ObjectResult>().Subject;
+        forbiddenResult.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+    }
+
+    #endregion
+
+    #region GetImageGenerationProviders Tests
+
+    [Fact]
+    public void GetImageGenerationProviders_WhenNoProviders_ReturnsEmptyList()
+    {
+        // Arrange
+        _mockImageGenerationFactory.Setup(f => f.GetEnabledProviders())
+            .Returns(Array.Empty<IImageGenerationProvider>());
+
+        // Act
+        var result = _sut.GetImageGenerationProviders();
+
+        // Assert
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        okResult.Value.Should().NotBeNull();
+    }
+
+    #endregion
+
+    #region GetImageGenerationSizes Tests
+
+    [Fact]
+    public void GetImageGenerationSizes_WhenProviderNotFound_ReturnsNotFound()
+    {
+        // Arrange
+        _mockImageGenerationFactory.Setup(f => f.HasProvider("non-existent"))
+            .Returns(false);
+
+        // Act
+        var result = _sut.GetImageGenerationSizes("non-existent");
+
+        // Assert
+        result.Result.Should().BeOfType<NotFoundObjectResult>();
+    }
+
+    #endregion
+
+    #region GenerateImage Tests
+
+    [Fact]
+    public async Task GenerateImage_WhenNotAuthenticated_ReturnsUnauthorized()
+    {
+        // Arrange - user not authenticated
+        var request = new GenerateImageRequest { Prompt = "Test prompt", Provider = "openai" };
+
+        // Act
+        var result = await _sut.GenerateImage("conv-1", request);
+
+        // Assert
+        result.Result.Should().BeOfType<UnauthorizedObjectResult>();
+    }
+
+    [Fact]
+    public async Task GenerateImage_WhenPromptIsEmpty_ReturnsBadRequest()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedUser(userId);
+        var request = new GenerateImageRequest { Prompt = "", Provider = "openai" };
+
+        // Act
+        var result = await _sut.GenerateImage("conv-1", request);
+
+        // Assert
+        var badRequest = result.Result.Should().BeOfType<BadRequestObjectResult>().Subject;
+        badRequest.Value.Should().BeEquivalentTo(new { error = "Prompt is required" });
+    }
+
+    [Fact]
+    public async Task GenerateImage_WhenProviderIsEmpty_ReturnsBadRequest()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedUser(userId);
+        var request = new GenerateImageRequest { Prompt = "Test prompt", Provider = "" };
+
+        // Act
+        var result = await _sut.GenerateImage("conv-1", request);
+
+        // Assert
+        var badRequest = result.Result.Should().BeOfType<BadRequestObjectResult>().Subject;
+        badRequest.Value.Should().BeEquivalentTo(new { error = "Provider is required" });
+    }
+
+    [Fact]
+    public async Task GenerateImage_WhenConversationNotFound_ReturnsNotFound()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedUser(userId);
+        var request = new GenerateImageRequest { Prompt = "Test prompt", Provider = "openai" };
+
+        _mockChatRepository.Setup(r => r.GetByIdAsync("non-existent"))
+            .ReturnsAsync((ChatConversation?)null);
+
+        // Act
+        var result = await _sut.GenerateImage("non-existent", request);
+
+        // Assert
+        result.Result.Should().BeOfType<NotFoundObjectResult>();
+    }
+
+    [Fact]
+    public async Task GenerateImage_WhenConversationBelongsToOtherUser_ReturnsForbidden()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedUser(userId);
+        var request = new GenerateImageRequest { Prompt = "Test prompt", Provider = "openai" };
+
+        var conversation = CreateTestConversation("conv-1", "other-user", "Test");
+        _mockChatRepository.Setup(r => r.GetByIdAsync("conv-1"))
+            .ReturnsAsync(conversation);
+
+        // Act
+        var result = await _sut.GenerateImage("conv-1", request);
+
+        // Assert
+        var forbiddenResult = result.Result.Should().BeOfType<ObjectResult>().Subject;
+        forbiddenResult.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+    }
+
+    [Fact]
+    public async Task GenerateImage_WhenProviderNotFound_ReturnsBadRequest()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedUser(userId);
+        var request = new GenerateImageRequest { Prompt = "Test prompt", Provider = "unknown" };
+
+        var conversation = CreateTestConversation("conv-1", userId, "Test");
+        _mockChatRepository.Setup(r => r.GetByIdAsync("conv-1"))
+            .ReturnsAsync(conversation);
+
+        _mockImageGenerationFactory.Setup(f => f.HasProvider("unknown"))
+            .Returns(false);
+
+        // Act
+        var result = await _sut.GenerateImage("conv-1", request);
+
+        // Assert
+        result.Result.Should().BeOfType<BadRequestObjectResult>();
     }
 
     #endregion
