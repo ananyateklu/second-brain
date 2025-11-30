@@ -54,7 +54,7 @@ export function RichNoteForm({
             rules={{ required: 'Content is required' }}
             render={({ field }) => (
               <RichTextEditor
-                content={field.value}
+                content={field.value || ''}
                 onChange={field.onChange}
                 onTagsChange={(tags) => {
                   // Convert array of tags back to comma-separated string for the form

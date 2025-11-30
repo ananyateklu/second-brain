@@ -107,13 +107,23 @@ describe('auth-store', () => {
             };
 
             vi.mocked(authService.validateLoginForm).mockReturnValue({ valid: true, errors: [] });
-            vi.mocked(authService.login).mockResolvedValue(mockResponse);
+            vi.mocked(authService.login).mockResolvedValue({ ...mockResponse, isNewUser: false });
             vi.mocked(authService.extractUser).mockReturnValue({
                 userId: 'user-123',
                 email: 'test@example.com',
                 displayName: 'Test User',
             });
-            vi.mocked(userPreferencesService.loadAndMergePreferences).mockResolvedValue({});
+            vi.mocked(userPreferencesService.loadAndMergePreferences).mockResolvedValue({
+                chatProvider: 'openai',
+                chatModel: 'gpt-4',
+                vectorStoreProvider: 'PostgreSQL',
+                defaultNoteView: 'grid',
+                itemsPerPage: 20,
+                fontSize: 'medium',
+                enableNotifications: true,
+                ollamaRemoteUrl: null,
+                useRemoteOllama: false,
+            });
 
             // Act
             const loginPromise = useAuthStore.getState().login('test@example.com', 'password123');
@@ -139,9 +149,19 @@ describe('auth-store', () => {
             };
 
             vi.mocked(authService.validateLoginForm).mockReturnValue({ valid: true, errors: [] });
-            vi.mocked(authService.login).mockResolvedValue(mockResponse);
+            vi.mocked(authService.login).mockResolvedValue({ ...mockResponse, isNewUser: false });
             vi.mocked(authService.extractUser).mockReturnValue(mockUser);
-            vi.mocked(userPreferencesService.loadAndMergePreferences).mockResolvedValue({});
+            vi.mocked(userPreferencesService.loadAndMergePreferences).mockResolvedValue({
+                chatProvider: 'openai',
+                chatModel: 'gpt-4',
+                vectorStoreProvider: 'PostgreSQL',
+                defaultNoteView: 'grid',
+                itemsPerPage: 20,
+                fontSize: 'medium',
+                enableNotifications: true,
+                ollamaRemoteUrl: null,
+                useRemoteOllama: false,
+            });
 
             // Act
             await useAuthStore.getState().login('test@example.com', 'password123');
@@ -203,9 +223,19 @@ describe('auth-store', () => {
                 displayName: 'New User',
             };
 
-            vi.mocked(authService.register).mockResolvedValue(mockResponse);
+            vi.mocked(authService.register).mockResolvedValue({ ...mockResponse, isNewUser: true });
             vi.mocked(authService.extractUser).mockReturnValue(mockUser);
-            vi.mocked(userPreferencesService.loadAndMergePreferences).mockResolvedValue({});
+            vi.mocked(userPreferencesService.loadAndMergePreferences).mockResolvedValue({
+                chatProvider: 'openai',
+                chatModel: 'gpt-4',
+                vectorStoreProvider: 'PostgreSQL',
+                defaultNoteView: 'grid',
+                itemsPerPage: 20,
+                fontSize: 'medium',
+                enableNotifications: true,
+                ollamaRemoteUrl: null,
+                useRemoteOllama: false,
+            });
 
             // Act
             await useAuthStore.getState().register('newuser@example.com', 'SecurePass123', 'New User');

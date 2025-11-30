@@ -5,7 +5,6 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import React from 'react';
 import { ErrorBoundary, ErrorFallback, FeatureErrorBoundary } from '../ErrorBoundary';
 
 // Component that throws an error
@@ -158,7 +157,7 @@ describe('ErrorBoundary', () => {
             // Act
             render(
                 <ErrorBoundary
-                    fallback={(error, reset) => (
+                    fallback={(_error, reset) => (
                         <button onClick={() => { reset(); resetFn(); }}>
                             Custom Reset
                         </button>

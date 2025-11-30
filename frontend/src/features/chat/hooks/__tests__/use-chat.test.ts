@@ -34,6 +34,11 @@ function createMockConversation(overrides = {}) {
         id: 'conv-1',
         title: 'Test Conversation',
         userId: 'user-123',
+        provider: 'openai',
+        model: 'gpt-4',
+        ragEnabled: false,
+        agentEnabled: false,
+        imageGenerationEnabled: false,
         messages: [],
         createdAt: '2024-01-01T12:00:00Z',
         updatedAt: '2024-01-01T12:00:00Z',
@@ -177,7 +182,7 @@ describe('use-chat', () => {
     describe('useCreateConversation', () => {
         it('should call chatService.createConversation with request data', async () => {
             // Arrange
-            const createRequest = { title: 'New Chat', userId: 'user-123' };
+            const createRequest = { title: 'New Chat', userId: 'user-123', provider: 'openai', model: 'gpt-4' };
             const createdConversation = createMockConversation({ ...createRequest, id: 'new-conv' });
             vi.mocked(chatService.createConversation).mockResolvedValue(createdConversation);
 
@@ -196,7 +201,7 @@ describe('use-chat', () => {
 
         it('should return created conversation', async () => {
             // Arrange
-            const createRequest = { title: 'New Chat', userId: 'user-123' };
+            const createRequest = { title: 'New Chat', userId: 'user-123', provider: 'openai', model: 'gpt-4' };
             const createdConversation = createMockConversation({ ...createRequest, id: 'new-conv' });
             vi.mocked(chatService.createConversation).mockResolvedValue(createdConversation);
 
@@ -260,8 +265,8 @@ describe('use-chat', () => {
     describe('useUpdateConversationSettings', () => {
         it('should call chatService.updateConversationSettings with correct params', async () => {
             // Arrange
-            const updateRequest = { title: 'Updated Title' };
-            const updatedConversation = createMockConversation({ title: 'Updated Title' });
+            const updateRequest = { ragEnabled: true };
+            const updatedConversation = createMockConversation({ ragEnabled: true });
             vi.mocked(chatService.updateConversationSettings).mockResolvedValue(updatedConversation);
 
             // Act
@@ -282,8 +287,8 @@ describe('use-chat', () => {
 
         it('should return updated conversation', async () => {
             // Arrange
-            const updateRequest = { title: 'New Title' };
-            const updatedConversation = createMockConversation({ title: 'New Title' });
+            const updateRequest = { ragEnabled: true };
+            const updatedConversation = createMockConversation({ ragEnabled: true });
             vi.mocked(chatService.updateConversationSettings).mockResolvedValue(updatedConversation);
 
             // Act
@@ -336,7 +341,7 @@ describe('use-chat', () => {
             // Assert
             await expect(
                 act(async () => {
-                    await result.current.mutateAsync({ title: 'Test', userId: 'user-123' });
+                    await result.current.mutateAsync({ title: 'Test', userId: 'user-123', provider: 'openai', model: 'gpt-4' });
                 })
             ).rejects.toThrow('Create failed');
         });

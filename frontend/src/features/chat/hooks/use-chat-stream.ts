@@ -2,21 +2,15 @@ import { useState, useCallback, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { chatService } from '../../../services';
 import { SendMessageRequest } from '../../../types/chat';
+import { RagContextNote } from '../../../types/rag';
 import { estimateTokenCount } from '../../../utils/token-utils';
 import { QUERY_KEYS } from '../../../lib/constants';
-
-interface RetrievedNote {
-  id: string;
-  title: string;
-  content: string;
-  score?: number;
-}
 
 export interface StreamingState {
   isStreaming: boolean;
   streamingMessage: string;
   streamingError: Error | null;
-  retrievedNotes: RetrievedNote[];
+  retrievedNotes: RagContextNote[];
   inputTokens?: number;
   outputTokens?: number;
   streamDuration?: number; // Duration in milliseconds
@@ -27,7 +21,7 @@ export function useChatStream() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState('');
   const [streamingError, setStreamingError] = useState<Error | null>(null);
-  const [retrievedNotes, setRetrievedNotes] = useState<RetrievedNote[]>([]);
+  const [retrievedNotes, setRetrievedNotes] = useState<RagContextNote[]>([]);
   const [inputTokens, setInputTokens] = useState<number | undefined>(undefined);
   const [outputTokens, setOutputTokens] = useState<number | undefined>(undefined);
   const [streamDuration, setStreamDuration] = useState<number | undefined>(undefined);
@@ -69,7 +63,7 @@ export function useChatStream() {
                 return newMessage;
               });
             },
-            onRag: (notes: RetrievedNote[]) => {
+            onRag: (notes: RagContextNote[]) => {
               setRetrievedNotes(notes);
             },
             onEnd: (_data: unknown) => {

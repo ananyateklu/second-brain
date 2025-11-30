@@ -363,6 +363,7 @@ describe('authService', () => {
                 displayName: 'Test User',
                 token: 'jwt-token-here',
                 apiKey: 'api-key-123',
+                isNewUser: false,
             };
 
             // Act
@@ -382,6 +383,7 @@ describe('authService', () => {
                 email: 'test@example.com',
                 displayName: 'Test User',
                 token: 'jwt-token-here',
+                isNewUser: false,
             };
 
             // Act
@@ -398,6 +400,7 @@ describe('authService', () => {
                 email: 'test@example.com',
                 displayName: 'Test User',
                 token: 'jwt-token-here',
+                isNewUser: false,
             };
 
             // Act
@@ -414,6 +417,7 @@ describe('authService', () => {
                 email: 'test@example.com',
                 displayName: undefined as unknown as string,
                 token: 'jwt-token-here',
+                isNewUser: false,
             };
 
             // Act

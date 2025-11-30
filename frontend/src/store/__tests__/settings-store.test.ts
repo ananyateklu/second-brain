@@ -217,21 +217,21 @@ describe('settings-store', () => {
     describe('setVectorStoreProvider', () => {
         it('should set vector store provider', async () => {
             // Arrange
-            vi.mocked(userPreferencesService.validateVectorStoreProvider).mockReturnValue('qdrant');
+            vi.mocked(userPreferencesService.validateVectorStoreProvider).mockReturnValue('Pinecone');
 
             // Act
-            await useSettingsStore.getState().setVectorStoreProvider('qdrant', false);
+            await useSettingsStore.getState().setVectorStoreProvider('Pinecone', false);
 
             // Assert
-            expect(useSettingsStore.getState().vectorStoreProvider).toBe('qdrant');
+            expect(useSettingsStore.getState().vectorStoreProvider).toBe('Pinecone');
         });
 
         it('should validate vector store provider using service', async () => {
             // Act
-            await useSettingsStore.getState().setVectorStoreProvider('chromadb', false);
+            await useSettingsStore.getState().setVectorStoreProvider('PostgreSQL', false);
 
             // Assert
-            expect(userPreferencesService.validateVectorStoreProvider).toHaveBeenCalledWith('chromadb');
+            expect(userPreferencesService.validateVectorStoreProvider).toHaveBeenCalledWith('PostgreSQL');
         });
     });
 

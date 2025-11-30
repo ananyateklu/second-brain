@@ -1,5 +1,4 @@
 import { useEditor, EditorContent, ReactRenderer, Editor } from '@tiptap/react';
-import { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import Mention from '@tiptap/extension-mention';
@@ -162,7 +161,8 @@ export function RichTextEditor({
 
   const extractTags = useCallback((editorInstance: Editor) => {
     const newTags: string[] = [];
-    editorInstance.state.doc.descendants((node: ProseMirrorNode) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    editorInstance.state.doc.descendants((node: any) => {
       if (node.type.name === 'mention') {
         newTags.push(node.attrs.id);
       }
@@ -281,7 +281,7 @@ export function RichTextEditor({
                 }
 
                 popup = tippy('body', {
-                  getReferenceClientRect: props.clientRect as () => DOMRect,
+                  getReferenceClientRect: () => props.clientRect?.() ?? new DOMRect(),
                   appendTo: () => document.body,
                   content: component.element,
                   showOnCreate: true,
@@ -298,7 +298,7 @@ export function RichTextEditor({
                 }
 
                 popup[0].setProps({
-                  getReferenceClientRect: props.clientRect,
+                  getReferenceClientRect: () => props.clientRect?.() ?? new DOMRect(),
                 });
               },
               onKeyDown(props) {
@@ -307,7 +307,7 @@ export function RichTextEditor({
                   return true;
                 }
                 // Cast component.ref since types are not perfectly aligned with ReactRenderer
-                return (component.ref as { onKeyDown?: (props: { event: KeyboardEvent }) => boolean })?.onKeyDown?.(props);
+                return (component.ref as { onKeyDown?: (props: { event: KeyboardEvent }) => boolean })?.onKeyDown?.(props) ?? false;
               },
               onExit() {
                 popup[0].destroy();
@@ -363,7 +363,8 @@ export function RichTextEditor({
     const replacements: Array<{ from: number; to: number; tag: string; needsSpace: boolean }> = [];
 
     // Traverse the document to find #tag patterns in text nodes
-    doc.descendants((node: ProseMirrorNode, pos: number) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    doc.descendants((node: any, pos: number) => {
       // Skip if already a mention node
       if (node.type.name === 'mention') {
         return;
