@@ -29,11 +29,11 @@ public class OpenAIEmbeddingProvider : IEmbeddingProvider
         _clientFactory = clientFactory;
         _logger = logger;
 
-        if (IsEnabled)
+        if (IsEnabled && !string.IsNullOrEmpty(_settings.ApiKey))
         {
             try
             {
-                _client = _clientFactory.CreateClient(_settings.ApiKey, _settings.Model);
+                _client = _clientFactory.CreateClient(_settings.ApiKey!, _settings.Model);
             }
             catch (Exception ex)
             {
@@ -125,7 +125,7 @@ public class OpenAIEmbeddingProvider : IEmbeddingProvider
         {
             var response = await _client.GenerateEmbeddingsAsync(textList, cancellationToken: cancellationToken);
             var embeddings = new List<List<double>>();
-            
+
             foreach (var embeddingItem in response.Value)
             {
                 var floats = embeddingItem.ToFloats();
