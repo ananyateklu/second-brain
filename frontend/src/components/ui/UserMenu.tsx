@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/auth-store';
 import { useThemeStore } from '../../store/theme-store';
 import { apiClient } from '../../lib/api-client';
-import { toast } from 'sonner';
+import { toast } from '../../hooks/use-toast';
 
 export function UserMenu() {
   const [isOpen, setIsOpen] = useState(false);

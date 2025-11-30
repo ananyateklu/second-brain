@@ -1,9 +1,10 @@
 /**
  * Toast Notifications Hook
  * Enhanced toast system with API error handling
+ * Uses custom toast implementation for full UI flexibility
  */
 
-import { toast as sonnerToast } from 'sonner';
+import { getToastContextRef, ToastType, ToastOptions as BaseToastOptions } from '../components/ui/Toast';
 import { ApiError, ApiErrorCode, isApiError } from '../types/api';
 
 // ============================================
@@ -26,6 +27,39 @@ interface ToastOptions {
   };
 }
 
+// Default durations
+const DEFAULT_DURATION = 4000;
+const ERROR_DURATION = 5000;
+
+// ============================================
+// Toast Helper
+// ============================================
+
+function showToast(
+  type: ToastType,
+  title: string,
+  options?: BaseToastOptions
+): string | null {
+  const context = getToastContextRef();
+  if (!context) {
+    console.error('Toast context not available. Make sure ToastProvider is mounted.');
+    return null;
+  }
+
+  const duration = options?.duration ?? (type === 'error' ? ERROR_DURATION : DEFAULT_DURATION);
+
+  return context.addToast({
+    type,
+    title,
+    description: options?.description,
+    duration,
+    action: options?.action,
+    cancel: options?.cancel,
+    onDismiss: options?.onDismiss,
+    onAutoClose: options?.onAutoClose,
+  });
+}
+
 // ============================================
 // Toast Functions
 // ============================================
@@ -34,10 +68,10 @@ export const toast = {
   /**
    * Show success toast
    */
-  success: (message: string, description?: string, options?: Omit<ToastOptions, 'description'>) => {
-    sonnerToast.success(message, {
+  success: (message: string, description?: string, options?: Omit<ToastOptions, 'description'>): string | null => {
+    return showToast('success', message, {
       description,
-      duration: options?.duration ?? 4000,
+      duration: options?.duration,
       action: options?.action,
     });
   },
@@ -45,10 +79,10 @@ export const toast = {
   /**
    * Show error toast
    */
-  error: (message: string, description?: string, options?: Omit<ToastOptions, 'description'>) => {
-    sonnerToast.error(message, {
+  error: (message: string, description?: string, options?: Omit<ToastOptions, 'description'>): string | null => {
+    return showToast('error', message, {
       description,
-      duration: options?.duration ?? 5000,
+      duration: options?.duration ?? ERROR_DURATION,
       action: options?.action,
     });
   },
@@ -56,21 +90,21 @@ export const toast = {
   /**
    * Show error toast from ApiError
    */
-  apiError: (error: unknown, fallbackMessage?: string) => {
+  apiError: (error: unknown, fallbackMessage?: string): string | null => {
     if (isApiError(error)) {
       const { title, message } = getApiErrorDisplay(error);
-      sonnerToast.error(title, {
+      return showToast('error', title, {
         description: message,
-        duration: 5000,
+        duration: ERROR_DURATION,
       });
     } else if (error instanceof Error) {
-      sonnerToast.error(fallbackMessage || 'Error', {
+      return showToast('error', fallbackMessage || 'Error', {
         description: error.message,
-        duration: 5000,
+        duration: ERROR_DURATION,
       });
     } else {
-      sonnerToast.error(fallbackMessage || 'An unexpected error occurred', {
-        duration: 5000,
+      return showToast('error', fallbackMessage || 'An unexpected error occurred', {
+        duration: ERROR_DURATION,
       });
     }
   },
@@ -78,10 +112,10 @@ export const toast = {
   /**
    * Show info toast
    */
-  info: (message: string, description?: string, options?: Omit<ToastOptions, 'description'>) => {
-    sonnerToast.info(message, {
+  info: (message: string, description?: string, options?: Omit<ToastOptions, 'description'>): string | null => {
+    return showToast('info', message, {
       description,
-      duration: options?.duration ?? 4000,
+      duration: options?.duration,
       action: options?.action,
     });
   },
@@ -89,26 +123,35 @@ export const toast = {
   /**
    * Show warning toast
    */
-  warning: (message: string, description?: string, options?: Omit<ToastOptions, 'description'>) => {
-    sonnerToast.warning(message, {
+  warning: (message: string, description?: string, options?: Omit<ToastOptions, 'description'>): string | null => {
+    return showToast('warning', message, {
       description,
-      duration: options?.duration ?? 4000,
+      duration: options?.duration,
       action: options?.action,
     });
   },
 
   /**
-   * Show loading toast (returns dismiss function)
+   * Show loading toast (returns toast id for later dismissal/update)
    */
-  loading: (message: string): string | number => {
-    return sonnerToast.loading(message);
+  loading: (message: string): string | null => {
+    return showToast('loading', message, {
+      duration: Infinity,
+    });
   },
 
   /**
    * Dismiss a specific toast or all toasts
    */
-  dismiss: (toastId?: string | number) => {
-    sonnerToast.dismiss(toastId);
+  dismiss: (toastId?: string | null) => {
+    const context = getToastContextRef();
+    if (!context) return;
+
+    if (toastId) {
+      context.removeToast(toastId);
+    } else {
+      context.clearAll();
+    }
   },
 
   /**
@@ -126,17 +169,35 @@ export const toast = {
       error: string | ((error: Error) => string);
     }
   ): Promise<T> => {
-    sonnerToast.promise(promise, {
-      loading,
-      success,
-      error: (err: Error) => {
+    const context = getToastContextRef();
+    if (!context) {
+      return promise;
+    }
+
+    const loadingId = showToast('loading', loading, { duration: Infinity });
+
+    promise
+      .then((data) => {
+        if (loadingId) {
+          context.removeToast(loadingId);
+        }
+        const successMessage = typeof success === 'function' ? success(data) : success;
+        showToast('success', successMessage);
+      })
+      .catch((err: Error) => {
+        if (loadingId) {
+          context.removeToast(loadingId);
+        }
+        let errorMessage: string;
         if (isApiError(err)) {
           const display = getApiErrorDisplay(err);
-          return `${display.title}: ${display.message}`;
+          errorMessage = `${display.title}: ${display.message}`;
+        } else {
+          errorMessage = typeof error === 'function' ? error(err) : error;
         }
-        return typeof error === 'function' ? error(err) : error;
-      },
-    });
+        showToast('error', errorMessage);
+      });
+
     return promise;
   },
 
@@ -150,7 +211,7 @@ export const toast = {
     cancelText = 'Cancel',
   }: ConfirmOptions): Promise<boolean> => {
     return new Promise((resolve) => {
-      sonnerToast(title, {
+      showToast('default', title, {
         description,
         duration: Infinity,
         action: {
@@ -170,10 +231,10 @@ export const toast = {
   /**
    * Show custom toast
    */
-  custom: (message: string, options?: ToastOptions) => {
-    sonnerToast(message, {
+  custom: (message: string, options?: ToastOptions): string | null => {
+    return showToast('default', message, {
       description: options?.description,
-      duration: options?.duration ?? 4000,
+      duration: options?.duration,
       action: options?.action,
     });
   },

@@ -573,221 +573,6 @@
   }
 }
 
-/* Toast Notification Styles - Sonner */
-/* Default theme (dark) toast colors */
-:root {
-  --success-bg: var(--color-brand-700);
-  --success-border: var(--color-brand-500);
-  --success-text: #ffffff;
-  --info-bg: var(--color-brand-800);
-  --info-border: var(--color-brand-600);
-  --info-text: var(--color-brand-100);
-  --warning-bg: color-mix(in srgb, #f59e0b 20%, var(--color-brand-900));
-  --warning-border: #f59e0b;
-  --warning-text: #fbbf24;
-  --error-bg: color-mix(
-    in srgb,
-    var(--color-error) 20%,
-    var(--color-brand-900)
-  );
-  --error-border: var(--color-error);
-  --error-text: var(--color-error-text);
-}
-
-/* Light theme toast colors */
-[data-theme="light"] {
-  --success-bg: var(--color-brand-600);
-  --success-border: var(--color-brand-500);
-  --success-text: #ffffff;
-  --info-bg: var(--color-brand-100);
-  --info-border: var(--color-brand-400);
-  --info-text: var(--color-brand-800);
-  --warning-bg: color-mix(in srgb, #f59e0b 15%, var(--color-brand-50));
-  --warning-border: #f59e0b;
-  --warning-text: #d97706;
-  --error-bg: color-mix(in srgb, var(--color-error) 15%, var(--color-brand-50));
-  --error-border: var(--color-error);
-  --error-text: var(--color-error-text);
-}
-
-/* Blue theme toast colors */
-[data-theme="blue"] {
-  --success-bg: var(--color-brand-700);
-  --success-border: var(--color-brand-500);
-  --success-text: #ffffff;
-  --info-bg: var(--color-blue-800);
-  --info-border: var(--color-blue-600);
-  --info-text: var(--color-blue-100);
-  --warning-bg: color-mix(in srgb, #f59e0b 20%, var(--color-blue-950));
-  --warning-border: #f59e0b;
-  --warning-text: #fbbf24;
-  --error-bg: color-mix(in srgb, var(--color-error) 20%, var(--color-blue-950));
-  --error-border: var(--color-error);
-  --error-text: var(--color-error-text);
-}
-
-/* Base toast styling */
-[data-sonner-toast] {
-  background: var(--surface-elevated) !important;
-  border: 1px solid var(--border) !important;
-  color: var(--text-primary) !important;
-  box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.3),
-    0 4px 8px -2px rgba(0, 0, 0, 0.1) !important;
-  backdrop-filter: blur(8px);
-  border-radius: 8px !important;
-}
-
-/* Success toast - dark green theme */
-[data-sonner-toast][data-type="success"],
-[data-sonner-toast].success {
-  background: var(--success-bg) !important;
-  border-color: var(--success-border) !important;
-  color: var(--success-text) !important;
-  box-shadow: 0 10px 24px -12px rgba(47, 86, 56, 0.55),
-    0 4px 8px -2px rgba(47, 86, 56, 0.2) !important;
-}
-
-[data-sonner-toast][data-type="success"] [data-title],
-[data-sonner-toast][data-type="success"] [data-description],
-[data-sonner-toast].success [data-title],
-[data-sonner-toast].success [data-description] {
-  color: var(--success-text) !important;
-}
-
-/* Info toast */
-[data-sonner-toast][data-type="info"],
-[data-sonner-toast].info {
-  background: var(--info-bg) !important;
-  border-color: var(--info-border) !important;
-  color: var(--info-text) !important;
-  box-shadow: 0 10px 24px -12px rgba(54, 105, 61, 0.4),
-    0 4px 8px -2px rgba(54, 105, 61, 0.15) !important;
-}
-
-[data-sonner-toast][data-type="info"] [data-title],
-[data-sonner-toast][data-type="info"] [data-description],
-[data-sonner-toast].info [data-title],
-[data-sonner-toast].info [data-description] {
-  color: var(--info-text) !important;
-}
-
-/* Warning toast */
-[data-sonner-toast][data-type="warning"],
-[data-sonner-toast].warning {
-  background: var(--warning-bg) !important;
-  border-color: var(--warning-border) !important;
-  color: var(--warning-text) !important;
-  box-shadow: 0 10px 24px -12px rgba(245, 158, 11, 0.4),
-    0 4px 8px -2px rgba(245, 158, 11, 0.15) !important;
-}
-
-[data-sonner-toast][data-type="warning"] [data-title],
-[data-sonner-toast][data-type="warning"] [data-description],
-[data-sonner-toast].warning [data-title],
-[data-sonner-toast].warning [data-description] {
-  color: var(--warning-text) !important;
-}
-
-/* Error toast */
-[data-sonner-toast][data-type="error"],
-[data-sonner-toast].error {
-  background: var(--error-bg) !important;
-  border-color: var(--error-border) !important;
-  color: var(--error-text) !important;
-  box-shadow: 0 10px 24px -12px rgba(239, 68, 68, 0.4),
-    0 4px 8px -2px rgba(239, 68, 68, 0.15) !important;
-}
-
-[data-sonner-toast][data-type="error"] [data-title],
-[data-sonner-toast][data-type="error"] [data-description],
-[data-sonner-toast].error [data-title],
-[data-sonner-toast].error [data-description] {
-  color: var(--error-text) !important;
-}
-
-/* Loading toast */
-[data-sonner-toast][data-type="loading"],
-[data-sonner-toast].loading {
-  background: var(--surface-elevated) !important;
-  border-color: var(--border) !important;
-  color: var(--text-primary) !important;
-}
-
-/* Default toast (for confirm dialogs) */
-[data-sonner-toast]:not([data-type]) {
-  background: var(--surface-elevated) !important;
-  border-color: var(--border) !important;
-  color: var(--text-primary) !important;
-}
-
-/* Toast action buttons */
-[data-sonner-toast] [data-button],
-[data-sonner-toast] button[data-button] {
-  background: var(--btn-primary-bg) !important;
-  color: var(--btn-primary-text) !important;
-  border-color: var(--btn-primary-border) !important;
-  border-radius: 6px !important;
-  font-weight: 500 !important;
-  padding: 0.5rem 1rem !important;
-  transition: all 0.2s ease !important;
-}
-
-[data-sonner-toast] [data-button]:hover,
-[data-sonner-toast] button[data-button]:hover {
-  background: var(--btn-primary-hover-bg) !important;
-  border-color: var(--btn-primary-hover-border) !important;
-  box-shadow: var(--btn-primary-hover-shadow) !important;
-}
-
-/* Toast cancel button */
-[data-sonner-toast] [data-cancel],
-[data-sonner-toast] button[data-cancel] {
-  background: transparent !important;
-  color: var(--text-secondary) !important;
-  border-color: var(--border) !important;
-  border-radius: 6px !important;
-  font-weight: 500 !important;
-  padding: 0.5rem 1rem !important;
-  transition: all 0.2s ease !important;
-}
-
-[data-sonner-toast] [data-cancel]:hover,
-[data-sonner-toast] button[data-cancel]:hover {
-  background: var(--btn-secondary-hover-bg) !important;
-  color: var(--btn-secondary-hover-text) !important;
-  border-color: var(--btn-secondary-hover-border) !important;
-}
-
-/* Toast close button */
-[data-sonner-toast] [data-close-button],
-[data-sonner-toast] button[data-close-button] {
-  color: var(--text-secondary) !important;
-  opacity: 0.7 !important;
-  transition: opacity 0.2s ease, color 0.2s ease !important;
-}
-
-[data-sonner-toast] [data-close-button]:hover,
-[data-sonner-toast] button[data-close-button]:hover {
-  opacity: 1 !important;
-  color: var(--text-primary) !important;
-}
-
-/* Toast icon styling */
-[data-sonner-toast] [data-icon] {
-  color: inherit !important;
-}
-
-/* Ensure text elements inherit colors */
-[data-sonner-toast] [data-title] {
-  color: inherit !important;
-  font-weight: 600 !important;
-}
-
-[data-sonner-toast] [data-description] {
-  color: inherit !important;
-  opacity: 0.9 !important;
-}
-
 /* TipTap Editor Styles */
 .ProseMirror {
   outline: none !important;
@@ -1373,3 +1158,47 @@ button {
 .file-icon-doc { color: #3b82f6; }
 .file-icon-txt { color: #6b7280; }
 .file-icon-image { color: #10b981; }
+
+/* ========================================
+   Custom Toast Notification Styles
+   ======================================== */
+
+/* Ensure custom toast styles have priority */
+.custom-toast-item,
+[data-custom-toast="true"] {
+  /* Reset potential conflicting styles */
+  list-style: none !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+}
+
+/* Custom Toast Animations */
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes toastSlideOut {
+  from {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%) scale(0.95);
+  }
+}
+
+.toast-enter {
+  animation: toastSlideIn 0.3s cubic-bezier(0.21, 1.02, 0.73, 1) forwards;
+}
+
+.toast-exit {
+  animation: toastSlideOut 0.25s cubic-bezier(0.06, 0.71, 0.55, 1) forwards;
+}

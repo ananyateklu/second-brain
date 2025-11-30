@@ -158,6 +158,7 @@ export function useChatConversationManager(
         : null;
 
       await deleteConversationMutation.mutateAsync(id);
+      toast.success('Conversation deleted');
 
       if (conversationId === id) {
         if (nextConversation) {
