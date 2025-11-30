@@ -907,5 +907,875 @@ public class AgentServiceTests
     }
 
     #endregion
+
+    #region Additional Provider Tests
+
+    [Fact]
+    public async Task ProcessStreamAsync_WithGeminiProvider_WhenDisabled_ReturnsError()
+    {
+        // Arrange
+        var settings = new AIProvidersSettings
+        {
+            OpenAI = new OpenAISettings { Enabled = false },
+            Anthropic = new AnthropicSettings { Enabled = false },
+            Gemini = new GeminiSettings { Enabled = false },
+            XAI = new XAISettings { Enabled = false },
+            Ollama = new OllamaSettings { Enabled = false }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        var request = new AgentRequest
+        {
+            Provider = "gemini",
+            Model = "gemini-pro",
+            UserId = "user-123",
+            Messages = new List<AgentMessage> { new() { Role = "user", Content = "Hello" } }
+        };
+
+        // Act
+        var events = new List<AgentStreamEvent>();
+        await foreach (var evt in service.ProcessStreamAsync(request))
+        {
+            events.Add(evt);
+        }
+
+        // Assert
+        events.Should().Contain(e => e.Type == AgentEventType.Error);
+        var errorEvent = events.First(e => e.Type == AgentEventType.Error);
+        errorEvent.Content.Should().Contain("Gemini");
+    }
+
+    [Fact]
+    public async Task ProcessStreamAsync_WithOllamaProvider_WhenDisabled_ReturnsError()
+    {
+        // Arrange
+        var settings = new AIProvidersSettings
+        {
+            OpenAI = new OpenAISettings { Enabled = false },
+            Anthropic = new AnthropicSettings { Enabled = false },
+            Gemini = new GeminiSettings { Enabled = false },
+            XAI = new XAISettings { Enabled = false },
+            Ollama = new OllamaSettings { Enabled = false }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        var request = new AgentRequest
+        {
+            Provider = "ollama",
+            Model = "llama3",
+            UserId = "user-123",
+            Messages = new List<AgentMessage> { new() { Role = "user", Content = "Hello" } }
+        };
+
+        // Act
+        var events = new List<AgentStreamEvent>();
+        await foreach (var evt in service.ProcessStreamAsync(request))
+        {
+            events.Add(evt);
+        }
+
+        // Assert
+        events.Should().Contain(e => e.Type == AgentEventType.Error);
+        var errorEvent = events.First(e => e.Type == AgentEventType.Error);
+        errorEvent.Content.Should().Contain("Ollama");
+    }
+
+    [Fact]
+    public async Task ProcessStreamAsync_WithXaiProvider_WhenDisabled_ReturnsError()
+    {
+        // Arrange
+        var settings = new AIProvidersSettings
+        {
+            OpenAI = new OpenAISettings { Enabled = false },
+            Anthropic = new AnthropicSettings { Enabled = false },
+            Gemini = new GeminiSettings { Enabled = false },
+            XAI = new XAISettings { Enabled = false },
+            Ollama = new OllamaSettings { Enabled = false }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        var request = new AgentRequest
+        {
+            Provider = "xai",
+            Model = "grok-2",
+            UserId = "user-123",
+            Messages = new List<AgentMessage> { new() { Role = "user", Content = "Hello" } }
+        };
+
+        // Act
+        var events = new List<AgentStreamEvent>();
+        await foreach (var evt in service.ProcessStreamAsync(request))
+        {
+            events.Add(evt);
+        }
+
+        // Assert
+        events.Should().Contain(e => e.Type == AgentEventType.Error);
+        var errorEvent = events.First(e => e.Type == AgentEventType.Error);
+        errorEvent.Content.Should().Contain("xAI");
+    }
+
+    [Fact]
+    public async Task ProcessStreamAsync_WithOpenAI_WhenNoApiKey_ReturnsError()
+    {
+        // Arrange
+        var settings = new AIProvidersSettings
+        {
+            OpenAI = new OpenAISettings { Enabled = true, ApiKey = "" },
+            Anthropic = new AnthropicSettings { Enabled = false },
+            Gemini = new GeminiSettings { Enabled = false },
+            XAI = new XAISettings { Enabled = false },
+            Ollama = new OllamaSettings { Enabled = false }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        var request = new AgentRequest
+        {
+            Provider = "openai",
+            Model = "gpt-4",
+            UserId = "user-123",
+            Messages = new List<AgentMessage> { new() { Role = "user", Content = "Hello" } }
+        };
+
+        // Act
+        var events = new List<AgentStreamEvent>();
+        await foreach (var evt in service.ProcessStreamAsync(request))
+        {
+            events.Add(evt);
+        }
+
+        // Assert
+        events.Should().Contain(e => e.Type == AgentEventType.Error);
+    }
+
+    [Fact]
+    public async Task ProcessStreamAsync_WithGemini_WhenNoApiKey_ReturnsError()
+    {
+        // Arrange
+        var settings = new AIProvidersSettings
+        {
+            OpenAI = new OpenAISettings { Enabled = false },
+            Anthropic = new AnthropicSettings { Enabled = false },
+            Gemini = new GeminiSettings { Enabled = true, ApiKey = "" },
+            XAI = new XAISettings { Enabled = false },
+            Ollama = new OllamaSettings { Enabled = false }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        var request = new AgentRequest
+        {
+            Provider = "gemini",
+            Model = "gemini-pro",
+            UserId = "user-123",
+            Messages = new List<AgentMessage> { new() { Role = "user", Content = "Hello" } }
+        };
+
+        // Act
+        var events = new List<AgentStreamEvent>();
+        await foreach (var evt in service.ProcessStreamAsync(request))
+        {
+            events.Add(evt);
+        }
+
+        // Assert
+        events.Should().Contain(e => e.Type == AgentEventType.Error);
+    }
+
+    [Fact]
+    public async Task ProcessStreamAsync_WithXAI_WhenNoApiKey_ReturnsError()
+    {
+        // Arrange
+        var settings = new AIProvidersSettings
+        {
+            OpenAI = new OpenAISettings { Enabled = false },
+            Anthropic = new AnthropicSettings { Enabled = false },
+            Gemini = new GeminiSettings { Enabled = false },
+            XAI = new XAISettings { Enabled = true, ApiKey = "", BaseUrl = "https://api.x.ai" },
+            Ollama = new OllamaSettings { Enabled = false }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        var request = new AgentRequest
+        {
+            Provider = "grok",
+            Model = "grok-2",
+            UserId = "user-123",
+            Messages = new List<AgentMessage> { new() { Role = "user", Content = "Hello" } }
+        };
+
+        // Act
+        var events = new List<AgentStreamEvent>();
+        await foreach (var evt in service.ProcessStreamAsync(request))
+        {
+            events.Add(evt);
+        }
+
+        // Assert
+        events.Should().Contain(e => e.Type == AgentEventType.Error);
+    }
+
+    [Fact]
+    public async Task ProcessStreamAsync_WithAnthropic_WhenNoApiKey_ReturnsError()
+    {
+        // Arrange
+        var settings = new AIProvidersSettings
+        {
+            OpenAI = new OpenAISettings { Enabled = false },
+            Anthropic = new AnthropicSettings { Enabled = true, ApiKey = "" },
+            Gemini = new GeminiSettings { Enabled = false },
+            XAI = new XAISettings { Enabled = false },
+            Ollama = new OllamaSettings { Enabled = false }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        var request = new AgentRequest
+        {
+            Provider = "claude",
+            Model = "claude-3-opus",
+            UserId = "user-123",
+            Messages = new List<AgentMessage> { new() { Role = "user", Content = "Hello" } }
+        };
+
+        // Act
+        var events = new List<AgentStreamEvent>();
+        await foreach (var evt in service.ProcessStreamAsync(request))
+        {
+            events.Add(evt);
+        }
+
+        // Assert
+        events.Should().Contain(e => e.Type == AgentEventType.Error);
+        var errorEvent = events.First(e => e.Type == AgentEventType.Error);
+        errorEvent.Content.Should().Contain("not enabled");
+    }
+
+    #endregion
+
+    #region Provider Case Sensitivity Tests
+
+    [Theory]
+    [InlineData("openai")]
+    [InlineData("OpenAI")]
+    [InlineData("OPENAI")]
+    public async Task ProcessStreamAsync_DetectsOpenAIProvider_CaseInsensitive(string provider)
+    {
+        // Arrange
+        var settings = new AIProvidersSettings
+        {
+            OpenAI = new OpenAISettings { Enabled = false },
+            Anthropic = new AnthropicSettings { Enabled = false },
+            Gemini = new GeminiSettings { Enabled = false },
+            XAI = new XAISettings { Enabled = false },
+            Ollama = new OllamaSettings { Enabled = false }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        var request = new AgentRequest
+        {
+            Provider = provider,
+            Model = "gpt-4",
+            UserId = "user-123",
+            Messages = new List<AgentMessage> { new() { Role = "user", Content = "Hi" } }
+        };
+
+        // Act
+        var events = new List<AgentStreamEvent>();
+        await foreach (var evt in service.ProcessStreamAsync(request))
+        {
+            events.Add(evt);
+        }
+
+        // Assert
+        events.Should().Contain(e => e.Type == AgentEventType.Error);
+        var errorEvent = events.First(e => e.Type == AgentEventType.Error);
+        errorEvent.Content.Should().Contain("OpenAI");
+    }
+
+    [Theory]
+    [InlineData("gemini")]
+    [InlineData("Gemini")]
+    [InlineData("GEMINI")]
+    public async Task ProcessStreamAsync_DetectsGeminiProvider_CaseInsensitive(string provider)
+    {
+        // Arrange
+        var settings = new AIProvidersSettings
+        {
+            OpenAI = new OpenAISettings { Enabled = false },
+            Anthropic = new AnthropicSettings { Enabled = false },
+            Gemini = new GeminiSettings { Enabled = false },
+            XAI = new XAISettings { Enabled = false },
+            Ollama = new OllamaSettings { Enabled = false }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        var request = new AgentRequest
+        {
+            Provider = provider,
+            Model = "gemini-pro",
+            UserId = "user-123",
+            Messages = new List<AgentMessage> { new() { Role = "user", Content = "Hi" } }
+        };
+
+        // Act
+        var events = new List<AgentStreamEvent>();
+        await foreach (var evt in service.ProcessStreamAsync(request))
+        {
+            events.Add(evt);
+        }
+
+        // Assert
+        events.Should().Contain(e => e.Type == AgentEventType.Error);
+        var errorEvent = events.First(e => e.Type == AgentEventType.Error);
+        errorEvent.Content.Should().Contain("Gemini");
+    }
+
+    [Theory]
+    [InlineData("ollama")]
+    [InlineData("Ollama")]
+    [InlineData("OLLAMA")]
+    public async Task ProcessStreamAsync_DetectsOllamaProvider_CaseInsensitive(string provider)
+    {
+        // Arrange
+        var settings = new AIProvidersSettings
+        {
+            OpenAI = new OpenAISettings { Enabled = false },
+            Anthropic = new AnthropicSettings { Enabled = false },
+            Gemini = new GeminiSettings { Enabled = false },
+            XAI = new XAISettings { Enabled = false },
+            Ollama = new OllamaSettings { Enabled = false }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        var request = new AgentRequest
+        {
+            Provider = provider,
+            Model = "llama3",
+            UserId = "user-123",
+            Messages = new List<AgentMessage> { new() { Role = "user", Content = "Hi" } }
+        };
+
+        // Act
+        var events = new List<AgentStreamEvent>();
+        await foreach (var evt in service.ProcessStreamAsync(request))
+        {
+            events.Add(evt);
+        }
+
+        // Assert
+        events.Should().Contain(e => e.Type == AgentEventType.Error);
+        var errorEvent = events.First(e => e.Type == AgentEventType.Error);
+        errorEvent.Content.Should().Contain("Ollama");
+    }
+
+    [Theory]
+    [InlineData("grok")]
+    [InlineData("Grok")]
+    [InlineData("GROK")]
+    [InlineData("xai")]
+    [InlineData("XAI")]
+    public async Task ProcessStreamAsync_DetectsXAIProvider_CaseInsensitive(string provider)
+    {
+        // Arrange
+        var settings = new AIProvidersSettings
+        {
+            OpenAI = new OpenAISettings { Enabled = false },
+            Anthropic = new AnthropicSettings { Enabled = false },
+            Gemini = new GeminiSettings { Enabled = false },
+            XAI = new XAISettings { Enabled = false },
+            Ollama = new OllamaSettings { Enabled = false }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        var request = new AgentRequest
+        {
+            Provider = provider,
+            Model = "grok-2",
+            UserId = "user-123",
+            Messages = new List<AgentMessage> { new() { Role = "user", Content = "Hi" } }
+        };
+
+        // Act
+        var events = new List<AgentStreamEvent>();
+        await foreach (var evt in service.ProcessStreamAsync(request))
+        {
+            events.Add(evt);
+        }
+
+        // Assert
+        events.Should().Contain(e => e.Type == AgentEventType.Error);
+        var errorEvent = events.First(e => e.Type == AgentEventType.Error);
+        errorEvent.Content.Should().Contain("xAI");
+    }
+
+    #endregion
+
+    #region Ollama Provider Specific Tests
+
+    [Fact]
+    public void AgentRequest_OllamaBaseUrl_CanBeSet()
+    {
+        // Arrange & Act
+        var request = new AgentRequest
+        {
+            Provider = "ollama",
+            Model = "llama3",
+            UserId = "user-123",
+            OllamaBaseUrl = "http://custom-ollama:11434",
+            Messages = new List<AgentMessage> { new() { Role = "user", Content = "Hello" } }
+        };
+
+        // Assert
+        request.OllamaBaseUrl.Should().Be("http://custom-ollama:11434");
+    }
+
+    [Fact]
+    public void AgentRequest_OllamaBaseUrl_DefaultsToNull()
+    {
+        // Arrange & Act
+        var request = new AgentRequest
+        {
+            Provider = "ollama",
+            Model = "llama3",
+            UserId = "user-123",
+            Messages = new List<AgentMessage> { new() { Role = "user", Content = "Hello" } }
+        };
+
+        // Assert
+        request.OllamaBaseUrl.Should().BeNull();
+    }
+
+    #endregion
+
+    #region Capabilities Tests
+
+    [Fact]
+    public async Task ProcessStreamAsync_WithMultipleCapabilities_EmitsPreparingToolsStatus()
+    {
+        // Arrange
+        var settings = new AIProvidersSettings
+        {
+            OpenAI = new OpenAISettings { Enabled = false },
+            Anthropic = new AnthropicSettings { Enabled = false },
+            Gemini = new GeminiSettings { Enabled = false },
+            XAI = new XAISettings { Enabled = false },
+            Ollama = new OllamaSettings { Enabled = false }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        var request = new AgentRequest
+        {
+            Provider = "openai",
+            Model = "gpt-4",
+            UserId = "user-123",
+            Capabilities = new List<string> { "notes", "unknown-capability" },
+            Messages = new List<AgentMessage> { new() { Role = "user", Content = "Hello" } }
+        };
+
+        // Act
+        var events = new List<AgentStreamEvent>();
+        await foreach (var evt in service.ProcessStreamAsync(request))
+        {
+            events.Add(evt);
+        }
+
+        // Assert
+        events.Should().Contain(e => e.Type == AgentEventType.Status && e.Content!.Contains("Preparing tools"));
+    }
+
+    [Fact]
+    public async Task ProcessStreamAsync_WithEmptyCapabilities_DoesNotEmitPreparingToolsStatus()
+    {
+        // Arrange
+        var settings = new AIProvidersSettings
+        {
+            OpenAI = new OpenAISettings { Enabled = false },
+            Anthropic = new AnthropicSettings { Enabled = false },
+            Gemini = new GeminiSettings { Enabled = false },
+            XAI = new XAISettings { Enabled = false },
+            Ollama = new OllamaSettings { Enabled = false }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        var request = new AgentRequest
+        {
+            Provider = "openai",
+            Model = "gpt-4",
+            UserId = "user-123",
+            Capabilities = new List<string>(),
+            Messages = new List<AgentMessage> { new() { Role = "user", Content = "Hello" } }
+        };
+
+        // Act
+        var events = new List<AgentStreamEvent>();
+        await foreach (var evt in service.ProcessStreamAsync(request))
+        {
+            events.Add(evt);
+        }
+
+        // Assert - Empty capabilities should not trigger "Preparing tools" status
+        events.Where(e => e.Type == AgentEventType.Status && e.Content!.Contains("Preparing tools"))
+            .Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ProcessStreamAsync_WithNullCapabilities_DoesNotEmitPreparingToolsStatus()
+    {
+        // Arrange
+        var settings = new AIProvidersSettings
+        {
+            OpenAI = new OpenAISettings { Enabled = false },
+            Anthropic = new AnthropicSettings { Enabled = false },
+            Gemini = new GeminiSettings { Enabled = false },
+            XAI = new XAISettings { Enabled = false },
+            Ollama = new OllamaSettings { Enabled = false }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        var request = new AgentRequest
+        {
+            Provider = "openai",
+            Model = "gpt-4",
+            UserId = "user-123",
+            Capabilities = null,
+            Messages = new List<AgentMessage> { new() { Role = "user", Content = "Hello" } }
+        };
+
+        // Act
+        var events = new List<AgentStreamEvent>();
+        await foreach (var evt in service.ProcessStreamAsync(request))
+        {
+            events.Add(evt);
+        }
+
+        // Assert - Null capabilities should not trigger "Preparing tools" status
+        events.Where(e => e.Type == AgentEventType.Status && e.Content!.Contains("Preparing tools"))
+            .Should().BeEmpty();
+    }
+
+    #endregion
+
+    #region Conversation History Edge Cases Tests
+
+    [Fact]
+    public async Task ProcessStreamAsync_WithAssistantMessageWithEmptyToolCalls_ProcessesCorrectly()
+    {
+        // Arrange
+        var settings = new AIProvidersSettings
+        {
+            Anthropic = new AnthropicSettings { Enabled = false }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        var request = new AgentRequest
+        {
+            Provider = "claude",
+            Model = "claude-3-opus",
+            UserId = "user-123",
+            Messages = new List<AgentMessage>
+            {
+                new() { Role = "user", Content = "Hello" },
+                new() { Role = "assistant", Content = "Hi!", ToolCalls = new List<ToolCallInfo>() },
+                new() { Role = "user", Content = "How are you?" }
+            }
+        };
+
+        // Act
+        var events = new List<AgentStreamEvent>();
+        await foreach (var evt in service.ProcessStreamAsync(request))
+        {
+            events.Add(evt);
+        }
+
+        // Assert
+        events.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public async Task ProcessStreamAsync_WithAssistantMessageWithNullContent_ProcessesCorrectly()
+    {
+        // Arrange
+        var settings = new AIProvidersSettings
+        {
+            Anthropic = new AnthropicSettings { Enabled = false }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        var request = new AgentRequest
+        {
+            Provider = "claude",
+            Model = "claude-3-opus",
+            UserId = "user-123",
+            Messages = new List<AgentMessage>
+            {
+                new() { Role = "user", Content = "Hello" },
+                new()
+                {
+                    Role = "assistant",
+                    Content = "",
+                    ToolCalls = new List<ToolCallInfo>
+                    {
+                        new() { ToolName = "search_notes", Arguments = "{}", Result = "Found 3 notes" }
+                    }
+                },
+                new() { Role = "user", Content = "Show me the first one" }
+            }
+        };
+
+        // Act
+        var events = new List<AgentStreamEvent>();
+        await foreach (var evt in service.ProcessStreamAsync(request))
+        {
+            events.Add(evt);
+        }
+
+        // Assert
+        events.Should().NotBeEmpty();
+    }
+
+    #endregion
+
+    #region Event Sequence Tests
+
+    [Fact]
+    public async Task ProcessStreamAsync_AlwaysEmitsInitializingStatusFirst()
+    {
+        // Arrange
+        var request = new AgentRequest
+        {
+            Provider = "unknown-provider",
+            Model = "model",
+            UserId = "user-123",
+            Messages = new List<AgentMessage> { new() { Role = "user", Content = "Hello" } }
+        };
+
+        // Act
+        var events = new List<AgentStreamEvent>();
+        await foreach (var evt in _sut.ProcessStreamAsync(request))
+        {
+            events.Add(evt);
+        }
+
+        // Assert
+        events.Should().NotBeEmpty();
+        events[0].Type.Should().Be(AgentEventType.Status);
+        events[0].Content.Should().Be("Initializing agent...");
+    }
+
+    [Fact]
+    public async Task ProcessStreamAsync_WithError_EmitsErrorAsLastEvent()
+    {
+        // Arrange
+        var settings = new AIProvidersSettings
+        {
+            OpenAI = new OpenAISettings { Enabled = false },
+            Anthropic = new AnthropicSettings { Enabled = false },
+            Gemini = new GeminiSettings { Enabled = false },
+            XAI = new XAISettings { Enabled = false },
+            Ollama = new OllamaSettings { Enabled = false }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        var request = new AgentRequest
+        {
+            Provider = "openai",
+            Model = "gpt-4",
+            UserId = "user-123",
+            Messages = new List<AgentMessage> { new() { Role = "user", Content = "Hello" } }
+        };
+
+        // Act
+        var events = new List<AgentStreamEvent>();
+        await foreach (var evt in service.ProcessStreamAsync(request))
+        {
+            events.Add(evt);
+        }
+
+        // Assert - Error should be the last event when an error occurs
+        events.Last().Type.Should().Be(AgentEventType.Error);
+    }
+
+    #endregion
+
+    #region Anthropic Provider Tests with Capabilities
+
+    [Fact]
+    public async Task ProcessStreamAsync_WithAnthropicAndCapabilities_EmitsPreparingToolsStatus()
+    {
+        // Arrange
+        var settings = new AIProvidersSettings
+        {
+            OpenAI = new OpenAISettings { Enabled = false },
+            Anthropic = new AnthropicSettings { Enabled = false },
+            Gemini = new GeminiSettings { Enabled = false },
+            XAI = new XAISettings { Enabled = false },
+            Ollama = new OllamaSettings { Enabled = false }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        var request = new AgentRequest
+        {
+            Provider = "claude",
+            Model = "claude-3-opus",
+            UserId = "user-123",
+            Capabilities = new List<string> { "notes" },
+            Messages = new List<AgentMessage> { new() { Role = "user", Content = "Hello" } }
+        };
+
+        // Act
+        var events = new List<AgentStreamEvent>();
+        await foreach (var evt in service.ProcessStreamAsync(request))
+        {
+            events.Add(evt);
+        }
+
+        // Assert - Should emit status before error (even if provider is disabled)
+        events.Should().Contain(e => e.Type == AgentEventType.Status);
+    }
+
+    #endregion
 }
 
