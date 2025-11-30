@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { aiService } from '../services';
+import { aiService } from '../services/ai.service';
 import type { OllamaPullProgress, OllamaPullRequest } from '../types/ai';
 
 export interface ModelDownload {
