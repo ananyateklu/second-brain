@@ -104,6 +104,12 @@
   --color-accent-blue-border: #5d7dac;
   --color-accent-blue-dot: #5d7dac;
 
+  /* Image generation capability colors (muted green) */
+  --color-image-gen: var(--color-brand-200); /* Soft muted green for image generation */
+  --color-image-gen-alpha: color-mix(in srgb, var(--color-brand-200) 15%, transparent);
+  --color-image-gen-text: var(--color-brand-200);
+  --color-image-gen-border: var(--color-brand-200);
+
   /* Shadow variables */
   --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
@@ -244,6 +250,12 @@
   --color-accent-blue-border: #4a6d99;
   --color-accent-blue-dot: #4a6d99;
 
+  /* Image generation capability colors for light theme */
+  --color-image-gen: var(--color-brand-500); /* Medium green for light mode contrast */
+  --color-image-gen-alpha: color-mix(in srgb, var(--color-brand-500) 15%, transparent);
+  --color-image-gen-text: var(--color-brand-500);
+  --color-image-gen-border: var(--color-brand-500);
+
   /* Input focus colors for light theme */
   --input-focus-border: var(--color-brand-500);
   --input-focus-ring: color-mix(
@@ -334,6 +346,12 @@
   --color-accent-blue-text: #5d7dac;
   --color-accent-blue-border: #5d7dac;
   --color-accent-blue-dot: #5d7dac;
+
+  /* Image generation capability colors for dark theme */
+  --color-image-gen: var(--color-brand-200); /* Soft muted green for image generation */
+  --color-image-gen-alpha: color-mix(in srgb, var(--color-brand-200) 15%, transparent);
+  --color-image-gen-text: var(--color-brand-200);
+  --color-image-gen-border: var(--color-brand-200);
 
   /* Input focus colors for dark theme */
   --input-focus-border: var(--color-brand-400);
@@ -444,6 +462,12 @@
   --color-accent-blue-text: var(--color-blue-300);
   --color-accent-blue-border: var(--color-blue-300);
   --color-accent-blue-dot: var(--color-blue-300);
+
+  /* Image generation capability colors for blue theme */
+  --color-image-gen: var(--color-brand-200); /* Soft muted green for image generation */
+  --color-image-gen-alpha: color-mix(in srgb, var(--color-brand-200) 15%, transparent);
+  --color-image-gen-text: var(--color-brand-200);
+  --color-image-gen-border: var(--color-brand-200);
 
   /* Input focus colors for blue theme */
   --input-focus-border: var(--color-brand-400);

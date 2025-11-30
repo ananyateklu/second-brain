@@ -52,13 +52,13 @@ export const getRegularChartColor = (): string => {
 
 /**
  * Get image generation chart color from CSS variables (cached)
- * Uses a distinct purple color to differentiate from other chat types
+ * Uses a soft muted green that blends with the theme
  */
 export const getImageGenChartColor = (): string => {
   if (cachedImageGenChartColor) return cachedImageGenChartColor;
 
-  // Use a distinct purple color for image generation
-  cachedImageGenChartColor = '#9b59b6';
+  const style = getComputedStyle(document.documentElement);
+  cachedImageGenChartColor = style.getPropertyValue('--color-image-gen').trim() || '#a3c4ab';
   return cachedImageGenChartColor;
 };
 

@@ -19,9 +19,11 @@ interface NotesFilterProps {
   notes: Note[];
   filterState: NotesFilterState;
   onFilterChange: (filters: NotesFilterState) => void;
+  isBulkMode?: boolean;
+  onBulkModeToggle?: () => void;
 }
 
-export function NotesFilter({ notes, filterState, onFilterChange }: NotesFilterProps) {
+export function NotesFilter({ notes, filterState, onFilterChange, isBulkMode = false, onBulkModeToggle }: NotesFilterProps) {
   const [isDateDropdownOpen, setIsDateDropdownOpen] = useState(false);
   const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
@@ -524,6 +526,49 @@ export function NotesFilter({ notes, filterState, onFilterChange }: NotesFilterP
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
           Clear filters
+        </button>
+      )}
+
+      {/* Bulk Select Toggle Button */}
+      {onBulkModeToggle && (
+        <button
+          type="button"
+          onClick={onBulkModeToggle}
+          className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2 ml-auto"
+          style={{
+            backgroundColor: isBulkMode ? 'var(--color-brand-600)' : 'transparent',
+            color: isBulkMode ? '#ffffff' : 'var(--text-secondary)',
+            border: `1px solid ${isBulkMode ? 'var(--color-brand-600)' : 'var(--border)'}`,
+            boxShadow: isBulkMode ? 'var(--shadow-lg), 0 0 20px -10px var(--color-primary-alpha)' : 'none',
+          }}
+          onMouseEnter={(e) => {
+            if (!isBulkMode) {
+              e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+              e.currentTarget.style.color = 'var(--text-primary)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!isBulkMode) {
+              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.color = 'var(--text-secondary)';
+            }
+          }}
+        >
+          {isBulkMode ? (
+            <>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Cancel
+            </>
+          ) : (
+            <>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              Select
+            </>
+          )}
         </button>
       )}
     </div>

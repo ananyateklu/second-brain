@@ -337,7 +337,7 @@ export function ModelUsageSection({
                             labelLine={true}
                             label={renderLabel}
                             outerRadius={80}
-                            fill="#8884d8"
+                            fill="var(--color-brand-600)"
                             dataKey="value"
                             paddingAngle={2}
                           >
@@ -385,7 +385,7 @@ export function ModelUsageSection({
                             labelLine={true}
                             label={renderLabel}
                             outerRadius={80}
-                            fill="#8884d8"
+                            fill="var(--color-brand-600)"
                             dataKey="value"
                             paddingAngle={2}
                           >

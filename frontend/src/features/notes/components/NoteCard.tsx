@@ -18,6 +18,9 @@ interface NoteCardProps {
   createdOn?: string | null;
   modifiedOn?: string | null;
   showDeleteButton?: boolean;
+  isBulkMode?: boolean;
+  isSelected?: boolean;
+  onSelect?: (noteId: string) => void;
 }
 
 // Regex-based HTML stripping (safer than innerHTML and faster)
@@ -70,6 +73,9 @@ export const NoteCard = memo(function NoteCard({
   content,
   createdOn,
   showDeleteButton = true,
+  isBulkMode = false,
+  isSelected = false,
+  onSelect,
 }: NoteCardProps) {
   const openEditModal = useUIStore((state) => state.openEditModal);
   const deleteNoteMutation = useDeleteNote();
@@ -82,7 +88,11 @@ export const NoteCard = memo(function NoteCard({
   const isDarkMode = theme === 'dark' || theme === 'blue';
 
   const handleCardClick = () => {
-    openEditModal(note);
+    if (isBulkMode && onSelect) {
+      onSelect(note.id);
+    } else {
+      openEditModal(note);
+    }
   };
 
   const handleDelete = async (e: React.MouseEvent) => {
@@ -153,14 +163,33 @@ export const NoteCard = memo(function NoteCard({
   const headerMargin = isMicro ? 'mb-1.5' : (isCompact ? 'mb-2' : 'mb-3');
   const contentMargin = isMicro ? 'mb-2' : (isCompact ? 'mb-3' : 'mb-4');
 
+  // Determine border and background based on selection state
+  const getBorderColor = () => {
+    if (isBulkMode && isSelected) {
+      return 'var(--color-brand-500)';
+    }
+    if (isHovered) {
+      return relevanceScore && relevanceScore > 0.8 && isSmall ? 'var(--color-brand-400)' : 'var(--color-brand-500)';
+    }
+    return 'var(--border)';
+  };
+
+  const getBackgroundStyle = () => {
+    if (isBulkMode && isSelected) {
+      return isDarkMode
+        ? 'color-mix(in srgb, var(--color-brand-600) 10%, var(--surface-card))'
+        : 'color-mix(in srgb, var(--color-brand-100) 30%, var(--surface-card))';
+    }
+    return 'var(--surface-card)';
+  };
+
   return (
     <div
       className={`group relative border transition-all duration-300 cursor-pointer overflow-hidden backdrop-blur-md flex flex-col ${containerPadding}`}
       style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: isHovered
-          ? (relevanceScore && relevanceScore > 0.8 && isSmall ? 'var(--color-brand-400)' : 'var(--color-brand-500)')
-          : 'var(--border)',
+        backgroundColor: getBackgroundStyle(),
+        borderColor: getBorderColor(),
+        borderWidth: isBulkMode && isSelected ? '2px' : '1px',
         boxShadow: isHovered
           ? 'var(--shadow-lg), 0 0 40px -15px var(--color-primary-alpha)'
           : (isSmall ? 'var(--shadow-sm)' : 'var(--shadow-card), 0 0 30px -20px var(--color-primary-alpha)'),
@@ -170,6 +199,24 @@ export const NoteCard = memo(function NoteCard({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
+      {/* Bulk Selection Checkbox */}
+      {isBulkMode && (
+        <div
+          className="absolute top-3 left-3 z-20 flex items-center justify-center w-6 h-6 rounded-md border-2 transition-all duration-200"
+          style={{
+            backgroundColor: isSelected ? 'var(--color-brand-600)' : 'var(--surface-card)',
+            borderColor: isSelected ? 'var(--color-brand-600)' : 'var(--border)',
+            boxShadow: isSelected ? '0 2px 8px -2px var(--color-primary-alpha)' : 'var(--shadow-sm)',
+          }}
+        >
+          {isSelected && (
+            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+            </svg>
+          )}
+        </div>
+      )}
+
       {/* Ambient glow effect */}
       <div
         className="absolute -top-20 -right-20 w-40 h-40 rounded-full opacity-15 blur-2xl pointer-events-none transition-opacity duration-1000"

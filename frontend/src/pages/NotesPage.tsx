@@ -1,13 +1,15 @@
-import { useMemo, useState } from 'react';
-import { useNotes } from '../features/notes/hooks/use-notes-query';
+import { useMemo, useState, useCallback } from 'react';
+import { useNotes, useDeleteNote } from '../features/notes/hooks/use-notes-query';
 import { NoteList } from '../features/notes/components/NoteList';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Button } from '../components/ui/Button';
 import { useUIStore } from '../store/ui-store';
 import { EditNoteModal } from '../features/notes/components/EditNoteModal';
+import { BulkActionsBar } from '../features/notes/components/BulkActionsBar';
 import { Note } from '../features/notes/types/note';
 import { NotesFilter, NotesFilterState } from '../features/notes/components/NotesFilter';
+import { toast } from '../hooks/use-toast';
 import {
   startOfDay,
   subDays,
@@ -79,6 +81,7 @@ const applyDateFilter = (
 
 export function NotesPage() {
   const { data: notes, isLoading, error } = useNotes();
+  const deleteNoteMutation = useDeleteNote();
   const openCreateModal = useUIStore((state) => state.openCreateModal);
   const searchQuery = useUIStore((state) => state.searchQuery);
   const searchMode = useUIStore((state) => state.searchMode);
@@ -89,6 +92,34 @@ export function NotesPage() {
     sortBy: 'newest',
     archiveFilter: 'all',
   });
+
+  // Bulk selection state
+  const [isBulkMode, setIsBulkMode] = useState(false);
+  const [selectedNoteIds, setSelectedNoteIds] = useState<Set<string>>(new Set());
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Bulk mode handlers
+  const toggleBulkMode = useCallback(() => {
+    setIsBulkMode((prev) => {
+      if (prev) {
+        // Exiting bulk mode - clear selections
+        setSelectedNoteIds(new Set());
+      }
+      return !prev;
+    });
+  }, []);
+
+  const handleNoteSelect = useCallback((noteId: string) => {
+    setSelectedNoteIds((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(noteId)) {
+        newSet.delete(noteId);
+      } else {
+        newSet.add(noteId);
+      }
+      return newSet;
+    });
+  }, []);
 
   // Memoize date boundaries - only recalculate when date filter changes
   const dateBoundaries = useMemo(() => {
@@ -192,6 +223,53 @@ export function NotesPage() {
     return filtered;
   }, [notes, searchQuery, searchMode, filterState, dateBoundaries]);
 
+  // Select/Deselect all handlers - operates on filtered notes
+  const handleSelectAll = useCallback(() => {
+    setSelectedNoteIds(new Set(filteredNotes.map((note) => note.id)));
+  }, [filteredNotes]);
+
+  const handleDeselectAll = useCallback(() => {
+    setSelectedNoteIds(new Set());
+  }, []);
+
+  // Bulk delete handler
+  const handleBulkDelete = useCallback(async () => {
+    if (selectedNoteIds.size === 0) return;
+
+    setIsDeleting(true);
+    const idsToDelete = Array.from(selectedNoteIds);
+    const totalCount = idsToDelete.length;
+    let deletedCount = 0;
+    const failedIds: string[] = [];
+
+    toast.info('Deleting notes...', `Deleting ${totalCount} note${totalCount === 1 ? '' : 's'}...`);
+
+    for (const id of idsToDelete) {
+      try {
+        await deleteNoteMutation.mutateAsync(id);
+        deletedCount++;
+      } catch (error) {
+        console.error('Failed to delete note:', { id, error });
+        failedIds.push(id);
+      }
+    }
+
+    setIsDeleting(false);
+
+    if (failedIds.length === 0) {
+      toast.success('Notes deleted', `Successfully deleted ${deletedCount} note${deletedCount === 1 ? '' : 's'}.`);
+      setSelectedNoteIds(new Set());
+      setIsBulkMode(false);
+    } else {
+      // Keep failed notes selected for retry
+      setSelectedNoteIds(new Set(failedIds));
+      toast.error(
+        'Some notes failed to delete',
+        `Deleted ${deletedCount} of ${totalCount} notes. ${failedIds.length} note${failedIds.length === 1 ? '' : 's'} failed.`
+      );
+    }
+  }, [selectedNoteIds, deleteNoteMutation]);
+
   if (error) {
     return (
       <div
@@ -263,6 +341,8 @@ export function NotesPage() {
             notes={notes}
             filterState={filterState}
             onFilterChange={setFilterState}
+            isBulkMode={isBulkMode}
+            onBulkModeToggle={toggleBulkMode}
           />
         )}
         <EmptyState
@@ -290,11 +370,28 @@ export function NotesPage() {
           notes={notes}
           filterState={filterState}
           onFilterChange={setFilterState}
+          isBulkMode={isBulkMode}
+          onBulkModeToggle={toggleBulkMode}
         />
       )}
       <div className={notes && notes.length > 0 ? 'pt-10' : ''}>
-        <NoteList notes={filteredNotes} />
+        <NoteList
+          notes={filteredNotes}
+          isBulkMode={isBulkMode}
+          selectedNoteIds={selectedNoteIds}
+          onNoteSelect={handleNoteSelect}
+        />
       </div>
+      {isBulkMode && (
+        <BulkActionsBar
+          selectedCount={selectedNoteIds.size}
+          totalCount={filteredNotes.length}
+          onSelectAll={handleSelectAll}
+          onDeselectAll={handleDeselectAll}
+          onDelete={handleBulkDelete}
+          isDeleting={isDeleting}
+        />
+      )}
       <EditNoteModal />
     </>
   );
