@@ -5,11 +5,18 @@ import { SendMessageRequest } from '../../../types/chat';
 import { estimateTokenCount } from '../../../utils/token-utils';
 import { QUERY_KEYS } from '../../../lib/constants';
 
+interface RetrievedNote {
+  id: string;
+  title: string;
+  content: string;
+  score?: number;
+}
+
 export interface StreamingState {
   isStreaming: boolean;
   streamingMessage: string;
   streamingError: Error | null;
-  retrievedNotes: any[];
+  retrievedNotes: RetrievedNote[];
   inputTokens?: number;
   outputTokens?: number;
   streamDuration?: number; // Duration in milliseconds
@@ -20,7 +27,7 @@ export function useChatStream() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState('');
   const [streamingError, setStreamingError] = useState<Error | null>(null);
-  const [retrievedNotes, setRetrievedNotes] = useState<any[]>([]);
+  const [retrievedNotes, setRetrievedNotes] = useState<RetrievedNote[]>([]);
   const [inputTokens, setInputTokens] = useState<number | undefined>(undefined);
   const [outputTokens, setOutputTokens] = useState<number | undefined>(undefined);
   const [streamDuration, setStreamDuration] = useState<number | undefined>(undefined);
@@ -62,7 +69,7 @@ export function useChatStream() {
                 return newMessage;
               });
             },
-            onRag: (notes: any[]) => {
+            onRag: (notes: RetrievedNote[]) => {
               setRetrievedNotes(notes);
             },
             onEnd: (_data: unknown) => {

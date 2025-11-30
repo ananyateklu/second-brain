@@ -68,9 +68,9 @@ export function useApiQuery<TData, TError = ApiError>(
   options?: UseApiQueryOptions<TData, TError>
 ): UseApiQueryResult<TData, TError> {
   const {
-    onError,
-    showErrorToast = false,
-    errorMessage,
+    onError: _onError,
+    showErrorToast: _showErrorToast = false,
+    errorMessage: _errorMessage,
     ...queryOptions
   } = options || {};
 

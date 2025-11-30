@@ -1,4 +1,5 @@
-import { useEditor, EditorContent, ReactRenderer } from '@tiptap/react';
+import { useEditor, EditorContent, ReactRenderer, Editor } from '@tiptap/react';
+import { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import Mention from '@tiptap/extension-mention';
@@ -29,7 +30,12 @@ interface RichTextEditorProps {
 }
 
 // --- Suggestion UI Component ---
-const SuggestionList = forwardRef((props: any, ref) => {
+interface SuggestionListProps {
+  items: string[];
+  command: (attrs: { id: string }) => void;
+}
+
+const SuggestionList = forwardRef((props: SuggestionListProps, ref) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   const selectItem = (index: number) => {
@@ -154,9 +160,9 @@ export function RichTextEditor({
     return markdownToHtml(content);
   }, [content]);
 
-  const extractTags = useCallback((editorInstance: any) => {
+  const extractTags = useCallback((editorInstance: Editor) => {
     const newTags: string[] = [];
-    editorInstance.state.doc.descendants((node: any) => {
+    editorInstance.state.doc.descendants((node: ProseMirrorNode) => {
       if (node.type.name === 'mention') {
         newTags.push(node.attrs.id);
       }
@@ -261,7 +267,7 @@ export function RichTextEditor({
           },
           render: () => {
             let component: ReactRenderer;
-            let popup: any;
+            let popup: ReturnType<typeof tippy>;
 
             return {
               onStart: (props) => {
@@ -275,7 +281,7 @@ export function RichTextEditor({
                 }
 
                 popup = tippy('body', {
-                  getReferenceClientRect: props.clientRect as any,
+                  getReferenceClientRect: props.clientRect as () => DOMRect,
                   appendTo: () => document.body,
                   content: component.element,
                   showOnCreate: true,
@@ -300,8 +306,8 @@ export function RichTextEditor({
                   popup[0].hide();
                   return true;
                 }
-                // Cast component.ref to any since types are not perfectly aligned with ReactRenderer
-                return (component.ref as any)?.onKeyDown(props);
+                // Cast component.ref since types are not perfectly aligned with ReactRenderer
+                return (component.ref as { onKeyDown?: (props: { event: KeyboardEvent }) => boolean })?.onKeyDown?.(props);
               },
               onExit() {
                 popup[0].destroy();
@@ -351,13 +357,13 @@ export function RichTextEditor({
   });
 
   // Helper to convert #tag patterns to mention nodes after content is loaded
-  const convertTagsToMentions = useCallback((editorInstance: any) => {
+  const convertTagsToMentions = useCallback((editorInstance: Editor) => {
     const { state } = editorInstance;
     const { doc } = state;
     const replacements: Array<{ from: number; to: number; tag: string; needsSpace: boolean }> = [];
 
     // Traverse the document to find #tag patterns in text nodes
-    doc.descendants((node: any, pos: number) => {
+    doc.descendants((node: ProseMirrorNode, pos: number) => {
       // Skip if already a mention node
       if (node.type.name === 'mention') {
         return;

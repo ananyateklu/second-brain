@@ -1,4 +1,4 @@
-import { Control, Controller, UseFormRegister, UseFormSetValue } from 'react-hook-form';
+import { Control, Controller, UseFormRegister, UseFormSetValue, FieldErrors } from 'react-hook-form';
 import { RichTextEditor } from '../../../components/editor/RichTextEditor';
 import { NoteFormData } from '../hooks/use-note-form';
 
@@ -6,7 +6,7 @@ interface RichNoteFormProps {
   register: UseFormRegister<NoteFormData>;
   control: Control<NoteFormData>;
   setValue: UseFormSetValue<NoteFormData>;
-  errors: any;
+  errors: FieldErrors<NoteFormData>;
   isSubmitting: boolean;
 }
 

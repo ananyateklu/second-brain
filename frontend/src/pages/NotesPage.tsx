@@ -158,7 +158,7 @@ export function NotesPage() {
     }
 
     // Apply filters
-    let filtered = notes.filter((note: Note) => {
+    const filtered = notes.filter((note: Note) => {
       // Search query filter
       if (hasSearchQuery) {
         const titleMatch = note.title.toLowerCase().includes(query);

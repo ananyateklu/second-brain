@@ -67,10 +67,10 @@ export function MarkdownMessage({ content }: MarkdownMessageProps) {
   const processedContent = useMemo(() => {
     // Decode Unicode escape sequences (e.g., \uD83D\uDC4B -> 👋)
     // Replace all \uXXXX patterns with their actual Unicode characters
-    let decoded = content.replace(/\\u([0-9A-Fa-f]{4})/g, (_match, code) => {
+    const decoded = content.replace(/\\u([0-9A-Fa-f]{4})/g, (_match, code) => {
       return String.fromCharCode(parseInt(code, 16));
     });
-    
+
     // Replace [Note Name] with custom link, avoiding checkboxes [x] [ ] and existing links
     return decoded.replace(/\[([^\]]+)\](?!\()/g, (match, name) => {
       const trimmed = name.trim();
@@ -87,42 +87,42 @@ export function MarkdownMessage({ content }: MarkdownMessageProps) {
         components={{
           // ... existing components ...
           // Headers
-          h1: ({ node, ...props }) => (
+          h1: ({ node: _node, ...props }) => (
             <h1
               className="text-2xl font-bold mt-6 mb-4"
               style={{ color: 'var(--text-primary)' }}
               {...props}
             />
           ),
-          h2: ({ node, ...props }) => (
+          h2: ({ node: _node, ...props }) => (
             <h2
               className="text-xl font-bold mt-5 mb-3"
               style={{ color: 'var(--text-primary)' }}
               {...props}
             />
           ),
-          h3: ({ node, ...props }) => (
+          h3: ({ node: _node, ...props }) => (
             <h3
               className="text-lg font-semibold mt-4 mb-2"
               style={{ color: 'var(--text-primary)' }}
               {...props}
             />
           ),
-          h4: ({ node, ...props }) => (
+          h4: ({ node: _node, ...props }) => (
             <h4
               className="text-base font-semibold mt-3 mb-2"
               style={{ color: 'var(--text-primary)' }}
               {...props}
             />
           ),
-          h5: ({ node, ...props }) => (
+          h5: ({ node: _node, ...props }) => (
             <h5
               className="text-sm font-semibold mt-2 mb-1"
               style={{ color: 'var(--text-primary)' }}
               {...props}
             />
           ),
-          h6: ({ node, ...props }) => (
+          h6: ({ node: _node, ...props }) => (
             <h6
               className="text-xs font-semibold mt-2 mb-1"
               style={{ color: 'var(--text-primary)' }}
@@ -130,7 +130,7 @@ export function MarkdownMessage({ content }: MarkdownMessageProps) {
             />
           ),
           // Paragraphs
-          p: ({ node, ...props }) => (
+          p: ({ node: _node, ...props }) => (
             <p
               className="mb-4 last:mb-0 leading-relaxed"
               style={{ color: 'var(--text-primary)' }}
@@ -138,21 +138,21 @@ export function MarkdownMessage({ content }: MarkdownMessageProps) {
             />
           ),
           // Lists
-          ul: ({ node, ...props }) => (
+          ul: ({ node: _node, ...props }) => (
             <ul
               className="list-disc mb-4 space-y-2 ml-6"
               style={{ color: 'var(--text-primary)' }}
               {...props}
             />
           ),
-          ol: ({ node, ...props }) => (
+          ol: ({ node: _node, ...props }) => (
             <ol
               className="list-decimal mb-4 space-y-2 ml-6"
               style={{ color: 'var(--text-primary)' }}
               {...props}
             />
           ),
-          li: ({ node, ...props }) => (
+          li: ({ node: _node, ...props }) => (
             <li
               className="mb-1"
               style={{ color: 'var(--text-primary)' }}
@@ -160,7 +160,7 @@ export function MarkdownMessage({ content }: MarkdownMessageProps) {
             />
           ),
           // Strong/Bold
-          strong: ({ node, ...props }) => (
+          strong: ({ node: _node, ...props }) => (
             <strong
               className="font-bold"
               style={{ color: 'var(--text-primary)' }}
@@ -168,7 +168,7 @@ export function MarkdownMessage({ content }: MarkdownMessageProps) {
             />
           ),
           // Emphasis/Italic
-          em: ({ node, ...props }) => (
+          em: ({ node: _node, ...props }) => (
             <em
               className="italic"
               style={{ color: 'var(--text-primary)' }}
@@ -176,7 +176,8 @@ export function MarkdownMessage({ content }: MarkdownMessageProps) {
             />
           ),
           // Code blocks
-          code: ({ node, inline, className, children, ...props }: any) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          code: ({ node: _node, inline, className, children, ...props }: any) => {
             const match = /language-(\w+)/.exec(className || '');
             const language = match ? match[1] : '';
 
@@ -216,9 +217,11 @@ export function MarkdownMessage({ content }: MarkdownMessageProps) {
               </SyntaxHighlighter>
             );
           },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           pre: ({ node, ...props }: any) => {
             // If it contains a code element with syntax highlighting, don't wrap it
             const hasCodeBlock = node?.children?.some(
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               (child: any) => child.type === 'element' && child.tagName === 'code' && child.properties?.className
             );
 
@@ -238,7 +241,7 @@ export function MarkdownMessage({ content }: MarkdownMessageProps) {
             );
           },
           // Blockquotes
-          blockquote: ({ node, ...props }) => (
+          blockquote: ({ node: _node, ...props }) => (
             <blockquote
               className="border-l-4 pl-4 my-4 italic"
               style={{
@@ -249,7 +252,7 @@ export function MarkdownMessage({ content }: MarkdownMessageProps) {
             />
           ),
           // Links
-          a: ({ node, ...props }) => {
+          a: ({ node: _node, ...props }) => {
             if (props.href?.startsWith('#note?name=')) {
               const noteName = decodeURIComponent(props.href.replace('#note?name=', ''));
               const note = notes?.find(n => n.title === noteName);
@@ -294,7 +297,7 @@ export function MarkdownMessage({ content }: MarkdownMessageProps) {
             );
           },
           // Horizontal rule
-          hr: ({ node, ...props }) => (
+          hr: ({ node: _node, ...props }) => (
             <hr
               className="my-6"
               style={{ borderColor: 'var(--border)' }}
@@ -302,7 +305,7 @@ export function MarkdownMessage({ content }: MarkdownMessageProps) {
             />
           ),
           // Tables
-          table: ({ node, ...props }) => (
+          table: ({ node: _node, ...props }) => (
             <div className="overflow-x-auto my-4">
               <table
                 className="min-w-full border-collapse"
@@ -311,28 +314,28 @@ export function MarkdownMessage({ content }: MarkdownMessageProps) {
               />
             </div>
           ),
-          thead: ({ node, ...props }) => (
+          thead: ({ node: _node, ...props }) => (
             <thead
               style={{ backgroundColor: 'var(--surface-card)' }}
               {...props}
             />
           ),
-          tbody: ({ node, ...props }) => <tbody {...props} />,
-          tr: ({ node, ...props }) => (
+          tbody: ({ node: _node, ...props }) => <tbody {...props} />,
+          tr: ({ node: _node, ...props }) => (
             <tr
               className="border-b"
               style={{ borderColor: 'var(--border)' }}
               {...props}
             />
           ),
-          th: ({ node, ...props }) => (
+          th: ({ node: _node, ...props }) => (
             <th
               className="px-4 py-2 text-left font-semibold"
               style={{ color: 'var(--text-primary)' }}
               {...props}
             />
           ),
-          td: ({ node, ...props }) => (
+          td: ({ node: _node, ...props }) => (
             <td
               className="px-4 py-2"
               style={{ color: 'var(--text-primary)' }}

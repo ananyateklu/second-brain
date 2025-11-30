@@ -28,7 +28,7 @@ const stripHtmlTags = (html: string): string => {
   if (!html) return '';
 
   // Replace block-level closing tags with newlines to preserve structure
-  let text = html
+  const text = html
     .replace(/<\/p>/gi, '\n')
     .replace(/<\/div>/gi, '\n')
     .replace(/<\/li>/gi, '\n')
@@ -311,37 +311,37 @@ export const NoteCard = memo(function NoteCard({
               remarkPlugins={[remarkGfm]}
               components={{
                 // Simplified components for preview
-                p: ({ node, ...props }) => (
+                p: ({ node: _node, ...props }) => (
                   <p className="mb-1 last:mb-0" style={{ fontSize: contentFontSize, margin: 0, lineHeight: isMicro ? '1.3' : '1.5' }} {...props} />
                 ),
-                h1: ({ node, ...props }) => (
+                h1: ({ node: _node, ...props }) => (
                   <strong className="block mb-0.5 mt-1" style={{ fontSize: contentFontSize }} {...props} />
                 ),
-                h2: ({ node, ...props }) => (
+                h2: ({ node: _node, ...props }) => (
                   <strong className="block mb-0.5 mt-1" style={{ fontSize: contentFontSize }} {...props} />
                 ),
-                h3: ({ node, ...props }) => (
+                h3: ({ node: _node, ...props }) => (
                   <strong className="block mb-0.5 mt-1" style={{ fontSize: contentFontSize }} {...props} />
                 ),
-                ul: ({ node, ...props }) => (
+                ul: ({ node: _node, ...props }) => (
                   <ul className="list-disc ml-3 mb-0.5 space-y-0" style={{ fontSize: contentFontSize }} {...props} />
                 ),
-                ol: ({ node, ...props }) => (
+                ol: ({ node: _node, ...props }) => (
                   <ol className="list-decimal ml-3 mb-0.5 space-y-0" style={{ fontSize: contentFontSize }} {...props} />
                 ),
-                li: ({ node, ...props }) => (
+                li: ({ node: _node, ...props }) => (
                   <li style={{ fontSize: contentFontSize }} {...props} />
                 ),
-                strong: ({ node, ...props }) => (
+                strong: ({ node: _node, ...props }) => (
                   <strong className="font-semibold" style={{ fontSize: contentFontSize, color: 'var(--text-primary)' }} {...props} />
                 ),
-                em: ({ node, ...props }) => (
+                em: ({ node: _node, ...props }) => (
                   <em className="italic" style={{ fontSize: contentFontSize }} {...props} />
                 ),
-                code: ({ node, ...props }) => (
+                code: ({ node: _node, ...props }) => (
                   <code className="px-1 py-0.5 rounded" style={{ fontSize: contentFontSize, backgroundColor: 'var(--surface-elevated)' }} {...props} />
                 ),
-                blockquote: ({ node, ...props }) => (
+                blockquote: ({ node: _node, ...props }) => (
                   <blockquote className="border-l-2 pl-2 italic my-0.5" style={{ fontSize: contentFontSize, borderColor: 'var(--border)' }} {...props} />
                 ),
                 // Hide complex elements in preview
