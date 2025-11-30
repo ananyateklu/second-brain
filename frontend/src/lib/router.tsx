@@ -5,6 +5,7 @@ import { ProtectedRoute } from '../components/auth/ProtectedRoute';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { LoginPage } from '../pages/LoginPage';
 import { NotFoundPage } from '../pages/NotFoundPage';
+import { PageLoader } from './PageLoader';
 
 // Lazy load heavy pages to reduce initial bundle size
 const DashboardPage = lazy(() => import('../pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
@@ -15,15 +16,6 @@ const ChatPage = lazy(() => import('../pages/ChatPage').then(m => ({ default: m.
 const GeneralSettings = lazy(() => import('../pages/settings/GeneralSettings').then(m => ({ default: m.GeneralSettings })));
 const AISettings = lazy(() => import('../pages/settings/AISettings').then(m => ({ default: m.AISettings })));
 const RAGSettings = lazy(() => import('../pages/settings/RAGSettings').then(m => ({ default: m.RAGSettings })));
-
-// Loading fallback for lazy-loaded pages
-function PageLoader() {
-  return (
-    <div className="flex items-center justify-center h-full min-h-[400px]">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--btn-primary-bg)]" />
-    </div>
-  );
-}
 
 export const router = createBrowserRouter([
   {

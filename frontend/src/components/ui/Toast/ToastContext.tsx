@@ -3,7 +3,8 @@
  * Global state management for toast notifications
  */
 
-import { createContext, useContext, useReducer, useCallback, ReactNode, useRef, useEffect } from 'react';
+import { createContext, useReducer, useCallback, ReactNode, useRef, useEffect, useMemo } from 'react';
+import { setToastContextRef } from './toast-utils';
 
 // ============================================
 // Types
@@ -54,7 +55,7 @@ type ToastActionType =
 // Context
 // ============================================
 
-interface ToastContextValue {
+export interface ToastContextValue {
   toasts: Toast[];
   addToast: (toast: Omit<Toast, 'id' | 'createdAt'>) => string;
   removeToast: (id: string) => void;
@@ -62,7 +63,8 @@ interface ToastContextValue {
   clearAll: () => void;
 }
 
-const ToastContext = createContext<ToastContextValue | null>(null);
+// eslint-disable-next-line react-refresh/only-export-components
+export const ToastContext = createContext<ToastContextValue | null>(null);
 
 // ============================================
 // Reducer
@@ -135,18 +137,20 @@ export function ToastProvider({ children, maxToasts = 5 }: ToastProviderProps) {
 
       dispatch({ type: 'ADD_TOAST', payload: newToast });
 
-      // Remove oldest toasts if exceeding max
-      if (state.toasts.length >= maxToasts) {
-        const oldestToast = state.toasts[0];
-        if (oldestToast) {
-          dispatch({ type: 'REMOVE_TOAST', payload: oldestToast.id });
-        }
-      }
-
       return id;
     },
-    [generateId, maxToasts, state.toasts.length]
+    [generateId]
   );
+
+  // Remove oldest toasts if exceeding max
+  useEffect(() => {
+    if (state.toasts.length > maxToasts) {
+      const oldestToast = state.toasts[0];
+      if (oldestToast) {
+        dispatch({ type: 'REMOVE_TOAST', payload: oldestToast.id });
+      }
+    }
+  }, [state.toasts.length, maxToasts, state.toasts]);
 
   const removeToast = useCallback((id: string) => {
     // First mark as exiting for animation
@@ -182,31 +186,8 @@ export function ToastProvider({ children, maxToasts = 5 }: ToastProviderProps) {
 }
 
 // ============================================
-// Hook
+// Provider with Ref (for external access)
 // ============================================
-
-export function useToastContext() {
-  const context = useContext(ToastContext);
-  if (!context) {
-    throw new Error('useToastContext must be used within a ToastProvider');
-  }
-  return context;
-}
-
-// ============================================
-// Toast API (Singleton for use outside React)
-// ============================================
-
-// Store reference to context functions for use outside React components
-let toastContextRef: ToastContextValue | null = null;
-
-export function setToastContextRef(context: ToastContextValue | null) {
-  toastContextRef = context;
-}
-
-export function getToastContextRef(): ToastContextValue | null {
-  return toastContextRef;
-}
 
 // Provider wrapper that sets the context ref
 export function ToastProviderWithRef({ children, maxToasts = 5 }: ToastProviderProps) {
@@ -249,13 +230,17 @@ export function ToastProviderWithRef({ children, maxToasts = 5 }: ToastProviderP
     dispatch({ type: 'CLEAR_ALL' });
   }, []);
 
-  const contextValue: ToastContextValue = {
-    toasts: state.toasts,
-    addToast,
-    removeToast,
-    updateToast,
-    clearAll,
-  };
+  // Memoize context value to prevent unnecessary re-renders
+  const contextValue = useMemo<ToastContextValue>(
+    () => ({
+      toasts: state.toasts,
+      addToast,
+      removeToast,
+      updateToast,
+      clearAll,
+    }),
+    [state.toasts, addToast, removeToast, updateToast, clearAll]
+  );
 
   // Set the ref for external access
   useEffect(() => {

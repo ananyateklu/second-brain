@@ -4,7 +4,7 @@
  */
 
 import { createPortal } from 'react-dom';
-import { useToastContext } from './ToastContext';
+import { useToastContext } from './use-toast-context';
 import { ToastItem } from './ToastItem';
 
 // ============================================

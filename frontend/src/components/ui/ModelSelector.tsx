@@ -34,7 +34,12 @@ export function ModelSelector({
   const isBlueTheme = theme === 'blue';
 
   const selectedProviderData = providers.find((p) => p.provider === selectedProvider);
-  const availableModels = selectedProviderData?.availableModels || [];
+  
+  // Memoize availableModels to prevent dependency array changes on every render
+  const availableModels = useMemo(
+    () => selectedProviderData?.availableModels || [],
+    [selectedProviderData?.availableModels]
+  );
   
   // Group models by category
   const groupedModels = useMemo(() => groupModelsByCategory(availableModels), [availableModels]);

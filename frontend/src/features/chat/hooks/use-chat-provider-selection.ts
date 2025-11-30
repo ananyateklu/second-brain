@@ -54,13 +54,13 @@ export function useChatProviderSelection(): ProviderSelectionState & ProviderSel
     if (savedChatProvider && savedChatProvider !== selectedProvider) {
       setSelectedProvider(savedChatProvider);
     }
-  }, [savedChatProvider]);
+  }, [savedChatProvider, selectedProvider]);
 
   useEffect(() => {
     if (savedChatModel && savedChatModel !== selectedModel) {
       setSelectedModel(savedChatModel);
     }
-  }, [savedChatModel]);
+  }, [savedChatModel, selectedModel]);
 
   // Get available providers from health data
   const availableProviders = useMemo(() => (

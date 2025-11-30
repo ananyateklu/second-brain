@@ -4,7 +4,8 @@
  */
 
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { Toast, useToastContext } from './ToastContext';
+import { Toast } from './ToastContext';
+import { useToastContext } from './use-toast-context';
 
 // ============================================
 // Icons
@@ -120,7 +121,7 @@ export function ToastItem({ toast, index }: ToastItemProps) {
   const handleDismiss = useCallback(() => {
     toast.onDismiss?.();
     removeToast(toast.id);
-  }, [removeToast, toast.id, toast.onDismiss]);
+  }, [removeToast, toast]);
 
   // Progress bar animation
   useEffect(() => {

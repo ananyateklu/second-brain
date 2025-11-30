@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useChatStream } from './use-chat-stream';
 import { useAgentStream } from '../../agents/hooks/use-agent-stream';
 import { ToolExecution, ThinkingStep } from '../../agents/types/agent-types';
@@ -45,14 +45,24 @@ export function useCombinedStreaming(agentModeEnabled: boolean) {
   // Agent streaming
   const agentStream = useAgentStream();
 
+  // Use refs for cleanup to avoid stale closure issues
+  const chatStreamRef = useRef(chatStream);
+  const agentStreamRef = useRef(agentStream);
+
+  // Keep refs up to date
+  useEffect(() => {
+    chatStreamRef.current = chatStream;
+    agentStreamRef.current = agentStream;
+  }, [chatStream, agentStream]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (chatStream.isStreaming) {
-        chatStream.cancelStream();
+      if (chatStreamRef.current.isStreaming) {
+        chatStreamRef.current.cancelStream();
       }
-      if (agentStream.isStreaming) {
-        agentStream.cancelStream();
+      if (agentStreamRef.current.isStreaming) {
+        agentStreamRef.current.cancelStream();
       }
     };
   }, []);

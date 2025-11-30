@@ -36,7 +36,7 @@ export function EditNoteModal() {
         keepDefaultValues: false,
       });
     }
-  }, [editingNote?.id, isOpen, reset]);
+  }, [editingNote, isOpen, reset]);
 
   // Keyboard shortcut: Cmd/Ctrl + S to save
   useEffect(() => {

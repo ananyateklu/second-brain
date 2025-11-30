@@ -9,9 +9,6 @@ import {
   ModelUsageSection,
 } from '../features/dashboard/components';
 
-// Re-export for backward compatibility
-export { resetDashboardColorCache } from '../features/dashboard/utils/dashboard-utils';
-
 export function DashboardPage() {
   const [selectedTimeRange, setSelectedTimeRange] = useState<number>(30);
   const [selectedChatTimeRange, setSelectedChatTimeRange] = useState<number>(30);
