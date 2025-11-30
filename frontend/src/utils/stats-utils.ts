@@ -112,10 +112,12 @@ export function calculateStats(notes: Note[]): DashboardStats {
 /**
  * Group notes by date for chart data (last N days)
  * For longer ranges (>90 days), groups by week or month for better readability
+ * Note: "Last N days" includes today, so we subtract N-1 days from today
  */
 export function getChartData(notes: Note[], days: number = 30): ChartDataPoint[] {
   const now = new Date();
-  const rangeStart = startOfDay(subDays(now, days));
+  // Subtract days-1 so that "Last 30 days" means "29 days ago through today" = 30 data points including today
+  const rangeStart = startOfDay(subDays(now, days - 1));
 
   // Determine grouping strategy based on time range
   const groupByWeek = days >= 90 && days <= 180;
@@ -278,6 +280,7 @@ const emptyCounts = (): ChatCounts => ({
 /**
  * Process daily conversation counts for chart display
  * Groups by week or month for longer ranges, similar to getChartData
+ * Note: "Last N days" includes today, so we subtract N-1 days from today
  */
 export function getChatUsageChartData(
   dailyRagCounts: Record<string, number>,
@@ -287,7 +290,8 @@ export function getChatUsageChartData(
   days: number = 30
 ): ChatUsageDataPoint[] {
   const now = new Date();
-  const rangeStart = startOfDay(subDays(now, days));
+  // Subtract days-1 so that "Last 30 days" means "29 days ago through today" = 30 data points including today
+  const rangeStart = startOfDay(subDays(now, days - 1));
 
   // Determine grouping strategy based on time range
   const groupByWeek = days >= 90 && days <= 180;
