@@ -32,6 +32,7 @@ export interface ConversationManagerActions {
   handleNewChat: () => void;
   handleSelectConversation: (id: string, onSelect?: (conv: ChatConversation) => void) => void;
   handleDeleteConversation: (id: string) => Promise<void>;
+  handleBulkDeleteConversations: (ids: string[]) => Promise<void>;
   createConversation: (request: CreateConversationRequest) => Promise<ChatConversation>;
   clearPendingIfMatched: (isStreaming: boolean, streamingMessage: string) => void;
 }
@@ -174,6 +175,49 @@ export function useChatConversationManager(
     }
   }, [conversationId, conversations, deleteConversationMutation]);
 
+  // Handle bulk conversation deletion
+  const handleBulkDeleteConversations = useCallback(async (ids: string[]) => {
+    if (ids.length === 0) return;
+
+    const confirmed = await toast.confirm({
+      title: 'Delete Conversations',
+      description: `Are you sure you want to delete ${ids.length} conversation${ids.length > 1 ? 's' : ''}?`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+    });
+
+    if (confirmed) {
+      try {
+        // Delete all conversations in parallel
+        await Promise.all(ids.map((id) => deleteConversationMutation.mutateAsync(id)));
+        
+        toast.success(`${ids.length} conversation${ids.length > 1 ? 's' : ''} deleted`);
+
+        // Determine next conversation to select after bulk deletion
+        const remainingConversations = conversations?.filter((c) => !ids.includes(c.id)) || [];
+        const deletedCurrentConversation = conversationId && ids.includes(conversationId);
+
+        if (deletedCurrentConversation) {
+          if (remainingConversations.length > 0) {
+            // Select the most recently updated remaining conversation
+            const nextConversation = remainingConversations.reduce((prev, current) =>
+              new Date(current.updatedAt) > new Date(prev.updatedAt) ? current : prev
+            );
+            setConversationIdState(nextConversation.id);
+            setIsNewChat(false);
+          } else {
+            // No conversations left, show new chat state
+            setConversationIdState(null);
+            setIsNewChat(true);
+          }
+        }
+      } catch (error) {
+        console.error('Error deleting conversations:', { error, ids });
+        toast.error('Failed to delete some conversations');
+      }
+    }
+  }, [conversationId, conversations, deleteConversationMutation]);
+
   // Create a new conversation
   const createConversation = useCallback(async (request: CreateConversationRequest) => {
     const newConversation = await createConversationMutation.mutateAsync(request);
@@ -214,6 +258,7 @@ export function useChatConversationManager(
     handleNewChat,
     handleSelectConversation,
     handleDeleteConversation,
+    handleBulkDeleteConversations,
     createConversation,
     clearPendingIfMatched,
   };

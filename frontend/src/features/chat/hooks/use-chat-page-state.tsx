@@ -91,6 +91,7 @@ export interface ChatPageActions {
   handleNewChat: () => void;
   handleSelectConversation: (id: string) => void;
   handleDeleteConversation: (id: string) => void;
+  handleBulkDeleteConversations?: (ids: string[]) => Promise<void>;
 
   // Settings Actions
   handleRagToggle: (enabled: boolean) => void;
@@ -160,6 +161,7 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     handleNewChat,
     handleSelectConversation: baseHandleSelectConversation,
     handleDeleteConversation,
+    handleBulkDeleteConversations,
     createConversation,
   } = conversationManager;
 
@@ -516,6 +518,7 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     handleNewChat,
     handleSelectConversation,
     handleDeleteConversation,
+    handleBulkDeleteConversations,
 
     // Settings Actions
     handleRagToggle,

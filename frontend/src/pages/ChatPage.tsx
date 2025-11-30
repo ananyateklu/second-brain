@@ -76,6 +76,7 @@ export function ChatPage() {
     handleNewChat,
     handleSelectConversation,
     handleDeleteConversation,
+    handleBulkDeleteConversations,
     handleRagToggle,
     handleVectorStoreChange,
     setAgentModeEnabled,
@@ -104,6 +105,7 @@ export function ChatPage() {
           isNewChat={isNewChat}
           onSelectConversation={handleSelectConversation}
           onDeleteConversation={handleDeleteConversation}
+          onBulkDeleteConversations={handleBulkDeleteConversations}
           onNewChat={handleNewChat}
           onToggleSidebar={() => setShowSidebar(false)}
         />

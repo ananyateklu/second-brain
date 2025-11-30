@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { ChatConversation } from '../types/chat';
 import { formatModelName } from '../../../utils/model-name-formatter';
 import { formatConversationDate } from '../../../utils/date-utils';
@@ -18,11 +18,103 @@ function formatTokenCount(count: number): string {
   return count.toString();
 }
 
+/**
+ * Custom circular checkbox component with animations
+ */
+function CircularCheckbox({
+  checked,
+  onChange,
+  staggerIndex = 0,
+}: {
+  checked: boolean;
+  onChange: () => void;
+  staggerIndex?: number;
+}) {
+  const [isAnimating, setIsAnimating] = useState(false);
+  const prevCheckedRef = useRef(checked);
+
+  useEffect(() => {
+    if (prevCheckedRef.current !== checked) {
+      setIsAnimating(true);
+      const timer = setTimeout(() => setIsAnimating(false), 250);
+      prevCheckedRef.current = checked;
+      return () => clearTimeout(timer);
+    }
+  }, [checked]);
+
+  return (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={checked}
+      onClick={(e) => {
+        e.stopPropagation();
+        onChange();
+      }}
+      className="selection-checkbox flex-shrink-0 relative w-5 h-5 rounded-full cursor-pointer transition-all duration-200 hover:scale-110 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+      style={{
+        '--stagger-index': staggerIndex,
+        backgroundColor: checked
+          ? 'var(--btn-primary-bg)'
+          : 'transparent',
+        border: checked
+          ? '2px solid var(--btn-primary-bg)'
+          : '2px solid var(--text-tertiary)',
+        boxShadow: checked
+          ? '0 2px 8px -2px rgba(54, 105, 61, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.1)'
+          : 'none',
+        focusVisibleRingColor: 'var(--btn-primary-bg)',
+      } as React.CSSProperties}
+      onMouseEnter={(e) => {
+        if (!checked) {
+          e.currentTarget.style.borderColor = 'var(--color-brand-400)';
+          e.currentTarget.style.boxShadow = '0 0 0 3px color-mix(in srgb, var(--color-brand-600) 15%, transparent)';
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!checked) {
+          e.currentTarget.style.borderColor = 'var(--text-tertiary)';
+          e.currentTarget.style.boxShadow = 'none';
+        }
+      }}
+    >
+      {/* Checkmark icon */}
+      <svg
+        className={`absolute inset-0 w-full h-full p-1 selection-checkbox-inner ${isAnimating ? (checked ? 'checked' : 'unchecked') : ''}`}
+        viewBox="0 0 24 24"
+        fill="none"
+        style={{
+          opacity: checked ? 1 : 0,
+          transform: checked ? 'scale(1)' : 'scale(0.5)',
+          transition: 'opacity 0.15s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
+        }}
+      >
+        <path
+          className="selection-checkmark"
+          d="M5 13l4 4L19 7"
+          stroke="white"
+          strokeWidth={3}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{
+            strokeDasharray: checked ? 24 : 24,
+            strokeDashoffset: checked ? 0 : 24,
+            transition: 'stroke-dashoffset 0.2s ease-out 0.1s',
+          }}
+        />
+      </svg>
+    </button>
+  );
+}
+
 export interface ConversationListItemProps {
   conversation: ChatConversation;
   isSelected: boolean;
+  isSelectionMode?: boolean;
+  isChecked?: boolean;
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
+  staggerIndex?: number;
 }
 
 /**
@@ -31,12 +123,16 @@ export interface ConversationListItemProps {
 export function ConversationListItem({
   conversation,
   isSelected,
+  isSelectionMode = false,
+  isChecked = false,
   onSelect,
   onDelete,
+  staggerIndex = 0,
 }: ConversationListItemProps) {
   const theme = useThemeStore((state) => state.theme);
   const isDarkMode = theme === 'dark' || theme === 'blue';
   const isPlaceholder = conversation.id === 'placeholder-new-chat';
+  const showCheckbox = isSelectionMode && !isPlaceholder;
 
   // Calculate total tokens from all messages
   // Use stored token counts if available, otherwise estimate from content
@@ -53,41 +149,110 @@ export function ConversationListItem({
     }, 0);
   }, [conversation.messages]);
 
+  const handleClick = () => {
+    if (isSelectionMode && !isPlaceholder) {
+      onSelect(conversation.id);
+    } else if (!isSelectionMode) {
+      onSelect(conversation.id);
+    }
+  };
+
+  // Determine background color based on selection state
+  const getBackgroundColor = () => {
+    if (isSelectionMode && isChecked) {
+      return 'color-mix(in srgb, var(--surface-card) 40%, transparent)';
+    }
+    if (isSelected && !isSelectionMode) {
+      return 'var(--surface-card)';
+    }
+    return 'transparent';
+  };
+
+  // Determine left border styling
+  const getLeftBorderStyle = () => {
+    if (isSelectionMode && isChecked) {
+      return {
+        width: '3px',
+        color: 'var(--color-brand-500)',
+      };
+    }
+    if (isSelected && !isSelectionMode) {
+      return {
+        width: '4px',
+        color: 'var(--btn-primary-bg)',
+      };
+    }
+    return {
+      width: '0.5px',
+      color: 'color-mix(in srgb, var(--border) 85%, transparent)',
+    };
+  };
+
+  const leftBorder = getLeftBorderStyle();
+
   return (
     <div
-      className="group px-4 py-3 cursor-pointer transition-all duration-200"
+      className={`group px-4 py-3 transition-all duration-300 ${isSelectionMode && isChecked ? 'selection-item-highlight' : ''}`}
       style={{
-        backgroundColor: isSelected ? 'var(--surface-card)' : 'transparent',
-        borderLeftWidth: isSelected ? '4px' : '0.5px',
-        borderLeftColor: isSelected
-          ? 'var(--btn-primary-bg)'
-          : 'color-mix(in srgb, var(--border) 85%, transparent)',
+        backgroundColor: getBackgroundColor(),
+        borderLeftWidth: leftBorder.width,
+        borderLeftColor: leftBorder.color,
         borderTopWidth: '0.5px',
         borderTopColor: 'color-mix(in srgb, var(--border) 85%, transparent)',
         borderRightWidth: '0.5px',
         borderRightColor: 'color-mix(in srgb, var(--border) 85%, transparent)',
         borderBottomWidth: '0.5px',
         borderBottomColor: 'color-mix(in srgb, var(--border) 85%, transparent)',
+        cursor: isSelectionMode ? 'pointer' : 'pointer',
+        boxShadow: 'none',
       }}
-      onClick={() => onSelect(conversation.id)}
+      onClick={handleClick}
+      onMouseEnter={(e) => {
+        if (!isSelected && !(isSelectionMode && isChecked)) {
+          e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--surface-card) 50%, transparent)';
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!isSelected && !(isSelectionMode && isChecked)) {
+          e.currentTarget.style.backgroundColor = 'transparent';
+        }
+      }}
     >
       <div className="flex flex-col gap-1">
         <div className="flex items-center justify-between gap-2">
-          <h3
-            className="text-sm font-medium truncate flex-1 min-w-0"
-            style={{ color: 'var(--text-primary)' }}
-          >
-            {conversation.title}
-          </h3>
-          {!isPlaceholder && (
+          <div className="flex items-center gap-2.5 flex-1 min-w-0">
+            {showCheckbox && (
+              <CircularCheckbox
+                checked={isChecked}
+                onChange={() => onSelect(conversation.id)}
+                staggerIndex={staggerIndex}
+              />
+            )}
+            <h3
+              className="text-sm font-medium truncate flex-1 min-w-0 transition-colors duration-200"
+              style={{
+                color: 'var(--text-primary)',
+              }}
+            >
+              {conversation.title}
+            </h3>
+          </div>
+          {!isPlaceholder && !isSelectionMode && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onDelete(conversation.id);
               }}
-              className="p-1 rounded hover:bg-opacity-10 transition-all duration-200 flex-shrink-0 opacity-0 group-hover:opacity-100"
+              className="p-1.5 rounded-lg transition-all duration-200 flex-shrink-0 opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-95"
               style={{
                 color: 'rgb(239, 68, 68)',
+                backgroundColor: 'transparent',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
               }}
               title="Delete conversation"
             >
@@ -196,7 +361,9 @@ export function ConversationListItem({
             {/* Date */}
             <span
               className="text-[10px] whitespace-nowrap"
-              style={{ color: 'var(--text-tertiary)' }}
+              style={{
+                color: 'var(--text-tertiary)',
+              }}
             >
               {formatConversationDate(conversation.updatedAt)}
             </span>

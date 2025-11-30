@@ -105,8 +105,14 @@
   --color-accent-blue-dot: #5d7dac;
 
   /* Image generation capability colors (muted green) */
-  --color-image-gen: var(--color-brand-200); /* Soft muted green for image generation */
-  --color-image-gen-alpha: color-mix(in srgb, var(--color-brand-200) 15%, transparent);
+  --color-image-gen: var(
+    --color-brand-200
+  ); /* Soft muted green for image generation */
+  --color-image-gen-alpha: color-mix(
+    in srgb,
+    var(--color-brand-200) 15%,
+    transparent
+  );
   --color-image-gen-text: var(--color-brand-200);
   --color-image-gen-border: var(--color-brand-200);
 
@@ -251,8 +257,14 @@
   --color-accent-blue-dot: #4a6d99;
 
   /* Image generation capability colors for light theme */
-  --color-image-gen: var(--color-brand-500); /* Medium green for light mode contrast */
-  --color-image-gen-alpha: color-mix(in srgb, var(--color-brand-500) 15%, transparent);
+  --color-image-gen: var(
+    --color-brand-500
+  ); /* Medium green for light mode contrast */
+  --color-image-gen-alpha: color-mix(
+    in srgb,
+    var(--color-brand-500) 15%,
+    transparent
+  );
   --color-image-gen-text: var(--color-brand-500);
   --color-image-gen-border: var(--color-brand-500);
 
@@ -348,8 +360,14 @@
   --color-accent-blue-dot: #5d7dac;
 
   /* Image generation capability colors for dark theme */
-  --color-image-gen: var(--color-brand-200); /* Soft muted green for image generation */
-  --color-image-gen-alpha: color-mix(in srgb, var(--color-brand-200) 15%, transparent);
+  --color-image-gen: var(
+    --color-brand-200
+  ); /* Soft muted green for image generation */
+  --color-image-gen-alpha: color-mix(
+    in srgb,
+    var(--color-brand-200) 15%,
+    transparent
+  );
   --color-image-gen-text: var(--color-brand-200);
   --color-image-gen-border: var(--color-brand-200);
 
@@ -464,8 +482,14 @@
   --color-accent-blue-dot: var(--color-blue-300);
 
   /* Image generation capability colors for blue theme */
-  --color-image-gen: var(--color-brand-200); /* Soft muted green for image generation */
-  --color-image-gen-alpha: color-mix(in srgb, var(--color-brand-200) 15%, transparent);
+  --color-image-gen: var(
+    --color-brand-200
+  ); /* Soft muted green for image generation */
+  --color-image-gen-alpha: color-mix(
+    in srgb,
+    var(--color-brand-200) 15%,
+    transparent
+  );
   --color-image-gen-text: var(--color-brand-200);
   --color-image-gen-border: var(--color-brand-200);
 
@@ -903,7 +927,8 @@ button {
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-border-focus: rgba(122, 168, 132, 0.4);
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2);
-  --glass-shadow-focus: 0 12px 48px rgba(54, 105, 61, 0.25), 0 4px 16px rgba(0, 0, 0, 0.3);
+  --glass-shadow-focus: 0 12px 48px rgba(54, 105, 61, 0.25),
+    0 4px 16px rgba(0, 0, 0, 0.3);
   --glass-blur: 16px;
   --gradient-border-angle: 135deg;
 }
@@ -913,7 +938,8 @@ button {
   --glass-border: rgba(0, 0, 0, 0.08);
   --glass-border-focus: rgba(54, 105, 61, 0.4);
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
-  --glass-shadow-focus: 0 12px 48px rgba(54, 105, 61, 0.15), 0 4px 16px rgba(0, 0, 0, 0.08);
+  --glass-shadow-focus: 0 12px 48px rgba(54, 105, 61, 0.15),
+    0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 [data-theme="blue"] {
@@ -921,12 +947,14 @@ button {
   --glass-border: rgba(255, 255, 255, 0.06);
   --glass-border-focus: rgba(93, 125, 172, 0.4);
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.25);
-  --glass-shadow-focus: 0 12px 48px rgba(74, 109, 153, 0.2), 0 4px 16px rgba(0, 0, 0, 0.3);
+  --glass-shadow-focus: 0 12px 48px rgba(74, 109, 153, 0.2),
+    0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
 /* Chat Input Animations */
 @keyframes borderGlow {
-  0%, 100% {
+  0%,
+  100% {
     border-color: var(--glass-border);
     box-shadow: var(--glass-shadow);
   }
@@ -1024,7 +1052,8 @@ button {
 }
 
 @keyframes typingGlow {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: var(--glass-shadow);
   }
   50% {
@@ -1075,7 +1104,7 @@ button {
 
 /* Gradient border effect on focus */
 .chat-input-glass::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: -1px;
   border-radius: inherit;
@@ -1154,10 +1183,18 @@ button {
 }
 
 /* File type icon colors */
-.file-icon-pdf { color: #ef4444; }
-.file-icon-doc { color: #3b82f6; }
-.file-icon-txt { color: #6b7280; }
-.file-icon-image { color: #10b981; }
+.file-icon-pdf {
+  color: #ef4444;
+}
+.file-icon-doc {
+  color: #3b82f6;
+}
+.file-icon-txt {
+  color: #6b7280;
+}
+.file-icon-image {
+  color: #10b981;
+}
 
 /* ========================================
    Custom Toast Notification Styles
@@ -1201,4 +1238,189 @@ button {
 
 .toast-exit {
   animation: toastSlideOut 0.25s cubic-bezier(0.06, 0.71, 0.55, 1) forwards;
+}
+
+/* ========================================
+   Chat Selection Mode Animations
+   ======================================== */
+
+/* Checkbox fill animation with scale bounce */
+@keyframes checkIn {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes checkOut {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+}
+
+/* Checkmark draw animation */
+@keyframes checkmarkDraw {
+  0% {
+    stroke-dashoffset: 24;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Trash icon shake on delete button hover */
+@keyframes shakeDelete {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-2px) rotate(-3deg);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(2px) rotate(3deg);
+  }
+}
+
+/* Subtle pulse when delete is actionable */
+@keyframes pulseDelete {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+  }
+}
+
+/* Action bar slide down entrance */
+@keyframes slideDownReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(-12px);
+    max-height: 0;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 80px;
+  }
+}
+
+/* Staggered checkbox fade in */
+@keyframes staggerFadeIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  60% {
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Background highlight on selection */
+@keyframes selectHighlight {
+  0% {
+    background-color: transparent;
+  }
+  50% {
+    background-color: color-mix(in srgb, var(--surface-card) 60%, transparent);
+  }
+  100% {
+    background-color: color-mix(in srgb, var(--surface-card) 40%, transparent);
+  }
+}
+
+/* Selection mode toggle rotation */
+@keyframes toggleRotateIn {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(180deg);
+  }
+}
+
+@keyframes toggleRotateOut {
+  0% {
+    transform: rotate(180deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Selection mode styles */
+.selection-action-bar {
+  animation: slideDownReveal 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.selection-checkbox {
+  animation: staggerFadeIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation-delay: calc(var(--stagger-index, 0) * 30ms);
+  opacity: 0;
+}
+
+.selection-checkbox-inner {
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.selection-checkbox-inner.checked {
+  animation: checkIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.selection-checkbox-inner.unchecked {
+  animation: checkOut 0.15s ease-out forwards;
+}
+
+.selection-checkmark {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+}
+
+.selection-checkbox-inner.checked .selection-checkmark {
+  animation: checkmarkDraw 0.2s ease-out 0.1s forwards;
+}
+
+.delete-button-pulse {
+  animation: pulseDelete 1.5s ease-in-out infinite;
+}
+
+.delete-button-shake:hover svg {
+  animation: shakeDelete 0.5s ease-in-out;
+}
+
+.selection-item-highlight {
+  animation: selectHighlight 0.3s ease-out forwards;
+}
+
+.toggle-rotate-in {
+  animation: toggleRotateIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.toggle-rotate-out {
+  animation: toggleRotateOut 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
