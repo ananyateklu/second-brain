@@ -6,15 +6,20 @@ import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
+// Check if SSL certs exist (only for local development)
+const keyPath = path.resolve(__dirname, 'certs/nginx-selfsigned.key')
+const certPath = path.resolve(__dirname, 'certs/nginx-selfsigned.crt')
+const certsExist = fs.existsSync(keyPath) && fs.existsSync(certPath)
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
   server: {
     port: 3000,
-    https: {
-      key: fs.readFileSync(path.resolve(__dirname, 'certs/nginx-selfsigned.key')),
-      cert: fs.readFileSync(path.resolve(__dirname, 'certs/nginx-selfsigned.crt')),
-    },
+    https: certsExist ? {
+      key: fs.readFileSync(keyPath),
+      cert: fs.readFileSync(certPath),
+    } : undefined,
     host: '0.0.0.0', // Allow access from network
     proxy: {
       '/api': {
