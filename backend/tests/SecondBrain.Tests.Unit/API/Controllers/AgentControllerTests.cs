@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using SecondBrain.API.Controllers;
+using UserPreferencesResponse = SecondBrain.Application.DTOs.Responses.UserPreferencesResponse;
 using SecondBrain.Application.Services;
 using SecondBrain.Application.Services.Agents;
 using SecondBrain.Application.Services.Agents.Models;
@@ -9,6 +10,15 @@ using SecondBrain.Core.Entities;
 using SecondBrain.Core.Interfaces;
 
 namespace SecondBrain.Tests.Unit.API.Controllers;
+
+public static class AsyncEnumerable
+{
+    public static async IAsyncEnumerable<T> Empty<T>()
+    {
+        await Task.CompletedTask;
+        yield break;
+    }
+}
 
 public class AgentControllerTests
 {
@@ -296,6 +306,252 @@ public class AgentControllerTests
 
     #endregion
 
+    #region StreamAgentMessage Tests
+
+    [Fact]
+    public async Task StreamAgentMessage_WhenNotAuthenticated_Returns401()
+    {
+        // Arrange
+        SetupStreamingContext();
+        var request = new AgentMessageRequest { Content = "Test message" };
+
+        // Act
+        await _sut.StreamAgentMessage("conv-1", request);
+
+        // Assert
+        var context = _sut.ControllerContext.HttpContext;
+        context.Response.StatusCode.Should().Be(StatusCodes.Status401Unauthorized);
+    }
+
+    [Fact]
+    public async Task StreamAgentMessage_WhenContentIsEmpty_Returns400()
+    {
+        // Arrange
+        SetupAuthenticatedStreamingContext("user-123");
+        var request = new AgentMessageRequest { Content = "" };
+
+        // Act
+        await _sut.StreamAgentMessage("conv-1", request);
+
+        // Assert
+        var context = _sut.ControllerContext.HttpContext;
+        context.Response.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
+    }
+
+    [Fact]
+    public async Task StreamAgentMessage_WhenContentIsWhitespace_Returns400()
+    {
+        // Arrange
+        SetupAuthenticatedStreamingContext("user-123");
+        var request = new AgentMessageRequest { Content = "   " };
+
+        // Act
+        await _sut.StreamAgentMessage("conv-1", request);
+
+        // Assert
+        var context = _sut.ControllerContext.HttpContext;
+        context.Response.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
+    }
+
+    [Fact]
+    public async Task StreamAgentMessage_WhenConversationNotFound_WritesErrorEvent()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedStreamingContext(userId);
+        var request = new AgentMessageRequest { Content = "Test message" };
+
+        _mockChatRepository.Setup(r => r.GetByIdAsync("non-existent"))
+            .ReturnsAsync((ChatConversation?)null);
+
+        // Act
+        await _sut.StreamAgentMessage("non-existent", request);
+
+        // Assert
+        var context = _sut.ControllerContext.HttpContext;
+        context.Response.Body.Seek(0, SeekOrigin.Begin);
+        using var reader = new StreamReader(context.Response.Body);
+        var responseBody = await reader.ReadToEndAsync();
+        responseBody.Should().Contain("error");
+        responseBody.Should().Contain("Conversation not found");
+    }
+
+    [Fact]
+    public async Task StreamAgentMessage_WhenConversationBelongsToOtherUser_WritesAccessDeniedError()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedStreamingContext(userId);
+        var request = new AgentMessageRequest { Content = "Test message" };
+
+        var conversation = CreateTestConversation("conv-1", "other-user", "Test");
+        _mockChatRepository.Setup(r => r.GetByIdAsync("conv-1"))
+            .ReturnsAsync(conversation);
+
+        // Act
+        await _sut.StreamAgentMessage("conv-1", request);
+
+        // Assert
+        var context = _sut.ControllerContext.HttpContext;
+        context.Response.Body.Seek(0, SeekOrigin.Begin);
+        using var reader = new StreamReader(context.Response.Body);
+        var responseBody = await reader.ReadToEndAsync();
+        responseBody.Should().Contain("Access denied");
+    }
+
+    [Fact]
+    public async Task StreamAgentMessage_WhenValidRequest_SetsSSEHeaders()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedStreamingContext(userId);
+        var request = new AgentMessageRequest { Content = "Test message" };
+
+        var conversation = CreateTestConversation("conv-1", userId, "Test");
+        _mockChatRepository.Setup(r => r.GetByIdAsync("conv-1"))
+            .ReturnsAsync(conversation);
+
+        // Set up agent service to return empty stream (simulate completion)
+        _mockAgentService.Setup(s => s.ProcessStreamAsync(It.IsAny<AgentRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(AsyncEnumerable.Empty<AgentStreamEvent>());
+
+        // Act
+        await _sut.StreamAgentMessage("conv-1", request);
+
+        // Assert
+        var context = _sut.ControllerContext.HttpContext;
+        context.Response.Headers["Content-Type"].ToString().Should().Contain("text/event-stream");
+        context.Response.Headers["Cache-Control"].ToString().Should().Contain("no-cache");
+    }
+
+    [Fact]
+    public async Task StreamAgentMessage_WhenOllamaProvider_TriesToGetUserPreferences()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedStreamingContext(userId);
+        var request = new AgentMessageRequest { Content = "Test message" };
+
+        var conversation = CreateTestConversation("conv-1", userId, "Test");
+        conversation.Provider = "Ollama";
+        _mockChatRepository.Setup(r => r.GetByIdAsync("conv-1"))
+            .ReturnsAsync(conversation);
+
+        _mockUserPreferencesService.Setup(s => s.GetPreferencesAsync(userId))
+            .ReturnsAsync(new UserPreferencesResponse
+            {
+                UseRemoteOllama = true,
+                OllamaRemoteUrl = "http://remote-ollama:11434"
+            });
+
+        _mockAgentService.Setup(s => s.ProcessStreamAsync(It.IsAny<AgentRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(AsyncEnumerable.Empty<AgentStreamEvent>());
+
+        // Act
+        await _sut.StreamAgentMessage("conv-1", request);
+
+        // Assert
+        _mockUserPreferencesService.Verify(s => s.GetPreferencesAsync(userId), Times.Once);
+    }
+
+    [Fact]
+    public async Task StreamAgentMessage_WhenNotSupportedException_WritesErrorEvent()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedStreamingContext(userId);
+        var request = new AgentMessageRequest { Content = "Test message" };
+
+        var conversation = CreateTestConversation("conv-1", userId, "Test");
+        _mockChatRepository.Setup(r => r.GetByIdAsync("conv-1"))
+            .ReturnsAsync(conversation);
+
+        _mockAgentService.Setup(s => s.ProcessStreamAsync(It.IsAny<AgentRequest>(), It.IsAny<CancellationToken>()))
+            .Throws(new NotSupportedException("Provider not supported"));
+
+        // Act
+        await _sut.StreamAgentMessage("conv-1", request);
+
+        // Assert
+        var context = _sut.ControllerContext.HttpContext;
+        context.Response.Body.Seek(0, SeekOrigin.Begin);
+        using var reader = new StreamReader(context.Response.Body);
+        var responseBody = await reader.ReadToEndAsync();
+        responseBody.Should().Contain("error");
+    }
+
+    [Fact]
+    public async Task StreamAgentMessage_WhenGeneralException_WritesErrorEvent()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedStreamingContext(userId);
+        var request = new AgentMessageRequest { Content = "Test message" };
+
+        var conversation = CreateTestConversation("conv-1", userId, "Test");
+        _mockChatRepository.Setup(r => r.GetByIdAsync("conv-1"))
+            .ReturnsAsync(conversation);
+
+        _mockAgentService.Setup(s => s.ProcessStreamAsync(It.IsAny<AgentRequest>(), It.IsAny<CancellationToken>()))
+            .Throws(new Exception("Unexpected error"));
+
+        // Act
+        await _sut.StreamAgentMessage("conv-1", request);
+
+        // Assert
+        var context = _sut.ControllerContext.HttpContext;
+        context.Response.Body.Seek(0, SeekOrigin.Begin);
+        using var reader = new StreamReader(context.Response.Body);
+        var responseBody = await reader.ReadToEndAsync();
+        responseBody.Should().Contain("error");
+    }
+
+    #endregion
+
+    #region SupportedProvidersResponse DTO Tests
+
+    [Fact]
+    public void SupportedProvidersResponse_DefaultProviders_IsEmptyList()
+    {
+        // Act
+        var response = new SupportedProvidersResponse();
+
+        // Assert
+        response.Providers.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void SupportedProvidersResponse_CanSetProviders()
+    {
+        // Arrange & Act
+        var response = new SupportedProvidersResponse
+        {
+            Providers = new List<ProviderSupport>
+            {
+                new() { Name = "OpenAI", Supported = true }
+            }
+        };
+
+        // Assert
+        response.Providers.Should().HaveCount(1);
+    }
+
+    #endregion
+
+    #region CapabilitiesResponse DTO Tests
+
+    [Fact]
+    public void CapabilitiesResponse_DefaultCapabilities_IsEmptyList()
+    {
+        // Act
+        var response = new CapabilitiesResponse();
+
+        // Assert
+        response.Capabilities.Should().BeEmpty();
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private void SetupAuthenticatedUser(string userId)
@@ -314,6 +570,44 @@ public class AgentControllerTests
         _sut.ControllerContext = new ControllerContext
         {
             HttpContext = httpContext
+        };
+    }
+
+    private void SetupStreamingContext()
+    {
+        var httpContext = new DefaultHttpContext();
+        httpContext.Response.Body = new MemoryStream();
+        _sut.ControllerContext = new ControllerContext
+        {
+            HttpContext = httpContext
+        };
+    }
+
+    private void SetupAuthenticatedStreamingContext(string userId)
+    {
+        var httpContext = new DefaultHttpContext();
+        httpContext.Items["UserId"] = userId;
+        httpContext.Response.Body = new MemoryStream();
+        _sut.ControllerContext = new ControllerContext
+        {
+            HttpContext = httpContext
+        };
+    }
+
+    private static ChatConversation CreateTestConversation(string id, string userId, string title)
+    {
+        return new ChatConversation
+        {
+            Id = id,
+            UserId = userId,
+            Title = title,
+            Provider = "openai",
+            Model = "gpt-4",
+            RagEnabled = false,
+            AgentEnabled = false,
+            Messages = new List<ChatMessage>(),
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
         };
     }
 

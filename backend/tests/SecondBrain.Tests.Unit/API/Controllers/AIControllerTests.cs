@@ -536,6 +536,228 @@ public class AIControllerTests
 
     #endregion
 
+    #region Additional GetAllProvidersHealth Tests
+
+    [Fact]
+    public async Task GetAllProvidersHealth_WhenFactoryThrowsException_Returns500()
+    {
+        // Arrange
+        _mockProviderFactory.Setup(f => f.GetAllProviders())
+            .Throws(new Exception("Factory error"));
+
+        // Act
+        var result = await _sut.GetAllProvidersHealth();
+
+        // Assert
+        var statusResult = result.Result.Should().BeOfType<ObjectResult>().Subject;
+        statusResult.StatusCode.Should().Be(500);
+    }
+
+    [Fact]
+    public async Task GetAllProvidersHealth_WhenNoProviders_ReturnsEmptyList()
+    {
+        // Arrange
+        _mockProviderFactory.Setup(f => f.GetAllProviders())
+            .Returns(new List<IAIProvider>());
+
+        // Act
+        var result = await _sut.GetAllProvidersHealth();
+
+        // Assert
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<AIHealthResponse>().Subject;
+        response.Providers.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetAllProvidersHealth_SetsCheckedAtTimestamp()
+    {
+        // Arrange
+        var beforeCheck = DateTime.UtcNow.AddSeconds(-1);
+        _mockProviderFactory.Setup(f => f.GetAllProviders())
+            .Returns(new List<IAIProvider>());
+
+        // Act
+        var result = await _sut.GetAllProvidersHealth();
+        var afterCheck = DateTime.UtcNow.AddSeconds(1);
+
+        // Assert
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<AIHealthResponse>().Subject;
+        response.CheckedAt.Should().BeAfter(beforeCheck);
+        response.CheckedAt.Should().BeBefore(afterCheck);
+    }
+
+    [Fact]
+    public async Task GetAllProvidersHealth_WithoutRemoteOllama_UsesRegularHealthCheck()
+    {
+        // Arrange
+        var ollamaProvider = new Mock<IAIProvider>();
+        ollamaProvider.Setup(p => p.ProviderName).Returns("Ollama");
+        ollamaProvider.Setup(p => p.GetHealthStatusAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AIProviderHealth { Provider = "Ollama", IsHealthy = true });
+
+        _mockProviderFactory.Setup(f => f.GetAllProviders())
+            .Returns(new List<IAIProvider> { ollamaProvider.Object });
+
+        // Act
+        var result = await _sut.GetAllProvidersHealth(useRemoteOllama: false);
+
+        // Assert
+        ollamaProvider.Verify(p => p.GetHealthStatusAsync(It.IsAny<CancellationToken>()), Times.Once);
+        ollamaProvider.Verify(p => p.GetHealthStatusAsync(
+            It.IsAny<Dictionary<string, string>>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetAllProvidersHealth_WhenSocketException_ReturnsUnreachableStatus()
+    {
+        // Arrange
+        var unreachableProvider = new Mock<IAIProvider>();
+        unreachableProvider.Setup(p => p.ProviderName).Returns("Ollama");
+        unreachableProvider.Setup(p => p.GetHealthStatusAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new HttpRequestException("Connection refused", 
+                new System.Net.Sockets.SocketException()));
+
+        _mockProviderFactory.Setup(f => f.GetAllProviders())
+            .Returns(new List<IAIProvider> { unreachableProvider.Object });
+
+        // Act
+        var result = await _sut.GetAllProvidersHealth();
+
+        // Assert
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<AIHealthResponse>().Subject;
+        var health = response.Providers.First();
+        health.IsHealthy.Should().BeFalse();
+        health.Status.Should().Be("Unreachable");
+    }
+
+    #endregion
+
+    #region Additional GetProviderHealth Tests
+
+    [Fact]
+    public async Task GetProviderHealth_WithRemoteOllama_PassesConfigOverrides()
+    {
+        // Arrange
+        var ollamaProvider = new Mock<IAIProvider>();
+        ollamaProvider.Setup(p => p.ProviderName).Returns("Ollama");
+        ollamaProvider.Setup(p => p.GetHealthStatusAsync(
+                It.Is<Dictionary<string, string>>(d => d.ContainsKey("ollamaBaseUrl")),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AIProviderHealth { Provider = "Ollama", IsHealthy = true });
+
+        _mockProviderFactory.Setup(f => f.GetProvider("ollama"))
+            .Returns(ollamaProvider.Object);
+
+        // Act
+        var result = await _sut.GetProviderHealth("ollama", 
+            ollamaBaseUrl: "http://remote:11434", 
+            useRemoteOllama: true);
+
+        // Assert
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        ollamaProvider.Verify(p => p.GetHealthStatusAsync(
+            It.Is<Dictionary<string, string>>(d => d["ollamaBaseUrl"] == "http://remote:11434"),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task GetProviderHealth_ForNonOllamaWithRemoteUrl_IgnoresRemoteUrl()
+    {
+        // Arrange
+        var openAIProvider = new Mock<IAIProvider>();
+        openAIProvider.Setup(p => p.ProviderName).Returns("OpenAI");
+        openAIProvider.Setup(p => p.GetHealthStatusAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AIProviderHealth { Provider = "OpenAI", IsHealthy = true });
+
+        _mockProviderFactory.Setup(f => f.GetProvider("openai"))
+            .Returns(openAIProvider.Object);
+
+        // Act
+        var result = await _sut.GetProviderHealth("openai", 
+            ollamaBaseUrl: "http://remote:11434", 
+            useRemoteOllama: true);
+
+        // Assert
+        openAIProvider.Verify(p => p.GetHealthStatusAsync(It.IsAny<CancellationToken>()), Times.Once);
+        openAIProvider.Verify(p => p.GetHealthStatusAsync(
+            It.IsAny<Dictionary<string, string>>(),
+            It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetProviderHealth_ReturnsAvailableModels()
+    {
+        // Arrange
+        var health = new AIProviderHealth
+        {
+            Provider = "OpenAI",
+            IsHealthy = true,
+            AvailableModels = new[] { "gpt-4", "gpt-4o", "gpt-3.5-turbo" }
+        };
+        _mockProvider.Setup(p => p.ProviderName).Returns("OpenAI");
+        _mockProvider.Setup(p => p.GetHealthStatusAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(health);
+        _mockProviderFactory.Setup(f => f.GetProvider("openai"))
+            .Returns(_mockProvider.Object);
+
+        // Act
+        var result = await _sut.GetProviderHealth("openai");
+
+        // Assert
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var healthResult = okResult.Value.Should().BeOfType<AIProviderHealth>().Subject;
+        healthResult.AvailableModels.Should().HaveCount(3);
+        healthResult.AvailableModels.Should().Contain("gpt-4o");
+    }
+
+    #endregion
+
+    #region Additional GetEnabledProviders Tests
+
+    [Fact]
+    public void GetEnabledProviders_WhenException_Returns500()
+    {
+        // Arrange
+        _mockProviderFactory.Setup(f => f.GetEnabledProviders())
+            .Throws(new Exception("Factory error"));
+
+        // Act
+        var result = _sut.GetEnabledProviders();
+
+        // Assert
+        var statusResult = result.Result.Should().BeOfType<ObjectResult>().Subject;
+        statusResult.StatusCode.Should().Be(500);
+    }
+
+    #endregion
+
+    #region Additional GenerateCompletion Tests
+
+    [Fact]
+    public async Task GenerateCompletion_WhenException_Returns500()
+    {
+        // Arrange
+        var request = new AIRequest { Prompt = "Test" };
+        _mockProvider.Setup(p => p.IsEnabled).Returns(true);
+        _mockProvider.Setup(p => p.GenerateCompletionAsync(It.IsAny<AIRequest>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("API error"));
+        _mockProviderFactory.Setup(f => f.GetProvider("openai"))
+            .Returns(_mockProvider.Object);
+
+        // Act
+        var result = await _sut.GenerateCompletion("openai", request);
+
+        // Assert
+        var statusResult = result.Result.Should().BeOfType<ObjectResult>().Subject;
+        statusResult.StatusCode.Should().Be(500);
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private IAIProvider CreateMockProvider(string name, bool isEnabled)

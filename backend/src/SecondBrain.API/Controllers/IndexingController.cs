@@ -1,11 +1,18 @@
 using Microsoft.AspNetCore.Mvc;
 using SecondBrain.Application.DTOs.Responses;
 using SecondBrain.Application.Services.RAG;
-using SecondBrain.Application.Services.VectorStore;
 using SecondBrain.Core.Interfaces;
-using SecondBrain.Infrastructure.VectorStore;
 
 namespace SecondBrain.API.Controllers;
+
+/// <summary>
+/// Service key constants for vector stores
+/// </summary>
+public static class VectorStoreKeys
+{
+    public const string PostgreSQL = "PostgreSQL";
+    public const string Pinecone = "Pinecone";
+}
 
 [ApiController]
 [Route("api/[controller]")]
@@ -13,14 +20,14 @@ namespace SecondBrain.API.Controllers;
 public class IndexingController : ControllerBase
 {
     private readonly IIndexingService _indexingService;
-    private readonly PostgresVectorStore _postgresStore;
-    private readonly PineconeVectorStore _pineconeStore;
+    private readonly IVectorStore _postgresStore;
+    private readonly IVectorStore _pineconeStore;
     private readonly ILogger<IndexingController> _logger;
 
     public IndexingController(
         IIndexingService indexingService,
-        PostgresVectorStore postgresStore,
-        PineconeVectorStore pineconeStore,
+        [FromKeyedServices(VectorStoreKeys.PostgreSQL)] IVectorStore postgresStore,
+        [FromKeyedServices(VectorStoreKeys.Pinecone)] IVectorStore pineconeStore,
         ILogger<IndexingController> logger)
     {
         _indexingService = indexingService;

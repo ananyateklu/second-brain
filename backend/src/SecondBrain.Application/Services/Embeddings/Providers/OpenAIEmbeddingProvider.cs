@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using OpenAI;
 using OpenAI.Embeddings;
 using SecondBrain.Application.Configuration;
+using SecondBrain.Application.Services.Embeddings.Interfaces;
 using SecondBrain.Application.Services.Embeddings.Models;
 
 namespace SecondBrain.Application.Services.Embeddings.Providers;
@@ -11,6 +12,7 @@ public class OpenAIEmbeddingProvider : IEmbeddingProvider
 {
     private readonly OpenAIEmbeddingSettings _settings;
     private readonly ILogger<OpenAIEmbeddingProvider> _logger;
+    private readonly IOpenAIEmbeddingClientFactory _clientFactory;
     private readonly EmbeddingClient? _client;
 
     public string ProviderName => "OpenAI";
@@ -20,17 +22,18 @@ public class OpenAIEmbeddingProvider : IEmbeddingProvider
 
     public OpenAIEmbeddingProvider(
         IOptions<EmbeddingProvidersSettings> settings,
+        IOpenAIEmbeddingClientFactory clientFactory,
         ILogger<OpenAIEmbeddingProvider> logger)
     {
         _settings = settings.Value.OpenAI;
+        _clientFactory = clientFactory;
         _logger = logger;
 
         if (IsEnabled)
         {
             try
             {
-                var client = new OpenAIClient(_settings.ApiKey);
-                _client = client.GetEmbeddingClient(_settings.Model);
+                _client = _clientFactory.CreateClient(_settings.ApiKey, _settings.Model);
             }
             catch (Exception ex)
             {

@@ -733,6 +733,716 @@ public class ChatControllerTests
 
     #endregion
 
+    #region GenerateSuggestedPrompts Tests
+
+    [Fact]
+    public async Task GenerateSuggestedPrompts_WhenNotAuthenticated_ReturnsUnauthorized()
+    {
+        // Arrange - user not authenticated
+        var request = new GenerateSuggestedPromptsRequest { Provider = "OpenAI", Model = "gpt-4o-mini" };
+
+        // Act
+        var result = await _sut.GenerateSuggestedPrompts(request);
+
+        // Assert
+        result.Result.Should().BeOfType<UnauthorizedObjectResult>();
+    }
+
+    [Fact]
+    public async Task GenerateSuggestedPrompts_WhenNoNotes_ReturnsDefaultPrompts()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedUser(userId);
+        var request = new GenerateSuggestedPromptsRequest();
+
+        _mockNoteRepository.Setup(r => r.GetByUserIdAsync(userId))
+            .ReturnsAsync(new List<Note>());
+
+        // Act
+        var result = await _sut.GenerateSuggestedPrompts(request);
+
+        // Assert
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<SuggestedPromptsResponse>().Subject;
+        response.Success.Should().BeTrue();
+        response.Prompts.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public async Task GenerateSuggestedPrompts_WhenOnlyArchivedNotes_ReturnsDefaultPrompts()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedUser(userId);
+        var request = new GenerateSuggestedPromptsRequest();
+
+        _mockNoteRepository.Setup(r => r.GetByUserIdAsync(userId))
+            .ReturnsAsync(new List<Note>
+            {
+                new() { Id = "1", Title = "Archived Note", Content = "Test", IsArchived = true, UserId = userId }
+            });
+
+        // Act
+        var result = await _sut.GenerateSuggestedPrompts(request);
+
+        // Assert
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<SuggestedPromptsResponse>().Subject;
+        response.Success.Should().BeTrue();
+    }
+
+    #endregion
+
+    #region StreamMessage Tests
+
+    [Fact]
+    public async Task StreamMessage_WhenNotAuthenticated_Returns401()
+    {
+        // Arrange
+        SetupStreamingContext();
+        var request = new SendMessageRequest { Content = "Test message" };
+
+        // Act
+        await _sut.StreamMessage("conv-1", request);
+
+        // Assert
+        var context = _sut.ControllerContext.HttpContext;
+        context.Response.StatusCode.Should().Be(StatusCodes.Status401Unauthorized);
+    }
+
+    [Fact]
+    public async Task StreamMessage_WhenContentIsEmpty_Returns400()
+    {
+        // Arrange
+        SetupAuthenticatedStreamingContext("user-123");
+        var request = new SendMessageRequest { Content = "" };
+
+        // Act
+        await _sut.StreamMessage("conv-1", request);
+
+        // Assert
+        var context = _sut.ControllerContext.HttpContext;
+        context.Response.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
+    }
+
+    [Fact]
+    public async Task StreamMessage_WhenConversationNotFound_WritesErrorEvent()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedStreamingContext(userId);
+        var request = new SendMessageRequest { Content = "Test message" };
+
+        _mockChatRepository.Setup(r => r.GetByIdAsync("non-existent"))
+            .ReturnsAsync((ChatConversation?)null);
+
+        // Act
+        await _sut.StreamMessage("non-existent", request);
+
+        // Assert
+        var context = _sut.ControllerContext.HttpContext;
+        context.Response.Body.Seek(0, SeekOrigin.Begin);
+        using var reader = new StreamReader(context.Response.Body);
+        var responseBody = await reader.ReadToEndAsync();
+        responseBody.Should().Contain("error");
+        responseBody.Should().Contain("Conversation not found");
+    }
+
+    [Fact]
+    public async Task StreamMessage_WhenConversationBelongsToOtherUser_WritesAccessDeniedError()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedStreamingContext(userId);
+        var request = new SendMessageRequest { Content = "Test message" };
+
+        var conversation = CreateTestConversation("conv-1", "other-user", "Test");
+        _mockChatRepository.Setup(r => r.GetByIdAsync("conv-1"))
+            .ReturnsAsync(conversation);
+
+        // Act
+        await _sut.StreamMessage("conv-1", request);
+
+        // Assert
+        var context = _sut.ControllerContext.HttpContext;
+        context.Response.Body.Seek(0, SeekOrigin.Begin);
+        using var reader = new StreamReader(context.Response.Body);
+        var responseBody = await reader.ReadToEndAsync();
+        responseBody.Should().Contain("Access denied");
+    }
+
+    #endregion
+
+    #region GetImageGenerationProviders Tests
+
+    [Fact]
+    public void GetImageGenerationProviders_WhenProvidersExist_ReturnsProviderList()
+    {
+        // Arrange
+        var mockProvider = new Mock<IImageGenerationProvider>();
+        mockProvider.Setup(p => p.ProviderName).Returns("OpenAI");
+        mockProvider.Setup(p => p.IsEnabled).Returns(true);
+        mockProvider.Setup(p => p.GetSupportedModels()).Returns(new[] { "dall-e-3", "dall-e-2" });
+
+        _mockImageGenerationFactory.Setup(f => f.GetEnabledProviders())
+            .Returns(new[] { mockProvider.Object });
+
+        // Act
+        var result = _sut.GetImageGenerationProviders();
+
+        // Assert
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var providers = okResult.Value.Should().BeAssignableTo<IEnumerable<ImageProviderInfo>>().Subject;
+        providers.Should().HaveCount(1);
+        providers.First().Provider.Should().Be("OpenAI");
+    }
+
+    #endregion
+
+    #region GetImageGenerationSizes Tests
+
+    [Fact]
+    public void GetImageGenerationSizes_WhenProviderExists_ReturnsSizes()
+    {
+        // Arrange
+        var mockProvider = new Mock<IImageGenerationProvider>();
+        mockProvider.Setup(p => p.GetSupportedSizes(It.IsAny<string>()))
+            .Returns(new[] { "1024x1024", "512x512" });
+
+        _mockImageGenerationFactory.Setup(f => f.HasProvider("openai"))
+            .Returns(true);
+        _mockImageGenerationFactory.Setup(f => f.GetProvider("openai"))
+            .Returns(mockProvider.Object);
+
+        // Act
+        var result = _sut.GetImageGenerationSizes("openai");
+
+        // Assert
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var sizes = okResult.Value.Should().BeAssignableTo<IEnumerable<string>>().Subject;
+        sizes.Should().Contain("1024x1024");
+    }
+
+    #endregion
+
+    #region CreateConversation Error Handling Tests
+
+    [Fact]
+    public async Task CreateConversation_WhenServiceThrows_Returns500()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedUser(userId);
+
+        var request = new CreateConversationRequest
+        {
+            Title = "New Chat",
+            Provider = "openai",
+            Model = "gpt-4"
+        };
+
+        _mockChatService.Setup(s => s.CreateConversationAsync(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                userId,
+                It.IsAny<bool>(),
+                It.IsAny<bool>(),
+                It.IsAny<bool>(),
+                It.IsAny<string?>(),
+                It.IsAny<string?>(),
+                It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("Database error"));
+
+        // Act
+        var result = await _sut.CreateConversation(request);
+
+        // Assert
+        var statusResult = result.Result.Should().BeOfType<ObjectResult>().Subject;
+        statusResult.StatusCode.Should().Be(500);
+    }
+
+    #endregion
+
+    #region GetConversation Error Handling Tests
+
+    [Fact]
+    public async Task GetConversation_WhenServiceThrows_Returns500()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedUser(userId);
+
+        _mockChatService.Setup(s => s.GetConversationByIdAsync("conv-1", userId, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("Database error"));
+
+        // Act
+        var result = await _sut.GetConversation("conv-1");
+
+        // Assert
+        var statusResult = result.Result.Should().BeOfType<ObjectResult>().Subject;
+        statusResult.StatusCode.Should().Be(500);
+    }
+
+    #endregion
+
+    #region UpdateConversationSettings Error Handling Tests
+
+    [Fact]
+    public async Task UpdateConversationSettings_WhenNotAuthenticated_ReturnsUnauthorized()
+    {
+        // Arrange - user not authenticated
+        var request = new UpdateConversationSettingsRequest { RagEnabled = true };
+
+        // Act
+        var result = await _sut.UpdateConversationSettings("conv-1", request);
+
+        // Assert
+        result.Result.Should().BeOfType<UnauthorizedObjectResult>();
+    }
+
+    [Fact]
+    public async Task UpdateConversationSettings_WhenServiceThrows_Returns500()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedUser(userId);
+
+        _mockChatService.Setup(s => s.UpdateConversationSettingsAsync(
+                "conv-1",
+                userId,
+                It.IsAny<bool?>(),
+                It.IsAny<string?>(),
+                It.IsAny<bool?>(),
+                It.IsAny<string?>(),
+                It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("Database error"));
+
+        // Act
+        var result = await _sut.UpdateConversationSettings("conv-1", new UpdateConversationSettingsRequest());
+
+        // Assert
+        var statusResult = result.Result.Should().BeOfType<ObjectResult>().Subject;
+        statusResult.StatusCode.Should().Be(500);
+    }
+
+    #endregion
+
+    #region DeleteConversation Error Handling Tests
+
+    [Fact]
+    public async Task DeleteConversation_WhenServiceThrows_Returns500()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedUser(userId);
+
+        _mockChatService.Setup(s => s.DeleteConversationAsync("conv-1", userId, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("Database error"));
+
+        // Act
+        var result = await _sut.DeleteConversation("conv-1");
+
+        // Assert
+        var statusResult = result.Should().BeOfType<ObjectResult>().Subject;
+        statusResult.StatusCode.Should().Be(500);
+    }
+
+    #endregion
+
+    #region SendMessage Success Scenarios
+
+    [Fact]
+    public async Task SendMessage_WhenSuccessful_ReturnsOkWithChatResponse()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedUser(userId);
+        var request = new SendMessageRequest { Content = "Hello, AI!" };
+
+        var conversation = CreateTestConversation("conv-1", userId, "Test");
+        _mockChatRepository.Setup(r => r.GetByIdAsync("conv-1"))
+            .ReturnsAsync(conversation);
+
+        var mockProvider = new Mock<IAIProvider>();
+        mockProvider.Setup(p => p.IsEnabled).Returns(true);
+        mockProvider.Setup(p => p.GenerateChatCompletionAsync(
+                It.IsAny<IEnumerable<SecondBrain.Application.Services.AI.Models.ChatMessage>>(),
+                It.IsAny<SecondBrain.Application.Services.AI.Models.AIRequest>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SecondBrain.Application.Services.AI.Models.AIResponse
+            {
+                Success = true,
+                Content = "Hello! How can I help you?",
+                TokensUsed = 25
+            });
+
+        _mockProviderFactory.Setup(f => f.GetProvider("openai"))
+            .Returns(mockProvider.Object);
+
+        _mockChatRepository.Setup(r => r.UpdateAsync("conv-1", It.IsAny<ChatConversation>()))
+            .ReturnsAsync((string id, ChatConversation c) => c);
+
+        // Act
+        var result = await _sut.SendMessage("conv-1", request);
+
+        // Assert
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        okResult.StatusCode.Should().Be(StatusCodes.Status200OK);
+    }
+
+    [Fact]
+    public async Task SendMessage_WhenProviderNotEnabled_ReturnsBadRequest()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedUser(userId);
+        var request = new SendMessageRequest { Content = "Hello!" };
+
+        var conversation = CreateTestConversation("conv-1", userId, "Test");
+        _mockChatRepository.Setup(r => r.GetByIdAsync("conv-1"))
+            .ReturnsAsync(conversation);
+
+        var mockProvider = new Mock<IAIProvider>();
+        mockProvider.Setup(p => p.IsEnabled).Returns(false);
+        _mockProviderFactory.Setup(f => f.GetProvider("openai"))
+            .Returns(mockProvider.Object);
+
+        // Act
+        var result = await _sut.SendMessage("conv-1", request);
+
+        // Assert
+        var badRequest = result.Result.Should().BeOfType<BadRequestObjectResult>().Subject;
+        badRequest.Value.Should().BeEquivalentTo(new { error = "Provider 'openai' is not enabled" });
+    }
+
+    [Fact]
+    public async Task SendMessage_WhenInvalidProvider_ReturnsBadRequest()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedUser(userId);
+        var request = new SendMessageRequest { Content = "Hello!" };
+
+        var conversation = CreateTestConversation("conv-1", userId, "Test");
+        _mockChatRepository.Setup(r => r.GetByIdAsync("conv-1"))
+            .ReturnsAsync(conversation);
+
+        _mockProviderFactory.Setup(f => f.GetProvider("openai"))
+            .Throws(new ArgumentException("Unknown provider"));
+
+        // Act
+        var result = await _sut.SendMessage("conv-1", request);
+
+        // Assert
+        result.Result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public async Task SendMessage_WhenUpdateFails_ReturnsNotFound()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedUser(userId);
+        var request = new SendMessageRequest { Content = "Hello!" };
+
+        var conversation = CreateTestConversation("conv-1", userId, "Test");
+        _mockChatRepository.Setup(r => r.GetByIdAsync("conv-1"))
+            .ReturnsAsync(conversation);
+
+        var mockProvider = new Mock<IAIProvider>();
+        mockProvider.Setup(p => p.IsEnabled).Returns(true);
+        mockProvider.Setup(p => p.GenerateChatCompletionAsync(
+                It.IsAny<IEnumerable<SecondBrain.Application.Services.AI.Models.ChatMessage>>(),
+                It.IsAny<SecondBrain.Application.Services.AI.Models.AIRequest>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SecondBrain.Application.Services.AI.Models.AIResponse
+            {
+                Success = true,
+                Content = "Response"
+            });
+
+        _mockProviderFactory.Setup(f => f.GetProvider("openai"))
+            .Returns(mockProvider.Object);
+
+        _mockChatRepository.Setup(r => r.UpdateAsync("conv-1", It.IsAny<ChatConversation>()))
+            .ReturnsAsync((ChatConversation?)null);
+
+        // Act
+        var result = await _sut.SendMessage("conv-1", request);
+
+        // Assert
+        result.Result.Should().BeOfType<NotFoundObjectResult>();
+    }
+
+    #endregion
+
+    #region GenerateImage Success Scenarios
+
+    [Fact]
+    public async Task GenerateImage_WhenSuccessful_ReturnsOkWithImages()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedUser(userId);
+        var request = new GenerateImageRequest
+        {
+            Prompt = "A beautiful sunset",
+            Provider = "openai",
+            Model = "dall-e-3"
+        };
+
+        var conversation = CreateTestConversation("conv-1", userId, "Test");
+        _mockChatRepository.Setup(r => r.GetByIdAsync("conv-1"))
+            .ReturnsAsync(conversation);
+
+        var mockProvider = new Mock<IImageGenerationProvider>();
+        mockProvider.Setup(p => p.IsEnabled).Returns(true);
+        mockProvider.Setup(p => p.GenerateImageAsync(
+                It.IsAny<SecondBrain.Application.Services.AI.Models.ImageGenerationRequest>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SecondBrain.Application.Services.AI.Models.ImageGenerationResponse
+            {
+                Success = true,
+                Images = new List<SecondBrain.Application.Services.AI.Models.GeneratedImage>
+                {
+                    new() { Base64Data = "base64data", MediaType = "image/png", Width = 1024, Height = 1024 }
+                },
+                Model = "dall-e-3",
+                Provider = "OpenAI"
+            });
+
+        _mockImageGenerationFactory.Setup(f => f.HasProvider("openai"))
+            .Returns(true);
+        _mockImageGenerationFactory.Setup(f => f.GetProvider("openai"))
+            .Returns(mockProvider.Object);
+
+        _mockChatRepository.Setup(r => r.UpdateAsync("conv-1", It.IsAny<ChatConversation>()))
+            .ReturnsAsync((string id, ChatConversation c) => c);
+
+        // Act
+        var result = await _sut.GenerateImage("conv-1", request);
+
+        // Assert
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<ImageGenerationApiResponse>().Subject;
+        response.Success.Should().BeTrue();
+        response.Images.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task GenerateImage_WhenProviderNotEnabled_ReturnsBadRequest()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedUser(userId);
+        var request = new GenerateImageRequest
+        {
+            Prompt = "Test",
+            Provider = "openai"
+        };
+
+        var conversation = CreateTestConversation("conv-1", userId, "Test");
+        _mockChatRepository.Setup(r => r.GetByIdAsync("conv-1"))
+            .ReturnsAsync(conversation);
+
+        var mockProvider = new Mock<IImageGenerationProvider>();
+        mockProvider.Setup(p => p.IsEnabled).Returns(false);
+
+        _mockImageGenerationFactory.Setup(f => f.HasProvider("openai"))
+            .Returns(true);
+        _mockImageGenerationFactory.Setup(f => f.GetProvider("openai"))
+            .Returns(mockProvider.Object);
+
+        // Act
+        var result = await _sut.GenerateImage("conv-1", request);
+
+        // Assert
+        result.Result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public async Task GenerateImage_WhenGenerationFails_ReturnsBadRequest()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedUser(userId);
+        var request = new GenerateImageRequest
+        {
+            Prompt = "Test",
+            Provider = "openai"
+        };
+
+        var conversation = CreateTestConversation("conv-1", userId, "Test");
+        _mockChatRepository.Setup(r => r.GetByIdAsync("conv-1"))
+            .ReturnsAsync(conversation);
+
+        var mockProvider = new Mock<IImageGenerationProvider>();
+        mockProvider.Setup(p => p.IsEnabled).Returns(true);
+        mockProvider.Setup(p => p.GenerateImageAsync(
+                It.IsAny<SecondBrain.Application.Services.AI.Models.ImageGenerationRequest>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new SecondBrain.Application.Services.AI.Models.ImageGenerationResponse
+            {
+                Success = false,
+                Error = "Generation failed"
+            });
+
+        _mockImageGenerationFactory.Setup(f => f.HasProvider("openai"))
+            .Returns(true);
+        _mockImageGenerationFactory.Setup(f => f.GetProvider("openai"))
+            .Returns(mockProvider.Object);
+
+        // Act
+        var result = await _sut.GenerateImage("conv-1", request);
+
+        // Assert
+        result.Result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public async Task GenerateImage_WhenExceptionThrown_Returns500()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedUser(userId);
+        var request = new GenerateImageRequest
+        {
+            Prompt = "Test",
+            Provider = "openai"
+        };
+
+        var conversation = CreateTestConversation("conv-1", userId, "Test");
+        _mockChatRepository.Setup(r => r.GetByIdAsync("conv-1"))
+            .ReturnsAsync(conversation);
+
+        _mockImageGenerationFactory.Setup(f => f.HasProvider("openai"))
+            .Returns(true);
+        _mockImageGenerationFactory.Setup(f => f.GetProvider("openai"))
+            .Throws(new Exception("Provider error"));
+
+        // Act
+        var result = await _sut.GenerateImage("conv-1", request);
+
+        // Assert
+        var statusResult = result.Result.Should().BeOfType<ObjectResult>().Subject;
+        statusResult.StatusCode.Should().Be(500);
+    }
+
+    #endregion
+
+    #region StreamMessage Success Scenarios
+
+    [Fact]
+    public async Task StreamMessage_WhenProviderNotEnabled_WritesErrorEvent()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedStreamingContext(userId);
+        var request = new SendMessageRequest { Content = "Test message" };
+
+        var conversation = CreateTestConversation("conv-1", userId, "Test");
+        _mockChatRepository.Setup(r => r.GetByIdAsync("conv-1"))
+            .ReturnsAsync(conversation);
+
+        var mockProvider = new Mock<IAIProvider>();
+        mockProvider.Setup(p => p.IsEnabled).Returns(false);
+        _mockProviderFactory.Setup(f => f.GetProvider("openai"))
+            .Returns(mockProvider.Object);
+
+        // Act
+        await _sut.StreamMessage("conv-1", request);
+
+        // Assert
+        var context = _sut.ControllerContext.HttpContext;
+        context.Response.Body.Seek(0, SeekOrigin.Begin);
+        using var reader = new StreamReader(context.Response.Body);
+        var responseBody = await reader.ReadToEndAsync();
+        responseBody.Should().Contain("Provider not enabled");
+    }
+
+    [Fact]
+    public async Task StreamMessage_WhenExceptionThrown_WritesErrorEvent()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedStreamingContext(userId);
+        var request = new SendMessageRequest { Content = "Test message" };
+
+        var conversation = CreateTestConversation("conv-1", userId, "Test");
+        _mockChatRepository.Setup(r => r.GetByIdAsync("conv-1"))
+            .ReturnsAsync(conversation);
+
+        _mockProviderFactory.Setup(f => f.GetProvider("openai"))
+            .Throws(new Exception("Provider error"));
+
+        // Act
+        await _sut.StreamMessage("conv-1", request);
+
+        // Assert
+        var context = _sut.ControllerContext.HttpContext;
+        context.Response.Body.Seek(0, SeekOrigin.Begin);
+        using var reader = new StreamReader(context.Response.Body);
+        var responseBody = await reader.ReadToEndAsync();
+        responseBody.Should().Contain("error");
+    }
+
+    #endregion
+
+    #region GenerateSuggestedPrompts Additional Tests
+
+    [Fact]
+    public async Task GenerateSuggestedPrompts_WhenExceptionThrown_ReturnsDefaultPrompts()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedUser(userId);
+        var request = new GenerateSuggestedPromptsRequest();
+
+        _mockNoteRepository.Setup(r => r.GetByUserIdAsync(userId))
+            .ThrowsAsync(new Exception("Database error"));
+
+        // Act
+        var result = await _sut.GenerateSuggestedPrompts(request);
+
+        // Assert
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<SuggestedPromptsResponse>().Subject;
+        response.Success.Should().BeFalse();
+        response.Prompts.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public async Task GenerateSuggestedPrompts_WhenProviderNotEnabled_ReturnsDefaultPrompts()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedUser(userId);
+        var request = new GenerateSuggestedPromptsRequest { Provider = "disabled-provider" };
+
+        _mockNoteRepository.Setup(r => r.GetByUserIdAsync(userId))
+            .ReturnsAsync(new List<Note>
+            {
+                new() { Id = "1", Title = "Test", Content = "Content", IsArchived = false, UserId = userId }
+            });
+
+        var mockProvider = new Mock<IAIProvider>();
+        mockProvider.Setup(p => p.IsEnabled).Returns(false);
+        _mockProviderFactory.Setup(f => f.GetProvider("disabled-provider"))
+            .Returns(mockProvider.Object);
+
+        // Act
+        var result = await _sut.GenerateSuggestedPrompts(request);
+
+        // Assert
+        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<SuggestedPromptsResponse>().Subject;
+        response.Prompts.Should().NotBeEmpty();
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private void SetupAuthenticatedUser(string userId)
@@ -748,6 +1458,27 @@ public class ChatControllerTests
     private void SetupUnauthenticatedUser()
     {
         var httpContext = new DefaultHttpContext();
+        _sut.ControllerContext = new ControllerContext
+        {
+            HttpContext = httpContext
+        };
+    }
+
+    private void SetupStreamingContext()
+    {
+        var httpContext = new DefaultHttpContext();
+        httpContext.Response.Body = new MemoryStream();
+        _sut.ControllerContext = new ControllerContext
+        {
+            HttpContext = httpContext
+        };
+    }
+
+    private void SetupAuthenticatedStreamingContext(string userId)
+    {
+        var httpContext = new DefaultHttpContext();
+        httpContext.Items["UserId"] = userId;
+        httpContext.Response.Body = new MemoryStream();
         _sut.ControllerContext = new ControllerContext
         {
             HttpContext = httpContext

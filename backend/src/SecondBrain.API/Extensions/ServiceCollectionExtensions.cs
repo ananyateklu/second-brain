@@ -25,6 +25,7 @@ using SecondBrain.Core.Interfaces;
 using SecondBrain.Infrastructure.Data;
 using SecondBrain.Infrastructure.Repositories;
 using SecondBrain.Infrastructure.VectorStore;
+using SecondBrain.API.Controllers;
 
 namespace SecondBrain.API.Extensions;
 
@@ -99,6 +100,10 @@ public static class ServiceCollectionExtensions
     {
         // Configure AI provider settings
         services.Configure<AIProvidersSettings>(configuration.GetSection(AIProvidersSettings.SectionName));
+
+        // Register client factories for testability
+        services.AddSingleton<IAnthropicClientFactory, AnthropicClientFactory>();
+        services.AddSingleton<IOpenAIClientFactory, OpenAIClientFactory>();
 
         // Register AI providers as singletons (they maintain their own state)
         services.AddSingleton<OpenAIProvider>();
@@ -253,6 +258,10 @@ public static class ServiceCollectionExtensions
         services.Configure<EmbeddingProvidersSettings>(configuration.GetSection(EmbeddingProvidersSettings.SectionName));
         services.Configure<RagSettings>(configuration.GetSection(RagSettings.SectionName));
 
+        // Register embedding client factories for testability
+        services.AddSingleton<SecondBrain.Application.Services.Embeddings.Interfaces.IOpenAIEmbeddingClientFactory, 
+                              SecondBrain.Application.Services.Embeddings.Interfaces.OpenAIEmbeddingClientFactory>();
+
         // Register embedding providers as singletons
         services.AddSingleton<OpenAIEmbeddingProvider>();
         services.AddSingleton<GeminiEmbeddingProvider>();
@@ -268,9 +277,13 @@ public static class ServiceCollectionExtensions
         // Register the embedding provider factory
         services.AddSingleton<IEmbeddingProviderFactory, EmbeddingProviderFactory>();
 
-        // Register vector stores
+        // Register vector stores as concrete types (needed for CompositeVectorStore)
         services.AddScoped<PostgresVectorStore>();
         services.AddScoped<PineconeVectorStore>();
+
+        // Register vector stores as keyed services for testable dependency injection
+        services.AddKeyedScoped<IVectorStore, PostgresVectorStore>(VectorStoreKeys.PostgreSQL);
+        services.AddKeyedScoped<IVectorStore, PineconeVectorStore>(VectorStoreKeys.Pinecone);
 
         // Register CompositeVectorStore as the default IVectorStore
         services.AddScoped<IVectorStore>(sp =>

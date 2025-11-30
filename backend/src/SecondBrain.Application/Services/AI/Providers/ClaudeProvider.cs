@@ -18,6 +18,7 @@ public class ClaudeProvider : IAIProvider
     private readonly AnthropicSettings _settings;
     private readonly ILogger<ClaudeProvider> _logger;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IAnthropicClientFactory _clientFactory;
     private readonly AnthropicClient? _client;
 
     public string ProviderName => "Claude";
@@ -26,17 +27,19 @@ public class ClaudeProvider : IAIProvider
     public ClaudeProvider(
         IOptions<AIProvidersSettings> settings,
         IHttpClientFactory httpClientFactory,
+        IAnthropicClientFactory clientFactory,
         ILogger<ClaudeProvider> logger)
     {
         _settings = settings.Value.Anthropic;
         _httpClientFactory = httpClientFactory;
+        _clientFactory = clientFactory;
         _logger = logger;
 
         if (_settings.Enabled && !string.IsNullOrWhiteSpace(_settings.ApiKey))
         {
             try
             {
-                _client = new AnthropicClient(new APIAuthentication(_settings.ApiKey));
+                _client = _clientFactory.CreateClient(_settings.ApiKey);
             }
             catch (Exception ex)
             {
