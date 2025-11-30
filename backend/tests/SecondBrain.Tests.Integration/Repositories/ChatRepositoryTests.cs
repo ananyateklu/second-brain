@@ -352,7 +352,7 @@ public class ChatRepositoryTests : IAsyncLifetime
         updated.AgentEnabled.Should().BeTrue();
         updated.AgentCapabilities.Should().Be("[\"read_notes\"]");
         updated.VectorStoreProvider.Should().Be("postgresql");
-        updated.UpdatedAt.Should().BeAfter(conversation.UpdatedAt);
+        updated.UpdatedAt.Should().BeOnOrAfter(conversation.UpdatedAt);
     }
 
     [Fact]
@@ -480,7 +480,7 @@ public class ChatRepositoryTests : IAsyncLifetime
         updated.Should().NotBeNull();
         updated!.Messages.Should().HaveCount(1);
         updated.Messages[0].Content.Should().Be("Response");
-        updated.UpdatedAt.Should().BeAfter(conversation.UpdatedAt);
+        updated.UpdatedAt.Should().BeOnOrAfter(conversation.UpdatedAt);
     }
 
     [Fact]

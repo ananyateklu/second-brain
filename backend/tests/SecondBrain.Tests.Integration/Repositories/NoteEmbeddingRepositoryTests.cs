@@ -432,8 +432,13 @@ public class NoteEmbeddingRepositoryTests : IAsyncLifetime
 
     private static NoteEmbedding CreateTestEmbedding(string id, string noteId, string userId, int chunkIndex)
     {
-        // Create a simple test vector with 3 dimensions
-        var testVector = new Vector(new float[] { 0.1f, 0.2f, 0.3f });
+        // Create a test vector with 1536 dimensions (OpenAI embedding size)
+        var testVectorData = new float[1536];
+        for (int i = 0; i < 1536; i++)
+        {
+            testVectorData[i] = 0.001f * (i + 1);
+        }
+        var testVector = new Vector(testVectorData);
 
         return new NoteEmbedding
         {
