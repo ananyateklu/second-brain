@@ -73,6 +73,12 @@ const ChartIcon = () => (
   </svg>
 );
 
+const ImageIcon = () => (
+  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+  </svg>
+);
+
 export function StatCardsGrid({ stats, aiStats, totalTokens }: StatCardsGridProps) {
   const statsConfig = useMemo<StatConfig[]>(() => [
     {
@@ -129,6 +135,20 @@ export function StatCardsGrid({ stats, aiStats, totalTokens }: StatCardsGridProp
             {((aiStats.agentConversationsCount / aiStats.totalConversations) * 100).toFixed(0)}%
           </span>
           {' '}of total
+        </p>
+      ) : undefined,
+      show: !!aiStats,
+    },
+    {
+      title: 'Image Generation',
+      value: aiStats?.imageGenerationConversationsCount || 0,
+      icon: <ImageIcon />,
+      subtitle: aiStats && aiStats.totalImagesGenerated > 0 ? (
+        <p className="text-[9px] whitespace-nowrap" style={{ color: 'var(--text-tertiary)' }}>
+          <span className="font-bold text-[13px]" style={{ color: 'var(--color-brand-600)' }}>
+            {aiStats.totalImagesGenerated}
+          </span>
+          {' '}images
         </p>
       ) : undefined,
       show: !!aiStats,

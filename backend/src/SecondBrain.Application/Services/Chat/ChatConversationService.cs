@@ -54,6 +54,7 @@ public class ChatConversationService : IChatConversationService
         string userId,
         bool ragEnabled = false,
         bool agentEnabled = false,
+        bool imageGenerationEnabled = false,
         string? agentCapabilities = null,
         string? vectorStoreProvider = null,
         CancellationToken cancellationToken = default)
@@ -68,6 +69,7 @@ public class ChatConversationService : IChatConversationService
             Model = model,
             RagEnabled = ragEnabled,
             AgentEnabled = agentEnabled,
+            ImageGenerationEnabled = imageGenerationEnabled,
             AgentCapabilities = agentCapabilities,
             VectorStoreProvider = vectorStoreProvider,
             UserId = userId,

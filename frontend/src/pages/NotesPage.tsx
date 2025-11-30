@@ -8,19 +8,25 @@ import { useUIStore } from '../store/ui-store';
 import { EditNoteModal } from '../features/notes/components/EditNoteModal';
 import { Note } from '../features/notes/types/note';
 import { NotesFilter, NotesFilterState } from '../features/notes/components/NotesFilter';
+import {
+  startOfDay,
+  subDays,
+  parse,
+  endOfDay,
+  parseISO,
+  isWithinInterval,
+  isEqual,
+  isBefore,
+} from 'date-fns';
 
 // Cache for date calculations to avoid recreating Date objects
 const getDateBoundaries = () => {
   const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const sevenDaysAgo = new Date(today);
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  const thirtyDaysAgo = new Date(today);
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const ninetyDaysAgo = new Date(today);
-  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+  const today = startOfDay(now);
+  const yesterday = subDays(today, 1);
+  const sevenDaysAgo = subDays(today, 7);
+  const thirtyDaysAgo = subDays(today, 30);
+  const ninetyDaysAgo = subDays(today, 90);
 
   return {
     today,
@@ -43,8 +49,8 @@ const applyDateFilter = (
 ): boolean => {
   if (dateFilter === 'all') return true;
 
-  const noteDate = new Date(note.createdAt);
-  const noteDateOnly = new Date(noteDate.getFullYear(), noteDate.getMonth(), noteDate.getDate());
+  const noteDate = parseISO(note.createdAt);
+  const noteDateOnly = startOfDay(noteDate);
   const noteDateOnlyTime = noteDateOnly.getTime();
 
   switch (dateFilter) {
@@ -53,17 +59,17 @@ const applyDateFilter = (
     case 'yesterday':
       return noteDateOnlyTime === boundaries.yesterdayTime;
     case 'last7days':
-      return noteDate >= boundaries.sevenDaysAgo;
+      return !isBefore(noteDate, boundaries.sevenDaysAgo);
     case 'last30days':
-      return noteDate >= boundaries.thirtyDaysAgo;
+      return !isBefore(noteDate, boundaries.thirtyDaysAgo);
     case 'last90days':
-      return noteDate >= boundaries.ninetyDaysAgo;
+      return !isBefore(noteDate, boundaries.ninetyDaysAgo);
     case 'custom':
       if (customDateStart && customDateEnd) {
-        const startDate = new Date(customDateStart);
-        const endDate = new Date(customDateEnd);
-        endDate.setHours(23, 59, 59, 999);
-        return noteDate >= startDate && noteDate <= endDate;
+        // Parse custom date strings as local dates to avoid timezone issues
+        const start = parse(customDateStart, 'yyyy-MM-dd', new Date());
+        const end = endOfDay(parse(customDateEnd, 'yyyy-MM-dd', new Date()));
+        return isWithinInterval(noteDate, { start, end });
       }
       return true;
     default:

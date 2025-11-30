@@ -1,4 +1,19 @@
 import { Note } from '../features/notes/types/note';
+import {
+  format,
+  parse,
+  startOfWeek,
+  startOfMonth,
+  startOfDay,
+  endOfDay,
+  addDays,
+  addMonths,
+  subDays,
+  parseISO,
+  isAfter,
+  isBefore,
+  isWithinInterval,
+} from 'date-fns';
 
 export interface ChartDataPoint {
   date: string;
@@ -12,33 +27,72 @@ export interface DashboardStats {
   notesUpdatedThisWeek: number;
 }
 
+// ============================================
+// Date Parsing Helpers
+// ============================================
+
+/**
+ * Format a Date as yyyy-MM-dd in local time
+ */
+function formatDateKey(date: Date): string {
+  return format(date, 'yyyy-MM-dd');
+}
+
+/**
+ * Parse a yyyy-MM-dd string as local date
+ */
+function parseDateKey(dateStr: string): Date {
+  return parse(dateStr, 'yyyy-MM-dd', new Date());
+}
+
+/**
+ * Format date for chart display (e.g., "Nov 30")
+ */
+function formatChartLabel(date: Date): string {
+  return format(date, 'MMM d');
+}
+
+/**
+ * Format month for chart display (e.g., "Nov 2025")
+ */
+function formatMonthLabel(date: Date): string {
+  return format(date, 'MMM yyyy');
+}
+
+/**
+ * Get month key for grouping (e.g., "2025-11")
+ */
+function getMonthKey(date: Date): string {
+  return format(date, 'yyyy-MM');
+}
+
+// ============================================
+// Dashboard Statistics
+// ============================================
+
 /**
  * Calculate dashboard statistics from notes array
  */
 export function calculateStats(notes: Note[]): DashboardStats {
   const now = new Date();
-  const startOfWeek = new Date(now);
-  startOfWeek.setDate(now.getDate() - now.getDay()); // Start of current week (Sunday)
-  startOfWeek.setHours(0, 0, 0, 0);
-
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  startOfMonth.setHours(0, 0, 0, 0);
+  const weekStart = startOfWeek(now, { weekStartsOn: 0 }); // Sunday
+  const monthStart = startOfMonth(now);
 
   let notesCreatedThisWeek = 0;
   let notesCreatedThisMonth = 0;
   let notesUpdatedThisWeek = 0;
 
   notes.forEach((note) => {
-    const createdAt = new Date(note.createdAt);
-    const updatedAt = new Date(note.updatedAt);
+    const createdAt = parseISO(note.createdAt);
+    const updatedAt = parseISO(note.updatedAt);
 
-    if (createdAt >= startOfWeek) {
+    if (!isBefore(createdAt, weekStart)) {
       notesCreatedThisWeek++;
     }
-    if (createdAt >= startOfMonth) {
+    if (!isBefore(createdAt, monthStart)) {
       notesCreatedThisMonth++;
     }
-    if (updatedAt >= startOfWeek) {
+    if (!isBefore(updatedAt, weekStart)) {
       notesUpdatedThisWeek++;
     }
   });
@@ -51,138 +105,135 @@ export function calculateStats(notes: Note[]): DashboardStats {
   };
 }
 
+// ============================================
+// Chart Data Generation
+// ============================================
+
 /**
  * Group notes by date for chart data (last N days)
  * For longer ranges (>90 days), groups by week or month for better readability
  */
 export function getChartData(notes: Note[], days: number = 30): ChartDataPoint[] {
   const now = new Date();
-  const startDate = new Date(now);
-  startDate.setDate(now.getDate() - days);
-  startDate.setHours(0, 0, 0, 0);
+  const rangeStart = startOfDay(subDays(now, days));
 
   // Determine grouping strategy based on time range
   const groupByWeek = days >= 90 && days <= 180;
   const groupByMonth = days > 180;
 
   if (groupByMonth) {
-    // Group by month for ranges > 180 days
-    const dataMap = new Map<string, number>();
-    
-    // Initialize all months with 0 count
-    const currentMonth = new Date(startDate);
-    while (currentMonth <= now) {
-      const monthKey = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
-      dataMap.set(monthKey, 0);
-      currentMonth.setMonth(currentMonth.getMonth() + 1);
-    }
-
-    // Count notes created per month
-    notes.forEach((note) => {
-      const createdAt = new Date(note.createdAt);
-      if (createdAt >= startDate) {
-        const monthKey = `${createdAt.getFullYear()}-${String(createdAt.getMonth() + 1).padStart(2, '0')}`;
-        const currentCount = dataMap.get(monthKey) || 0;
-        dataMap.set(monthKey, currentCount + 1);
-      }
-    });
-
-    // Convert to array and format dates
-    const chartData: ChartDataPoint[] = Array.from(dataMap.entries())
-      .map(([monthKey, count]) => {
-        const [year, month] = monthKey.split('-');
-        const dateObj = new Date(parseInt(year), parseInt(month) - 1, 1);
-        return {
-          date: dateObj.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-          count,
-          sortKey: monthKey,
-        };
-      })
-      .sort((a, b) => a.sortKey.localeCompare(b.sortKey))
-      .map(({ date, count }) => ({ date, count }));
-
-    return chartData;
+    return getMonthlyChartData(notes, rangeStart, now);
   } else if (groupByWeek) {
-    // Group by week for ranges > 90 days and <= 180 days
-    const dataMap = new Map<string, number>();
-    
-    // Initialize all weeks with 0 count
-    const currentWeek = new Date(startDate);
-    // Move to start of week (Sunday)
-    const dayOfWeek = currentWeek.getDay();
-    currentWeek.setDate(currentWeek.getDate() - dayOfWeek);
-    currentWeek.setHours(0, 0, 0, 0);
-    
-    while (currentWeek <= now) {
-      const weekKey = currentWeek.toISOString().split('T')[0];
-      dataMap.set(weekKey, 0);
-      currentWeek.setDate(currentWeek.getDate() + 7);
-    }
-
-    // Count notes created per week
-    notes.forEach((note) => {
-      const createdAt = new Date(note.createdAt);
-      if (createdAt >= startDate) {
-        // Find the start of the week for this note
-        const noteDate = new Date(createdAt);
-        const noteDayOfWeek = noteDate.getDay();
-        noteDate.setDate(noteDate.getDate() - noteDayOfWeek);
-        noteDate.setHours(0, 0, 0, 0);
-        const weekKey = noteDate.toISOString().split('T')[0];
-        const currentCount = dataMap.get(weekKey) || 0;
-        dataMap.set(weekKey, currentCount + 1);
-      }
-    });
-
-    // Convert to array and format dates
-    const chartData: ChartDataPoint[] = Array.from(dataMap.entries())
-      .map(([weekKey, count]) => {
-        const dateObj = new Date(weekKey);
-        return {
-          date: dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          count,
-          sortKey: weekKey,
-        };
-      })
-      .sort((a, b) => a.sortKey.localeCompare(b.sortKey))
-      .map(({ date, count }) => ({ date, count }));
-
-    return chartData;
+    return getWeeklyChartData(notes, rangeStart, now);
   } else {
-    // Daily grouping for ranges <= 90 days
-    const dataMap = new Map<string, number>();
-    for (let i = 0; i < days; i++) {
-      const date = new Date(startDate);
-      date.setDate(startDate.getDate() + i);
-      const dateKey = date.toISOString().split('T')[0];
-      dataMap.set(dateKey, 0);
-    }
-
-    // Count notes created per day
-    notes.forEach((note) => {
-      const createdAt = new Date(note.createdAt);
-      if (createdAt >= startDate) {
-        const dateKey = createdAt.toISOString().split('T')[0];
-        const currentCount = dataMap.get(dateKey) || 0;
-        dataMap.set(dateKey, currentCount + 1);
-      }
-    });
-
-    // Convert to array and format dates
-    const chartData: ChartDataPoint[] = Array.from(dataMap.entries())
-      .map(([date, count]) => {
-        const dateObj = new Date(date);
-        return {
-          date: dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          count,
-          sortKey: date,
-        };
-      })
-      .sort((a, b) => a.sortKey.localeCompare(b.sortKey))
-      .map(({ date, count }) => ({ date, count }));
-
-    return chartData;
+    return getDailyChartData(notes, rangeStart, now, days);
   }
+}
+
+function getMonthlyChartData(notes: Note[], rangeStart: Date, now: Date): ChartDataPoint[] {
+  const dataMap = new Map<string, number>();
+  
+  // Initialize all months with 0 count
+  let currentMonth = startOfMonth(rangeStart);
+  while (!isAfter(currentMonth, now)) {
+    dataMap.set(getMonthKey(currentMonth), 0);
+    currentMonth = addMonths(currentMonth, 1);
+  }
+
+  // Count notes created per month
+  notes.forEach((note) => {
+    const createdAt = parseISO(note.createdAt);
+    if (!isBefore(createdAt, rangeStart)) {
+      const monthKey = getMonthKey(createdAt);
+      const currentCount = dataMap.get(monthKey) || 0;
+      dataMap.set(monthKey, currentCount + 1);
+    }
+  });
+
+  // Convert to array and format dates
+  return Array.from(dataMap.entries())
+    .map(([monthKey, count]) => {
+      const dateObj = parse(monthKey, 'yyyy-MM', new Date());
+      return {
+        date: formatMonthLabel(dateObj),
+        count,
+        sortKey: monthKey,
+      };
+    })
+    .sort((a, b) => a.sortKey.localeCompare(b.sortKey))
+    .map(({ date, count }) => ({ date, count }));
+}
+
+function getWeeklyChartData(notes: Note[], rangeStart: Date, now: Date): ChartDataPoint[] {
+  const dataMap = new Map<string, number>();
+  
+  // Initialize all weeks with 0 count
+  let currentWeek = startOfWeek(rangeStart, { weekStartsOn: 0 });
+  while (!isAfter(currentWeek, now)) {
+    dataMap.set(formatDateKey(currentWeek), 0);
+    currentWeek = addDays(currentWeek, 7);
+  }
+
+  // Count notes created per week
+  notes.forEach((note) => {
+    const createdAt = parseISO(note.createdAt);
+    if (!isBefore(createdAt, rangeStart)) {
+      const weekStart = startOfWeek(createdAt, { weekStartsOn: 0 });
+      const weekKey = formatDateKey(weekStart);
+      const currentCount = dataMap.get(weekKey) || 0;
+      dataMap.set(weekKey, currentCount + 1);
+    }
+  });
+
+  // Convert to array and format dates
+  return Array.from(dataMap.entries())
+    .map(([weekKey, count]) => {
+      const dateObj = parseDateKey(weekKey);
+      return {
+        date: formatChartLabel(dateObj),
+        count,
+        sortKey: weekKey,
+      };
+    })
+    .sort((a, b) => a.sortKey.localeCompare(b.sortKey))
+    .map(({ date, count }) => ({ date, count }));
+}
+
+function getDailyChartData(notes: Note[], rangeStart: Date, now: Date, days: number): ChartDataPoint[] {
+  const dataMap = new Map<string, number>();
+  
+  // Extend range by 1 day to account for timezone differences
+  const rangeEnd = endOfDay(addDays(now, 1));
+  
+  // Initialize all days in the range with 0 counts
+  for (let i = 0; i < days; i++) {
+    const date = addDays(rangeStart, i);
+    dataMap.set(formatDateKey(date), 0);
+  }
+
+  // Count notes created per day
+  notes.forEach((note) => {
+    const createdAt = parseISO(note.createdAt);
+    if (isWithinInterval(createdAt, { start: rangeStart, end: rangeEnd })) {
+      const dateKey = formatDateKey(createdAt);
+      if (dataMap.has(dateKey)) {
+        dataMap.set(dateKey, (dataMap.get(dateKey) || 0) + 1);
+      }
+    }
+  });
+
+  // Convert to array and format dates
+  return Array.from(dataMap.entries())
+    .map(([dateKey, count]) => {
+      const dateObj = parseDateKey(dateKey);
+      return {
+        date: formatChartLabel(dateObj),
+        count,
+        sortKey: dateKey,
+      };
+    })
+    .sort((a, b) => a.sortKey.localeCompare(b.sortKey))
+    .map(({ date, count }) => ({ date, count }));
 }
 
 /**
@@ -191,19 +242,38 @@ export function getChartData(notes: Note[], days: number = 30): ChartDataPoint[]
 export function getRecentNotes(notes: Note[], limit: number = 5): Note[] {
   return [...notes]
     .sort((a, b) => {
-      const dateA = new Date(a.updatedAt);
-      const dateB = new Date(b.updatedAt);
+      const dateA = parseISO(a.updatedAt);
+      const dateB = parseISO(b.updatedAt);
       return dateB.getTime() - dateA.getTime();
     })
     .slice(0, limit);
 }
+
+// ============================================
+// Chat Usage Chart Data
+// ============================================
 
 export interface ChatUsageDataPoint {
   date: string;
   ragChats: number;
   regularChats: number;
   agentChats: number;
+  imageGenChats: number;
 }
+
+interface ChatCounts {
+  ragChats: number;
+  regularChats: number;
+  agentChats: number;
+  imageGenChats: number;
+}
+
+const emptyCounts = (): ChatCounts => ({
+  ragChats: 0,
+  regularChats: 0,
+  agentChats: 0,
+  imageGenChats: 0,
+});
 
 /**
  * Process daily conversation counts for chart display
@@ -213,255 +283,218 @@ export function getChatUsageChartData(
   dailyRagCounts: Record<string, number>,
   dailyNonRagCounts: Record<string, number>,
   dailyAgentCounts: Record<string, number>,
+  dailyImageGenCounts: Record<string, number>,
   days: number = 30
 ): ChatUsageDataPoint[] {
   const now = new Date();
-  const startDate = new Date(now);
-  startDate.setDate(now.getDate() - days);
-  startDate.setHours(0, 0, 0, 0);
+  const rangeStart = startOfDay(subDays(now, days));
 
   // Determine grouping strategy based on time range
   const groupByWeek = days >= 90 && days <= 180;
   const groupByMonth = days > 180;
 
   if (groupByMonth) {
-    // Group by month for ranges > 180 days
-    const dataMap = new Map<string, { ragChats: number; regularChats: number; agentChats: number }>();
-    
-    // Initialize all months with 0 counts
-    const currentMonth = new Date(startDate);
-    while (currentMonth <= now) {
-      const monthKey = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
-      dataMap.set(monthKey, { ragChats: 0, regularChats: 0, agentChats: 0 });
-      currentMonth.setMonth(currentMonth.getMonth() + 1);
-    }
-
-    // Helper function to parse date string (yyyy-MM-dd) to local date at midnight
-    const parseDateString = (dateStr: string): Date => {
-      const [year, month, day] = dateStr.split('-').map(Number);
-      const date = new Date(year, month - 1, day);
-      date.setHours(0, 0, 0, 0);
-      return date;
-    };
-
-    // Aggregate counts per month
-    Object.entries(dailyRagCounts).forEach(([dateStr, count]) => {
-      const date = parseDateString(dateStr);
-      if (date >= startDate) {
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        const current = dataMap.get(monthKey) || { ragChats: 0, regularChats: 0, agentChats: 0 };
-        dataMap.set(monthKey, { ...current, ragChats: current.ragChats + count });
-      }
-    });
-
-    Object.entries(dailyNonRagCounts).forEach(([dateStr, count]) => {
-      const date = parseDateString(dateStr);
-      if (date >= startDate) {
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        const current = dataMap.get(monthKey) || { ragChats: 0, regularChats: 0, agentChats: 0 };
-        dataMap.set(monthKey, { ...current, regularChats: current.regularChats + count });
-      }
-    });
-
-    Object.entries(dailyAgentCounts).forEach(([dateStr, count]) => {
-      const date = parseDateString(dateStr);
-      if (date >= startDate) {
-        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        const current = dataMap.get(monthKey) || { ragChats: 0, regularChats: 0, agentChats: 0 };
-        dataMap.set(monthKey, { ...current, agentChats: current.agentChats + count });
-      }
-    });
-
-    // Convert to array and format dates
-    return Array.from(dataMap.entries())
-      .map(([monthKey, counts]) => {
-        const [year, month] = monthKey.split('-');
-        const dateObj = new Date(parseInt(year), parseInt(month) - 1, 1);
-        return {
-          date: dateObj.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-          ragChats: counts.ragChats,
-          regularChats: counts.regularChats,
-          agentChats: counts.agentChats,
-          sortKey: monthKey,
-        } as ChatUsageDataPoint & { sortKey: string };
-      })
-      .sort((a, b) => a.sortKey.localeCompare(b.sortKey))
-      .map(({ date, ragChats, regularChats, agentChats }): ChatUsageDataPoint => ({ date, ragChats, regularChats, agentChats }));
+    return getMonthlyChatData(dailyRagCounts, dailyNonRagCounts, dailyAgentCounts, dailyImageGenCounts, rangeStart, now);
   } else if (groupByWeek) {
-    // Group by week for ranges >= 90 days and <= 180 days
-    const dataMap = new Map<string, { ragChats: number; regularChats: number; agentChats: number }>();
-    
-    // Initialize all weeks with 0 counts
-    const currentWeek = new Date(startDate);
-    const dayOfWeek = currentWeek.getDay();
-    currentWeek.setDate(currentWeek.getDate() - dayOfWeek);
-    currentWeek.setHours(0, 0, 0, 0);
-    
-    while (currentWeek <= now) {
-      const weekKey = currentWeek.toISOString().split('T')[0];
-      dataMap.set(weekKey, { ragChats: 0, regularChats: 0, agentChats: 0 });
-      currentWeek.setDate(currentWeek.getDate() + 7);
-    }
-
-    // Helper function to parse date string (yyyy-MM-dd) to local date at midnight
-    const parseDateString = (dateStr: string): Date => {
-      const [year, month, day] = dateStr.split('-').map(Number);
-      const date = new Date(year, month - 1, day);
-      date.setHours(0, 0, 0, 0);
-      return date;
-    };
-
-    // Aggregate counts per week
-    Object.entries(dailyRagCounts).forEach(([dateStr, count]) => {
-      const date = parseDateString(dateStr);
-      if (date >= startDate) {
-        const noteDate = new Date(date);
-        const noteDayOfWeek = noteDate.getDay();
-        noteDate.setDate(noteDate.getDate() - noteDayOfWeek);
-        noteDate.setHours(0, 0, 0, 0);
-        const weekKey = noteDate.toISOString().split('T')[0];
-        const current = dataMap.get(weekKey) || { ragChats: 0, regularChats: 0, agentChats: 0 };
-        dataMap.set(weekKey, { ...current, ragChats: current.ragChats + count });
-      }
-    });
-
-    Object.entries(dailyNonRagCounts).forEach(([dateStr, count]) => {
-      const date = parseDateString(dateStr);
-      if (date >= startDate) {
-        const noteDate = new Date(date);
-        const noteDayOfWeek = noteDate.getDay();
-        noteDate.setDate(noteDate.getDate() - noteDayOfWeek);
-        noteDate.setHours(0, 0, 0, 0);
-        const weekKey = noteDate.toISOString().split('T')[0];
-        const current = dataMap.get(weekKey) || { ragChats: 0, regularChats: 0, agentChats: 0 };
-        dataMap.set(weekKey, { ...current, regularChats: current.regularChats + count });
-      }
-    });
-
-    Object.entries(dailyAgentCounts).forEach(([dateStr, count]) => {
-      const date = parseDateString(dateStr);
-      if (date >= startDate) {
-        const noteDate = new Date(date);
-        const noteDayOfWeek = noteDate.getDay();
-        noteDate.setDate(noteDate.getDate() - noteDayOfWeek);
-        noteDate.setHours(0, 0, 0, 0);
-        const weekKey = noteDate.toISOString().split('T')[0];
-        const current = dataMap.get(weekKey) || { ragChats: 0, regularChats: 0, agentChats: 0 };
-        dataMap.set(weekKey, { ...current, agentChats: current.agentChats + count });
-      }
-    });
-
-    // Convert to array and format dates
-    return Array.from(dataMap.entries())
-      .map(([weekKey, counts]) => {
-        const dateObj = new Date(weekKey);
-        return {
-          date: dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          ragChats: counts.ragChats,
-          regularChats: counts.regularChats,
-          agentChats: counts.agentChats,
-          sortKey: weekKey,
-        } as ChatUsageDataPoint & { sortKey: string };
-      })
-      .sort((a, b) => a.sortKey.localeCompare(b.sortKey))
-      .map(({ date, ragChats, regularChats, agentChats }): ChatUsageDataPoint => ({ date, ragChats, regularChats, agentChats }));
+    return getWeeklyChatData(dailyRagCounts, dailyNonRagCounts, dailyAgentCounts, dailyImageGenCounts, rangeStart, now);
   } else {
-    // Daily grouping for ranges <= 90 days
-    const dataMap = new Map<string, { ragChats: number; regularChats: number; agentChats: number }>();
-    
-    // Helper function to format date as yyyy-MM-dd (local time, not UTC)
-    const formatDateKey = (date: Date): string => {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    };
-
-    // Helper function to parse date string (yyyy-MM-dd) - treat as local date
-    const parseDateString = (dateStr: string): Date => {
-      const [year, month, day] = dateStr.split('-').map(Number);
-      const date = new Date(year, month - 1, day);
-      date.setHours(0, 0, 0, 0);
-      return date;
-    };
-    
-    // Collect all backend date strings first to ensure we include them all
-    const allBackendDates = new Set<string>();
-    Object.keys(dailyRagCounts).forEach(dateStr => allBackendDates.add(dateStr));
-    Object.keys(dailyNonRagCounts).forEach(dateStr => allBackendDates.add(dateStr));
-    Object.keys(dailyAgentCounts).forEach(dateStr => allBackendDates.add(dateStr));
-    
-    // Initialize all days in the range with 0 counts
-    for (let i = 0; i < days; i++) {
-      const date = new Date(startDate);
-      date.setDate(startDate.getDate() + i);
-      const dateKey = formatDateKey(date);
-      dataMap.set(dateKey, { ragChats: 0, regularChats: 0, agentChats: 0 });
-    }
-    
-    // Also initialize any backend dates that might be in range but not in our local range
-    // (handles timezone edge cases)
-    allBackendDates.forEach(dateStr => {
-      const backendDate = parseDateString(dateStr);
-      if (backendDate >= startDate && backendDate <= now) {
-        const dateKey = formatDateKey(backendDate);
-        if (!dataMap.has(dateKey)) {
-          dataMap.set(dateKey, { ragChats: 0, regularChats: 0, agentChats: 0 });
-        }
-      }
-    });
-
-    // Fill in actual counts from backend data
-    Object.entries(dailyRagCounts).forEach(([dateStr, count]) => {
-      const backendDate = parseDateString(dateStr);
-      if (backendDate >= startDate && backendDate <= now) {
-        // Use local date key format for consistency
-        const dateKey = formatDateKey(backendDate);
-        const current = dataMap.get(dateKey);
-        if (current) {
-          dataMap.set(dateKey, { ...current, ragChats: current.ragChats + count });
-        }
-      }
-    });
-
-    Object.entries(dailyNonRagCounts).forEach(([dateStr, count]) => {
-      const backendDate = parseDateString(dateStr);
-      if (backendDate >= startDate && backendDate <= now) {
-        // Use local date key format for consistency
-        const dateKey = formatDateKey(backendDate);
-        const current = dataMap.get(dateKey);
-        if (current) {
-          dataMap.set(dateKey, { ...current, regularChats: current.regularChats + count });
-        }
-      }
-    });
-
-    Object.entries(dailyAgentCounts).forEach(([dateStr, count]) => {
-      const backendDate = parseDateString(dateStr);
-      if (backendDate >= startDate && backendDate <= now) {
-        // Use local date key format for consistency
-        const dateKey = formatDateKey(backendDate);
-        const current = dataMap.get(dateKey);
-        if (current) {
-          dataMap.set(dateKey, { ...current, agentChats: current.agentChats + count });
-        }
-      }
-    });
-
-    // Convert to array and format dates
-    return Array.from(dataMap.entries())
-      .map(([dateKey, counts]) => {
-        const dateObj = new Date(dateKey);
-        return {
-          date: dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          ragChats: counts.ragChats,
-          regularChats: counts.regularChats,
-          agentChats: counts.agentChats,
-          sortKey: dateKey,
-        } as ChatUsageDataPoint & { sortKey: string };
-      })
-      .sort((a, b) => a.sortKey.localeCompare(b.sortKey))
-      .map(({ date, ragChats, regularChats, agentChats }): ChatUsageDataPoint => ({ date, ragChats, regularChats, agentChats }));
+    return getDailyChatData(dailyRagCounts, dailyNonRagCounts, dailyAgentCounts, dailyImageGenCounts, rangeStart, now, days);
   }
 }
 
+function getMonthlyChatData(
+  dailyRagCounts: Record<string, number>,
+  dailyNonRagCounts: Record<string, number>,
+  dailyAgentCounts: Record<string, number>,
+  dailyImageGenCounts: Record<string, number>,
+  rangeStart: Date,
+  now: Date
+): ChatUsageDataPoint[] {
+  const dataMap = new Map<string, ChatCounts>();
+  
+  // Initialize all months
+  let currentMonth = startOfMonth(rangeStart);
+  while (!isAfter(currentMonth, now)) {
+    dataMap.set(getMonthKey(currentMonth), emptyCounts());
+    currentMonth = addMonths(currentMonth, 1);
+  }
+
+  // Aggregate counts per month
+  const aggregateCounts = (
+    dailyCounts: Record<string, number>,
+    field: keyof ChatCounts
+  ) => {
+    Object.entries(dailyCounts).forEach(([dateStr, count]) => {
+      const date = parseDateKey(dateStr);
+      if (!isBefore(date, rangeStart)) {
+        const monthKey = getMonthKey(date);
+        const current = dataMap.get(monthKey) || emptyCounts();
+        dataMap.set(monthKey, { ...current, [field]: current[field] + count });
+      }
+    });
+  };
+
+  aggregateCounts(dailyRagCounts, 'ragChats');
+  aggregateCounts(dailyNonRagCounts, 'regularChats');
+  aggregateCounts(dailyAgentCounts, 'agentChats');
+  aggregateCounts(dailyImageGenCounts, 'imageGenChats');
+
+  // Convert to array
+  return Array.from(dataMap.entries())
+    .map(([monthKey, counts]) => {
+      const dateObj = parse(monthKey, 'yyyy-MM', new Date());
+      return {
+        date: formatMonthLabel(dateObj),
+        ...counts,
+        sortKey: monthKey,
+      };
+    })
+    .sort((a, b) => a.sortKey.localeCompare(b.sortKey))
+    .map(({ date, ragChats, regularChats, agentChats, imageGenChats }) => ({
+      date,
+      ragChats,
+      regularChats,
+      agentChats,
+      imageGenChats,
+    }));
+}
+
+function getWeeklyChatData(
+  dailyRagCounts: Record<string, number>,
+  dailyNonRagCounts: Record<string, number>,
+  dailyAgentCounts: Record<string, number>,
+  dailyImageGenCounts: Record<string, number>,
+  rangeStart: Date,
+  now: Date
+): ChatUsageDataPoint[] {
+  const dataMap = new Map<string, ChatCounts>();
+  
+  // Initialize all weeks
+  let currentWeek = startOfWeek(rangeStart, { weekStartsOn: 0 });
+  while (!isAfter(currentWeek, now)) {
+    dataMap.set(formatDateKey(currentWeek), emptyCounts());
+    currentWeek = addDays(currentWeek, 7);
+  }
+
+  // Helper to get week key
+  const getWeekKey = (date: Date): string => 
+    formatDateKey(startOfWeek(date, { weekStartsOn: 0 }));
+
+  // Aggregate counts per week
+  const aggregateCounts = (
+    dailyCounts: Record<string, number>,
+    field: keyof ChatCounts
+  ) => {
+    Object.entries(dailyCounts).forEach(([dateStr, count]) => {
+      const date = parseDateKey(dateStr);
+      if (!isBefore(date, rangeStart)) {
+        const weekKey = getWeekKey(date);
+        const current = dataMap.get(weekKey) || emptyCounts();
+        dataMap.set(weekKey, { ...current, [field]: current[field] + count });
+      }
+    });
+  };
+
+  aggregateCounts(dailyRagCounts, 'ragChats');
+  aggregateCounts(dailyNonRagCounts, 'regularChats');
+  aggregateCounts(dailyAgentCounts, 'agentChats');
+  aggregateCounts(dailyImageGenCounts, 'imageGenChats');
+
+  // Convert to array
+  return Array.from(dataMap.entries())
+    .map(([weekKey, counts]) => {
+      const dateObj = parseDateKey(weekKey);
+      return {
+        date: formatChartLabel(dateObj),
+        ...counts,
+        sortKey: weekKey,
+      };
+    })
+    .sort((a, b) => a.sortKey.localeCompare(b.sortKey))
+    .map(({ date, ragChats, regularChats, agentChats, imageGenChats }) => ({
+      date,
+      ragChats,
+      regularChats,
+      agentChats,
+      imageGenChats,
+    }));
+}
+
+function getDailyChatData(
+  dailyRagCounts: Record<string, number>,
+  dailyNonRagCounts: Record<string, number>,
+  dailyAgentCounts: Record<string, number>,
+  dailyImageGenCounts: Record<string, number>,
+  rangeStart: Date,
+  now: Date,
+  days: number
+): ChatUsageDataPoint[] {
+  const dataMap = new Map<string, ChatCounts>();
+  
+  // Extend range by 1 day to account for timezone differences
+  const rangeEnd = endOfDay(addDays(now, 1));
+  
+  // Collect all backend date strings
+  const allBackendDates = new Set<string>();
+  [dailyRagCounts, dailyNonRagCounts, dailyAgentCounts, dailyImageGenCounts].forEach(counts => {
+    Object.keys(counts).forEach(dateStr => allBackendDates.add(dateStr));
+  });
+  
+  // Initialize all days in the range
+  for (let i = 0; i < days; i++) {
+    const date = addDays(rangeStart, i);
+    dataMap.set(formatDateKey(date), emptyCounts());
+  }
+  
+  // Initialize any backend dates in range
+  allBackendDates.forEach(dateStr => {
+    const backendDate = parseDateKey(dateStr);
+    if (isWithinInterval(backendDate, { start: rangeStart, end: rangeEnd })) {
+      const dateKey = formatDateKey(backendDate);
+      if (!dataMap.has(dateKey)) {
+        dataMap.set(dateKey, emptyCounts());
+      }
+    }
+  });
+
+  // Fill in counts from backend data
+  const fillCounts = (
+    dailyCounts: Record<string, number>,
+    field: keyof ChatCounts
+  ) => {
+    Object.entries(dailyCounts).forEach(([dateStr, count]) => {
+      const backendDate = parseDateKey(dateStr);
+      if (isWithinInterval(backendDate, { start: rangeStart, end: rangeEnd })) {
+        const dateKey = formatDateKey(backendDate);
+        const current = dataMap.get(dateKey);
+        if (current) {
+          dataMap.set(dateKey, { ...current, [field]: current[field] + count });
+        }
+      }
+    });
+  };
+
+  fillCounts(dailyRagCounts, 'ragChats');
+  fillCounts(dailyNonRagCounts, 'regularChats');
+  fillCounts(dailyAgentCounts, 'agentChats');
+  fillCounts(dailyImageGenCounts, 'imageGenChats');
+
+  // Convert to array
+  return Array.from(dataMap.entries())
+    .map(([dateKey, counts]) => {
+      const dateObj = parseDateKey(dateKey);
+      return {
+        date: formatChartLabel(dateObj),
+        ...counts,
+        sortKey: dateKey,
+      };
+    })
+    .sort((a, b) => a.sortKey.localeCompare(b.sortKey))
+    .map(({ date, ragChats, regularChats, agentChats, imageGenChats }) => ({
+      date,
+      ragChats,
+      regularChats,
+      agentChats,
+      imageGenChats,
+    }));
+}

@@ -5,6 +5,7 @@
 
 import { apiClient } from '../lib/api-client';
 import { API_ENDPOINTS } from '../lib/constants';
+import { format, parse, subDays } from 'date-fns';
 import type {
   AIUsageStats,
   ChartDataPoint,
@@ -38,9 +39,9 @@ export const statsService = {
     const today = new Date();
     
     for (let i = days - 1; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
+      const date = subDays(today, i);
+      // Use date-fns format for local date formatting
+      const dateStr = format(date, 'yyyy-MM-dd');
       
       result.push({
         date: dateStr,
@@ -179,8 +180,9 @@ export const statsService = {
    * Format date label for charts
    */
   formatDateLabel(dateStr: string): string {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    // Parse as local date using date-fns
+    const date = parse(dateStr, 'yyyy-MM-dd', new Date());
+    return format(date, 'MMM d');
   },
 
   /**

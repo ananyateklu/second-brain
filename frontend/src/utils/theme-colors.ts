@@ -8,6 +8,7 @@
 let cachedThemeColors: string[] | null = null;
 let cachedRagChartColor: string | null = null;
 let cachedRegularChartColor: string | null = null;
+let cachedImageGenChartColor: string | null = null;
 
 /**
  * Get theme colors from CSS variables (cached)
@@ -50,6 +51,18 @@ export const getRegularChartColor = (): string => {
 };
 
 /**
+ * Get image generation chart color from CSS variables (cached)
+ * Uses a distinct purple color to differentiate from other chat types
+ */
+export const getImageGenChartColor = (): string => {
+  if (cachedImageGenChartColor) return cachedImageGenChartColor;
+
+  // Use a distinct purple color for image generation
+  cachedImageGenChartColor = '#9b59b6';
+  return cachedImageGenChartColor;
+};
+
+/**
  * Reset color cache when theme changes
  * Should be called when the theme is changed
  */
@@ -57,5 +70,6 @@ export const resetThemeColorCache = (): void => {
   cachedThemeColors = null;
   cachedRagChartColor = null;
   cachedRegularChartColor = null;
+  cachedImageGenChartColor = null;
 };
 

@@ -386,6 +386,7 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
             title: chatService.generateTitle(params.prompt),
             ragEnabled: false,
             agentEnabled: false,
+            imageGenerationEnabled: true,
           });
           currentConversationId = newConversation.id;
         }

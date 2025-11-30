@@ -8,6 +8,7 @@ export {
   getThemeColors,
   getRagChartColor,
   getRegularChartColor,
+  getImageGenChartColor,
   resetThemeColorCache as resetDashboardColorCache,
 } from '../../../utils/theme-colors';
 

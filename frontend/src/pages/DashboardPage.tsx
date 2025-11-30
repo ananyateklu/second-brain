@@ -28,6 +28,7 @@ export function DashboardPage() {
     ragChartColor,
     regularChartColor,
     agentChartColor,
+    imageGenChartColor,
     getNotesChartData,
     getChatUsageData,
     getFilteredModelUsageData,
@@ -115,6 +116,7 @@ export function DashboardPage() {
             ragChartColor={ragChartColor}
             regularChartColor={regularChartColor}
             agentChartColor={agentChartColor}
+            imageGenChartColor={imageGenChartColor}
           />
         )}
       </div>

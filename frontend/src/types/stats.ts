@@ -11,6 +11,8 @@ export interface AIUsageStats {
   totalMessages: number;
   ragConversationsCount: number;
   agentConversationsCount: number;
+  imageGenerationConversationsCount: number;
+  totalImagesGenerated: number;
   modelUsageCounts: Record<string, number>;
   providerUsageCounts: Record<string, number>;
   modelTokenUsageCounts: Record<string, number>;
@@ -19,6 +21,7 @@ export interface AIUsageStats {
   dailyNonRagConversationCounts: Record<string, number>;
   dailyAgentConversationCounts: Record<string, number>;
   dailyNonAgentConversationCounts: Record<string, number>;
+  dailyImageGenerationConversationCounts: Record<string, number>;
   dailyModelUsageCounts: Record<string, Record<string, number>>;
   dailyModelTokenUsageCounts: Record<string, Record<string, number>>;
 }

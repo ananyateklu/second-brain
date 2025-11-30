@@ -23,6 +23,8 @@ public class StatsService : IStatsService
             TotalMessages = conversationsList.Sum(c => c.Messages.Count),
             RagConversationsCount = conversationsList.Count(c => c.RagEnabled),
             AgentConversationsCount = conversationsList.Count(c => c.AgentEnabled),
+            ImageGenerationConversationsCount = conversationsList.Count(c => c.ImageGenerationEnabled),
+            TotalImagesGenerated = conversationsList.Sum(c => c.Messages.Sum(m => m.GeneratedImages.Count)),
             ModelUsageCounts = conversationsList
                 .GroupBy(c => c.Model)
                 .Where(g => !string.IsNullOrEmpty(g.Key))
@@ -56,6 +58,11 @@ public class StatsService : IStatsService
                 .ToDictionary(g => g.Key.ToString("yyyy-MM-dd"), g => g.Count()),
             DailyNonAgentConversationCounts = conversationsList
                 .Where(c => !c.AgentEnabled)
+                .GroupBy(c => c.CreatedAt.Date)
+                .OrderBy(g => g.Key)
+                .ToDictionary(g => g.Key.ToString("yyyy-MM-dd"), g => g.Count()),
+            DailyImageGenerationConversationCounts = conversationsList
+                .Where(c => c.ImageGenerationEnabled)
                 .GroupBy(c => c.CreatedAt.Date)
                 .OrderBy(g => g.Key)
                 .ToDictionary(g => g.Key.ToString("yyyy-MM-dd"), g => g.Count()),

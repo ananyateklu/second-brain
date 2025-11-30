@@ -6,6 +6,7 @@ using SecondBrain.Application.Services.AI.Models;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace SecondBrain.Application.Services.AI.Providers;
 
@@ -248,13 +249,19 @@ public class OpenAIImageProvider : IImageGenerationProvider
     // Response models for deserialization
     private class OpenAIImageResponse
     {
+        [JsonPropertyName("data")]
         public List<OpenAIImageData> Data { get; set; } = new();
     }
 
     private class OpenAIImageData
     {
+        [JsonPropertyName("url")]
         public string? Url { get; set; }
+        
+        [JsonPropertyName("b64_json")]
         public string? B64Json { get; set; }
+        
+        [JsonPropertyName("revised_prompt")]
         public string? RevisedPrompt { get; set; }
     }
 }

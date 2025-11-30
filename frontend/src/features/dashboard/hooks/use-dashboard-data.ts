@@ -3,10 +3,12 @@ import { useNotes } from '../../notes/hooks/use-notes-query';
 import { useAIStats } from '../../stats/hooks/use-stats';
 import { calculateStats, getChartData, getChatUsageChartData } from '../../../utils/stats-utils';
 import { formatModelName } from '../../../utils/model-name-formatter';
+import { format, parse, subDays, startOfDay, isBefore } from 'date-fns';
 import {
   getThemeColors,
   getRagChartColor,
   getRegularChartColor,
+  getImageGenChartColor,
 } from '../utils/dashboard-utils';
 
 interface ModelUsageEntry {
@@ -26,6 +28,7 @@ interface ChatUsageDataPoint {
   ragChats: number;
   regularChats: number;
   agentChats: number;
+  imageGenChats: number;
 }
 
 interface NotesStats {
@@ -61,6 +64,7 @@ interface DashboardData {
   ragChartColor: string;
   regularChartColor: string;
   agentChartColor: string;
+  imageGenChartColor: string;
   
   // Chart data generators (need time range as input)
   getNotesChartData: (timeRange: number) => ChartDataPoint[];
@@ -83,6 +87,7 @@ export function useDashboardData(): DashboardData {
   const ragChartColor = getRagChartColor();
   const regularChartColor = getRegularChartColor();
   const agentChartColor = colors[2]; // Use third color from theme for agent chats
+  const imageGenChartColor = getImageGenChartColor();
 
   // Calculate notes stats
   const stats = useMemo<NotesStats | null>(() => {
@@ -128,6 +133,7 @@ export function useDashboardData(): DashboardData {
         aiStats.dailyRagConversationCounts,
         aiStats.dailyNonRagConversationCounts,
         aiStats.dailyAgentConversationCounts,
+        aiStats.dailyImageGenerationConversationCounts || {},
         timeRange
       );
     };
@@ -143,17 +149,21 @@ export function useDashboardData(): DashboardData {
       modelDataMap: Map<string, { conversations: number; tokens: number }>;
     } => {
       // Filter model usage data by time range using daily data from backend
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - timeRange);
-      const cutoffDateStr = cutoffDate.toISOString().split('T')[0];
+      const cutoffDate = startOfDay(subDays(new Date(), timeRange));
+
+      // Helper to parse yyyy-MM-dd as local date
+      const parseDateKey = (dateStr: string): Date => 
+        parse(dateStr, 'yyyy-MM-dd', new Date());
 
       // Aggregate daily model usage counts within the time range
       const filteredModelCounts: Record<string, number> = {};
       const filteredModelTokens: Record<string, number> = {};
 
       if (aiStats?.dailyModelUsageCounts) {
-        Object.entries(aiStats.dailyModelUsageCounts).forEach(([date, modelCounts]) => {
-          if (date >= cutoffDateStr) {
+        Object.entries(aiStats.dailyModelUsageCounts).forEach(([dateStr, modelCounts]) => {
+          // Parse backend date as local date for proper comparison
+          const backendDate = parseDateKey(dateStr);
+          if (!isBefore(backendDate, cutoffDate)) {
             Object.entries(modelCounts).forEach(([model, count]) => {
               filteredModelCounts[model] = (filteredModelCounts[model] || 0) + count;
             });
@@ -162,8 +172,10 @@ export function useDashboardData(): DashboardData {
       }
 
       if (aiStats?.dailyModelTokenUsageCounts) {
-        Object.entries(aiStats.dailyModelTokenUsageCounts).forEach(([date, modelTokens]) => {
-          if (date >= cutoffDateStr) {
+        Object.entries(aiStats.dailyModelTokenUsageCounts).forEach(([dateStr, modelTokens]) => {
+          // Parse backend date as local date for proper comparison
+          const backendDate = parseDateKey(dateStr);
+          if (!isBefore(backendDate, cutoffDate)) {
             Object.entries(modelTokens).forEach(([model, tokens]) => {
               filteredModelTokens[model] = (filteredModelTokens[model] || 0) + tokens;
             });
@@ -259,6 +271,7 @@ export function useDashboardData(): DashboardData {
     ragChartColor,
     regularChartColor,
     agentChartColor,
+    imageGenChartColor,
     getNotesChartData,
     getChatUsageData,
     getFilteredModelUsageData,

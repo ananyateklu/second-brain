@@ -8,6 +8,7 @@ interface ChatUsageDataPoint {
   ragChats: number;
   regularChats: number;
   agentChats: number;
+  imageGenChats: number;
 }
 
 interface ChatUsageChartProps {
@@ -17,6 +18,7 @@ interface ChatUsageChartProps {
   ragChartColor: string;
   regularChartColor: string;
   agentChartColor: string;
+  imageGenChartColor: string;
 }
 
 export function ChatUsageChart({
@@ -26,6 +28,7 @@ export function ChatUsageChart({
   ragChartColor,
   regularChartColor,
   agentChartColor,
+  imageGenChartColor,
 }: ChatUsageChartProps) {
   if (chatUsageChartData.length === 0) return null;
 
@@ -134,6 +137,7 @@ export function ChatUsageChart({
                     ragChats: 'RAG-Enhanced Chats',
                     regularChats: 'Regular Chats',
                     agentChats: 'Agent Chats',
+                    imageGenChats: 'Image Generation',
                   };
                   return [`${value}`, labels[name] || name];
                 }}
@@ -147,6 +151,7 @@ export function ChatUsageChart({
                     ragChats: 'RAG-Enhanced Chats',
                     regularChats: 'Regular Chats',
                     agentChats: 'Agent Chats',
+                    imageGenChats: 'Image Generation',
                   };
                   return (
                     <span style={{ color: 'var(--text-primary)', fontSize: '13px' }}>
@@ -181,6 +186,15 @@ export function ChatUsageChart({
                 dot={{ fill: agentChartColor, r: 4 }}
                 activeDot={{ r: 6 }}
                 name="agentChats"
+              />
+              <Line
+                type="monotone"
+                dataKey="imageGenChats"
+                stroke={imageGenChartColor}
+                strokeWidth={2}
+                dot={{ fill: imageGenChartColor, r: 4 }}
+                activeDot={{ r: 6 }}
+                name="imageGenChats"
               />
             </LineChart>
           </ResponsiveContainer>

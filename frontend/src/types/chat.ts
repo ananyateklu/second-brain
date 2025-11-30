@@ -74,6 +74,7 @@ export interface ChatConversation {
   model: string;
   ragEnabled: boolean;
   agentEnabled: boolean;
+  imageGenerationEnabled: boolean;
   agentCapabilities?: string;
   vectorStoreProvider?: string;
   messages: ChatMessage[];
@@ -91,6 +92,7 @@ export interface CreateConversationRequest {
   model: string;
   ragEnabled?: boolean;
   agentEnabled?: boolean;
+  imageGenerationEnabled?: boolean;
   agentCapabilities?: string;
   vectorStoreProvider?: string;
   userId?: string;

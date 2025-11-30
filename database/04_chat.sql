@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS chat_conversations (
     model VARCHAR(100) NOT NULL,
     rag_enabled BOOLEAN NOT NULL DEFAULT FALSE,
     agent_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    image_generation_enabled BOOLEAN NOT NULL DEFAULT FALSE,
     agent_capabilities TEXT,
     vector_store_provider VARCHAR(50),
     user_id VARCHAR(128) NOT NULL,
@@ -82,6 +83,7 @@ COMMENT ON COLUMN chat_conversations.provider IS 'AI provider (openai, anthropic
 COMMENT ON COLUMN chat_conversations.model IS 'AI model used for the conversation';
 COMMENT ON COLUMN chat_conversations.rag_enabled IS 'Whether RAG is enabled for this conversation';
 COMMENT ON COLUMN chat_conversations.agent_enabled IS 'Whether agent mode is enabled';
+COMMENT ON COLUMN chat_conversations.image_generation_enabled IS 'Whether this conversation is for image generation';
 COMMENT ON COLUMN chat_conversations.agent_capabilities IS 'JSON array of enabled agent capability IDs (e.g., ["notes"])';
 COMMENT ON COLUMN chat_conversations.vector_store_provider IS 'Vector store used for RAG';
 
