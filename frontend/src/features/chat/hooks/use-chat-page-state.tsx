@@ -63,6 +63,7 @@ export interface ChatPageState {
   retrievedNotes: RagContextNote[];
   toolExecutions: ToolExecution[];
   thinkingSteps: ThinkingStep[];
+  processingStatus: string | null;
   inputTokens?: number;
   outputTokens?: number;
   streamDuration?: number;
@@ -203,6 +204,7 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     retrievedNotes,
     toolExecutions,
     thinkingSteps,
+    processingStatus,
     inputTokens,
     outputTokens,
     streamDuration,
@@ -492,6 +494,7 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     retrievedNotes,
     toolExecutions,
     thinkingSteps,
+    processingStatus,
     inputTokens,
     outputTokens,
     streamDuration,

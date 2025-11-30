@@ -17,7 +17,6 @@ import {
   endOfDay,
   parseISO,
   isWithinInterval,
-  isEqual,
   isBefore,
 } from 'date-fns';
 

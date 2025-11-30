@@ -21,6 +21,7 @@ public class ChatController : ControllerBase
 {
     private readonly IChatConversationService _chatService;
     private readonly IChatRepository _chatRepository;
+    private readonly INoteRepository _noteRepository;
     private readonly IAIProviderFactory _providerFactory;
     private readonly IImageGenerationProviderFactory _imageGenerationFactory;
     private readonly IRagService _ragService;
@@ -30,6 +31,7 @@ public class ChatController : ControllerBase
     public ChatController(
         IChatConversationService chatService,
         IChatRepository chatRepository,
+        INoteRepository noteRepository,
         IAIProviderFactory providerFactory,
         IImageGenerationProviderFactory imageGenerationFactory,
         IRagService ragService,
@@ -38,6 +40,7 @@ public class ChatController : ControllerBase
     {
         _chatService = chatService;
         _chatRepository = chatRepository;
+        _noteRepository = noteRepository;
         _providerFactory = providerFactory;
         _imageGenerationFactory = imageGenerationFactory;
         _ragService = ragService;
@@ -978,6 +981,279 @@ public class ChatController : ControllerBase
         var sizes = imageProvider.GetSupportedSizes(model ?? string.Empty);
 
         return Ok(sizes);
+    }
+
+    /// <summary>
+    /// Generate AI-powered suggested prompts based on user's notes
+    /// </summary>
+    [HttpPost("suggested-prompts")]
+    [ProducesResponseType(typeof(SuggestedPromptsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<SuggestedPromptsResponse>> GenerateSuggestedPrompts(
+        [FromBody] GenerateSuggestedPromptsRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = HttpContext.Items["UserId"]?.ToString();
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { error = "Not authenticated" });
+        }
+
+        try
+        {
+            _logger.LogInformation(
+                "Generating suggested prompts. UserId: {UserId}, Provider: {Provider}, Model: {Model}",
+                userId, request.Provider, request.Model);
+
+            // Get user's notes to analyze
+            var notes = await _noteRepository.GetByUserIdAsync(userId);
+            var notesList = notes.Where(n => !n.IsArchived).ToList();
+
+            if (!notesList.Any())
+            {
+                return Ok(new SuggestedPromptsResponse
+                {
+                    Success = true,
+                    Prompts = GetDefaultPrompts(),
+                    Provider = request.Provider ?? "default",
+                    Model = request.Model ?? "default"
+                });
+            }
+
+            // Sample notes for analysis (take recent and diverse notes)
+            var sampledNotes = SampleNotesForAnalysis(notesList, maxNotes: 10);
+
+            // Build context from notes
+            var notesContext = BuildNotesContext(sampledNotes);
+
+            // Get AI provider
+            var providerName = request.Provider;
+            var modelName = request.Model;
+
+            // If no provider specified, try to get user preferences or use defaults
+            if (string.IsNullOrWhiteSpace(providerName))
+            {
+                try
+                {
+                    var userPrefs = await _userPreferencesService.GetPreferencesAsync(userId);
+                    providerName = userPrefs.ChatProvider ?? "OpenAI";
+                    modelName = userPrefs.ChatModel ?? "gpt-4o-mini";
+                }
+                catch
+                {
+                    providerName = "OpenAI";
+                    modelName = "gpt-4o-mini";
+                }
+            }
+
+            var aiProvider = _providerFactory.GetProvider(providerName);
+            if (!aiProvider.IsEnabled)
+            {
+                // Fall back to default prompts if provider not available
+                return Ok(new SuggestedPromptsResponse
+                {
+                    Success = true,
+                    Prompts = GetDefaultPrompts(),
+                    Provider = providerName,
+                    Model = modelName ?? "unknown",
+                    Error = $"Provider '{providerName}' is not enabled, returning default prompts"
+                });
+            }
+
+            // Generate prompts using AI
+            var systemPrompt = @"You are a helpful assistant that generates contextual prompt suggestions for a note-taking AI assistant. Based on the user's notes, generate exactly 4 useful prompt suggestions that would help them explore their knowledge base.
+
+Each prompt should be:
+1. Specific to topics found in their notes
+2. Actionable and useful
+3. Varied in type (e.g., summarize, analyze, compare, explore connections, generate ideas)
+
+Respond ONLY with a JSON array of objects in this exact format (no markdown, no explanation):
+[
+  {""id"": ""unique-id-1"", ""label"": ""Short Label (3-5 words)"", ""promptTemplate"": ""Full prompt text that will be sent to the AI..."", ""category"": ""summarize|analyze|create|explore""},
+  {""id"": ""unique-id-2"", ""label"": ""Short Label"", ""promptTemplate"": ""Full prompt..."", ""category"": ""category""},
+  {""id"": ""unique-id-3"", ""label"": ""Short Label"", ""promptTemplate"": ""Full prompt..."", ""category"": ""category""},
+  {""id"": ""unique-id-4"", ""label"": ""Short Label"", ""promptTemplate"": ""Full prompt..."", ""category"": ""category""}
+]
+
+Categories:
+- summarize: For summarization tasks
+- analyze: For analysis and insights
+- create: For generating new content or ideas
+- explore: For finding connections or exploring topics";
+
+            var userPrompt = $@"Based on these notes from the user's knowledge base, generate 4 contextual prompt suggestions:
+
+{notesContext}
+
+Generate prompts that would be genuinely useful for exploring this content.";
+
+            var messages = new List<Application.Services.AI.Models.ChatMessage>
+            {
+                new() { Role = "system", Content = systemPrompt },
+                new() { Role = "user", Content = userPrompt }
+            };
+
+            var aiRequest = new AIRequest
+            {
+                Model = modelName ?? "gpt-4o-mini",
+                Temperature = 0.7f,
+                MaxTokens = 1000
+            };
+
+            // Set Ollama remote URL if configured
+            if (providerName.Equals("Ollama", StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    var userPrefs = await _userPreferencesService.GetPreferencesAsync(userId);
+                    if (userPrefs.UseRemoteOllama && !string.IsNullOrWhiteSpace(userPrefs.OllamaRemoteUrl))
+                    {
+                        aiRequest.OllamaBaseUrl = userPrefs.OllamaRemoteUrl;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to fetch user preferences for Ollama URL override");
+                }
+            }
+
+            var aiResponse = await aiProvider.GenerateChatCompletionAsync(messages, aiRequest, cancellationToken);
+
+            // Parse the AI response
+            var prompts = ParsePromptsFromResponse(aiResponse.Content);
+
+            if (prompts.Count == 0)
+            {
+                _logger.LogWarning("Failed to parse AI response for suggested prompts. Response: {Response}", aiResponse.Content);
+                prompts = GetDefaultPrompts();
+            }
+
+            return Ok(new SuggestedPromptsResponse
+            {
+                Success = true,
+                Prompts = prompts,
+                Provider = providerName,
+                Model = modelName ?? aiRequest.Model
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating suggested prompts. UserId: {UserId}", userId);
+            return Ok(new SuggestedPromptsResponse
+            {
+                Success = false,
+                Prompts = GetDefaultPrompts(),
+                Error = "Failed to generate custom prompts, returning defaults"
+            });
+        }
+    }
+
+    private static List<Note> SampleNotesForAnalysis(List<Note> notes, int maxNotes)
+    {
+        if (notes.Count <= maxNotes)
+            return notes;
+
+        // Take a mix of recent and random notes for diversity
+        var recentNotes = notes
+            .OrderByDescending(n => n.UpdatedAt)
+            .Take(maxNotes / 2)
+            .ToList();
+
+        var remainingNotes = notes.Except(recentNotes).ToList();
+        var random = new Random();
+        var randomNotes = remainingNotes
+            .OrderBy(_ => random.Next())
+            .Take(maxNotes - recentNotes.Count)
+            .ToList();
+
+        return recentNotes.Concat(randomNotes).ToList();
+    }
+
+    private static string BuildNotesContext(List<Note> notes)
+    {
+        var sb = new System.Text.StringBuilder();
+
+        foreach (var note in notes)
+        {
+            sb.AppendLine($"--- Note: {note.Title} ---");
+            if (note.Tags?.Any() == true)
+            {
+                sb.AppendLine($"Tags: {string.Join(", ", note.Tags)}");
+            }
+            // Truncate content to avoid too much context
+            var content = note.Content.Length > 500
+                ? note.Content.Substring(0, 500) + "..."
+                : note.Content;
+            sb.AppendLine(content);
+            sb.AppendLine();
+        }
+
+        return sb.ToString();
+    }
+
+    private static List<SuggestedPromptDto> ParsePromptsFromResponse(string response)
+    {
+        try
+        {
+            // Try to extract JSON from the response (in case there's extra text)
+            var jsonStart = response.IndexOf('[');
+            var jsonEnd = response.LastIndexOf(']');
+
+            if (jsonStart >= 0 && jsonEnd > jsonStart)
+            {
+                var jsonString = response.Substring(jsonStart, jsonEnd - jsonStart + 1);
+                var options = new System.Text.Json.JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+                var prompts = System.Text.Json.JsonSerializer.Deserialize<List<SuggestedPromptDto>>(jsonString, options);
+                return prompts ?? new List<SuggestedPromptDto>();
+            }
+        }
+        catch
+        {
+            // Fall through to return empty list
+        }
+
+        return new List<SuggestedPromptDto>();
+    }
+
+    private static List<SuggestedPromptDto> GetDefaultPrompts()
+    {
+        return new List<SuggestedPromptDto>
+        {
+            new()
+            {
+                Id = "summarize",
+                Label = "Summarize my notes",
+                PromptTemplate = "Please summarize my notes on ",
+                Category = "summarize"
+            },
+            new()
+            {
+                Id = "connections",
+                Label = "Find connections",
+                PromptTemplate = "What connections can you find between my notes about ",
+                Category = "explore"
+            },
+            new()
+            {
+                Id = "ideas",
+                Label = "Generate ideas",
+                PromptTemplate = "Based on my notes, can you generate some ideas for ",
+                Category = "create"
+            },
+            new()
+            {
+                Id = "questions",
+                Label = "Ask questions",
+                PromptTemplate = "What questions should I explore based on my notes about ",
+                Category = "explore"
+            }
+        };
     }
 }
 

@@ -213,6 +213,15 @@ public class AgentController : ControllerBase
                         await Response.Body.FlushAsync(cancellationToken);
                         break;
 
+                    case AgentEventType.Status:
+                        var statusJson = JsonSerializer.Serialize(new
+                        {
+                            status = evt.Content
+                        });
+                        await Response.WriteAsync($"event: status\ndata: {statusJson}\n\n");
+                        await Response.Body.FlushAsync(cancellationToken);
+                        break;
+
                     case AgentEventType.Error:
                         await Response.WriteAsync($"event: error\ndata: {{\"error\":\"{evt.Content}\"}}\n\n");
                         await Response.Body.FlushAsync(cancellationToken);

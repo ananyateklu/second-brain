@@ -83,6 +83,7 @@ export function useChatConversationManager(
       model: selectedModel,
       ragEnabled: ragEnabled,
       agentEnabled: false,
+      imageGenerationEnabled: false,
       vectorStoreProvider: ragEnabled ? selectedVectorStore : undefined,
       messages: [],
       userId: user?.userId || DEFAULT_USER_ID,

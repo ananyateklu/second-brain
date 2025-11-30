@@ -12,6 +12,7 @@ export interface CombinedStreamingState {
   retrievedNotes: RagContextNote[];
   toolExecutions: ToolExecution[];
   thinkingSteps: ThinkingStep[];
+  processingStatus: string | null;
   inputTokens?: number;
   outputTokens?: number;
   streamDuration?: number;
@@ -64,6 +65,7 @@ export function useCombinedStreaming(agentModeEnabled: boolean) {
     retrievedNotes: agentModeEnabled ? [] : chatStream.retrievedNotes,
     toolExecutions: agentModeEnabled ? agentStream.toolExecutions : [],
     thinkingSteps: agentModeEnabled ? agentStream.thinkingSteps : [],
+    processingStatus: agentModeEnabled ? agentStream.processingStatus : null,
     inputTokens: agentModeEnabled ? agentStream.inputTokens : chatStream.inputTokens,
     outputTokens: agentModeEnabled ? agentStream.outputTokens : chatStream.outputTokens,
     streamDuration: agentModeEnabled ? agentStream.streamDuration : chatStream.streamDuration,

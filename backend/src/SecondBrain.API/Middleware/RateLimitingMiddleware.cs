@@ -19,31 +19,48 @@ public class RateLimitingMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<RateLimitingMiddleware> _logger;
-    
+    private readonly IWebHostEnvironment _environment;
+
     // Store request counts per IP with timestamps
     // NOTE: This static dictionary only works for single-instance deployments.
     // For multi-instance deployments, replace with IDistributedCache or Redis.
     private static readonly ConcurrentDictionary<string, RequestCounter> _requestCounts = new();
-    
+
     // Configuration - consider moving to appsettings.json for production
     private const int MaxRequestsPerMinute = 60;
     private const int MaxRequestsPer15Minutes = 300;
     private const int CleanupIntervalMinutes = 5;
-    
+
+    // Localhost/loopback addresses to skip rate limiting in development
+    private static readonly HashSet<string> LocalhostAddresses = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "127.0.0.1",
+        "::1",
+        "localhost"
+    };
+
     private static DateTime _lastCleanup = DateTime.UtcNow;
 
-    public RateLimitingMiddleware(RequestDelegate next, ILogger<RateLimitingMiddleware> logger)
+    public RateLimitingMiddleware(RequestDelegate next, ILogger<RateLimitingMiddleware> logger, IWebHostEnvironment environment)
     {
         _next = next;
         _logger = logger;
+        _environment = environment;
     }
 
     public async Task InvokeAsync(HttpContext context)
     {
         var ipAddress = GetClientIpAddress(context);
-        
+
         // Skip rate limiting for health checks
         if (context.Request.Path.StartsWithSegments("/api/health"))
+        {
+            await _next(context);
+            return;
+        }
+
+        // Skip rate limiting for localhost in development environment
+        if (_environment.IsDevelopment() && IsLocalhostAddress(ipAddress))
         {
             await _next(context);
             return;
@@ -57,30 +74,30 @@ public class RateLimitingMiddleware
         }
 
         var counter = _requestCounts.GetOrAdd(ipAddress, _ => new RequestCounter());
-        
+
         if (!counter.IsAllowed(MaxRequestsPerMinute, MaxRequestsPer15Minutes))
         {
             _logger.LogWarning("Rate limit exceeded for IP {IpAddress} on path {Path}", ipAddress, context.Request.Path);
-            
+
             context.Response.StatusCode = (int)HttpStatusCode.TooManyRequests;
             context.Response.Headers.Append("Retry-After", "60");
-            
+
             await context.Response.WriteAsJsonAsync(new
             {
                 error = "Rate limit exceeded",
                 message = "Too many requests. Please try again later.",
                 retryAfter = 60
             });
-            
+
             return;
         }
 
         counter.RecordRequest();
-        
+
         // Add rate limit headers
         context.Response.Headers.Append("X-RateLimit-Limit-Minute", MaxRequestsPerMinute.ToString());
         context.Response.Headers.Append("X-RateLimit-Limit-15Minutes", MaxRequestsPer15Minutes.ToString());
-        context.Response.Headers.Append("X-RateLimit-Remaining-Minute", 
+        context.Response.Headers.Append("X-RateLimit-Remaining-Minute",
             counter.GetRemainingRequests(MaxRequestsPerMinute, TimeSpan.FromMinutes(1)).ToString());
 
         await _next(context);
@@ -102,6 +119,11 @@ public class RateLimitingMiddleware
         }
 
         return context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+    }
+
+    private static bool IsLocalhostAddress(string ipAddress)
+    {
+        return LocalhostAddresses.Contains(ipAddress);
     }
 
     private static void CleanupOldEntries()
@@ -132,7 +154,7 @@ public class RateLimitingMiddleware
             {
                 _requests.Add(DateTime.UtcNow);
                 LastRequest = DateTime.UtcNow;
-                
+
                 // Clean up old requests
                 var cutoffTime = DateTime.UtcNow.AddMinutes(-15);
                 _requests.RemoveAll(r => r < cutoffTime);

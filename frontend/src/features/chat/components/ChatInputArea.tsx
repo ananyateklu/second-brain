@@ -18,10 +18,12 @@ import {
   QUALITY_OPTIONS,
   STYLE_OPTIONS,
 } from '../../../utils/image-generation-models';
-import { MessageImage, ImageGenerationResponse } from '../types/chat';
+import { MessageImage, ImageGenerationResponse, SuggestedPrompt } from '../types/chat';
 import { useNotes } from '../../notes/hooks/use-notes-query';
 import { Note } from '../../notes/types/note';
 import { ImageGenerationPanel } from './ImageGenerationPanel';
+import { chatService } from '../../../services/chat.service';
+import { STORAGE_KEYS } from '../../../lib/constants';
 
 export interface ImageGenerationParams {
   prompt: string;
@@ -56,45 +58,64 @@ export interface ChatInputAreaProps {
   onGenerateImage?: (params: ImageGenerationParams) => Promise<void>;
 }
 
-// Suggested prompts configuration
-const SUGGESTED_PROMPTS = [
+// Default suggested prompts configuration
+const DEFAULT_PROMPTS: SuggestedPrompt[] = [
   {
     id: 'summarize',
     label: 'Summarize my notes',
-    icon: (
-      <svg className="w-3.5 h-3.5" style={{ color: 'var(--color-brand-400)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-      </svg>
-    )
+    promptTemplate: 'Please summarize my notes on ',
+    category: 'summarize',
   },
   {
     id: 'connections',
     label: 'Find connections',
-    icon: (
-      <svg className="w-3.5 h-3.5" style={{ color: 'var(--color-brand-400)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-      </svg>
-    )
+    promptTemplate: 'What connections can you find between my notes about ',
+    category: 'explore',
   },
   {
     id: 'ideas',
     label: 'Generate ideas',
-    icon: (
-      <svg className="w-3.5 h-3.5" style={{ color: 'var(--color-brand-400)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-      </svg>
-    )
+    promptTemplate: 'Based on my notes, can you generate some ideas for ',
+    category: 'create',
   },
   {
     id: 'questions',
     label: 'Ask questions',
-    icon: (
-      <svg className="w-3.5 h-3.5" style={{ color: 'var(--color-brand-400)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    )
+    promptTemplate: 'What questions should I explore based on my notes about ',
+    category: 'explore',
   },
 ];
+
+// Get icon for prompt category
+const getCategoryIcon = (category: SuggestedPrompt['category']) => {
+  switch (category) {
+    case 'summarize':
+      return (
+        <svg className="w-3.5 h-3.5" style={{ color: 'var(--color-brand-400)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+      );
+    case 'analyze':
+      return (
+        <svg className="w-3.5 h-3.5" style={{ color: 'var(--color-brand-400)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+      );
+    case 'create':
+      return (
+        <svg className="w-3.5 h-3.5" style={{ color: 'var(--color-brand-400)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+        </svg>
+      );
+    case 'explore':
+    default:
+      return (
+        <svg className="w-3.5 h-3.5" style={{ color: 'var(--color-brand-400)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      );
+  }
+};
 
 // File type icons
 const FILE_ICONS: Record<string, JSX.Element> = {
@@ -157,17 +178,74 @@ export function ChatInputArea({
   const [showImageGenPanel, setShowImageGenPanel] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [imageGenError, setImageGenError] = useState<string | null>(null);
-  
+
   // Image generation settings (for inline mode)
   const [imageSize, setImageSize] = useState('1024x1024');
   const [imageQuality, setImageQuality] = useState('standard');
   const [imageStyle, setImageStyle] = useState('vivid');
+
+  // Smart prompts state
+  const [smartPrompts, setSmartPrompts] = useState<SuggestedPrompt[] | null>(null);
+  const [isLoadingPrompts, setIsLoadingPrompts] = useState(false);
+  const [promptsGenerated, setPromptsGenerated] = useState(false);
+  const [showSmartPrompts, setShowSmartPrompts] = useState(true);
 
   // Check if current provider supports image generation
   const supportsImageGeneration = useMemo(() => {
     if (!provider) return false;
     return isImageGenerationProvider(provider);
   }, [provider]);
+
+  // Load cached smart prompts from sessionStorage on mount
+  useEffect(() => {
+    try {
+      const cached = sessionStorage.getItem(STORAGE_KEYS.SUGGESTED_PROMPTS);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed.prompts && Array.isArray(parsed.prompts) && parsed.prompts.length > 0) {
+          setSmartPrompts(parsed.prompts);
+          setPromptsGenerated(true);
+        }
+      }
+    } catch {
+      // Ignore parsing errors
+    }
+  }, []);
+
+  // Generate smart prompts
+  const handleGenerateSmartPrompts = useCallback(async () => {
+    if (isLoadingPrompts) return;
+
+    setIsLoadingPrompts(true);
+    try {
+      const response = await chatService.generateSuggestedPrompts({
+        provider,
+        model,
+      });
+
+      if (response.success && response.prompts.length > 0) {
+        setSmartPrompts(response.prompts);
+        setPromptsGenerated(true);
+        // Cache in sessionStorage
+        try {
+          sessionStorage.setItem(
+            STORAGE_KEYS.SUGGESTED_PROMPTS,
+            JSON.stringify({ prompts: response.prompts, timestamp: Date.now() })
+          );
+        } catch {
+          // Ignore storage errors
+        }
+      }
+    } catch (error) {
+      console.error('Failed to generate smart prompts:', { error });
+      // Keep using default prompts on error
+    } finally {
+      setIsLoadingPrompts(false);
+    }
+  }, [isLoadingPrompts, provider, model]);
+
+  // Get current prompts to display
+  const displayPrompts = smartPrompts || DEFAULT_PROMPTS;
 
   // Get current image model info for inline settings
   const currentImageModelInfo = useMemo(() => {
@@ -507,14 +585,8 @@ export function ChatInputArea({
   }, [value, onChange]);
 
   // Handle suggested prompt click
-  const handlePromptClick = useCallback((promptId: string) => {
-    const prompts: Record<string, string> = {
-      summarize: 'Please summarize my notes on ',
-      connections: 'What connections can you find between my notes about ',
-      ideas: 'Based on my notes, can you generate some ideas for ',
-      questions: 'What questions should I explore based on my notes about ',
-    };
-    onChange(prompts[promptId] || '');
+  const handlePromptClick = useCallback((prompt: SuggestedPrompt) => {
+    onChange(prompt.promptTemplate);
     textareaRef.current?.focus();
   }, [onChange]);
 
@@ -548,24 +620,74 @@ export function ChatInputArea({
     >
       <div className="max-w-3xl mx-auto">
         {/* Suggested Prompts - Only show when input is empty AND agent mode + notes capability are enabled AND not in image mode */}
-        {!isImageGenerationMode && !value.trim() && !attachedFiles.length && !disabled && agentModeEnabled && notesCapabilityEnabled && (
-          <div className="mb-3 flex flex-wrap gap-2 justify-center">
-            {SUGGESTED_PROMPTS.map((prompt, index) => (
+        {!isImageGenerationMode && !value.trim() && !attachedFiles.length && !disabled && agentModeEnabled && notesCapabilityEnabled && showSmartPrompts && (
+          <div className="mb-3 flex flex-col items-center gap-2">
+            {/* Generate Smart Prompts Button with Close Button */}
+            <div className="flex items-center gap-2">
               <button
-                key={prompt.id}
-                onClick={() => handlePromptClick(prompt.id)}
-                className="prompt-chip px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-1.5"
+                onClick={handleGenerateSmartPrompts}
+                disabled={isLoadingPrompts}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
-                  '--chip-index': index,
-                  backgroundColor: 'var(--surface-elevated)',
-                  color: 'var(--text-secondary)',
-                  border: '1px solid var(--border)',
-                } as React.CSSProperties}
+                  backgroundColor: promptsGenerated ? 'var(--surface-card)' : 'var(--color-primary-alpha)',
+                  color: promptsGenerated ? 'var(--text-secondary)' : 'var(--color-brand-400)',
+                  border: promptsGenerated ? '1px solid var(--border)' : '1px solid var(--color-brand-400)',
+                }}
               >
-                {prompt.icon}
-                {prompt.label}
+                {isLoadingPrompts ? (
+                  <>
+                    <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    <span>Generating...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                    </svg>
+                    <span>{promptsGenerated ? 'Regenerate Smart Prompts' : 'Generate Smart Prompts'}</span>
+                  </>
+                )}
               </button>
-            ))}
+              <button
+                onClick={() => setShowSmartPrompts(false)}
+                className="p-1.5 rounded-lg transition-all duration-200 hover:scale-110 active:scale-95 flex items-center justify-center"
+                style={{
+                  color: 'var(--text-tertiary)',
+                  backgroundColor: 'transparent',
+                }}
+                title="Close smart prompts"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Prompt Chips */}
+            <div className="flex flex-wrap gap-2 justify-center">
+              {displayPrompts.map((prompt, index) => (
+                <button
+                  key={prompt.id}
+                  onClick={() => handlePromptClick(prompt)}
+                  className="prompt-chip px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-1.5 max-w-xs truncate"
+                  style={{
+                    '--chip-index': index,
+                    backgroundColor: smartPrompts
+                      ? 'color-mix(in srgb, var(--color-brand-600) 30%, var(--surface-card-solid))'
+                      : 'var(--surface-elevated)',
+                    color: smartPrompts ? 'var(--color-brand-400)' : 'var(--text-secondary)',
+                    border: smartPrompts ? '1px solid var(--color-brand-400)' : '1px solid var(--border)',
+                  } as React.CSSProperties}
+                  title={prompt.promptTemplate}
+                >
+                  {getCategoryIcon(prompt.category)}
+                  <span className="truncate">{prompt.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -1055,6 +1177,24 @@ export function ChatInputArea({
               </button>
             )}
 
+            {/* Smart Prompts Toggle - Show when prompts are closed and conditions are met */}
+            {!isImageGenerationMode && !showSmartPrompts && !value.trim() && !attachedFiles.length && !disabled && agentModeEnabled && notesCapabilityEnabled && (
+              <button
+                onClick={() => setShowSmartPrompts(true)}
+                disabled={isLoading || disabled}
+                className="flex-shrink-0 p-2 rounded-xl transition-all duration-200 hover:scale-110 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  color: 'var(--text-tertiary)',
+                  backgroundColor: 'transparent',
+                }}
+                title="Show smart prompts"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                </svg>
+              </button>
+            )}
+
             {/* Image Generation Toggle - only show for providers that support it when NOT in image model mode */}
             {!isImageGenerationMode && supportsImageGeneration && conversationId && (
               <button
@@ -1098,12 +1238,11 @@ export function ChatInputArea({
                 }
                 disabled={isLoading || disabled || isGeneratingImage}
                 rows={1}
-                className="w-full resize-none outline-none text-sm leading-relaxed placeholder:opacity-50"
+                className="w-full resize-none outline-none text-sm leading-relaxed placeholder:opacity-50 overflow-hidden"
                 style={{
                   backgroundColor: 'transparent',
                   color: 'var(--text-primary)',
                   minHeight: '24px',
-                  maxHeight: '200px',
                 }}
                 onInput={(e) => {
                   const target = e.target as HTMLTextAreaElement;

@@ -200,7 +200,7 @@ export function useToastContext() {
 // Store reference to context functions for use outside React components
 let toastContextRef: ToastContextValue | null = null;
 
-export function setToastContextRef(context: ToastContextValue) {
+export function setToastContextRef(context: ToastContextValue | null) {
   toastContextRef = context;
 }
 

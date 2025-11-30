@@ -16,6 +16,8 @@ import type {
   ImageGenerationResponse,
   ImageProviderInfo,
   StreamingCallbacks,
+  GenerateSuggestedPromptsRequest,
+  SuggestedPromptsResponse,
 } from '../types/chat';
 import type { RagContextNote } from '../types/rag';
 
@@ -268,6 +270,22 @@ export const chatService = {
    */
   async getImageGenerationSizes(provider: string, model?: string): Promise<string[]> {
     return apiClient.get<string[]>(API_ENDPOINTS.CHAT.IMAGE_SIZES(provider, model));
+  },
+
+  // ============================================
+  // Suggested Prompts
+  // ============================================
+
+  /**
+   * Generate AI-powered suggested prompts based on user's notes
+   */
+  async generateSuggestedPrompts(
+    request: GenerateSuggestedPromptsRequest = {}
+  ): Promise<SuggestedPromptsResponse> {
+    return apiClient.post<SuggestedPromptsResponse>(
+      API_ENDPOINTS.CHAT.SUGGESTED_PROMPTS,
+      request
+    );
   },
 
   // ============================================

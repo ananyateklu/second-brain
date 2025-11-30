@@ -59,6 +59,7 @@ export function useAgentStream() {
   const [streamingError, setStreamingError] = useState<Error | null>(null);
   const [toolExecutions, setToolExecutions] = useState<ToolExecution[]>([]);
   const [thinkingSteps, setThinkingSteps] = useState<ThinkingStep[]>([]);
+  const [processingStatus, setProcessingStatus] = useState<string | null>(null);
   const [inputTokens, setInputTokens] = useState<number | undefined>(undefined);
   const [outputTokens, setOutputTokens] = useState<number | undefined>(undefined);
   const [streamDuration, setStreamDuration] = useState<number | undefined>(undefined);
@@ -74,6 +75,7 @@ export function useAgentStream() {
       setStreamingError(null);
       setToolExecutions([]);
       setThinkingSteps([]);
+      setProcessingStatus(null);
       completeThinkingBlocksRef.current.clear();
 
       // Calculate input tokens for the user's message
@@ -300,6 +302,17 @@ export function useAgentStream() {
                 }
                 break;
 
+              case 'status':
+                if (data) {
+                  try {
+                    const statusData = JSON.parse(data);
+                    setProcessingStatus(statusData.status);
+                  } catch (e) {
+                    console.error('Failed to parse status data:', e);
+                  }
+                }
+                break;
+
               case 'end':
                 if (streamStartTimeRef.current) {
                   const duration = Date.now() - streamStartTimeRef.current;
@@ -308,6 +321,7 @@ export function useAgentStream() {
                 }
 
                 setIsStreaming(false);
+                setProcessingStatus(null);
 
                 setTimeout(() => {
                   queryClient.invalidateQueries({ queryKey: ['conversation', conversationId] });
@@ -345,6 +359,7 @@ export function useAgentStream() {
           setStreamingError(new Error('Unknown error occurred during agent streaming'));
         }
         setIsStreaming(false);
+        setProcessingStatus(null);
       } finally {
         abortControllerRef.current = null;
       }
@@ -371,6 +386,7 @@ export function useAgentStream() {
     // setInputTokens(undefined);
     // setOutputTokens(undefined);
     setStreamDuration(undefined);
+    setProcessingStatus(null);
     setIsStreaming(false);
     streamStartTimeRef.current = null;
     completeThinkingBlocksRef.current.clear();
@@ -383,6 +399,7 @@ export function useAgentStream() {
     streamingError,
     toolExecutions,
     thinkingSteps,
+    processingStatus,
     inputTokens,
     outputTokens,
     streamDuration,

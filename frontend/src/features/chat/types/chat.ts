@@ -19,4 +19,5 @@ export type {
   StreamingCallbacks,
   StreamEndData,
   CombinedStreamingState,
+  SuggestedPrompt,
 } from '../../../types/chat';

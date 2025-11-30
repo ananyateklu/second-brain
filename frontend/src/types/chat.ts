@@ -212,3 +212,49 @@ export interface CombinedStreamingState {
   streamDuration?: number;
 }
 
+// ============================================
+// Suggested Prompts Types
+// ============================================
+
+/**
+ * Request to generate AI-powered suggested prompts
+ */
+export interface GenerateSuggestedPromptsRequest {
+  /** The AI provider to use for generating prompts */
+  provider?: string;
+  /** The model to use for generating prompts */
+  model?: string;
+  /** Number of prompts to generate (default: 4) */
+  count?: number;
+}
+
+/**
+ * A single suggested prompt
+ */
+export interface SuggestedPrompt {
+  /** Unique identifier for the prompt */
+  id: string;
+  /** Short label displayed on the prompt chip */
+  label: string;
+  /** Full prompt template that will be inserted when clicked */
+  promptTemplate: string;
+  /** Category/icon type for the prompt */
+  category: 'summarize' | 'analyze' | 'create' | 'explore';
+}
+
+/**
+ * Response from generating suggested prompts
+ */
+export interface SuggestedPromptsResponse {
+  /** Whether the generation was successful */
+  success: boolean;
+  /** List of generated prompt suggestions */
+  prompts: SuggestedPrompt[];
+  /** Error message if generation failed */
+  error?: string;
+  /** The provider used for generation */
+  provider: string;
+  /** The model used for generation */
+  model: string;
+}
+

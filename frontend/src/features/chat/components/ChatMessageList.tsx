@@ -25,6 +25,7 @@ export interface ChatMessageListProps {
   retrievedNotes: RagContextNote[];
   toolExecutions: ToolExecution[];
   thinkingSteps: ThinkingStep[];
+  processingStatus?: string | null;
   inputTokens?: number;
   outputTokens?: number;
   streamDuration?: number;
@@ -53,6 +54,7 @@ export function ChatMessageList({
   retrievedNotes,
   toolExecutions,
   thinkingSteps,
+  processingStatus,
   inputTokens,
   outputTokens,
   streamDuration,
@@ -150,6 +152,7 @@ export function ChatMessageList({
                 agentModeEnabled={agentModeEnabled}
                 thinkingSteps={thinkingSteps}
                 toolExecutions={toolExecutions}
+                processingStatus={processingStatus}
                 retrievedNotes={retrievedNotes}
               />
             )}

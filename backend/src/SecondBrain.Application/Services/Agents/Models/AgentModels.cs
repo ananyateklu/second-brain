@@ -63,6 +63,7 @@ public enum AgentEventType
     ToolCallStart,
     ToolCallEnd,
     Thinking,
+    Status,
     Error,
     End
 }

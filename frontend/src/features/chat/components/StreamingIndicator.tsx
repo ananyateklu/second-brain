@@ -18,6 +18,7 @@ export interface StreamingIndicatorProps {
   agentModeEnabled?: boolean;
   thinkingSteps?: ThinkingStep[];
   toolExecutions?: ToolExecution[];
+  processingStatus?: string | null;
   retrievedNotes?: RagContextNote[];
 }
 
@@ -34,6 +35,7 @@ export function StreamingIndicator({
   agentModeEnabled = false,
   thinkingSteps = [],
   toolExecutions = [],
+  processingStatus = null,
   retrievedNotes = [],
 }: StreamingIndicatorProps) {
   const hasSteps = thinkingSteps.length > 0 || toolExecutions.length > 0;
@@ -56,8 +58,8 @@ export function StreamingIndicator({
         </ProcessTimeline>
       )}
 
-      {/* Show thinking/loading indicator only when streaming but no message content yet (agent mode only) */}
-      {agentModeEnabled && isStreaming && !streamingMessage && !hasSteps && (
+      {/* Show processing status indicator when streaming (agent mode only) */}
+      {agentModeEnabled && isStreaming && processingStatus && !streamingMessage && !hasSteps && (
         <div className="flex justify-start">
           <div
             className="w-full rounded-2xl rounded-bl-md px-5 py-3"
@@ -66,16 +68,57 @@ export function StreamingIndicator({
               color: 'var(--text-primary)',
             }}
           >
-            <span className="text-sm italic" style={{ color: 'var(--text-secondary)' }}>
-              Agent thinking...
-            </span>
-            <span
-              className="inline-block w-2 h-4 ml-1 animate-pulse"
-              style={{
-                backgroundColor: 'var(--btn-primary-bg)',
-                verticalAlign: 'middle',
-              }}
-            />
+            <div className="flex items-center gap-3">
+              {/* Animated spinner */}
+              <div className="relative w-5 h-5 flex-shrink-0">
+                <div
+                  className="absolute inset-0 rounded-full border-2 border-transparent animate-spin"
+                  style={{
+                    borderTopColor: 'var(--color-brand-500)',
+                    borderRightColor: 'var(--color-brand-500)',
+                  }}
+                />
+                <div
+                  className="absolute inset-1 rounded-full"
+                  style={{ backgroundColor: 'var(--surface-card)' }}
+                />
+              </div>
+              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                {processingStatus}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Fallback loading indicator when streaming but no status yet */}
+      {agentModeEnabled && isStreaming && !processingStatus && !streamingMessage && !hasSteps && (
+        <div className="flex justify-start">
+          <div
+            className="w-full rounded-2xl rounded-bl-md px-5 py-3"
+            style={{
+              backgroundColor: 'var(--surface-card)',
+              color: 'var(--text-primary)',
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="relative w-5 h-5 flex-shrink-0">
+                <div
+                  className="absolute inset-0 rounded-full border-2 border-transparent animate-spin"
+                  style={{
+                    borderTopColor: 'var(--color-brand-500)',
+                    borderRightColor: 'var(--color-brand-500)',
+                  }}
+                />
+                <div
+                  className="absolute inset-1 rounded-full"
+                  style={{ backgroundColor: 'var(--surface-card)' }}
+                />
+              </div>
+              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                Agent thinking...
+              </span>
+            </div>
           </div>
         </div>
       )}
@@ -90,6 +133,26 @@ export function StreamingIndicator({
               color: 'var(--text-primary)',
             }}
           >
+            {/* Show inline status bar when there's content AND a processing status (e.g., after tool execution) */}
+            {agentModeEnabled && isStreaming && processingStatus && processingStatus !== 'Generating response...' && (
+              <div
+                className="flex items-center gap-2 mb-3 pb-3"
+                style={{ borderBottom: '1px solid var(--border)' }}
+              >
+                <div className="relative w-4 h-4 flex-shrink-0">
+                  <div
+                    className="absolute inset-0 rounded-full border-2 border-transparent animate-spin"
+                    style={{
+                      borderTopColor: 'var(--color-brand-500)',
+                      borderRightColor: 'var(--color-brand-500)',
+                    }}
+                  />
+                </div>
+                <span className="text-xs font-medium" style={{ color: 'var(--color-brand-500)' }}>
+                  {processingStatus}
+                </span>
+              </div>
+            )}
             <div>
               <MarkdownMessage
                 content={agentModeEnabled ? stripThinkingTags(streamingMessage) : streamingMessage}

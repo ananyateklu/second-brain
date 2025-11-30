@@ -54,6 +54,7 @@ export function ChatPage() {
     retrievedNotes,
     toolExecutions,
     thinkingSteps,
+    processingStatus,
     inputTokens,
     outputTokens,
     streamDuration,
@@ -144,6 +145,7 @@ export function ChatPage() {
           retrievedNotes={retrievedNotes}
           toolExecutions={toolExecutions}
           thinkingSteps={thinkingSteps}
+          processingStatus={processingStatus}
           inputTokens={inputTokens}
           outputTokens={outputTokens}
           streamDuration={streamDuration}

@@ -92,6 +92,13 @@ public class AgentService : IAgentService
         _logger.LogInformation("Processing agent request. Provider: {Provider}, Model: {Model}, UserId: {UserId}",
             request.Provider, request.Model, request.UserId);
 
+        // Emit initial status
+        yield return new AgentStreamEvent
+        {
+            Type = AgentEventType.Status,
+            Content = "Initializing agent..."
+        };
+
         // Use native Claude tool calling for Anthropic provider
         var isAnthropic = request.Provider.Equals("claude", StringComparison.OrdinalIgnoreCase) ||
                          request.Provider.Equals("anthropic", StringComparison.OrdinalIgnoreCase);
@@ -103,6 +110,17 @@ public class AgentService : IAgentService
                 yield return evt;
             }
             yield break;
+        }
+
+        // Emit status for preparing tools
+        var hasCapabilities = request.Capabilities != null && request.Capabilities.Count > 0;
+        if (hasCapabilities)
+        {
+            yield return new AgentStreamEvent
+            {
+                Type = AgentEventType.Status,
+                Content = "Preparing tools..."
+            };
         }
 
         // Use Semantic Kernel for other providers
@@ -128,6 +146,13 @@ public class AgentService : IAgentService
             };
             yield break;
         }
+
+        // Emit status for building context
+        yield return new AgentStreamEvent
+        {
+            Type = AgentEventType.Status,
+            Content = "Building conversation context..."
+        };
 
         var chatHistory = new ChatHistory();
         chatHistory.AddSystemMessage(GetSystemPrompt(request.Capabilities));
@@ -191,6 +216,14 @@ public class AgentService : IAgentService
         var fullResponse = new StringBuilder();
         var emittedToolCalls = new HashSet<string>(); // Track which tool calls we've already emitted
         var emittedThinkingBlocks = new HashSet<string>();
+        var hasEmittedFirstToken = false;
+
+        // Emit status for calling the model
+        yield return new AgentStreamEvent
+        {
+            Type = AgentEventType.Status,
+            Content = $"Calling {request.Provider} model..."
+        };
 
         await foreach (var update in chatService.GetStreamingChatMessageContentsAsync(
             chatHistory, settings, kernel, cancellationToken))
@@ -198,6 +231,17 @@ public class AgentService : IAgentService
             if (cancellationToken.IsCancellationRequested)
             {
                 yield break;
+            }
+
+            // Emit "Generating response..." status on first content
+            if (!hasEmittedFirstToken && !string.IsNullOrEmpty(update.Content))
+            {
+                hasEmittedFirstToken = true;
+                yield return new AgentStreamEvent
+                {
+                    Type = AgentEventType.Status,
+                    Content = "Generating response..."
+                };
             }
 
             // Check for completed function invocations from our filter
@@ -354,8 +398,14 @@ public class AgentService : IAgentService
         var tools = new List<Anthropic.SDK.Common.Tool>();
         var pluginMethods = new Dictionary<string, (IAgentPlugin Plugin, MethodInfo Method)>();
 
+        // Emit status for preparing tools if capabilities are enabled
         if (request.Capabilities != null && request.Capabilities.Count > 0)
         {
+            yield return new AgentStreamEvent
+            {
+                Type = AgentEventType.Status,
+                Content = "Preparing tools..."
+            };
             foreach (var capabilityId in request.Capabilities)
             {
                 if (_plugins.TryGetValue(capabilityId, out var plugin))
@@ -418,6 +468,13 @@ public class AgentService : IAgentService
             }
         }
 
+        // Emit status for building context
+        yield return new AgentStreamEvent
+        {
+            Type = AgentEventType.Status,
+            Content = "Building conversation context..."
+        };
+
         // Build message history
         var messages = new List<Anthropic.SDK.Messaging.Message>();
 
@@ -460,6 +517,24 @@ public class AgentService : IAgentService
 
         for (int iteration = 0; iteration < maxIterations; iteration++)
         {
+            // Emit status for calling the model
+            if (iteration == 0)
+            {
+                yield return new AgentStreamEvent
+                {
+                    Type = AgentEventType.Status,
+                    Content = "Calling Claude model..."
+                };
+            }
+            else
+            {
+                yield return new AgentStreamEvent
+                {
+                    Type = AgentEventType.Status,
+                    Content = "Processing tool results..."
+                };
+            }
+
             var parameters = new MessageParameters
             {
                 Model = request.Model,
@@ -503,6 +578,17 @@ public class AgentService : IAgentService
             // Process the response content
             if (response?.Content != null)
             {
+                // Emit status that we're now generating the response
+                var hasTextContent = response.Content.Any(c => c is Anthropic.SDK.Messaging.TextContent tc && !string.IsNullOrEmpty(tc.Text));
+                if (hasTextContent)
+                {
+                    yield return new AgentStreamEvent
+                    {
+                        Type = AgentEventType.Status,
+                        Content = "Generating response..."
+                    };
+                }
+
                 foreach (var content in response.Content)
                 {
                     if (content is Anthropic.SDK.Messaging.TextContent textContent)
@@ -548,6 +634,13 @@ public class AgentService : IAgentService
                 var toolUseBlocks = response.Content.OfType<ToolUseContent>().ToList();
                 if (toolUseBlocks.Any())
                 {
+                    // Emit status for executing tools
+                    yield return new AgentStreamEvent
+                    {
+                        Type = AgentEventType.Status,
+                        Content = $"Executing {toolUseBlocks.Count} tool{(toolUseBlocks.Count > 1 ? "s" : "")}..."
+                    };
+
                     // Add assistant message with tool use to history
                     var assistantMsg = new Anthropic.SDK.Messaging.Message
                     {
@@ -751,8 +844,8 @@ public class AgentService : IAgentService
                     throw new InvalidOperationException("Ollama provider is not enabled");
 
                 // Use override URL if provided, otherwise use default from settings
-                var effectiveOllamaUrl = !string.IsNullOrWhiteSpace(ollamaBaseUrl) 
-                    ? ollamaBaseUrl.TrimEnd('/') 
+                var effectiveOllamaUrl = !string.IsNullOrWhiteSpace(ollamaBaseUrl)
+                    ? ollamaBaseUrl.TrimEnd('/')
                     : _settings.Ollama.BaseUrl;
 
                 // Ollama can use OpenAI-compatible endpoint

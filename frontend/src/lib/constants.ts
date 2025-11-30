@@ -52,6 +52,7 @@ export const API_ENDPOINTS = {
       const base = `/chat/image-generation/providers/${provider}/sizes`;
       return model ? `${base}?model=${encodeURIComponent(model)}` : base;
     },
+    SUGGESTED_PROMPTS: '/chat/suggested-prompts',
   },
 
   // AI
@@ -231,6 +232,7 @@ export const STORAGE_KEYS = {
   THEME: 'second-brain-theme',
   UI_STATE: 'second-brain-ui',
   OLLAMA_DOWNLOADS: 'ollama-downloads',
+  SUGGESTED_PROMPTS: 'suggested-prompts-cache',
 } as const;
 
 /**

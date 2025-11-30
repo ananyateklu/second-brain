@@ -3,7 +3,7 @@ import { useNotes } from '../../notes/hooks/use-notes-query';
 import { useAIStats } from '../../stats/hooks/use-stats';
 import { calculateStats, getChartData, getChatUsageChartData } from '../../../utils/stats-utils';
 import { formatModelName } from '../../../utils/model-name-formatter';
-import { format, parse, subDays, startOfDay, isBefore } from 'date-fns';
+import { parse, subDays, startOfDay, isBefore } from 'date-fns';
 import {
   getThemeColors,
   getRagChartColor,
