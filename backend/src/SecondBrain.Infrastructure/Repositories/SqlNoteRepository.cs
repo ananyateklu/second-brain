@@ -59,37 +59,37 @@ public class SqlNoteRepository : INoteRepository
 
     public async Task<Note> CreateAsync(Note note)
     {
+        _logger.LogDebug("Creating new note. NoteTitle: {NoteTitle}, UserId: {UserId}", note.Title, note.UserId);
+
+        // Validate required fields (outside try-catch so validation exceptions bubble up directly)
+        if (string.IsNullOrWhiteSpace(note.Content))
+        {
+            throw new ArgumentException("Note content cannot be null or empty", nameof(note));
+        }
+
+        if (string.IsNullOrWhiteSpace(note.Title))
+        {
+            throw new ArgumentException("Note title cannot be null or empty", nameof(note));
+        }
+
+        if (string.IsNullOrEmpty(note.Id))
+        {
+            note.Id = Guid.NewGuid().ToString();
+        }
+
+        // Only set timestamps if they haven't been explicitly provided (e.g., for imports)
+        var now = DateTime.UtcNow;
+        if (note.CreatedAt == default || Math.Abs((note.CreatedAt - now).TotalSeconds) < 1)
+        {
+            note.CreatedAt = now;
+        }
+        if (note.UpdatedAt == default || Math.Abs((note.UpdatedAt - now).TotalSeconds) < 1)
+        {
+            note.UpdatedAt = now;
+        }
+
         try
         {
-            _logger.LogDebug("Creating new note. NoteTitle: {NoteTitle}, UserId: {UserId}", note.Title, note.UserId);
-
-            // Validate required fields
-            if (string.IsNullOrWhiteSpace(note.Content))
-            {
-                throw new ArgumentException("Note content cannot be null or empty", nameof(note));
-            }
-
-            if (string.IsNullOrWhiteSpace(note.Title))
-            {
-                throw new ArgumentException("Note title cannot be null or empty", nameof(note));
-            }
-
-            if (string.IsNullOrEmpty(note.Id))
-            {
-                note.Id = Guid.NewGuid().ToString();
-            }
-
-            // Only set timestamps if they haven't been explicitly provided (e.g., for imports)
-            var now = DateTime.UtcNow;
-            if (note.CreatedAt == default || Math.Abs((note.CreatedAt - now).TotalSeconds) < 1)
-            {
-                note.CreatedAt = now;
-            }
-            if (note.UpdatedAt == default || Math.Abs((note.UpdatedAt - now).TotalSeconds) < 1)
-            {
-                note.UpdatedAt = now;
-            }
-
             _context.Notes.Add(note);
             await _context.SaveChangesAsync();
 
