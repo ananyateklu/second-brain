@@ -14,6 +14,10 @@ public class RagServiceTests
 {
     private readonly Mock<IEmbeddingProviderFactory> _mockEmbeddingProviderFactory;
     private readonly Mock<IVectorStore> _mockVectorStore;
+    private readonly Mock<IHybridSearchService> _mockHybridSearchService;
+    private readonly Mock<IQueryExpansionService> _mockQueryExpansionService;
+    private readonly Mock<IRerankerService> _mockRerankerService;
+    private readonly Mock<IRagAnalyticsService> _mockRagAnalyticsService;
     private readonly Mock<IEmbeddingProvider> _mockEmbeddingProvider;
     private readonly Mock<ILogger<RagService>> _mockLogger;
     private readonly RagSettings _ragSettings;
@@ -23,6 +27,10 @@ public class RagServiceTests
     {
         _mockEmbeddingProviderFactory = new Mock<IEmbeddingProviderFactory>();
         _mockVectorStore = new Mock<IVectorStore>();
+        _mockHybridSearchService = new Mock<IHybridSearchService>();
+        _mockQueryExpansionService = new Mock<IQueryExpansionService>();
+        _mockRerankerService = new Mock<IRerankerService>();
+        _mockRagAnalyticsService = new Mock<IRagAnalyticsService>();
         _mockEmbeddingProvider = new Mock<IEmbeddingProvider>();
         _mockLogger = new Mock<ILogger<RagService>>();
 
@@ -43,6 +51,10 @@ public class RagServiceTests
         _sut = new RagService(
             _mockEmbeddingProviderFactory.Object,
             _mockVectorStore.Object,
+            _mockHybridSearchService.Object,
+            _mockQueryExpansionService.Object,
+            _mockRerankerService.Object,
+            _mockRagAnalyticsService.Object,
             options,
             _mockLogger.Object
         );
@@ -57,23 +69,80 @@ public class RagServiceTests
         var userId = "user-123";
         var query = "How do I implement authentication?";
         var embedding = new List<double> { 0.1, 0.2, 0.3 };
-        var searchResults = new List<VectorSearchResult>
+        
+        var expandedEmbeddings = new ExpandedQueryEmbeddings
         {
-            CreateSearchResult("note-1", "Auth Implementation", 0.95f),
-            CreateSearchResult("note-2", "Security Best Practices", 0.85f)
+            OriginalQuery = query,
+            OriginalEmbedding = embedding,
+            TotalTokensUsed = 10
         };
 
-        _mockEmbeddingProvider.Setup(p => p.GenerateEmbeddingAsync(query, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new EmbeddingResponse
+        var hybridResults = new List<HybridSearchResult>
+        {
+            new HybridSearchResult
             {
-                Success = true,
-                Embedding = embedding,
-                TokensUsed = 10
-            });
+                Id = "embedding-note-1",
+                NoteId = "note-1",
+                NoteTitle = "Auth Implementation",
+                Content = "Title: Auth Implementation\n\nThis is the content of Auth Implementation.",
+                NoteTags = new List<string> { "test" },
+                ChunkIndex = 0,
+                VectorScore = 0.95f,
+                RRFScore = 0.95f
+            },
+            new HybridSearchResult
+            {
+                Id = "embedding-note-2",
+                NoteId = "note-2",
+                NoteTitle = "Security Best Practices",
+                Content = "Title: Security Best Practices\n\nThis is the content of Security Best Practices.",
+                NoteTags = new List<string> { "test" },
+                ChunkIndex = 0,
+                VectorScore = 0.85f,
+                RRFScore = 0.85f
+            }
+        };
 
-        _mockVectorStore.Setup(v => v.SearchAsync(
-                embedding, userId, _ragSettings.TopK, _ragSettings.SimilarityThreshold, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(searchResults);
+        var rerankedResults = new List<RerankedResult>
+        {
+            new RerankedResult
+            {
+                Id = "embedding-note-1",
+                NoteId = "note-1",
+                NoteTitle = "Auth Implementation",
+                Content = "Title: Auth Implementation\n\nThis is the content of Auth Implementation.",
+                NoteTags = new List<string> { "test" },
+                ChunkIndex = 0,
+                VectorScore = 0.95f,
+                RRFScore = 0.95f,
+                RelevanceScore = 9.5f,
+                FinalScore = 0.95f
+            },
+            new RerankedResult
+            {
+                Id = "embedding-note-2",
+                NoteId = "note-2",
+                NoteTitle = "Security Best Practices",
+                Content = "Title: Security Best Practices\n\nThis is the content of Security Best Practices.",
+                NoteTags = new List<string> { "test" },
+                ChunkIndex = 0,
+                VectorScore = 0.85f,
+                RRFScore = 0.85f,
+                RelevanceScore = 8.5f,
+                FinalScore = 0.85f
+            }
+        };
+
+        _mockQueryExpansionService.Setup(s => s.GetExpandedQueryEmbeddingsAsync(query, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expandedEmbeddings);
+
+        _mockHybridSearchService.Setup(s => s.SearchAsync(
+                query, embedding, userId, It.IsAny<int>(), It.IsAny<float>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(hybridResults);
+
+        _mockRerankerService.Setup(s => s.RerankAsync(
+                query, It.IsAny<List<HybridSearchResult>>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(rerankedResults);
 
         // Act
         var result = await _sut.RetrieveContextAsync(query, userId);
@@ -92,13 +161,15 @@ public class RagServiceTests
         var userId = "user-123";
         var query = "Test query";
 
-        _mockEmbeddingProvider.Setup(p => p.GenerateEmbeddingAsync(query, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new EmbeddingResponse
-            {
-                Success = false,
-                Error = "API Error",
-                Embedding = new List<double>()
-            });
+        var expandedEmbeddings = new ExpandedQueryEmbeddings
+        {
+            OriginalQuery = query,
+            OriginalEmbedding = new List<double>(),
+            TotalTokensUsed = 0
+        };
+
+        _mockQueryExpansionService.Setup(s => s.GetExpandedQueryEmbeddingsAsync(query, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expandedEmbeddings);
 
         // Act
         var result = await _sut.RetrieveContextAsync(query, userId);
@@ -107,8 +178,8 @@ public class RagServiceTests
         result.Should().NotBeNull();
         result.RetrievedNotes.Should().BeEmpty();
         result.FormattedContext.Should().BeEmpty();
-        _mockVectorStore.Verify(v => v.SearchAsync(
-            It.IsAny<List<double>>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<float>(), It.IsAny<CancellationToken>()),
+        _mockHybridSearchService.Verify(s => s.SearchAsync(
+            It.IsAny<string>(), It.IsAny<List<double>>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<float>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -120,17 +191,19 @@ public class RagServiceTests
         var query = "Unrelated query with no matches";
         var embedding = new List<double> { 0.1, 0.2, 0.3 };
 
-        _mockEmbeddingProvider.Setup(p => p.GenerateEmbeddingAsync(query, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new EmbeddingResponse
-            {
-                Success = true,
-                Embedding = embedding,
-                TokensUsed = 5
-            });
+        var expandedEmbeddings = new ExpandedQueryEmbeddings
+        {
+            OriginalQuery = query,
+            OriginalEmbedding = embedding,
+            TotalTokensUsed = 5
+        };
 
-        _mockVectorStore.Setup(v => v.SearchAsync(
-                embedding, userId, It.IsAny<int>(), It.IsAny<float>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<VectorSearchResult>());
+        _mockQueryExpansionService.Setup(s => s.GetExpandedQueryEmbeddingsAsync(query, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expandedEmbeddings);
+
+        _mockHybridSearchService.Setup(s => s.SearchAsync(
+                query, embedding, userId, It.IsAny<int>(), It.IsAny<float>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<HybridSearchResult>());
 
         // Act
         var result = await _sut.RetrieveContextAsync(query, userId);
@@ -151,19 +224,30 @@ public class RagServiceTests
         var customThreshold = 0.5f;
         var embedding = new List<double> { 0.1 };
 
-        _mockEmbeddingProvider.Setup(p => p.GenerateEmbeddingAsync(query, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new EmbeddingResponse { Success = true, Embedding = embedding });
+        var expandedEmbeddings = new ExpandedQueryEmbeddings
+        {
+            OriginalQuery = query,
+            OriginalEmbedding = embedding,
+            TotalTokensUsed = 0
+        };
 
-        _mockVectorStore.Setup(v => v.SearchAsync(
-                embedding, userId, customTopK, customThreshold, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<VectorSearchResult>());
+        _mockQueryExpansionService.Setup(s => s.GetExpandedQueryEmbeddingsAsync(query, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expandedEmbeddings);
+
+        _mockHybridSearchService.Setup(s => s.SearchAsync(
+                query, embedding, userId, It.IsAny<int>(), customThreshold, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<HybridSearchResult>());
+
+        _mockRerankerService.Setup(s => s.RerankAsync(
+                query, It.IsAny<List<HybridSearchResult>>(), customTopK, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<RerankedResult>());
 
         // Act
         await _sut.RetrieveContextAsync(query, userId, topK: customTopK, similarityThreshold: customThreshold);
 
         // Assert
-        _mockVectorStore.Verify(v => v.SearchAsync(
-            embedding, userId, customTopK, customThreshold, It.IsAny<CancellationToken>()),
+        _mockHybridSearchService.Verify(s => s.SearchAsync(
+            query, embedding, userId, It.IsAny<int>(), customThreshold, It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -174,7 +258,7 @@ public class RagServiceTests
         var userId = "user-123";
         var query = "Test";
 
-        _mockEmbeddingProvider.Setup(p => p.GenerateEmbeddingAsync(query, It.IsAny<CancellationToken>()))
+        _mockQueryExpansionService.Setup(s => s.GetExpandedQueryEmbeddingsAsync(query, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Unexpected error"));
 
         // Act
@@ -193,17 +277,56 @@ public class RagServiceTests
         var userId = "user-123";
         var query = "Test";
         var embedding = new List<double> { 0.1 };
-        var searchResults = new List<VectorSearchResult>
+
+        var expandedEmbeddings = new ExpandedQueryEmbeddings
         {
-            CreateSearchResult("note-1", "High Relevance Note", 0.95f)
+            OriginalQuery = query,
+            OriginalEmbedding = embedding,
+            TotalTokensUsed = 0
         };
 
-        _mockEmbeddingProvider.Setup(p => p.GenerateEmbeddingAsync(query, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new EmbeddingResponse { Success = true, Embedding = embedding });
+        var hybridResults = new List<HybridSearchResult>
+        {
+            new HybridSearchResult
+            {
+                Id = "embedding-note-1",
+                NoteId = "note-1",
+                NoteTitle = "High Relevance Note",
+                Content = "Title: High Relevance Note\n\nThis is the content of High Relevance Note.",
+                NoteTags = new List<string> { "test" },
+                ChunkIndex = 0,
+                VectorScore = 0.95f,
+                RRFScore = 0.95f
+            }
+        };
 
-        _mockVectorStore.Setup(v => v.SearchAsync(
-                It.IsAny<List<double>>(), userId, It.IsAny<int>(), It.IsAny<float>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(searchResults);
+        var rerankedResults = new List<RerankedResult>
+        {
+            new RerankedResult
+            {
+                Id = "embedding-note-1",
+                NoteId = "note-1",
+                NoteTitle = "High Relevance Note",
+                Content = "Title: High Relevance Note\n\nThis is the content of High Relevance Note.",
+                NoteTags = new List<string> { "test" },
+                ChunkIndex = 0,
+                VectorScore = 0.95f,
+                RRFScore = 0.95f,
+                RelevanceScore = 9.5f,
+                FinalScore = 0.95f
+            }
+        };
+
+        _mockQueryExpansionService.Setup(s => s.GetExpandedQueryEmbeddingsAsync(query, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expandedEmbeddings);
+
+        _mockHybridSearchService.Setup(s => s.SearchAsync(
+                query, embedding, userId, It.IsAny<int>(), It.IsAny<float>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(hybridResults);
+
+        _mockRerankerService.Setup(s => s.RerankAsync(
+                query, It.IsAny<List<HybridSearchResult>>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(rerankedResults);
 
         // Act
         var result = await _sut.RetrieveContextAsync(query, userId);

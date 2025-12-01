@@ -736,6 +736,7 @@ public class NotesPluginTests
                 It.IsAny<int?>(),
                 It.IsAny<float?>(),
                 It.IsAny<string?>(),
+                It.IsAny<string?>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(ragContext);
 
@@ -764,6 +765,7 @@ public class NotesPluginTests
                 It.IsAny<int?>(),
                 It.IsAny<float?>(),
                 It.IsAny<string?>(),
+                It.IsAny<string?>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(ragContext);
         _mockNoteRepository.Setup(r => r.GetByIdAsync("note-id"))
@@ -785,6 +787,7 @@ public class NotesPluginTests
                 It.IsAny<string>(),
                 It.IsAny<int?>(),
                 It.IsAny<float?>(),
+                It.IsAny<string?>(),
                 It.IsAny<string?>(),
                 It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("RAG error"));

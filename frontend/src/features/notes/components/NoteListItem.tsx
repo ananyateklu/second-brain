@@ -14,29 +14,6 @@ interface NoteListItemProps {
   onSelect?: (noteId: string) => void;
 }
 
-// Regex-based HTML stripping (safer than innerHTML and faster)
-const stripHtmlTags = (html: string): string => {
-  if (!html) return '';
-
-  const text = html
-    .replace(/<\/p>/gi, ' ')
-    .replace(/<\/div>/gi, ' ')
-    .replace(/<\/li>/gi, ' ')
-    .replace(/<\/h[1-6]>/gi, ' ')
-    .replace(/<br\s*\/?>/gi, ' ')
-    .replace(/<[^>]*>/g, '')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&apos;/g, "'")
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  return text;
-};
 
 export const NoteListItem = memo(function NoteListItem({
   note,
@@ -73,25 +50,6 @@ export const NoteListItem = memo(function NoteListItem({
     }
   };
 
-  // Check if content is HTML
-  const isHtml = note.content && /<[a-z][\s\S]*>/i.test(note.content);
-
-  // Get preview content
-  const previewContent = useMemo(() => {
-    if (!note.content) return '';
-    if (isHtml) {
-      return stripHtmlTags(note.content);
-    }
-    // For markdown, strip markdown syntax for cleaner preview
-    return note.content
-      .replace(/^#+\s/gm, '')
-      .replace(/\*\*(.*?)\*\*/g, '$1')
-      .replace(/\*(.*?)\*/g, '$1')
-      .replace(/`(.*?)`/g, '$1')
-      .replace(/\[(.*?)\]\(.*?\)/g, '$1')
-      .replace(/\n+/g, ' ')
-      .trim();
-  }, [note.content, isHtml]);
 
   // Extract tags
   const displayTags = useMemo(() => {
@@ -195,7 +153,7 @@ export const NoteListItem = memo(function NoteListItem({
           </svg>
         </div>
 
-        {/* Title & Content */}
+        {/* Title */}
         <div className="flex-1 min-w-0">
           <h3
             className="text-sm font-semibold truncate"
@@ -204,14 +162,6 @@ export const NoteListItem = memo(function NoteListItem({
           >
             {note.title}
           </h3>
-          {previewContent && (
-            <p
-              className="text-xs truncate mt-0.5"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              {previewContent}
-            </p>
-          )}
         </div>
 
         {/* Tags */}
