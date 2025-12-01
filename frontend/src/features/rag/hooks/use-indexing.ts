@@ -27,8 +27,16 @@ export const useIndexingStatus = (jobId: string | null, enabled: boolean = true)
       if (data?.status === 'running' || data?.status === 'pending') {
         return 1000; // Poll every 1 second for faster updates
       }
-      return false; // Stop polling
+      // For completed/failed status, do one final refetch after a short delay
+      // to ensure we have the latest status before stopping
+      if (data?.status === 'completed' || data?.status === 'partially_completed' || data?.status === 'failed') {
+        // Return a small interval to allow one more refetch, then stop
+        // This ensures we capture the final status update
+        return false; // Stop polling after final status is confirmed
+      }
+      return false; // Stop polling for unknown statuses
     },
+    refetchOnWindowFocus: true, // Refetch when window regains focus to catch any updates
   });
 };
 

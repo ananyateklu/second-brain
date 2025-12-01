@@ -1448,3 +1448,8 @@ button {
 .toggle-rotate-out {
   animation: toggleRotateOut 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
+
+/* Override font-weight for conversation titles */
+.conversation-title {
+  font-weight: 400 !important;
+}

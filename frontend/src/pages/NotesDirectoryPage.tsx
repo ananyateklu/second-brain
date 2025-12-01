@@ -170,10 +170,10 @@ export function NotesDirectoryPage() {
         >
           {/* Sidebar Header */}
           <div
-            className="flex-shrink-0 px-4 py-[1.43rem] border-b flex items-center justify-between"
+            className="flex-shrink-0 px-4 border-b flex items-center justify-between h-16"
             style={{ borderColor: 'var(--border)' }}
           >
-            <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+            <h2 className="text-lg font-semibold leading-none" style={{ color: 'var(--text-primary)' }}>
               Folders
             </h2>
             <button
@@ -391,7 +391,7 @@ export function NotesDirectoryPage() {
       <div className="flex-1 flex flex-col h-full min-w-0 relative">
         {/* Header */}
         <div
-          className="flex-shrink-0 px-6 py-4 border-b flex items-center justify-between"
+          className="flex-shrink-0 px-4 border-b flex items-center justify-between h-16"
           style={{ borderColor: 'var(--border)' }}
         >
           <div className="flex items-center gap-3">
@@ -426,7 +426,7 @@ export function NotesDirectoryPage() {
                   d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
                 />
               </svg>
-              <h1 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+              <h1 className="text-lg font-semibold leading-none" style={{ color: 'var(--text-primary)' }}>
                 {getCurrentTitle()}
               </h1>
             </div>

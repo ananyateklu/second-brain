@@ -192,7 +192,7 @@ export function ConversationListItem({
 
   return (
     <div
-      className={`group px-4 py-3 transition-all duration-300 ${isSelectionMode && isChecked ? 'selection-item-highlight' : ''}`}
+      className={`group px-4 py-2 transition-all duration-300 ${isSelectionMode && isChecked ? 'selection-item-highlight' : ''}`}
       style={{
         backgroundColor: getBackgroundColor(),
         borderLeftWidth: leftBorder.width,
@@ -229,9 +229,10 @@ export function ConversationListItem({
               />
             )}
             <h3
-              className="text-sm font-medium truncate flex-1 min-w-0 transition-colors duration-200"
+              className="conversation-title text-sm font-normal flex-1 min-w-0 transition-all duration-200 truncate"
               style={{
                 color: 'var(--text-primary)',
+                fontWeight: 400,
               }}
             >
               {conversation.title}
@@ -243,7 +244,7 @@ export function ConversationListItem({
                 e.stopPropagation();
                 onDelete(conversation.id);
               }}
-              className="p-1.5 rounded-lg transition-all duration-200 flex-shrink-0 opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-95"
+              className="p-1.5 rounded-lg transition-all duration-200 flex-shrink-0 hidden group-hover:flex hover:scale-110 active:scale-95"
               style={{
                 color: 'rgb(239, 68, 68)',
                 backgroundColor: 'transparent',

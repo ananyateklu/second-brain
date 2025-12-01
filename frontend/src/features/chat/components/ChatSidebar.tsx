@@ -90,8 +90,7 @@ export function ChatSidebar({
 
   return (
     <div
-      className={`border-r flex flex-col h-full flex-shrink-0 transition-all duration-300 ease-out ${isSelectionMode ? 'w-72 md:w-[23rem]' : 'w-64 md:w-80'
-        }`}
+      className="border-r flex flex-col h-full flex-shrink-0 transition-all duration-300 ease-out w-72 md:w-[23rem]"
       style={{ borderColor: 'var(--border)' }}
     >
       {/* Sidebar Header - Fixed */}

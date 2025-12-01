@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { IndexingButton } from '../../components/ui/IndexingButton';
 import { IndexingStats } from '../../components/ui/IndexingStats';
 import { useAuthStore } from '../../store/auth-store';
+import { QUERY_KEYS } from '../../lib/constants';
 
 export function RAGSettings() {
   const queryClient = useQueryClient();
@@ -71,7 +72,11 @@ export function RAGSettings() {
         <IndexingButton
           userId={user.userId}
           onComplete={() => {
-            queryClient.invalidateQueries({ queryKey: ['indexStats', user.userId] });
+            const statsQueryKey = QUERY_KEYS.indexing.stats(user.userId);
+            // Invalidate to mark as stale
+            queryClient.invalidateQueries({ queryKey: statsQueryKey });
+            // Force immediate refetch to update UI right away
+            queryClient.refetchQueries({ queryKey: statsQueryKey });
           }}
         />
       </section>
@@ -112,7 +117,11 @@ export function RAGSettings() {
           </div>
           <button
             type="button"
-            onClick={() => queryClient.invalidateQueries({ queryKey: ['indexStats', user.userId] })}
+            onClick={() => {
+              const statsQueryKey = QUERY_KEYS.indexing.stats(user.userId);
+              queryClient.invalidateQueries({ queryKey: statsQueryKey });
+              queryClient.refetchQueries({ queryKey: statsQueryKey });
+            }}
             className="text-xs font-semibold px-3 py-1.5 rounded-xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg shrink-0 flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)]"
             style={{
               borderColor: 'var(--color-brand-600)',
