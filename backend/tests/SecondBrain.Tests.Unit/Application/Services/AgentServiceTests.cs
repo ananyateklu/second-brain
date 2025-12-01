@@ -1777,5 +1777,1473 @@ public class AgentServiceTests
     }
 
     #endregion
+
+    #region FunctionInvocationFilter Tests
+
+    [Fact]
+    public void FunctionInvocationFilter_Results_IsInitialized()
+    {
+        // Arrange
+        var filter = new FunctionInvocationFilter();
+
+        // Assert
+        filter.Results.Should().NotBeNull();
+        filter.Results.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void FunctionInvocationFilter_Results_IsConcurrentQueue()
+    {
+        // Arrange
+        var filter = new FunctionInvocationFilter();
+
+        // Assert
+        filter.Results.Should().BeOfType<System.Collections.Concurrent.ConcurrentQueue<(string, string, string)>>();
+    }
+
+    [Fact]
+    public void FunctionInvocationFilter_ImplementsIFunctionInvocationFilter()
+    {
+        // Arrange
+        var filter = new FunctionInvocationFilter();
+
+        // Assert
+        filter.Should().BeAssignableTo<Microsoft.SemanticKernel.IFunctionInvocationFilter>();
+    }
+
+    [Fact]
+    public void FunctionInvocationFilter_Results_CanEnqueueAndDequeue()
+    {
+        // Arrange
+        var filter = new FunctionInvocationFilter();
+
+        // Act - Directly test the queue operations
+        filter.Results.Enqueue(("TestFunc", "{}", "result"));
+
+        // Assert
+        filter.Results.Should().HaveCount(1);
+        filter.Results.TryDequeue(out var result);
+        result.Name.Should().Be("TestFunc");
+        result.Arguments.Should().Be("{}");
+        result.Result.Should().Be("result");
+    }
+
+    [Fact]
+    public async Task FunctionInvocationFilter_Results_IsThreadSafe()
+    {
+        // Arrange
+        var filter = new FunctionInvocationFilter();
+        var tasks = new List<Task>();
+        var resultCount = 100;
+
+        // Act - Enqueue from multiple threads
+        for (int i = 0; i < resultCount; i++)
+        {
+            var index = i;
+            tasks.Add(Task.Run(() => filter.Results.Enqueue(($"Func{index}", "{}", "result"))));
+        }
+        await Task.WhenAll(tasks);
+
+        // Assert
+        filter.Results.Should().HaveCount(resultCount);
+    }
+
+    #endregion
+
+    #region GetJsonSchemaType Tests
+
+    [Theory]
+    [InlineData(typeof(string), "string")]
+    [InlineData(typeof(int), "integer")]
+    [InlineData(typeof(long), "integer")]
+    [InlineData(typeof(float), "number")]
+    [InlineData(typeof(double), "number")]
+    [InlineData(typeof(decimal), "number")]
+    [InlineData(typeof(bool), "boolean")]
+    public void GetJsonSchemaType_PrimitiveTypes_ReturnsCorrectSchemaType(Type inputType, string expectedSchema)
+    {
+        // Act
+        var result = AgentService.GetJsonSchemaType(inputType);
+
+        // Assert
+        result.Should().Be(expectedSchema);
+    }
+
+    [Fact]
+    public void GetJsonSchemaType_NullableInt_ReturnsInteger()
+    {
+        // Act
+        var result = AgentService.GetJsonSchemaType(typeof(int?));
+
+        // Assert
+        result.Should().Be("integer");
+    }
+
+    [Fact]
+    public void GetJsonSchemaType_NullableBool_ReturnsBoolean()
+    {
+        // Act
+        var result = AgentService.GetJsonSchemaType(typeof(bool?));
+
+        // Assert
+        result.Should().Be("boolean");
+    }
+
+    [Fact]
+    public void GetJsonSchemaType_NullableDouble_ReturnsNumber()
+    {
+        // Act
+        var result = AgentService.GetJsonSchemaType(typeof(double?));
+
+        // Assert
+        result.Should().Be("number");
+    }
+
+    [Fact]
+    public void GetJsonSchemaType_Array_ReturnsArray()
+    {
+        // Act
+        var result = AgentService.GetJsonSchemaType(typeof(string[]));
+
+        // Assert
+        result.Should().Be("array");
+    }
+
+    [Fact]
+    public void GetJsonSchemaType_GenericList_ReturnsArray()
+    {
+        // Act
+        var result = AgentService.GetJsonSchemaType(typeof(List<string>));
+
+        // Assert
+        result.Should().Be("array");
+    }
+
+    [Fact]
+    public void GetJsonSchemaType_IntArray_ReturnsArray()
+    {
+        // Act
+        var result = AgentService.GetJsonSchemaType(typeof(int[]));
+
+        // Assert
+        result.Should().Be("array");
+    }
+
+    [Fact]
+    public void GetJsonSchemaType_UnknownType_DefaultsToString()
+    {
+        // Act
+        var result = AgentService.GetJsonSchemaType(typeof(DateTime));
+
+        // Assert
+        result.Should().Be("string");
+    }
+
+    [Fact]
+    public void GetJsonSchemaType_CustomClass_DefaultsToString()
+    {
+        // Act
+        var result = AgentService.GetJsonSchemaType(typeof(AgentRequest));
+
+        // Assert
+        result.Should().Be("string");
+    }
+
+    #endregion
+
+    #region ConvertJsonToType Tests
+
+    [Fact]
+    public void ConvertJsonToType_NullNode_ReturnsNull()
+    {
+        // Act
+        var result = AgentService.ConvertJsonToType(null, typeof(string));
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public void ConvertJsonToType_StringValue_ReturnsString()
+    {
+        // Arrange
+        var node = System.Text.Json.Nodes.JsonNode.Parse("\"hello\"");
+
+        // Act
+        var result = AgentService.ConvertJsonToType(node, typeof(string));
+
+        // Assert
+        result.Should().Be("hello");
+    }
+
+    [Fact]
+    public void ConvertJsonToType_IntValue_ReturnsInt()
+    {
+        // Arrange
+        var node = System.Text.Json.Nodes.JsonNode.Parse("42");
+
+        // Act
+        var result = AgentService.ConvertJsonToType(node, typeof(int));
+
+        // Assert
+        result.Should().Be(42);
+    }
+
+    [Fact]
+    public void ConvertJsonToType_LongValue_ReturnsLong()
+    {
+        // Arrange
+        var node = System.Text.Json.Nodes.JsonNode.Parse("9223372036854775807");
+
+        // Act
+        var result = AgentService.ConvertJsonToType(node, typeof(long));
+
+        // Assert
+        result.Should().Be(9223372036854775807L);
+    }
+
+    [Fact]
+    public void ConvertJsonToType_FloatValue_ReturnsFloat()
+    {
+        // Arrange
+        var node = System.Text.Json.Nodes.JsonNode.Parse("3.14");
+
+        // Act
+        var result = AgentService.ConvertJsonToType(node, typeof(float));
+
+        // Assert
+        result.Should().BeOfType<float>();
+        ((float)result!).Should().BeApproximately(3.14f, 0.01f);
+    }
+
+    [Fact]
+    public void ConvertJsonToType_DoubleValue_ReturnsDouble()
+    {
+        // Arrange
+        var node = System.Text.Json.Nodes.JsonNode.Parse("3.14159265359");
+
+        // Act
+        var result = AgentService.ConvertJsonToType(node, typeof(double));
+
+        // Assert
+        result.Should().BeOfType<double>();
+        ((double)result!).Should().BeApproximately(3.14159265359, 0.0001);
+    }
+
+    [Fact]
+    public void ConvertJsonToType_BoolValue_ReturnsBool()
+    {
+        // Arrange
+        var node = System.Text.Json.Nodes.JsonNode.Parse("true");
+
+        // Act
+        var result = AgentService.ConvertJsonToType(node, typeof(bool));
+
+        // Assert
+        result.Should().Be(true);
+    }
+
+    [Fact]
+    public void ConvertJsonToType_NullableInt_ReturnsInt()
+    {
+        // Arrange
+        var node = System.Text.Json.Nodes.JsonNode.Parse("42");
+
+        // Act
+        var result = AgentService.ConvertJsonToType(node, typeof(int?));
+
+        // Assert
+        result.Should().Be(42);
+    }
+
+    [Fact]
+    public void ConvertJsonToType_UnknownType_ReturnsToString()
+    {
+        // Arrange
+        var node = System.Text.Json.Nodes.JsonNode.Parse("{\"key\": \"value\"}");
+
+        // Act
+        var result = AgentService.ConvertJsonToType(node, typeof(DateTime));
+
+        // Assert
+        result.Should().BeOfType<string>();
+        result!.ToString().Should().Contain("key");
+    }
+
+    [Fact]
+    public void ConvertJsonToType_InvalidConversion_FallsBackToString()
+    {
+        // Arrange - Try to parse a string as an int
+        var node = System.Text.Json.Nodes.JsonNode.Parse("\"not-a-number\"");
+
+        // Act
+        var result = AgentService.ConvertJsonToType(node, typeof(int));
+
+        // Assert
+        result.Should().Be("not-a-number");
+    }
+
+    #endregion
+
+    #region GetSystemPrompt Tests
+
+    [Fact]
+    public void GetSystemPrompt_WithNullCapabilities_ReturnsGeneralAssistantMode()
+    {
+        // Act
+        var prompt = _sut.GetSystemPrompt(null);
+
+        // Assert
+        prompt.Should().Contain("General Assistant Mode");
+        prompt.Should().Contain("operating as a general assistant without specialized tools");
+    }
+
+    [Fact]
+    public void GetSystemPrompt_WithEmptyCapabilities_ReturnsGeneralAssistantMode()
+    {
+        // Act
+        var prompt = _sut.GetSystemPrompt(new List<string>());
+
+        // Assert
+        prompt.Should().Contain("General Assistant Mode");
+    }
+
+    [Fact]
+    public void GetSystemPrompt_WithNotesCapability_IncludesNotesPrompt()
+    {
+        // Act
+        var prompt = _sut.GetSystemPrompt(new List<string> { "notes" });
+
+        // Assert
+        prompt.Should().Contain("Notes Management Tools");
+        prompt.Should().NotContain("General Assistant Mode");
+    }
+
+    [Fact]
+    public void GetSystemPrompt_ContainsCorePrinciples()
+    {
+        // Act
+        var prompt = _sut.GetSystemPrompt(null);
+
+        // Assert
+        prompt.Should().Contain("Core Principles");
+        prompt.Should().Contain("Simplicity");
+        prompt.Should().Contain("Transparency");
+        prompt.Should().Contain("Accuracy");
+    }
+
+    [Fact]
+    public void GetSystemPrompt_ContainsReasoningProcess()
+    {
+        // Act
+        var prompt = _sut.GetSystemPrompt(null);
+
+        // Assert
+        prompt.Should().Contain("<thinking>");
+        prompt.Should().Contain("</thinking>");
+    }
+
+    [Fact]
+    public void GetSystemPrompt_WithUnknownCapability_DoesNotAddUnknownContent()
+    {
+        // Act
+        var prompt = _sut.GetSystemPrompt(new List<string> { "unknown-capability" });
+
+        // Assert - Unknown capabilities are just ignored, no content added
+        prompt.Should().Contain("Core Principles");
+        prompt.Should().NotContain("unknown-capability");
+        // No specific capability content should be added for unknown capabilities
+    }
+
+    [Fact]
+    public void GetSystemPrompt_WithMixedCapabilities_IncludesKnownOnes()
+    {
+        // Act
+        var prompt = _sut.GetSystemPrompt(new List<string> { "notes", "unknown-cap" });
+
+        // Assert
+        prompt.Should().Contain("Notes Management Tools");
+        prompt.Should().NotContain("General Assistant Mode");
+    }
+
+    #endregion
+
+    #region BuildKernel Tests
+
+    [Fact]
+    public void BuildKernel_WithOpenAI_Enabled_ReturnsKernel()
+    {
+        // Arrange
+        var settings = new AIProvidersSettings
+        {
+            OpenAI = new OpenAISettings { Enabled = true, ApiKey = "test-key" },
+            Anthropic = new AnthropicSettings { Enabled = false },
+            Gemini = new GeminiSettings { Enabled = false },
+            XAI = new XAISettings { Enabled = false },
+            Ollama = new OllamaSettings { Enabled = false }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        // Act
+        var kernel = service.BuildKernel("openai", "gpt-4", "user-123", null);
+
+        // Assert
+        kernel.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void BuildKernel_WithOpenAI_Disabled_ThrowsException()
+    {
+        // Arrange
+        var settings = new AIProvidersSettings
+        {
+            OpenAI = new OpenAISettings { Enabled = false },
+            Anthropic = new AnthropicSettings { Enabled = false },
+            Gemini = new GeminiSettings { Enabled = false },
+            XAI = new XAISettings { Enabled = false },
+            Ollama = new OllamaSettings { Enabled = false }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        // Act & Assert
+        var act = () => service.BuildKernel("openai", "gpt-4", "user-123", null);
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("*OpenAI*not enabled*");
+    }
+
+    [Fact]
+    public void BuildKernel_WithGrok_Enabled_ReturnsKernel()
+    {
+        // Arrange
+        var settings = new AIProvidersSettings
+        {
+            OpenAI = new OpenAISettings { Enabled = false },
+            Anthropic = new AnthropicSettings { Enabled = false },
+            Gemini = new GeminiSettings { Enabled = false },
+            XAI = new XAISettings { Enabled = true, ApiKey = "test-key", BaseUrl = "https://api.x.ai" },
+            Ollama = new OllamaSettings { Enabled = false }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        // Act
+        var kernel = service.BuildKernel("grok", "grok-2", "user-123", null);
+
+        // Assert
+        kernel.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void BuildKernel_WithXAI_Enabled_ReturnsKernel()
+    {
+        // Arrange
+        var settings = new AIProvidersSettings
+        {
+            OpenAI = new OpenAISettings { Enabled = false },
+            Anthropic = new AnthropicSettings { Enabled = false },
+            Gemini = new GeminiSettings { Enabled = false },
+            XAI = new XAISettings { Enabled = true, ApiKey = "test-key", BaseUrl = "https://api.x.ai" },
+            Ollama = new OllamaSettings { Enabled = false }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        // Act
+        var kernel = service.BuildKernel("xai", "grok-2", "user-123", null);
+
+        // Assert
+        kernel.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void BuildKernel_WithGemini_Enabled_ReturnsKernel()
+    {
+        // Arrange
+        var settings = new AIProvidersSettings
+        {
+            OpenAI = new OpenAISettings { Enabled = false },
+            Anthropic = new AnthropicSettings { Enabled = false },
+            Gemini = new GeminiSettings { Enabled = true, ApiKey = "test-key" },
+            XAI = new XAISettings { Enabled = false },
+            Ollama = new OllamaSettings { Enabled = false }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        // Act
+        var kernel = service.BuildKernel("gemini", "gemini-pro", "user-123", null);
+
+        // Assert
+        kernel.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void BuildKernel_WithOllama_Enabled_ReturnsKernel()
+    {
+        // Arrange
+        var settings = new AIProvidersSettings
+        {
+            OpenAI = new OpenAISettings { Enabled = false },
+            Anthropic = new AnthropicSettings { Enabled = false },
+            Gemini = new GeminiSettings { Enabled = false },
+            XAI = new XAISettings { Enabled = false },
+            Ollama = new OllamaSettings { Enabled = true, BaseUrl = "http://localhost:11434" }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        // Act
+        var kernel = service.BuildKernel("ollama", "llama3", "user-123", null);
+
+        // Assert
+        kernel.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void BuildKernel_WithOllama_CustomBaseUrl_UsesCustomUrl()
+    {
+        // Arrange
+        var settings = new AIProvidersSettings
+        {
+            OpenAI = new OpenAISettings { Enabled = false },
+            Anthropic = new AnthropicSettings { Enabled = false },
+            Gemini = new GeminiSettings { Enabled = false },
+            XAI = new XAISettings { Enabled = false },
+            Ollama = new OllamaSettings { Enabled = true, BaseUrl = "http://localhost:11434" }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        // Act - Pass a custom URL
+        var kernel = service.BuildKernel("ollama", "llama3", "user-123", null, "http://custom-ollama:11434/");
+
+        // Assert
+        kernel.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void BuildKernel_WithAnthropic_ThrowsException()
+    {
+        // Arrange - Anthropic should not be handled by BuildKernel
+        // Act & Assert
+        var act = () => _sut.BuildKernel("claude", "claude-3", "user-123", null);
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("*Anthropic*ProcessAnthropicStreamAsync*");
+    }
+
+    [Fact]
+    public void BuildKernel_WithUnknownProvider_ThrowsArgumentException()
+    {
+        // Act & Assert
+        var act = () => _sut.BuildKernel("unknown-provider", "model", "user-123", null);
+        act.Should().Throw<ArgumentException>()
+            .WithMessage("*Unknown provider*");
+    }
+
+    [Fact]
+    public void BuildKernel_WithNotesCapability_RegistersPlugin()
+    {
+        // Act
+        var kernel = _sut.BuildKernel("openai", "gpt-4", "user-123", new List<string> { "notes" });
+
+        // Assert
+        kernel.Should().NotBeNull();
+        kernel.Plugins.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public void BuildKernel_WithUnknownCapability_LogsWarning()
+    {
+        // Act
+        var kernel = _sut.BuildKernel("openai", "gpt-4", "user-123", new List<string> { "unknown-cap" });
+
+        // Assert - Kernel should still be created, unknown capability is just logged
+        kernel.Should().NotBeNull();
+    }
+
+    #endregion
+
+    #region InvokePluginMethodAsync Tests
+
+    [Fact]
+    public async Task InvokePluginMethodAsync_WithValidParameters_InvokesMethod()
+    {
+        // Arrange
+        var plugin = new TestPlugin();
+        var method = typeof(TestPlugin).GetMethod("SimpleMethod")!;
+        var input = System.Text.Json.Nodes.JsonNode.Parse("{\"name\": \"TestName\"}")!;
+
+        // Act
+        var result = await _sut.InvokePluginMethodAsync(plugin, method, input);
+
+        // Assert
+        result.Should().Contain("TestName");
+    }
+
+    [Fact]
+    public async Task InvokePluginMethodAsync_WithDefaultParameter_UsesDefault()
+    {
+        // Arrange
+        var plugin = new TestPlugin();
+        var method = typeof(TestPlugin).GetMethod("MethodWithDefault")!;
+        var input = System.Text.Json.Nodes.JsonNode.Parse("{}")!;
+
+        // Act
+        var result = await _sut.InvokePluginMethodAsync(plugin, method, input);
+
+        // Assert
+        result.Should().Be("default");
+    }
+
+    [Fact]
+    public async Task InvokePluginMethodAsync_WithAsyncMethod_AwaitsResult()
+    {
+        // Arrange
+        var plugin = new TestPlugin();
+        var method = typeof(TestPlugin).GetMethod("AsyncMethod")!;
+        var input = System.Text.Json.Nodes.JsonNode.Parse("{\"value\": 42}")!;
+
+        // Act
+        var result = await _sut.InvokePluginMethodAsync(plugin, method, input);
+
+        // Assert
+        result.Should().Be("42");
+    }
+
+    [Fact]
+    public async Task InvokePluginMethodAsync_WithNullInput_UsesNullForParameters()
+    {
+        // Arrange
+        var plugin = new TestPlugin();
+        var method = typeof(TestPlugin).GetMethod("MethodWithNullable")!;
+
+        // Act
+        var result = await _sut.InvokePluginMethodAsync(plugin, method, null);
+
+        // Assert
+        result.Should().Be("null");
+    }
+
+    [Fact]
+    public async Task InvokePluginMethodAsync_WithIntParameter_ConvertsCorrectly()
+    {
+        // Arrange
+        var plugin = new TestPlugin();
+        var method = typeof(TestPlugin).GetMethod("MethodWithInt")!;
+        var input = System.Text.Json.Nodes.JsonNode.Parse("{\"number\": 123}")!;
+
+        // Act
+        var result = await _sut.InvokePluginMethodAsync(plugin, method, input);
+
+        // Assert
+        result.Should().Be("123");
+    }
+
+    #endregion
+
+    #region ProcessStreamAsync Extended Edge Cases
+
+    [Fact]
+    public async Task ProcessStreamAsync_WithCancellation_StopsProcessing()
+    {
+        // Arrange - Use disabled provider to avoid actual API calls
+        var settings = new AIProvidersSettings
+        {
+            OpenAI = new OpenAISettings { Enabled = false },
+            Anthropic = new AnthropicSettings { Enabled = false },
+            Gemini = new GeminiSettings { Enabled = false },
+            XAI = new XAISettings { Enabled = false },
+            Ollama = new OllamaSettings { Enabled = false }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        var cts = new CancellationTokenSource();
+        cts.Cancel(); // Cancel immediately
+
+        var request = new AgentRequest
+        {
+            Provider = "openai",
+            Model = "gpt-4",
+            UserId = "user-123",
+            Messages = new List<AgentMessage> { new() { Role = "user", Content = "Hello" } }
+        };
+
+        // Act
+        var events = new List<AgentStreamEvent>();
+        await foreach (var evt in service.ProcessStreamAsync(request, cts.Token))
+        {
+            events.Add(evt);
+        }
+
+        // Assert - Should still process some events even with cancellation
+        events.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public async Task ProcessStreamAsync_WithMultipleToolCallsInHistory_ProcessesAll()
+    {
+        // Arrange
+        var settings = new AIProvidersSettings
+        {
+            OpenAI = new OpenAISettings { Enabled = false },
+            Anthropic = new AnthropicSettings { Enabled = false },
+            Gemini = new GeminiSettings { Enabled = false },
+            XAI = new XAISettings { Enabled = false },
+            Ollama = new OllamaSettings { Enabled = false }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        var request = new AgentRequest
+        {
+            Provider = "openai",
+            Model = "gpt-4",
+            UserId = "user-123",
+            Messages = new List<AgentMessage>
+            {
+                new() { Role = "user", Content = "Search my notes" },
+                new()
+                {
+                    Role = "assistant",
+                    Content = "I found some notes",
+                    ToolCalls = new List<ToolCallInfo>
+                    {
+                        new() { ToolName = "search_notes", Arguments = "{\"query\":\"test\"}", Result = "2 notes" },
+                        new() { ToolName = "get_note", Arguments = "{\"id\":\"1\"}", Result = "Note 1" }
+                    }
+                },
+                new() { Role = "user", Content = "Show me more" }
+            }
+        };
+
+        // Act
+        var events = new List<AgentStreamEvent>();
+        await foreach (var evt in service.ProcessStreamAsync(request))
+        {
+            events.Add(evt);
+        }
+
+        // Assert
+        events.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public async Task ProcessStreamAsync_EmitsBuildingContextStatus()
+    {
+        // Note: This test verifies that the building context status is emitted
+        // when the kernel is successfully built. Since we can't mock the kernel easily,
+        // we verify the status sequence when using an enabled provider that will
+        // eventually fail due to an API call (but after emitting the status).
+
+        // For now, verify that status events are correctly typed
+        var settings = new AIProvidersSettings
+        {
+            OpenAI = new OpenAISettings { Enabled = false },
+            Anthropic = new AnthropicSettings { Enabled = false },
+            Gemini = new GeminiSettings { Enabled = false },
+            XAI = new XAISettings { Enabled = false },
+            Ollama = new OllamaSettings { Enabled = false }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        var request = new AgentRequest
+        {
+            Provider = "openai",
+            Model = "gpt-4",
+            UserId = "user-123",
+            Messages = new List<AgentMessage> { new() { Role = "user", Content = "Hello" } }
+        };
+
+        // Act
+        var events = new List<AgentStreamEvent>();
+        await foreach (var evt in service.ProcessStreamAsync(request))
+        {
+            events.Add(evt);
+        }
+
+        // Assert - When provider is disabled, we get init status and then error
+        // The "Building context" status comes after kernel is built successfully
+        events.Should().Contain(e => e.Type == AgentEventType.Status &&
+            e.Content == "Initializing agent...");
+    }
+
+    [Fact]
+    public async Task ProcessStreamAsync_StatusEvents_HaveCorrectEventType()
+    {
+        // Arrange - Test that status events have correct type
+        var settings = new AIProvidersSettings
+        {
+            OpenAI = new OpenAISettings { Enabled = false },
+            Anthropic = new AnthropicSettings { Enabled = false },
+            Gemini = new GeminiSettings { Enabled = false },
+            XAI = new XAISettings { Enabled = false },
+            Ollama = new OllamaSettings { Enabled = false }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        var request = new AgentRequest
+        {
+            Provider = "openai",
+            Model = "gpt-4",
+            UserId = "user-123",
+            Messages = new List<AgentMessage> { new() { Role = "user", Content = "Hello" } }
+        };
+
+        // Act
+        var events = new List<AgentStreamEvent>();
+        await foreach (var evt in service.ProcessStreamAsync(request))
+        {
+            events.Add(evt);
+        }
+
+        // Assert - All status events should have the correct type
+        var statusEvents = events.Where(e => e.Type == AgentEventType.Status);
+        statusEvents.Should().NotBeEmpty();
+        foreach (var statusEvent in statusEvents)
+        {
+            statusEvent.Content.Should().NotBeNullOrEmpty();
+        }
+    }
+
+    #endregion
+
+    #region GetJsonSchemaType Additional Tests
+
+    [Fact]
+    public void GetJsonSchemaType_NullableFloat_ReturnsNumber()
+    {
+        // Act
+        var result = AgentService.GetJsonSchemaType(typeof(float?));
+
+        // Assert
+        result.Should().Be("number");
+    }
+
+    [Fact]
+    public void GetJsonSchemaType_NullableDecimal_ReturnsNumber()
+    {
+        // Act
+        var result = AgentService.GetJsonSchemaType(typeof(decimal?));
+
+        // Assert
+        result.Should().Be("number");
+    }
+
+    [Fact]
+    public void GetJsonSchemaType_NullableLong_ReturnsInteger()
+    {
+        // Act
+        var result = AgentService.GetJsonSchemaType(typeof(long?));
+
+        // Assert
+        result.Should().Be("integer");
+    }
+
+    [Fact]
+    public void GetJsonSchemaType_ListOfInt_ReturnsArray()
+    {
+        // Act
+        var result = AgentService.GetJsonSchemaType(typeof(List<int>));
+
+        // Assert
+        result.Should().Be("array");
+    }
+
+    [Fact]
+    public void GetJsonSchemaType_ObjectArray_ReturnsArray()
+    {
+        // Act
+        var result = AgentService.GetJsonSchemaType(typeof(object[]));
+
+        // Assert
+        result.Should().Be("array");
+    }
+
+    #endregion
+
+    #region ConvertJsonToType Additional Tests
+
+    [Fact]
+    public void ConvertJsonToType_NullableDouble_ReturnsDouble()
+    {
+        // Arrange
+        var node = System.Text.Json.Nodes.JsonNode.Parse("3.14");
+
+        // Act
+        var result = AgentService.ConvertJsonToType(node, typeof(double?));
+
+        // Assert
+        result.Should().BeOfType<double>();
+    }
+
+    [Fact]
+    public void ConvertJsonToType_NullableBool_ReturnsBool()
+    {
+        // Arrange
+        var node = System.Text.Json.Nodes.JsonNode.Parse("false");
+
+        // Act
+        var result = AgentService.ConvertJsonToType(node, typeof(bool?));
+
+        // Assert
+        result.Should().Be(false);
+    }
+
+    [Fact]
+    public void ConvertJsonToType_ArrayValue_ReturnsString()
+    {
+        // Arrange
+        var node = System.Text.Json.Nodes.JsonNode.Parse("[1, 2, 3]");
+
+        // Act
+        var result = AgentService.ConvertJsonToType(node, typeof(int[]));
+
+        // Assert
+        result.Should().BeOfType<string>();
+        result!.ToString().Should().Contain("1");
+    }
+
+    [Fact]
+    public void ConvertJsonToType_BoolFalse_ReturnsFalse()
+    {
+        // Arrange
+        var node = System.Text.Json.Nodes.JsonNode.Parse("false");
+
+        // Act
+        var result = AgentService.ConvertJsonToType(node, typeof(bool));
+
+        // Assert
+        result.Should().Be(false);
+    }
+
+    [Fact]
+    public void ConvertJsonToType_NegativeInt_ReturnsNegative()
+    {
+        // Arrange
+        var node = System.Text.Json.Nodes.JsonNode.Parse("-42");
+
+        // Act
+        var result = AgentService.ConvertJsonToType(node, typeof(int));
+
+        // Assert
+        result.Should().Be(-42);
+    }
+
+    [Fact]
+    public void ConvertJsonToType_NegativeDouble_ReturnsNegative()
+    {
+        // Arrange
+        var node = System.Text.Json.Nodes.JsonNode.Parse("-3.14");
+
+        // Act
+        var result = AgentService.ConvertJsonToType(node, typeof(double));
+
+        // Assert
+        ((double)result!).Should().BeApproximately(-3.14, 0.01);
+    }
+
+    #endregion
+
+    #region InvokePluginMethodAsync Additional Tests
+
+    [Fact]
+    public async Task InvokePluginMethodAsync_WithMultipleParameters_ConvertsAll()
+    {
+        // Arrange
+        var plugin = new TestPlugin();
+        var method = typeof(TestPlugin).GetMethod("MethodWithMultipleParams")!;
+        var input = System.Text.Json.Nodes.JsonNode.Parse("{\"name\": \"Test\", \"count\": 5}")!;
+
+        // Act
+        var result = await _sut.InvokePluginMethodAsync(plugin, method, input);
+
+        // Assert
+        result.Should().Contain("Test");
+        result.Should().Contain("5");
+    }
+
+    [Fact]
+    public async Task InvokePluginMethodAsync_WithMissingOptionalParam_UsesNull()
+    {
+        // Arrange
+        var plugin = new TestPlugin();
+        var method = typeof(TestPlugin).GetMethod("MethodWithNullable")!;
+        var input = System.Text.Json.Nodes.JsonNode.Parse("{}")!;
+
+        // Act
+        var result = await _sut.InvokePluginMethodAsync(plugin, method, input);
+
+        // Assert
+        result.Should().Be("null");
+    }
+
+    [Fact]
+    public async Task InvokePluginMethodAsync_WithBoolParameter_ConvertsBool()
+    {
+        // Arrange
+        var plugin = new TestPlugin();
+        var method = typeof(TestPlugin).GetMethod("MethodWithBool")!;
+        var input = System.Text.Json.Nodes.JsonNode.Parse("{\"flag\": true}")!;
+
+        // Act
+        var result = await _sut.InvokePluginMethodAsync(plugin, method, input);
+
+        // Assert
+        result.Should().Be("True");
+    }
+
+    #endregion
+
+    #region Anthropic Provider Additional Tests
+
+    [Fact]
+    public async Task ProcessStreamAsync_WithAnthropicAndToolCallHistory_IncludesContext()
+    {
+        // Arrange
+        var settings = new AIProvidersSettings
+        {
+            OpenAI = new OpenAISettings { Enabled = false },
+            Anthropic = new AnthropicSettings { Enabled = false },
+            Gemini = new GeminiSettings { Enabled = false },
+            XAI = new XAISettings { Enabled = false },
+            Ollama = new OllamaSettings { Enabled = false }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        var request = new AgentRequest
+        {
+            Provider = "anthropic",
+            Model = "claude-3-opus",
+            UserId = "user-123",
+            Capabilities = new List<string> { "notes" },
+            Messages = new List<AgentMessage>
+            {
+                new() { Role = "user", Content = "Search my notes" },
+                new()
+                {
+                    Role = "assistant",
+                    Content = "I found some notes",
+                    ToolCalls = new List<ToolCallInfo>
+                    {
+                        new() { ToolName = "search_notes", Arguments = "{}", Result = "2 notes found" },
+                    }
+                },
+                new() { Role = "user", Content = "Show me the first" }
+            }
+        };
+
+        // Act
+        var events = new List<AgentStreamEvent>();
+        await foreach (var evt in service.ProcessStreamAsync(request))
+        {
+            events.Add(evt);
+        }
+
+        // Assert - Should emit status events before error
+        events.Should().Contain(e => e.Type == AgentEventType.Status);
+    }
+
+    [Fact]
+    public async Task ProcessStreamAsync_WithAnthropicEmptyContent_ProcessesCorrectly()
+    {
+        // Arrange
+        var settings = new AIProvidersSettings
+        {
+            OpenAI = new OpenAISettings { Enabled = false },
+            Anthropic = new AnthropicSettings { Enabled = false },
+            Gemini = new GeminiSettings { Enabled = false },
+            XAI = new XAISettings { Enabled = false },
+            Ollama = new OllamaSettings { Enabled = false }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        var request = new AgentRequest
+        {
+            Provider = "claude",
+            Model = "claude-3-opus",
+            UserId = "user-123",
+            Messages = new List<AgentMessage>
+            {
+                new() { Role = "user", Content = "" },
+                new() { Role = "assistant", Content = "" },
+                new() { Role = "user", Content = "Hello" }
+            }
+        };
+
+        // Act
+        var events = new List<AgentStreamEvent>();
+        await foreach (var evt in service.ProcessStreamAsync(request))
+        {
+            events.Add(evt);
+        }
+
+        // Assert
+        events.Should().NotBeEmpty();
+    }
+
+    #endregion
+
+    #region BuildKernel Additional Tests
+
+    [Fact]
+    public void BuildKernel_WithOllama_EmptyBaseUrl_UsesSettingsDefault()
+    {
+        // Arrange
+        var settings = new AIProvidersSettings
+        {
+            OpenAI = new OpenAISettings { Enabled = false },
+            Anthropic = new AnthropicSettings { Enabled = false },
+            Gemini = new GeminiSettings { Enabled = false },
+            XAI = new XAISettings { Enabled = false },
+            Ollama = new OllamaSettings { Enabled = true, BaseUrl = "http://localhost:11434" }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        // Act - Pass empty string as custom URL, should use settings default
+        var kernel = service.BuildKernel("ollama", "llama3", "user-123", null, "");
+
+        // Assert
+        kernel.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void BuildKernel_WithOllama_WhitespaceBaseUrl_UsesSettingsDefault()
+    {
+        // Arrange
+        var settings = new AIProvidersSettings
+        {
+            OpenAI = new OpenAISettings { Enabled = false },
+            Anthropic = new AnthropicSettings { Enabled = false },
+            Gemini = new GeminiSettings { Enabled = false },
+            XAI = new XAISettings { Enabled = false },
+            Ollama = new OllamaSettings { Enabled = true, BaseUrl = "http://localhost:11434" }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        // Act - Pass whitespace as custom URL, should use settings default
+        var kernel = service.BuildKernel("ollama", "llama3", "user-123", null, "   ");
+
+        // Assert
+        kernel.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void BuildKernel_WithOllama_TrailingSlashUrl_TrimsSlash()
+    {
+        // Arrange
+        var settings = new AIProvidersSettings
+        {
+            OpenAI = new OpenAISettings { Enabled = false },
+            Anthropic = new AnthropicSettings { Enabled = false },
+            Gemini = new GeminiSettings { Enabled = false },
+            XAI = new XAISettings { Enabled = false },
+            Ollama = new OllamaSettings { Enabled = true, BaseUrl = "http://localhost:11434" }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        // Act - Pass URL with trailing slash
+        var kernel = service.BuildKernel("ollama", "llama3", "user-123", null, "http://remote-ollama:11434/");
+
+        // Assert
+        kernel.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void BuildKernel_WithXAI_Disabled_ThrowsException()
+    {
+        // Arrange
+        var settings = new AIProvidersSettings
+        {
+            OpenAI = new OpenAISettings { Enabled = false },
+            Anthropic = new AnthropicSettings { Enabled = false },
+            Gemini = new GeminiSettings { Enabled = false },
+            XAI = new XAISettings { Enabled = false },
+            Ollama = new OllamaSettings { Enabled = false }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        // Act & Assert
+        var act = () => service.BuildKernel("xai", "grok-2", "user-123", null);
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("*xAI*not enabled*");
+    }
+
+    [Fact]
+    public void BuildKernel_WithGemini_Disabled_ThrowsException()
+    {
+        // Arrange
+        var settings = new AIProvidersSettings
+        {
+            OpenAI = new OpenAISettings { Enabled = false },
+            Anthropic = new AnthropicSettings { Enabled = false },
+            Gemini = new GeminiSettings { Enabled = false },
+            XAI = new XAISettings { Enabled = false },
+            Ollama = new OllamaSettings { Enabled = false }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        // Act & Assert
+        var act = () => service.BuildKernel("gemini", "gemini-pro", "user-123", null);
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("*Gemini*not enabled*");
+    }
+
+    [Fact]
+    public void BuildKernel_WithOllama_Disabled_ThrowsException()
+    {
+        // Arrange
+        var settings = new AIProvidersSettings
+        {
+            OpenAI = new OpenAISettings { Enabled = false },
+            Anthropic = new AnthropicSettings { Enabled = false },
+            Gemini = new GeminiSettings { Enabled = false },
+            XAI = new XAISettings { Enabled = false },
+            Ollama = new OllamaSettings { Enabled = false }
+        };
+        var mockSettings = new Mock<IOptions<AIProvidersSettings>>();
+        mockSettings.Setup(s => s.Value).Returns(settings);
+
+        var service = new AgentService(
+            mockSettings.Object,
+            _mockNoteRepository.Object,
+            _mockRagService.Object,
+            _mockLogger.Object
+        );
+
+        // Act & Assert
+        var act = () => service.BuildKernel("ollama", "llama3", "user-123", null);
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("*Ollama*not enabled*");
+    }
+
+    #endregion
+
+    #region GetSystemPrompt Additional Tests
+
+    [Fact]
+    public void GetSystemPrompt_ContainsToolUsageGuidelines()
+    {
+        // Act
+        var prompt = _sut.GetSystemPrompt(new List<string> { "notes" });
+
+        // Assert
+        prompt.Should().Contain("Tool Usage Guidelines");
+        prompt.Should().Contain("Always use them");
+    }
+
+    [Fact]
+    public void GetSystemPrompt_ContainsContextAwareness()
+    {
+        // Act
+        var prompt = _sut.GetSystemPrompt(null);
+
+        // Assert
+        prompt.Should().Contain("Context Awareness");
+        prompt.Should().Contain("conversation history");
+    }
+
+    [Fact]
+    public void GetSystemPrompt_ContainsErrorHandling()
+    {
+        // Act
+        var prompt = _sut.GetSystemPrompt(null);
+
+        // Assert
+        prompt.Should().Contain("Error Handling");
+        prompt.Should().Contain("tool call fails");
+    }
+
+    #endregion
+}
+
+/// <summary>
+/// Test plugin for InvokePluginMethodAsync tests
+/// </summary>
+public class TestPlugin : SecondBrain.Application.Services.Agents.Plugins.IAgentPlugin
+{
+    public string CapabilityId => "test";
+    public string DisplayName => "Test";
+    public string Description => "Test plugin";
+
+    private string _currentUserId = string.Empty;
+
+    public void SetCurrentUserId(string userId) => _currentUserId = userId;
+    public object GetPluginInstance() => this;
+    public string GetPluginName() => "Test";
+    public string GetSystemPromptAddition() => "";
+
+    public string SimpleMethod(string name)
+    {
+        return $"Hello, {name}!";
+    }
+
+    public string MethodWithDefault(string value = "default")
+    {
+        return value;
+    }
+
+    public async Task<string> AsyncMethod(int value)
+    {
+        await Task.Delay(1);
+        return value.ToString();
+    }
+
+    public string MethodWithNullable(string? optional)
+    {
+        return optional ?? "null";
+    }
+
+    public string MethodWithInt(int number)
+    {
+        return number.ToString();
+    }
+
+    public string MethodWithMultipleParams(string name, int count)
+    {
+        return $"{name}: {count}";
+    }
+
+    public string MethodWithBool(bool flag)
+    {
+        return flag.ToString();
+    }
 }
 

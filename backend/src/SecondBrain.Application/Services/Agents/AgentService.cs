@@ -723,7 +723,7 @@ public class AgentService : IAgentService
         };
     }
 
-    private static string GetJsonSchemaType(Type type)
+    internal static string GetJsonSchemaType(Type type)
     {
         var underlyingType = Nullable.GetUnderlyingType(type) ?? type;
 
@@ -736,7 +736,7 @@ public class AgentService : IAgentService
         return "string";
     }
 
-    private async Task<string> InvokePluginMethodAsync(IAgentPlugin plugin, System.Reflection.MethodInfo method, JsonNode? input)
+    internal async Task<string> InvokePluginMethodAsync(IAgentPlugin plugin, System.Reflection.MethodInfo method, JsonNode? input)
     {
         var parameters = method.GetParameters();
         var args = new object?[parameters.Length];
@@ -772,7 +772,7 @@ public class AgentService : IAgentService
         return result?.ToString() ?? "";
     }
 
-    private static object? ConvertJsonToType(JsonNode? node, Type targetType)
+    internal static object? ConvertJsonToType(JsonNode? node, Type targetType)
     {
         if (node == null) return null;
 
@@ -795,7 +795,7 @@ public class AgentService : IAgentService
         }
     }
 
-    private Kernel BuildKernel(string provider, string model, string userId, List<string>? capabilities, string? ollamaBaseUrl = null)
+    internal Kernel BuildKernel(string provider, string model, string userId, List<string>? capabilities, string? ollamaBaseUrl = null)
     {
         var builder = Kernel.CreateBuilder();
 
@@ -881,7 +881,7 @@ public class AgentService : IAgentService
         return builder.Build();
     }
 
-    private string GetSystemPrompt(List<string>? capabilities)
+    internal string GetSystemPrompt(List<string>? capabilities)
     {
         var basePrompt = @"You are an intelligent AI assistant that helps users accomplish tasks effectively.
 
