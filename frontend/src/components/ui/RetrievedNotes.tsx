@@ -11,38 +11,60 @@ export function RetrievedNotes({ notes }: RetrievedNotesProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const { data: allNotes, isLoading } = useNotes();
 
-  // Match retrieved notes with full note data
+  // Group notes by noteId and deduplicate, keeping track of chunk count
   const notesWithData = useMemo(() => {
     if (!notes) return [];
 
-    return notes
-      .map((retrievedNote) => {
+    // Group by noteId
+    const groupedByNoteId = new Map<string, RagContextNote[]>();
+
+    for (const retrievedNote of notes) {
+      const existing = groupedByNoteId.get(retrievedNote.noteId);
+      if (existing) {
+        existing.push(retrievedNote);
+      } else {
+        groupedByNoteId.set(retrievedNote.noteId, [retrievedNote]);
+      }
+    }
+
+    // Convert to array with aggregated data
+    return Array.from(groupedByNoteId.entries())
+      .map(([noteId, chunks]) => {
+        // Get the chunk with the highest relevance score
+        const bestChunk = chunks.reduce((best, current) =>
+          (current.relevanceScore || 0) > (best.relevanceScore || 0) ? current : best
+          , chunks[0]);
+
         // Try to find the full note for complete data
-        const fullNote = allNotes?.find((n) => n.id === retrievedNote.noteId);
+        const fullNote = allNotes?.find((n) => n.id === noteId);
 
         // If full note is found, use it; otherwise create a minimal note object from retrieved data
         const noteToDisplay = fullNote || {
-          id: retrievedNote.noteId,
-          title: retrievedNote.title || 'Untitled Note',
-          content: retrievedNote.content || retrievedNote.chunkContent || '',
-          tags: retrievedNote.tags || [],
+          id: noteId,
+          title: bestChunk.title || 'Untitled Note',
+          content: bestChunk.content || bestChunk.chunkContent || '',
+          tags: bestChunk.tags || [],
           isArchived: false,
-          createdAt: retrievedNote.createdOn || new Date().toISOString(),
-          updatedAt: retrievedNote.modifiedOn || new Date().toISOString(),
+          createdAt: bestChunk.createdOn || new Date().toISOString(),
+          updatedAt: bestChunk.modifiedOn || new Date().toISOString(),
         };
 
         return {
           note: noteToDisplay,
-          relevanceScore: retrievedNote.relevanceScore,
-          chunkIndex: retrievedNote.chunkIndex,
-          chunkContent: retrievedNote.chunkContent,
-          content: retrievedNote.content,
-          createdOn: retrievedNote.createdOn,
-          modifiedOn: retrievedNote.modifiedOn,
+          relevanceScore: bestChunk.relevanceScore,
+          chunkCount: chunks.length,
+          chunkContent: bestChunk.chunkContent,
+          content: bestChunk.content,
+          createdOn: bestChunk.createdOn,
+          modifiedOn: bestChunk.modifiedOn,
         };
       })
       .sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0));
   }, [allNotes, notes]);
+
+  // Count unique notes for the header
+  const uniqueNoteCount = notesWithData.length;
+  const totalChunkCount = notes?.length || 0;
 
   if (!notes || notes.length === 0) {
     return null;
@@ -78,7 +100,10 @@ export function RetrievedNotes({ notes }: RetrievedNotesProps) {
           </div>
           <div className="flex flex-col items-start text-left">
             <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-              Found {notes.length} relevant note{notes.length !== 1 ? 's' : ''}
+              Found {uniqueNoteCount} relevant note{uniqueNoteCount !== 1 ? 's' : ''}
+              {totalChunkCount > uniqueNoteCount && (
+                <span className="font-normal" style={{ color: 'var(--text-tertiary)' }}> ({totalChunkCount} chunks)</span>
+              )}
             </span>
             <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
               Top match: <span style={{ color: 'var(--color-brand-600)', fontWeight: 600 }}>{topScore}%</span>
@@ -119,13 +144,13 @@ export function RetrievedNotes({ notes }: RetrievedNotesProps) {
             </div>
           ) : (
             <div className="grid gap-2 grid-cols-1 sm:grid-cols-2">
-              {notesWithData.map(({ note, relevanceScore, chunkIndex, content, createdOn }, index) => (
+              {notesWithData.map(({ note, relevanceScore, chunkCount, content, createdOn }) => (
                 <NoteCard
-                  key={`${note.id}-${index}`}
+                  key={note.id}
                   note={note}
                   variant="micro"
                   relevanceScore={relevanceScore}
-                  chunkIndex={chunkIndex}
+                  chunkCount={chunkCount}
                   content={content}
                   createdOn={createdOn}
                   showDeleteButton={false}

@@ -192,7 +192,7 @@ export function ConversationListItem({
 
   return (
     <div
-      className={`group px-4 py-2 transition-all duration-300 ${isSelectionMode && isChecked ? 'selection-item-highlight' : ''}`}
+      className={`group px-4 py-2 transition-all duration-300 relative ${isSelectionMode && isChecked ? 'selection-item-highlight' : ''}`}
       style={{
         backgroundColor: getBackgroundColor(),
         borderLeftWidth: leftBorder.width,
@@ -218,6 +218,15 @@ export function ConversationListItem({
         }
       }}
     >
+      {/* Hover indicator - faded green bar on the left */}
+      {!isPlaceholder && (
+        <div
+          className="absolute left-0 top-0 bottom-0 w-1 opacity-0 group-hover:opacity-40 transition-opacity duration-200"
+          style={{
+            backgroundColor: 'var(--color-brand-500)',
+          }}
+        />
+      )}
       <div className="flex flex-col gap-1">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5 flex-1 min-w-0">
@@ -244,10 +253,12 @@ export function ConversationListItem({
                 e.stopPropagation();
                 onDelete(conversation.id);
               }}
-              className="p-1.5 rounded-lg transition-all duration-200 flex-shrink-0 hidden group-hover:flex hover:scale-110 active:scale-95"
+              className="p-1.5 rounded-lg transition-all duration-200 flex-shrink-0 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-95"
               style={{
                 color: 'rgb(239, 68, 68)',
                 backgroundColor: 'transparent',
+                width: '28px',
+                height: '28px',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';

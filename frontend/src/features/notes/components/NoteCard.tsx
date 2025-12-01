@@ -13,6 +13,7 @@ interface NoteCardProps {
   variant?: 'full' | 'compact' | 'micro';
   relevanceScore?: number;
   chunkIndex?: number;
+  chunkCount?: number;
   chunkContent?: string;
   content?: string;
   createdOn?: string | null;
@@ -69,6 +70,7 @@ export const NoteCard = memo(function NoteCard({
   variant = 'full',
   relevanceScore,
   chunkIndex,
+  chunkCount,
   chunkContent,
   content,
   createdOn,
@@ -472,7 +474,14 @@ export const NoteCard = memo(function NoteCard({
 
           {/* Metadata / Date */}
           <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
-            {isSmall && chunkIndex !== undefined ? (
+            {isSmall && chunkCount !== undefined && chunkCount > 0 ? (
+              <span
+                className={`${isMicro ? 'text-[8px] px-1' : 'text-[9px] px-1.5'} font-medium py-0.5 rounded`}
+                style={{ backgroundColor: 'var(--surface-hover)', color: 'var(--text-tertiary)' }}
+              >
+                {chunkCount} chunk{chunkCount !== 1 ? 's' : ''}
+              </span>
+            ) : isSmall && chunkIndex !== undefined ? (
               <span
                 className={`${isMicro ? 'text-[8px] px-1' : 'text-[9px] px-1.5'} font-medium py-0.5 rounded`}
                 style={{ backgroundColor: 'var(--surface-hover)', color: 'var(--text-tertiary)' }}
