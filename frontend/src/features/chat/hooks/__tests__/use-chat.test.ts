@@ -12,6 +12,7 @@ import {
     useChatConversation,
     useCreateConversation,
     useDeleteConversation,
+    useBulkDeleteConversations,
     useUpdateConversationSettings,
 } from '../use-chat';
 import { chatService } from '../../../../services';
@@ -23,6 +24,7 @@ vi.mock('../../../../services', () => ({
         getConversation: vi.fn(),
         createConversation: vi.fn(),
         deleteConversation: vi.fn(),
+        bulkDeleteConversations: vi.fn(),
         updateConversationSettings: vi.fn(),
         sendMessage: vi.fn(),
     },
@@ -256,6 +258,76 @@ describe('use-chat', () => {
                     await result.current.mutateAsync('conv-1');
                 })
             ).rejects.toThrow('Delete failed');
+        });
+    });
+
+    // ============================================
+    // useBulkDeleteConversations Tests
+    // ============================================
+    describe('useBulkDeleteConversations', () => {
+        it('should call chatService.bulkDeleteConversations with ids', async () => {
+            // Arrange
+            const conversationIds = ['conv-1', 'conv-2', 'conv-3'];
+            vi.mocked(chatService.bulkDeleteConversations).mockResolvedValue({
+                deletedCount: 3,
+                message: 'Successfully deleted 3 conversation(s)',
+            });
+
+            // Act
+            const { result } = renderHook(() => useBulkDeleteConversations(), {
+                wrapper: createWrapper(),
+            });
+
+            await act(async () => {
+                await result.current.mutateAsync(conversationIds);
+            });
+
+            // Assert
+            expect(chatService.bulkDeleteConversations).toHaveBeenCalledWith(conversationIds);
+        });
+
+        it('should return deleted count on success', async () => {
+            // Arrange
+            const conversationIds = ['conv-1', 'conv-2'];
+            vi.mocked(chatService.bulkDeleteConversations).mockResolvedValue({
+                deletedCount: 2,
+                message: 'Successfully deleted 2 conversation(s)',
+            });
+
+            // Act
+            const { result } = renderHook(() => useBulkDeleteConversations(), {
+                wrapper: createWrapper(),
+            });
+
+            let response;
+            await act(async () => {
+                response = await result.current.mutateAsync(conversationIds);
+            });
+
+            // Assert
+            expect(response).toEqual({
+                deletedCount: 2,
+                message: 'Successfully deleted 2 conversation(s)',
+            });
+        });
+
+        it('should handle bulk deletion error', async () => {
+            // Arrange
+            vi.mocked(chatService.bulkDeleteConversations).mockRejectedValue(
+                new Error('Bulk delete failed')
+            );
+
+            // Act
+            const { result } = renderHook(() => useBulkDeleteConversations(), {
+                wrapper: createWrapper(),
+            });
+
+            // Assert
+            await expect(
+                act(async () => {
+                    await result.current.mutateAsync(['conv-1', 'conv-2']);
+                })
+            ).rejects.toThrow('Bulk delete failed');
         });
     });
 

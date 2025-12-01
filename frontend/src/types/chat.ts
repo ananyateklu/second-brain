@@ -62,6 +62,10 @@ export interface ChatMessage {
   images?: MessageImage[];
   /** Generated images from image generation requests */
   generatedImages?: GeneratedImage[];
+  /** RAG query log ID for feedback submission (only on assistant messages with RAG) */
+  ragLogId?: string;
+  /** User feedback on RAG response quality ('thumbs_up' or 'thumbs_down') */
+  ragFeedback?: string;
 }
 
 /**
@@ -128,6 +132,8 @@ export interface SendMessageRequest {
 export interface ChatResponseWithRag {
   conversation: ChatConversation;
   retrievedNotes: RagContextNote[];
+  /** RAG query log ID for feedback submission */
+  ragLogId?: string;
 }
 
 // ============================================
@@ -197,6 +203,8 @@ export interface StreamEndData {
   inputTokens?: number;
   outputTokens?: number;
   durationMs?: number;
+  /** RAG query log ID for feedback submission */
+  ragLogId?: string;
 }
 
 /**

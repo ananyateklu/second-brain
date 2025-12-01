@@ -109,23 +109,67 @@ function isHtml(content: string): boolean {
   }
 
   // Check for HTML entities or common HTML patterns
-  if (/&[a-z]+;/i.test(trimmed) || /<[a-z]+[^>]*>/i.test(trimmed)) {
+  // Be more specific to avoid false positives with markdown
+  if (/&(nbsp|amp|lt|gt|quot|#\d+);/i.test(trimmed) || /<(p|div|span|h[1-6]|ul|ol|li|br|table|pre|code|blockquote|strong|em|a|img)[^>]*>/i.test(trimmed)) {
     return true;
   }
 
   return false;
 }
 
+// Helper function to detect markdown patterns
+function hasMarkdownPatterns(content: string): boolean {
+  if (!content) return false;
+  
+  // Check for common markdown patterns
+  const markdownPatterns = [
+    /^#{1,6}\s+/m,                    // Headers: # Header
+    /^\s*[-*+]\s+/m,                  // Unordered lists: - item
+    /^\s*\d+\.\s+/m,                  // Ordered lists: 1. item
+    /\*\*[^*]+\*\*/,                  // Bold: **text**
+    /\*[^*]+\*/,                      // Italic: *text*
+    /__[^_]+__/,                      // Bold: __text__
+    /_[^_]+_/,                        // Italic: _text_
+    /`[^`]+`/,                        // Inline code: `code`
+    /```[\s\S]*?```/,                 // Code blocks: ```code```
+    /^\s*>/m,                         // Blockquotes: > quote
+    /\[([^\]]+)\]\([^)]+\)/,          // Links: [text](url)
+    /!\[([^\]]*)\]\([^)]+\)/,         // Images: ![alt](url)
+    /^\s*[-*_]{3,}\s*$/m,             // Horizontal rules: ---
+    /^\|.*\|$/m,                      // Tables: |col1|col2|
+    /^\s*-\s*\[[ x]\]/mi,             // Task lists: - [ ] or - [x]
+  ];
+  
+  return markdownPatterns.some(pattern => pattern.test(content));
+}
 
-// Helper function to convert markdown to HTML
+// Helper function to convert markdown to HTML for TipTap
 function markdownToHtml(markdown: string): string {
   if (!markdown || markdown.trim() === '') return '<p></p>';
   try {
     // Configure marked to use GFM (GitHub Flavored Markdown) and breaks
-    const html = marked.parse(markdown, {
+    let html = marked.parse(markdown, {
       breaks: true,
       gfm: true
     }) as string;
+    
+    // Post-process HTML for TipTap compatibility
+    // Convert task lists to TipTap format
+    html = html.replace(
+      /<li><input\s+checked(?:="[^"]*")?\s+disabled(?:="[^"]*")?\s+type="checkbox"(?:="[^"]*")?>\s*/gi,
+      '<li data-type="taskItem" data-checked="true">'
+    );
+    html = html.replace(
+      /<li><input\s+disabled(?:="[^"]*")?\s+type="checkbox"(?:="[^"]*")?>\s*/gi,
+      '<li data-type="taskItem" data-checked="false">'
+    );
+    
+    // Wrap task list items in task list ul
+    html = html.replace(
+      /<ul>\s*(<li data-type="taskItem")/gi,
+      '<ul data-type="taskList">$1'
+    );
+    
     return html;
   } catch (error) {
     console.error('Error converting markdown to HTML:', { error, markdown });
@@ -155,8 +199,34 @@ export function RichTextEditor({
       return content;
     }
 
-    // Otherwise, treat as markdown and convert to HTML
-    return markdownToHtml(content);
+    // Check if content has markdown patterns and convert
+    if (hasMarkdownPatterns(content)) {
+      return markdownToHtml(content);
+    }
+
+    // For plain text without markdown, wrap in paragraph and convert line breaks
+    // This preserves the text structure while making it TipTap-compatible
+    const lines = content.split('\n');
+    const paragraphs = [];
+    let currentParagraph: string[] = [];
+    
+    for (const line of lines) {
+      if (line.trim() === '') {
+        if (currentParagraph.length > 0) {
+          paragraphs.push(`<p>${currentParagraph.join('<br>')}</p>`);
+          currentParagraph = [];
+        }
+      } else {
+        currentParagraph.push(line);
+      }
+    }
+    
+    // Add remaining paragraph
+    if (currentParagraph.length > 0) {
+      paragraphs.push(`<p>${currentParagraph.join('<br>')}</p>`);
+    }
+    
+    return paragraphs.length > 0 ? paragraphs.join('') : '<p></p>';
   }, [content]);
 
   const extractTags = useCallback((editorInstance: Editor) => {
@@ -266,8 +336,8 @@ export function RichTextEditor({
               .run();
           },
           render: () => {
-            let component: ReactRenderer;
-            let popup: ReturnType<typeof tippy>;
+            let component: ReactRenderer | null = null;
+            let popup: ReturnType<typeof tippy> | null = null;
 
             return {
               onStart: (props) => {
@@ -291,9 +361,9 @@ export function RichTextEditor({
                 });
               },
               onUpdate(props) {
-                component.updateProps(props);
+                component?.updateProps(props);
 
-                if (!props.clientRect) {
+                if (!props.clientRect || !popup?.[0]) {
                   return;
                 }
 
@@ -303,15 +373,22 @@ export function RichTextEditor({
               },
               onKeyDown(props) {
                 if (props.event.key === 'Escape') {
-                  popup[0].hide();
+                  popup?.[0]?.hide();
                   return true;
                 }
                 // Cast component.ref since types are not perfectly aligned with ReactRenderer
-                return (component.ref as { onKeyDown?: (props: { event: KeyboardEvent }) => boolean })?.onKeyDown?.(props) ?? false;
+                return (component?.ref as { onKeyDown?: (props: { event: KeyboardEvent }) => boolean })?.onKeyDown?.(props) ?? false;
               },
               onExit() {
-                popup[0].destroy();
-                component.destroy();
+                // Only destroy if the popup exists and hasn't been destroyed yet
+                if (popup?.[0]) {
+                  popup[0].destroy();
+                  popup = null;
+                }
+                if (component) {
+                  component.destroy();
+                  component = null;
+                }
               },
             };
           },

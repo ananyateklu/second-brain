@@ -16,6 +16,8 @@ export { ChatWelcomeScreen } from './ChatWelcomeScreen';
 export { MessageBubble } from './MessageBubble';
 export type { MessageBubbleProps } from './MessageBubble';
 
+export { MessageFeedback } from './MessageFeedback';
+
 export { ConversationListItem } from './ConversationListItem';
 export type { ConversationListItemProps } from './ConversationListItem';
 

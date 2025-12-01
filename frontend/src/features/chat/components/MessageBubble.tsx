@@ -1,21 +1,26 @@
 import { useState, useCallback } from 'react';
-import { ChatMessage, GeneratedImage } from '../types/chat';
+import { ChatMessage, GeneratedImage } from '../../../types/chat';
 import { MarkdownMessage } from '../../../components/MarkdownMessage';
 import { TokenUsageDisplay } from '../../../components/TokenUsageDisplay';
 import { stripThinkingTags } from '../../../utils/thinking-utils';
 import { downloadGeneratedImage, getImageDataUrl } from '../../../utils/image-generation-models';
+import { MessageFeedback } from './MessageFeedback';
 
 export interface MessageBubbleProps {
   message: ChatMessage;
   modelName?: string;
   userName?: string;
   hasToolCalls?: boolean;
+  hasThinkingContent?: boolean;
   // For streaming messages that haven't been persisted yet
   streamingInputTokens?: number;
   streamingOutputTokens?: number;
   streamingDuration?: number;
   agentModeEnabled?: boolean;
   isLastMessage?: boolean;
+  // RAG feedback
+  ragLogId?: string;
+  showFeedback?: boolean;
 }
 
 /**
@@ -217,16 +222,23 @@ export function MessageBubble({
   modelName,
   userName,
   hasToolCalls = false,
+  hasThinkingContent = false,
   streamingInputTokens,
   streamingOutputTokens,
   streamingDuration,
   agentModeEnabled = false,
   isLastMessage = false,
+  ragLogId,
+  showFeedback = true,
 }: MessageBubbleProps) {
   const isUser = message.role === 'user';
   const hasGeneratedImages = message.generatedImages && message.generatedImages.length > 0;
   const isImageRequest = isUser && isImageGenerationRequest(message.content);
   const displayContent = isImageRequest ? extractImagePrompt(message.content) : message.content;
+  
+  // Determine if we should show feedback (assistant message with RAG log ID)
+  const effectiveRagLogId = ragLogId || message.ragLogId;
+  const shouldShowFeedback = !isUser && effectiveRagLogId && showFeedback;
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
@@ -305,7 +317,7 @@ export function MessageBubble({
             {/* Regular message content (may be empty for pure image generation) */}
             {message.content && !message.content.startsWith('[Generated Image]') && (
               <MarkdownMessage
-                content={hasToolCalls ? stripThinkingTags(message.content) : message.content}
+                content={(hasToolCalls || hasThinkingContent) ? stripThinkingTags(message.content) : message.content}
               />
             )}
 
@@ -343,6 +355,14 @@ export function MessageBubble({
                 (isLastMessage && agentModeEnabled ? streamingDuration : undefined)
               }
             />
+
+            {/* RAG Feedback buttons */}
+            {shouldShowFeedback && effectiveRagLogId && (
+              <MessageFeedback 
+                ragLogId={effectiveRagLogId} 
+                currentFeedback={message.ragFeedback as 'thumbs_up' | 'thumbs_down' | undefined}
+              />
+            )}
           </>
         )}
       </div>

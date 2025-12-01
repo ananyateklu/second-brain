@@ -174,6 +174,37 @@ public class SqlNoteRepository : INoteRepository
         }
     }
 
+    public async Task<int> DeleteManyAsync(IEnumerable<string> ids, string userId)
+    {
+        try
+        {
+            var idList = ids.ToList();
+            _logger.LogDebug("Deleting multiple notes. Count: {Count}, UserId: {UserId}", idList.Count, userId);
+
+            // Get all notes that match the IDs and belong to the user
+            var notes = await _context.Notes
+                .Where(n => idList.Contains(n.Id) && n.UserId == userId)
+                .ToListAsync();
+
+            if (notes.Count == 0)
+            {
+                _logger.LogDebug("No notes found for bulk deletion. UserId: {UserId}", userId);
+                return 0;
+            }
+
+            _context.Notes.RemoveRange(notes);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Bulk deleted notes successfully. Count: {Count}, UserId: {UserId}", notes.Count, userId);
+            return notes.Count;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error bulk deleting notes. UserId: {UserId}", userId);
+            throw new RepositoryException($"Failed to bulk delete notes for user '{userId}'", ex);
+        }
+    }
+
     public async Task<Note?> GetByUserIdAndExternalIdAsync(string userId, string externalId)
     {
         try

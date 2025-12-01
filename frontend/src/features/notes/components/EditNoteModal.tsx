@@ -1,18 +1,71 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { Modal } from '../../../components/ui/Modal';
 import { RichNoteForm } from './RichNoteForm';
 import { Button } from '../../../components/ui/Button';
 import { useUIStore } from '../../../store/ui-store';
-import { useUpdateNote } from '../hooks/use-notes-query';
+import { useUpdateNote, useArchiveNote, useUnarchiveNote, useMoveToFolder, useNotes } from '../hooks/use-notes-query';
 import { useNoteForm, formDataToNote, noteToFormData } from '../hooks/use-note-form';
 import { formatRelativeDate } from '../../../utils/date-utils';
+import { useThemeStore } from '../../../store/theme-store';
+import { NOTES_FOLDERS } from '../../../lib/constants';
 
 export function EditNoteModal() {
   const isOpen = useUIStore((state) => state.isEditModalOpen);
   const editingNote = useUIStore((state) => state.editingNote);
   const closeModal = useUIStore((state) => state.closeEditModal);
   const updateNoteMutation = useUpdateNote();
+  const archiveNoteMutation = useArchiveNote();
+  const unarchiveNoteMutation = useUnarchiveNote();
+  const moveToFolderMutation = useMoveToFolder();
+  const { data: allNotes } = useNotes();
   const formRef = useRef<HTMLFormElement>(null);
+  const theme = useThemeStore((state) => state.theme);
+  const isDarkMode = theme === 'dark' || theme === 'blue';
+  const [isArchived, setIsArchived] = useState(editingNote?.isArchived ?? false);
+  const [currentFolder, setCurrentFolder] = useState<string | undefined>(editingNote?.folder);
+  const [isFolderDropdownOpen, setIsFolderDropdownOpen] = useState(false);
+
+  // Get unique folders from all notes
+  const availableFolders = useMemo(() => {
+    if (!allNotes) return [];
+    const folders = allNotes
+      .map(note => note.folder)
+      .filter((folder): folder is string => !!folder);
+    return Array.from(new Set(folders)).sort();
+  }, [allNotes]);
+
+  // Sync local states with editingNote
+  useEffect(() => {
+    if (editingNote) {
+      setIsArchived(editingNote.isArchived);
+      setCurrentFolder(editingNote.folder);
+    }
+  }, [editingNote]);
+
+  const handleArchiveToggle = async () => {
+    if (!editingNote) return;
+
+    if (isArchived) {
+      await unarchiveNoteMutation.mutateAsync(editingNote.id);
+      setIsArchived(false);
+      // Remove from Archived folder (only if currently in Archived folder)
+      if (currentFolder === NOTES_FOLDERS.ARCHIVED) {
+        setCurrentFolder(undefined);
+      }
+    } else {
+      await archiveNoteMutation.mutateAsync(editingNote.id);
+      setIsArchived(true);
+      // Move to Archived folder
+      setCurrentFolder(NOTES_FOLDERS.ARCHIVED);
+    }
+  };
+
+  const handleFolderChange = async (folder: string | null) => {
+    if (!editingNote) return;
+    setCurrentFolder(folder || undefined);
+    setIsFolderDropdownOpen(false);
+    await moveToFolderMutation.mutateAsync({ id: editingNote.id, folder });
+  };
 
   const { register, control, setValue, handleSubmit, errors, isSubmitting, isDirty, reset } = useNoteForm({
     defaultValues: editingNote ? noteToFormData(editingNote) : undefined,
@@ -89,30 +142,180 @@ export function EditNoteModal() {
       }
       subtitle={editingNote?.updatedAt ? formatRelativeDate(editingNote.updatedAt) : undefined}
       headerAction={
-        isDirty ? (
+        <div className="flex items-center gap-2">
+          {/* Folder Selector */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsFolderDropdownOpen(!isFolderDropdownOpen)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200"
+              style={{
+                backgroundColor: currentFolder
+                  ? isDarkMode
+                    ? 'color-mix(in srgb, var(--color-brand-600) 20%, transparent)'
+                    : 'color-mix(in srgb, var(--color-brand-100) 50%, transparent)'
+                  : 'var(--surface-elevated)',
+                color: currentFolder ? 'var(--color-brand-600)' : 'var(--text-secondary)',
+                border: `1px solid ${currentFolder ? 'var(--color-brand-400)' : 'var(--border)'}`,
+              }}
+              disabled={moveToFolderMutation.isPending}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+              </svg>
+              <span className="max-w-[120px] truncate">{currentFolder || 'No folder'}</span>
+              <svg
+                className={`w-3 h-3 transition-transform duration-200 ${isFolderDropdownOpen ? 'rotate-180' : ''}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {/* Folder Dropdown */}
+            {isFolderDropdownOpen && (
+              <div
+                className="absolute top-full right-0 mt-1 min-w-[200px] max-h-64 overflow-y-auto rounded-xl border shadow-xl z-50"
+                style={{
+                  backgroundColor: 'var(--surface-card-solid)',
+                  borderColor: 'var(--border)',
+                }}
+              >
+                <div className="p-1">
+                  {/* Remove from folder */}
+                  <button
+                    type="button"
+                    onClick={() => handleFolderChange(null)}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors"
+                    style={{
+                      backgroundColor: !currentFolder ? 'var(--color-brand-600)' : 'transparent',
+                      color: !currentFolder ? '#ffffff' : 'var(--text-primary)',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (currentFolder) e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+                    }}
+                    onMouseLeave={(e) => {
+                      if (currentFolder) e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    No folder
+                  </button>
+
+                  {availableFolders.length > 0 && (
+                    <div className="border-t my-1" style={{ borderColor: 'var(--border)' }} />
+                  )}
+
+                  {/* Existing folders */}
+                  {availableFolders.map((folder) => (
+                    <button
+                      key={folder}
+                      type="button"
+                      onClick={() => handleFolderChange(folder)}
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors"
+                      style={{
+                        backgroundColor: currentFolder === folder ? 'var(--color-brand-600)' : 'transparent',
+                        color: currentFolder === folder ? '#ffffff' : 'var(--text-primary)',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (currentFolder !== folder) e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+                      }}
+                      onMouseLeave={(e) => {
+                        if (currentFolder !== folder) e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                      </svg>
+                      <span className="truncate">{folder}</span>
+                    </button>
+                  ))}
+
+                  {/* Create new folder input */}
+                  <div className="border-t mt-1 pt-1" style={{ borderColor: 'var(--border)' }}>
+                    <div className="px-2 py-1">
+                      <input
+                        type="text"
+                        placeholder="New folder name..."
+                        className="w-full px-2 py-1.5 rounded-md text-sm"
+                        style={{
+                          backgroundColor: 'var(--surface-elevated)',
+                          color: 'var(--text-primary)',
+                          border: '1px solid var(--border)',
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            const value = e.currentTarget.value.trim();
+                            if (value) {
+                              handleFolderChange(value);
+                              e.currentTarget.value = '';
+                            }
+                          }
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Archive/Unarchive Button */}
           <Button
             type="button"
-            variant="primary"
-            isLoading={isSubmitting}
-            disabled={isSubmitting}
-            onClick={() => {
-              if (formRef.current) {
-                formRef.current.requestSubmit();
-              }
-            }}
+            variant="secondary"
+            isLoading={archiveNoteMutation.isPending || unarchiveNoteMutation.isPending}
+            disabled={archiveNoteMutation.isPending || unarchiveNoteMutation.isPending}
+            onClick={handleArchiveToggle}
+            title={isArchived ? 'Restore from archive' : 'Archive note'}
           >
-            {isSubmitting ? (
-              <>Saving...</>
+            {isArchived ? (
+              <>
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4l3-3m0 0l3 3m-3-3v6" />
+                </svg>
+                Restore
+              </>
             ) : (
               <>
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
                 </svg>
-                Update Note
+                Archive
               </>
             )}
           </Button>
-        ) : null
+          {/* Update Button */}
+          {isDirty && (
+            <Button
+              type="button"
+              variant="primary"
+              isLoading={isSubmitting}
+              disabled={isSubmitting}
+              onClick={() => {
+                if (formRef.current) {
+                  formRef.current.requestSubmit();
+                }
+              }}
+            >
+              {isSubmitting ? (
+                <>Saving...</>
+              ) : (
+                <>
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Update Note
+                </>
+              )}
+            </Button>
+          )}
+        </div>
       }
     >
       <form ref={formRef} onSubmit={handleSubmit} className="h-full flex flex-col">

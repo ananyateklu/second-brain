@@ -10,7 +10,9 @@ import { PageLoader } from './PageLoader';
 // Lazy load heavy pages to reduce initial bundle size
 const DashboardPage = lazy(() => import('../pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
 const NotesPage = lazy(() => import('../pages/NotesPage').then(m => ({ default: m.NotesPage })));
+const NotesDirectoryPage = lazy(() => import('../pages/NotesDirectoryPage').then(m => ({ default: m.NotesDirectoryPage })));
 const ChatPage = lazy(() => import('../pages/ChatPage').then(m => ({ default: m.ChatPage })));
+const RagAnalyticsPage = lazy(() => import('../pages/RagAnalyticsPage').then(m => ({ default: m.RagAnalyticsPage })));
 
 // Lazy load settings pages (not frequently visited)
 const GeneralSettings = lazy(() => import('../pages/settings/GeneralSettings').then(m => ({ default: m.GeneralSettings })));
@@ -55,6 +57,20 @@ export const router = createBrowserRouter([
     ),
   },
   {
+    path: '/directory',
+    element: (
+      <ProtectedRoute>
+        <ErrorBoundary>
+          <AppLayout>
+            <Suspense fallback={<PageLoader />}>
+              <NotesDirectoryPage />
+            </Suspense>
+          </AppLayout>
+        </ErrorBoundary>
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: '/chat',
     element: (
       <ProtectedRoute>
@@ -62,6 +78,20 @@ export const router = createBrowserRouter([
           <AppLayout>
             <Suspense fallback={<PageLoader />}>
               <ChatPage />
+            </Suspense>
+          </AppLayout>
+        </ErrorBoundary>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/analytics',
+    element: (
+      <ProtectedRoute>
+        <ErrorBoundary>
+          <AppLayout>
+            <Suspense fallback={<PageLoader />}>
+              <RagAnalyticsPage />
             </Suspense>
           </AppLayout>
         </ErrorBoundary>

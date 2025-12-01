@@ -175,6 +175,12 @@
     var(--color-brand-900),
     #050805 40%
   );
+
+  /* Smart prompt chip colors (dark mode default) */
+  --prompt-chip-bg: color-mix(in srgb, var(--color-brand-600) 30%, var(--surface-card-solid));
+  --prompt-chip-text: var(--color-brand-400);
+  --prompt-chip-border: var(--color-brand-400);
+  --prompt-chip-hover-bg: color-mix(in srgb, var(--color-brand-600) 40%, var(--surface-card-solid));
 }
 
 /* Light theme colors */
@@ -275,6 +281,12 @@
     var(--color-brand-600) 20%,
     transparent
   );
+
+  /* Smart prompt chip colors for light theme - lighter background */
+  --prompt-chip-bg: color-mix(in srgb, var(--color-brand-100) 50%, #ffffff);
+  --prompt-chip-text: var(--color-brand-700);
+  --prompt-chip-border: var(--color-brand-300);
+  --prompt-chip-hover-bg: var(--color-brand-100);
 
   color-scheme: light;
 }
@@ -378,6 +390,12 @@
     var(--color-brand-500) 25%,
     transparent
   );
+
+  /* Smart prompt chip colors for dark theme */
+  --prompt-chip-bg: color-mix(in srgb, var(--color-brand-600) 30%, var(--surface-card-solid));
+  --prompt-chip-text: var(--color-brand-400);
+  --prompt-chip-border: var(--color-brand-400);
+  --prompt-chip-hover-bg: color-mix(in srgb, var(--color-brand-600) 40%, var(--surface-card-solid));
 
   --page-background: radial-gradient(
     circle at top left,
@@ -500,6 +518,12 @@
     var(--color-brand-500) 25%,
     transparent
   );
+
+  /* Smart prompt chip colors for blue theme */
+  --prompt-chip-bg: color-mix(in srgb, var(--color-brand-600) 30%, var(--surface-card-solid));
+  --prompt-chip-text: var(--color-brand-400);
+  --prompt-chip-border: var(--color-brand-400);
+  --prompt-chip-hover-bg: color-mix(in srgb, var(--color-brand-600) 40%, var(--surface-card-solid));
 
   /* Blue theme indicator */
   --blue-indicator: var(--color-blue-400);

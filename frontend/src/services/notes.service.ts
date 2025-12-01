@@ -4,7 +4,7 @@
  */
 
 import { apiClient } from '../lib/api-client';
-import { API_ENDPOINTS } from '../lib/constants';
+import { API_ENDPOINTS, NOTES_FOLDERS } from '../lib/constants';
 import type {
   Note,
   NoteResponse,
@@ -58,16 +58,33 @@ export const notesService = {
   },
 
   /**
-   * Archive a note
+   * Bulk delete multiple notes in a single request
    */
-  async archive(id: string): Promise<NoteResponse> {
-    return this.update(id, { isArchived: true });
+  async bulkDelete(noteIds: string[]): Promise<{ deletedCount: number; message: string }> {
+    return apiClient.post<{ deletedCount: number; message: string }>(
+      API_ENDPOINTS.NOTES.BULK_DELETE,
+      { noteIds }
+    );
   },
 
   /**
-   * Unarchive a note
+   * The folder name used for archived notes
+   */
+  ARCHIVED_FOLDER: NOTES_FOLDERS.ARCHIVED,
+
+  /**
+   * Archive a note (moves to Archived folder)
+   */
+  async archive(id: string): Promise<NoteResponse> {
+    return this.update(id, { isArchived: true, folder: NOTES_FOLDERS.ARCHIVED, updateFolder: true });
+  },
+
+  /**
+   * Unarchive a note (backend automatically removes from Archived folder if applicable)
    */
   async unarchive(id: string): Promise<NoteResponse> {
+    // Don't send updateFolder - let the backend automatically remove from Archived folder
+    // only if the note was in the Archived folder
     return this.update(id, { isArchived: false });
   },
 

@@ -55,8 +55,8 @@ public static class ServiceCollectionExtensions
     {
         // Configure JWT settings
         services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
-        
-        var jwtSettings = configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>() 
+
+        var jwtSettings = configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
             ?? new JwtSettings();
 
         // Validate JWT secret key
@@ -259,7 +259,7 @@ public static class ServiceCollectionExtensions
         services.Configure<RagSettings>(configuration.GetSection(RagSettings.SectionName));
 
         // Register embedding client factories for testability
-        services.AddSingleton<SecondBrain.Application.Services.Embeddings.Interfaces.IOpenAIEmbeddingClientFactory, 
+        services.AddSingleton<SecondBrain.Application.Services.Embeddings.Interfaces.IOpenAIEmbeddingClientFactory,
                               SecondBrain.Application.Services.Embeddings.Interfaces.OpenAIEmbeddingClientFactory>();
 
         // Register embedding providers as singletons
@@ -295,7 +295,31 @@ public static class ServiceCollectionExtensions
             return new CompositeVectorStore(postgresStore, pineconeStore, settings, logger);
         });
 
-        // Register RAG services
+        // Register note embedding search repository for BM25 search
+        services.AddScoped<INoteEmbeddingSearchRepository, SqlNoteEmbeddingSearchRepository>();
+
+        // Register BM25 search service for hybrid search
+        services.AddScoped<IBM25SearchService, BM25SearchService>();
+
+        // Register hybrid search service (combines vector + BM25 with RRF fusion)
+        services.AddScoped<IHybridSearchService, HybridSearchService>();
+
+        // Register query expansion service (HyDE + multi-query)
+        services.AddScoped<IQueryExpansionService, QueryExpansionService>();
+
+        // Register reranking service (LLM-based relevance scoring)
+        services.AddScoped<IRerankerService, RerankerService>();
+
+        // Register RAG query log repository
+        services.AddScoped<IRagQueryLogRepository, SqlRagQueryLogRepository>();
+
+        // Register RAG analytics service for observability
+        services.AddScoped<IRagAnalyticsService, RagAnalyticsService>();
+
+        // Register topic clustering service for query analysis
+        services.AddScoped<ITopicClusteringService, TopicClusteringService>();
+
+        // Register core RAG services
         services.AddScoped<IChunkingService, ChunkingService>();
         services.AddScoped<IIndexingService, IndexingService>();
         services.AddScoped<IRagService, RagService>();

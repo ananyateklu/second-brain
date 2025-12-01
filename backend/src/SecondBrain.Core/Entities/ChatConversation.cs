@@ -83,6 +83,20 @@ public class ChatMessage
     [Column("duration_ms")]
     public double? DurationMs { get; set; }
 
+    /// <summary>
+    /// RAG query log ID for feedback association (only for assistant messages with RAG)
+    /// </summary>
+    [Column("rag_log_id")]
+    [MaxLength(128)]
+    public string? RagLogId { get; set; }
+
+    /// <summary>
+    /// User feedback on RAG response quality ('thumbs_up' or 'thumbs_down')
+    /// </summary>
+    [Column("rag_feedback")]
+    [MaxLength(20)]
+    public string? RagFeedback { get; set; }
+
     // Navigation property back to conversation (ignored to prevent circular serialization)
     [ForeignKey("ConversationId")]
     [JsonIgnore]

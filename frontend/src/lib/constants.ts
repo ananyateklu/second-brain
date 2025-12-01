@@ -36,6 +36,7 @@ export const API_ENDPOINTS = {
   NOTES: {
     BASE: '/notes',
     BY_ID: (id: string) => `/notes/${id}`,
+    BULK_DELETE: '/notes/bulk-delete',
     IMPORT: '/notes/import',
   },
 
@@ -44,6 +45,7 @@ export const API_ENDPOINTS = {
     CONVERSATIONS: '/chat/conversations',
     CONVERSATION_BY_ID: (id: string) => `/chat/conversations/${id}`,
     CONVERSATION_SETTINGS: (id: string) => `/chat/conversations/${id}/settings`,
+    BULK_DELETE: '/chat/conversations/bulk-delete',
     MESSAGES: (conversationId: string) => `/chat/conversations/${conversationId}/messages`,
     STREAM_MESSAGES: (conversationId: string) => `/chat/conversations/${conversationId}/messages/stream`,
     GENERATE_IMAGE: (conversationId: string) => `/chat/conversations/${conversationId}/generate-image`,
@@ -78,6 +80,16 @@ export const API_ENDPOINTS = {
     STATS: '/indexing/stats',
     REINDEX_NOTE: (noteId: string) => `/indexing/reindex/${noteId}`,
     DELETE_NOTES: '/indexing/notes',
+  },
+
+  // RAG Analytics
+  RAG_ANALYTICS: {
+    FEEDBACK: '/rag/analytics/feedback',
+    STATS: '/rag/analytics/stats',
+    LOGS: '/rag/analytics/logs',
+    LOG_BY_ID: (id: string) => `/rag/analytics/logs/${id}`,
+    CLUSTER: '/rag/analytics/cluster',
+    TOPICS: '/rag/analytics/topics',
   },
 
   // Statistics
@@ -133,9 +145,9 @@ export const QUERY_KEYS = {
   // AI Health
   aiHealth: {
     all: ['ai-health'] as const,
-    health: (ollamaBaseUrl?: string | null, useRemoteOllama?: boolean) => 
+    health: (ollamaBaseUrl?: string | null, useRemoteOllama?: boolean) =>
       [...QUERY_KEYS.aiHealth.all, { ollamaBaseUrl, useRemoteOllama }] as const,
-    provider: (provider: string, ollamaBaseUrl?: string | null, useRemoteOllama?: boolean) => 
+    provider: (provider: string, ollamaBaseUrl?: string | null, useRemoteOllama?: boolean) =>
       [...QUERY_KEYS.aiHealth.all, provider, { ollamaBaseUrl, useRemoteOllama }] as const,
   },
 
@@ -144,6 +156,15 @@ export const QUERY_KEYS = {
     all: ['indexing'] as const,
     stats: (userId?: string) => [...QUERY_KEYS.indexing.all, 'stats', userId] as const,
     job: (jobId: string) => [...QUERY_KEYS.indexing.all, 'job', jobId] as const,
+  },
+
+  // RAG Analytics
+  ragAnalytics: {
+    all: ['rag-analytics'] as const,
+    stats: (since?: string) => [...QUERY_KEYS.ragAnalytics.all, 'stats', since] as const,
+    logs: (page?: number, pageSize?: number) => [...QUERY_KEYS.ragAnalytics.all, 'logs', { page, pageSize }] as const,
+    log: (id: string) => [...QUERY_KEYS.ragAnalytics.all, 'log', id] as const,
+    topics: () => [...QUERY_KEYS.ragAnalytics.all, 'topics'] as const,
   },
 
   // Statistics
@@ -164,7 +185,7 @@ export const QUERY_KEYS = {
   imageGeneration: {
     all: ['image-generation'] as const,
     providers: () => [...QUERY_KEYS.imageGeneration.all, 'providers'] as const,
-    sizes: (provider: string, model?: string) => 
+    sizes: (provider: string, model?: string) =>
       [...QUERY_KEYS.imageGeneration.all, 'sizes', provider, model] as const,
   },
 } as const;
@@ -252,4 +273,12 @@ export const AI_PROVIDERS = {
 export const VECTOR_STORES = {
   POSTGRESQL: 'PostgreSQL',
   PINECONE: 'Pinecone',
+} as const;
+
+/**
+ * Notes folder constants
+ */
+export const NOTES_FOLDERS = {
+  /** Folder name for archived notes - automatically assigned when archiving */
+  ARCHIVED: 'Archived',
 } as const;

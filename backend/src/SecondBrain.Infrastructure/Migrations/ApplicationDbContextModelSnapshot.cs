@@ -120,6 +120,16 @@ namespace SecondBrain.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("output_tokens");
 
+                    b.Property<string>("RagLogId")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("rag_log_id");
+
+                    b.Property<string>("RagFeedback")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("rag_feedback");
+
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasMaxLength(20)

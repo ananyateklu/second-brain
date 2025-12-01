@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { Note } from '../features/notes/types/note';
 
+export type NotesViewMode = 'card' | 'list';
+
 interface UIStore {
   // Modal states
   isCreateModalOpen: boolean;
@@ -19,6 +21,9 @@ interface UIStore {
   sidebarState: 'closed' | 'collapsed' | 'expanded';
   previousSidebarState: 'closed' | 'collapsed' | 'expanded' | null;
   
+  // Notes view mode
+  notesViewMode: NotesViewMode;
+  
   // Actions
   openCreateModal: () => void;
   closeCreateModal: () => void;
@@ -34,9 +39,11 @@ interface UIStore {
   toggleSearchMode: () => void;
   toggleSidebar: () => void;
   closeSidebar: () => void;
+  setNotesViewMode: (mode: NotesViewMode) => void;
 }
 
 const SIDEBAR_STORAGE_KEY = 'second-brain-sidebar-state';
+const NOTES_VIEW_MODE_STORAGE_KEY = 'second-brain-notes-view-mode';
 
 // Load sidebar state from localStorage
 const loadSidebarState = (): 'closed' | 'collapsed' | 'expanded' => {
@@ -59,8 +66,25 @@ const saveSidebarState = (state: 'closed' | 'collapsed' | 'expanded') => {
   localStorage.setItem(SIDEBAR_STORAGE_KEY, state);
 };
 
+// Load notes view mode from localStorage
+const loadNotesViewMode = (): NotesViewMode => {
+  if (typeof window === 'undefined') return 'card';
+  const stored = localStorage.getItem(NOTES_VIEW_MODE_STORAGE_KEY);
+  if (stored === 'card' || stored === 'list') {
+    return stored;
+  }
+  return 'card'; // Default to card view
+};
+
+// Save notes view mode to localStorage
+const saveNotesViewMode = (mode: NotesViewMode) => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(NOTES_VIEW_MODE_STORAGE_KEY, mode);
+};
+
 // Initialize sidebar state from storage
 const initialSidebarState = loadSidebarState();
+const initialNotesViewMode = loadNotesViewMode();
 
 export const useUIStore = create<UIStore>((set) => ({
   // Initial state
@@ -73,6 +97,7 @@ export const useUIStore = create<UIStore>((set) => ({
   searchMode: 'both' as 'both' | 'title' | 'content',
   sidebarState: initialSidebarState,
   previousSidebarState: null,
+  notesViewMode: initialNotesViewMode,
   
   // Actions
   openCreateModal: () => set({ isCreateModalOpen: true }),
@@ -129,5 +154,9 @@ export const useUIStore = create<UIStore>((set) => ({
       previousSidebarState: state.sidebarState
     };
   }),
+  setNotesViewMode: (mode) => {
+    saveNotesViewMode(mode);
+    return set({ notesViewMode: mode });
+  },
 }));
 

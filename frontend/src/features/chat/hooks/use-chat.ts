@@ -68,3 +68,14 @@ export function useDeleteConversation() {
   });
 }
 
+export function useBulkDeleteConversations() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (conversationIds: string[]) => chatService.bulkDeleteConversations(conversationIds),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations.all });
+    },
+  });
+}
+

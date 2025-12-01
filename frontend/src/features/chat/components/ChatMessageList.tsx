@@ -10,7 +10,7 @@ import { ToolExecutionCard } from '../../agents/components/ToolExecutionCard';
 import { ProcessTimeline } from './ProcessTimeline';
 import { RetrievedNotes } from '../../../components/ui/RetrievedNotes';
 import { TokenUsageDisplay } from '../../../components/TokenUsageDisplay';
-import { extractThinkingContent } from '../../../utils/thinking-utils';
+import { extractThinkingContent, hasThinkingTags } from '../../../utils/thinking-utils';
 import { convertToolCallToExecution } from '../utils/tool-utils';
 
 import { PendingMessage } from '../hooks/use-chat-conversation-manager';
@@ -123,6 +123,7 @@ export function ChatMessageList({
                 totalMessages={conversation.messages.length}
                 conversation={conversation}
                 streamingMessage={streamingMessage}
+                isStreaming={isStreaming}
                 agentModeEnabled={agentModeEnabled}
                 userName={userName}
                 inputTokens={inputTokens}
@@ -175,6 +176,7 @@ interface MessageWithContextProps {
   totalMessages: number;
   conversation: ChatConversation;
   streamingMessage: string;
+  isStreaming: boolean;
   agentModeEnabled: boolean;
   userName?: string;
   inputTokens?: number;
@@ -191,6 +193,7 @@ function MessageWithContext({
   totalMessages,
   conversation,
   streamingMessage,
+  isStreaming,
   agentModeEnabled,
   userName,
   inputTokens,
@@ -200,11 +203,24 @@ function MessageWithContext({
   const isAssistantMessage = message.role === 'assistant';
   const isLastMessage = index === totalMessages - 1;
 
-  // Only hide the last assistant message if it's a duplicate of what's currently streaming.
-  // This prevents hiding old assistant messages from previous exchanges when a new response is streaming.
-  // We check if the message content matches (or is a prefix/suffix of) the streaming message.
+  // Hide the last assistant message if:
+  // 1. We're currently streaming (to avoid showing both streaming indicator AND persisted message)
+  // 2. OR the persisted message is a duplicate of what's in the streaming buffer
+  // This prevents double rendering of the same content.
   const isStreamingDuplicate = useMemo(() => {
-    if (!isAssistantMessage || !isLastMessage || !streamingMessage) {
+    if (!isAssistantMessage || !isLastMessage) {
+      return false;
+    }
+
+    // If we're currently streaming, always hide the last assistant message
+    // to prevent showing both the streaming indicator and the persisted message
+    if (isStreaming && streamingMessage) {
+      return true;
+    }
+
+    // If not streaming but there's still streaming content in the buffer,
+    // check if this persisted message matches it
+    if (!streamingMessage) {
       return false;
     }
 
@@ -237,13 +253,16 @@ function MessageWithContext({
     }
 
     return false;
-  }, [isAssistantMessage, isLastMessage, streamingMessage, message.content]);
+  }, [isAssistantMessage, isLastMessage, isStreaming, streamingMessage, message.content]);
 
   const hasToolCalls = !!(isAssistantMessage && message.toolCalls && message.toolCalls.length > 0);
 
-  // Extract thinking content from persisted messages
+  // Check for thinking content in message (supports both <thinking> and <think> tags)
+  const hasThinkingContent = isAssistantMessage && hasThinkingTags(message.content);
+
+  // Extract thinking content from persisted messages when there are tool calls OR thinking tags
   const persistedThinkingSteps =
-    hasToolCalls && !isStreamingDuplicate
+    (hasToolCalls || hasThinkingContent) && !isStreamingDuplicate
       ? extractThinkingContent(message.content)
       : [];
 
@@ -286,6 +305,7 @@ function MessageWithContext({
           modelName={conversation.model}
           userName={userName}
           hasToolCalls={hasToolCalls}
+          hasThinkingContent={hasThinkingContent}
           streamingInputTokens={inputTokens}
           streamingOutputTokens={outputTokens}
           streamingDuration={streamDuration}
@@ -360,10 +380,10 @@ function PendingUserMessage({ pendingMessage, inputTokens, userName }: PendingUs
               <span>Generate Image</span>
             </div>
           </div>
-          
+
           {/* Prompt text */}
           <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed">{prompt}</p>
-          
+
           <TokenUsageDisplay
             inputTokens={inputTokens}
             outputTokens={undefined}

@@ -4,6 +4,7 @@ import {
   useChatConversation,
   useCreateConversation,
   useDeleteConversation,
+  useBulkDeleteConversations,
 } from './use-chat';
 import { toast } from '../../../hooks/use-toast';
 import { useAuthStore } from '../../../store/auth-store';
@@ -61,6 +62,7 @@ export function useChatConversationManager(
   const { data: conversation } = useChatConversation(conversationId);
   const createConversationMutation = useCreateConversation();
   const deleteConversationMutation = useDeleteConversation();
+  const bulkDeleteMutation = useBulkDeleteConversations();
 
   // Auto-load most recent conversation on mount (but not when user explicitly starts new chat)
   useEffect(() => {
@@ -189,10 +191,10 @@ export function useChatConversationManager(
 
     if (confirmed) {
       try {
-        // Delete all conversations in parallel
-        await Promise.all(ids.map((id) => deleteConversationMutation.mutateAsync(id)));
+        // Use bulk delete endpoint - single API call instead of multiple
+        const result = await bulkDeleteMutation.mutateAsync(ids);
         
-        toast.success(`${ids.length} conversation${ids.length > 1 ? 's' : ''} deleted`);
+        toast.success(`${result.deletedCount} conversation${result.deletedCount !== 1 ? 's' : ''} deleted`);
 
         // Determine next conversation to select after bulk deletion
         const remainingConversations = conversations?.filter((c) => !ids.includes(c.id)) || [];
@@ -214,10 +216,10 @@ export function useChatConversationManager(
         }
       } catch (error) {
         console.error('Error deleting conversations:', { error, ids });
-        toast.error('Failed to delete some conversations');
+        toast.error('Failed to delete conversations');
       }
     }
-  }, [conversationId, conversations, deleteConversationMutation]);
+  }, [conversationId, conversations, bulkDeleteMutation]);
 
   // Create a new conversation
   const createConversation = useCallback(async (request: CreateConversationRequest) => {

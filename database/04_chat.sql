@@ -34,6 +34,8 @@ CREATE TABLE IF NOT EXISTS chat_messages (
     input_tokens INTEGER,
     output_tokens INTEGER,
     duration_ms DOUBLE PRECISION,
+    rag_log_id VARCHAR(128),
+    rag_feedback VARCHAR(20),
     
     -- Foreign key constraint
     CONSTRAINT fk_chat_messages_conversations
@@ -92,6 +94,7 @@ COMMENT ON COLUMN chat_messages.role IS 'Message role (user or assistant)';
 COMMENT ON COLUMN chat_messages.input_tokens IS 'Token count for input/prompt';
 COMMENT ON COLUMN chat_messages.output_tokens IS 'Token count for output/response';
 COMMENT ON COLUMN chat_messages.duration_ms IS 'Response generation time in milliseconds';
+COMMENT ON COLUMN chat_messages.rag_log_id IS 'RAG query log ID for feedback association';
 
 COMMENT ON TABLE tool_calls IS 'Agent tool call executions';
 COMMENT ON COLUMN tool_calls.tool_name IS 'Name of the tool that was called';

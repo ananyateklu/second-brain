@@ -463,6 +463,10 @@ public class AgentService : IAgentService
                         var function = new Function(toolName, toolDescription, schemaObj);
                         tools.Add(new Anthropic.SDK.Common.Tool(function));
                         pluginMethods[toolName] = (plugin, method);
+
+                        // Log the tool schema for debugging
+                        _logger.LogDebug("Registered tool {ToolName} with schema: {Schema}",
+                            toolName, schemaObj.ToJsonString());
                     }
                 }
             }
@@ -523,7 +527,7 @@ public class AgentService : IAgentService
                 yield return new AgentStreamEvent
                 {
                     Type = AgentEventType.Status,
-                    Content = "Calling Claude model..."
+                    Content = "Analyzing your request..."
                 };
             }
             else
@@ -531,7 +535,7 @@ public class AgentService : IAgentService
                 yield return new AgentStreamEvent
                 {
                     Type = AgentEventType.Status,
-                    Content = "Processing tool results..."
+                    Content = "Continuing with tool results..."
                 };
             }
 
@@ -541,7 +545,8 @@ public class AgentService : IAgentService
                 Messages = messages,
                 MaxTokens = request.MaxTokens ?? 4096,
                 System = new List<SystemMessage> { new SystemMessage(systemPrompt) },
-                Temperature = request.Temperature.HasValue ? (decimal)request.Temperature.Value : 0.7m
+                Temperature = request.Temperature.HasValue ? (decimal)request.Temperature.Value : 0.7m,
+                Stream = true // Enable streaming
             };
 
             if (tools.Count > 0)
@@ -549,61 +554,57 @@ public class AgentService : IAgentService
                 parameters.Tools = tools;
             }
 
-            MessageResponse? response = null;
             var shouldContinue = false;
             string? errorMessage = null;
 
-            // Use non-streaming API for simpler tool handling
-            try
-            {
-                response = await client.Messages.GetClaudeMessageAsync(parameters, cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error calling Anthropic API");
-                errorMessage = ex.Message;
-            }
+            // Track state
+            var pendingToolCalls = new List<(string Id, string Name, JsonNode? Input)>();
+            var responseContentBlocks = new List<ContentBase>();
+            var iterationTextContent = new StringBuilder();
 
-            // Handle error outside of catch block
-            if (errorMessage != null)
-            {
-                yield return new AgentStreamEvent
-                {
-                    Type = AgentEventType.Error,
-                    Content = $"Error: {errorMessage}"
-                };
-                yield break;
-            }
+            // Use streaming for text delivery when no tools, non-streaming when tools are enabled
+            // This ensures reliable tool call handling while still providing fast text streaming
+            var useStreaming = tools.Count == 0;
 
-            // Process the response content
-            if (response?.Content != null)
+            if (useStreaming)
             {
-                // Emit status that we're now generating the response
-                var hasTextContent = response.Content.Any(c => c is Anthropic.SDK.Messaging.TextContent tc && !string.IsNullOrEmpty(tc.Text));
-                if (hasTextContent)
+                // Stream text tokens in real-time (no tool handling needed)
+                var hasEmittedFirstToken = false;
+
+                await foreach (var streamEvent in StreamAnthropicWithErrorHandling(
+                    client, parameters, cancellationToken, e => errorMessage = e))
                 {
-                    yield return new AgentStreamEvent
+                    if (cancellationToken.IsCancellationRequested)
                     {
-                        Type = AgentEventType.Status,
-                        Content = "Generating response..."
-                    };
-                }
+                        yield break;
+                    }
 
-                foreach (var content in response.Content)
-                {
-                    if (content is Anthropic.SDK.Messaging.TextContent textContent)
+                    // Handle text deltas
+                    if (streamEvent.Delta?.Text != null)
                     {
-                        var text = textContent.Text ?? "";
+                        var text = streamEvent.Delta.Text;
                         fullResponse.Append(text);
+                        iterationTextContent.Append(text);
+
+                        if (!hasEmittedFirstToken)
+                        {
+                            hasEmittedFirstToken = true;
+                            yield return new AgentStreamEvent
+                            {
+                                Type = AgentEventType.Status,
+                                Content = "Generating response..."
+                            };
+                        }
 
                         // Check for thinking blocks
+                        var currentContent = fullResponse.ToString();
                         var thinkingStartIndex = 0;
-                        while ((thinkingStartIndex = text.IndexOf("<thinking>", thinkingStartIndex, StringComparison.OrdinalIgnoreCase)) != -1)
+                        while ((thinkingStartIndex = currentContent.IndexOf("<thinking>", thinkingStartIndex, StringComparison.OrdinalIgnoreCase)) != -1)
                         {
-                            var thinkingEndIndex = text.IndexOf("</thinking>", thinkingStartIndex, StringComparison.OrdinalIgnoreCase);
+                            var thinkingEndIndex = currentContent.IndexOf("</thinking>", thinkingStartIndex, StringComparison.OrdinalIgnoreCase);
                             if (thinkingEndIndex != -1)
                             {
-                                var thinkingContent = text.Substring(
+                                var thinkingContent = currentContent.Substring(
                                     thinkingStartIndex + 10,
                                     thinkingEndIndex - thinkingStartIndex - 10
                                 ).Trim();
@@ -629,85 +630,235 @@ public class AgentService : IAgentService
                         };
                     }
                 }
+            }
+            else
+            {
+                // Use non-streaming for tool-enabled requests (more reliable tool handling)
+                // But emit progress status to keep user informed
+                parameters.Stream = false;
 
-                // Check for tool use
-                var toolUseBlocks = response.Content.OfType<ToolUseContent>().ToList();
-                if (toolUseBlocks.Any())
+                MessageResponse? response = null;
+                try
                 {
-                    // Emit status for executing tools
+                    response = await client.Messages.GetClaudeMessageAsync(parameters, cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error calling Anthropic API");
+                    errorMessage = ex.Message;
+                }
+
+                if (response?.Content != null)
+                {
+                    // Process response content
+                    var hasTextContent = response.Content.Any(c => c is Anthropic.SDK.Messaging.TextContent tc && !string.IsNullOrEmpty(tc.Text));
+                    if (hasTextContent)
+                    {
+                        yield return new AgentStreamEvent
+                        {
+                            Type = AgentEventType.Status,
+                            Content = "Generating response..."
+                        };
+                    }
+
+                    foreach (var content in response.Content)
+                    {
+                        if (content is Anthropic.SDK.Messaging.TextContent textContent)
+                        {
+                            var text = textContent.Text ?? "";
+                            fullResponse.Append(text);
+                            iterationTextContent.Append(text);
+
+                            // Check for thinking blocks
+                            var thinkingStartIndex = 0;
+                            while ((thinkingStartIndex = text.IndexOf("<thinking>", thinkingStartIndex, StringComparison.OrdinalIgnoreCase)) != -1)
+                            {
+                                var thinkingEndIndex = text.IndexOf("</thinking>", thinkingStartIndex, StringComparison.OrdinalIgnoreCase);
+                                if (thinkingEndIndex != -1)
+                                {
+                                    var thinkingContent = text.Substring(
+                                        thinkingStartIndex + 10,
+                                        thinkingEndIndex - thinkingStartIndex - 10
+                                    ).Trim();
+
+                                    if (!emittedThinkingBlocks.Contains(thinkingContent))
+                                    {
+                                        emittedThinkingBlocks.Add(thinkingContent);
+                                        yield return new AgentStreamEvent
+                                        {
+                                            Type = AgentEventType.Thinking,
+                                            Content = thinkingContent
+                                        };
+                                    }
+                                    thinkingStartIndex = thinkingEndIndex + 11;
+                                }
+                                else break;
+                            }
+
+                            yield return new AgentStreamEvent
+                            {
+                                Type = AgentEventType.Token,
+                                Content = text
+                            };
+
+                            responseContentBlocks.Add(textContent);
+                        }
+                        else if (content is ToolUseContent toolUse)
+                        {
+                            _logger.LogInformation("Claude tool call received. Tool: {ToolName}, Id: {ToolId}, Arguments: {Arguments}",
+                                toolUse.Name, toolUse.Id, toolUse.Input?.ToJsonString() ?? "null");
+
+                            pendingToolCalls.Add((toolUse.Id ?? "", toolUse.Name ?? "", toolUse.Input));
+                            responseContentBlocks.Add(toolUse);
+
+                            yield return new AgentStreamEvent
+                            {
+                                Type = AgentEventType.Status,
+                                Content = $"Planning to use {toolUse.Name}..."
+                            };
+                        }
+                    }
+                }
+            }
+
+            // Handle error outside of streaming loop
+            if (errorMessage != null)
+            {
+                yield return new AgentStreamEvent
+                {
+                    Type = AgentEventType.Error,
+                    Content = $"Error: {errorMessage}"
+                };
+                yield break;
+            }
+
+            // Execute any pending tool calls
+            if (pendingToolCalls.Count > 0)
+            {
+                var textContent = iterationTextContent.ToString();
+
+                yield return new AgentStreamEvent
+                {
+                    Type = AgentEventType.Status,
+                    Content = $"Executing {pendingToolCalls.Count} tool{(pendingToolCalls.Count > 1 ? "s" : "")}..."
+                };
+
+                // Add assistant message with tool use to history
+                if (responseContentBlocks.Count == 0)
+                {
+                    // If no content blocks, create one from text
+                    if (!string.IsNullOrEmpty(textContent))
+                    {
+                        responseContentBlocks.Add(new Anthropic.SDK.Messaging.TextContent { Text = textContent });
+                    }
+                }
+
+                var assistantMsg = new Anthropic.SDK.Messaging.Message
+                {
+                    Role = RoleType.Assistant,
+                    Content = responseContentBlocks
+                };
+                messages.Add(assistantMsg);
+
+                // Execute tools and collect results
+                var toolResults = new List<ContentBase>();
+
+                foreach (var (toolId, toolName, toolInput) in pendingToolCalls)
+                {
+                    // WORKAROUND: For CreateNote, if content is missing but there's text output, use that
+                    var effectiveInput = toolInput;
+                    if (toolName == "CreateNote" && toolInput is JsonObject inputObj)
+                    {
+                        var hasContent = inputObj.ContainsKey("content") &&
+                                       inputObj["content"] != null &&
+                                       !string.IsNullOrWhiteSpace(inputObj["content"]?.GetValue<string>());
+
+                        if (!hasContent && !string.IsNullOrWhiteSpace(textContent))
+                        {
+                            _logger.LogWarning("CreateNote called without content parameter. Extracting content from Claude's text response (length: {Length})",
+                                textContent.Length);
+
+                            var cleanedContent = CleanContentForNote(textContent);
+
+                            if (!string.IsNullOrWhiteSpace(cleanedContent))
+                            {
+                                var newInput = new JsonObject();
+                                foreach (var kvp in inputObj)
+                                {
+                                    newInput[kvp.Key] = kvp.Value?.DeepClone();
+                                }
+                                newInput["content"] = cleanedContent;
+                                effectiveInput = newInput;
+
+                                _logger.LogInformation("Injected content into CreateNote call from Claude's text response");
+                            }
+                        }
+                    }
+
+                    // Emit tool start event
                     yield return new AgentStreamEvent
                     {
                         Type = AgentEventType.Status,
-                        Content = $"Executing {toolUseBlocks.Count} tool{(toolUseBlocks.Count > 1 ? "s" : "")}..."
+                        Content = $"Executing {toolName}..."
                     };
 
-                    // Add assistant message with tool use to history
-                    var assistantMsg = new Anthropic.SDK.Messaging.Message
+                    yield return new AgentStreamEvent
                     {
-                        Role = RoleType.Assistant,
-                        Content = response.Content
+                        Type = AgentEventType.ToolCallStart,
+                        ToolName = toolName,
+                        ToolArguments = effectiveInput?.ToJsonString() ?? "{}"
                     };
-                    messages.Add(assistantMsg);
 
-                    // Execute tools and collect results
-                    var toolResults = new List<ContentBase>();
-
-                    foreach (var toolUse in toolUseBlocks)
+                    string result;
+                    try
                     {
-                        yield return new AgentStreamEvent
+                        if (pluginMethods.TryGetValue(toolName, out var pluginMethod))
                         {
-                            Type = AgentEventType.ToolCallStart,
-                            ToolName = toolUse.Name,
-                            ToolArguments = toolUse.Input?.ToString() ?? "{}"
-                        };
-
-                        string result;
-                        try
-                        {
-                            if (pluginMethods.TryGetValue(toolUse.Name, out var pluginMethod))
-                            {
-                                result = await InvokePluginMethodAsync(
-                                    pluginMethod.Plugin,
-                                    pluginMethod.Method,
-                                    toolUse.Input);
-                            }
-                            else
-                            {
-                                result = $"Error: Unknown tool '{toolUse.Name}'";
-                            }
+                            _logger.LogDebug("Executing tool {ToolName} via plugin {PluginName}",
+                                toolName, pluginMethod.Plugin.GetPluginName());
+                            result = await InvokePluginMethodAsync(
+                                pluginMethod.Plugin,
+                                pluginMethod.Method,
+                                effectiveInput);
+                            _logger.LogDebug("Tool {ToolName} execution result: {Result}", toolName, result);
                         }
-                        catch (Exception ex)
+                        else
                         {
-                            result = $"Error executing tool: {ex.Message}";
-                            _logger.LogError(ex, "Error executing tool {ToolName}", toolUse.Name);
+                            result = $"Error: Unknown tool '{toolName}'";
+                            _logger.LogWarning("Unknown tool requested: {ToolName}", toolName);
                         }
-
-                        yield return new AgentStreamEvent
-                        {
-                            Type = AgentEventType.ToolCallEnd,
-                            ToolName = toolUse.Name,
-                            ToolResult = result
-                        };
-
-                        toolResults.Add(new ToolResultContent
-                        {
-                            ToolUseId = toolUse.Id,
-                            Content = new List<ContentBase>
-                            {
-                                new Anthropic.SDK.Messaging.TextContent { Text = result }
-                            }
-                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        result = $"Error executing tool: {ex.Message}";
+                        _logger.LogError(ex, "Error executing tool {ToolName}", toolName);
                     }
 
-                    // Add tool results as user message
-                    var userMsg = new Anthropic.SDK.Messaging.Message
+                    yield return new AgentStreamEvent
                     {
-                        Role = RoleType.User,
-                        Content = toolResults
+                        Type = AgentEventType.ToolCallEnd,
+                        ToolName = toolName,
+                        ToolResult = result
                     };
-                    messages.Add(userMsg);
-                    shouldContinue = true;
+
+                    toolResults.Add(new ToolResultContent
+                    {
+                        ToolUseId = toolId,
+                        Content = new List<ContentBase>
+                        {
+                            new Anthropic.SDK.Messaging.TextContent { Text = result }
+                        }
+                    });
                 }
+
+                // Add tool results as user message
+                var userMsg = new Anthropic.SDK.Messaging.Message
+                {
+                    Role = RoleType.User,
+                    Content = toolResults
+                };
+                messages.Add(userMsg);
+                shouldContinue = true;
             }
 
             if (!shouldContinue)
@@ -723,6 +874,76 @@ public class AgentService : IAgentService
         };
     }
 
+    /// <summary>
+    /// Helper to wrap Anthropic streaming API call with error handling.
+    /// This allows us to avoid yield-in-try issues by wrapping the try-catch internally.
+    /// </summary>
+    private async IAsyncEnumerable<MessageResponse> StreamAnthropicWithErrorHandling(
+        AnthropicClient client,
+        MessageParameters parameters,
+        [EnumeratorCancellation] CancellationToken cancellationToken,
+        Action<string> onError)
+    {
+        IAsyncEnumerator<MessageResponse>? enumerator = null;
+
+        try
+        {
+            enumerator = client.Messages.StreamClaudeMessageAsync(parameters, cancellationToken).GetAsyncEnumerator(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error starting Anthropic streaming API");
+            onError(ex.Message);
+            yield break;
+        }
+
+        if (enumerator == null)
+        {
+            yield break;
+        }
+
+        try
+        {
+            while (true)
+            {
+                MessageResponse? current = null;
+                bool hasNext = false;
+
+                try
+                {
+                    hasNext = await enumerator.MoveNextAsync();
+                    if (hasNext)
+                    {
+                        current = enumerator.Current;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error during Anthropic streaming");
+                    onError(ex.Message);
+                    yield break;
+                }
+
+                if (!hasNext)
+                {
+                    break;
+                }
+
+                if (current != null)
+                {
+                    yield return current;
+                }
+            }
+        }
+        finally
+        {
+            if (enumerator != null)
+            {
+                await enumerator.DisposeAsync();
+            }
+        }
+    }
+
     internal static string GetJsonSchemaType(Type type)
     {
         var underlyingType = Nullable.GetUnderlyingType(type) ?? type;
@@ -736,19 +957,58 @@ public class AgentService : IAgentService
         return "string";
     }
 
+    // Common parameter name aliases that AI models might use
+    private static readonly Dictionary<string, string[]> ParameterAliases = new(StringComparer.OrdinalIgnoreCase)
+    {
+        { "content", new[] { "body", "text", "note_content", "noteContent", "message" } },
+        { "title", new[] { "name", "heading", "subject" } },
+        { "query", new[] { "search", "searchQuery", "search_query", "q" } },
+        { "tags", new[] { "labels", "categories", "tag" } },
+        { "noteId", new[] { "note_id", "id", "noteID" } },
+        { "contentToAppend", new[] { "content_to_append", "appendContent", "append_content", "newContent", "new_content" } }
+    };
+
     internal async Task<string> InvokePluginMethodAsync(IAgentPlugin plugin, System.Reflection.MethodInfo method, JsonNode? input)
     {
         var parameters = method.GetParameters();
         var args = new object?[parameters.Length];
+
+        // Log the raw input for debugging
+        _logger.LogDebug("Invoking plugin method {MethodName} with input: {Input}",
+            method.Name, input?.ToJsonString() ?? "null");
 
         for (int i = 0; i < parameters.Length; i++)
         {
             var param = parameters[i];
             var paramName = param.Name!;
 
-            if (input is JsonObject jsonObj && jsonObj.TryGetPropertyValue(paramName, out var value))
+            if (input is JsonObject jsonObj)
             {
-                args[i] = ConvertJsonToType(value, param.ParameterType);
+                // First try the exact parameter name
+                if (jsonObj.TryGetPropertyValue(paramName, out var value))
+                {
+                    args[i] = ConvertJsonToType(value, param.ParameterType);
+                    _logger.LogDebug("Parameter {ParamName} found with value: {Value}",
+                        paramName, value?.ToJsonString() ?? "null");
+                }
+                // Try fallback aliases if exact name not found
+                else if (TryGetValueWithAliases(jsonObj, paramName, out var aliasValue, out var usedAlias))
+                {
+                    args[i] = ConvertJsonToType(aliasValue, param.ParameterType);
+                    _logger.LogWarning("Parameter {ParamName} not found, but found alias {Alias} with value. Using alias value.",
+                        paramName, usedAlias);
+                }
+                else if (param.HasDefaultValue)
+                {
+                    args[i] = param.DefaultValue;
+                    _logger.LogDebug("Parameter {ParamName} not found, using default value", paramName);
+                }
+                else
+                {
+                    args[i] = null;
+                    _logger.LogWarning("Required parameter {ParamName} not found in tool arguments and has no default. Available keys: {Keys}",
+                        paramName, string.Join(", ", jsonObj.Select(kvp => kvp.Key)));
+                }
             }
             else if (param.HasDefaultValue)
             {
@@ -757,6 +1017,8 @@ public class AgentService : IAgentService
             else
             {
                 args[i] = null;
+                _logger.LogWarning("Input is not a JsonObject for method {MethodName}, parameter {ParamName} will be null",
+                    method.Name, paramName);
             }
         }
 
@@ -770,6 +1032,80 @@ public class AgentService : IAgentService
         }
 
         return result?.ToString() ?? "";
+    }
+
+    /// <summary>
+    /// Tries to get a value from the JSON object using parameter aliases
+    /// </summary>
+    private static bool TryGetValueWithAliases(JsonObject jsonObj, string paramName, out JsonNode? value, out string? usedAlias)
+    {
+        value = null;
+        usedAlias = null;
+
+        // Check if we have aliases for this parameter
+        if (ParameterAliases.TryGetValue(paramName, out var aliases))
+        {
+            foreach (var alias in aliases)
+            {
+                if (jsonObj.TryGetPropertyValue(alias, out value) && value != null)
+                {
+                    usedAlias = alias;
+                    return true;
+                }
+            }
+        }
+
+        // Also try case-insensitive matching as a last resort
+        foreach (var kvp in jsonObj)
+        {
+            if (kvp.Key.Equals(paramName, StringComparison.OrdinalIgnoreCase) && kvp.Key != paramName)
+            {
+                value = kvp.Value;
+                usedAlias = kvp.Key;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Cleans up text content from Claude's response for use as note content.
+    /// Removes thinking blocks, common conversational prefixes, and trims whitespace.
+    /// </summary>
+    private static string CleanContentForNote(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return string.Empty;
+
+        var content = text;
+
+        // Remove thinking blocks (both <thinking> and <think> variants)
+        content = System.Text.RegularExpressions.Regex.Replace(
+            content,
+            @"<think(?:ing)?>(.*?)</think(?:ing)?>",
+            "",
+            System.Text.RegularExpressions.RegexOptions.Singleline | System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        // Remove common conversational prefixes that Claude might add
+        var prefixesToRemove = new[]
+        {
+            @"^I'll create (?:a|the) note.*?(?:\.|:)\s*",
+            @"^(?:Here's|Here is) the note.*?(?:\.|:)\s*",
+            @"^Creating (?:a|the) note.*?(?:\.|:)\s*",
+            @"^Let me create.*?(?:\.|:)\s*",
+            @"^I'm creating.*?(?:\.|:)\s*",
+        };
+
+        foreach (var prefix in prefixesToRemove)
+        {
+            content = System.Text.RegularExpressions.Regex.Replace(
+                content,
+                prefix,
+                "",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        }
+
+        return content.Trim();
     }
 
     internal static object? ConvertJsonToType(JsonNode? node, Type targetType)

@@ -34,6 +34,11 @@ public interface INoteService
     Task<bool> DeleteNoteAsync(string noteId, string userId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Delete multiple notes (verifies ownership)
+    /// </summary>
+    Task<int> BulkDeleteNotesAsync(IEnumerable<string> noteIds, string userId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Check if a note belongs to a user
     /// </summary>
     Task<bool> IsNoteOwnedByUserAsync(string noteId, string userId, CancellationToken cancellationToken = default);

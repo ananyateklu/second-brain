@@ -41,12 +41,38 @@ public class NotesPlugin : IAgentPlugin
 
 You have access to tools for managing the user's notes. Use these tools to help users organize and retrieve their information.
 
-### Available Tools
+### Core Note Operations
 
-- **CreateNote**: Create a new note with title, content, and optional tags
+- **CreateNote**: Create a new note with title and content (BOTH REQUIRED)
+  - IMPORTANT: You MUST provide BOTH 'title' AND 'content' parameters - content cannot be empty
+  - If you have a lot of content, include all of it in the 'content' parameter - do not truncate
   - Use when user wants to save information or remember something
   - Always provide meaningful titles that summarize the content
   - Suggest relevant tags based on content (e.g., 'meeting', 'recipe', 'project')
+
+- **GetNote**: Retrieve full note by ID
+  - Use to view complete note contents before editing
+  - Always get the note first when you need to modify content
+
+- **UpdateNote**: Modify a note's title, content, or tags
+  - Requires the note ID from previous operations
+  - Can update one or more fields at a time
+  - To edit content (e.g., remove an item from a list), first use GetNote to see current content
+
+- **AppendToNote**: Add content to the end of an existing note
+  - Use for adding items to lists, appending new information
+  - Much simpler than GetNote + UpdateNote when just adding content
+  - Example: 'add milk to my grocery list'
+
+- **DeleteNote**: Permanently remove a note
+  - Only use when user explicitly requests deletion
+  - This action cannot be undone
+
+- **DuplicateNote**: Create a copy of an existing note
+  - Use when user wants to use a note as a template
+  - Can optionally specify a new title for the copy
+
+### Search Tools
 
 - **SearchNotes**: Keyword-based search in titles, content, and tags
   - Use for finding specific notes when user provides exact terms
@@ -57,21 +83,50 @@ You have access to tools for managing the user's notes. Use these tools to help 
   - Finds notes by meaning even without exact keyword matches
   - Example: 'cooking' finds notes about recipes, ingredients, meal planning
 
-- **UpdateNote**: Modify a note's title, content, or tags
-  - Requires the note ID from previous operations
-  - Can update one or more fields at a time
-  - To edit content (e.g., remove an item from a list), first use GetNote to see current content
+- **SearchByTags**: Find notes by their tags
+  - Use when user wants notes with specific tags
+  - Can require all tags or any of the specified tags
 
-- **GetNote**: Retrieve full note by ID
-  - Use to view complete note contents before editing
-  - Always get the note first when you need to modify content
+- **GetNotesByDateRange**: Find notes by creation or update date
+  - Supports relative dates: 'today', 'yesterday', 'last week', 'last month'
+  - Can search by created or updated date
+
+- **FindRelatedNotes**: Find notes similar to a given note
+  - Uses semantic search to find conceptually related notes
+  - Falls back to tag-based similarity if semantic search unavailable
+
+### Organization Tools
+
+- **ListAllNotes**: Show all notes (with optional pagination)
+  - Use when user wants to see their complete list of notes
+  - Returns all notes, not just recent ones
 
 - **ListRecentNotes**: Show most recently updated notes
   - Use when user wants to see their notes or remember what they saved
 
-- **DeleteNote**: Permanently remove a note
-  - Only use when user explicitly requests deletion
-  - This action cannot be undone
+- **ListArchivedNotes**: Show archived notes
+  - Use when user wants to see notes they've archived
+
+- **ArchiveNote**: Archive a note (soft delete)
+  - Hides note from main list without deleting
+  - Use when user wants to hide but preserve a note
+
+- **UnarchiveNote**: Restore an archived note
+  - Brings archived note back to main list
+
+- **MoveToFolder**: Organize note into a folder
+  - Use when user wants to categorize notes
+  - Pass empty string to remove from folder
+
+- **ListFolders**: Show all folders with note counts
+  - Helps users understand their folder organization
+
+- **ListAllTags**: Show all tags with usage counts
+  - Helps users discover how notes are tagged
+
+- **GetNoteStats**: Get notes statistics overview
+  - Total counts, tag distribution, folder organization
+  - Notes created this week/month
 
 ### Important Guidelines
 
@@ -79,23 +134,26 @@ You have access to tools for managing the user's notes. Use these tools to help 
 2. **Track note IDs** - Remember IDs from tool results for follow-up actions
 3. **Understand context** - When user says 'that note' or 'the one I created', reference the ID from conversation history
 4. **Don't repeat content** - Notes display as visual cards in the UI, so keep your responses concise
-5. **Suggest improvements** - Offer to add tags, create related notes, or organize information
+5. **Suggest organization** - Offer to add tags, move to folders, or find related notes
+6. **Use AppendToNote** - When adding to existing notes, prefer this over GetNote + UpdateNote
 
 ### Content Editing Pattern
 
 When modifying note content:
 1. GetNote to retrieve current content
 2. Modify the content as requested
-3. UpdateNote with the new content";
+3. UpdateNote with the new content
+
+For simple additions, use AppendToNote instead.";
     }
 
     #endregion
 
     [KernelFunction("CreateNote")]
-    [Description("Creates a new note with the specified title and content. Use this when the user wants to save information, create a note, or remember something.")]
+    [Description("Creates a new note with title and content. IMPORTANT: Both 'title' and 'content' parameters are REQUIRED and must be provided in a single tool call. Do not omit the content parameter.")]
     public async Task<string> CreateNoteAsync(
-        [Description("The title of the note")] string title,
-        [Description("The content/body of the note - this is required and cannot be empty")] string content,
+        [Description("The title of the note (required)")] string title,
+        [Description("The full text content of the note - REQUIRED, must not be empty or omitted")] string content,
         [Description("Comma-separated tags for categorizing the note (optional)")] string? tags = null)
     {
         if (string.IsNullOrEmpty(_currentUserId))
@@ -111,7 +169,7 @@ When modifying note content:
 
         if (string.IsNullOrWhiteSpace(content))
         {
-            return "Error: Note content is required and cannot be empty. Please provide the content for the note.";
+            return "Error: The 'content' parameter is required but was not provided. You must call CreateNote with BOTH 'title' AND 'content' parameters in the same tool call. Please retry with: {\"title\": \"your title\", \"content\": \"your note content here\"}";
         }
 
         try
@@ -271,7 +329,7 @@ When modifying note content:
                 {
                     var added = note.Tags.Except(previousTags).ToList();
                     var removed = previousTags.Except(note.Tags).ToList();
-                    
+
                     if (added.Any())
                         changeDetails.Add($"added tags: {string.Join(", ", added)}");
                     if (removed.Any())
@@ -393,6 +451,90 @@ When modifying note content:
         }
     }
 
+    [KernelFunction("ListAllNotes")]
+    [Description("Lists all of the user's notes. Use this when the user wants to see their complete list of notes, not just recent ones.")]
+    public async Task<string> ListAllNotesAsync(
+        [Description("Whether to include archived notes (default: false)")] bool includeArchived = false,
+        [Description("Optional: Skip this many notes for pagination (default: 0)")] int skip = 0,
+        [Description("Optional: Maximum number of notes to return. Use 0 or negative for all notes (default: 0 = all)")] int limit = 0)
+    {
+        if (string.IsNullOrEmpty(_currentUserId))
+        {
+            return "Error: User context not set. Cannot list notes.";
+        }
+
+        try
+        {
+            var notes = await _noteRepository.GetByUserIdAsync(_currentUserId);
+
+            var filteredNotes = includeArchived
+                ? notes.ToList()
+                : notes.Where(n => !n.IsArchived).ToList();
+
+            var totalCount = filteredNotes.Count;
+
+            // Apply ordering
+            var orderedNotes = filteredNotes
+                .OrderByDescending(n => n.UpdatedAt)
+                .Skip(skip);
+
+            // Apply limit if specified
+            if (limit > 0)
+            {
+                orderedNotes = orderedNotes.Take(limit);
+            }
+
+            var resultNotes = orderedNotes.ToList();
+
+            if (!resultNotes.Any())
+            {
+                if (skip > 0)
+                {
+                    return $"No more notes to show (skipped {skip} notes, total: {totalCount}).";
+                }
+                return includeArchived
+                    ? "You don't have any notes yet."
+                    : "You don't have any active notes. You may have archived notes - try setting includeArchived to true.";
+            }
+
+            var noteData = resultNotes.Select(n => new
+            {
+                id = n.Id,
+                title = n.Title,
+                content = n.Content,
+                tags = n.Tags,
+                folder = n.Folder,
+                isArchived = n.IsArchived,
+                createdAt = n.CreatedAt,
+                updatedAt = n.UpdatedAt
+            }).ToList();
+
+            var paginationInfo = skip > 0 || limit > 0
+                ? $" (showing {resultNotes.Count} of {totalCount}, skipped {skip})"
+                : "";
+
+            var response = new
+            {
+                type = "notes",
+                message = $"Found {totalCount} total note(s){paginationInfo}",
+                notes = noteData,
+                pagination = new
+                {
+                    total = totalCount,
+                    returned = resultNotes.Count,
+                    skipped = skip,
+                    hasMore = skip + resultNotes.Count < totalCount
+                }
+            };
+
+            return JsonSerializer.Serialize(response);
+        }
+        catch (Exception ex)
+        {
+            return $"Error listing all notes: {ex.Message}";
+        }
+    }
+
     [KernelFunction("SemanticSearch")]
     [Description("Searches for notes using semantic/meaning-based search powered by AI embeddings. This finds notes that are conceptually related to the query even if they don't contain the exact keywords. Use this for complex queries or when keyword search doesn't find what you need.")]
     public async Task<string> SemanticSearchAsync(
@@ -422,9 +564,16 @@ When modifying note content:
                 return $"No notes found semantically related to \"{query}\". Try using SearchNotes for keyword-based search.";
             }
 
+            // Deduplicate by NoteId, keeping the highest similarity score for each note
+            // This prevents the same note from appearing multiple times when multiple chunks match
+            var uniqueNoteResults = ragContext.RetrievedNotes
+                .GroupBy(r => r.NoteId)
+                .Select(g => g.OrderByDescending(r => r.SimilarityScore).First())
+                .ToList();
+
             // Get full note details for the retrieved notes
             var noteData = new List<object>();
-            foreach (var result in ragContext.RetrievedNotes)
+            foreach (var result in uniqueNoteResults)
             {
                 var note = await _noteRepository.GetByIdAsync(result.NoteId);
                 if (note != null && note.UserId == _currentUserId)
@@ -489,6 +638,794 @@ When modifying note content:
         catch (Exception ex)
         {
             return $"Error deleting note: {ex.Message}";
+        }
+    }
+
+    [KernelFunction("ArchiveNote")]
+    [Description("Archives a note, hiding it from the main list while preserving it. Use this when the user wants to hide a note without permanently deleting it.")]
+    public async Task<string> ArchiveNoteAsync(
+        [Description("The ID of the note to archive")] string noteId)
+    {
+        if (string.IsNullOrEmpty(_currentUserId))
+        {
+            return "Error: User context not set. Cannot archive note.";
+        }
+
+        try
+        {
+            var note = await _noteRepository.GetByIdAsync(noteId);
+
+            if (note == null)
+            {
+                return $"Note with ID \"{noteId}\" not found.";
+            }
+
+            if (note.UserId != _currentUserId)
+            {
+                return "Error: You don't have permission to archive this note.";
+            }
+
+            if (note.IsArchived)
+            {
+                return $"Note \"{note.Title}\" (ID: {noteId}) is already archived.";
+            }
+
+            note.IsArchived = true;
+            note.Folder = "Archived"; // Move to Archived folder
+            note.UpdatedAt = DateTime.UtcNow;
+            await _noteRepository.UpdateAsync(noteId, note);
+
+            return $"Successfully archived note \"{note.Title}\" (ID: {noteId}) and moved it to the Archived folder. Use UnarchiveNote to restore it.";
+        }
+        catch (Exception ex)
+        {
+            return $"Error archiving note: {ex.Message}";
+        }
+    }
+
+    [KernelFunction("UnarchiveNote")]
+    [Description("Restores an archived note back to the main list. Use this when the user wants to bring back a previously archived note.")]
+    public async Task<string> UnarchiveNoteAsync(
+        [Description("The ID of the note to unarchive")] string noteId)
+    {
+        if (string.IsNullOrEmpty(_currentUserId))
+        {
+            return "Error: User context not set. Cannot unarchive note.";
+        }
+
+        try
+        {
+            var note = await _noteRepository.GetByIdAsync(noteId);
+
+            if (note == null)
+            {
+                return $"Note with ID \"{noteId}\" not found.";
+            }
+
+            if (note.UserId != _currentUserId)
+            {
+                return "Error: You don't have permission to unarchive this note.";
+            }
+
+            if (!note.IsArchived)
+            {
+                return $"Note \"{note.Title}\" (ID: {noteId}) is not archived.";
+            }
+
+            note.IsArchived = false;
+            // Remove from Archived folder (only if currently in Archived folder)
+            if (note.Folder == "Archived")
+            {
+                note.Folder = null;
+            }
+            note.UpdatedAt = DateTime.UtcNow;
+            await _noteRepository.UpdateAsync(noteId, note);
+
+            return $"Successfully restored note \"{note.Title}\" (ID: {noteId}) from archive.";
+        }
+        catch (Exception ex)
+        {
+            return $"Error unarchiving note: {ex.Message}";
+        }
+    }
+
+    [KernelFunction("ListArchivedNotes")]
+    [Description("Lists all archived notes. Use this when the user wants to see notes they have previously archived.")]
+    public async Task<string> ListArchivedNotesAsync(
+        [Description("Maximum number of archived notes to list (default: 10)")] int maxResults = 10)
+    {
+        if (string.IsNullOrEmpty(_currentUserId))
+        {
+            return "Error: User context not set. Cannot list archived notes.";
+        }
+
+        try
+        {
+            var notes = await _noteRepository.GetByUserIdAsync(_currentUserId);
+
+            var archivedNotes = notes
+                .Where(n => n.IsArchived)
+                .OrderByDescending(n => n.UpdatedAt)
+                .Take(maxResults)
+                .ToList();
+
+            if (!archivedNotes.Any())
+            {
+                return "You don't have any archived notes.";
+            }
+
+            var noteData = archivedNotes.Select(n => new
+            {
+                id = n.Id,
+                title = n.Title,
+                content = n.Content,
+                tags = n.Tags,
+                createdAt = n.CreatedAt,
+                updatedAt = n.UpdatedAt
+            }).ToList();
+
+            var response = new
+            {
+                type = "notes",
+                message = $"Found {archivedNotes.Count} archived note(s)",
+                notes = noteData
+            };
+
+            return JsonSerializer.Serialize(response);
+        }
+        catch (Exception ex)
+        {
+            return $"Error listing archived notes: {ex.Message}";
+        }
+    }
+
+    [KernelFunction("AppendToNote")]
+    [Description("Appends content to the end of an existing note. Use this when the user wants to add something to an existing note, like adding items to a list or adding new information.")]
+    public async Task<string> AppendToNoteAsync(
+        [Description("The ID of the note to append to")] string noteId,
+        [Description("The content to append to the note")] string contentToAppend,
+        [Description("Whether to add a newline before the appended content (default: true)")] bool addNewline = true)
+    {
+        if (string.IsNullOrEmpty(_currentUserId))
+        {
+            return "Error: User context not set. Cannot append to note.";
+        }
+
+        if (string.IsNullOrWhiteSpace(contentToAppend))
+        {
+            return "Error: Content to append cannot be empty.";
+        }
+
+        try
+        {
+            var note = await _noteRepository.GetByIdAsync(noteId);
+
+            if (note == null)
+            {
+                return $"Note with ID \"{noteId}\" not found.";
+            }
+
+            if (note.UserId != _currentUserId)
+            {
+                return "Error: You don't have permission to modify this note.";
+            }
+
+            var separator = addNewline ? "\n" : "";
+            note.Content = note.Content + separator + contentToAppend.Trim();
+            note.UpdatedAt = DateTime.UtcNow;
+            await _noteRepository.UpdateAsync(noteId, note);
+
+            return $"Successfully appended content to note \"{note.Title}\" (ID: {noteId}).";
+        }
+        catch (Exception ex)
+        {
+            return $"Error appending to note: {ex.Message}";
+        }
+    }
+
+    [KernelFunction("SearchByTags")]
+    [Description("Finds notes that have one or more of the specified tags. Use this when the user wants to find notes by their tags or categories.")]
+    public async Task<string> SearchByTagsAsync(
+        [Description("Comma-separated list of tags to search for")] string tags,
+        [Description("If true, notes must have ALL specified tags; if false, notes with ANY of the tags match (default: false)")] bool requireAll = false,
+        [Description("Maximum number of results to return (default: 10)")] int maxResults = 10)
+    {
+        if (string.IsNullOrEmpty(_currentUserId))
+        {
+            return "Error: User context not set. Cannot search notes.";
+        }
+
+        if (string.IsNullOrWhiteSpace(tags))
+        {
+            return "Error: Please specify at least one tag to search for.";
+        }
+
+        try
+        {
+            var searchTags = tags.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(t => t.Trim().ToLowerInvariant())
+                .Where(t => !string.IsNullOrEmpty(t))
+                .ToList();
+
+            if (!searchTags.Any())
+            {
+                return "Error: Please specify at least one valid tag to search for.";
+            }
+
+            var notes = await _noteRepository.GetByUserIdAsync(_currentUserId);
+
+            var matches = notes
+                .Where(n => !n.IsArchived)
+                .Where(n =>
+                {
+                    var noteTags = n.Tags.Select(t => t.ToLowerInvariant()).ToList();
+                    return requireAll
+                        ? searchTags.All(st => noteTags.Contains(st))
+                        : searchTags.Any(st => noteTags.Contains(st));
+                })
+                .OrderByDescending(n => n.UpdatedAt)
+                .Take(maxResults)
+                .ToList();
+
+            if (!matches.Any())
+            {
+                var tagList = string.Join(", ", searchTags);
+                return requireAll
+                    ? $"No notes found with all of these tags: {tagList}."
+                    : $"No notes found with any of these tags: {tagList}.";
+            }
+
+            var noteData = matches.Select(n => new
+            {
+                id = n.Id,
+                title = n.Title,
+                content = n.Content,
+                tags = n.Tags,
+                createdAt = n.CreatedAt,
+                updatedAt = n.UpdatedAt
+            }).ToList();
+
+            var response = new
+            {
+                type = "notes",
+                message = $"Found {matches.Count} note(s) with {(requireAll ? "all" : "any")} of the tags: {string.Join(", ", searchTags)}",
+                notes = noteData
+            };
+
+            return JsonSerializer.Serialize(response);
+        }
+        catch (Exception ex)
+        {
+            return $"Error searching notes by tags: {ex.Message}";
+        }
+    }
+
+    [KernelFunction("ListAllTags")]
+    [Description("Lists all unique tags used across the user's notes, with counts showing how many notes use each tag. Use this to help the user understand how their notes are organized.")]
+    public async Task<string> ListAllTagsAsync(
+        [Description("Whether to include archived notes in the tag counts (default: false)")] bool includeArchived = false)
+    {
+        if (string.IsNullOrEmpty(_currentUserId))
+        {
+            return "Error: User context not set. Cannot list tags.";
+        }
+
+        try
+        {
+            var notes = await _noteRepository.GetByUserIdAsync(_currentUserId);
+
+            var filteredNotes = includeArchived
+                ? notes
+                : notes.Where(n => !n.IsArchived);
+
+            var tagCounts = filteredNotes
+                .SelectMany(n => n.Tags)
+                .GroupBy(t => t.ToLowerInvariant())
+                .Select(g => new { tag = g.First(), count = g.Count() })
+                .OrderByDescending(x => x.count)
+                .ThenBy(x => x.tag)
+                .ToList();
+
+            if (!tagCounts.Any())
+            {
+                return "You don't have any tags yet. Add tags to your notes to organize them.";
+            }
+
+            var response = new
+            {
+                type = "tags",
+                message = $"Found {tagCounts.Count} unique tag(s) across your notes",
+                tags = tagCounts.Select(tc => new { name = tc.tag, noteCount = tc.count }).ToList(),
+                totalNotesWithTags = filteredNotes.Count(n => n.Tags.Any()),
+                totalNotes = filteredNotes.Count()
+            };
+
+            return JsonSerializer.Serialize(response);
+        }
+        catch (Exception ex)
+        {
+            return $"Error listing tags: {ex.Message}";
+        }
+    }
+
+    [KernelFunction("MoveToFolder")]
+    [Description("Moves a note to a specific folder for organization. Use this when the user wants to organize notes into folders or categories.")]
+    public async Task<string> MoveToFolderAsync(
+        [Description("The ID of the note to move")] string noteId,
+        [Description("The folder name to move the note to (use empty string or null to remove from folder)")] string? folder = null)
+    {
+        if (string.IsNullOrEmpty(_currentUserId))
+        {
+            return "Error: User context not set. Cannot move note.";
+        }
+
+        try
+        {
+            var note = await _noteRepository.GetByIdAsync(noteId);
+
+            if (note == null)
+            {
+                return $"Note with ID \"{noteId}\" not found.";
+            }
+
+            if (note.UserId != _currentUserId)
+            {
+                return "Error: You don't have permission to move this note.";
+            }
+
+            var previousFolder = note.Folder;
+            var newFolder = string.IsNullOrWhiteSpace(folder) ? null : folder.Trim();
+
+            note.Folder = newFolder;
+            note.UpdatedAt = DateTime.UtcNow;
+            await _noteRepository.UpdateAsync(noteId, note);
+
+            if (string.IsNullOrEmpty(newFolder))
+            {
+                return previousFolder != null
+                    ? $"Removed note \"{note.Title}\" (ID: {noteId}) from folder \"{previousFolder}\"."
+                    : $"Note \"{note.Title}\" (ID: {noteId}) is not in any folder.";
+            }
+
+            return previousFolder != null
+                ? $"Moved note \"{note.Title}\" (ID: {noteId}) from folder \"{previousFolder}\" to \"{newFolder}\"."
+                : $"Moved note \"{note.Title}\" (ID: {noteId}) to folder \"{newFolder}\".";
+        }
+        catch (Exception ex)
+        {
+            return $"Error moving note: {ex.Message}";
+        }
+    }
+
+    [KernelFunction("ListFolders")]
+    [Description("Lists all folders used to organize notes, with counts showing how many notes are in each folder. Use this to help the user understand their folder organization.")]
+    public async Task<string> ListFoldersAsync(
+        [Description("Whether to include archived notes in the folder counts (default: false)")] bool includeArchived = false)
+    {
+        if (string.IsNullOrEmpty(_currentUserId))
+        {
+            return "Error: User context not set. Cannot list folders.";
+        }
+
+        try
+        {
+            var notes = await _noteRepository.GetByUserIdAsync(_currentUserId);
+            var allNotes = notes.ToList();
+
+            var activeNotes = allNotes.Where(n => !n.IsArchived).ToList();
+            var archivedNotes = allNotes.Where(n => n.IsArchived).ToList();
+            var filteredNotes = includeArchived ? allNotes : activeNotes;
+
+            // Calculate folder counts from filtered notes
+            var folderCountsDict = filteredNotes
+                .Where(n => !string.IsNullOrEmpty(n.Folder))
+                .GroupBy(n => n.Folder!)
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            // Always include the "Archived" folder if there are archived notes (it's a system-managed folder)
+            if (archivedNotes.Any() && !folderCountsDict.ContainsKey("Archived"))
+            {
+                folderCountsDict["Archived"] = archivedNotes.Count;
+            }
+
+            var folderCounts = folderCountsDict
+                .Select(kvp => new { name = kvp.Key, noteCount = kvp.Value })
+                .OrderByDescending(x => x.noteCount)
+                .ThenBy(x => x.name)
+                .ToList();
+
+            var notesWithoutFolder = filteredNotes.Count(n => string.IsNullOrEmpty(n.Folder));
+            var totalNotesCount = filteredNotes.Count + (includeArchived ? 0 : archivedNotes.Count);
+
+            if (!folderCounts.Any() && notesWithoutFolder == 0 && !archivedNotes.Any())
+            {
+                return "You don't have any notes yet.";
+            }
+
+            var response = new
+            {
+                type = "folders",
+                message = folderCounts.Any()
+                    ? $"Found {folderCounts.Count} folder(s)"
+                    : "No folders found. All notes are unfiled.",
+                folders = folderCounts,
+                unfiledNotes = notesWithoutFolder,
+                totalNotes = totalNotesCount
+            };
+
+            return JsonSerializer.Serialize(response);
+        }
+        catch (Exception ex)
+        {
+            return $"Error listing folders: {ex.Message}";
+        }
+    }
+
+    [KernelFunction("GetNoteStats")]
+    [Description("Gets statistics about the user's notes, including total counts, tag distribution, and folder organization. Use this to give the user an overview of their notes.")]
+    public async Task<string> GetNoteStatsAsync(
+        [Description("Whether to include archived notes in the statistics (default: false)")] bool includeArchived = false)
+    {
+        if (string.IsNullOrEmpty(_currentUserId))
+        {
+            return "Error: User context not set. Cannot get statistics.";
+        }
+
+        try
+        {
+            var notes = await _noteRepository.GetByUserIdAsync(_currentUserId);
+            var allNotes = notes.ToList();
+
+            var activeNotes = allNotes.Where(n => !n.IsArchived).ToList();
+            var archivedNotes = allNotes.Where(n => n.IsArchived).ToList();
+            var notesForStats = includeArchived ? allNotes : activeNotes;
+
+            // Tag statistics
+            var tagCounts = notesForStats
+                .SelectMany(n => n.Tags)
+                .GroupBy(t => t.ToLowerInvariant())
+                .Select(g => new { tag = g.First(), count = g.Count() })
+                .OrderByDescending(x => x.count)
+                .Take(10)
+                .ToList();
+
+            // Folder statistics - calculate from notesForStats first
+            var folderCountsDict = notesForStats
+                .Where(n => !string.IsNullOrEmpty(n.Folder))
+                .GroupBy(n => n.Folder!)
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            // Always include the "Archived" folder if there are archived notes (it's a system-managed folder)
+            // This ensures users can see their archived notes count in folder statistics
+            if (archivedNotes.Any() && !folderCountsDict.ContainsKey("Archived"))
+            {
+                folderCountsDict["Archived"] = archivedNotes.Count;
+            }
+
+            var topFolders = folderCountsDict
+                .Select(kvp => new { name = kvp.Key, count = kvp.Value })
+                .OrderByDescending(x => x.count)
+                .ThenBy(x => x.name)
+                .Take(10)
+                .ToList();
+
+            // Calculate notes in folders - include archived notes since they're in the Archived folder
+            var notesInFoldersCount = notesForStats.Count(n => !string.IsNullOrEmpty(n.Folder));
+            if (!includeArchived && archivedNotes.Any())
+            {
+                // Add archived notes count since they're all in the Archived folder
+                notesInFoldersCount += archivedNotes.Count;
+            }
+
+            // Date statistics
+            var now = DateTime.UtcNow;
+            var notesThisWeek = notesForStats.Count(n => n.CreatedAt >= now.AddDays(-7));
+            var notesThisMonth = notesForStats.Count(n => n.CreatedAt >= now.AddDays(-30));
+
+            var response = new
+            {
+                type = "stats",
+                message = "Notes statistics",
+                statistics = new
+                {
+                    totalNotes = allNotes.Count,
+                    activeNotes = activeNotes.Count,
+                    archivedNotes = archivedNotes.Count,
+                    notesCreatedThisWeek = notesThisWeek,
+                    notesCreatedThisMonth = notesThisMonth,
+                    notesWithTags = notesForStats.Count(n => n.Tags.Any()),
+                    notesInFolders = notesInFoldersCount,
+                    uniqueTagCount = tagCounts.Count,
+                    uniqueFolderCount = folderCountsDict.Count,
+                    topTags = tagCounts.Select(tc => new { name = tc.tag, count = tc.count }).ToList(),
+                    topFolders = topFolders
+                }
+            };
+
+            return JsonSerializer.Serialize(response);
+        }
+        catch (Exception ex)
+        {
+            return $"Error getting note statistics: {ex.Message}";
+        }
+    }
+
+    [KernelFunction("GetNotesByDateRange")]
+    [Description("Finds notes created or updated within a specific date range. Use this when the user wants to find notes from a particular time period.")]
+    public async Task<string> GetNotesByDateRangeAsync(
+        [Description("Start date in ISO format (e.g., '2024-01-01') or relative like 'today', 'yesterday', 'last week', 'last month'")] string startDate,
+        [Description("End date in ISO format (e.g., '2024-12-31') or relative like 'today', 'now' (optional, defaults to now)")] string? endDate = null,
+        [Description("Whether to search by 'created' or 'updated' date (default: 'created')")] string dateField = "created",
+        [Description("Maximum number of results to return (default: 10)")] int maxResults = 10)
+    {
+        if (string.IsNullOrEmpty(_currentUserId))
+        {
+            return "Error: User context not set. Cannot search notes.";
+        }
+
+        try
+        {
+            var now = DateTime.UtcNow;
+            DateTime start;
+            DateTime end = now;
+
+            // Parse start date
+            start = ParseRelativeDate(startDate, now);
+
+            // Parse end date if provided
+            if (!string.IsNullOrWhiteSpace(endDate))
+            {
+                end = ParseRelativeDate(endDate, now);
+            }
+
+            // Ensure start is before end
+            if (start > end)
+            {
+                (start, end) = (end, start);
+            }
+
+            var notes = await _noteRepository.GetByUserIdAsync(_currentUserId);
+
+            var useCreatedDate = dateField.Equals("created", StringComparison.OrdinalIgnoreCase);
+
+            var matches = notes
+                .Where(n => !n.IsArchived)
+                .Where(n =>
+                {
+                    var dateToCheck = useCreatedDate ? n.CreatedAt : n.UpdatedAt;
+                    return dateToCheck >= start && dateToCheck <= end;
+                })
+                .OrderByDescending(n => useCreatedDate ? n.CreatedAt : n.UpdatedAt)
+                .Take(maxResults)
+                .ToList();
+
+            if (!matches.Any())
+            {
+                return $"No notes found {(useCreatedDate ? "created" : "updated")} between {start:yyyy-MM-dd} and {end:yyyy-MM-dd}.";
+            }
+
+            var noteData = matches.Select(n => new
+            {
+                id = n.Id,
+                title = n.Title,
+                content = n.Content,
+                tags = n.Tags,
+                createdAt = n.CreatedAt,
+                updatedAt = n.UpdatedAt
+            }).ToList();
+
+            var response = new
+            {
+                type = "notes",
+                message = $"Found {matches.Count} note(s) {(useCreatedDate ? "created" : "updated")} between {start:yyyy-MM-dd} and {end:yyyy-MM-dd}",
+                notes = noteData
+            };
+
+            return JsonSerializer.Serialize(response);
+        }
+        catch (Exception ex)
+        {
+            return $"Error searching notes by date: {ex.Message}";
+        }
+    }
+
+    private static DateTime ParseRelativeDate(string dateStr, DateTime now)
+    {
+        var lower = dateStr.Trim().ToLowerInvariant();
+
+        return lower switch
+        {
+            "today" or "now" => now,
+            "yesterday" => now.AddDays(-1),
+            "last week" or "week ago" => now.AddDays(-7),
+            "last month" or "month ago" => now.AddMonths(-1),
+            "last year" or "year ago" => now.AddYears(-1),
+            _ => DateTime.TryParse(dateStr, out var parsed) ? parsed : now
+        };
+    }
+
+    [KernelFunction("FindRelatedNotes")]
+    [Description("Finds notes that are semantically related to a specific note. Use this to discover connections between notes or find similar content.")]
+    public async Task<string> FindRelatedNotesAsync(
+        [Description("The ID of the note to find related notes for")] string noteId,
+        [Description("Maximum number of related notes to return (default: 5)")] int maxResults = 5)
+    {
+        if (string.IsNullOrEmpty(_currentUserId))
+        {
+            return "Error: User context not set. Cannot find related notes.";
+        }
+
+        try
+        {
+            var note = await _noteRepository.GetByIdAsync(noteId);
+
+            if (note == null)
+            {
+                return $"Note with ID \"{noteId}\" not found.";
+            }
+
+            if (note.UserId != _currentUserId)
+            {
+                return "Error: You don't have permission to access this note.";
+            }
+
+            // If RAG service is available, use semantic search
+            if (_ragService != null)
+            {
+                var searchQuery = $"{note.Title} {note.Content}";
+                var ragContext = await _ragService.RetrieveContextAsync(
+                    searchQuery,
+                    _currentUserId,
+                    topK: maxResults + 1, // +1 because the note itself might be returned
+                    similarityThreshold: 0.3f);
+
+                // Deduplicate by NoteId, keeping the highest similarity score for each note
+                // This prevents the same note from appearing multiple times when multiple chunks match
+                var uniqueNoteResults = ragContext.RetrievedNotes
+                    .Where(r => r.NoteId != noteId) // Skip the source note
+                    .GroupBy(r => r.NoteId)
+                    .Select(g => g.OrderByDescending(r => r.SimilarityScore).First())
+                    .ToList();
+
+                var relatedNotes = new List<object>();
+                foreach (var result in uniqueNoteResults)
+                {
+                    var relatedNote = await _noteRepository.GetByIdAsync(result.NoteId);
+                    if (relatedNote != null && relatedNote.UserId == _currentUserId && !relatedNote.IsArchived)
+                    {
+                        relatedNotes.Add(new
+                        {
+                            id = relatedNote.Id,
+                            title = relatedNote.Title,
+                            content = relatedNote.Content,
+                            tags = relatedNote.Tags,
+                            createdAt = relatedNote.CreatedAt,
+                            updatedAt = relatedNote.UpdatedAt,
+                            similarityScore = result.SimilarityScore
+                        });
+
+                        if (relatedNotes.Count >= maxResults) break;
+                    }
+                }
+
+                if (!relatedNotes.Any())
+                {
+                    return $"No related notes found for \"{note.Title}\".";
+                }
+
+                var response = new
+                {
+                    type = "notes",
+                    message = $"Found {relatedNotes.Count} note(s) related to \"{note.Title}\"",
+                    sourceNote = new { id = note.Id, title = note.Title },
+                    notes = relatedNotes
+                };
+
+                return JsonSerializer.Serialize(response);
+            }
+
+            // Fallback: Use tag-based similarity
+            var notes = await _noteRepository.GetByUserIdAsync(_currentUserId);
+            var similarNotes = notes
+                .Where(n => !n.IsArchived && n.Id != noteId)
+                .Select(n => new
+                {
+                    note = n,
+                    commonTags = n.Tags.Intersect(note.Tags, StringComparer.OrdinalIgnoreCase).Count()
+                })
+                .Where(x => x.commonTags > 0)
+                .OrderByDescending(x => x.commonTags)
+                .Take(maxResults)
+                .ToList();
+
+            if (!similarNotes.Any())
+            {
+                return $"No related notes found for \"{note.Title}\". Try adding tags to find connections.";
+            }
+
+            var fallbackResponse = new
+            {
+                type = "notes",
+                message = $"Found {similarNotes.Count} note(s) with similar tags to \"{note.Title}\"",
+                sourceNote = new { id = note.Id, title = note.Title },
+                notes = similarNotes.Select(x => new
+                {
+                    id = x.note.Id,
+                    title = x.note.Title,
+                    content = x.note.Content,
+                    tags = x.note.Tags,
+                    createdAt = x.note.CreatedAt,
+                    updatedAt = x.note.UpdatedAt,
+                    commonTags = x.commonTags
+                }).ToList()
+            };
+
+            return JsonSerializer.Serialize(fallbackResponse);
+        }
+        catch (Exception ex)
+        {
+            return $"Error finding related notes: {ex.Message}";
+        }
+    }
+
+    [KernelFunction("DuplicateNote")]
+    [Description("Creates a copy of an existing note. Use this when the user wants to duplicate a note as a template or starting point for a new note.")]
+    public async Task<string> DuplicateNoteAsync(
+        [Description("The ID of the note to duplicate")] string noteId,
+        [Description("Optional new title for the duplicate (default: adds 'Copy of' prefix)")] string? newTitle = null)
+    {
+        if (string.IsNullOrEmpty(_currentUserId))
+        {
+            return "Error: User context not set. Cannot duplicate note.";
+        }
+
+        try
+        {
+            var sourceNote = await _noteRepository.GetByIdAsync(noteId);
+
+            if (sourceNote == null)
+            {
+                return $"Note with ID \"{noteId}\" not found.";
+            }
+
+            if (sourceNote.UserId != _currentUserId)
+            {
+                return "Error: You don't have permission to duplicate this note.";
+            }
+
+            var duplicateTitle = string.IsNullOrWhiteSpace(newTitle)
+                ? $"Copy of {sourceNote.Title}"
+                : newTitle.Trim();
+
+            var duplicateNote = new Note
+            {
+                Id = Guid.NewGuid().ToString(),
+                Title = duplicateTitle,
+                Content = sourceNote.Content,
+                Tags = new List<string>(sourceNote.Tags),
+                Folder = sourceNote.Folder,
+                UserId = _currentUserId,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                IsArchived = false,
+                Source = "agent"
+            };
+
+            var created = await _noteRepository.CreateAsync(duplicateNote);
+
+            var tagInfo = created.Tags.Any()
+                ? $" with tags: {string.Join(", ", created.Tags)}"
+                : "";
+
+            var folderInfo = !string.IsNullOrEmpty(created.Folder)
+                ? $" in folder \"{created.Folder}\""
+                : "";
+
+            return $"Successfully duplicated note \"{sourceNote.Title}\" as \"{created.Title}\" (ID: {created.Id}){tagInfo}{folderInfo}.";
+        }
+        catch (Exception ex)
+        {
+            return $"Error duplicating note: {ex.Message}";
         }
     }
 }

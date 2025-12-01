@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using NpgsqlTypes;
 using Pgvector;
 
 namespace SecondBrain.Core.Entities;
@@ -46,4 +47,8 @@ public class NoteEmbedding
 
     [Column("note_tags", TypeName = "text[]")]
     public List<string> NoteTags { get; set; } = new();
+
+    // Full-text search vector for BM25/hybrid search
+    [Column("search_vector")]
+    public NpgsqlTsVector? SearchVector { get; set; }
 }

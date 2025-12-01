@@ -7,25 +7,27 @@ import { estimateTokenCount } from '../../../utils/token-utils';
 // Parse thinking blocks from streaming message
 // Returns array of thinking steps, including incomplete ones (without closing tag)
 // Returns both complete and incomplete blocks
+// Supports both <thinking> and <think> tag variants
 const parseThinkingBlocks = (message: string): { complete: ThinkingStep[]; incomplete: ThinkingStep | null } => {
   const completeSteps: ThinkingStep[] = [];
   let incompleteStep: ThinkingStep | null = null;
-  
-  const thinkingTagRegex = /<thinking>/gi;
-  const closingTagRegex = /<\/thinking>/gi;
+
+  // Regex patterns to match both <thinking> and <think> tag variants
+  const thinkingTagRegex = /<think(?:ing)?>/gi;
+  const closingTagRegex = /<\/think(?:ing)?>/gi;
 
   let match;
-  
+
   // Reset regex lastIndex
   thinkingTagRegex.lastIndex = 0;
-  
+
   while ((match = thinkingTagRegex.exec(message)) !== null) {
     const startIndex = match.index + match[0].length;
-    
+
     // Find the closing tag after this opening tag
     closingTagRegex.lastIndex = startIndex;
     const closingMatch = closingTagRegex.exec(message);
-    
+
     if (closingMatch) {
       // Complete thinking block
       const content = message.substring(startIndex, closingMatch.index).trim();
@@ -48,7 +50,7 @@ const parseThinkingBlocks = (message: string): { complete: ThinkingStep[]; incom
       break;
     }
   }
-  
+
   return { complete: completeSteps, incomplete: incompleteStep };
 };
 
@@ -166,25 +168,25 @@ export function useAgentStream() {
                   setStreamingMessage((prev) => {
                     const newMessage = prev + unescapedData;
                     setOutputTokens(estimateTokenCount(newMessage));
-                    
+
                     // Parse thinking blocks from the updated message
                     const { complete, incomplete } = parseThinkingBlocks(newMessage);
-                    
+
                     setThinkingSteps((prevSteps) => {
                       const mergedSteps: ThinkingStep[] = [];
                       const stepMap = new Map<string, ThinkingStep>();
-                      
+
                       // Build a map of existing steps by their content prefix (for matching)
                       prevSteps.forEach((step) => {
                         const key = step.content.substring(0, 100);
                         stepMap.set(key, step);
                       });
-                      
+
                       // Process complete blocks
                       complete.forEach((completeStep) => {
                         const stepKey = completeStep.content.substring(0, 100);
                         completeThinkingBlocksRef.current.add(stepKey);
-                        
+
                         // Use existing timestamp if available, otherwise use new one
                         const existingStep = stepMap.get(stepKey);
                         mergedSteps.push({
@@ -193,12 +195,12 @@ export function useAgentStream() {
                         });
                         stepMap.delete(stepKey); // Remove from map so we don't add it again
                       });
-                      
+
                       // Process incomplete block if present
                       if (incomplete) {
                         const incompleteKey = incomplete.content.substring(0, 100);
                         const existingStep = stepMap.get(incompleteKey);
-                        
+
                         // Check if there's a matching incomplete step
                         if (existingStep && !completeThinkingBlocksRef.current.has(incompleteKey)) {
                           // Update existing incomplete step, keep original timestamp
@@ -212,10 +214,10 @@ export function useAgentStream() {
                           mergedSteps.push(incomplete);
                         }
                       }
-                      
+
                       return mergedSteps;
                     });
-                    
+
                     return newMessage;
                   });
                 }
@@ -267,16 +269,16 @@ export function useAgentStream() {
                   try {
                     const thinkingData = JSON.parse(data);
                     const stepKey = thinkingData.content.substring(0, 50);
-                    
+
                     // Mark as complete
                     completeThinkingBlocksRef.current.add(stepKey);
-                    
+
                     setThinkingSteps((prev) => {
                       // Check if we already have this step (from streaming message parsing)
                       const existingIndex = prev.findIndex(
                         (step) => step.content.substring(0, 50) === stepKey
                       );
-                      
+
                       if (existingIndex >= 0) {
                         // Update existing step with complete content
                         const updated = [...prev];

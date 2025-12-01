@@ -230,6 +230,7 @@ public class ChatController : ControllerBase
             // Retrieve RAG context if enabled
             List<RagContextResponse> retrievedNotes = new();
             var messageContent = request.Content;
+            Guid? ragLogId = null;
 
             if (request.UseRag)
             {
@@ -240,7 +241,11 @@ public class ChatController : ControllerBase
                     request.Content,
                     userId,
                     vectorStoreProvider: request.VectorStoreProvider,
+                    conversationId: id,
                     cancellationToken: cancellationToken);
+                
+                // Capture RAG log ID for feedback association
+                ragLogId = ragContext.RagLogId;
 
                 messageContent = _ragService.EnhancePromptWithContext(request.Content, ragContext);
 
@@ -410,7 +415,7 @@ public class ChatController : ControllerBase
             }
             var durationMs = (DateTime.UtcNow - startTime).TotalMilliseconds;
 
-            // Add assistant message with retrieved notes
+            // Add assistant message with retrieved notes and RAG log ID
             var outputTokens = TokenEstimator.EstimateTokenCount(fullResponse.ToString());
             var assistantMessage = new Core.Entities.ChatMessage
             {
@@ -419,6 +424,7 @@ public class ChatController : ControllerBase
                 Timestamp = DateTime.UtcNow,
                 OutputTokens = outputTokens,
                 DurationMs = durationMs,
+                RagLogId = ragLogId?.ToString(),
                 RetrievedNotes = retrievedNotes.Select(n => new Core.Entities.RetrievedNote
                 {
                     NoteId = n.NoteId,
@@ -435,13 +441,14 @@ public class ChatController : ControllerBase
             // Update conversation in database
             await _chatRepository.UpdateAsync(id, conversation);
 
-            // Send end event with conversation ID and token usage
+            // Send end event with conversation ID, token usage, and RAG log ID for feedback
             var endData = System.Text.Json.JsonSerializer.Serialize(new
             {
                 conversationId = id,
                 messageId = conversation.Messages.Count - 1,
                 inputTokens = inputTokens,
-                outputTokens = outputTokens
+                outputTokens = outputTokens,
+                ragLogId = ragLogId?.ToString()
             });
             await Response.WriteAsync($"event: end\ndata: {endData}\n\n");
             await Response.Body.FlushAsync(cancellationToken);
@@ -508,6 +515,7 @@ public class ChatController : ControllerBase
             // Retrieve RAG context if enabled
             List<RagContextResponse> retrievedNotes = new();
             var messageContent = request.Content;
+            Guid? ragLogId = null;
 
             if (request.UseRag)
             {
@@ -519,7 +527,11 @@ public class ChatController : ControllerBase
                     request.Content,
                     userId,
                     vectorStoreProvider: request.VectorStoreProvider,
+                    conversationId: id,
                     cancellationToken: cancellationToken);
+                
+                // Capture RAG log ID for feedback association
+                ragLogId = ragContext.RagLogId;
 
                 // Enhance the message with RAG context (or lack thereof)
                 // We do this regardless of whether notes were found, so the model knows we looked.
@@ -646,7 +658,7 @@ public class ChatController : ControllerBase
             var aiResponse = await aiProvider.GenerateChatCompletionAsync(aiMessages, aiRequest, cancellationToken);
             var durationMs = (DateTime.UtcNow - startTime).TotalMilliseconds;
 
-            // Add assistant message with retrieved notes if RAG was used
+            // Add assistant message with retrieved notes and RAG log ID if RAG was used
             var assistantMessage = new Core.Entities.ChatMessage
             {
                 Role = "assistant",
@@ -654,6 +666,7 @@ public class ChatController : ControllerBase
                 Timestamp = DateTime.UtcNow,
                 OutputTokens = aiResponse.TokensUsed,
                 DurationMs = durationMs,
+                RagLogId = ragLogId?.ToString(),
                 RetrievedNotes = retrievedNotes.Select(n => new Core.Entities.RetrievedNote
                 {
                     NoteId = n.NoteId,
@@ -674,11 +687,12 @@ public class ChatController : ControllerBase
                 return NotFound(new { error = $"Failed to update conversation '{id}'" });
             }
 
-            // Return conversation with retrieved notes
+            // Return conversation with retrieved notes and RAG log ID for feedback
             var response = new ChatResponseWithRag
             {
                 Conversation = updated,
-                RetrievedNotes = retrievedNotes
+                RetrievedNotes = retrievedNotes,
+                RagLogId = ragLogId?.ToString()
             };
 
             return Ok(response);
@@ -780,6 +794,47 @@ public class ChatController : ControllerBase
         {
             _logger.LogError(ex, "Error deleting conversation. ConversationId: {ConversationId}, UserId: {UserId}", id, userId);
             return StatusCode(500, new { error = "Failed to delete conversation" });
+        }
+    }
+
+    /// <summary>
+    /// Bulk delete multiple conversations (must belong to authenticated user)
+    /// </summary>
+    [HttpPost("conversations/bulk-delete")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult> BulkDeleteConversations(
+        [FromBody] BulkDeleteConversationsRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = HttpContext.Items["UserId"]?.ToString();
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { error = "Not authenticated" });
+        }
+
+        if (request.ConversationIds == null || request.ConversationIds.Count == 0)
+        {
+            return BadRequest(new { error = "At least one conversation ID is required" });
+        }
+
+        try
+        {
+            _logger.LogInformation("Bulk deleting {Count} conversations for user {UserId}",
+                request.ConversationIds.Count, userId);
+
+            var deletedCount = await _chatService.BulkDeleteConversationsAsync(
+                request.ConversationIds, userId, cancellationToken);
+
+            return Ok(new { deletedCount, message = $"Successfully deleted {deletedCount} conversation(s)" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error bulk deleting conversations. Count: {Count}, UserId: {UserId}",
+                request.ConversationIds.Count, userId);
+            return StatusCode(500, new { error = "Failed to delete conversations" });
         }
     }
 

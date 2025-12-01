@@ -51,15 +51,60 @@ public static class MappingExtensions
     }
 
     /// <summary>
-    /// Updates an existing Note entity with data from UpdateNoteRequest
+    /// The folder name used for archived notes
+    /// </summary>
+    public const string ArchivedFolderName = "Archived";
+
+    /// <summary>
+    /// Updates an existing Note entity with data from UpdateNoteRequest.
+    /// Only updates fields that are explicitly provided (not null).
+    /// When archiving a note, it is automatically moved to the "Archived" folder.
+    /// When unarchiving, it is removed from the "Archived" folder (folder set to null).
     /// </summary>
     public static void UpdateFrom(this Note note, UpdateNoteRequest request)
     {
-        note.Title = request.Title;
-        note.Content = request.Content;
-        note.Tags = request.Tags;
-        note.IsArchived = request.IsArchived;
-        note.Folder = request.Folder;
+        if (request.Title != null)
+        {
+            note.Title = request.Title;
+        }
+
+        if (request.Content != null)
+        {
+            note.Content = request.Content;
+        }
+
+        if (request.Tags != null)
+        {
+            note.Tags = request.Tags;
+        }
+
+        if (request.IsArchived.HasValue)
+        {
+            note.IsArchived = request.IsArchived.Value;
+
+            // Automatically manage folder when archiving/unarchiving
+            if (request.IsArchived.Value)
+            {
+                // When archiving, move to Archived folder
+                note.Folder = ArchivedFolderName;
+            }
+            else
+            {
+                // When unarchiving, remove from Archived folder (only if currently in Archived folder)
+                if (note.Folder == ArchivedFolderName)
+                {
+                    note.Folder = null;
+                }
+            }
+        }
+
+        // Only update folder if explicitly requested (to allow setting to null/empty)
+        // This takes precedence over the automatic archiving folder logic above
+        if (request.UpdateFolder)
+        {
+            note.Folder = request.Folder;
+        }
+
         note.UpdatedAt = DateTime.UtcNow;
     }
 

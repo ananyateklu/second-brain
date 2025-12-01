@@ -7,7 +7,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
-import { useNotes, useNote, useCreateNote, useUpdateNote, useDeleteNote } from '../use-notes-query';
+import { useNotes, useNote, useCreateNote, useUpdateNote, useDeleteNote, useBulkDeleteNotes } from '../use-notes-query';
 import { notesService } from '../../../../services';
 import { toast } from '../../../../hooks/use-toast';
 
@@ -19,6 +19,7 @@ vi.mock('../../../../services', () => ({
         create: vi.fn(),
         update: vi.fn(),
         delete: vi.fn(),
+        bulkDelete: vi.fn(),
     },
 }));
 
@@ -353,6 +354,76 @@ describe('use-notes-query', () => {
 
             // Assert
             expect(toast.error).toHaveBeenCalledWith('Failed to delete note', 'Delete failed');
+        });
+    });
+
+    // ============================================
+    // useBulkDeleteNotes Tests
+    // ============================================
+    describe('useBulkDeleteNotes', () => {
+        it('should call notesService.bulkDelete with note ids', async () => {
+            // Arrange
+            const noteIds = ['note-1', 'note-2', 'note-3'];
+            vi.mocked(notesService.bulkDelete).mockResolvedValue({
+                deletedCount: 3,
+                message: 'Successfully deleted 3 note(s)',
+            });
+
+            // Act
+            const { result } = renderHook(() => useBulkDeleteNotes(), {
+                wrapper: createWrapper(),
+            });
+
+            await act(async () => {
+                await result.current.mutateAsync(noteIds);
+            });
+
+            // Assert
+            expect(notesService.bulkDelete).toHaveBeenCalledWith(noteIds);
+        });
+
+        it('should return deleted count on success', async () => {
+            // Arrange
+            const noteIds = ['note-1', 'note-2'];
+            vi.mocked(notesService.bulkDelete).mockResolvedValue({
+                deletedCount: 2,
+                message: 'Successfully deleted 2 note(s)',
+            });
+
+            // Act
+            const { result } = renderHook(() => useBulkDeleteNotes(), {
+                wrapper: createWrapper(),
+            });
+
+            let response;
+            await act(async () => {
+                response = await result.current.mutateAsync(noteIds);
+            });
+
+            // Assert
+            expect(response).toEqual({
+                deletedCount: 2,
+                message: 'Successfully deleted 2 note(s)',
+            });
+        });
+
+        it('should handle bulk deletion error', async () => {
+            // Arrange
+            vi.mocked(notesService.bulkDelete).mockRejectedValue(
+                new Error('Bulk delete failed')
+            );
+
+            // Act
+            const { result } = renderHook(() => useBulkDeleteNotes(), {
+                wrapper: createWrapper(),
+            });
+
+            // Assert
+            await expect(
+                act(async () => {
+                    await result.current.mutateAsync(['note-1', 'note-2']);
+                })
+            ).rejects.toThrow('Bulk delete failed');
         });
     });
 

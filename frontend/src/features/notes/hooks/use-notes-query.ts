@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { notesService } from '../../../services';
 import { Note, CreateNoteRequest, UpdateNoteRequest } from '../../../types/notes';
 import { toast } from '../../../hooks/use-toast';
-import { QUERY_KEYS } from '../../../lib/constants';
+import { QUERY_KEYS, NOTES_FOLDERS } from '../../../lib/constants';
 
 // Type aliases for backward compatibility
 type CreateNoteInput = CreateNoteRequest;
@@ -166,6 +166,229 @@ export function useDeleteNote() {
     onSettled: () => {
       // Refetch to ensure consistency
       queryClient.invalidateQueries({ queryKey: notesKeys.all });
+    },
+  });
+}
+
+// Mutation: Bulk delete notes
+export function useBulkDeleteNotes() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (noteIds: string[]) => notesService.bulkDelete(noteIds),
+    onMutate: async (noteIds) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: notesKeys.all });
+
+      // Snapshot previous value
+      const previousNotes = queryClient.getQueryData<Note[]>(notesKeys.all);
+
+      // Optimistically update
+      if (previousNotes) {
+        queryClient.setQueryData<Note[]>(
+          notesKeys.all,
+          previousNotes.filter((note) => !noteIds.includes(note.id))
+        );
+      }
+
+      return { previousNotes };
+    },
+    onError: (_error, _noteIds, context) => {
+      // Rollback on error
+      if (context?.previousNotes) {
+        queryClient.setQueryData(notesKeys.all, context.previousNotes);
+      }
+    },
+    onSettled: () => {
+      // Refetch to ensure consistency
+      queryClient.invalidateQueries({ queryKey: notesKeys.all });
+    },
+  });
+}
+
+// Mutation: Archive note
+export function useArchiveNote() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => notesService.archive(id),
+    onMutate: async (id) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: notesKeys.all });
+      await queryClient.cancelQueries({ queryKey: notesKeys.detail(id) });
+
+      // Snapshot previous values
+      const previousNotes = queryClient.getQueryData<Note[]>(notesKeys.all);
+      const previousNote = queryClient.getQueryData<Note>(notesKeys.detail(id));
+
+      // Optimistically update notes list (set isArchived and move to Archived folder)
+      if (previousNotes) {
+        queryClient.setQueryData<Note[]>(
+          notesKeys.all,
+          previousNotes.map((note) =>
+            note.id === id
+              ? { ...note, isArchived: true, folder: NOTES_FOLDERS.ARCHIVED, updatedAt: new Date().toISOString() }
+              : note
+          )
+        );
+      }
+
+      // Optimistically update single note
+      if (previousNote) {
+        queryClient.setQueryData<Note>(notesKeys.detail(id), {
+          ...previousNote,
+          isArchived: true,
+          folder: NOTES_FOLDERS.ARCHIVED,
+          updatedAt: new Date().toISOString(),
+        });
+      }
+
+      return { previousNotes, previousNote };
+    },
+    onSuccess: () => {
+      toast.success('Note archived');
+    },
+    onError: (error, id, context) => {
+      // Rollback on error
+      if (context?.previousNotes) {
+        queryClient.setQueryData(notesKeys.all, context.previousNotes);
+      }
+      if (context?.previousNote) {
+        queryClient.setQueryData(notesKeys.detail(id), context.previousNote);
+      }
+      toast.error('Failed to archive note', error instanceof Error ? error.message : 'Unknown error');
+    },
+    onSettled: (_data, _error, id) => {
+      // Refetch to ensure consistency
+      queryClient.invalidateQueries({ queryKey: notesKeys.all });
+      queryClient.invalidateQueries({ queryKey: notesKeys.detail(id) });
+    },
+  });
+}
+
+// Mutation: Unarchive note
+export function useUnarchiveNote() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => notesService.unarchive(id),
+    onMutate: async (id) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: notesKeys.all });
+      await queryClient.cancelQueries({ queryKey: notesKeys.detail(id) });
+
+      // Snapshot previous values
+      const previousNotes = queryClient.getQueryData<Note[]>(notesKeys.all);
+      const previousNote = queryClient.getQueryData<Note>(notesKeys.detail(id));
+
+      // Optimistically update notes list (set isArchived to false and remove from Archived folder)
+      if (previousNotes) {
+        queryClient.setQueryData<Note[]>(
+          notesKeys.all,
+          previousNotes.map((note) =>
+            note.id === id
+              ? { 
+                  ...note, 
+                  isArchived: false, 
+                  // Only remove folder if it was in the Archived folder
+                  folder: note.folder === NOTES_FOLDERS.ARCHIVED ? undefined : note.folder,
+                  updatedAt: new Date().toISOString() 
+                }
+              : note
+          )
+        );
+      }
+
+      // Optimistically update single note
+      if (previousNote) {
+        queryClient.setQueryData<Note>(notesKeys.detail(id), {
+          ...previousNote,
+          isArchived: false,
+          // Only remove folder if it was in the Archived folder
+          folder: previousNote.folder === NOTES_FOLDERS.ARCHIVED ? undefined : previousNote.folder,
+          updatedAt: new Date().toISOString(),
+        });
+      }
+
+      return { previousNotes, previousNote };
+    },
+    onSuccess: () => {
+      toast.success('Note restored from archive');
+    },
+    onError: (error, id, context) => {
+      // Rollback on error
+      if (context?.previousNotes) {
+        queryClient.setQueryData(notesKeys.all, context.previousNotes);
+      }
+      if (context?.previousNote) {
+        queryClient.setQueryData(notesKeys.detail(id), context.previousNote);
+      }
+      toast.error('Failed to restore note', error instanceof Error ? error.message : 'Unknown error');
+    },
+    onSettled: (_data, _error, id) => {
+      // Refetch to ensure consistency
+      queryClient.invalidateQueries({ queryKey: notesKeys.all });
+      queryClient.invalidateQueries({ queryKey: notesKeys.detail(id) });
+    },
+  });
+}
+
+// Mutation: Move note to folder
+export function useMoveToFolder() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, folder }: { id: string; folder: string | null }) =>
+      notesService.update(id, { folder: folder || undefined, updateFolder: true }),
+    onMutate: async ({ id, folder }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: notesKeys.all });
+      await queryClient.cancelQueries({ queryKey: notesKeys.detail(id) });
+
+      // Snapshot previous values
+      const previousNotes = queryClient.getQueryData<Note[]>(notesKeys.all);
+      const previousNote = queryClient.getQueryData<Note>(notesKeys.detail(id));
+
+      // Optimistically update notes list
+      if (previousNotes) {
+        queryClient.setQueryData<Note[]>(
+          notesKeys.all,
+          previousNotes.map((note) =>
+            note.id === id
+              ? { ...note, folder: folder || undefined, updatedAt: new Date().toISOString() }
+              : note
+          )
+        );
+      }
+
+      // Optimistically update single note
+      if (previousNote) {
+        queryClient.setQueryData<Note>(notesKeys.detail(id), {
+          ...previousNote,
+          folder: folder || undefined,
+          updatedAt: new Date().toISOString(),
+        });
+      }
+
+      return { previousNotes, previousNote };
+    },
+    onSuccess: (_data, { folder }) => {
+      toast.success(folder ? `Moved to folder "${folder}"` : 'Removed from folder');
+    },
+    onError: (error, { id }, context) => {
+      // Rollback on error
+      if (context?.previousNotes) {
+        queryClient.setQueryData(notesKeys.all, context.previousNotes);
+      }
+      if (context?.previousNote) {
+        queryClient.setQueryData(notesKeys.detail(id), context.previousNote);
+      }
+      toast.error('Failed to move note', error instanceof Error ? error.message : 'Unknown error');
+    },
+    onSettled: (_data, _error, { id }) => {
+      // Refetch to ensure consistency
+      queryClient.invalidateQueries({ queryKey: notesKeys.all });
+      queryClient.invalidateQueries({ queryKey: notesKeys.detail(id) });
     },
   });
 }

@@ -33,6 +33,7 @@ export interface CreateNoteRequest {
 
 /**
  * Update note request (aligned with backend UpdateNoteRequest)
+ * All properties are optional - only provided fields will be updated.
  */
 export interface UpdateNoteRequest {
   title?: string;
@@ -40,6 +41,8 @@ export interface UpdateNoteRequest {
   tags?: string[];
   isArchived?: boolean;
   folder?: string;
+  /** Set to true to explicitly update folder (required to clear folder with null/undefined) */
+  updateFolder?: boolean;
 }
 
 /**

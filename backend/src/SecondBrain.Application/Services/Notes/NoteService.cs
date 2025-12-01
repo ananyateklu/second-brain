@@ -122,6 +122,24 @@ public class NoteService : INoteService
         return deleted;
     }
 
+    public async Task<int> BulkDeleteNotesAsync(IEnumerable<string> noteIds, string userId, CancellationToken cancellationToken = default)
+    {
+        var idList = noteIds.ToList();
+        _logger.LogDebug("Bulk deleting notes. Count: {Count}, UserId: {UserId}", idList.Count, userId);
+
+        if (idList.Count == 0)
+        {
+            return 0;
+        }
+
+        // The repository handles ownership verification by filtering on userId
+        var deletedCount = await _noteRepository.DeleteManyAsync(idList, userId);
+
+        _logger.LogInformation("Bulk deleted {DeletedCount} notes for user {UserId}", deletedCount, userId);
+
+        return deletedCount;
+    }
+
     public async Task<bool> IsNoteOwnedByUserAsync(string noteId, string userId, CancellationToken cancellationToken = default)
     {
         var note = await _noteRepository.GetByIdAsync(noteId);

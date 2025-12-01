@@ -1,5 +1,5 @@
 import { useMemo, useState, useCallback } from 'react';
-import { useNotes, useDeleteNote } from '../features/notes/hooks/use-notes-query';
+import { useNotes, useBulkDeleteNotes } from '../features/notes/hooks/use-notes-query';
 import { NoteList } from '../features/notes/components/NoteList';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
@@ -80,16 +80,19 @@ const applyDateFilter = (
 
 export function NotesPage() {
   const { data: notes, isLoading, error } = useNotes();
-  const deleteNoteMutation = useDeleteNote();
+  const bulkDeleteMutation = useBulkDeleteNotes();
   const openCreateModal = useUIStore((state) => state.openCreateModal);
   const searchQuery = useUIStore((state) => state.searchQuery);
   const searchMode = useUIStore((state) => state.searchMode);
+  const notesViewMode = useUIStore((state) => state.notesViewMode);
+  const setNotesViewMode = useUIStore((state) => state.setNotesViewMode);
 
   const [filterState, setFilterState] = useState<NotesFilterState>({
     dateFilter: 'all',
     selectedTags: [],
     sortBy: 'newest',
     archiveFilter: 'all',
+    selectedFolder: null,
   });
 
   // Bulk selection state
@@ -135,9 +138,10 @@ export function NotesPage() {
     const hasDateFilter = filterState.dateFilter !== 'all';
     const hasTagFilter = filterState.selectedTags.length > 0;
     const hasArchiveFilter = filterState.archiveFilter !== 'all';
+    const hasFolderFilter = filterState.selectedFolder !== null && filterState.selectedFolder !== undefined;
 
     // Early return if no filters
-    if (!hasSearchQuery && !hasDateFilter && !hasTagFilter && !hasArchiveFilter) {
+    if (!hasSearchQuery && !hasDateFilter && !hasTagFilter && !hasArchiveFilter && !hasFolderFilter) {
       // Only need to sort
       const sorted = [...notes];
       sorted.sort((a, b) => {
@@ -200,6 +204,16 @@ export function NotesPage() {
         }
       }
 
+      // Folder filter
+      if (hasFolderFilter) {
+        // Empty string means unfiled notes (no folder)
+        if (filterState.selectedFolder === '') {
+          if (note.folder) return false; // Has a folder, but we want unfiled
+        } else {
+          if (note.folder !== filterState.selectedFolder) return false;
+        }
+      }
+
       return true;
     });
 
@@ -238,36 +252,23 @@ export function NotesPage() {
     setIsDeleting(true);
     const idsToDelete = Array.from(selectedNoteIds);
     const totalCount = idsToDelete.length;
-    let deletedCount = 0;
-    const failedIds: string[] = [];
 
     toast.info('Deleting notes...', `Deleting ${totalCount} note${totalCount === 1 ? '' : 's'}...`);
 
-    for (const id of idsToDelete) {
-      try {
-        await deleteNoteMutation.mutateAsync(id);
-        deletedCount++;
-      } catch (error) {
-        console.error('Failed to delete note:', { id, error });
-        failedIds.push(id);
-      }
-    }
-
-    setIsDeleting(false);
-
-    if (failedIds.length === 0) {
-      toast.success('Notes deleted', `Successfully deleted ${deletedCount} note${deletedCount === 1 ? '' : 's'}.`);
+    try {
+      // Use bulk delete endpoint - single API call instead of multiple
+      const result = await bulkDeleteMutation.mutateAsync(idsToDelete);
+      
+      toast.success('Notes deleted', `Successfully deleted ${result.deletedCount} note${result.deletedCount === 1 ? '' : 's'}.`);
       setSelectedNoteIds(new Set());
       setIsBulkMode(false);
-    } else {
-      // Keep failed notes selected for retry
-      setSelectedNoteIds(new Set(failedIds));
-      toast.error(
-        'Some notes failed to delete',
-        `Deleted ${deletedCount} of ${totalCount} notes. ${failedIds.length} note${failedIds.length === 1 ? '' : 's'} failed.`
-      );
+    } catch (error) {
+      console.error('Failed to delete notes:', { error, idsToDelete });
+      toast.error('Failed to delete notes', 'An error occurred while deleting notes.');
+    } finally {
+      setIsDeleting(false);
     }
-  }, [selectedNoteIds, deleteNoteMutation]);
+  }, [selectedNoteIds, bulkDeleteMutation]);
 
   if (error) {
     return (
@@ -330,6 +331,7 @@ export function NotesPage() {
     filterState.dateFilter !== 'all' ||
     filterState.selectedTags.length > 0 ||
     filterState.archiveFilter !== 'all' ||
+    (filterState.selectedFolder !== null && filterState.selectedFolder !== undefined) ||
     searchQuery.trim() !== '';
 
   if (hasActiveFilters && filteredNotes.length === 0) {
@@ -340,6 +342,8 @@ export function NotesPage() {
             notes={notes}
             filterState={filterState}
             onFilterChange={setFilterState}
+            viewMode={notesViewMode}
+            onViewModeChange={setNotesViewMode}
             isBulkMode={isBulkMode}
             onBulkModeToggle={toggleBulkMode}
           />
@@ -369,6 +373,8 @@ export function NotesPage() {
           notes={notes}
           filterState={filterState}
           onFilterChange={setFilterState}
+          viewMode={notesViewMode}
+          onViewModeChange={setNotesViewMode}
           isBulkMode={isBulkMode}
           onBulkModeToggle={toggleBulkMode}
         />
@@ -376,6 +382,7 @@ export function NotesPage() {
       <div className={notes && notes.length > 0 ? 'pt-10' : ''}>
         <NoteList
           notes={filteredNotes}
+          viewMode={notesViewMode}
           isBulkMode={isBulkMode}
           selectedNoteIds={selectedNoteIds}
           onNoteSelect={handleNoteSelect}

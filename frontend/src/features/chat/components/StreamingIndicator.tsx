@@ -49,7 +49,7 @@ export function StreamingIndicator({
           hasContent={hasSteps}
         >
           {thinkingSteps.map((step, index) => (
-            <ThinkingStepCard key={`thinking-${index}`} step={step} />
+            <ThinkingStepCard key={`thinking-${index}`} step={step} isStreaming={isStreaming} />
           ))}
 
           {toolExecutions.map((execution, index) => (

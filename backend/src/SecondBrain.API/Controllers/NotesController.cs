@@ -221,4 +221,48 @@ public class NotesController : ControllerBase
             throw;
         }
     }
+
+    /// <summary>
+    /// Bulk delete multiple notes (must belong to authenticated user)
+    /// </summary>
+    /// <param name="request">Request containing note IDs to delete</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Number of deleted notes</returns>
+    [HttpPost("bulk-delete")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult> BulkDeleteNotes(
+        [FromBody] BulkDeleteNotesRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = HttpContext.Items["UserId"]?.ToString();
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { error = "Not authenticated" });
+        }
+
+        if (request.NoteIds == null || request.NoteIds.Count == 0)
+        {
+            return BadRequest(new { error = "At least one note ID is required" });
+        }
+
+        try
+        {
+            _logger.LogInformation("Bulk deleting {Count} notes for user {UserId}",
+                request.NoteIds.Count, userId);
+
+            var deletedCount = await _noteService.BulkDeleteNotesAsync(
+                request.NoteIds, userId, cancellationToken);
+
+            return Ok(new { deletedCount, message = $"Successfully deleted {deletedCount} note(s)" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error bulk deleting notes. Count: {Count}, UserId: {UserId}",
+                request.NoteIds.Count, userId);
+            return StatusCode(500, new { error = "Failed to delete notes" });
+        }
+    }
 }

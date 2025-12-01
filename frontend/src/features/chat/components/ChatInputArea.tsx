@@ -171,8 +171,27 @@ export function ChatInputArea({
   const [isDragging, setIsDragging] = useState(false);
   const [showToolbar, setShowToolbar] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<FileAttachment | null>(null);
-  const [isTyping, setIsTyping] = useState(false);
-  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Reusable callback to adjust textarea height
+  const adjustTextareaHeight = useCallback(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = `${textarea.scrollHeight}px`;
+    }
+  }, []);
+
+  // Adjust textarea height when value changes (e.g., after sending, or when prompt is inserted)
+  useEffect(() => {
+    if (textareaRef.current) {
+      if (!value) {
+        textareaRef.current.style.height = 'auto';
+      } else {
+        // Adjust height for new content (handles programmatic value changes like smart prompts)
+        adjustTextareaHeight();
+      }
+    }
+  }, [value, adjustTextareaHeight]);
 
   // Image generation state
   const [showImageGenPanel, setShowImageGenPanel] = useState(false);
@@ -303,26 +322,6 @@ export function ChatInputArea({
       setTimeout(() => setFileError(null), 3000);
     }
   }, [supportsVision, attachedFiles]);
-
-  // Handle typing indicator
-  useEffect(() => {
-    if (value.trim()) {
-      setIsTyping(true);
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-      typingTimeoutRef.current = setTimeout(() => {
-        setIsTyping(false);
-      }, 1000);
-    } else {
-      setIsTyping(false);
-    }
-    return () => {
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-    };
-  }, [value]);
 
   // Handle mention detection
   const handleInputChange = useCallback((newValue: string) => {
@@ -607,9 +606,14 @@ export function ChatInputArea({
     }
   }, [onImageGenerated]);
 
-  const hasContent = isImageGenerationMode ? value.trim().length > 0 : (value.trim() || attachedFiles.length > 0);
-  const wordCount = value.trim() ? value.trim().split(/\s+/).length : 0;
-  const charCount = value.length;
+  // Memoize derived values to prevent recalculations on every render
+  const { hasContent, wordCount, charCount } = useMemo(() => ({
+    hasContent: isImageGenerationMode
+      ? value.trim().length > 0
+      : Boolean(value.trim() || attachedFiles.length > 0),
+    wordCount: value.trim() ? value.trim().split(/\s+/).length : 0,
+    charCount: value.length,
+  }), [value, attachedFiles.length, isImageGenerationMode]);
 
   return (
     <div
@@ -629,7 +633,7 @@ export function ChatInputArea({
                 disabled={isLoadingPrompts}
                 className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
-                  backgroundColor: promptsGenerated ? 'var(--surface-card)' : 'var(--color-primary-alpha)',
+                  backgroundColor: promptsGenerated ? 'var(--surface-card-solid)' : 'var(--surface-card-solid)',
                   color: promptsGenerated ? 'var(--text-secondary)' : 'var(--color-brand-400)',
                   border: promptsGenerated ? '1px solid var(--border)' : '1px solid var(--color-brand-400)',
                 }}
@@ -676,10 +680,10 @@ export function ChatInputArea({
                   style={{
                     '--chip-index': index,
                     backgroundColor: smartPrompts
-                      ? 'color-mix(in srgb, var(--color-brand-600) 30%, var(--surface-card-solid))'
+                      ? 'var(--prompt-chip-bg)'
                       : 'var(--surface-elevated)',
-                    color: smartPrompts ? 'var(--color-brand-400)' : 'var(--text-secondary)',
-                    border: smartPrompts ? '1px solid var(--color-brand-400)' : '1px solid var(--border)',
+                    color: smartPrompts ? 'var(--prompt-chip-text)' : 'var(--text-secondary)',
+                    border: smartPrompts ? '1px solid var(--prompt-chip-border)' : '1px solid var(--border)',
                   } as React.CSSProperties}
                   title={prompt.promptTemplate}
                 >
@@ -1084,7 +1088,7 @@ export function ChatInputArea({
 
         {/* Main Input Container - Glassmorphism */}
         <div
-          className={`chat-input-glass relative flex flex-col rounded-3xl px-4 py-3 transition-all duration-300 ${isTyping ? 'is-typing' : ''}`}
+          className="chat-input-glass relative flex flex-col rounded-3xl px-3 py-2 transition-all duration-300"
         >
           {/* Hidden file input */}
           <input
@@ -1244,11 +1248,7 @@ export function ChatInputArea({
                   color: 'var(--text-primary)',
                   minHeight: '24px',
                 }}
-                onInput={(e) => {
-                  const target = e.target as HTMLTextAreaElement;
-                  target.style.height = 'auto';
-                  target.style.height = `${target.scrollHeight}px`;
-                }}
+                onInput={adjustTextareaHeight}
                 onFocus={() => setShowToolbar(false)}
               />
             </div>
@@ -1257,7 +1257,7 @@ export function ChatInputArea({
             <button
               onClick={isStreaming ? onCancel : handleSend}
               disabled={!isStreaming && (isLoading || isGeneratingImage || !hasContent || disabled)}
-              className={`send-button-animated flex-shrink-0 p-2.5 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${hasContent && !isStreaming && !isGeneratingImage ? 'has-content' : ''
+              className={`send-button-animated flex-shrink-0 w-10 h-10 p-0 rounded-full flex items-center justify-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${hasContent && !isStreaming && !isGeneratingImage ? 'has-content' : ''
                 }`}
               style={{
                 backgroundColor: isStreaming ? 'var(--error-bg)' : 'var(--btn-primary-bg)',

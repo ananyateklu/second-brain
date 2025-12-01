@@ -169,6 +169,24 @@ public class ChatConversationService : IChatConversationService
         return deleted;
     }
 
+    public async Task<int> BulkDeleteConversationsAsync(IEnumerable<string> conversationIds, string userId, CancellationToken cancellationToken = default)
+    {
+        var idList = conversationIds.ToList();
+        _logger.LogDebug("Bulk deleting conversations. Count: {Count}, UserId: {UserId}", idList.Count, userId);
+
+        if (idList.Count == 0)
+        {
+            return 0;
+        }
+
+        // The repository handles ownership verification by filtering on userId
+        var deletedCount = await _chatRepository.DeleteManyAsync(idList, userId);
+
+        _logger.LogInformation("Bulk deleted {DeletedCount} conversations for user {UserId}", deletedCount, userId);
+
+        return deletedCount;
+    }
+
     public async Task<ChatConversation?> AddMessageToConversationAsync(
         string conversationId,
         string userId,

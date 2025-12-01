@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Note } from '../types/note';
 import { useThemeStore } from '../../../store/theme-store';
+import { NotesViewMode } from '../../../store/ui-store';
 
 export type DateFilter = 'all' | 'today' | 'yesterday' | 'last7days' | 'last30days' | 'last90days' | 'custom';
 export type SortOption = 'newest' | 'oldest' | 'title-asc' | 'title-desc';
 export type ArchiveFilter = 'all' | 'archived' | 'not-archived';
+export type FolderFilter = string | null; // null means all folders, empty string means unfiled
 
 export interface NotesFilterState {
   dateFilter: DateFilter;
@@ -13,21 +15,25 @@ export interface NotesFilterState {
   selectedTags: string[];
   sortBy: SortOption;
   archiveFilter: ArchiveFilter;
+  selectedFolder?: FolderFilter;
 }
 
 interface NotesFilterProps {
   notes: Note[];
   filterState: NotesFilterState;
   onFilterChange: (filters: NotesFilterState) => void;
+  viewMode?: NotesViewMode;
+  onViewModeChange?: (mode: NotesViewMode) => void;
   isBulkMode?: boolean;
   onBulkModeToggle?: () => void;
 }
 
-export function NotesFilter({ notes, filterState, onFilterChange, isBulkMode = false, onBulkModeToggle }: NotesFilterProps) {
+export function NotesFilter({ notes, filterState, onFilterChange, viewMode = 'card', onViewModeChange, isBulkMode = false, onBulkModeToggle }: NotesFilterProps) {
   const [isDateDropdownOpen, setIsDateDropdownOpen] = useState(false);
   const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
   const [isArchiveDropdownOpen, setIsArchiveDropdownOpen] = useState(false);
+  const [isFolderDropdownOpen, setIsFolderDropdownOpen] = useState(false);
   const [topPosition, setTopPosition] = useState('80px'); // Default for mobile
   const filterRef = useRef<HTMLDivElement>(null);
   const { theme } = useThemeStore();
@@ -37,6 +43,7 @@ export function NotesFilter({ notes, filterState, onFilterChange, isBulkMode = f
   const tagDropdownRef = useRef<HTMLDivElement>(null);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
   const archiveDropdownRef = useRef<HTMLDivElement>(null);
+  const folderDropdownRef = useRef<HTMLDivElement>(null);
 
   // Handle responsive positioning
   useEffect(() => {
@@ -73,6 +80,27 @@ export function NotesFilter({ notes, filterState, onFilterChange, isBulkMode = f
     [notes]
   );
 
+  // Memoize folder calculation - only recalculate when notes array changes
+  const allFolders = useMemo(() => {
+    const folders = notes
+      .map(note => note.folder)
+      .filter((folder): folder is string => !!folder);
+    return Array.from(new Set(folders)).sort();
+  }, [notes]);
+
+  // Count notes in each folder
+  const folderCounts = useMemo(() => {
+    const counts: Record<string, number> = { unfiled: 0 };
+    notes.forEach(note => {
+      if (note.folder) {
+        counts[note.folder] = (counts[note.folder] || 0) + 1;
+      } else {
+        counts.unfiled += 1;
+      }
+    });
+    return counts;
+  }, [notes]);
+
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -87,6 +115,9 @@ export function NotesFilter({ notes, filterState, onFilterChange, isBulkMode = f
       }
       if (archiveDropdownRef.current && !archiveDropdownRef.current.contains(event.target as Node)) {
         setIsArchiveDropdownOpen(false);
+      }
+      if (folderDropdownRef.current && !folderDropdownRef.current.contains(event.target as Node)) {
+        setIsFolderDropdownOpen(false);
       }
     };
 
@@ -122,6 +153,16 @@ export function NotesFilter({ notes, filterState, onFilterChange, isBulkMode = f
       case 'not-archived': return 'Not archived';
       default: return 'All notes';
     }
+  };
+
+  const getFolderLabel = () => {
+    if (filterState.selectedFolder === undefined || filterState.selectedFolder === null) {
+      return 'All folders';
+    }
+    if (filterState.selectedFolder === '') {
+      return 'Unfiled';
+    }
+    return filterState.selectedFolder;
   };
 
   const handleDateFilterChange = (filter: DateFilter) => {
@@ -161,12 +202,21 @@ export function NotesFilter({ notes, filterState, onFilterChange, isBulkMode = f
     setIsArchiveDropdownOpen(false);
   };
 
+  const handleFolderFilterChange = (folder: FolderFilter) => {
+    onFilterChange({
+      ...filterState,
+      selectedFolder: folder,
+    });
+    setIsFolderDropdownOpen(false);
+  };
+
   const clearFilters = () => {
     onFilterChange({
       dateFilter: 'all',
       selectedTags: [],
       sortBy: 'newest',
       archiveFilter: 'all',
+      selectedFolder: null,
     });
   };
 
@@ -174,7 +224,8 @@ export function NotesFilter({ notes, filterState, onFilterChange, isBulkMode = f
     filterState.dateFilter !== 'all' ||
     filterState.selectedTags.length > 0 ||
     filterState.sortBy !== 'newest' ||
-    filterState.archiveFilter !== 'all';
+    filterState.archiveFilter !== 'all' ||
+    (filterState.selectedFolder !== null && filterState.selectedFolder !== undefined);
 
   const DropdownButton = ({ 
     label, 
@@ -502,6 +553,129 @@ export function NotesFilter({ notes, filterState, onFilterChange, isBulkMode = f
         ))}
       </div>
 
+      {/* Folder Filter */}
+      {(allFolders.length > 0 || folderCounts.unfiled > 0) && (
+        <div ref={folderDropdownRef} className="relative" style={{ zIndex: 51 }}>
+          <DropdownButton
+            label={getFolderLabel()}
+            isOpen={isFolderDropdownOpen}
+            onClick={() => setIsFolderDropdownOpen(!isFolderDropdownOpen)}
+          />
+          {renderDropdownMenu(isFolderDropdownOpen, (
+            <div className="p-2 max-h-64 overflow-y-auto">
+              {/* All folders option */}
+              <button
+                type="button"
+                onClick={() => handleFolderFilterChange(null)}
+                className="w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm flex items-center justify-between"
+                style={{
+                  backgroundColor: filterState.selectedFolder === null || filterState.selectedFolder === undefined
+                    ? 'var(--color-brand-600)'
+                    : 'transparent',
+                  color: filterState.selectedFolder === null || filterState.selectedFolder === undefined
+                    ? '#ffffff'
+                    : 'var(--text-primary)',
+                }}
+                onMouseEnter={(e) => {
+                  if (filterState.selectedFolder !== null && filterState.selectedFolder !== undefined) {
+                    e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (filterState.selectedFolder !== null && filterState.selectedFolder !== undefined) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }
+                }}
+              >
+                <span className="flex items-center gap-2">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                  </svg>
+                  All folders
+                </span>
+                <span className="text-xs opacity-60">{notes.length}</span>
+              </button>
+
+              {/* Unfiled option */}
+              {folderCounts.unfiled > 0 && (
+                <button
+                  type="button"
+                  onClick={() => handleFolderFilterChange('')}
+                  className="w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm flex items-center justify-between"
+                  style={{
+                    backgroundColor: filterState.selectedFolder === ''
+                      ? 'var(--color-brand-600)'
+                      : 'transparent',
+                    color: filterState.selectedFolder === ''
+                      ? '#ffffff'
+                      : 'var(--text-primary)',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (filterState.selectedFolder !== '') {
+                      e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (filterState.selectedFolder !== '') {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }
+                  }}
+                >
+                  <span className="flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Unfiled
+                  </span>
+                  <span className="text-xs opacity-60">{folderCounts.unfiled}</span>
+                </button>
+              )}
+
+              {/* Divider if there are folders */}
+              {allFolders.length > 0 && (
+                <div className="border-t my-1" style={{ borderColor: 'var(--border)' }} />
+              )}
+
+              {/* Individual folders */}
+              {allFolders.map((folder) => (
+                <button
+                  key={folder}
+                  type="button"
+                  onClick={() => handleFolderFilterChange(folder)}
+                  className="w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm flex items-center justify-between"
+                  style={{
+                    backgroundColor: filterState.selectedFolder === folder
+                      ? 'var(--color-brand-600)'
+                      : 'transparent',
+                    color: filterState.selectedFolder === folder
+                      ? '#ffffff'
+                      : 'var(--text-primary)',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (filterState.selectedFolder !== folder) {
+                      e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (filterState.selectedFolder !== folder) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }
+                  }}
+                >
+                  <span className="flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                    </svg>
+                    {folder}
+                  </span>
+                  <span className="text-xs opacity-60">{folderCounts[folder] || 0}</span>
+                </button>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Clear Filters Button */}
       {hasActiveFilters && (
         <button
@@ -529,12 +703,84 @@ export function NotesFilter({ notes, filterState, onFilterChange, isBulkMode = f
         </button>
       )}
 
+      {/* View Mode Toggle */}
+      {onViewModeChange && (
+        <div
+          className="flex items-center rounded-xl border overflow-hidden ml-auto"
+          style={{
+            backgroundColor: 'var(--surface-elevated)',
+            borderColor: 'var(--border)',
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => onViewModeChange('card')}
+            className="flex items-center justify-center w-9 h-9 transition-all duration-200"
+            style={{
+              backgroundColor: viewMode === 'card' ? 'var(--color-brand-600)' : 'transparent',
+              color: viewMode === 'card' ? '#ffffff' : 'var(--text-secondary)',
+            }}
+            onMouseEnter={(e) => {
+              if (viewMode !== 'card') {
+                e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+                e.currentTarget.style.color = 'var(--text-primary)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (viewMode !== 'card') {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = 'var(--text-secondary)';
+              }
+            }}
+            title="Card view"
+            aria-label="Card view"
+          >
+            {/* Grid/Card icon */}
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+            </svg>
+          </button>
+          <div
+            className="w-px h-5"
+            style={{ backgroundColor: 'var(--border)' }}
+          />
+          <button
+            type="button"
+            onClick={() => onViewModeChange('list')}
+            className="flex items-center justify-center w-9 h-9 transition-all duration-200"
+            style={{
+              backgroundColor: viewMode === 'list' ? 'var(--color-brand-600)' : 'transparent',
+              color: viewMode === 'list' ? '#ffffff' : 'var(--text-secondary)',
+            }}
+            onMouseEnter={(e) => {
+              if (viewMode !== 'list') {
+                e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+                e.currentTarget.style.color = 'var(--text-primary)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (viewMode !== 'list') {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = 'var(--text-secondary)';
+              }
+            }}
+            title="List view"
+            aria-label="List view"
+          >
+            {/* List icon */}
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       {/* Bulk Select Toggle Button */}
       {onBulkModeToggle && (
         <button
           type="button"
           onClick={onBulkModeToggle}
-          className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2 ml-auto"
+          className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2"
           style={{
             backgroundColor: isBulkMode ? 'var(--color-brand-600)' : 'transparent',
             color: isBulkMode ? '#ffffff' : 'var(--text-secondary)',

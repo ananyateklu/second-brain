@@ -10,6 +10,7 @@ public interface IRagService
         int? topK = null,
         float? similarityThreshold = null,
         string? vectorStoreProvider = null,
+        string? conversationId = null,
         CancellationToken cancellationToken = default);
 
     string EnhancePromptWithContext(string originalPrompt, RagContext context);

@@ -7,5 +7,10 @@ public class NoteChunk
     public int StartPosition { get; set; }
     public int EndPosition { get; set; }
     public int TokenCount { get; set; }
+
+    /// <summary>
+    /// The section header this chunk belongs to (for semantic chunking)
+    /// </summary>
+    public string? SectionHeader { get; set; }
 }
 

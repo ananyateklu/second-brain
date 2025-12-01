@@ -293,6 +293,38 @@ public class SqlChatRepository : IChatRepository
         }
     }
 
+    public async Task<int> DeleteManyAsync(IEnumerable<string> ids, string userId)
+    {
+        try
+        {
+            var idList = ids.ToList();
+            _logger.LogDebug("Deleting multiple conversations. Count: {Count}, UserId: {UserId}", idList.Count, userId);
+
+            // Get all conversations that match the IDs and belong to the user
+            var conversations = await _context.ChatConversations
+                .Include(c => c.Messages)
+                .Where(c => idList.Contains(c.Id) && c.UserId == userId)
+                .ToListAsync();
+
+            if (conversations.Count == 0)
+            {
+                _logger.LogDebug("No conversations found for bulk deletion. UserId: {UserId}", userId);
+                return 0;
+            }
+
+            _context.ChatConversations.RemoveRange(conversations);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Bulk deleted conversations successfully. Count: {Count}, UserId: {UserId}", conversations.Count, userId);
+            return conversations.Count;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error bulk deleting conversations. UserId: {UserId}", userId);
+            throw new RepositoryException($"Failed to bulk delete conversations for user '{userId}'", ex);
+        }
+    }
+
     public async Task<ChatConversation?> AddMessageAsync(string id, ChatMessage message)
     {
         try

@@ -9,6 +9,7 @@ public interface IChatRepository
     Task<ChatConversation> CreateAsync(ChatConversation conversation);
     Task<ChatConversation?> UpdateAsync(string id, ChatConversation conversation);
     Task<bool> DeleteAsync(string id);
+    Task<int> DeleteManyAsync(IEnumerable<string> ids, string userId);
     Task<ChatConversation?> AddMessageAsync(string id, ChatMessage message);
 }
 

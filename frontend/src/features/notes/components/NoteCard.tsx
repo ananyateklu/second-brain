@@ -1,6 +1,6 @@
 import { Note } from '../types/note';
 import { useUIStore } from '../../../store/ui-store';
-import { useDeleteNote } from '../hooks/use-notes-query';
+import { useDeleteNote, useArchiveNote, useUnarchiveNote } from '../hooks/use-notes-query';
 import { toast } from '../../../hooks/use-toast';
 import { formatRelativeDate } from '../../../utils/date-utils';
 import ReactMarkdown from 'react-markdown';
@@ -79,6 +79,8 @@ export const NoteCard = memo(function NoteCard({
 }: NoteCardProps) {
   const openEditModal = useUIStore((state) => state.openEditModal);
   const deleteNoteMutation = useDeleteNote();
+  const archiveNoteMutation = useArchiveNote();
+  const unarchiveNoteMutation = useUnarchiveNote();
   const isCompact = variant === 'compact';
   const isMicro = variant === 'micro';
   const isSmall = isCompact || isMicro;
@@ -106,6 +108,15 @@ export const NoteCard = memo(function NoteCard({
 
     if (confirmed) {
       deleteNoteMutation.mutate(note.id);
+    }
+  };
+
+  const handleArchiveToggle = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click when clicking archive button
+    if (note.isArchived) {
+      unarchiveNoteMutation.mutate(note.id);
+    } else {
+      archiveNoteMutation.mutate(note.id);
     }
   };
 
@@ -217,6 +228,7 @@ export const NoteCard = memo(function NoteCard({
         </div>
       )}
 
+
       {/* Ambient glow effect */}
       <div
         className="absolute -top-20 -right-20 w-40 h-40 rounded-full opacity-15 blur-2xl pointer-events-none transition-opacity duration-1000"
@@ -264,6 +276,45 @@ export const NoteCard = memo(function NoteCard({
               <div
                 className={`flex items-center gap-1.5 transition-all duration-200 ${isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2'}`}
               >
+                {/* Archive/Unarchive Button */}
+                <button
+                  onClick={handleArchiveToggle}
+                  className="flex items-center justify-center w-7 h-7 rounded-full transition-colors"
+                  style={{
+                    backgroundColor: 'var(--surface-hover)',
+                    color: 'var(--text-tertiary)',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!archiveNoteMutation.isPending && !unarchiveNoteMutation.isPending) {
+                      e.currentTarget.style.backgroundColor = note.isArchived
+                        ? 'color-mix(in srgb, var(--color-success) 15%, transparent)'
+                        : 'color-mix(in srgb, var(--color-warning) 15%, transparent)';
+                      e.currentTarget.style.color = note.isArchived
+                        ? 'var(--color-success)'
+                        : 'var(--color-warning)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+                    e.currentTarget.style.color = 'var(--text-tertiary)';
+                  }}
+                  aria-label={note.isArchived ? 'Restore note' : 'Archive note'}
+                  title={note.isArchived ? 'Restore from archive' : 'Archive note'}
+                  disabled={archiveNoteMutation.isPending || unarchiveNoteMutation.isPending}
+                >
+                  {note.isArchived ? (
+                    // Unarchive icon (arrow coming out of box)
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4l3-3m0 0l3 3m-3-3v6" />
+                    </svg>
+                  ) : (
+                    // Archive icon (box with down arrow)
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                    </svg>
+                  )}
+                </button>
+                {/* Delete Button */}
                 <button
                   onClick={handleDelete}
                   className="flex items-center justify-center w-7 h-7 rounded-full transition-colors"
@@ -360,9 +411,30 @@ export const NoteCard = memo(function NoteCard({
 
         {/* Footer Info */}
         <div className={`flex items-end justify-between ${!isSmall ? 'mt-2' : 'mt-auto'}`}>
-          {/* Tags */}
-          {displayTags.length > 0 && (
-            <div className="flex flex-wrap gap-1">
+          {/* Left side: Archived badge + Tags */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {/* Archived Badge */}
+            {note.isArchived && (
+              <span
+                className={`inline-flex items-center gap-1 rounded-md font-medium ${isMicro ? 'px-1.5 py-0.5 text-[8px]' : (isCompact ? 'px-1.5 py-0.5 text-[9px]' : 'px-2 py-0.5 text-[10px]')}`}
+                style={{
+                  backgroundColor: isDarkMode
+                    ? 'color-mix(in srgb, var(--color-warning) 20%, transparent)'
+                    : 'color-mix(in srgb, var(--color-warning) 15%, transparent)',
+                  color: isDarkMode ? 'var(--color-warning)' : 'var(--color-warning-dark, #b45309)',
+                  border: `1px solid ${isDarkMode ? 'color-mix(in srgb, var(--color-warning) 30%, transparent)' : 'color-mix(in srgb, var(--color-warning) 25%, transparent)'}`,
+                }}
+              >
+                <svg className={`${isMicro ? 'w-2.5 h-2.5' : 'w-3 h-3'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                </svg>
+                Archived
+              </span>
+            )}
+
+            {/* Tags */}
+            {displayTags.length > 0 && (
+              <div className="flex flex-wrap gap-1">
               {displayTags.slice(0, isMicro ? 2 : (isCompact ? 2 : 3)).map((tag, index) => (
                 <span
                   key={`${tag}-${index}`}
@@ -394,8 +466,9 @@ export const NoteCard = memo(function NoteCard({
                   +{displayTags.length - (isMicro ? 2 : (isCompact ? 2 : 3))}
                 </span>
               )}
-            </div>
-          )}
+              </div>
+            )}
+          </div>
 
           {/* Metadata / Date */}
           <div className="flex items-center gap-2 flex-shrink-0 ml-auto">

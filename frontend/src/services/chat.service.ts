@@ -241,6 +241,16 @@ export const chatService = {
     return apiClient.delete<void>(API_ENDPOINTS.CHAT.CONVERSATION_BY_ID(id));
   },
 
+  /**
+   * Bulk delete multiple conversations in a single request
+   */
+  async bulkDeleteConversations(conversationIds: string[]): Promise<{ deletedCount: number; message: string }> {
+    return apiClient.post<{ deletedCount: number; message: string }>(
+      API_ENDPOINTS.CHAT.BULK_DELETE,
+      { conversationIds }
+    );
+  },
+
   // ============================================
   // Image Generation
   // ============================================

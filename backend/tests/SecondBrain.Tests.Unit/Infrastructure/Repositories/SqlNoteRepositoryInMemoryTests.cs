@@ -95,6 +95,23 @@ public class TestNoteRepository : INoteRepository
         return true;
     }
 
+    public async Task<int> DeleteManyAsync(IEnumerable<string> ids, string userId)
+    {
+        var idList = ids.ToList();
+
+        var notes = await _context.Notes
+            .Where(n => idList.Contains(n.Id) && n.UserId == userId)
+            .ToListAsync();
+
+        if (notes.Count == 0)
+            return 0;
+
+        _context.Notes.RemoveRange(notes);
+        await _context.SaveChangesAsync();
+
+        return notes.Count;
+    }
+
     public async Task<IEnumerable<Note>> GetByUserIdAsync(string userId)
     {
         return await _context.Notes.AsNoTracking()
@@ -448,6 +465,85 @@ public class SqlNoteRepositoryInMemoryTests : IDisposable
 
         // Assert
         result.Should().BeFalse();
+    }
+
+    #endregion
+
+    #region DeleteManyAsync Tests
+
+    [Fact]
+    public async Task DeleteManyAsync_WhenNotesExist_DeletesAllAndReturnsCount()
+    {
+        // Arrange
+        var notes = new List<Note>
+        {
+            CreateTestNote("note-1", "user-1", "Note 1"),
+            CreateTestNote("note-2", "user-1", "Note 2"),
+            CreateTestNote("note-3", "user-1", "Note 3")
+        };
+        await _context.Notes.AddRangeAsync(notes);
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+
+        // Act
+        var result = await _sut.DeleteManyAsync(new[] { "note-1", "note-2", "note-3" }, "user-1");
+
+        // Assert
+        result.Should().Be(3);
+        var remaining = await _context.Notes.CountAsync();
+        remaining.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task DeleteManyAsync_WhenNoNotesMatch_ReturnsZero()
+    {
+        // Act
+        var result = await _sut.DeleteManyAsync(new[] { "non-existent-1", "non-existent-2" }, "user-1");
+
+        // Assert
+        result.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task DeleteManyAsync_OnlyDeletesUserOwnedNotes()
+    {
+        // Arrange
+        var notes = new List<Note>
+        {
+            CreateTestNote("note-1", "user-1", "User 1 Note 1"),
+            CreateTestNote("note-2", "user-2", "User 2 Note"),
+            CreateTestNote("note-3", "user-1", "User 1 Note 2")
+        };
+        await _context.Notes.AddRangeAsync(notes);
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+
+        // Act - try to delete all three, but only user-1 owns two of them
+        var result = await _sut.DeleteManyAsync(new[] { "note-1", "note-2", "note-3" }, "user-1");
+
+        // Assert
+        result.Should().Be(2); // Only the two owned by user-1
+        var remaining = await _context.Notes.ToListAsync();
+        remaining.Should().HaveCount(1);
+        remaining[0].UserId.Should().Be("user-2");
+    }
+
+    [Fact]
+    public async Task DeleteManyAsync_WithEmptyIdList_ReturnsZero()
+    {
+        // Arrange
+        var note = CreateTestNote("note-1", "user-1", "Test Note");
+        await _context.Notes.AddAsync(note);
+        await _context.SaveChangesAsync();
+        _context.ChangeTracker.Clear();
+
+        // Act
+        var result = await _sut.DeleteManyAsync(Array.Empty<string>(), "user-1");
+
+        // Assert
+        result.Should().Be(0);
+        var remaining = await _context.Notes.CountAsync();
+        remaining.Should().Be(1);
     }
 
     #endregion

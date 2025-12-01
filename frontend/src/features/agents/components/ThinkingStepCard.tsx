@@ -1,13 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ThinkingStep } from '../types/agent-types';
 
 interface ThinkingStepCardProps {
   step: ThinkingStep;
   isLast?: boolean;
+  /** When true, the card will be expanded by default to show streaming content */
+  isStreaming?: boolean;
 }
 
-export function ThinkingStepCard({ step }: ThinkingStepCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+export function ThinkingStepCard({ step, isStreaming = false }: ThinkingStepCardProps) {
+  // Start expanded when streaming, collapsed otherwise
+  const [isExpanded, setIsExpanded] = useState(isStreaming);
+
+  // Auto-expand when streaming starts
+  useEffect(() => {
+    if (isStreaming) {
+      setIsExpanded(true);
+    }
+  }, [isStreaming]);
 
   // Parse the thinking content into steps
   const parseSteps = (content: string): string[] => {
@@ -44,6 +54,13 @@ export function ThinkingStepCard({ step }: ThinkingStepCardProps) {
           >
             Thinking Process
           </span>
+          {/* Show streaming indicator when actively streaming */}
+          {isStreaming && (
+            <span 
+              className="inline-block w-1.5 h-1.5 rounded-full animate-pulse"
+              style={{ backgroundColor: 'var(--color-brand-500)' }}
+            />
+          )}
           <span className="text-xs opacity-50" style={{ color: 'var(--text-tertiary)' }}>
             {step.timestamp.toLocaleTimeString()}
           </span>
@@ -72,6 +89,16 @@ export function ThinkingStepCard({ step }: ThinkingStepCardProps) {
                 {stepText}
               </div>
             ))}
+            {/* Show cursor when streaming to indicate more content coming */}
+            {isStreaming && (
+              <span
+                className="inline-block w-1.5 h-3 ml-0.5 animate-pulse"
+                style={{
+                  backgroundColor: 'var(--color-brand-500)',
+                  verticalAlign: 'middle',
+                }}
+              />
+            )}
           </div>
         )}
       </div>

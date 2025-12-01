@@ -12,12 +12,91 @@ import type {
   VectorStoreProvider,
   EmbeddingProvider,
   StartIndexingOptions,
+  RagFeedbackRequest,
+  RagPerformanceStats,
+  RagQueryLogsResponse,
+  RagQueryLog,
+  TopicAnalyticsResponse,
 } from '../types/rag';
 
 /**
- * RAG service for indexing and vector store operations
+ * RAG service for indexing, vector store operations, and analytics
  */
 export const ragService = {
+  // ============================================
+  // RAG Analytics & Feedback
+  // ============================================
+
+  /**
+   * Submit feedback for a RAG query response
+   * This is critical for correlating retrieval metrics with user satisfaction
+   */
+  async submitFeedback(request: RagFeedbackRequest): Promise<void> {
+    return apiClient.post<void>(API_ENDPOINTS.RAG_ANALYTICS.FEEDBACK, request);
+  },
+
+  /**
+   * Get RAG performance statistics
+   */
+  async getPerformanceStats(since?: Date): Promise<RagPerformanceStats> {
+    const params = new URLSearchParams();
+    if (since) {
+      params.append('since', since.toISOString());
+    }
+    const queryString = params.toString();
+    const url = queryString 
+      ? `${API_ENDPOINTS.RAG_ANALYTICS.STATS}?${queryString}`
+      : API_ENDPOINTS.RAG_ANALYTICS.STATS;
+    return apiClient.get<RagPerformanceStats>(url);
+  },
+
+  /**
+   * Get paginated RAG query logs
+   */
+  async getQueryLogs(
+    page = 1,
+    pageSize = 20,
+    since?: Date,
+    feedbackOnly = false
+  ): Promise<RagQueryLogsResponse> {
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    params.append('pageSize', pageSize.toString());
+    if (since) {
+      params.append('since', since.toISOString());
+    }
+    if (feedbackOnly) {
+      params.append('feedbackOnly', 'true');
+    }
+    return apiClient.get<RagQueryLogsResponse>(`${API_ENDPOINTS.RAG_ANALYTICS.LOGS}?${params}`);
+  },
+
+  /**
+   * Get a single RAG query log by ID
+   */
+  async getQueryLog(id: string): Promise<RagQueryLog> {
+    return apiClient.get<RagQueryLog>(API_ENDPOINTS.RAG_ANALYTICS.LOG_BY_ID(id));
+  },
+
+  /**
+   * Trigger topic clustering on recent queries
+   */
+  async clusterQueries(clusterCount = 5): Promise<{ message: string }> {
+    const params = new URLSearchParams({ clusterCount: clusterCount.toString() });
+    return apiClient.post<{ message: string }>(`${API_ENDPOINTS.RAG_ANALYTICS.CLUSTER}?${params}`);
+  },
+
+  /**
+   * Get topic statistics
+   */
+  async getTopicStats(): Promise<TopicAnalyticsResponse> {
+    return apiClient.get<TopicAnalyticsResponse>(API_ENDPOINTS.RAG_ANALYTICS.TOPICS);
+  },
+
+  // ============================================
+  // Indexing Operations
+  // ============================================
+
   /**
    * Start indexing notes
    */

@@ -240,9 +240,20 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     }
   }, [pendingMessage, conversation?.messages, setPendingMessage]);
 
+  // Track the previous message count to detect when new messages are added
+  const prevMessageCountRef = useRef<number>(0);
+
   // Cleanup streaming state once message is persisted
   useEffect(() => {
     if (!isStreaming && streamingMessage && conversation?.messages) {
+      // Get current message count
+      const currentMessageCount = conversation.messages.length;
+
+      // Check if a new message was added since we started streaming
+      // This is more reliable than content matching which can fail due to formatting differences
+      const hasNewMessage = currentMessageCount > prevMessageCountRef.current;
+
+      // Also do content matching as a fallback
       const hasMatchingMessage = conversation.messages.some(
         (msg) =>
           msg.role === 'assistant' &&
@@ -261,12 +272,33 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
                   ))))
       );
 
-      if (hasMatchingMessage) {
+      // Reset stream if either condition is met
+      if (hasNewMessage || hasMatchingMessage) {
         setPendingMessage(null);
         resetStream();
       }
     }
+
+    // Update the message count ref when conversation changes
+    if (conversation?.messages) {
+      prevMessageCountRef.current = conversation.messages.length;
+    }
   }, [conversation?.messages, isStreaming, streamingMessage, resetStream, setPendingMessage]);
+
+  // Fallback cleanup: if streaming ended but stream state wasn't cleared after a timeout,
+  // force clear it to prevent stuck UI state
+  useEffect(() => {
+    if (!isStreaming && streamingMessage) {
+      const timeoutId = setTimeout(() => {
+        // If we still have a streaming message after streaming ended, clear it
+        // This handles edge cases where the content matching and message count checks both fail
+        resetStream();
+        setPendingMessage(null);
+      }, 2000); // 2 second fallback timeout
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isStreaming, streamingMessage, resetStream, setPendingMessage]);
 
   // Handle sending a message
   const handleSendMessage = useCallback(

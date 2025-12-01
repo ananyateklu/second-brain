@@ -50,6 +50,11 @@ public interface IChatConversationService
     Task<bool> DeleteConversationAsync(string conversationId, string userId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Delete multiple conversations (verifies ownership)
+    /// </summary>
+    Task<int> BulkDeleteConversationsAsync(IEnumerable<string> conversationIds, string userId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Add a message to a conversation
     /// </summary>
     Task<ChatConversation?> AddMessageToConversationAsync(

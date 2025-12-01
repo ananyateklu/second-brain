@@ -21,6 +21,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<GeneratedImageData> GeneratedImages { get; set; } = null!;
     public DbSet<IndexingJob> IndexingJobs { get; set; } = null!;
     public DbSet<NoteEmbedding> NoteEmbeddings { get; set; } = null!;
+    public DbSet<RagQueryLog> RagQueryLogs { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -138,6 +139,18 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.NoteId).HasDatabaseName("ix_note_embeddings_note_id");
             entity.HasIndex(e => e.UserId).HasDatabaseName("ix_note_embeddings_user_id");
             entity.HasIndex(e => new { e.NoteId, e.ChunkIndex }).HasDatabaseName("ix_note_embeddings_note_chunk");
+            
+            // Configure tsvector for full-text search (GIN index created via SQL migration)
+            entity.Property(e => e.SearchVector)
+                .HasColumnType("tsvector");
+        });
+
+        // Configure RagQueryLog entity for analytics
+        modelBuilder.Entity<RagQueryLog>(entity =>
+        {
+            entity.HasIndex(e => e.UserId).HasDatabaseName("ix_rag_query_logs_user_id");
+            entity.HasIndex(e => e.CreatedAt).HasDatabaseName("ix_rag_query_logs_created_at");
+            entity.HasIndex(e => e.ConversationId).HasDatabaseName("ix_rag_query_logs_conversation");
         });
     }
 }
