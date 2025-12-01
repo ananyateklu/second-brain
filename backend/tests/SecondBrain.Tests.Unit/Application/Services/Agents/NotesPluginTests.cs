@@ -117,7 +117,7 @@ public class NotesPluginTests
         var result = await _sut.CreateNoteAsync("Title", "");
 
         // Assert
-        result.Should().Contain("Error: Note content is required");
+        result.Should().Contain("Error: The 'content' parameter is required");
     }
 
     [Fact]
@@ -127,7 +127,7 @@ public class NotesPluginTests
         var result = await _sut.CreateNoteAsync("Title", "   ");
 
         // Assert
-        result.Should().Contain("Error: Note content is required");
+        result.Should().Contain("Error: The 'content' parameter is required");
     }
 
     [Fact]

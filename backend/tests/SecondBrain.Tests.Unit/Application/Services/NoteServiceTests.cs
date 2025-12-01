@@ -261,7 +261,8 @@ public class NoteServiceTests
             Content = "Updated Content",
             Tags = new List<string> { "updated-tag" },
             IsArchived = true,
-            Folder = "Archive"
+            Folder = "Archive",
+            UpdateFolder = true // Explicitly set folder to override automatic "Archived" folder
         };
 
         _mockNoteRepository.Setup(r => r.GetByIdAsync(noteId))

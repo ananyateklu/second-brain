@@ -27,6 +27,10 @@ public class NoteEmbeddingTestDbContext : DbContext
         modelBuilder.Entity<NoteEmbedding>()
             .Ignore(e => e.Embedding);
 
+        // Ignore PostgreSQL-specific types that aren't compatible with InMemory provider
+        modelBuilder.Entity<NoteEmbedding>()
+            .Ignore(e => e.SearchVector);
+
         // Configure NoteTags as a simple property (InMemory doesn't support PostgreSQL array types)
         modelBuilder.Entity<NoteEmbedding>()
             .Property(e => e.NoteTags)

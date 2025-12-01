@@ -26,11 +26,11 @@ public class UpdateNoteRequestValidatorTests
 
         // Assert
         result.ShouldHaveValidationErrorFor(x => x.Title)
-            .WithErrorMessage("Title is required");
+            .WithErrorMessage("Title cannot be empty when provided");
     }
 
     [Fact]
-    public void Title_WhenNull_ShouldHaveValidationError()
+    public void Title_WhenNull_ShouldNotHaveValidationError()
     {
         // Arrange
         var request = new UpdateNoteRequest { Title = null! };
@@ -39,7 +39,8 @@ public class UpdateNoteRequestValidatorTests
         var result = _sut.TestValidate(request);
 
         // Assert
-        result.ShouldHaveValidationErrorFor(x => x.Title);
+        // Title is optional in UpdateNoteRequest (null means don't update)
+        result.ShouldNotHaveValidationErrorFor(x => x.Title);
     }
 
     [Fact]
@@ -88,7 +89,7 @@ public class UpdateNoteRequestValidatorTests
     #region Content Validation Tests
 
     [Fact]
-    public void Content_WhenNull_ShouldHaveValidationError()
+    public void Content_WhenNull_ShouldNotHaveValidationError()
     {
         // Arrange
         var request = new UpdateNoteRequest { Title = "Valid Title", Content = null! };
@@ -97,8 +98,8 @@ public class UpdateNoteRequestValidatorTests
         var result = _sut.TestValidate(request);
 
         // Assert
-        result.ShouldHaveValidationErrorFor(x => x.Content)
-            .WithErrorMessage("Content cannot be null");
+        // Content is optional in UpdateNoteRequest (null means don't update)
+        result.ShouldNotHaveValidationErrorFor(x => x.Content);
     }
 
     [Fact]
@@ -152,17 +153,18 @@ public class UpdateNoteRequestValidatorTests
     #region Tags Validation Tests
 
     [Fact]
-    public void Tags_WhenNull_ShouldThrowOrHaveValidationError()
+    public void Tags_WhenNull_ShouldNotHaveValidationError()
     {
         // Arrange
         var request = new UpdateNoteRequest { Title = "Valid", Content = "Valid", Tags = null! };
 
-        // Act & Assert
-        // Note: The current validator implementation doesn't use CascadeMode, so the Must rules
-        // execute even when NotNull fails, causing a NullReferenceException.
-        // This test documents the current behavior.
-        var act = () => _sut.TestValidate(request);
-        act.Should().Throw<NullReferenceException>();
+        // Act
+        var result = _sut.TestValidate(request);
+
+        // Assert
+        // Tags is optional in UpdateNoteRequest (null means don't update)
+        // The validator only validates Tags when it's not null
+        result.ShouldNotHaveValidationErrorFor(x => x.Tags);
     }
 
     [Fact]
@@ -351,8 +353,8 @@ public class UpdateNoteRequestValidatorTests
         var request = new UpdateNoteRequest
         {
             Title = "",
-            Content = null!,
-            Tags = new List<string>() // Use empty list to avoid NullReferenceException
+            Content = new string('a', 1000001), // Exceeds max length
+            Tags = new List<string> { "tag1", "", "tag2" } // Contains empty tag
         };
 
         // Act

@@ -35,6 +35,14 @@ vi.mock('../../hooks/use-notes-query', () => ({
     mutate: vi.fn(),
     isPending: false,
   })),
+  useArchiveNote: vi.fn(() => ({
+    mutate: vi.fn(),
+    isPending: false,
+  })),
+  useUnarchiveNote: vi.fn(() => ({
+    mutate: vi.fn(),
+    isPending: false,
+  })),
 }));
 
 // Mock the toast
