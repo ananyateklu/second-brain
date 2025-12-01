@@ -68,6 +68,9 @@ export function ChatPage() {
     isImageGenerationMode,
     agentCapabilities,
 
+    // Context Usage
+    contextUsage,
+
     // Actions
     setInputValue,
     toggleSidebar,
@@ -133,6 +136,8 @@ export function ChatPage() {
           agentCapabilities={agentCapabilities}
           isLoading={isLoading}
           isImageGenerationMode={isImageGenerationMode}
+          contextUsage={contextUsage}
+          isStreaming={isStreaming}
         />
 
         {/* Messages Area */}

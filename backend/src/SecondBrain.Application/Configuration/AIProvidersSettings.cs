@@ -43,9 +43,9 @@ public class AnthropicSettings
     public string? ApiKey { get; set; }
     public string BaseUrl { get; set; } = "https://api.anthropic.com/v1";
     public string DefaultModel { get; set; } = "claude-3-5-sonnet-20240620";
-    public int MaxTokens { get; set; } = 4096;
+    public int MaxTokens { get; set; } = 8192;
     public float Temperature { get; set; } = 0.7f;
-    public int TimeoutSeconds { get; set; } = 30;
+    public int TimeoutSeconds { get; set; } = 60;
     public string Version { get; set; } = "2023-06-01";
 }
 

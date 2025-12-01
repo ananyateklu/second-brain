@@ -398,9 +398,16 @@ public class ClaudeProvider : IAIProvider
         // Fallback to known models if API call fails
         return new[]
         {
+            // Claude 4 models
+            "claude-sonnet-4-20250514",
+            "claude-opus-4-20250514",
+            // Claude 3.7 models
+            "claude-3-7-sonnet-20250219",
+            // Claude 3.5 models
             "claude-3-5-sonnet-20241022",
             "claude-3-5-sonnet-20240620",
             "claude-3-5-haiku-20241022",
+            // Claude 3 models
             "claude-3-opus-20240229",
             "claude-3-sonnet-20240229",
             "claude-3-haiku-20240307"

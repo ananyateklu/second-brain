@@ -5,7 +5,8 @@ import { SelectorSkeleton } from '../../../components/ui/SelectorSkeleton';
 import { RagToggle } from '../../../components/ui/RagToggle';
 import { VectorStoreSelector } from '../../../components/ui/VectorStoreSelector';
 import { AgentControlsGroup } from '../../../components/ui/AgentControlsGroup';
-import { UserMenu } from '../../../components/ui/UserMenu';
+import { ContextUsageIndicator } from '../../../components/ui/ContextUsageIndicator';
+import { ContextUsageState } from '../../../types/context-usage';
 
 export interface ProviderInfo {
   provider: string;
@@ -50,6 +51,9 @@ export interface ChatHeaderProps {
   isLoading: boolean;
   // Image generation mode
   isImageGenerationMode?: boolean;
+  // Context usage
+  contextUsage: ContextUsageState;
+  isStreaming?: boolean;
 }
 
 /**
@@ -73,6 +77,8 @@ export function ChatHeader({
   agentCapabilities,
   isLoading,
   isImageGenerationMode = false,
+  contextUsage,
+  isStreaming = false,
 }: ChatHeaderProps) {
   return (
     <div
@@ -187,9 +193,12 @@ export function ChatHeader({
       {/* Spacer */}
       <div className="flex-1 min-w-0" />
 
-      {/* User Menu */}
+      {/* Context Usage Indicator */}
       <div className="flex-shrink-0">
-        <UserMenu />
+        <ContextUsageIndicator
+          contextUsage={contextUsage}
+          isStreaming={isStreaming}
+        />
       </div>
     </div>
   );

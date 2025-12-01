@@ -14,6 +14,7 @@ export * from './ai';
 export * from './rag';
 export * from './stats';
 export * from './agent';
+export * from './context-usage';
 
 // Common utility types
 export type Nullable<T> = T | null;

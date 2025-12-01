@@ -11,6 +11,7 @@ import { useChatProviderSelection } from './use-chat-provider-selection';
 import { useChatSettings } from './use-chat-settings';
 import { useChatScroll } from './use-chat-scroll';
 import { useCombinedStreaming } from './use-combined-streaming';
+import { useContextUsage } from './use-context-usage';
 import { chatService } from '../../../services';
 import { toast } from '../../../hooks/use-toast';
 import { useAuthStore } from '../../../store/auth-store';
@@ -21,6 +22,7 @@ import type { AgentCapability } from '../components/ChatHeader';
 import type { ProviderInfo } from './use-chat-provider-selection';
 import type { RagContextNote } from '../../rag/types';
 import type { ToolExecution, ThinkingStep } from '../../agents/types/agent-types';
+import type { ContextUsageState } from '../../../types/context-usage';
 
 export interface ImageGenerationParams {
   prompt: string;
@@ -76,6 +78,9 @@ export interface ChatPageState {
   isLoading: boolean;
   isImageGenerationMode: boolean;
   agentCapabilities: AgentCapability[];
+
+  // Context Usage
+  contextUsage: ContextUsageState;
 }
 
 export interface ChatPageActions {
@@ -223,6 +228,27 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
 
   // Computed loading state
   const isLoading = sendMessage.isPending || isCreating || isStreaming || isGeneratingImage;
+
+  // Build agent capabilities list for context usage calculation
+  const enabledAgentCapabilities = useMemo(() => {
+    const capabilities: string[] = [];
+    if (notesCapabilityEnabled) capabilities.push('notes');
+    return capabilities;
+  }, [notesCapabilityEnabled]);
+
+  // Context usage tracking
+  const contextUsage = useContextUsage({
+    conversation,
+    model: selectedModel,
+    agentModeEnabled,
+    agentCapabilities: enabledAgentCapabilities,
+    ragEnabled,
+    currentInput: inputValue,
+    streamingToolExecutions: toolExecutions,
+    streamingRetrievedNotes: retrievedNotes,
+    isStreaming,
+    streamingMessage,
+  });
 
   // Clear pending message when it appears in the conversation
   useEffect(() => {
@@ -539,6 +565,9 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     isLoading,
     isImageGenerationMode,
     agentCapabilities,
+
+    // Context Usage
+    contextUsage,
 
     // UI Actions
     setInputValue,

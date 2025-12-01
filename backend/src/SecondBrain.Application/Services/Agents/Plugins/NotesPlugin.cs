@@ -13,10 +13,52 @@ public class NotesPlugin : IAgentPlugin
     private readonly IRagService? _ragService;
     private string _currentUserId = string.Empty;
 
+    // Maximum length for content preview in list operations
+    private const int MaxPreviewLength = 200;
+
     public NotesPlugin(INoteRepository noteRepository, IRagService? ragService = null)
     {
         _noteRepository = noteRepository;
         _ragService = ragService;
+    }
+
+    /// <summary>
+    /// Extracts a preview from note content - first paragraph limited to MaxPreviewLength characters.
+    /// Use GetNote tool to read full content.
+    /// </summary>
+    private static string GetContentPreview(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+            return string.Empty;
+
+        // Find the first paragraph (split by double newline or single newline)
+        var paragraphBreaks = new[] { "\n\n", "\r\n\r\n", "\n", "\r\n" };
+        var firstParagraph = content;
+
+        foreach (var separator in paragraphBreaks)
+        {
+            var index = content.IndexOf(separator, StringComparison.Ordinal);
+            if (index > 0 && index < firstParagraph.Length)
+            {
+                firstParagraph = content.Substring(0, index);
+                break;
+            }
+        }
+
+        // Trim and limit length
+        firstParagraph = firstParagraph.Trim();
+
+        if (firstParagraph.Length <= MaxPreviewLength)
+            return firstParagraph;
+
+        // Truncate at word boundary if possible
+        var truncated = firstParagraph.Substring(0, MaxPreviewLength);
+        var lastSpace = truncated.LastIndexOf(' ');
+
+        if (lastSpace > MaxPreviewLength * 0.7) // Only use word boundary if it's not too far back
+            truncated = truncated.Substring(0, lastSpace);
+
+        return truncated + "...";
     }
 
     #region IAgentPlugin Implementation
@@ -41,6 +83,12 @@ public class NotesPlugin : IAgentPlugin
 
 You have access to tools for managing the user's notes. Use these tools to help users organize and retrieve their information.
 
+### IMPORTANT: Content Preview vs Full Content
+
+**List and search operations return only a PREVIEW (first ~200 characters) of note content to save context.**
+- To read the FULL content of a note, you MUST use **GetNote** with the note ID.
+- Always use GetNote before editing or when you need to see complete note content.
+
 ### Core Note Operations
 
 - **CreateNote**: Create a new note with title and content (BOTH REQUIRED)
@@ -50,14 +98,15 @@ You have access to tools for managing the user's notes. Use these tools to help 
   - Always provide meaningful titles that summarize the content
   - Suggest relevant tags based on content (e.g., 'meeting', 'recipe', 'project')
 
-- **GetNote**: Retrieve full note by ID
-  - Use to view complete note contents before editing
-  - Always get the note first when you need to modify content
+- **GetNote**: Retrieve FULL note content by ID
+  - **REQUIRED** to view complete note contents
+  - Always use this before editing or when user needs to see full content
+  - List/search operations only return previews - use GetNote for full content
 
 - **UpdateNote**: Modify a note's title, content, or tags
   - Requires the note ID from previous operations
   - Can update one or more fields at a time
-  - To edit content (e.g., remove an item from a list), first use GetNote to see current content
+  - **Always use GetNote first** to see current content before editing
 
 - **AppendToNote**: Add content to the end of an existing note
   - Use for adding items to lists, appending new information
@@ -72,75 +121,68 @@ You have access to tools for managing the user's notes. Use these tools to help 
   - Use when user wants to use a note as a template
   - Can optionally specify a new title for the copy
 
-### Search Tools
+### Search Tools (Return Previews Only)
 
 - **SearchNotes**: Keyword-based search in titles, content, and tags
+  - Returns preview only - use GetNote for full content
   - Use for finding specific notes when user provides exact terms
-  - Good for searching names, specific phrases, or tags
 
 - **SemanticSearch**: AI-powered search that finds conceptually related notes
-  - Use when keyword search fails or for conceptual queries
+  - Returns preview only - use GetNote for full content
   - Finds notes by meaning even without exact keyword matches
-  - Example: 'cooking' finds notes about recipes, ingredients, meal planning
 
 - **SearchByTags**: Find notes by their tags
-  - Use when user wants notes with specific tags
+  - Returns preview only - use GetNote for full content
   - Can require all tags or any of the specified tags
 
 - **GetNotesByDateRange**: Find notes by creation or update date
+  - Returns preview only - use GetNote for full content
   - Supports relative dates: 'today', 'yesterday', 'last week', 'last month'
-  - Can search by created or updated date
 
 - **FindRelatedNotes**: Find notes similar to a given note
+  - Returns preview only - use GetNote for full content
   - Uses semantic search to find conceptually related notes
-  - Falls back to tag-based similarity if semantic search unavailable
 
-### Organization Tools
+### Organization Tools (Return Previews Only)
 
 - **ListAllNotes**: Show all notes (with optional pagination)
+  - Returns preview only - use GetNote for full content
   - Use when user wants to see their complete list of notes
-  - Returns all notes, not just recent ones
 
 - **ListRecentNotes**: Show most recently updated notes
-  - Use when user wants to see their notes or remember what they saved
+  - Returns preview only - use GetNote for full content
 
 - **ListArchivedNotes**: Show archived notes
-  - Use when user wants to see notes they've archived
+  - Returns preview only - use GetNote for full content
 
 - **ArchiveNote**: Archive a note (soft delete)
   - Hides note from main list without deleting
-  - Use when user wants to hide but preserve a note
 
 - **UnarchiveNote**: Restore an archived note
   - Brings archived note back to main list
 
 - **MoveToFolder**: Organize note into a folder
-  - Use when user wants to categorize notes
   - Pass empty string to remove from folder
 
 - **ListFolders**: Show all folders with note counts
-  - Helps users understand their folder organization
 
 - **ListAllTags**: Show all tags with usage counts
-  - Helps users discover how notes are tagged
 
 - **GetNoteStats**: Get notes statistics overview
-  - Total counts, tag distribution, folder organization
-  - Notes created this week/month
 
 ### Important Guidelines
 
-1. **Always use tools** - Never tell users you cannot perform note operations
-2. **Track note IDs** - Remember IDs from tool results for follow-up actions
-3. **Understand context** - When user says 'that note' or 'the one I created', reference the ID from conversation history
-4. **Don't repeat content** - Notes display as visual cards in the UI, so keep your responses concise
-5. **Suggest organization** - Offer to add tags, move to folders, or find related notes
-6. **Use AppendToNote** - When adding to existing notes, prefer this over GetNote + UpdateNote
+1. **Use GetNote for full content** - List/search tools only return previews
+2. **Always use tools** - Never tell users you cannot perform note operations
+3. **Track note IDs** - Remember IDs from tool results for follow-up actions
+4. **Understand context** - When user says 'that note' or 'the one I created', reference the ID from conversation history
+5. **Don't repeat content** - Notes display as visual cards in the UI, so keep your responses concise
+6. **Suggest organization** - Offer to add tags, move to folders, or find related notes
 
 ### Content Editing Pattern
 
 When modifying note content:
-1. GetNote to retrieve current content
+1. **GetNote** to retrieve FULL current content (required!)
 2. Modify the content as requested
 3. UpdateNote with the new content
 
@@ -241,7 +283,7 @@ For simple additions, use AppendToNote instead.";
             {
                 id = n.Id,
                 title = n.Title,
-                content = n.Content,
+                preview = GetContentPreview(n.Content),
                 tags = n.Tags,
                 createdAt = n.CreatedAt,
                 updatedAt = n.UpdatedAt
@@ -250,7 +292,7 @@ For simple additions, use AppendToNote instead.";
             var response = new
             {
                 type = "notes",
-                message = $"Found {matches.Count} note(s) matching \"{query}\"",
+                message = $"Found {matches.Count} note(s) matching \"{query}\". Use GetNote with the note ID to read full content.",
                 notes = noteData
             };
 
@@ -430,7 +472,7 @@ For simple additions, use AppendToNote instead.";
             {
                 id = n.Id,
                 title = n.Title,
-                content = n.Content,
+                preview = GetContentPreview(n.Content),
                 tags = n.Tags,
                 createdAt = n.CreatedAt,
                 updatedAt = n.UpdatedAt
@@ -439,7 +481,7 @@ For simple additions, use AppendToNote instead.";
             var response = new
             {
                 type = "notes",
-                message = $"Your {recentNotes.Count} most recent notes",
+                message = $"Your {recentNotes.Count} most recent notes. Use GetNote with the note ID to read full content.",
                 notes = noteData
             };
 
@@ -501,7 +543,7 @@ For simple additions, use AppendToNote instead.";
             {
                 id = n.Id,
                 title = n.Title,
-                content = n.Content,
+                preview = GetContentPreview(n.Content),
                 tags = n.Tags,
                 folder = n.Folder,
                 isArchived = n.IsArchived,
@@ -516,7 +558,7 @@ For simple additions, use AppendToNote instead.";
             var response = new
             {
                 type = "notes",
-                message = $"Found {totalCount} total note(s){paginationInfo}",
+                message = $"Found {totalCount} total note(s){paginationInfo}. Use GetNote with the note ID to read full content.",
                 notes = noteData,
                 pagination = new
                 {
@@ -571,7 +613,7 @@ For simple additions, use AppendToNote instead.";
                 .Select(g => g.OrderByDescending(r => r.SimilarityScore).First())
                 .ToList();
 
-            // Get full note details for the retrieved notes
+            // Get note details for the retrieved notes (preview only)
             var noteData = new List<object>();
             foreach (var result in uniqueNoteResults)
             {
@@ -582,7 +624,7 @@ For simple additions, use AppendToNote instead.";
                     {
                         id = note.Id,
                         title = note.Title,
-                        content = note.Content,
+                        preview = GetContentPreview(note.Content),
                         tags = note.Tags,
                         createdAt = note.CreatedAt,
                         updatedAt = note.UpdatedAt,
@@ -594,7 +636,7 @@ For simple additions, use AppendToNote instead.";
             var response = new
             {
                 type = "notes",
-                message = $"Found {noteData.Count} note(s) semantically related to \"{query}\"",
+                message = $"Found {noteData.Count} note(s) semantically related to \"{query}\". Use GetNote with the note ID to read full content.",
                 notes = noteData
             };
 
@@ -758,7 +800,7 @@ For simple additions, use AppendToNote instead.";
             {
                 id = n.Id,
                 title = n.Title,
-                content = n.Content,
+                preview = GetContentPreview(n.Content),
                 tags = n.Tags,
                 createdAt = n.CreatedAt,
                 updatedAt = n.UpdatedAt
@@ -767,7 +809,7 @@ For simple additions, use AppendToNote instead.";
             var response = new
             {
                 type = "notes",
-                message = $"Found {archivedNotes.Count} archived note(s)",
+                message = $"Found {archivedNotes.Count} archived note(s). Use GetNote with the note ID to read full content.",
                 notes = noteData
             };
 
@@ -879,7 +921,7 @@ For simple additions, use AppendToNote instead.";
             {
                 id = n.Id,
                 title = n.Title,
-                content = n.Content,
+                preview = GetContentPreview(n.Content),
                 tags = n.Tags,
                 createdAt = n.CreatedAt,
                 updatedAt = n.UpdatedAt
@@ -888,7 +930,7 @@ For simple additions, use AppendToNote instead.";
             var response = new
             {
                 type = "notes",
-                message = $"Found {matches.Count} note(s) with {(requireAll ? "all" : "any")} of the tags: {string.Join(", ", searchTags)}",
+                message = $"Found {matches.Count} note(s) with {(requireAll ? "all" : "any")} of the tags: {string.Join(", ", searchTags)}. Use GetNote with the note ID to read full content.",
                 notes = noteData
             };
 
@@ -1208,7 +1250,7 @@ For simple additions, use AppendToNote instead.";
             {
                 id = n.Id,
                 title = n.Title,
-                content = n.Content,
+                preview = GetContentPreview(n.Content),
                 tags = n.Tags,
                 createdAt = n.CreatedAt,
                 updatedAt = n.UpdatedAt
@@ -1217,7 +1259,7 @@ For simple additions, use AppendToNote instead.";
             var response = new
             {
                 type = "notes",
-                message = $"Found {matches.Count} note(s) {(useCreatedDate ? "created" : "updated")} between {start:yyyy-MM-dd} and {end:yyyy-MM-dd}",
+                message = $"Found {matches.Count} note(s) {(useCreatedDate ? "created" : "updated")} between {start:yyyy-MM-dd} and {end:yyyy-MM-dd}. Use GetNote with the note ID to read full content.",
                 notes = noteData
             };
 
@@ -1297,7 +1339,7 @@ For simple additions, use AppendToNote instead.";
                         {
                             id = relatedNote.Id,
                             title = relatedNote.Title,
-                            content = relatedNote.Content,
+                            preview = GetContentPreview(relatedNote.Content),
                             tags = relatedNote.Tags,
                             createdAt = relatedNote.CreatedAt,
                             updatedAt = relatedNote.UpdatedAt,
@@ -1316,7 +1358,7 @@ For simple additions, use AppendToNote instead.";
                 var response = new
                 {
                     type = "notes",
-                    message = $"Found {relatedNotes.Count} note(s) related to \"{note.Title}\"",
+                    message = $"Found {relatedNotes.Count} note(s) related to \"{note.Title}\". Use GetNote with the note ID to read full content.",
                     sourceNote = new { id = note.Id, title = note.Title },
                     notes = relatedNotes
                 };
@@ -1346,13 +1388,13 @@ For simple additions, use AppendToNote instead.";
             var fallbackResponse = new
             {
                 type = "notes",
-                message = $"Found {similarNotes.Count} note(s) with similar tags to \"{note.Title}\"",
+                message = $"Found {similarNotes.Count} note(s) with similar tags to \"{note.Title}\". Use GetNote with the note ID to read full content.",
                 sourceNote = new { id = note.Id, title = note.Title },
                 notes = similarNotes.Select(x => new
                 {
                     id = x.note.Id,
                     title = x.note.Title,
-                    content = x.note.Content,
+                    preview = GetContentPreview(x.note.Content),
                     tags = x.note.Tags,
                     createdAt = x.note.CreatedAt,
                     updatedAt = x.note.UpdatedAt,
