@@ -54,6 +54,7 @@ export function ChatPage() {
     retrievedNotes,
     toolExecutions,
     thinkingSteps,
+    agentRetrievedNotes,
     processingStatus,
     inputTokens,
     outputTokens,
@@ -150,6 +151,7 @@ export function ChatPage() {
           retrievedNotes={retrievedNotes}
           toolExecutions={toolExecutions}
           thinkingSteps={thinkingSteps}
+          agentRetrievedNotes={agentRetrievedNotes}
           processingStatus={processingStatus}
           inputTokens={inputTokens}
           outputTokens={outputTokens}

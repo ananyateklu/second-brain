@@ -167,6 +167,15 @@ public class TestVectorStore : IVectorStore
         return Task.FromResult(noteIds);
     }
 
+    public Task<Dictionary<string, DateTime?>> GetIndexedNotesWithTimestampsAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        var result = _embeddings
+            .Where(e => e.UserId == userId)
+            .GroupBy(e => e.NoteId)
+            .ToDictionary(g => g.Key, g => (DateTime?)g.First().NoteUpdatedAt);
+        return Task.FromResult(result);
+    }
+
     // Helper methods for tests
     public void Clear() => _embeddings.Clear();
     public int Count => _embeddings.Count;

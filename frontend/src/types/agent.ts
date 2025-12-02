@@ -36,6 +36,7 @@ export interface AgentStreamState {
   streamingMessage: string;
   toolExecutions: ToolExecution[];
   thinkingSteps: ThinkingStep[];
+  retrievedNotes: RetrievedNoteContext[];
   error: Error | null;
   inputTokens?: number;
   outputTokens?: number;
@@ -100,6 +101,17 @@ export interface AgentNoteResult {
   tags: string[];
   createdAt: string;
   updatedAt: string;
+}
+
+/**
+ * Retrieved note context from automatic semantic search injection
+ */
+export interface RetrievedNoteContext {
+  noteId: string;
+  title: string;
+  preview: string;
+  tags: string[];
+  similarityScore: number;
 }
 
 /**

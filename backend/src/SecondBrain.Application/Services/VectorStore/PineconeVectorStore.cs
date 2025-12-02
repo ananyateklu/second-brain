@@ -469,4 +469,75 @@ public class PineconeVectorStore : IVectorStore
             return new HashSet<string>();
         }
     }
+
+    public async Task<Dictionary<string, DateTime?>> GetIndexedNotesWithTimestampsAsync(
+        string userId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var index = await GetIndexClientAsync();
+
+            // Get index dimension from stats
+            var indexStats = await index.DescribeIndexStatsAsync(new DescribeIndexStatsRequest());
+            var dimension = indexStats.Dimension ?? 1536;
+
+            // Create a dummy vector (all zeros) to query all vectors
+            var dummyVector = new float[dimension];
+
+            // Query with high TopK to get all vectors
+            var query = new QueryRequest
+            {
+                Vector = dummyVector,
+                TopK = 10000,
+                IncludeMetadata = true,
+                IncludeValues = false
+            };
+
+            var response = await index.QueryAsync(query);
+            var result = new Dictionary<string, DateTime?>();
+
+            if (response.Matches != null)
+            {
+                foreach (var match in response.Matches)
+                {
+                    if (match.Metadata != null && match.Metadata.TryGetValue("noteId", out var noteId))
+                    {
+                        var noteIdStr = ExtractMetadataString(noteId);
+                        if (!string.IsNullOrEmpty(noteIdStr) && !result.ContainsKey(noteIdStr))
+                        {
+                            DateTime? noteUpdatedAt = null;
+
+                            if (match.Metadata.TryGetValue("noteUpdatedAt", out var noteUpdatedAtVal))
+                            {
+                                var noteUpdatedAtStr = ExtractMetadataString(noteUpdatedAtVal);
+                                if (!string.IsNullOrEmpty(noteUpdatedAtStr))
+                                {
+                                    // Try parsing ISO 8601 format
+                                    if (DateTime.TryParse(noteUpdatedAtStr, null, System.Globalization.DateTimeStyles.RoundtripKind, out var date))
+                                    {
+                                        noteUpdatedAt = date;
+                                    }
+                                    else if (DateTime.TryParse(noteUpdatedAtStr, out var dateAlt))
+                                    {
+                                        noteUpdatedAt = dateAlt;
+                                    }
+                                }
+                            }
+
+                            result[noteIdStr] = noteUpdatedAt;
+                        }
+                    }
+                }
+            }
+
+            _logger.LogInformation("Found {Count} indexed notes with timestamps in Pinecone", result.Count);
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting indexed notes with timestamps from Pinecone. UserId: {UserId}", userId);
+            return new Dictionary<string, DateTime?>();
+        }
+    }
 }

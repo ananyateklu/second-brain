@@ -55,6 +55,23 @@ public class AgentStreamEvent
     public string? ToolName { get; set; }
     public string? ToolArguments { get; set; }
     public string? ToolResult { get; set; }
+    
+    /// <summary>
+    /// Retrieved notes from automatic context injection (for ContextRetrieval events)
+    /// </summary>
+    public List<RetrievedNoteContext>? RetrievedNotes { get; set; }
+}
+
+/// <summary>
+/// Represents a note retrieved via automatic context injection
+/// </summary>
+public class RetrievedNoteContext
+{
+    public string NoteId { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string Preview { get; set; } = string.Empty;
+    public List<string> Tags { get; set; } = new();
+    public float SimilarityScore { get; set; }
 }
 
 public enum AgentEventType
@@ -65,7 +82,11 @@ public enum AgentEventType
     Thinking,
     Status,
     Error,
-    End
+    End,
+    /// <summary>
+    /// Automatic context retrieval from semantic search (shows "Searching your notes...")
+    /// </summary>
+    ContextRetrieval
 }
 
 public class ToolExecutionResult

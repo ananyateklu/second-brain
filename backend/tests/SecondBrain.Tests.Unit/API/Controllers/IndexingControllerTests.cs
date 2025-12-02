@@ -15,6 +15,7 @@ public class IndexingControllerTests
     private readonly Mock<IIndexingService> _mockIndexingService;
     private readonly Mock<IVectorStore> _mockPostgresStore;
     private readonly Mock<IVectorStore> _mockPineconeStore;
+    private readonly Mock<INoteRepository> _mockNoteRepository;
     private readonly Mock<ILogger<IndexingController>> _mockLogger;
     private readonly IndexingController _sut;
 
@@ -23,12 +24,18 @@ public class IndexingControllerTests
         _mockIndexingService = new Mock<IIndexingService>();
         _mockPostgresStore = new Mock<IVectorStore>();
         _mockPineconeStore = new Mock<IVectorStore>();
+        _mockNoteRepository = new Mock<INoteRepository>();
         _mockLogger = new Mock<ILogger<IndexingController>>();
+
+        // Default setup for note repository
+        _mockNoteRepository.Setup(r => r.GetByUserIdAsync(It.IsAny<string>()))
+            .ReturnsAsync(new List<Note>());
 
         _sut = new IndexingController(
             _mockIndexingService.Object,
             _mockPostgresStore.Object,
             _mockPineconeStore.Object,
+            _mockNoteRepository.Object,
             _mockLogger.Object
         );
 
@@ -249,10 +256,16 @@ public class IndexingControllerTests
         var postgresStats = CreateTestIndexStats(userId, "PostgreSQL", 100, 10);
         var pineconeStats = CreateTestIndexStats(userId, "Pinecone", 200, 20);
 
+        _mockNoteRepository.Setup(r => r.GetByUserIdAsync(userId))
+            .ReturnsAsync(new List<Note>());
         _mockPostgresStore.Setup(s => s.GetIndexStatsAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(postgresStats);
+        _mockPostgresStore.Setup(s => s.GetIndexedNotesWithTimestampsAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<string, DateTime?>());
         _mockPineconeStore.Setup(s => s.GetIndexStatsAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(pineconeStats);
+        _mockPineconeStore.Setup(s => s.GetIndexedNotesWithTimestampsAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<string, DateTime?>());
 
         // Act
         var result = await _sut.GetIndexStats(userId);
@@ -273,10 +286,14 @@ public class IndexingControllerTests
         var userId = "user-123";
         var pineconeStats = CreateTestIndexStats(userId, "Pinecone", 200, 20);
 
+        _mockNoteRepository.Setup(r => r.GetByUserIdAsync(userId))
+            .ReturnsAsync(new List<Note>());
         _mockPostgresStore.Setup(s => s.GetIndexStatsAsync(userId, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Postgres error"));
         _mockPineconeStore.Setup(s => s.GetIndexStatsAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(pineconeStats);
+        _mockPineconeStore.Setup(s => s.GetIndexedNotesWithTimestampsAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<string, DateTime?>());
 
         // Act
         var result = await _sut.GetIndexStats(userId);
@@ -295,8 +312,12 @@ public class IndexingControllerTests
         var userId = "user-123";
         var postgresStats = CreateTestIndexStats(userId, "PostgreSQL", 100, 10);
 
+        _mockNoteRepository.Setup(r => r.GetByUserIdAsync(userId))
+            .ReturnsAsync(new List<Note>());
         _mockPostgresStore.Setup(s => s.GetIndexStatsAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(postgresStats);
+        _mockPostgresStore.Setup(s => s.GetIndexedNotesWithTimestampsAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<string, DateTime?>());
         _mockPineconeStore.Setup(s => s.GetIndexStatsAsync(userId, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Pinecone error"));
 
@@ -314,10 +335,16 @@ public class IndexingControllerTests
     public async Task GetIndexStats_UsesDefaultUserIdWhenNotProvided()
     {
         // Arrange
+        _mockNoteRepository.Setup(r => r.GetByUserIdAsync("default-user"))
+            .ReturnsAsync(new List<Note>());
         _mockPostgresStore.Setup(s => s.GetIndexStatsAsync("default-user", It.IsAny<CancellationToken>()))
             .ReturnsAsync(CreateTestIndexStats("default-user", "PostgreSQL", 0, 0));
+        _mockPostgresStore.Setup(s => s.GetIndexedNotesWithTimestampsAsync("default-user", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<string, DateTime?>());
         _mockPineconeStore.Setup(s => s.GetIndexStatsAsync("default-user", It.IsAny<CancellationToken>()))
             .ReturnsAsync(CreateTestIndexStats("default-user", "Pinecone", 0, 0));
+        _mockPineconeStore.Setup(s => s.GetIndexedNotesWithTimestampsAsync("default-user", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<string, DateTime?>());
 
         // Act
         await _sut.GetIndexStats();
@@ -342,10 +369,16 @@ public class IndexingControllerTests
             VectorStoreProvider = "PostgreSQL"
         };
 
+        _mockNoteRepository.Setup(r => r.GetByUserIdAsync(userId))
+            .ReturnsAsync(new List<Note>());
         _mockPostgresStore.Setup(s => s.GetIndexStatsAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(postgresStats);
+        _mockPostgresStore.Setup(s => s.GetIndexedNotesWithTimestampsAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<string, DateTime?>());
         _mockPineconeStore.Setup(s => s.GetIndexStatsAsync(userId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(CreateTestIndexStats(userId, "Pinecone", 0, 0));
+        _mockPineconeStore.Setup(s => s.GetIndexedNotesWithTimestampsAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<string, DateTime?>());
 
         // Act
         var result = await _sut.GetIndexStats(userId);
@@ -364,6 +397,8 @@ public class IndexingControllerTests
     {
         // Arrange
         var userId = "user-123";
+        _mockNoteRepository.Setup(r => r.GetByUserIdAsync(userId))
+            .ReturnsAsync(new List<Note>());
         _mockPostgresStore.Setup(s => s.GetIndexStatsAsync(userId, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new Exception("Postgres error"));
         _mockPineconeStore.Setup(s => s.GetIndexStatsAsync(userId, It.IsAny<CancellationToken>()))

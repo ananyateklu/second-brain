@@ -161,6 +161,8 @@ public class AgentController : ControllerBase
             var startTime = DateTime.UtcNow;
             var fullResponse = new StringBuilder();
             var toolCalls = new List<ToolCall>();
+            // Track retrieved notes from automatic context injection
+            var retrievedNotes = new List<RetrievedNote>();
             // Track pending tool calls to capture arguments from ToolCallStart
             // since ToolCallEnd events don't include arguments
             var pendingToolArguments = new Dictionary<string, string>();
@@ -239,6 +241,41 @@ public class AgentController : ControllerBase
                         await Response.Body.FlushAsync(cancellationToken);
                         break;
 
+                    case AgentEventType.ContextRetrieval:
+                        // Store retrieved notes for persistence
+                        if (evt.RetrievedNotes != null && evt.RetrievedNotes.Count > 0)
+                        {
+                            foreach (var note in evt.RetrievedNotes)
+                            {
+                                retrievedNotes.Add(new RetrievedNote
+                                {
+                                    NoteId = note.NoteId,
+                                    Title = note.Title,
+                                    Tags = note.Tags,
+                                    RelevanceScore = note.SimilarityScore,
+                                    ChunkContent = note.Preview,
+                                    ChunkIndex = 0 // Context injection doesn't use chunk indexing
+                                });
+                            }
+                        }
+
+                        var contextRetrievalJson = JsonSerializer.Serialize(new
+                        {
+                            message = evt.Content,
+                            retrievedNotes = evt.RetrievedNotes?.Select(n => new
+                            {
+                                noteId = n.NoteId,
+                                title = n.Title,
+                                preview = n.Preview,
+                                tags = n.Tags,
+                                similarityScore = n.SimilarityScore
+                            }).ToList()
+                        });
+                        await Response.WriteAsync($"event: context_retrieval\ndata: {contextRetrievalJson}\n\n");
+                        await Response.Body.FlushAsync(cancellationToken);
+                        _logger.LogDebug("Context retrieval event sent. NotesCount: {Count}", evt.RetrievedNotes?.Count ?? 0);
+                        break;
+
                     case AgentEventType.Error:
                         await Response.WriteAsync($"event: error\ndata: {{\"error\":\"{evt.Content}\"}}\n\n");
                         await Response.Body.FlushAsync(cancellationToken);
@@ -248,14 +285,15 @@ public class AgentController : ControllerBase
 
             var durationMs = (DateTime.UtcNow - startTime).TotalMilliseconds;
 
-            // Add assistant message to conversation
+            // Add assistant message to conversation with tool calls and retrieved notes
             var assistantMessage = new ChatMessage
             {
                 Role = "assistant",
                 Content = fullResponse.ToString(),
                 Timestamp = DateTime.UtcNow,
                 DurationMs = durationMs,
-                ToolCalls = toolCalls
+                ToolCalls = toolCalls,
+                RetrievedNotes = retrievedNotes
             };
             conversation.Messages.Add(assistantMessage);
             conversation.UpdatedAt = DateTime.UtcNow;
@@ -264,18 +302,19 @@ public class AgentController : ControllerBase
             // Update conversation in database
             await _chatRepository.UpdateAsync(id, conversation);
 
-            // Send end event
+            // Send end event with retrieved notes count
             var endData = JsonSerializer.Serialize(new
             {
                 conversationId = id,
                 messageId = conversation.Messages.Count - 1,
-                toolCallsCount = toolCalls.Count
+                toolCallsCount = toolCalls.Count,
+                retrievedNotesCount = retrievedNotes.Count
             });
             await Response.WriteAsync($"event: end\ndata: {endData}\n\n");
             await Response.Body.FlushAsync(cancellationToken);
 
-            _logger.LogInformation("Agent streaming completed. ConversationId: {ConversationId}, UserId: {UserId}, ToolCalls: {ToolCallsCount}",
-                id, userId, toolCalls.Count);
+            _logger.LogInformation("Agent streaming completed. ConversationId: {ConversationId}, UserId: {UserId}, ToolCalls: {ToolCallsCount}, RetrievedNotes: {RetrievedNotesCount}",
+                id, userId, toolCalls.Count, retrievedNotes.Count);
         }
         catch (NotSupportedException ex)
         {

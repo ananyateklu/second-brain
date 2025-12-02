@@ -16,6 +16,7 @@ export type {
   AgentNotesResponse,
   AgentStreamingCallbacks,
   AgentEndData,
+  RetrievedNoteContext,
 } from '../../../types/agent';
 
 // Re-export ToolCall from chat types for backward compatibility

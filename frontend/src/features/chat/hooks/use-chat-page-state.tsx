@@ -21,7 +21,7 @@ import type { MessageImage, ImageGenerationResponse, ChatConversation } from '..
 import type { AgentCapability } from '../components/ChatHeader';
 import type { ProviderInfo } from './use-chat-provider-selection';
 import type { RagContextNote } from '../../../types/rag';
-import type { ToolExecution, ThinkingStep } from '../../agents/types/agent-types';
+import type { ToolExecution, ThinkingStep, RetrievedNoteContext } from '../../agents/types/agent-types';
 import type { ContextUsageState } from '../../../types/context-usage';
 
 export interface ImageGenerationParams {
@@ -65,6 +65,8 @@ export interface ChatPageState {
   retrievedNotes: RagContextNote[];
   toolExecutions: ToolExecution[];
   thinkingSteps: ThinkingStep[];
+  /** Notes automatically retrieved via semantic search for agent context injection */
+  agentRetrievedNotes: RetrievedNoteContext[];
   processingStatus: string | null;
   inputTokens?: number;
   outputTokens?: number;
@@ -226,6 +228,7 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     retrievedNotes,
     toolExecutions,
     thinkingSteps,
+    agentRetrievedNotes,
     processingStatus,
     inputTokens,
     outputTokens,
@@ -569,6 +572,7 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     retrievedNotes,
     toolExecutions,
     thinkingSteps,
+    agentRetrievedNotes,
     processingStatus,
     inputTokens,
     outputTokens,

@@ -83,6 +83,17 @@ public class NotesPlugin : IAgentPlugin
 
 You have access to tools for managing the user's notes. Use these tools to help users organize and retrieve their information.
 
+### Using Automatically Retrieved Context
+
+When you see ""---RELEVANT NOTES CONTEXT---"" in the system context:
+- This contains notes automatically retrieved based on the user's query using semantic search
+- **Use this information to answer directly** WITHOUT calling search tools first
+- The context includes note titles, previews, tags, and relevance scores
+- If the provided context is sufficient, answer immediately from it
+- If you need MORE information or the FULL content of a specific note, THEN use the **GetNote** tool with the note ID
+- If the context is NOT relevant to the user's question, ignore it and use your tools as normal
+- **Reference specific notes by title** when citing information from the context
+
 ### IMPORTANT: Content Preview vs Full Content
 
 **List and search operations return only a PREVIEW (first ~200 characters) of note content to save context.**

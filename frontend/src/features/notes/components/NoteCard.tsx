@@ -53,16 +53,26 @@ const stripHtmlTags = (html: string): string => {
 };
 
 // Relevance score color logic - using brand colors based on score
+// Dark green for high scores, lighter green as score decreases
 const getRelevanceColor = (score: number) => {
-  if (score >= 0.8) return 'var(--color-brand-700)';
-  if (score >= 0.5) return 'var(--color-brand-600)';
-  return 'var(--color-brand-500)';
+  // White text for dark backgrounds (high scores)
+  if (score >= 0.9) return '#ffffff'; // White text on dark green
+  if (score >= 0.8) return '#ffffff'; // White text on medium-dark green
+  if (score >= 0.7) return '#ffffff'; // White text on medium green
+  // Dark text for lighter backgrounds (lower scores)
+  if (score >= 0.6) return 'var(--color-brand-700)'; // Dark text on light green
+  if (score >= 0.5) return 'var(--color-brand-700)'; // Dark text on lighter green
+  return 'var(--color-brand-600)'; // Dark text on lightest green
 };
 
 const getRelevanceBg = (score: number) => {
-  if (score >= 0.8) return 'var(--color-brand-200)';
-  if (score >= 0.5) return 'var(--color-brand-100)';
-  return 'var(--color-brand-50)';
+  // Dark green background for high scores, getting lighter as score decreases
+  if (score >= 0.9) return 'var(--color-brand-600)'; // Dark green for very high scores
+  if (score >= 0.8) return 'var(--color-brand-500)';
+  if (score >= 0.7) return 'var(--color-brand-400)';
+  if (score >= 0.6) return 'var(--color-brand-300)';
+  if (score >= 0.5) return 'var(--color-brand-200)';
+  return 'var(--color-brand-100)'; // Lightest background for low scores
 };
 
 export const NoteCard = memo(function NoteCard({

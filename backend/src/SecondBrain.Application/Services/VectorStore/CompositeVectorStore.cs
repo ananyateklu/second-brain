@@ -217,4 +217,28 @@ public class CompositeVectorStore : IVectorStore
 
         return await _postgresStore.GetIndexedNoteIdsAsync(userId, cancellationToken);
     }
+
+    public async Task<Dictionary<string, DateTime?>> GetIndexedNotesWithTimestampsAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        // For reading, prefer the primary store based on configuration
+        if (PreferPineconeForRead)
+        {
+            try
+            {
+                return await _pineconeStore.GetIndexedNotesWithTimestampsAsync(userId, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                // Fallback to PostgreSQL if Pinecone fails and we are in "Both" mode
+                if (CurrentProvider.Equals("Both", StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger.LogWarning(ex, "Pinecone GetIndexedNotesWithTimestampsAsync failed, falling back to PostgreSQL.");
+                    return await _postgresStore.GetIndexedNotesWithTimestampsAsync(userId, cancellationToken);
+                }
+                throw;
+            }
+        }
+
+        return await _postgresStore.GetIndexedNotesWithTimestampsAsync(userId, cancellationToken);
+    }
 }

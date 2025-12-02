@@ -1,12 +1,13 @@
 import { RefObject, useMemo } from 'react';
 import { ChatConversation, ChatMessage, ToolCall } from '../types/chat';
-import { ToolExecution, ThinkingStep } from '../../agents/types/agent-types';
+import { ToolExecution, ThinkingStep, RetrievedNoteContext } from '../../agents/types/agent-types';
 import { RagContextNote } from '../../../types/rag';
 import { MessageBubble } from './MessageBubble';
 import { StreamingIndicator, ImageGenerationLoadingSkeleton } from './StreamingIndicator';
 import { ChatWelcomeScreen } from './ChatWelcomeScreen';
 import { ThinkingStepCard } from '../../agents/components/ThinkingStepCard';
 import { ToolExecutionCard } from '../../agents/components/ToolExecutionCard';
+import { RetrievedContextCard } from '../../agents/components/RetrievedContextCard';
 import { ProcessTimeline } from './ProcessTimeline';
 import { RetrievedNotes } from '../../../components/ui/RetrievedNotes';
 import { TokenUsageDisplay } from '../../../components/TokenUsageDisplay';
@@ -25,6 +26,8 @@ export interface ChatMessageListProps {
   retrievedNotes: RagContextNote[];
   toolExecutions: ToolExecution[];
   thinkingSteps: ThinkingStep[];
+  /** Notes automatically retrieved via semantic search for agent context injection */
+  agentRetrievedNotes: RetrievedNoteContext[];
   processingStatus?: string | null;
   inputTokens?: number;
   outputTokens?: number;
@@ -54,6 +57,7 @@ export function ChatMessageList({
   retrievedNotes,
   toolExecutions,
   thinkingSteps,
+  agentRetrievedNotes,
   processingStatus,
   inputTokens,
   outputTokens,
@@ -155,6 +159,7 @@ export function ChatMessageList({
                 toolExecutions={toolExecutions}
                 processingStatus={processingStatus}
                 retrievedNotes={retrievedNotes}
+                agentRetrievedNotes={agentRetrievedNotes}
               />
             )}
 
@@ -256,6 +261,9 @@ function MessageWithContext({
   }, [isAssistantMessage, isLastMessage, isStreaming, streamingMessage, message.content]);
 
   const hasToolCalls = !!(isAssistantMessage && message.toolCalls && message.toolCalls.length > 0);
+  
+  // Check for retrieved notes (from agent context injection)
+  const hasRetrievedNotes = !!(isAssistantMessage && message.retrievedNotes && message.retrievedNotes.length > 0);
 
   // Check for thinking content in message (supports both <thinking> and <think> tags)
   const hasThinkingContent = isAssistantMessage && hasThinkingTags(message.content);
@@ -273,12 +281,31 @@ function MessageWithContext({
   const shouldShowPersistedToolExecutions =
     hasToolCalls && !isStreamingDuplicate;
 
-  const hasProcessContent = shouldShowPersistedThinking || shouldShowPersistedToolExecutions;
+  // Show retrieved notes in timeline for agent mode messages
+  // Use conversation.agentEnabled to check if this was an agent conversation (for persisted messages)
+  const isAgentConversation = conversation.agentEnabled || agentModeEnabled;
+  const shouldShowPersistedRetrievedNotes =
+    isAgentConversation && hasRetrievedNotes && !isStreamingDuplicate;
+
+  const hasProcessContent = shouldShowPersistedThinking || shouldShowPersistedToolExecutions || shouldShowPersistedRetrievedNotes;
 
   return (
     <div>
-      {/* Use ProcessTimeline to wrap reasoning and tool executions */}
+      {/* Use ProcessTimeline to wrap reasoning, context retrieval, and tool executions */}
       <ProcessTimeline hasContent={hasProcessContent}>
+        {/* Show retrieved notes context first (from agent context injection) */}
+        {shouldShowPersistedRetrievedNotes && (
+          <RetrievedContextCard
+            retrievedNotes={message.retrievedNotes!.map(note => ({
+              noteId: note.noteId,
+              title: note.title,
+              preview: note.chunkContent,
+              tags: note.tags,
+              similarityScore: note.relevanceScore
+            }))}
+          />
+        )}
+
         {shouldShowPersistedThinking && persistedThinkingSteps.map((thinkingContent, thinkingIndex) => (
           <ThinkingStepCard
             key={`${index}-thinking-${thinkingIndex}`}
@@ -314,8 +341,8 @@ function MessageWithContext({
         />
       )}
 
-      {/* Show retrieved notes after assistant messages that have them */}
-      {isAssistantMessage && message.retrievedNotes && message.retrievedNotes.length > 0 && (
+      {/* Show retrieved notes after assistant messages for non-agent RAG mode */}
+      {isAssistantMessage && !isAgentConversation && message.retrievedNotes && message.retrievedNotes.length > 0 && (
         <RetrievedNotes notes={message.retrievedNotes} />
       )}
     </div>

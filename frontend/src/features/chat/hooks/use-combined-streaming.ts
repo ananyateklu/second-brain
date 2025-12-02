@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useChatStream } from './use-chat-stream';
 import { useAgentStream } from '../../agents/hooks/use-agent-stream';
-import { ToolExecution, ThinkingStep } from '../../agents/types/agent-types';
+import { ToolExecution, ThinkingStep, RetrievedNoteContext } from '../../agents/types/agent-types';
 import { RagContextNote } from '../../../types/rag';
 import { MessageImage } from '../types/chat';
 
@@ -12,6 +12,8 @@ export interface CombinedStreamingState {
   retrievedNotes: RagContextNote[];
   toolExecutions: ToolExecution[];
   thinkingSteps: ThinkingStep[];
+  /** Notes automatically retrieved via semantic search for agent context injection */
+  agentRetrievedNotes: RetrievedNoteContext[];
   processingStatus: string | null;
   inputTokens?: number;
   outputTokens?: number;
@@ -75,6 +77,7 @@ export function useCombinedStreaming(agentModeEnabled: boolean) {
     retrievedNotes: agentModeEnabled ? [] : chatStream.retrievedNotes,
     toolExecutions: agentModeEnabled ? agentStream.toolExecutions : [],
     thinkingSteps: agentModeEnabled ? agentStream.thinkingSteps : [],
+    agentRetrievedNotes: agentModeEnabled ? agentStream.retrievedNotes : [],
     processingStatus: agentModeEnabled ? agentStream.processingStatus : null,
     inputTokens: agentModeEnabled ? agentStream.inputTokens : chatStream.inputTokens,
     outputTokens: agentModeEnabled ? agentStream.outputTokens : chatStream.outputTokens,

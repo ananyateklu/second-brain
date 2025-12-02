@@ -56,5 +56,16 @@ public interface IVectorStore
     Task<HashSet<string>> GetIndexedNoteIdsAsync(
         string userId,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets all indexed note IDs with their NoteUpdatedAt timestamps.
+    /// Used to detect stale notes that need re-indexing.
+    /// </summary>
+    /// <param name="userId">The user ID to filter by</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Dictionary mapping note IDs to their indexed NoteUpdatedAt timestamps</returns>
+    Task<Dictionary<string, DateTime?>> GetIndexedNotesWithTimestampsAsync(
+        string userId,
+        CancellationToken cancellationToken = default);
 }
 

@@ -2,9 +2,10 @@ import { MarkdownMessage } from '../../../components/MarkdownMessage';
 import { TokenUsageDisplay } from '../../../components/TokenUsageDisplay';
 import { ThinkingStepCard } from '../../agents/components/ThinkingStepCard';
 import { ToolExecutionCard } from '../../agents/components/ToolExecutionCard';
+import { RetrievedContextCard } from '../../agents/components/RetrievedContextCard';
 import { ProcessTimeline } from './ProcessTimeline';
 import { RetrievedNotes } from '../../../components/ui/RetrievedNotes';
-import { ToolExecution, ThinkingStep } from '../../agents/types/agent-types';
+import { ToolExecution, ThinkingStep, RetrievedNoteContext } from '../../agents/types/agent-types';
 import { RagContextNote } from '../../../types/rag';
 import { stripThinkingTags } from '../../../utils/thinking-utils';
 
@@ -20,6 +21,8 @@ export interface StreamingIndicatorProps {
   toolExecutions?: ToolExecution[];
   processingStatus?: string | null;
   retrievedNotes?: RagContextNote[];
+  /** Notes automatically retrieved via semantic search for agent context injection */
+  agentRetrievedNotes?: RetrievedNoteContext[];
 }
 
 /**
@@ -37,17 +40,27 @@ export function StreamingIndicator({
   toolExecutions = [],
   processingStatus = null,
   retrievedNotes = [],
+  agentRetrievedNotes = [],
 }: StreamingIndicatorProps) {
-  const hasSteps = thinkingSteps.length > 0 || toolExecutions.length > 0;
+  const hasAgentRetrievedNotes = agentRetrievedNotes.length > 0;
+  const hasSteps = thinkingSteps.length > 0 || toolExecutions.length > 0 || hasAgentRetrievedNotes;
 
   return (
     <div>
-      {/* Show thinking steps and tool executions in timeline */}
+      {/* Show thinking steps, context retrieval, and tool executions in timeline */}
       {agentModeEnabled && (
         <ProcessTimeline
           isStreaming={isStreaming}
           hasContent={hasSteps}
         >
+          {/* Show automatically retrieved notes context first */}
+          {hasAgentRetrievedNotes && (
+            <RetrievedContextCard 
+              retrievedNotes={agentRetrievedNotes} 
+              isStreaming={isStreaming && !streamingMessage} 
+            />
+          )}
+
           {thinkingSteps.map((step, index) => (
             <ThinkingStepCard key={`thinking-${index}`} step={step} isStreaming={isStreaming} />
           ))}

@@ -1,4 +1,4 @@
-import { useIndexStats, useDeleteIndexedNotes } from '../../features/rag/hooks/use-indexing';
+import { useIndexStats, useDeleteIndexedNotes, useActiveIndexingVectorStores } from '../../features/rag/hooks/use-indexing';
 import { IndexStatsData } from '../../types/rag';
 import { toast } from '../../hooks/use-toast';
 
@@ -6,7 +6,7 @@ interface IndexingStatsProps {
   userId?: string;
 }
 
-function StatsCard({ title, stats, userId, vectorStoreProvider }: { title: string; stats: IndexStatsData | undefined; userId: string; vectorStoreProvider: import('../../types/rag').VectorStoreProvider }) {
+function StatsCard({ title, stats, userId, vectorStoreProvider, isIndexing }: { title: string; stats: IndexStatsData | undefined; userId: string; vectorStoreProvider: import('../../types/rag').VectorStoreProvider; isIndexing: boolean }) {
   const deleteIndexedNotesMutation = useDeleteIndexedNotes();
   const isDeleting = deleteIndexedNotesMutation.isPending;
 
@@ -75,7 +75,7 @@ function StatsCard({ title, stats, userId, vectorStoreProvider }: { title: strin
   if (!stats) {
     return (
       <div
-        className="relative p-4 rounded-xl border overflow-hidden group transition-all duration-300"
+        className="relative p-3 rounded-xl border overflow-hidden group transition-all duration-300"
         style={{
           backgroundColor: 'var(--surface-elevated)',
           borderColor: 'var(--border)',
@@ -92,7 +92,7 @@ function StatsCard({ title, stats, userId, vectorStoreProvider }: { title: strin
         <div className="relative">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <h4 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+              <h4 className="font-semibold text-base" style={{ color: 'var(--text-primary)' }}>
                 {title}
               </h4>
               <span
@@ -105,13 +105,13 @@ function StatsCard({ title, stats, userId, vectorStoreProvider }: { title: strin
               />
             </div>
             <div
-              className="px-2 py-0.5 rounded-md text-xs font-medium flex items-center gap-1"
+              className="px-1.5 py-0.5 rounded-md text-[10px] font-medium flex items-center gap-1"
               style={{
                 backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 10%, transparent)',
                 color: 'var(--text-secondary)',
               }}
             >
-              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
               </svg>
               No data
@@ -122,24 +122,35 @@ function StatsCard({ title, stats, userId, vectorStoreProvider }: { title: strin
     );
   }
 
-  const isHealthy = stats.totalEmbeddings > 0 && stats.lastIndexedAt !== null;
+  const hasIssues = stats.notIndexedCount > 0 || stats.staleNotesCount > 0;
+  const isHealthy = stats.totalEmbeddings > 0 && stats.lastIndexedAt !== null && !hasIssues;
   const healthColor = isHealthy ? 'var(--color-success)' : 'var(--color-warning)';
 
   return (
     <div
-      className={`relative p-4 rounded-xl border overflow-hidden group transition-all duration-300 ${isDeleting ? '' : 'hover:shadow-md hover:-translate-y-0.5'}`}
+      className={`relative p-3 rounded-xl border overflow-hidden group transition-all duration-300 ${isDeleting ? '' : 'hover:shadow-md hover:-translate-y-0.5'} ${isIndexing ? 'animate-pulse' : ''}`}
       style={{
         backgroundColor: 'var(--surface-elevated)',
-        borderColor: isDeleting ? 'color-mix(in srgb, var(--color-error) 40%, var(--border))' : 'var(--border)',
+        borderColor: isDeleting ? 'color-mix(in srgb, var(--color-error) 40%, var(--border))' : isIndexing ? 'color-mix(in srgb, var(--color-brand-600) 40%, var(--border))' : 'var(--border)',
       }}
     >
       {/* Background gradient */}
       <div
-        className={`absolute inset-0 transition-opacity ${isDeleting ? 'opacity-0' : 'opacity-5 group-hover:opacity-8'}`}
+        className={`absolute inset-0 transition-opacity ${isDeleting ? 'opacity-0' : isIndexing ? 'opacity-10 animate-pulse' : 'opacity-5 group-hover:opacity-8'}`}
         style={{
           background: 'linear-gradient(135deg, var(--color-brand-500) 0%, transparent 100%)',
         }}
       />
+
+      {/* Indexing indicator overlay */}
+      {isIndexing && (
+        <div
+          className="absolute inset-0 opacity-15 animate-pulse pointer-events-none"
+          style={{
+            background: 'radial-gradient(circle at center, var(--color-brand-400) 0%, transparent 70%)',
+          }}
+        />
+      )}
 
       {/* Deletion Loading Overlay */}
       {isDeleting && (
@@ -201,7 +212,7 @@ function StatsCard({ title, stats, userId, vectorStoreProvider }: { title: strin
 
       <div className={`relative ${isDeleting ? 'opacity-30 pointer-events-none' : ''}`}>
         {/* Header */}
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-2.5">
           <div className="flex items-center gap-2">
             <h4 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
               {title}
@@ -269,78 +280,194 @@ function StatsCard({ title, stats, userId, vectorStoreProvider }: { title: strin
           </div>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-3 mb-3">
-          <div>
-            <p className="text-xs font-medium mb-1 flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
-              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        {/* Main Stats Grid - 4 columns inline layout */}
+        <div className="grid grid-cols-4 gap-2 mb-2.5">
+          {/* Total Notes */}
+          <div
+            className="p-2 rounded-md"
+            style={{
+              backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 5%, transparent)',
+            }}
+          >
+            <div className="flex items-center gap-1 mb-0.5">
+              <svg className="h-3 w-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--text-secondary)' }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
-              Total Embeddings
-            </p>
-            <p className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
-              {stats.totalEmbeddings.toLocaleString()}
+              <p className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+                Total Notes
+              </p>
+            </div>
+            <p className={`text-base font-bold ${isIndexing ? 'animate-pulse' : ''}`} style={{ color: 'var(--text-primary)' }}>
+              {stats.totalNotesInSystem.toLocaleString()}
             </p>
           </div>
 
-          <div>
-            <p className="text-xs font-medium mb-1 flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
-              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          {/* Indexed Notes */}
+          <div
+            className="p-2 rounded-md"
+            style={{
+              backgroundColor: stats.uniqueNotes === stats.totalNotesInSystem && stats.totalNotesInSystem > 0
+                ? 'color-mix(in srgb, var(--color-success) 8%, transparent)'
+                : 'color-mix(in srgb, var(--color-brand-600) 5%, transparent)',
+            }}
+          >
+            <div className="flex items-center gap-1 mb-0.5">
+              <svg className="h-3 w-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--text-secondary)' }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              Unique Notes
-            </p>
-            <p className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+              <p className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+                Indexed
+              </p>
+            </div>
+            <p className={`text-base font-bold ${isIndexing ? 'animate-pulse' : ''}`} style={{ color: stats.uniqueNotes === stats.totalNotesInSystem && stats.totalNotesInSystem > 0 ? 'var(--color-success)' : 'var(--text-primary)' }}>
               {stats.uniqueNotes.toLocaleString()}
+            </p>
+          </div>
+
+          {/* Not Indexed */}
+          <div
+            className="p-2 rounded-md"
+            style={{
+              backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 5%, transparent)',
+            }}
+          >
+            <div className="flex items-center gap-1 mb-0.5">
+              <svg className="h-3 w-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--text-secondary)' }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <p className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+                Not Indexed
+              </p>
+            </div>
+            <p
+              className={`text-base font-bold ${isIndexing ? 'animate-pulse' : ''}`}
+              style={{
+                color: stats.notIndexedCount > 0 ? 'var(--color-warning)' : 'var(--color-success)',
+              }}
+            >
+              {stats.notIndexedCount.toLocaleString()}
+            </p>
+          </div>
+
+          {/* Needs Update */}
+          <div
+            className="p-2 rounded-md"
+            style={{
+              backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 5%, transparent)',
+            }}
+          >
+            <div className="flex items-center gap-1 mb-0.5">
+              <svg className="h-3 w-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--text-secondary)' }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <p className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+                Needs Update
+              </p>
+            </div>
+            <p
+              className={`text-base font-bold ${isIndexing ? 'animate-pulse' : ''}`}
+              style={{
+                color: stats.staleNotesCount > 0 ? 'var(--color-warning)' : 'var(--color-success)',
+              }}
+            >
+              {stats.staleNotesCount.toLocaleString()}
             </p>
           </div>
         </div>
 
+        {/* Embeddings Info Row */}
+        <div
+          className="flex items-center justify-between p-2 rounded-md mb-2.5"
+          style={{
+            backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 5%, transparent)',
+          }}
+        >
+          <div className="flex items-center gap-1">
+            <svg className="h-3 w-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--text-secondary)' }}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
+            <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+              Total Embeddings
+            </span>
+          </div>
+          <span className={`text-xs font-bold ${isIndexing ? 'animate-pulse' : ''}`} style={{ color: 'var(--text-primary)' }}>
+            {stats.totalEmbeddings.toLocaleString()}
+          </span>
+        </div>
+
+        {/* Status Indicator */}
+        {stats.totalNotesInSystem > 0 && (
+          <div
+            className="flex items-center gap-1.5 p-1.5 rounded-md mb-2.5"
+            style={{
+              backgroundColor: isHealthy
+                ? 'color-mix(in srgb, var(--color-success) 8%, transparent)'
+                : 'color-mix(in srgb, var(--color-warning) 8%, transparent)',
+              border: `1px solid ${isHealthy
+                ? 'color-mix(in srgb, var(--color-success) 20%, transparent)'
+                : 'color-mix(in srgb, var(--color-warning) 20%, transparent)'}`,
+            }}
+          >
+            <svg
+              className="h-3.5 w-3.5 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+              style={{ color: isHealthy ? 'var(--color-success)' : 'var(--color-warning)' }}
+            >
+              {isHealthy ? (
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              )}
+            </svg>
+            <span
+              className="text-xs font-medium"
+              style={{ color: isHealthy ? 'var(--color-success)' : 'var(--color-warning)' }}
+            >
+              {isHealthy
+                ? 'All notes indexed and up to date'
+                : `${stats.notIndexedCount + stats.staleNotesCount} note${stats.notIndexedCount + stats.staleNotesCount !== 1 ? 's' : ''} need${stats.notIndexedCount + stats.staleNotesCount === 1 ? 's' : ''} attention`}
+            </span>
+          </div>
+        )}
+
         {/* Additional Info */}
         <div
-          className="pt-3 border-t flex flex-wrap items-center gap-x-4 gap-y-2 text-xs"
+          className="pt-2 border-t grid grid-cols-3 gap-1"
           style={{ borderColor: 'var(--border)' }}
         >
-          <div className="flex items-center gap-1.5">
-            <svg className="h-3.5 w-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--text-secondary)' }}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span style={{ color: 'var(--text-secondary)' }}>Last Indexed:</span>
-            <span
-              className="font-semibold"
+          <div className="text-center">
+            <p className="text-[10px] font-medium" style={{ color: 'var(--text-secondary)' }}>
+              Last Indexed
+            </p>
+            <p
+              className="text-[11px] font-semibold truncate"
               style={{ color: 'var(--text-primary)' }}
               title={formatFullDate(stats.lastIndexedAt)}
             >
               {formatDate(stats.lastIndexedAt)}
-            </span>
+            </p>
           </div>
 
-          {stats.embeddingProvider && (
-            <div className="flex items-center gap-1.5">
-              <svg className="h-3.5 w-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--text-secondary)' }}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-              </svg>
-              <span style={{ color: 'var(--text-secondary)' }}>Model:</span>
-              <span
-                className="font-semibold capitalize"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                {stats.embeddingProvider}
-              </span>
-            </div>
-          )}
+          <div className="text-center">
+            <p className="text-[10px] font-medium" style={{ color: 'var(--text-secondary)' }}>
+              Avg. Chunks
+            </p>
+            <p className="text-[11px] font-semibold" style={{ color: 'var(--color-brand-600)' }}>
+              {stats.uniqueNotes > 0 ? (stats.totalEmbeddings / stats.uniqueNotes).toFixed(1) : '0'}
+            </p>
+          </div>
 
-          {stats.uniqueNotes > 0 && (
-            <div className="flex items-center gap-1.5">
-              <svg className="h-3.5 w-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--text-secondary)' }}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-              <span style={{ color: 'var(--text-secondary)' }}>Avg. chunks:</span>
-              <span className="font-semibold" style={{ color: 'var(--color-brand-600)' }}>
-                {(stats.totalEmbeddings / stats.uniqueNotes).toFixed(1)}
-              </span>
-            </div>
-          )}
+          <div className="text-center">
+            <p className="text-[10px] font-medium" style={{ color: 'var(--text-secondary)' }}>
+              Model
+            </p>
+            <p className="text-[11px] font-semibold capitalize truncate" style={{ color: 'var(--text-primary)' }}>
+              {stats.embeddingProvider || 'N/A'}
+            </p>
+          </div>
         </div>
       </div>
     </div>
@@ -349,6 +476,7 @@ function StatsCard({ title, stats, userId, vectorStoreProvider }: { title: strin
 
 export function IndexingStats({ userId = 'default-user' }: IndexingStatsProps) {
   const { data: stats, isLoading } = useIndexStats(userId);
+  const activeVectorStores = useActiveIndexingVectorStores();
 
   if (isLoading) {
     return (
@@ -356,58 +484,40 @@ export function IndexingStats({ userId = 'default-user' }: IndexingStatsProps) {
         {[1, 2].map((i) => (
           <div
             key={i}
-            className="p-4 rounded-xl border animate-pulse"
+            className="p-3 rounded-xl border animate-pulse"
             style={{
               backgroundColor: 'var(--surface-elevated)',
               borderColor: 'var(--border)',
             }}
           >
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-2">
               <div
-                className="h-4 rounded w-1/3"
+                className="h-3.5 rounded w-1/3"
                 style={{ backgroundColor: 'var(--surface-card)' }}
               />
               <div
-                className="h-5 rounded w-20"
+                className="h-4 rounded w-16"
                 style={{ backgroundColor: 'var(--surface-card)' }}
               />
             </div>
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <div>
-                <div
-                  className="h-3 rounded w-3/4 mb-1"
-                  style={{ backgroundColor: 'var(--surface-card)' }}
-                />
-                <div
-                  className="h-6 rounded w-1/2"
-                  style={{ backgroundColor: 'var(--surface-card)' }}
-                />
-              </div>
-              <div>
-                <div
-                  className="h-3 rounded w-3/4 mb-1"
-                  style={{ backgroundColor: 'var(--surface-card)' }}
-                />
-                <div
-                  className="h-6 rounded w-1/2"
-                  style={{ backgroundColor: 'var(--surface-card)' }}
-                />
-              </div>
+            <div className="grid grid-cols-4 gap-2 mb-2">
+              {[1, 2, 3, 4].map((j) => (
+                <div key={j} className="p-2 rounded-md" style={{ backgroundColor: 'var(--surface-card)', opacity: 0.3 }}>
+                  <div className="h-2.5 rounded w-2/3 mb-1" style={{ backgroundColor: 'var(--surface-elevated)' }} />
+                  <div className="h-4 rounded w-1/2" style={{ backgroundColor: 'var(--surface-elevated)' }} />
+                </div>
+              ))}
             </div>
             <div
-              className="pt-3 border-t"
+              className="pt-2 border-t grid grid-cols-3 gap-1"
               style={{ borderColor: 'var(--border)' }}
             >
-              <div className="flex gap-3">
-                <div
-                  className="h-3 rounded w-1/4"
-                  style={{ backgroundColor: 'var(--surface-card)' }}
-                />
-                <div
-                  className="h-3 rounded w-1/4"
-                  style={{ backgroundColor: 'var(--surface-card)' }}
-                />
-              </div>
+              {[1, 2, 3].map((k) => (
+                <div key={k} className="text-center">
+                  <div className="h-2 rounded w-2/3 mx-auto mb-0.5" style={{ backgroundColor: 'var(--surface-card)' }} />
+                  <div className="h-3 rounded w-1/2 mx-auto" style={{ backgroundColor: 'var(--surface-card)' }} />
+                </div>
+              ))}
             </div>
           </div>
         ))}
@@ -418,29 +528,29 @@ export function IndexingStats({ userId = 'default-user' }: IndexingStatsProps) {
   if (!stats) {
     return (
       <div
-        className="p-6 rounded-xl border text-center"
+        className="p-4 rounded-xl border text-center"
         style={{
           backgroundColor: 'var(--surface-elevated)',
           borderColor: 'var(--border)',
         }}
       >
-        <div className="flex justify-center mb-3">
+        <div className="flex justify-center mb-2">
           <div
-            className="flex h-12 w-12 items-center justify-center rounded-xl border"
+            className="flex h-10 w-10 items-center justify-center rounded-lg border"
             style={{
               backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 8%, transparent)',
               borderColor: 'color-mix(in srgb, var(--color-brand-600) 20%, transparent)',
             }}
           >
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--text-secondary)' }}>
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--text-secondary)' }}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
           </div>
         </div>
-        <p className="text-sm font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
+        <p className="text-xs font-medium mb-0.5" style={{ color: 'var(--text-primary)' }}>
           No Stats Available
         </p>
-        <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+        <p className="text-[10px]" style={{ color: 'var(--text-secondary)' }}>
           Run your first indexing job to see stats appear here
         </p>
       </div>
@@ -449,8 +559,20 @@ export function IndexingStats({ userId = 'default-user' }: IndexingStatsProps) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-      <StatsCard title="PostgreSQL" stats={stats.postgreSQL} userId={userId} vectorStoreProvider="PostgreSQL" />
-      <StatsCard title="Pinecone" stats={stats.pinecone} userId={userId} vectorStoreProvider="Pinecone" />
+      <StatsCard
+        title="PostgreSQL"
+        stats={stats.postgreSQL}
+        userId={userId}
+        vectorStoreProvider="PostgreSQL"
+        isIndexing={activeVectorStores.has('PostgreSQL')}
+      />
+      <StatsCard
+        title="Pinecone"
+        stats={stats.pinecone}
+        userId={userId}
+        vectorStoreProvider="Pinecone"
+        isIndexing={activeVectorStores.has('Pinecone')}
+      />
     </div>
   );
 }

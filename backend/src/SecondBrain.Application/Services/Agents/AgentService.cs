@@ -51,6 +51,12 @@ public class AgentService : IAgentService
     private readonly IRagService _ragService;
     private readonly ILogger<AgentService> _logger;
     private readonly Dictionary<string, IAgentPlugin> _plugins = new();
+    private readonly QueryIntentDetector _intentDetector = new();
+
+    // Constants for context injection
+    private const int ContextRetrievalTopK = 3;
+    private const float ContextRetrievalThreshold = 0.4f;
+    private const int MaxPreviewLength = 300;
 
     public AgentService(
         IOptions<AIProvidersSettings> settings,
@@ -195,6 +201,34 @@ public class AgentService : IAgentService
                 {
                     chatHistory.AddAssistantMessage(message.Content);
                 }
+            }
+        }
+
+        // Automatic context injection for knowledge queries
+        var lastUserMessage = GetLastUserMessage(request);
+        if (!string.IsNullOrEmpty(lastUserMessage) && HasNotesCapability(request))
+        {
+            yield return new AgentStreamEvent
+            {
+                Type = AgentEventType.Status,
+                Content = "Searching your notes for relevant context..."
+            };
+
+            var (contextMessage, retrievedNotes) = await TryRetrieveContextAsync(
+                lastUserMessage, request.UserId, HasNotesCapability(request), cancellationToken);
+
+            if (contextMessage != null && retrievedNotes != null && retrievedNotes.Count > 0)
+            {
+                // Emit context retrieval event so frontend can display the retrieved notes
+                yield return new AgentStreamEvent
+                {
+                    Type = AgentEventType.ContextRetrieval,
+                    Content = $"Found {retrievedNotes.Count} relevant note(s)",
+                    RetrievedNotes = retrievedNotes
+                };
+
+                // Inject context as a system message (after the main system prompt but before user messages)
+                chatHistory.AddSystemMessage(contextMessage);
             }
         }
 
@@ -514,7 +548,40 @@ public class AgentService : IAgentService
             }
         }
 
+        // Automatic context injection for knowledge queries (Anthropic path)
+        string? injectedContext = null;
+        var lastUserMessageAnthropic = GetLastUserMessage(request);
+        if (!string.IsNullOrEmpty(lastUserMessageAnthropic) && HasNotesCapability(request))
+        {
+            yield return new AgentStreamEvent
+            {
+                Type = AgentEventType.Status,
+                Content = "Searching your notes for relevant context..."
+            };
+
+            var (contextMessage, retrievedNotes) = await TryRetrieveContextAsync(
+                lastUserMessageAnthropic, request.UserId, HasNotesCapability(request), cancellationToken);
+
+            if (contextMessage != null && retrievedNotes != null && retrievedNotes.Count > 0)
+            {
+                // Emit context retrieval event so frontend can display the retrieved notes
+                yield return new AgentStreamEvent
+                {
+                    Type = AgentEventType.ContextRetrieval,
+                    Content = $"Found {retrievedNotes.Count} relevant note(s)",
+                    RetrievedNotes = retrievedNotes
+                };
+
+                injectedContext = contextMessage;
+            }
+        }
+
         var systemPrompt = GetSystemPrompt(request.Capabilities);
+        // Append injected context to system prompt for Anthropic
+        if (!string.IsNullOrEmpty(injectedContext))
+        {
+            systemPrompt += "\n\n" + injectedContext;
+        }
         var fullResponse = new StringBuilder();
         var emittedThinkingBlocks = new HashSet<string>();
         var maxIterations = 10; // Prevent infinite loops
@@ -1215,6 +1282,135 @@ public class AgentService : IAgentService
         }
 
         return builder.Build();
+    }
+
+    /// <summary>
+    /// Attempts to retrieve relevant note context for the user's query using semantic search.
+    /// Returns null if no relevant context is found or if context retrieval is not applicable.
+    /// </summary>
+    private async Task<(string? ContextMessage, List<RetrievedNoteContext>? RetrievedNotes)> TryRetrieveContextAsync(
+        string query,
+        string userId,
+        bool hasNotesCapability,
+        CancellationToken cancellationToken)
+    {
+        if (!hasNotesCapability)
+            return (null, null);
+
+        if (!_intentDetector.ShouldRetrieveContext(query))
+        {
+            _logger.LogDebug("Query does not require context retrieval: {Query}", 
+                query.Substring(0, Math.Min(50, query.Length)));
+            return (null, null);
+        }
+
+        try
+        {
+            _logger.LogInformation("Retrieving context for query: {Query}", 
+                query.Substring(0, Math.Min(50, query.Length)));
+
+            var ragContext = await _ragService.RetrieveContextAsync(
+                query,
+                userId,
+                topK: ContextRetrievalTopK,
+                similarityThreshold: ContextRetrievalThreshold,
+                cancellationToken: cancellationToken);
+
+            if (!ragContext.RetrievedNotes.Any())
+            {
+                _logger.LogDebug("No relevant notes found for context injection");
+                return (null, null);
+            }
+
+            // Deduplicate by NoteId, keeping highest score
+            var uniqueNotes = ragContext.RetrievedNotes
+                .GroupBy(r => r.NoteId)
+                .Select(g => g.OrderByDescending(r => r.SimilarityScore).First())
+                .ToList();
+
+            // Build context message and retrieved notes list
+            var retrievedNotes = new List<RetrievedNoteContext>();
+            var contextBuilder = new StringBuilder();
+            contextBuilder.AppendLine("---RELEVANT NOTES CONTEXT (use for answering)---");
+
+            foreach (var note in uniqueNotes)
+            {
+                // Get full note for better preview
+                var fullNote = await _noteRepository.GetByIdAsync(note.NoteId);
+                if (fullNote == null || fullNote.UserId != userId)
+                    continue;
+
+                var preview = GetContentPreview(fullNote.Content, MaxPreviewLength);
+                var tagsStr = fullNote.Tags.Any() ? $" [Tags: {string.Join(", ", fullNote.Tags)}]" : "";
+
+                contextBuilder.AppendLine($"[Note: \"{fullNote.Title}\"] (relevance: {note.SimilarityScore:F2}){tagsStr}");
+                contextBuilder.AppendLine($"Preview: {preview}");
+                contextBuilder.AppendLine();
+
+                retrievedNotes.Add(new RetrievedNoteContext
+                {
+                    NoteId = note.NoteId,
+                    Title = fullNote.Title,
+                    Preview = preview,
+                    Tags = fullNote.Tags.ToList(),
+                    SimilarityScore = note.SimilarityScore
+                });
+            }
+
+            contextBuilder.AppendLine("---END CONTEXT---");
+            contextBuilder.AppendLine("Use GetNote tool with the note ID if you need the full content of any note above.");
+
+            _logger.LogInformation("Injected context from {Count} notes", retrievedNotes.Count);
+
+            return (contextBuilder.ToString(), retrievedNotes);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to retrieve context for query, proceeding without context");
+            return (null, null);
+        }
+    }
+
+    /// <summary>
+    /// Extracts a preview from note content - first portion limited to maxLength characters.
+    /// </summary>
+    private static string GetContentPreview(string content, int maxLength)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+            return string.Empty;
+
+        // Clean up content
+        var cleaned = content.Trim();
+
+        if (cleaned.Length <= maxLength)
+            return cleaned;
+
+        // Truncate at word boundary if possible
+        var truncated = cleaned.Substring(0, maxLength);
+        var lastSpace = truncated.LastIndexOf(' ');
+
+        if (lastSpace > maxLength * 0.7)
+            truncated = truncated.Substring(0, lastSpace);
+
+        return truncated + "...";
+    }
+
+    /// <summary>
+    /// Gets the last user message from the request
+    /// </summary>
+    private static string? GetLastUserMessage(AgentRequest request)
+    {
+        return request.Messages
+            .LastOrDefault(m => m.Role.Equals("user", StringComparison.OrdinalIgnoreCase))
+            ?.Content;
+    }
+
+    /// <summary>
+    /// Checks if notes capability is enabled for the request
+    /// </summary>
+    private static bool HasNotesCapability(AgentRequest request)
+    {
+        return request.Capabilities?.Contains("notes", StringComparer.OrdinalIgnoreCase) ?? false;
     }
 
     internal string GetSystemPrompt(List<string>? capabilities)

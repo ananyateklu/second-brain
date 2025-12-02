@@ -47,6 +47,12 @@ export interface IndexStatsData {
   lastIndexedAt: string | null;
   embeddingProvider: string;
   vectorStoreProvider: string;
+  /** Total number of notes in the system for the user */
+  totalNotesInSystem: number;
+  /** Number of notes that are not indexed in this vector store */
+  notIndexedCount: number;
+  /** Number of notes that are indexed but have been modified since last indexing */
+  staleNotesCount: number;
 }
 
 /**

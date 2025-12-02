@@ -22,17 +22,20 @@ public class IndexingController : ControllerBase
     private readonly IIndexingService _indexingService;
     private readonly IVectorStore _postgresStore;
     private readonly IVectorStore _pineconeStore;
+    private readonly INoteRepository _noteRepository;
     private readonly ILogger<IndexingController> _logger;
 
     public IndexingController(
         IIndexingService indexingService,
         [FromKeyedServices(VectorStoreKeys.PostgreSQL)] IVectorStore postgresStore,
         [FromKeyedServices(VectorStoreKeys.Pinecone)] IVectorStore pineconeStore,
+        INoteRepository noteRepository,
         ILogger<IndexingController> logger)
     {
         _indexingService = indexingService;
         _postgresStore = postgresStore;
         _pineconeStore = pineconeStore;
+        _noteRepository = noteRepository;
         _logger = logger;
     }
 
@@ -136,17 +139,44 @@ public class IndexingController : ControllerBase
         {
             var response = new IndexStatsResponse();
 
+            // Get all notes for the user to calculate not indexed and stale counts
+            var allNotes = (await _noteRepository.GetByUserIdAsync(userId)).ToList();
+            var totalNotesCount = allNotes.Count;
+            var notesDict = allNotes.ToDictionary(n => n.Id, n => n.UpdatedAt);
+
             // Get PostgreSQL stats
             try
             {
                 var postgresStats = await _postgresStore.GetIndexStatsAsync(userId, cancellationToken);
+                var postgresIndexedWithTimestamps = await _postgresStore.GetIndexedNotesWithTimestampsAsync(userId, cancellationToken);
+                
+                // Calculate not indexed count
+                var postgresIndexedIds = postgresIndexedWithTimestamps.Keys.ToHashSet();
+                var postgresNotIndexedCount = allNotes.Count(n => !postgresIndexedIds.Contains(n.Id));
+                
+                // Calculate stale notes count (notes where UpdatedAt > NoteUpdatedAt in embedding)
+                var postgresStaleCount = 0;
+                foreach (var note in allNotes)
+                {
+                    if (postgresIndexedWithTimestamps.TryGetValue(note.Id, out var indexedUpdatedAt))
+                    {
+                        if (indexedUpdatedAt.HasValue && note.UpdatedAt > indexedUpdatedAt.Value)
+                        {
+                            postgresStaleCount++;
+                        }
+                    }
+                }
+                
                 response.PostgreSQL = new IndexStatsData
                 {
                     TotalEmbeddings = postgresStats.TotalEmbeddings,
                     UniqueNotes = postgresStats.UniqueNotes,
                     LastIndexedAt = postgresStats.LastIndexedAt,
                     EmbeddingProvider = postgresStats.EmbeddingProvider,
-                    VectorStoreProvider = postgresStats.VectorStoreProvider
+                    VectorStoreProvider = postgresStats.VectorStoreProvider,
+                    TotalNotesInSystem = totalNotesCount,
+                    NotIndexedCount = postgresNotIndexedCount,
+                    StaleNotesCount = postgresStaleCount
                 };
             }
             catch (Exception ex)
@@ -159,13 +189,35 @@ public class IndexingController : ControllerBase
             try
             {
                 var pineconeStats = await _pineconeStore.GetIndexStatsAsync(userId, cancellationToken);
+                var pineconeIndexedWithTimestamps = await _pineconeStore.GetIndexedNotesWithTimestampsAsync(userId, cancellationToken);
+                
+                // Calculate not indexed count
+                var pineconeIndexedIds = pineconeIndexedWithTimestamps.Keys.ToHashSet();
+                var pineconeNotIndexedCount = allNotes.Count(n => !pineconeIndexedIds.Contains(n.Id));
+                
+                // Calculate stale notes count (notes where UpdatedAt > NoteUpdatedAt in embedding)
+                var pineconeStaleCount = 0;
+                foreach (var note in allNotes)
+                {
+                    if (pineconeIndexedWithTimestamps.TryGetValue(note.Id, out var indexedUpdatedAt))
+                    {
+                        if (indexedUpdatedAt.HasValue && note.UpdatedAt > indexedUpdatedAt.Value)
+                        {
+                            pineconeStaleCount++;
+                        }
+                    }
+                }
+                
                 response.Pinecone = new IndexStatsData
                 {
                     TotalEmbeddings = pineconeStats.TotalEmbeddings,
                     UniqueNotes = pineconeStats.UniqueNotes,
                     LastIndexedAt = pineconeStats.LastIndexedAt,
                     EmbeddingProvider = pineconeStats.EmbeddingProvider,
-                    VectorStoreProvider = pineconeStats.VectorStoreProvider
+                    VectorStoreProvider = pineconeStats.VectorStoreProvider,
+                    TotalNotesInSystem = totalNotesCount,
+                    NotIndexedCount = pineconeNotIndexedCount,
+                    StaleNotesCount = pineconeStaleCount
                 };
             }
             catch (Exception ex)

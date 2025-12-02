@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../../store/auth-store';
-import { ToolExecution, ThinkingStep, AgentMessageRequest } from '../types/agent-types';
+import { ToolExecution, ThinkingStep, AgentMessageRequest, RetrievedNoteContext } from '../types/agent-types';
 import { estimateTokenCount } from '../../../utils/token-utils';
 
 // Parse thinking blocks from streaming message
@@ -54,6 +54,24 @@ const parseThinkingBlocks = (message: string): { complete: ThinkingStep[]; incom
   return { complete: completeSteps, incomplete: incompleteStep };
 };
 
+// Estimate token count for RAG context injected into the prompt
+// This mirrors the format built by the backend in AgentService.TryRetrieveContextAsync
+const estimateContextTokens = (notes: RetrievedNoteContext[]): number => {
+  if (!notes || notes.length === 0) return 0;
+
+  // Reconstruct the context format matching backend
+  let contextText = '---RELEVANT NOTES CONTEXT (use for answering)---\n';
+  for (const note of notes) {
+    const tagsStr = note.tags?.length ? ` [Tags: ${note.tags.join(', ')}]` : '';
+    contextText += `[Note: "${note.title}"] (relevance: ${note.similarityScore.toFixed(2)})${tagsStr}\n`;
+    contextText += `Preview: ${note.preview}\n\n`;
+  }
+  contextText += '---END CONTEXT---\n';
+  contextText += 'Use GetNote tool with the note ID if you need the full content of any note above.';
+
+  return estimateTokenCount(contextText);
+};
+
 export function useAgentStream() {
   const queryClient = useQueryClient();
   const [isStreaming, setIsStreaming] = useState(false);
@@ -61,6 +79,7 @@ export function useAgentStream() {
   const [streamingError, setStreamingError] = useState<Error | null>(null);
   const [toolExecutions, setToolExecutions] = useState<ToolExecution[]>([]);
   const [thinkingSteps, setThinkingSteps] = useState<ThinkingStep[]>([]);
+  const [retrievedNotes, setRetrievedNotes] = useState<RetrievedNoteContext[]>([]);
   const [processingStatus, setProcessingStatus] = useState<string | null>(null);
   const [inputTokens, setInputTokens] = useState<number | undefined>(undefined);
   const [outputTokens, setOutputTokens] = useState<number | undefined>(undefined);
@@ -77,6 +96,7 @@ export function useAgentStream() {
       setStreamingError(null);
       setToolExecutions([]);
       setThinkingSteps([]);
+      setRetrievedNotes([]);
       setProcessingStatus(null);
       completeThinkingBlocksRef.current.clear();
 
@@ -315,6 +335,22 @@ export function useAgentStream() {
                 }
                 break;
 
+              case 'context_retrieval':
+                if (data) {
+                  try {
+                    const contextData = JSON.parse(data);
+                    if (contextData.retrievedNotes && Array.isArray(contextData.retrievedNotes)) {
+                      setRetrievedNotes(contextData.retrievedNotes);
+                      // Update input tokens to include RAG context
+                      const contextTokens = estimateContextTokens(contextData.retrievedNotes);
+                      setInputTokens((prev) => (prev ?? 0) + contextTokens);
+                    }
+                  } catch (e) {
+                    console.error('Failed to parse context_retrieval data:', e);
+                  }
+                }
+                break;
+
               case 'end':
                 if (streamStartTimeRef.current) {
                   const duration = Date.now() - streamStartTimeRef.current;
@@ -401,6 +437,7 @@ export function useAgentStream() {
     streamingError,
     toolExecutions,
     thinkingSteps,
+    retrievedNotes,
     processingStatus,
     inputTokens,
     outputTokens,

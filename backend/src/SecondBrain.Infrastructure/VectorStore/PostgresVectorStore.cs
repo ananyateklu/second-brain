@@ -311,5 +311,29 @@ public class PostgresVectorStore : IVectorStore
             return new HashSet<string>();
         }
     }
+
+    public async Task<Dictionary<string, DateTime?>> GetIndexedNotesWithTimestampsAsync(
+        string userId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Get unique note IDs with their NoteUpdatedAt timestamp
+            // We group by NoteId and take the first NoteUpdatedAt since all chunks have the same value
+            var results = await _context.NoteEmbeddings
+                .AsNoTracking()
+                .Where(e => e.UserId == userId)
+                .GroupBy(e => e.NoteId)
+                .Select(g => new { NoteId = g.Key, NoteUpdatedAt = g.First().NoteUpdatedAt })
+                .ToListAsync(cancellationToken);
+
+            return results.ToDictionary(r => r.NoteId, r => (DateTime?)r.NoteUpdatedAt);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting indexed notes with timestamps. UserId: {UserId}", userId);
+            return new Dictionary<string, DateTime?>();
+        }
+    }
 }
 

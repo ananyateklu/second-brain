@@ -26,5 +26,20 @@ public class IndexStats
     public DateTime? LastIndexedAt { get; set; }
     public string EmbeddingProvider { get; set; } = string.Empty;
     public string VectorStoreProvider { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Total number of notes in the system for the user
+    /// </summary>
+    public int TotalNotesInSystem { get; set; }
+    
+    /// <summary>
+    /// Number of notes that are not indexed in this vector store
+    /// </summary>
+    public int NotIndexedCount { get; set; }
+    
+    /// <summary>
+    /// Number of notes that are indexed but have been modified since last indexing
+    /// </summary>
+    public int StaleNotesCount { get; set; }
 }
 
