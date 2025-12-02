@@ -104,7 +104,14 @@
   --color-accent-blue-border: #5d7dac;
   --color-accent-blue-dot: #5d7dac;
 
-  /* Image generation capability colors (muted green) */
+  /* Image generation capability colors (purple accent) */
+  --color-accent-purple: #a78bfa; /* Medium-light purple */
+  --color-accent-purple-alpha: color-mix(in srgb, #a78bfa 15%, transparent);
+  --color-accent-purple-text: #a78bfa;
+  --color-accent-purple-border: #a78bfa;
+  --color-accent-purple-dot: #a78bfa;
+
+  /* Image generation capability colors (muted green - legacy) */
   --color-image-gen: var(
     --color-brand-200
   ); /* Soft muted green for image generation */
@@ -262,6 +269,13 @@
   --color-accent-blue-border: #4a6d99;
   --color-accent-blue-dot: #4a6d99;
 
+  /* Purple accent colors for light mode */
+  --color-accent-purple: #8b5cf6; /* Medium purple for light mode contrast */
+  --color-accent-purple-alpha: color-mix(in srgb, #8b5cf6 15%, transparent);
+  --color-accent-purple-text: #8b5cf6;
+  --color-accent-purple-border: #8b5cf6;
+  --color-accent-purple-dot: #8b5cf6;
+
   /* Image generation capability colors for light theme */
   --color-image-gen: var(
     --color-brand-500
@@ -370,6 +384,13 @@
   --color-accent-blue-text: #5d7dac;
   --color-accent-blue-border: #5d7dac;
   --color-accent-blue-dot: #5d7dac;
+
+  /* Purple accent colors for blue theme */
+  --color-accent-purple: #a78bfa; /* Medium-light purple */
+  --color-accent-purple-alpha: color-mix(in srgb, #a78bfa 15%, transparent);
+  --color-accent-purple-text: #a78bfa;
+  --color-accent-purple-border: #a78bfa;
+  --color-accent-purple-dot: #a78bfa;
 
   /* Image generation capability colors for dark theme */
   --color-image-gen: var(
@@ -498,6 +519,13 @@
   --color-accent-blue-text: var(--color-blue-300);
   --color-accent-blue-border: var(--color-blue-300);
   --color-accent-blue-dot: var(--color-blue-300);
+
+  /* Purple accent colors for blue-light theme */
+  --color-accent-purple: #8b5cf6; /* Medium purple for light mode contrast */
+  --color-accent-purple-alpha: color-mix(in srgb, #8b5cf6 15%, transparent);
+  --color-accent-purple-text: #8b5cf6;
+  --color-accent-purple-border: #8b5cf6;
+  --color-accent-purple-dot: #8b5cf6;
 
   /* Image generation capability colors for blue theme */
   --color-image-gen: var(
