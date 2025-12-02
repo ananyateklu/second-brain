@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useChatStream } from './use-chat-stream';
 import { useAgentStream } from '../../agents/hooks/use-agent-stream';
 import { ToolExecution, ThinkingStep } from '../../agents/types/agent-types';
-import { RagContextNote } from '../../rag/types';
+import { RagContextNote } from '../../../types/rag';
 import { MessageImage } from '../types/chat';
 
 export interface CombinedStreamingState {

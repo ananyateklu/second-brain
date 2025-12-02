@@ -65,21 +65,24 @@ export const EMPTY_CONTEXT_BREAKDOWN: ContextUsageBreakdown = {
 };
 
 /**
- * Estimated token counts for system components
- * These are approximations based on typical usage patterns
+ * Estimated token counts for system components.
+ * These values are calibrated against actual backend implementations:
+ * - Agent system prompt: ~3200 chars in AgentService.GetSystemPrompt()
+ * - Notes capability prompt: ~5000 chars in NotesPlugin.GetSystemPromptAddition()
+ * - RAG wrapper: ~800+ chars in RagService.EnhancePromptWithContext()
  */
 export const CONTEXT_ESTIMATION_CONSTANTS = {
-  /** Base system prompt tokens (without agent mode) */
-  BASE_SYSTEM_PROMPT: 150,
-  /** Additional system prompt tokens when agent mode is enabled */
-  AGENT_SYSTEM_PROMPT_ADDITION: 500,
-  /** Tokens per enabled agent capability */
-  TOKENS_PER_CAPABILITY: 200,
-  /** Average tokens per tool definition */
-  TOKENS_PER_TOOL_DEFINITION: 250,
+  /** Base system prompt tokens (regular chat has no system prompt, agent mode adds ~3200 chars) */
+  BASE_SYSTEM_PROMPT: 0,
+  /** Additional system prompt tokens when agent mode is enabled (~3200 chars / 3.5 ≈ 914 tokens) */
+  AGENT_SYSTEM_PROMPT_ADDITION: 900,
+  /** Tokens per enabled agent capability (notes: ~5000 chars / 3.5 ≈ 1429 tokens) */
+  TOKENS_PER_CAPABILITY: 1400,
+  /** Average tokens per tool definition (function schema with description and parameters) */
+  TOKENS_PER_TOOL_DEFINITION: 150,
   /** Overhead tokens per message (role, formatting, etc.) */
   MESSAGE_OVERHEAD: 10,
-  /** RAG context header/footer tokens */
-  RAG_CONTEXT_OVERHEAD: 50,
+  /** RAG context instruction wrapper tokens (~800 chars / 3.5 ≈ 229 tokens) */
+  RAG_CONTEXT_OVERHEAD: 230,
 } as const;
 

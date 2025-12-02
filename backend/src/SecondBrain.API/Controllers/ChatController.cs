@@ -243,7 +243,7 @@ public class ChatController : ControllerBase
                     vectorStoreProvider: request.VectorStoreProvider,
                     conversationId: id,
                     cancellationToken: cancellationToken);
-                
+
                 // Capture RAG log ID for feedback association
                 ragLogId = ragContext.RagLogId;
 
@@ -315,14 +315,13 @@ public class ChatController : ControllerBase
                 }
             }
 
-            // Add user message
-            var inputTokens = TokenEstimator.EstimateTokenCount(request.Content);
+            // Add user message (store original content for history)
             var userMessage = new Core.Entities.ChatMessage
             {
                 Role = "user",
                 Content = request.Content,
                 Timestamp = DateTime.UtcNow,
-                InputTokens = inputTokens
+                // InputTokens will be set below after calculating full context tokens
             };
 
             // Map images to domain entity if present
@@ -363,6 +362,18 @@ public class ChatController : ControllerBase
                     lastMessage.Content = messageContent;
                 }
             }
+
+            // Calculate input tokens from the FULL context sent to the AI:
+            // - All conversation messages (including enhanced RAG content for last message)
+            // - Per-message formatting overhead
+            var inputTokens = 0;
+            foreach (var msg in aiMessages)
+            {
+                inputTokens += TokenEstimator.EstimateTokenCount(msg.Content);
+                // Add overhead for message role and formatting (~10 tokens per message)
+                inputTokens += 10;
+            }
+            userMessage.InputTokens = inputTokens;
 
             // Generate AI streaming response
             var aiRequest = new AIRequest
@@ -529,7 +540,7 @@ public class ChatController : ControllerBase
                     vectorStoreProvider: request.VectorStoreProvider,
                     conversationId: id,
                     cancellationToken: cancellationToken);
-                
+
                 // Capture RAG log ID for feedback association
                 ragLogId = ragContext.RagLogId;
 

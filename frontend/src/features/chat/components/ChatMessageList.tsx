@@ -1,7 +1,7 @@
 import { RefObject, useMemo } from 'react';
 import { ChatConversation, ChatMessage, ToolCall } from '../types/chat';
 import { ToolExecution, ThinkingStep } from '../../agents/types/agent-types';
-import { RagContextNote } from '../../rag/types';
+import { RagContextNote } from '../../../types/rag';
 import { MessageBubble } from './MessageBubble';
 import { StreamingIndicator, ImageGenerationLoadingSkeleton } from './StreamingIndicator';
 import { ChatWelcomeScreen } from './ChatWelcomeScreen';

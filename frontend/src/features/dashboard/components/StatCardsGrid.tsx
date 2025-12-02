@@ -1,7 +1,7 @@
 import { useMemo, ReactNode } from 'react';
 import { StatCard } from './StatCard';
 import { formatTokenCount } from '../utils/dashboard-utils';
-import type { AIUsageStats } from '../../stats/types';
+import type { AIUsageStats } from '../../../types/stats';
 
 interface NotesStats {
   totalNotes: number;

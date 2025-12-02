@@ -5,7 +5,7 @@ import { ToolExecutionCard } from '../../agents/components/ToolExecutionCard';
 import { ProcessTimeline } from './ProcessTimeline';
 import { RetrievedNotes } from '../../../components/ui/RetrievedNotes';
 import { ToolExecution, ThinkingStep } from '../../agents/types/agent-types';
-import { RagContextNote } from '../../rag/types';
+import { RagContextNote } from '../../../types/rag';
 import { stripThinkingTags } from '../../../utils/thinking-utils';
 
 export interface StreamingIndicatorProps {

@@ -4,10 +4,10 @@
  */
 
 import { useState, memo } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ragService } from '../../../services/rag.service';
 import { QUERY_KEYS } from '../../../lib/constants';
 import type { TopicAnalyticsResponse } from '../../../types/rag';
+import { useApiMutation } from '../../../hooks/use-api-mutation';
 
 interface TopicDistributionCardProps {
   topicData: TopicAnalyticsResponse | undefined;
@@ -30,15 +30,13 @@ const TOPIC_COLORS = [
 
 export const TopicDistributionCard = memo(function TopicDistributionCard({ topicData, isLoading }: TopicDistributionCardProps) {
   const [clusterCount, setClusterCount] = useState(5);
-  const queryClient = useQueryClient();
 
-  const clusterMutation = useMutation({
-    mutationFn: () => ragService.clusterQueries(clusterCount),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ragAnalytics.topics() });
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.ragAnalytics.logs() });
-    },
-  });
+  const clusterMutation = useApiMutation<{ message: string }, number>(
+    (count) => ragService.clusterQueries(count),
+    {
+      invalidateQueries: [QUERY_KEYS.ragAnalytics.topics(), QUERY_KEYS.ragAnalytics.logs()],
+    }
+  );
 
   const hasTopics = topicData && topicData.topics.length > 0;
   const totalQueries = hasTopics
@@ -114,7 +112,7 @@ export const TopicDistributionCard = memo(function TopicDistributionCard({ topic
             ))}
           </select>
           <button
-            onClick={() => clusterMutation.mutate()}
+            onClick={() => clusterMutation.mutate(clusterCount)}
             disabled={clusterMutation.isPending}
             className="px-4 py-1.5 text-sm font-medium rounded-lg transition-all duration-200 disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
             style={{

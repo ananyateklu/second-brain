@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { RagContextNote } from '../../features/rag/types';
+import { RagContextNote } from '../../types/rag';
 import { NoteCard } from '../../features/notes/components/NoteCard';
 import { useNotes } from '../../features/notes/hooks/use-notes-query';
 

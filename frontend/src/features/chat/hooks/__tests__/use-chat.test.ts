@@ -394,10 +394,11 @@ describe('use-chat', () => {
                 wrapper: createWrapper(),
             });
 
-            // Assert
+            // Assert - wait for query to fail after retries
+            // useApiQuery retries up to 2 times for non-auth/non-404 errors
             await waitFor(() => {
                 expect(result.current.isError).toBe(true);
-            });
+            }, { timeout: 5000 });
             expect(result.current.error).toBeTruthy();
         });
 

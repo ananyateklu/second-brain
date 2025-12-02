@@ -20,7 +20,7 @@ import { isImageGenerationModel } from '../../../utils/image-generation-models';
 import type { MessageImage, ImageGenerationResponse, ChatConversation } from '../../../types/chat';
 import type { AgentCapability } from '../components/ChatHeader';
 import type { ProviderInfo } from './use-chat-provider-selection';
-import type { RagContextNote } from '../../rag/types';
+import type { RagContextNote } from '../../../types/rag';
 import type { ToolExecution, ThinkingStep } from '../../agents/types/agent-types';
 import type { ContextUsageState } from '../../../types/context-usage';
 

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { ChatConversation } from '../../../types/chat';
 import { ToolExecution } from '../../agents/types/agent-types';
-import { RagContextNote } from '../../rag/types';
+import { RagContextNote } from '../../../types/rag';
 import {
   ContextUsageBreakdown,
   ContextUsageState,
@@ -84,15 +84,15 @@ export function useContextUsage(options: UseContextUsageOptions): ContextUsageSt
   // This prevents context from appearing smaller during the brief window when
   // the page has loaded but UI state hasn't synced from the conversation yet
   const effectiveAgentEnabled = agentModeEnabled || conversationAgentEnabled;
-  const effectiveCapabilities = agentCapabilities.length > 0 
-    ? agentCapabilities 
+  const effectiveCapabilities = agentCapabilities.length > 0
+    ? agentCapabilities
     : conversationCapabilities;
   const effectiveRagEnabled = ragEnabled || conversationRagEnabled;
 
   const breakdown = useMemo((): ContextUsageBreakdown => {
     // Calculate system prompt tokens
     let systemPromptTokens = CONTEXT_ESTIMATION_CONSTANTS.BASE_SYSTEM_PROMPT;
-    
+
     if (effectiveAgentEnabled) {
       systemPromptTokens += CONTEXT_ESTIMATION_CONSTANTS.AGENT_SYSTEM_PROMPT_ADDITION;
       systemPromptTokens += effectiveCapabilities.length * CONTEXT_ESTIMATION_CONSTANTS.TOKENS_PER_CAPABILITY;
@@ -101,7 +101,7 @@ export function useContextUsage(options: UseContextUsageOptions): ContextUsageSt
     // Calculate message history tokens
     let messageHistoryTokens = 0;
     const messages = conversation?.messages || [];
-    
+
     for (const message of messages) {
       // Base content tokens
       messageHistoryTokens += estimateTokenCount(message.content);
@@ -112,14 +112,18 @@ export function useContextUsage(options: UseContextUsageOptions): ContextUsageSt
     // Calculate tool definitions tokens (when agent mode is enabled)
     let toolDefinitionTokens = 0;
     if (effectiveAgentEnabled && effectiveCapabilities.length > 0) {
-      // Each capability typically defines multiple tools
-      // Notes capability: ~5 tools (search, create, update, delete, get)
+      // Each capability defines multiple tools with their schemas
+      // Actual tool counts based on backend plugin implementations:
+      // - Notes: 20 tools (CreateNote, GetNote, UpdateNote, DeleteNote, SearchNotes,
+      //   SemanticSearch, ListAllNotes, ListRecentNotes, ArchiveNote, UnarchiveNote,
+      //   DuplicateNote, AppendToNote, SearchByTags, GetNotesByDateRange, FindRelatedNotes,
+      //   ListArchivedNotes, MoveToFolder, ListFolders, ListAllTags, GetNoteStats)
       const toolsPerCapability: Record<string, number> = {
-        'notes': 5,
+        'notes': 20,
         'web': 2,
         'code': 3,
       };
-      
+
       for (const capability of effectiveCapabilities) {
         const toolCount = toolsPerCapability[capability] || 2;
         toolDefinitionTokens += toolCount * CONTEXT_ESTIMATION_CONSTANTS.TOKENS_PER_TOOL_DEFINITION;
@@ -128,7 +132,7 @@ export function useContextUsage(options: UseContextUsageOptions): ContextUsageSt
 
     // Calculate tool results tokens (from conversation history + streaming)
     let toolResultTokens = 0;
-    
+
     // From persisted messages
     for (const message of messages) {
       if (message.toolCalls && message.toolCalls.length > 0) {
@@ -140,7 +144,7 @@ export function useContextUsage(options: UseContextUsageOptions): ContextUsageSt
         }
       }
     }
-    
+
     // From streaming tool executions
     for (const execution of streamingToolExecutions) {
       if (execution.status === 'completed' && execution.result) {
@@ -153,7 +157,7 @@ export function useContextUsage(options: UseContextUsageOptions): ContextUsageSt
     // Calculate RAG context tokens
     // Use effectiveRagEnabled to count historical RAG context even before UI state syncs
     let ragContextTokens = 0;
-    
+
     if (effectiveRagEnabled) {
       // From persisted messages
       for (const message of messages) {
@@ -167,7 +171,7 @@ export function useContextUsage(options: UseContextUsageOptions): ContextUsageSt
           }
         }
       }
-      
+
       // From streaming retrieved notes
       if (streamingRetrievedNotes.length > 0) {
         ragContextTokens += CONTEXT_ESTIMATION_CONSTANTS.RAG_CONTEXT_OVERHEAD;
@@ -181,14 +185,14 @@ export function useContextUsage(options: UseContextUsageOptions): ContextUsageSt
 
     // Calculate current input tokens
     let currentInputTokens = estimateTokenCount(currentInput);
-    
+
     // Add streaming message tokens if streaming
     if (isStreaming && streamingMessage) {
       currentInputTokens += estimateTokenCount(streamingMessage);
     }
 
     // Calculate total
-    const total = 
+    const total =
       systemPromptTokens +
       messageHistoryTokens +
       toolDefinitionTokens +

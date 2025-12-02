@@ -21,12 +21,12 @@ export interface UseApiQueryOptions<TData, TError = ApiError>
    * Custom error handler
    */
   onError?: (error: TError) => void;
-  
+
   /**
    * Whether to show toast on error
    */
   showErrorToast?: boolean;
-  
+
   /**
    * Custom error message for toast
    */
@@ -36,28 +36,28 @@ export interface UseApiQueryOptions<TData, TError = ApiError>
 /**
  * Extended query result with additional helpers
  */
-export type UseApiQueryResult<TData, TError = ApiError> = 
+export type UseApiQueryResult<TData, TError = ApiError> =
   UseQueryResult<TData, TError> & {
-  /**
-   * Check if the error is an API error
-   */
-  isApiError: boolean;
-  
-  /**
-   * Get typed API error
-   */
-  apiError: ApiError | null;
-  
-  /**
-   * Check if error is an auth error
-   */
-  isAuthError: boolean;
-  
-  /**
-   * Check if error is a not found error
-   */
-  isNotFoundError: boolean;
-};
+    /**
+     * Check if the error is an API error
+     */
+    isApiError: boolean;
+
+    /**
+     * Get typed API error
+     */
+    apiError: ApiError | null;
+
+    /**
+     * Check if error is an auth error
+     */
+    isAuthError: boolean;
+
+    /**
+     * Check if error is a not found error
+     */
+    isNotFoundError: boolean;
+  };
 
 /**
  * Standardized API query hook with error handling
@@ -79,8 +79,9 @@ export function useApiQuery<TData, TError = ApiError>(
     queryFn,
     staleTime: CACHE.STALE_TIME,
     gcTime: CACHE.GC_TIME,
+    // Smart retry: don't retry on auth errors or not found
+    // This can be overridden by queryOptions or QueryClient defaults
     retry: (failureCount, error) => {
-      // Don't retry on auth errors or not found
       if (isApiError(error)) {
         if (error.isAuthError() || error.code === 'NOT_FOUND') {
           return false;
@@ -88,6 +89,7 @@ export function useApiQuery<TData, TError = ApiError>(
       }
       return failureCount < 2;
     },
+    // Spread queryOptions AFTER our defaults so users can override
     ...queryOptions,
   });
 
@@ -119,7 +121,7 @@ export function createQueryHook<TData, TParams = void>(
     options?: UseApiQueryOptions<TData>
   ): UseApiQueryResult<TData> {
     const queryKey = getQueryKey(params);
-    
+
     return useApiQuery<TData>(
       queryKey,
       () => queryFn(params),

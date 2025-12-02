@@ -1,5 +1,5 @@
 import { useIndexStats, useDeleteIndexedNotes } from '../../features/rag/hooks/use-indexing';
-import { IndexStatsData } from '../../features/rag/types';
+import { IndexStatsData } from '../../types/rag';
 import { toast } from '../../hooks/use-toast';
 
 interface IndexingStatsProps {
