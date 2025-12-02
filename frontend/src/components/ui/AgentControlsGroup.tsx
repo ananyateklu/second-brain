@@ -18,13 +18,29 @@ interface Capability {
 interface AgentControlsGroupProps {
   agentEnabled: boolean;
   onAgentChange: (enabled: boolean) => void;
+  agentRagEnabled: boolean;
+  onAgentRagChange: (enabled: boolean) => void;
   capabilities: Capability[];
   disabled?: boolean;
 }
 
+// Search icon for Agent RAG toggle
+const SearchIcon = () => (
+  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+    />
+  </svg>
+);
+
 export function AgentControlsGroup({
   agentEnabled,
   onAgentChange,
+  agentRagEnabled,
+  onAgentRagChange,
   capabilities,
   disabled = false,
 }: AgentControlsGroupProps) {
@@ -37,8 +53,8 @@ export function AgentControlsGroup({
         disabled={disabled}
       />
 
-      {/* Capabilities - only show when agent is enabled */}
-      {agentEnabled && capabilities.length > 0 && (
+      {/* Capabilities and Agent RAG - only show when agent is enabled */}
+      {agentEnabled && (capabilities.length > 0 || true) && (
         <div className="flex items-center gap-1.5 relative pl-2">
           {/* Connecting line */}
           <div
@@ -46,6 +62,22 @@ export function AgentControlsGroup({
             style={{
               backgroundColor: 'var(--border)',
               opacity: 0.5,
+            }}
+          />
+          
+          {/* Agent RAG toggle */}
+          <AgentCapabilityToggle
+            capabilityId="agent-rag"
+            displayName="Auto Context"
+            enabled={agentRagEnabled}
+            onChange={onAgentRagChange}
+            disabled={disabled}
+            icon={<SearchIcon />}
+            color={{
+              enabledBg: 'var(--color-accent-blue-alpha)',
+              enabledText: 'var(--color-accent-blue-text)',
+              enabledBorder: 'var(--color-accent-blue-border)',
+              enabledDot: 'var(--color-accent-blue-dot)',
             }}
           />
           

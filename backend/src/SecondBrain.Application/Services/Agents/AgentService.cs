@@ -135,7 +135,7 @@ public class AgentService : IAgentService
 
         try
         {
-            kernel = BuildKernel(request.Provider, request.Model, request.UserId, request.Capabilities, request.OllamaBaseUrl);
+            kernel = BuildKernel(request.Provider, request.Model, request.UserId, request.Capabilities, request.AgentRagEnabled, request.OllamaBaseUrl);
         }
         catch (Exception ex)
         {
@@ -204,9 +204,9 @@ public class AgentService : IAgentService
             }
         }
 
-        // Automatic context injection for knowledge queries
+        // Automatic context injection for knowledge queries (only when AgentRagEnabled is true)
         var lastUserMessage = GetLastUserMessage(request);
-        if (!string.IsNullOrEmpty(lastUserMessage) && HasNotesCapability(request))
+        if (request.AgentRagEnabled && !string.IsNullOrEmpty(lastUserMessage) && HasNotesCapability(request))
         {
             yield return new AgentStreamEvent
             {
@@ -445,6 +445,7 @@ public class AgentService : IAgentService
                 if (_plugins.TryGetValue(capabilityId, out var plugin))
                 {
                     plugin.SetCurrentUserId(request.UserId);
+                    plugin.SetAgentRagEnabled(request.AgentRagEnabled);
 
                     // Get all methods with KernelFunction attribute
                     var pluginInstance = plugin.GetPluginInstance();
@@ -548,10 +549,10 @@ public class AgentService : IAgentService
             }
         }
 
-        // Automatic context injection for knowledge queries (Anthropic path)
+        // Automatic context injection for knowledge queries (Anthropic path, only when AgentRagEnabled is true)
         string? injectedContext = null;
         var lastUserMessageAnthropic = GetLastUserMessage(request);
-        if (!string.IsNullOrEmpty(lastUserMessageAnthropic) && HasNotesCapability(request))
+        if (request.AgentRagEnabled && !string.IsNullOrEmpty(lastUserMessageAnthropic) && HasNotesCapability(request))
         {
             yield return new AgentStreamEvent
             {
@@ -1198,7 +1199,7 @@ public class AgentService : IAgentService
         }
     }
 
-    internal Kernel BuildKernel(string provider, string model, string userId, List<string>? capabilities, string? ollamaBaseUrl = null)
+    internal Kernel BuildKernel(string provider, string model, string userId, List<string>? capabilities, bool agentRagEnabled = true, string? ollamaBaseUrl = null)
     {
         var builder = Kernel.CreateBuilder();
 
@@ -1270,6 +1271,7 @@ public class AgentService : IAgentService
                 if (_plugins.TryGetValue(capabilityId, out var plugin))
                 {
                     plugin.SetCurrentUserId(userId);
+                    plugin.SetAgentRagEnabled(agentRagEnabled);
                     builder.Plugins.AddFromObject(plugin.GetPluginInstance(), plugin.GetPluginName());
                     _logger.LogDebug("Registered plugin {PluginName} for capability {CapabilityId}",
                         plugin.GetPluginName(), capabilityId);
@@ -1299,14 +1301,14 @@ public class AgentService : IAgentService
 
         if (!_intentDetector.ShouldRetrieveContext(query))
         {
-            _logger.LogDebug("Query does not require context retrieval: {Query}", 
+            _logger.LogDebug("Query does not require context retrieval: {Query}",
                 query.Substring(0, Math.Min(50, query.Length)));
             return (null, null);
         }
 
         try
         {
-            _logger.LogInformation("Retrieving context for query: {Query}", 
+            _logger.LogInformation("Retrieving context for query: {Query}",
                 query.Substring(0, Math.Min(50, query.Length)));
 
             var ragContext = await _ragService.RetrieveContextAsync(

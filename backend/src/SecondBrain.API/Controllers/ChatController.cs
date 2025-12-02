@@ -153,6 +153,7 @@ public class ChatController : ControllerBase
                 userId,
                 request.RagEnabled,
                 request.AgentEnabled,
+                request.AgentRagEnabled,
                 request.ImageGenerationEnabled,
                 request.AgentCapabilities,
                 request.VectorStoreProvider,
@@ -747,6 +748,7 @@ public class ChatController : ControllerBase
                 request.RagEnabled,
                 request.VectorStoreProvider,
                 request.AgentEnabled,
+                request.AgentRagEnabled,
                 request.AgentCapabilities,
                 cancellationToken);
 

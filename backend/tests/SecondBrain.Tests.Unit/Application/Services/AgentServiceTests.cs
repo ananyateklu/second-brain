@@ -2366,7 +2366,7 @@ public class AgentServiceTests
         );
 
         // Act - Pass a custom URL
-        var kernel = service.BuildKernel("ollama", "llama3", "user-123", null, "http://custom-ollama:11434/");
+        var kernel = service.BuildKernel("ollama", "llama3", "user-123", null, true, "http://custom-ollama:11434/");
 
         // Assert
         kernel.Should().NotBeNull();
@@ -3006,7 +3006,7 @@ public class AgentServiceTests
         );
 
         // Act - Pass empty string as custom URL, should use settings default
-        var kernel = service.BuildKernel("ollama", "llama3", "user-123", null, "");
+        var kernel = service.BuildKernel("ollama", "llama3", "user-123", null, true, "");
 
         // Assert
         kernel.Should().NotBeNull();
@@ -3035,7 +3035,7 @@ public class AgentServiceTests
         );
 
         // Act - Pass whitespace as custom URL, should use settings default
-        var kernel = service.BuildKernel("ollama", "llama3", "user-123", null, "   ");
+        var kernel = service.BuildKernel("ollama", "llama3", "user-123", null, true, "   ");
 
         // Assert
         kernel.Should().NotBeNull();
@@ -3064,7 +3064,7 @@ public class AgentServiceTests
         );
 
         // Act - Pass URL with trailing slash
-        var kernel = service.BuildKernel("ollama", "llama3", "user-123", null, "http://remote-ollama:11434/");
+        var kernel = service.BuildKernel("ollama", "llama3", "user-123", null, true, "http://remote-ollama:11434/");
 
         // Assert
         kernel.Should().NotBeNull();
@@ -3204,8 +3204,10 @@ public class TestPlugin : SecondBrain.Application.Services.Agents.Plugins.IAgent
     public string Description => "Test plugin";
 
     private string _currentUserId = string.Empty;
+    private bool _agentRagEnabled = true;
 
     public void SetCurrentUserId(string userId) => _currentUserId = userId;
+    public void SetAgentRagEnabled(bool enabled) => _agentRagEnabled = enabled;
     public object GetPluginInstance() => this;
     public string GetPluginName() => "Test";
     public string GetSystemPromptAddition() => "";

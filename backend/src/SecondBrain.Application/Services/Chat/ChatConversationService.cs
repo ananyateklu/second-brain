@@ -54,6 +54,7 @@ public class ChatConversationService : IChatConversationService
         string userId,
         bool ragEnabled = false,
         bool agentEnabled = false,
+        bool agentRagEnabled = true,
         bool imageGenerationEnabled = false,
         string? agentCapabilities = null,
         string? vectorStoreProvider = null,
@@ -69,6 +70,7 @@ public class ChatConversationService : IChatConversationService
             Model = model,
             RagEnabled = ragEnabled,
             AgentEnabled = agentEnabled,
+            AgentRagEnabled = agentRagEnabled,
             ImageGenerationEnabled = imageGenerationEnabled,
             AgentCapabilities = agentCapabilities,
             VectorStoreProvider = vectorStoreProvider,
@@ -89,6 +91,7 @@ public class ChatConversationService : IChatConversationService
         bool? ragEnabled = null,
         string? vectorStoreProvider = null,
         bool? agentEnabled = null,
+        bool? agentRagEnabled = null,
         string? agentCapabilities = null,
         CancellationToken cancellationToken = default)
     {
@@ -124,6 +127,11 @@ public class ChatConversationService : IChatConversationService
         if (agentEnabled.HasValue)
         {
             conversation.AgentEnabled = agentEnabled.Value;
+        }
+
+        if (agentRagEnabled.HasValue)
+        {
+            conversation.AgentRagEnabled = agentRagEnabled.Value;
         }
 
         if (agentCapabilities != null)

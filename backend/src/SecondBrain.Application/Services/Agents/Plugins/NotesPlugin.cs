@@ -12,6 +12,7 @@ public class NotesPlugin : IAgentPlugin
     private readonly INoteRepository _noteRepository;
     private readonly IRagService? _ragService;
     private string _currentUserId = string.Empty;
+    private bool _agentRagEnabled = true;
 
     // Maximum length for content preview in list operations
     private const int MaxPreviewLength = 200;
@@ -72,17 +73,19 @@ public class NotesPlugin : IAgentPlugin
         _currentUserId = userId;
     }
 
+    public void SetAgentRagEnabled(bool enabled)
+    {
+        _agentRagEnabled = enabled;
+    }
+
     public object GetPluginInstance() => this;
 
     public string GetPluginName() => "Notes";
 
     public string GetSystemPromptAddition()
     {
-        return @"
-## Notes Management Tools
-
-You have access to tools for managing the user's notes. Use these tools to help users organize and retrieve their information.
-
+        var contextInstructions = _agentRagEnabled
+            ? @"
 ### Using Automatically Retrieved Context
 
 When you see ""---RELEVANT NOTES CONTEXT---"" in the system context:
@@ -93,7 +96,23 @@ When you see ""---RELEVANT NOTES CONTEXT---"" in the system context:
 - If you need MORE information or the FULL content of a specific note, THEN use the **GetNote** tool with the note ID
 - If the context is NOT relevant to the user's question, ignore it and use your tools as normal
 - **Reference specific notes by title** when citing information from the context
+"
+            : @"
+### Proactive Search Strategy
 
+Automatic context retrieval is disabled for this conversation. You should:
+- **Proactively use search tools** when the user asks questions about their notes
+- Use **SemanticSearch** for conceptual/meaning-based queries
+- Use **SearchNotes** for keyword-based searches
+- Use **SearchByTags** when looking for notes by category
+- Always search before answering questions that might relate to the user's notes
+";
+
+        return @"
+## Notes Management Tools
+
+You have access to tools for managing the user's notes. Use these tools to help users organize and retrieve their information.
+" + contextInstructions + @"
 ### IMPORTANT: Content Preview vs Full Content
 
 **List and search operations return only a PREVIEW (first ~200 characters) of note content to save context.**

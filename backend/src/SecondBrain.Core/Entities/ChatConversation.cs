@@ -29,6 +29,9 @@ public class ChatConversation
     [Column("agent_enabled")]
     public bool AgentEnabled { get; set; } = false;
 
+    [Column("agent_rag_enabled")]
+    public bool AgentRagEnabled { get; set; } = true;
+
     [Column("image_generation_enabled")]
     public bool ImageGenerationEnabled { get; set; } = false;
 

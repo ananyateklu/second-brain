@@ -27,6 +27,7 @@ public interface IChatConversationService
         string userId,
         bool ragEnabled = false,
         bool agentEnabled = false,
+        bool agentRagEnabled = true,
         bool imageGenerationEnabled = false,
         string? agentCapabilities = null,
         string? vectorStoreProvider = null,
@@ -41,6 +42,7 @@ public interface IChatConversationService
         bool? ragEnabled = null,
         string? vectorStoreProvider = null,
         bool? agentEnabled = null,
+        bool? agentRagEnabled = null,
         string? agentCapabilities = null,
         CancellationToken cancellationToken = default);
 

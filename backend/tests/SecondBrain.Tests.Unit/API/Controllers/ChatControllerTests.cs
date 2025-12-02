@@ -208,6 +208,7 @@ public class ChatControllerTests
                 It.IsAny<bool>(),
                 It.IsAny<bool>(),
                 It.IsAny<bool>(),
+                It.IsAny<bool>(),
                 It.IsAny<string?>(),
                 It.IsAny<string?>(),
                 It.IsAny<CancellationToken>()))
@@ -312,6 +313,7 @@ public class ChatControllerTests
                 true,
                 true,
                 true,
+                true,
                 "notes",
                 "pinecone",
                 It.IsAny<CancellationToken>()))
@@ -326,6 +328,7 @@ public class ChatControllerTests
             "claude",
             "claude-3-opus",
             userId,
+            true,
             true,
             true,
             true,
@@ -364,6 +367,7 @@ public class ChatControllerTests
                 "postgresql",
                 null,
                 null,
+                null,
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(updatedConversation);
 
@@ -391,6 +395,7 @@ public class ChatControllerTests
                 It.IsAny<bool?>(),
                 It.IsAny<string?>(),
                 It.IsAny<bool?>(),
+                It.IsAny<bool?>(),
                 It.IsAny<string?>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync((ChatConversation?)null);
@@ -415,6 +420,7 @@ public class ChatControllerTests
                 userId,
                 It.IsAny<bool?>(),
                 It.IsAny<string?>(),
+                It.IsAny<bool?>(),
                 It.IsAny<bool?>(),
                 It.IsAny<string?>(),
                 It.IsAny<CancellationToken>()))
@@ -950,6 +956,7 @@ public class ChatControllerTests
                 It.IsAny<bool>(),
                 It.IsAny<bool>(),
                 It.IsAny<bool>(),
+                It.IsAny<bool>(),
                 It.IsAny<string?>(),
                 It.IsAny<string?>(),
                 It.IsAny<CancellationToken>()))
@@ -1014,6 +1021,7 @@ public class ChatControllerTests
                 userId,
                 It.IsAny<bool?>(),
                 It.IsAny<string?>(),
+                It.IsAny<bool?>(),
                 It.IsAny<bool?>(),
                 It.IsAny<string?>(),
                 It.IsAny<CancellationToken>()))

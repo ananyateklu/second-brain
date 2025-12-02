@@ -110,7 +110,8 @@ public class AgentController : ControllerBase
                 UserId = userId,
                 Temperature = request.Temperature,
                 MaxTokens = request.MaxTokens,
-                Capabilities = request.Capabilities
+                Capabilities = request.Capabilities,
+                AgentRagEnabled = conversation.AgentRagEnabled
             };
 
             // Set Ollama remote URL if configured for this user

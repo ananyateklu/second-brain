@@ -8,6 +8,7 @@ public class UpdateConversationSettingsRequest
     public bool? RagEnabled { get; set; }
     public string? VectorStoreProvider { get; set; }
     public bool? AgentEnabled { get; set; }
+    public bool? AgentRagEnabled { get; set; }
     public string? AgentCapabilities { get; set; }
 }
 

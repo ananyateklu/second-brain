@@ -29,6 +29,12 @@ public interface IAgentPlugin
     void SetCurrentUserId(string userId);
 
     /// <summary>
+    /// Set whether automatic RAG context retrieval is enabled.
+    /// When disabled, the system prompt should not include instructions about automatically retrieved context.
+    /// </summary>
+    void SetAgentRagEnabled(bool enabled);
+
+    /// <summary>
     /// Get the plugin object to register with Semantic Kernel
     /// </summary>
     object GetPluginInstance();

@@ -78,6 +78,8 @@ export interface ChatConversation {
   model: string;
   ragEnabled: boolean;
   agentEnabled: boolean;
+  /** Whether automatic RAG context retrieval is enabled for agent mode (defaults to true) */
+  agentRagEnabled?: boolean;
   imageGenerationEnabled: boolean;
   agentCapabilities?: string;
   vectorStoreProvider?: string;
@@ -96,6 +98,7 @@ export interface CreateConversationRequest {
   model: string;
   ragEnabled?: boolean;
   agentEnabled?: boolean;
+  agentRagEnabled?: boolean;
   imageGenerationEnabled?: boolean;
   agentCapabilities?: string;
   vectorStoreProvider?: string;
@@ -109,6 +112,7 @@ export interface UpdateConversationSettingsRequest {
   ragEnabled?: boolean;
   vectorStoreProvider?: string;
   agentEnabled?: boolean;
+  agentRagEnabled?: boolean;
   agentCapabilities?: string;
 }
 

@@ -45,6 +45,7 @@ export function ChatPage() {
     ragEnabled,
     selectedVectorStore,
     agentModeEnabled,
+    agentRagEnabled,
     notesCapabilityEnabled,
 
     // Streaming State
@@ -85,6 +86,7 @@ export function ChatPage() {
     handleRagToggle,
     handleVectorStoreChange,
     setAgentModeEnabled,
+    setAgentRagEnabled,
     handleSendMessage,
     handleGenerateImage,
     handleImageGenerated,
@@ -134,6 +136,8 @@ export function ChatPage() {
           onVectorStoreChange={(provider) => handleVectorStoreChange(provider as VectorStoreProvider)}
           agentModeEnabled={agentModeEnabled}
           onAgentModeChange={setAgentModeEnabled}
+          agentRagEnabled={agentRagEnabled}
+          onAgentRagChange={setAgentRagEnabled}
           agentCapabilities={agentCapabilities}
           isLoading={isLoading}
           isImageGenerationMode={isImageGenerationMode}

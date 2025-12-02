@@ -56,6 +56,7 @@ export interface ChatPageState {
   ragEnabled: boolean;
   selectedVectorStore: string;
   agentModeEnabled: boolean;
+  agentRagEnabled: boolean;
   notesCapabilityEnabled: boolean;
 
   // Streaming State
@@ -105,6 +106,7 @@ export interface ChatPageActions {
   handleRagToggle: (enabled: boolean) => void;
   handleVectorStoreChange: (provider: 'PostgreSQL' | 'Pinecone') => Promise<void>;
   setAgentModeEnabled: (enabled: boolean) => void;
+  setAgentRagEnabled: (enabled: boolean) => void;
   setNotesCapabilityEnabled: (enabled: boolean) => void;
 
   // Message Actions
@@ -183,8 +185,10 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     ragEnabled,
     selectedVectorStore,
     agentModeEnabled,
+    agentRagEnabled,
     notesCapabilityEnabled,
     setAgentModeEnabled,
+    setAgentRagEnabled,
     setNotesCapabilityEnabled,
     handleRagToggle,
     handleVectorStoreChange,
@@ -372,6 +376,7 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
             title: chatService.generateTitle(messageToSend),
             ragEnabled: ragEnabled,
             agentEnabled: agentModeEnabled,
+            agentRagEnabled: agentRagEnabled,
             agentCapabilities:
               capabilities.length > 0 ? JSON.stringify(capabilities) : undefined,
             vectorStoreProvider: ragEnabled ? selectedVectorStore : undefined,
@@ -411,6 +416,7 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
       selectedModel,
       ragEnabled,
       agentModeEnabled,
+      agentRagEnabled,
       notesCapabilityEnabled,
       selectedVectorStore,
       user?.userId,
@@ -563,6 +569,7 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     ragEnabled,
     selectedVectorStore,
     agentModeEnabled,
+    agentRagEnabled,
     notesCapabilityEnabled,
 
     // Streaming State
@@ -609,6 +616,7 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     handleRagToggle,
     handleVectorStoreChange,
     setAgentModeEnabled,
+    setAgentRagEnabled,
     setNotesCapabilityEnabled,
 
     // Message Actions

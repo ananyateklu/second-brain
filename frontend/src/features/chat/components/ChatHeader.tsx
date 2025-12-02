@@ -46,6 +46,8 @@ export interface ChatHeaderProps {
   // Agent settings
   agentModeEnabled: boolean;
   onAgentModeChange: (enabled: boolean) => void;
+  agentRagEnabled: boolean;
+  onAgentRagChange: (enabled: boolean) => void;
   agentCapabilities: AgentCapability[];
   // Loading state
   isLoading: boolean;
@@ -74,6 +76,8 @@ export function ChatHeader({
   onVectorStoreChange,
   agentModeEnabled,
   onAgentModeChange,
+  agentRagEnabled,
+  onAgentRagChange,
   agentCapabilities,
   isLoading,
   isImageGenerationMode = false,
@@ -185,6 +189,8 @@ export function ChatHeader({
         <AgentControlsGroup
           agentEnabled={agentModeEnabled}
           onAgentChange={onAgentModeChange}
+          agentRagEnabled={agentRagEnabled}
+          onAgentRagChange={onAgentRagChange}
           capabilities={agentCapabilities}
           disabled={isLoading}
         />
