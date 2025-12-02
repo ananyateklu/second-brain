@@ -40,6 +40,9 @@ public class NoteEmbedding
     [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    [Column("note_updated_at")]
+    public DateTime NoteUpdatedAt { get; set; } = DateTime.UtcNow;
+
     // Metadata for better retrieval
     [Column("note_title")]
     [MaxLength(500)]

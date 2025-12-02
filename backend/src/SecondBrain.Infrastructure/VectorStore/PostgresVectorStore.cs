@@ -43,6 +43,7 @@ public class PostgresVectorStore : IVectorStore
                 existingEmbedding.EmbeddingModel = embedding.EmbeddingModel;
                 existingEmbedding.NoteTitle = embedding.NoteTitle;
                 existingEmbedding.NoteTags = embedding.NoteTags;
+                existingEmbedding.NoteUpdatedAt = embedding.NoteUpdatedAt;
             }
             else
             {
@@ -90,6 +91,7 @@ public class PostgresVectorStore : IVectorStore
                     existingEmbedding.EmbeddingModel = embedding.EmbeddingModel;
                     existingEmbedding.NoteTitle = embedding.NoteTitle;
                     existingEmbedding.NoteTags = embedding.NoteTags;
+                    existingEmbedding.NoteUpdatedAt = embedding.NoteUpdatedAt;
                 }
                 else
                 {
@@ -263,6 +265,50 @@ public class PostgresVectorStore : IVectorStore
         {
             _logger.LogError(ex, "Error getting index stats. UserId: {UserId}", userId);
             return new IndexStats { UserId = userId };
+        }
+    }
+
+    public async Task<DateTime?> GetNoteUpdatedAtAsync(
+        string noteId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            // Get the first chunk's NoteUpdatedAt (all chunks for a note have the same value)
+            var embedding = await _context.NoteEmbeddings
+                .AsNoTracking()
+                .Where(e => e.NoteId == noteId)
+                .Select(e => new { e.NoteUpdatedAt })
+                .FirstOrDefaultAsync(cancellationToken);
+
+            return embedding?.NoteUpdatedAt;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting note updated at. NoteId: {NoteId}", noteId);
+            return null;
+        }
+    }
+
+    public async Task<HashSet<string>> GetIndexedNoteIdsAsync(
+        string userId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var noteIds = await _context.NoteEmbeddings
+                .AsNoTracking()
+                .Where(e => e.UserId == userId)
+                .Select(e => e.NoteId)
+                .Distinct()
+                .ToListAsync(cancellationToken);
+
+            return noteIds.ToHashSet();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting indexed note IDs. UserId: {UserId}", userId);
+            return new HashSet<string>();
         }
     }
 }

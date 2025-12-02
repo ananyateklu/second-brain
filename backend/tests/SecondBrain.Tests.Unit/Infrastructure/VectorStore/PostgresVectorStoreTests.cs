@@ -34,6 +34,7 @@ public class TestVectorStore : IVectorStore
             existing.EmbeddingModel = embedding.EmbeddingModel;
             existing.NoteTitle = embedding.NoteTitle;
             existing.NoteTags = embedding.NoteTags;
+            existing.NoteUpdatedAt = embedding.NoteUpdatedAt;
         }
         else
         {
@@ -67,6 +68,7 @@ public class TestVectorStore : IVectorStore
                 existing.EmbeddingModel = embedding.EmbeddingModel;
                 existing.NoteTitle = embedding.NoteTitle;
                 existing.NoteTags = embedding.NoteTags;
+                existing.NoteUpdatedAt = embedding.NoteUpdatedAt;
             }
             else
             {
@@ -147,6 +149,22 @@ public class TestVectorStore : IVectorStore
             EmbeddingProvider = provider,
             VectorStoreProvider = "TestVectorStore"
         });
+    }
+
+    public Task<DateTime?> GetNoteUpdatedAtAsync(string noteId, CancellationToken cancellationToken = default)
+    {
+        var embedding = _embeddings.FirstOrDefault(e => e.NoteId == noteId);
+        return Task.FromResult(embedding?.NoteUpdatedAt);
+    }
+
+    public Task<HashSet<string>> GetIndexedNoteIdsAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        var noteIds = _embeddings
+            .Where(e => e.UserId == userId)
+            .Select(e => e.NoteId)
+            .Distinct()
+            .ToHashSet();
+        return Task.FromResult(noteIds);
     }
 
     // Helper methods for tests

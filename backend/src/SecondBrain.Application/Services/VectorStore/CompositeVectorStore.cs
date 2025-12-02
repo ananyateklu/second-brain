@@ -169,4 +169,52 @@ public class CompositeVectorStore : IVectorStore
         stats.VectorStoreProvider = CurrentProvider;
         return stats;
     }
+
+    public async Task<DateTime?> GetNoteUpdatedAtAsync(string noteId, CancellationToken cancellationToken = default)
+    {
+        // For reading, prefer the primary store based on configuration
+        if (PreferPineconeForRead)
+        {
+            try
+            {
+                return await _pineconeStore.GetNoteUpdatedAtAsync(noteId, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                // Fallback to PostgreSQL if Pinecone fails and we are in "Both" mode
+                if (CurrentProvider.Equals("Both", StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger.LogWarning(ex, "Pinecone GetNoteUpdatedAtAsync failed, falling back to PostgreSQL.");
+                    return await _postgresStore.GetNoteUpdatedAtAsync(noteId, cancellationToken);
+                }
+                throw;
+            }
+        }
+
+        return await _postgresStore.GetNoteUpdatedAtAsync(noteId, cancellationToken);
+    }
+
+    public async Task<HashSet<string>> GetIndexedNoteIdsAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        // For reading, prefer the primary store based on configuration
+        if (PreferPineconeForRead)
+        {
+            try
+            {
+                return await _pineconeStore.GetIndexedNoteIdsAsync(userId, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                // Fallback to PostgreSQL if Pinecone fails and we are in "Both" mode
+                if (CurrentProvider.Equals("Both", StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger.LogWarning(ex, "Pinecone GetIndexedNoteIdsAsync failed, falling back to PostgreSQL.");
+                    return await _postgresStore.GetIndexedNoteIdsAsync(userId, cancellationToken);
+                }
+                throw;
+            }
+        }
+
+        return await _postgresStore.GetIndexedNoteIdsAsync(userId, cancellationToken);
+    }
 }

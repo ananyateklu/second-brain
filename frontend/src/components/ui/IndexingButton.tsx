@@ -39,10 +39,24 @@ export function IndexingButton({ userId = 'default-user', onComplete }: Indexing
       // Only show toast if we haven't shown it for this job status yet
       if (toastShownRef.current !== statusKey) {
         if (isCompleted) {
-          toast.success(
-            'Indexing Complete',
-            `Successfully indexed ${jobStatus.processedNotes} notes`
-          );
+          // Build a descriptive message based on what happened
+          const parts: string[] = [];
+          
+          if (jobStatus.processedNotes > 0) {
+            parts.push(`${jobStatus.processedNotes} indexed`);
+          }
+          if (jobStatus.deletedNotes > 0) {
+            parts.push(`${jobStatus.deletedNotes} removed`);
+          }
+          if (jobStatus.skippedNotes > 0) {
+            parts.push(`${jobStatus.skippedNotes} up to date`);
+          }
+          
+          const message = parts.length > 0 
+            ? parts.join(', ')
+            : 'All notes are already up to date';
+          
+          toast.success('Indexing Complete', message);
           toastShownRef.current = statusKey;
         } else if (isFailed) {
           toast.error(
@@ -212,9 +226,16 @@ export function IndexingButton({ userId = 'default-user', onComplete }: Indexing
       {jobStatus && isIndexing && (
         <div className="space-y-1">
           <div className="flex items-center justify-between text-sm" style={{ color: 'var(--text-secondary)' }}>
-            <span>Progress: {jobStatus.processedNotes} / {jobStatus.totalNotes} notes</span>
+            {jobStatus.totalNotes === 0 ? (
+              <span>Checking for changes...</span>
+            ) : (
+              <>
+                <span>Indexing: {jobStatus.processedNotes} / {jobStatus.totalNotes} notes</span>
             <span>{jobStatus.progressPercentage}%</span>
+              </>
+            )}
           </div>
+          {jobStatus.totalNotes > 0 && (
           <div className="w-full rounded-full h-2" style={{ backgroundColor: 'var(--border)' }}>
             <div
               className="h-2 rounded-full transition-all duration-300"
@@ -224,6 +245,7 @@ export function IndexingButton({ userId = 'default-user', onComplete }: Indexing
               }}
             />
           </div>
+          )}
         </div>
       )}
     </div>

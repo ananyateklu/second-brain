@@ -19,7 +19,7 @@ namespace SecondBrain.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.0")
+                .HasAnnotation("ProductVersion", "10.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "vector");
@@ -88,7 +88,7 @@ namespace SecondBrain.Infrastructure.Migrations
                     b.HasIndex("UserId")
                         .HasDatabaseName("ix_chat_conversations_user_id");
 
-                    b.ToTable("chat_conversations");
+                    b.ToTable("chat_conversations", (string)null);
                 });
 
             modelBuilder.Entity("SecondBrain.Core.Entities.ChatMessage", b =>
@@ -125,11 +125,6 @@ namespace SecondBrain.Infrastructure.Migrations
                         .HasColumnType("character varying(128)")
                         .HasColumnName("rag_log_id");
 
-                    b.Property<string>("RagFeedback")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("rag_feedback");
-
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -148,7 +143,7 @@ namespace SecondBrain.Infrastructure.Migrations
                     b.HasIndex("Timestamp")
                         .HasDatabaseName("ix_chat_messages_timestamp");
 
-                    b.ToTable("chat_messages");
+                    b.ToTable("chat_messages", (string)null);
                 });
 
             modelBuilder.Entity("SecondBrain.Core.Entities.IndexingJob", b =>
@@ -219,7 +214,7 @@ namespace SecondBrain.Infrastructure.Migrations
                     b.HasIndex("UserId", "CreatedAt")
                         .HasDatabaseName("ix_indexing_jobs_user_created");
 
-                    b.ToTable("indexing_jobs");
+                    b.ToTable("indexing_jobs", (string)null);
                 });
 
             modelBuilder.Entity("SecondBrain.Core.Entities.MessageImage", b =>
@@ -255,7 +250,7 @@ namespace SecondBrain.Infrastructure.Migrations
                     b.HasIndex("MessageId")
                         .HasDatabaseName("ix_message_images_message_id");
 
-                    b.ToTable("message_images");
+                    b.ToTable("message_images", (string)null);
                 });
 
             modelBuilder.Entity("SecondBrain.Core.Entities.Note", b =>
@@ -325,7 +320,7 @@ namespace SecondBrain.Infrastructure.Migrations
                     b.HasIndex("UserId", "ExternalId")
                         .HasDatabaseName("ix_notes_user_external");
 
-                    b.ToTable("notes");
+                    b.ToTable("notes", (string)null);
                 });
 
             modelBuilder.Entity("SecondBrain.Core.Entities.NoteEmbedding", b =>
@@ -380,6 +375,10 @@ namespace SecondBrain.Infrastructure.Migrations
                         .HasColumnType("character varying(500)")
                         .HasColumnName("note_title");
 
+                    b.Property<DateTime>("NoteUpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("note_updated_at");
+
                     b.Property<string>("UserId")
                         .IsRequired()
                         .HasMaxLength(128)
@@ -397,7 +396,7 @@ namespace SecondBrain.Infrastructure.Migrations
                     b.HasIndex("NoteId", "ChunkIndex")
                         .HasDatabaseName("ix_note_embeddings_note_chunk");
 
-                    b.ToTable("note_embeddings");
+                    b.ToTable("note_embeddings", (string)null);
                 });
 
             modelBuilder.Entity("SecondBrain.Core.Entities.RetrievedNote", b =>
@@ -447,7 +446,7 @@ namespace SecondBrain.Infrastructure.Migrations
                     b.HasIndex("MessageId")
                         .HasDatabaseName("ix_retrieved_notes_message_id");
 
-                    b.ToTable("retrieved_notes");
+                    b.ToTable("retrieved_notes", (string)null);
                 });
 
             modelBuilder.Entity("SecondBrain.Core.Entities.ToolCall", b =>
@@ -491,7 +490,7 @@ namespace SecondBrain.Infrastructure.Migrations
                     b.HasIndex("MessageId")
                         .HasDatabaseName("ix_tool_calls_message_id");
 
-                    b.ToTable("tool_calls");
+                    b.ToTable("tool_calls", (string)null);
                 });
 
             modelBuilder.Entity("SecondBrain.Core.Entities.User", b =>
@@ -543,7 +542,7 @@ namespace SecondBrain.Infrastructure.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_users_email");
 
-                    b.ToTable("users");
+                    b.ToTable("users", (string)null);
                 });
 
             modelBuilder.Entity("SecondBrain.Core.Entities.UserPreferences", b =>
@@ -609,7 +608,7 @@ namespace SecondBrain.Infrastructure.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_user_preferences_user_id");
 
-                    b.ToTable("user_preferences");
+                    b.ToTable("user_preferences", (string)null);
                 });
 
             modelBuilder.Entity("SecondBrain.Core.Entities.ChatMessage", b =>

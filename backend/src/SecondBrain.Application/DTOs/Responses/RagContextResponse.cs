@@ -34,6 +34,8 @@ public class IndexingJobResponse
     public string Status { get; set; } = string.Empty;
     public int TotalNotes { get; set; }
     public int ProcessedNotes { get; set; }
+    public int SkippedNotes { get; set; }
+    public int DeletedNotes { get; set; }
     public int TotalChunks { get; set; }
     public int ProcessedChunks { get; set; }
     public List<string> Errors { get; set; } = new();

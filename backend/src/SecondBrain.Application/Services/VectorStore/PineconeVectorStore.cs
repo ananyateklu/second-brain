@@ -45,9 +45,9 @@ public class PineconeVectorStore : IVectorStore
     private string ExtractMetadataString(object? metadataValue)
     {
         if (metadataValue == null) return string.Empty;
-        
+
         var stringValue = metadataValue.ToString() ?? string.Empty;
-        
+
         // Check if it's JSON-escaped (starts and ends with quotes)
         if (stringValue.StartsWith("\"") && stringValue.EndsWith("\""))
         {
@@ -62,7 +62,7 @@ public class PineconeVectorStore : IVectorStore
                 return stringValue.Trim('"');
             }
         }
-        
+
         return stringValue;
     }
 
@@ -93,7 +93,8 @@ public class PineconeVectorStore : IVectorStore
                     ["chunkIndex"] = item.ChunkIndex,
                     ["embeddingProvider"] = item.EmbeddingProvider,
                     ["embeddingModel"] = item.EmbeddingModel,
-                    ["createdAt"] = item.CreatedAt.ToString("o")
+                    ["createdAt"] = item.CreatedAt.ToString("o"),
+                    ["noteUpdatedAt"] = item.NoteUpdatedAt.ToString("o")
                 };
 
                 if (item.NoteTags != null && item.NoteTags.Any())
@@ -166,11 +167,11 @@ public class PineconeVectorStore : IVectorStore
 
                     if (match.Metadata != null)
                     {
-                        if (match.Metadata.TryGetValue("noteId", out var noteId)) 
+                        if (match.Metadata.TryGetValue("noteId", out var noteId))
                             result.NoteId = ExtractMetadataString(noteId);
-                        if (match.Metadata.TryGetValue("content", out var content)) 
+                        if (match.Metadata.TryGetValue("content", out var content))
                             result.Content = ExtractMetadataString(content);
-                        if (match.Metadata.TryGetValue("noteTitle", out var title)) 
+                        if (match.Metadata.TryGetValue("noteTitle", out var title))
                             result.NoteTitle = ExtractMetadataString(title);
                         if (match.Metadata.TryGetValue("noteTags", out var tags))
                         {
@@ -371,6 +372,101 @@ public class PineconeVectorStore : IVectorStore
         {
             _logger.LogError(ex, "Error getting stats for UserId {UserId}", userId);
             return new IndexStats { UserId = userId, VectorStoreProvider = "Pinecone" };
+        }
+    }
+
+    public async Task<DateTime?> GetNoteUpdatedAtAsync(
+        string noteId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var index = await GetIndexClientAsync();
+
+            // Fetch the first chunk's vector by ID pattern (all chunks have the same noteUpdatedAt)
+            var vectorId = $"{noteId}_chunk_0";
+            var fetchRequest = new FetchRequest { Ids = new[] { vectorId } };
+            var response = await index.FetchAsync(fetchRequest);
+
+            if (response.Vectors != null && response.Vectors.TryGetValue(vectorId, out var vector))
+            {
+                if (vector.Metadata != null && vector.Metadata.TryGetValue("noteUpdatedAt", out var noteUpdatedAt))
+                {
+                    var noteUpdatedAtStr = ExtractMetadataString(noteUpdatedAt);
+                    if (!string.IsNullOrEmpty(noteUpdatedAtStr))
+                    {
+                        // Try parsing ISO 8601 format
+                        if (DateTime.TryParse(noteUpdatedAtStr, null, System.Globalization.DateTimeStyles.RoundtripKind, out var date))
+                        {
+                            return date;
+                        }
+                        // Try alternative parsing
+                        if (DateTime.TryParse(noteUpdatedAtStr, out var dateAlt))
+                        {
+                            return dateAlt;
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting note updated at from Pinecone. NoteId: {NoteId}", noteId);
+            return null;
+        }
+    }
+
+    public async Task<HashSet<string>> GetIndexedNoteIdsAsync(
+        string userId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var index = await GetIndexClientAsync();
+
+            // Get index dimension from stats
+            var indexStats = await index.DescribeIndexStatsAsync(new DescribeIndexStatsRequest());
+            var dimension = indexStats.Dimension ?? 1536;
+
+            // Create a dummy vector (all zeros) to query all vectors
+            var dummyVector = new float[dimension];
+
+            // Query with high TopK to get all vectors
+            var query = new QueryRequest
+            {
+                Vector = dummyVector,
+                TopK = 10000,
+                IncludeMetadata = true,
+                IncludeValues = false
+            };
+
+            var response = await index.QueryAsync(query);
+            var noteIds = new HashSet<string>();
+
+            if (response.Matches != null)
+            {
+                foreach (var match in response.Matches)
+                {
+                    if (match.Metadata != null && match.Metadata.TryGetValue("noteId", out var noteId))
+                    {
+                        var noteIdStr = ExtractMetadataString(noteId);
+                        if (!string.IsNullOrEmpty(noteIdStr))
+                        {
+                            noteIds.Add(noteIdStr);
+                        }
+                    }
+                }
+            }
+
+            _logger.LogInformation("Found {Count} indexed note IDs in Pinecone", noteIds.Count);
+            return noteIds;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting indexed note IDs from Pinecone. UserId: {UserId}", userId);
+            return new HashSet<string>();
         }
     }
 }

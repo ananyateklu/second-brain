@@ -26,6 +26,8 @@ export interface IndexingJobResponse {
   status: IndexingStatus | string;
   totalNotes: number;
   processedNotes: number;
+  skippedNotes: number;
+  deletedNotes: number;
   totalChunks: number;
   processedChunks: number;
   errors: string[];

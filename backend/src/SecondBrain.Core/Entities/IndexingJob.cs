@@ -45,6 +45,13 @@ public class IndexingJob
 
     [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    // Runtime-only properties (not persisted to database)
+    [NotMapped]
+    public int SkippedNotes { get; set; }
+
+    [NotMapped]
+    public int DeletedNotes { get; set; }
 }
 
 public static class IndexingStatus

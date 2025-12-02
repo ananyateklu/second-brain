@@ -179,6 +179,41 @@ You have access to tools for managing the user's notes. Use these tools to help 
 5. **Don't repeat content** - Notes display as visual cards in the UI, so keep your responses concise
 6. **Suggest organization** - Offer to add tags, move to folders, or find related notes
 
+### Large Content Strategy (IMPORTANT)
+
+When creating notes with substantial content (multiple sections, paragraphs, or lists):
+
+**Step 1: Plan and Announce**
+- Before creating, state: ""I'll create this note in X sections: [list sections briefly]""
+- This preserves context if the operation spans multiple tool calls
+
+**Step 2: Create with Initial Content**
+- Use CreateNote with the title and FIRST section only
+- Include a meaningful introduction or the first major section
+- Keep initial content moderate (1-3 paragraphs max)
+
+**Step 3: Capture the Note ID**
+- The CreateNote response includes the note ID
+- Explicitly acknowledge: ""Note created with ID: xxx""
+
+**Step 4: Append Remaining Sections**
+- Use AppendToNote for each additional section
+- Reference the note ID from Step 3
+- Add one section at a time for best reliability
+
+**Why This Pattern?**
+- Prevents token limit truncation during large content generation
+- Ensures no content is lost if generation is interrupted
+- Maintains reliable context across the operation
+
+**Example workflow for a multi-section note:**
+1. ""Creating 'Meeting Notes' in 3 sections: Attendees, Discussion, Action Items""
+2. CreateNote(title=""Meeting Notes"", content=""## Attendees\n- Alice\n- Bob..."")
+3. ""Note created with ID: abc123. Adding remaining sections.""
+4. AppendToNote(noteId=""abc123"", content=""\n\n## Discussion\n..."")
+5. AppendToNote(noteId=""abc123"", content=""\n\n## Action Items\n..."")
+6. ""Note complete with all 3 sections.""
+
 ### Content Editing Pattern
 
 When modifying note content:
@@ -192,7 +227,7 @@ For simple additions, use AppendToNote instead.";
     #endregion
 
     [KernelFunction("CreateNote")]
-    [Description("Creates a new note with title and content. IMPORTANT: Both 'title' and 'content' parameters are REQUIRED and must be provided in a single tool call. Do not omit the content parameter.")]
+    [Description("Creates a new note with title and content. IMPORTANT: Both parameters are REQUIRED. For notes with multiple sections, create with the first section only, then use AppendToNote for remaining sections. This prevents content truncation on large notes.")]
     public async Task<string> CreateNoteAsync(
         [Description("The title of the note (required)")] string title,
         [Description("The full text content of the note - REQUIRED, must not be empty or omitted")] string content,
@@ -857,7 +892,7 @@ For simple additions, use AppendToNote instead.";
             note.UpdatedAt = DateTime.UtcNow;
             await _noteRepository.UpdateAsync(noteId, note);
 
-            return $"Successfully appended content to note \"{note.Title}\" (ID: {noteId}).";
+            return $"Successfully appended content to note \"{note.Title}\" (ID: {noteId}). Note now contains {note.Content.Length} characters. Continue with additional AppendToNote calls if more sections remain.";
         }
         catch (Exception ex)
         {

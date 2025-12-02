@@ -129,14 +129,62 @@ public class IndexingService : IIndexingService
             }
 
             // Fetch notes for the specific user (multi-tenant)
-            var notes = (await noteRepository.GetByUserIdAsync(job.UserId)).ToList();
-            job.TotalNotes = notes.Count;
+            var allNotes = (await noteRepository.GetByUserIdAsync(job.UserId)).ToList();
+            var currentNoteIds = allNotes.Select(n => n.Id).ToHashSet();
+            
+            _logger.LogInformation("Found {TotalNotes} total notes. Checking for deleted notes and changes...", allNotes.Count);
+
+            // Cleanup: Remove embeddings for notes that no longer exist in the database
+            var indexedNoteIds = await vectorStore.GetIndexedNoteIdsAsync(job.UserId, CancellationToken.None);
+            var deletedNoteIds = indexedNoteIds.Except(currentNoteIds).ToList();
+            
+            if (deletedNoteIds.Any())
+            {
+                _logger.LogInformation("Found {Count} deleted notes to remove from index", deletedNoteIds.Count);
+                foreach (var deletedNoteId in deletedNoteIds)
+                {
+                    try
+                    {
+                        await vectorStore.DeleteByNoteIdAsync(deletedNoteId, CancellationToken.None);
+                        _logger.LogDebug("Removed embeddings for deleted note. NoteId: {NoteId}", deletedNoteId);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to remove embeddings for deleted note. NoteId: {NoteId}", deletedNoteId);
+                        job.Errors.Add($"Cleanup failed for deleted note {deletedNoteId}: {ex.Message}");
+                    }
+                }
+            }
+
+            // First pass: identify notes that need re-indexing (incremental indexing)
+            var notesToIndex = new List<Note>();
+            var skippedCount = 0;
+            
+            foreach (var note in allNotes)
+            {
+                var existingUpdatedAt = await vectorStore.GetNoteUpdatedAtAsync(note.Id, CancellationToken.None);
+                if (existingUpdatedAt.HasValue && existingUpdatedAt.Value >= note.UpdatedAt)
+                {
+                    _logger.LogDebug("Will skip unchanged note. NoteId: {NoteId}, UpdatedAt: {UpdatedAt}", note.Id, note.UpdatedAt);
+                    skippedCount++;
+                }
+                else
+                {
+                    notesToIndex.Add(note);
+                }
+            }
+
+            // Update job with accurate count of notes to index and stats
+            job.TotalNotes = notesToIndex.Count;
+            job.SkippedNotes = skippedCount;
+            job.DeletedNotes = deletedNoteIds.Count;
             await indexingJobRepository.UpdateAsync(jobId, job);
 
-            _logger.LogInformation("Starting indexing. JobId: {JobId}, TotalNotes: {TotalNotes}", jobId, notes.Count);
+            _logger.LogInformation("Starting indexing. JobId: {JobId}, NotesToIndex: {NotesToIndex}, Skipped: {Skipped}, Deleted: {Deleted}", 
+                jobId, notesToIndex.Count, skippedCount, deletedNoteIds.Count);
 
-            // Process each note
-            foreach (var note in notes)
+            // Second pass: index only the notes that need it
+            foreach (var note in notesToIndex)
             {
                 // Check if job was cancelled externally (e.g., via API)
                 var currentJob = await indexingJobRepository.GetByIdAsync(jobId);
@@ -160,6 +208,9 @@ public class IndexingService : IIndexingService
                 // Update progress after each note for real-time UI updates
                 await indexingJobRepository.UpdateAsync(jobId, job);
             }
+
+            _logger.LogInformation("Indexing stats. JobId: {JobId}, Indexed: {Indexed}, Skipped: {Skipped}",
+                jobId, job.ProcessedNotes, skippedCount);
 
             // Mark job as completed
             job.Status = job.Errors.Any() ? IndexingStatus.PartiallyCompleted : IndexingStatus.Completed;
@@ -241,6 +292,7 @@ public class IndexingService : IIndexingService
                 EmbeddingProvider = embeddingProvider.ProviderName,
                 EmbeddingModel = embeddingProvider.ModelName, // Store actual model name
                 CreatedAt = DateTime.UtcNow,
+                NoteUpdatedAt = note.UpdatedAt, // Track note modification for incremental indexing
                 NoteTitle = note.Title,
                 NoteTags = note.Tags
             };

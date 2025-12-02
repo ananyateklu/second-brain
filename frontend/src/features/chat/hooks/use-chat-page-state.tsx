@@ -188,15 +188,22 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     handleVectorStoreChange,
   } = settings;
 
-  // Sync provider/model when conversation loads (e.g., auto-load on mount)
+  // Track the previous conversation ID to detect when a new conversation is selected
+  const prevConversationIdRef = useRef<string | null>(null);
+
+  // Sync provider/model ONLY when a different conversation is selected (not on every render)
+  // This allows users to change provider/model after viewing a conversation
   useEffect(() => {
-    if (conversation && !isNewChat && conversationId) {
-      // Only update if different to avoid unnecessary re-renders
-      if (conversation.provider !== selectedProvider || conversation.model !== selectedModel) {
+    // Only sync when the conversation ID actually changes (new conversation selected)
+    if (conversationId !== prevConversationIdRef.current) {
+      prevConversationIdRef.current = conversationId;
+      
+      // If we have a conversation loaded (not a new chat), sync its provider/model
+      if (conversation && !isNewChat && conversationId) {
         setProviderAndModel(conversation.provider, conversation.model);
       }
     }
-  }, [conversation, conversationId, isNewChat, selectedProvider, selectedModel, setProviderAndModel]);
+  }, [conversation, conversationId, isNewChat, setProviderAndModel]);
 
   // Disable RAG and Agent mode when switching to image generation model
   useEffect(() => {

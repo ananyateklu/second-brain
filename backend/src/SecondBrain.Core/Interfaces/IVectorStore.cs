@@ -34,5 +34,27 @@ public interface IVectorStore
     Task<IndexStats> GetIndexStatsAsync(
         string userId,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets the note_updated_at timestamp for a note's embeddings.
+    /// Used for incremental indexing to skip unchanged notes.
+    /// </summary>
+    /// <param name="noteId">The note ID to check</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>The note's updated_at timestamp from the embedding, or null if not indexed</returns>
+    Task<DateTime?> GetNoteUpdatedAtAsync(
+        string noteId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets all unique note IDs that have embeddings in the vector store.
+    /// Used during indexing to identify and clean up orphaned embeddings.
+    /// </summary>
+    /// <param name="userId">The user ID to filter by</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Set of note IDs that have embeddings</returns>
+    Task<HashSet<string>> GetIndexedNoteIdsAsync(
+        string userId,
+        CancellationToken cancellationToken = default);
 }
 

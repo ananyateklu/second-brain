@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS note_embeddings (
     embedding_provider VARCHAR(50) NOT NULL,
     embedding_model VARCHAR(100) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    note_updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     note_title VARCHAR(500) NOT NULL,
     note_tags TEXT[] NOT NULL DEFAULT '{}'
 );
@@ -31,6 +32,7 @@ COMMENT ON COLUMN note_embeddings.content IS 'Text content of the chunk';
 COMMENT ON COLUMN note_embeddings.embedding IS '1536-dimension vector embedding';
 COMMENT ON COLUMN note_embeddings.embedding_provider IS 'Provider used to generate embedding (e.g., openai)';
 COMMENT ON COLUMN note_embeddings.embedding_model IS 'Model used to generate embedding (e.g., text-embedding-ada-002)';
+COMMENT ON COLUMN note_embeddings.note_updated_at IS 'Timestamp when the source note was last modified (for incremental indexing)';
 COMMENT ON COLUMN note_embeddings.note_title IS 'Denormalized note title for display';
 COMMENT ON COLUMN note_embeddings.note_tags IS 'Denormalized note tags for filtering';
 
