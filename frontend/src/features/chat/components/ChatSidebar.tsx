@@ -95,7 +95,7 @@ export function ChatSidebar({
     >
       {/* Sidebar Header - Fixed */}
       <div
-        className="flex-shrink-0 px-4 py-[1.43rem] border-b flex items-center justify-between"
+        className="flex-shrink-0 px-4 py-4.5 border-b flex items-center justify-between"
         style={{ borderColor: 'var(--border)' }}
       >
         <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>

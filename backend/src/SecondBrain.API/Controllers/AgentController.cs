@@ -161,6 +161,9 @@ public class AgentController : ControllerBase
             var startTime = DateTime.UtcNow;
             var fullResponse = new StringBuilder();
             var toolCalls = new List<ToolCall>();
+            // Track pending tool calls to capture arguments from ToolCallStart
+            // since ToolCallEnd events don't include arguments
+            var pendingToolArguments = new Dictionary<string, string>();
 
             await foreach (var evt in _agentService.ProcessStreamAsync(agentRequest, cancellationToken))
             {
@@ -174,6 +177,13 @@ public class AgentController : ControllerBase
                         break;
 
                     case AgentEventType.ToolCallStart:
+                        // Store arguments for this tool call to use when ToolCallEnd arrives
+                        var toolName = evt.ToolName ?? "";
+                        if (!string.IsNullOrEmpty(toolName))
+                        {
+                            pendingToolArguments[toolName] = evt.ToolArguments ?? "";
+                        }
+
                         var toolStartJson = JsonSerializer.Serialize(new
                         {
                             tool = evt.ToolName,
@@ -185,6 +195,10 @@ public class AgentController : ControllerBase
                         break;
 
                     case AgentEventType.ToolCallEnd:
+                        var endToolName = evt.ToolName ?? "";
+                        // Retrieve the arguments that were captured during ToolCallStart
+                        var toolArguments = pendingToolArguments.TryGetValue(endToolName, out var args) ? args : "";
+
                         var toolEndJson = JsonSerializer.Serialize(new
                         {
                             tool = evt.ToolName,
@@ -196,12 +210,15 @@ public class AgentController : ControllerBase
 
                         toolCalls.Add(new ToolCall
                         {
-                            ToolName = evt.ToolName ?? "",
-                            Arguments = evt.ToolArguments ?? "",
+                            ToolName = endToolName,
+                            Arguments = toolArguments,
                             Result = evt.ToolResult ?? "",
                             ExecutedAt = DateTime.UtcNow,
                             Success = true
                         });
+
+                        // Remove from pending after processing
+                        pendingToolArguments.Remove(endToolName);
                         break;
 
                     case AgentEventType.Thinking:

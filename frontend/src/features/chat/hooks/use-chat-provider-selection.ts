@@ -100,7 +100,9 @@ export function useChatProviderSelection(): ProviderSelectionState & ProviderSel
     }
   }, [availableProviders, selectedProvider, setChatProvider, setChatModel]);
 
-  // Update model when provider changes
+  // Auto-correct model if it's invalid for the current provider
+  // This handles: 1) provider change via dropdown, 2) invalid saved preferences
+  // When loading a conversation via setProviderAndModel, the model will be valid, so no correction occurs
   useEffect(() => {
     if (availableModels.length > 0 && !availableModels.includes(selectedModel)) {
       // Use preferred default model for the provider, fallback to first available
@@ -138,7 +140,11 @@ export function useChatProviderSelection(): ProviderSelectionState & ProviderSel
   const setProviderAndModel = useCallback((provider: string, model: string) => {
     setSelectedProvider(provider);
     setSelectedModel(model);
-  }, []);
+    // Also update settings store so useEffect hooks don't override
+    // Don't sync to backend - this is just for displaying the conversation's model
+    setChatProvider(provider);
+    setChatModel(model);
+  }, [setChatProvider, setChatModel]);
 
   return {
     // State

@@ -188,6 +188,16 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     handleVectorStoreChange,
   } = settings;
 
+  // Sync provider/model when conversation loads (e.g., auto-load on mount)
+  useEffect(() => {
+    if (conversation && !isNewChat && conversationId) {
+      // Only update if different to avoid unnecessary re-renders
+      if (conversation.provider !== selectedProvider || conversation.model !== selectedModel) {
+        setProviderAndModel(conversation.provider, conversation.model);
+      }
+    }
+  }, [conversation, conversationId, isNewChat, selectedProvider, selectedModel, setProviderAndModel]);
+
   // Disable RAG and Agent mode when switching to image generation model
   useEffect(() => {
     if (isImageGenerationMode) {

@@ -74,3 +74,4 @@ frontend/nginx.conf
 Thumbs.db
 backend/src/SecondBrain.API/secondbrain-db.json
 backend/coverage-report
+.markdownlint.json

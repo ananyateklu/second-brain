@@ -6,7 +6,7 @@
 
 </div>
 
-Intelligent knowledge management with AI-powered chat, smart notes, AI agents, and RAG (Retrieval-Augmented Generation) capabilities.
+Intelligent knowledge management with AI-powered chat, smart notes, AI agents, advanced RAG (Retrieval-Augmented Generation) with hybrid search, and multi-provider image generation.
 
 ## Screenshots
 
@@ -19,13 +19,13 @@ Intelligent knowledge management with AI-powered chat, smart notes, AI agents, a
 <br><strong>Dashboard</strong>
 </td>
 <td align="center">
-<img src="frontend/src/assets/chat-screenshot.png" alt="AI Chat" width="400"/>
-<br><strong>AI Chat</strong>
+<img src="frontend/src/assets/chat-screenshot.png" alt="Chat" width="400"/>
+<br><strong>Chat</strong>
 </td>
 </tr>
 <tr>
 <td align="center">
-<img src="frontend/src/assets/aisettings-screenshot.png" alt="AI Settings" width="400"/>
+<img src="frontend/src/assets/aisettings-screenshot.png" alt="Settings" width="400"/>
 <br><strong>AI Integration Settings</strong>
 </td>
 <td align="center">
@@ -39,25 +39,47 @@ Intelligent knowledge management with AI-powered chat, smart notes, AI agents, a
 
 ## Features
 
+### Core Features
+
 - **Email/Password Authentication**: Secure registration and login with JWT tokens
 - **Smart Notes**: Create, organize, and search your notes with a rich text editor
 - **AI Chat**: Multi-provider AI chat (OpenAI, Claude, Gemini, Ollama, Grok) with streaming responses
 - **AI Agents**: Agent mode with tool execution for automated note management
-- **RAG Search**: Semantic search with vector embeddings (PostgreSQL pgvector + Pinecone)
 - **AI Provider Health**: Real-time monitoring of AI provider status
 - **iOS Import**: Import notes from iPhone/iPad via Shortcuts
 - **Analytics Dashboard**: Track your notes, AI usage, and token consumption
+
+### Advanced RAG Features
+
+- **Hybrid Search**: Combines vector similarity search with BM25 lexical search using Reciprocal Rank Fusion (RRF)
+- **HyDE (Hypothetical Document Embeddings)**: Generates hypothetical documents to improve retrieval accuracy
+- **Multi-Query Generation**: Creates query variations to capture different phrasings
+- **LLM Reranking**: Uses AI to score and reorder retrieved results for better relevance
+- **RAG Analytics Dashboard**: Track query performance, user feedback, and identify areas for improvement
+- **Topic Clustering**: Automatically clusters queries to identify patterns and problem areas
+
+### Image Generation
+
+- **Multi-Provider Support**: Generate images with OpenAI DALL-E, Google Gemini, or X.AI Grok (Aurora)
+- **Configurable Settings**: Choose size, quality, and style options per model
+- **Chat Integration**: Generate images directly within conversations
+
+### Multimodal Chat
+
+- **Image Attachments**: Attach images to chat messages for vision-capable models
+- **Image Generation Panel**: Dedicated UI for configuring and generating images
 
 ## Tech Stack
 
 ### Backend
 
 - **Framework**: ASP.NET Core 10.0
-- **Database**: PostgreSQL with pgvector extension
+- **Database**: PostgreSQL with pgvector extension + full-text search
 - **Authentication**: JWT tokens with BCrypt password hashing
 - **Vector Stores**: PostgreSQL (pgvector), Pinecone
 - **AI Providers**: OpenAI, Claude (Anthropic), Google Gemini, Ollama, X.AI (Grok)
 - **Embedding Providers**: OpenAI, Gemini, Ollama
+- **Image Generation**: OpenAI DALL-E, Google Gemini, X.AI Grok
 
 ### Frontend
 
@@ -269,6 +291,7 @@ Second Brain uses a database-backed authentication system with JWT tokens:
 | `/api/notes` | POST | Create note |
 | `/api/notes/{id}` | PUT | Update note |
 | `/api/notes/{id}` | DELETE | Delete note |
+| `/api/notes/bulk-delete` | POST | Bulk delete notes |
 
 ### Chat
 
@@ -281,6 +304,9 @@ Second Brain uses a database-backed authentication system with JWT tokens:
 | `/api/chat/conversations/{id}/messages/stream` | POST | Stream message (SSE) |
 | `/api/chat/conversations/{id}/settings` | PATCH | Update conversation settings |
 | `/api/chat/conversations/{id}` | DELETE | Delete conversation |
+| `/api/chat/conversations/{id}/generate-image` | POST | Generate image in conversation |
+| `/api/chat/image-generation/providers` | GET | Get available image providers |
+| `/api/chat/image-generation/providers/{provider}/sizes` | GET | Get supported sizes for provider |
 
 ### AI Agents
 
@@ -310,6 +336,17 @@ Second Brain uses a database-backed authentication system with JWT tokens:
 | `/api/indexing/stats` | GET | Get index statistics (PostgreSQL + Pinecone) |
 | `/api/indexing/reindex/{noteId}` | POST | Reindex a specific note |
 | `/api/indexing/notes` | DELETE | Delete all indexed notes for user |
+
+### RAG Analytics
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/rag/analytics/feedback` | POST | Submit feedback for a RAG response |
+| `/api/rag/analytics/stats` | GET | Get RAG performance statistics |
+| `/api/rag/analytics/logs` | GET | Get paginated RAG query logs |
+| `/api/rag/analytics/logs/{id}` | GET | Get specific RAG query log |
+| `/api/rag/analytics/cluster` | POST | Run topic clustering on queries |
+| `/api/rag/analytics/topics` | GET | Get topic statistics |
 
 ### Import
 
@@ -423,12 +460,32 @@ Configure in `appsettings.json` or via environment variables:
 {
   "RAG": {
     "ChunkSize": 500,
-    "ChunkOverlap": 50,
+    "ChunkOverlap": 100,
     "TopK": 5,
     "SimilarityThreshold": 0.3,
     "MaxContextLength": 4000,
     "EnableChunking": true,
-    "VectorStoreProvider": "PostgreSQL"
+    "VectorStoreProvider": "PostgreSQL",
+    
+    "EnableHybridSearch": true,
+    "VectorWeight": 0.7,
+    "BM25Weight": 0.3,
+    "RRFConstant": 60,
+    
+    "EnableQueryExpansion": true,
+    "EnableHyDE": true,
+    "MultiQueryCount": 3,
+    
+    "EnableReranking": true,
+    "InitialRetrievalCount": 20,
+    "RerankingProvider": "OpenAI",
+    
+    "EnableSemanticChunking": true,
+    "MinChunkSize": 100,
+    "MaxChunkSize": 800,
+    
+    "EnableAnalytics": true,
+    "LogDetailedMetrics": false
   }
 }
 ```
@@ -456,7 +513,7 @@ pnpm dev
 cd backend
 dotnet test
 
-# Frontend tests (when available)
+# Frontend tests
 cd frontend
 pnpm test
 ```
@@ -578,11 +635,24 @@ Before running, verify:
 - Check index stats: `GET /api/indexing/stats`
 - Verify vector dimensions match (1536 for OpenAI, 768 for Gemini/Ollama)
 
+### RAG Not Returning Results
+
+- Check if hybrid search is enabled in settings
+- Verify BM25 search vectors are populated (run reindexing)
+- Check RAG analytics for query performance: `/analytics` page
+- Review similarity threshold settings
+
 ### Agent Mode Issues
 
 - Check supported providers: `GET /api/agent/supported-providers`
 - Ensure the AI provider supports function calling
 - Check conversation is marked with `agentEnabled: true`
+
+### Image Generation Issues
+
+- Verify the provider API key is configured (OpenAI, Gemini, or Grok)
+- Check supported models: DALL-E 3/2, Gemini image models, Grok-2-image
+- Ensure `imageGenerationEnabled: true` on the conversation
 
 ### SSL Certificate Issues (macOS)
 

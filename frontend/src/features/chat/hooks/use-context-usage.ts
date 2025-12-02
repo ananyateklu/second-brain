@@ -133,10 +133,18 @@ export function useContextUsage(options: UseContextUsageOptions): ContextUsageSt
     // Calculate tool results tokens (from conversation history + streaming)
     let toolResultTokens = 0;
 
-    // From persisted messages
+    // Build a set of persisted tool call signatures to detect duplicates
+    // We use tool name + result length as a simple signature to detect same tool call
+    const persistedToolSignatures = new Set<string>();
+
+    // Count persisted tool calls from messages
     for (const message of messages) {
       if (message.toolCalls && message.toolCalls.length > 0) {
         for (const toolCall of message.toolCalls) {
+          // Create a signature for this tool call to detect duplicates with streaming
+          const signature = `${toolCall.toolName}_${toolCall.result?.length ?? 0}`;
+          persistedToolSignatures.add(signature);
+
           toolResultTokens += estimateTokenCount(toolCall.result);
           toolResultTokens += estimateTokenCount(toolCall.arguments);
           // Overhead for tool call formatting
@@ -145,12 +153,19 @@ export function useContextUsage(options: UseContextUsageOptions): ContextUsageSt
       }
     }
 
-    // From streaming tool executions
+    // From streaming tool executions - ONLY count if not already in persisted messages
+    // This prevents double-counting when the message is persisted but streaming state hasn't cleared
     for (const execution of streamingToolExecutions) {
       if (execution.status === 'completed' && execution.result) {
-        toolResultTokens += estimateTokenCount(execution.result);
-        toolResultTokens += estimateTokenCount(execution.arguments || '');
-        toolResultTokens += 20;
+        // Check if this streaming execution is already in persisted data
+        const signature = `${execution.tool}_${execution.result?.length ?? 0}`;
+        if (!persistedToolSignatures.has(signature)) {
+          // Not yet persisted, count it
+          toolResultTokens += estimateTokenCount(execution.result);
+          toolResultTokens += estimateTokenCount(execution.arguments || '');
+          toolResultTokens += 20;
+        }
+        // If already persisted, skip to avoid double counting
       }
     }
 
