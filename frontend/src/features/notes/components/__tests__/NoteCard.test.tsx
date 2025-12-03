@@ -161,7 +161,7 @@ describe('NoteCard', () => {
 
       // Assert
       const card = screen.getByText('Test Note Title').closest('div[class*="cursor-pointer"]');
-      expect(card).toHaveClass('p-3');
+      expect(card).toHaveClass('p-2');
     });
   });
 
