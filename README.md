@@ -26,7 +26,7 @@ Intelligent knowledge management with AI-powered chat, smart notes, AI agents, a
 <tr>
 <td align="center">
 <img src="frontend/src/assets/aisettings-screenshot.png" alt="Settings" width="400"/>
-<br><strong>AI Integration Settings</strong>
+<br><strong>Integration Settings</strong>
 </td>
 <td align="center">
 <img src="frontend/src/assets/indexing-screenshot.png" alt="Indexing" width="400"/>
@@ -57,17 +57,6 @@ Intelligent knowledge management with AI-powered chat, smart notes, AI agents, a
 - **LLM Reranking**: Uses AI to score and reorder retrieved results for better relevance
 - **RAG Analytics Dashboard**: Track query performance, user feedback, and identify areas for improvement
 - **Topic Clustering**: Automatically clusters queries to identify patterns and problem areas
-
-### Image Generation
-
-- **Multi-Provider Support**: Generate images with OpenAI DALL-E, Google Gemini, or X.AI Grok (Aurora)
-- **Configurable Settings**: Choose size, quality, and style options per model
-- **Chat Integration**: Generate images directly within conversations
-
-### Multimodal Chat
-
-- **Image Attachments**: Attach images to chat messages for vision-capable models
-- **Image Generation Panel**: Dedicated UI for configuring and generating images
 
 ## Tech Stack
 
