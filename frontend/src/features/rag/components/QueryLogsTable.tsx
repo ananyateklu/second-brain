@@ -14,6 +14,8 @@ interface QueryLogsTableProps {
   totalPages: number;
   onPageChange: (page: number) => void;
   isLoading?: boolean;
+  feedbackOnly: boolean;
+  setFeedbackOnly: (value: boolean) => void;
 }
 
 const FeedbackBadge = memo(function FeedbackBadge({ feedback }: { feedback: RagFeedbackType | null }) {
@@ -91,6 +93,8 @@ export const QueryLogsTable = memo(function QueryLogsTable({
   totalPages,
   onPageChange,
   isLoading,
+  feedbackOnly,
+  setFeedbackOnly,
 }: QueryLogsTableProps) {
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
@@ -113,7 +117,7 @@ export const QueryLogsTable = memo(function QueryLogsTable({
 
       {/* Header */}
       <div
-        className="px-5 py-4 border-b flex items-center justify-between relative z-10"
+        className="px-5 py-2.5 border-b flex items-center justify-between relative z-10"
         style={{ borderColor: 'var(--border)' }}
       >
         <div className="flex items-center gap-3">
@@ -153,6 +157,44 @@ export const QueryLogsTable = memo(function QueryLogsTable({
             </span>
           </div>
         </div>
+
+        {/* Feedback Filter Checkbox */}
+        <label className="flex items-center gap-2.5 cursor-pointer group">
+          <div
+            className="relative w-5 h-5 rounded-md transition-all duration-200"
+            style={{
+              backgroundColor: feedbackOnly ? 'var(--color-brand-500)' : 'var(--surface-elevated)',
+              border: feedbackOnly ? 'none' : '1px solid var(--border)',
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={feedbackOnly}
+              onChange={(e) => {
+                setFeedbackOnly(e.target.checked);
+                onPageChange(1);
+              }}
+              className="absolute inset-0 opacity-0 cursor-pointer"
+            />
+            {feedbackOnly && (
+              <svg
+                className="absolute inset-0 w-5 h-5 p-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="white"
+                strokeWidth={3}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+          </div>
+          <span
+            className="text-sm transition-colors duration-200 font-medium"
+            style={{ color: feedbackOnly ? 'var(--text-primary)' : 'var(--text-secondary)' }}
+          >
+            Show only queries with feedback
+          </span>
+        </label>
       </div>
 
       {/* Table */}
@@ -161,7 +203,7 @@ export const QueryLogsTable = memo(function QueryLogsTable({
           <thead>
             <tr>
               <th
-                className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider"
+                className="px-4 py-1.5 text-left text-xs font-semibold uppercase tracking-wider"
                 style={{
                   color: 'var(--text-secondary)',
                   backgroundColor: 'var(--surface-elevated)',
@@ -170,7 +212,7 @@ export const QueryLogsTable = memo(function QueryLogsTable({
                 Query
               </th>
               <th
-                className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider"
+                className="px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wider"
                 style={{
                   color: 'var(--text-secondary)',
                   backgroundColor: 'var(--surface-elevated)',
@@ -179,7 +221,7 @@ export const QueryLogsTable = memo(function QueryLogsTable({
                 Time
               </th>
               <th
-                className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider"
+                className="px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wider"
                 style={{
                   color: 'var(--text-secondary)',
                   backgroundColor: 'var(--surface-elevated)',
@@ -188,7 +230,7 @@ export const QueryLogsTable = memo(function QueryLogsTable({
                 Results
               </th>
               <th
-                className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider"
+                className="px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wider"
                 style={{
                   color: 'var(--text-secondary)',
                   backgroundColor: 'var(--surface-elevated)',
@@ -197,7 +239,7 @@ export const QueryLogsTable = memo(function QueryLogsTable({
                 Top Score
               </th>
               <th
-                className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider"
+                className="px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wider"
                 style={{
                   color: 'var(--text-secondary)',
                   backgroundColor: 'var(--surface-elevated)',
@@ -206,7 +248,7 @@ export const QueryLogsTable = memo(function QueryLogsTable({
                 Feedback
               </th>
               <th
-                className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider"
+                className="px-4 py-1.5 text-left text-xs font-semibold uppercase tracking-wider"
                 style={{
                   color: 'var(--text-secondary)',
                   backgroundColor: 'var(--surface-elevated)',
@@ -299,7 +341,7 @@ export const QueryLogsTable = memo(function QueryLogsTable({
                       }
                     }}
                   >
-                    <td className="px-5 py-3.5">
+                    <td className="px-4 py-2">
                       <div>
                         <p
                           className="text-sm font-medium"
@@ -310,7 +352,7 @@ export const QueryLogsTable = memo(function QueryLogsTable({
                         </p>
                         {log.topicLabel && (
                           <span
-                            className="text-xs px-2 py-0.5 rounded-full mt-1.5 inline-block font-medium"
+                            className="text-xs px-2 py-0.5 rounded-full mt-1 inline-block font-medium"
                             style={{
                               backgroundColor: 'color-mix(in srgb, var(--color-brand-400) 15%, transparent)',
                               color: 'var(--color-brand-400)',
@@ -322,28 +364,28 @@ export const QueryLogsTable = memo(function QueryLogsTable({
                       </div>
                     </td>
                     <td
-                      className="px-4 py-3.5 text-sm font-mono tabular-nums"
+                      className="px-3 py-2 text-sm font-mono tabular-nums"
                       style={{ color: 'var(--text-secondary)' }}
                     >
                       {formatTime(log.totalTimeMs)}
                     </td>
                     <td
-                      className="px-4 py-3.5 text-sm tabular-nums"
+                      className="px-3 py-2 text-sm tabular-nums"
                       style={{ color: 'var(--text-secondary)' }}
                     >
                       {log.finalCount ?? '-'}
                     </td>
                     <td
-                      className="px-4 py-3.5 text-sm font-mono tabular-nums"
+                      className="px-3 py-2 text-sm font-mono tabular-nums"
                       style={{ color: 'var(--text-secondary)' }}
                     >
                       {log.topCosineScore?.toFixed(3) ?? '-'}
                     </td>
-                    <td className="px-4 py-3.5">
+                    <td className="px-3 py-2">
                       <FeedbackBadge feedback={log.userFeedback} />
                     </td>
                     <td
-                      className="px-5 py-3.5 text-sm"
+                      className="px-4 py-2 text-sm"
                       style={{ color: 'var(--text-tertiary)' }}
                     >
                       {formatDate(log.createdAt)}
@@ -355,7 +397,7 @@ export const QueryLogsTable = memo(function QueryLogsTable({
                     <tr>
                       <td
                         colSpan={6}
-                        className="px-5 py-4"
+                        className="px-5 py-3"
                         style={{
                           backgroundColor: 'var(--surface-elevated)',
                           borderTop: '1px solid var(--border)',
@@ -480,7 +522,7 @@ export const QueryLogsTable = memo(function QueryLogsTable({
       {/* Pagination */}
       {totalPages > 1 && (
         <div
-          className="px-5 py-4 border-t flex items-center justify-between relative z-10"
+          className="px-5 py-2.5 border-t flex items-center justify-between relative z-10"
           style={{ borderColor: 'var(--border)' }}
         >
           <p

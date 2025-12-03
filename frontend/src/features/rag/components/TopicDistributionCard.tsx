@@ -45,7 +45,7 @@ export const TopicDistributionCard = memo(function TopicDistributionCard({ topic
 
   return (
     <div
-      className="rounded-2xl transition-all duration-200 hover:scale-[1.01] backdrop-blur-md relative overflow-hidden group"
+      className="rounded-2xl transition-all duration-200 hover:scale-[1.005] backdrop-blur-md relative overflow-hidden group"
       style={{
         backgroundColor: 'var(--surface-card)',
         border: '1px solid var(--border)',
@@ -62,18 +62,18 @@ export const TopicDistributionCard = memo(function TopicDistributionCard({ topic
 
       {/* Header */}
       <div
-        className="px-4 py-3 border-b flex items-center justify-between relative z-10"
+        className="px-3 py-2 border-b flex items-center justify-between relative z-10"
         style={{ borderColor: 'var(--border)' }}
       >
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           <div
-            className="p-2.5 rounded-xl"
+            className="p-2 rounded-lg"
             style={{
               backgroundColor: 'color-mix(in srgb, var(--color-accent-blue) 15%, transparent)',
             }}
           >
             <svg
-              className="w-5 h-5"
+              className="w-4 h-4"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -88,7 +88,7 @@ export const TopicDistributionCard = memo(function TopicDistributionCard({ topic
             </svg>
           </div>
           <h3
-            className="text-lg font-semibold"
+            className="text-base font-semibold"
             style={{ color: 'var(--text-primary)' }}
           >
             Topic Distribution
@@ -96,11 +96,11 @@ export const TopicDistributionCard = memo(function TopicDistributionCard({ topic
         </div>
 
         {/* Cluster action */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <select
             value={clusterCount}
             onChange={(e) => setClusterCount(Number(e.target.value))}
-            className="px-3 py-1.5 text-sm rounded-lg transition-colors cursor-pointer"
+            className="px-2 py-1 text-xs rounded-lg transition-colors cursor-pointer"
             style={{
               backgroundColor: 'var(--surface-elevated)',
               color: 'var(--text-secondary)',
@@ -114,7 +114,7 @@ export const TopicDistributionCard = memo(function TopicDistributionCard({ topic
           <button
             onClick={() => clusterMutation.mutate(clusterCount)}
             disabled={clusterMutation.isPending}
-            className="px-4 py-1.5 text-sm font-medium rounded-lg transition-all duration-200 disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
+            className="px-3 py-1 text-xs font-medium rounded-lg transition-all duration-200 disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
             style={{
               backgroundColor: 'var(--btn-primary-bg)',
               color: 'var(--btn-primary-text)',
@@ -122,9 +122,9 @@ export const TopicDistributionCard = memo(function TopicDistributionCard({ topic
             }}
           >
             {clusterMutation.isPending ? (
-              <span className="flex items-center gap-2">
+              <span className="flex items-center gap-1.5">
                 <div
-                  className="w-3.5 h-3.5 border-2 rounded-full animate-spin"
+                  className="w-3 h-3 border-2 rounded-full animate-spin"
                   style={{ borderColor: 'rgba(255,255,255,0.3)', borderTopColor: 'white' }}
                 />
                 Clustering...
@@ -135,11 +135,11 @@ export const TopicDistributionCard = memo(function TopicDistributionCard({ topic
       </div>
 
       {/* Content */}
-      <div className="p-4 relative z-10">
+      <div className="p-3 relative z-10">
         {isLoading ? (
-          <div className="flex items-center justify-center py-8">
+          <div className="flex items-center justify-center py-6">
             <div
-              className="w-8 h-8 border-2 rounded-full animate-spin"
+              className="w-6 h-6 border-2 rounded-full animate-spin"
               style={{
                 borderColor: 'var(--border)',
                 borderTopColor: 'var(--color-brand-400)',
@@ -148,15 +148,15 @@ export const TopicDistributionCard = memo(function TopicDistributionCard({ topic
           </div>
         ) : !hasTopics ? (
           <div
-            className="text-center py-8"
+            className="text-center py-6"
             style={{ color: 'var(--text-tertiary)' }}
           >
             <div
-              className="w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center"
+              className="w-12 h-12 mx-auto mb-3 rounded-xl flex items-center justify-center"
               style={{ backgroundColor: 'var(--surface-elevated)' }}
             >
               <svg
-                className="w-8 h-8 opacity-50"
+                className="w-6 h-6 opacity-50"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -169,15 +169,15 @@ export const TopicDistributionCard = memo(function TopicDistributionCard({ topic
                 />
               </svg>
             </div>
-            <p className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
+            <p className="font-medium mb-1 text-sm" style={{ color: 'var(--text-primary)' }}>
               No topics yet
             </p>
-            <p className="text-sm">Run clustering to group your queries into topics</p>
+            <p className="text-xs">Run clustering to group your queries into topics</p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {/* Topic bars */}
-            <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-2">
               {topicData.topics.map((topic, index) => {
                 const percentage = (topic.queryCount / totalQueries) * 100;
                 const colors = TOPIC_COLORS[index % TOPIC_COLORS.length];
@@ -188,16 +188,16 @@ export const TopicDistributionCard = memo(function TopicDistributionCard({ topic
                 return (
                   <div
                     key={topic.clusterId}
-                    className="space-y-1.5 p-2.5 rounded-xl transition-colors duration-200 hover:bg-opacity-50"
+                    className="space-y-1 p-2 rounded-lg transition-colors duration-200 hover:bg-opacity-50"
                     style={{ backgroundColor: 'color-mix(in srgb, var(--surface-elevated) 50%, transparent)' }}
                   >
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
                         <div
-                          className="w-3 h-3 rounded-full"
+                          className="w-2.5 h-2.5 rounded-full"
                           style={{
                             backgroundColor: colors.main,
-                            boxShadow: `0 0 0 2px var(--surface-card), 0 0 0 4px ${colors.main}`,
+                            boxShadow: `0 0 0 1px var(--surface-card), 0 0 0 2px ${colors.main}`,
                           }}
                         />
                         <span
@@ -264,38 +264,38 @@ export const TopicDistributionCard = memo(function TopicDistributionCard({ topic
 
             {/* Summary stats */}
             <div
-              className="pt-3 border-t grid grid-cols-2 gap-3"
+              className="pt-2 border-t grid grid-cols-2 gap-2"
               style={{ borderColor: 'var(--border)' }}
             >
               <div
-                className="p-2.5 rounded-xl"
+                className="p-2 rounded-lg"
                 style={{ backgroundColor: 'var(--surface-elevated)' }}
               >
                 <p
-                  className="text-xs uppercase tracking-wide"
+                  className="text-[10px] uppercase tracking-wide"
                   style={{ color: 'var(--text-tertiary)' }}
                 >
                   Clustered
                 </p>
                 <p
-                  className="text-xl font-bold mt-1 tabular-nums"
+                  className="text-base font-bold tabular-nums"
                   style={{ color: 'var(--text-primary)' }}
                 >
                   {topicData.totalClustered}
                 </p>
               </div>
               <div
-                className="p-2.5 rounded-xl"
+                className="p-2 rounded-lg"
                 style={{ backgroundColor: 'var(--surface-elevated)' }}
               >
                 <p
-                  className="text-xs uppercase tracking-wide"
+                  className="text-[10px] uppercase tracking-wide"
                   style={{ color: 'var(--text-tertiary)' }}
                 >
                   Unclustered
                 </p>
                 <p
-                  className="text-xl font-bold mt-1 tabular-nums"
+                  className="text-base font-bold tabular-nums"
                   style={{ color: 'var(--text-primary)' }}
                 >
                   {topicData.totalUnclustered}
@@ -306,15 +306,15 @@ export const TopicDistributionCard = memo(function TopicDistributionCard({ topic
             {/* Insights */}
             {topicData.topics.length > 0 && (
               <div
-                className="p-3 rounded-xl"
+                className="p-2 rounded-lg"
                 style={{
                   backgroundColor: 'var(--surface-elevated)',
                   border: '1px solid var(--border)',
                 }}
               >
-                <div className="flex items-center gap-2 mb-1.5">
+                <div className="flex items-center gap-1.5 mb-1">
                   <svg
-                    className="w-4 h-4"
+                    className="w-3.5 h-3.5"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -328,7 +328,7 @@ export const TopicDistributionCard = memo(function TopicDistributionCard({ topic
                     />
                   </svg>
                   <p
-                    className="font-semibold text-sm"
+                    className="font-semibold text-xs"
                     style={{ color: 'var(--text-primary)' }}
                   >
                     Insights
@@ -344,7 +344,7 @@ export const TopicDistributionCard = memo(function TopicDistributionCard({ topic
 
                   return (
                     <ul
-                      className="space-y-1 text-xs"
+                      className="space-y-0.5 text-[11px]"
                       style={{ color: 'var(--text-secondary)' }}
                     >
                       <li className="flex items-start gap-2">
