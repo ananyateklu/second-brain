@@ -10,7 +10,7 @@ import { toast } from '../../hooks/use-toast';
 import anthropicLight from '../../assets/anthropic-light.svg';
 import anthropicDark from '../../assets/anthropic-dark.svg';
 import googleLogo from '../../assets/google.svg';
-import ollamaLogo from '../../assets/ollama.png';
+import ollamaLogo from '../../assets/ollama.svg';
 import openaiLight from '../../assets/openai-light.svg';
 import openaiDark from '../../assets/openai-dark.svg';
 import xaiLight from '../../assets/xai-light.svg';

@@ -243,7 +243,7 @@ export function MessageBubble({
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
       <div
-        className={`${isUser ? 'max-w-[80%]' : 'w-full'} rounded-2xl px-5 ${isImageRequest ? 'py-4' : 'py-3'} ${
+        className={`${isUser ? 'max-w-[85%]' : 'w-full'} rounded-2xl px-4 ${isImageRequest ? 'py-3' : 'py-2.5'} ${
           isUser ? 'rounded-br-md' : 'rounded-bl-md'
         }`}
         style={{
@@ -258,7 +258,7 @@ export function MessageBubble({
           <>
             {/* Image generation request badge */}
             {isImageRequest && (
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center gap-2 mb-2">
                 <div
                   className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
                   style={{
@@ -279,7 +279,7 @@ export function MessageBubble({
               </div>
             )}
             {message.images && message.images.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-2">
+              <div className="flex flex-wrap gap-1.5 mb-2">
                 {message.images.map((image, index) => (
                   <div
                     key={index}
@@ -295,7 +295,7 @@ export function MessageBubble({
                 ))}
               </div>
             )}
-            <p className={`whitespace-pre-wrap break-words ${isImageRequest ? 'text-[15px] leading-relaxed' : ''}`}>{displayContent}</p>
+            <p className={`whitespace-pre-wrap break-words text-sm ${isImageRequest ? 'leading-relaxed' : ''}`}>{displayContent}</p>
             <TokenUsageDisplay
               inputTokens={message.inputTokens}
               outputTokens={message.outputTokens}
@@ -307,7 +307,7 @@ export function MessageBubble({
           <>
             {/* Display generated images */}
             {hasGeneratedImages && (
-              <div className="mb-4 space-y-4">
+              <div className="mb-3 space-y-3">
                 {message.generatedImages!.map((image, index) => (
                   <GeneratedImageDisplay key={index} image={image} index={index} />
                 ))}

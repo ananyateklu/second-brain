@@ -112,9 +112,9 @@ export function ChatMessageList({
   return (
     <div
       ref={messagesContainerRef}
-      className="flex-1 overflow-y-auto px-6 py-8 mb-10 min-h-0 [scrollbar-gutter:stable] [scrollbar-width:thin] [scrollbar-color:var(--color-brand-400)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-brand-400)] [&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--color-brand-300)]"
+      className="flex-1 overflow-y-auto px-4 py-4 mb-6 min-h-0 [scrollbar-gutter:stable] [scrollbar-width:thin] [scrollbar-color:var(--color-brand-400)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-brand-400)] [&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--color-brand-300)]"
     >
-      <div className="max-w-3xl mx-auto space-y-6 h-full">
+      <div className="max-w-4xl mx-auto space-y-4 h-full">
         {hasNoMessages ? (
           <ChatWelcomeScreen />
         ) : (
@@ -169,7 +169,7 @@ export function ChatMessageList({
             )}
           </>
         )}
-        <div ref={messagesEndRef} className="h-16" />
+        <div ref={messagesEndRef} className="h-8" />
       </div>
     </div>
   );
@@ -380,7 +380,7 @@ function PendingUserMessage({ pendingMessage, inputTokens, userName }: PendingUs
     return (
       <div className="flex justify-end">
         <div
-          className="max-w-[80%] rounded-2xl px-5 py-4 rounded-br-md"
+          className="max-w-[85%] rounded-2xl px-4 py-3 rounded-br-md"
           style={{
             backgroundColor: 'var(--btn-primary-bg)',
             color: 'var(--btn-primary-text)',
@@ -388,7 +388,7 @@ function PendingUserMessage({ pendingMessage, inputTokens, userName }: PendingUs
           }}
         >
           {/* Image generation badge */}
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-2">
             <div
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
               style={{
@@ -409,7 +409,7 @@ function PendingUserMessage({ pendingMessage, inputTokens, userName }: PendingUs
           </div>
 
           {/* Prompt text */}
-          <p className="whitespace-pre-wrap break-words text-[15px] leading-relaxed">{prompt}</p>
+          <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{prompt}</p>
 
           <TokenUsageDisplay
             inputTokens={inputTokens}
@@ -426,7 +426,7 @@ function PendingUserMessage({ pendingMessage, inputTokens, userName }: PendingUs
   return (
     <div className="flex justify-end">
       <div
-        className="max-w-[80%] rounded-2xl px-5 py-3 rounded-br-md"
+        className="max-w-[85%] rounded-2xl px-4 py-2.5 rounded-br-md"
         style={{
           backgroundColor: 'var(--btn-primary-bg)',
           color: 'var(--btn-primary-text)',
@@ -434,7 +434,7 @@ function PendingUserMessage({ pendingMessage, inputTokens, userName }: PendingUs
         }}
       >
         {pendingMessage.images && pendingMessage.images.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-2">
+          <div className="flex flex-wrap gap-1.5 mb-2">
             {pendingMessage.images.map((image, index) => (
               <div
                 key={index}
@@ -450,7 +450,7 @@ function PendingUserMessage({ pendingMessage, inputTokens, userName }: PendingUs
             ))}
           </div>
         )}
-        <p className="whitespace-pre-wrap break-words">{pendingMessage.content}</p>
+        <p className="whitespace-pre-wrap break-words text-sm">{pendingMessage.content}</p>
         <TokenUsageDisplay
           inputTokens={inputTokens}
           outputTokens={undefined}

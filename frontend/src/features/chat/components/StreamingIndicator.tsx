@@ -75,7 +75,7 @@ export function StreamingIndicator({
       {agentModeEnabled && isStreaming && processingStatus && !streamingMessage && !hasSteps && (
         <div className="flex justify-start">
           <div
-            className="w-full rounded-2xl rounded-bl-md px-5 py-3"
+            className="w-full rounded-2xl rounded-bl-md px-4 py-2.5"
             style={{
               backgroundColor: 'var(--surface-card)',
               color: 'var(--text-primary)',
@@ -108,7 +108,7 @@ export function StreamingIndicator({
       {agentModeEnabled && isStreaming && !processingStatus && !streamingMessage && !hasSteps && (
         <div className="flex justify-start">
           <div
-            className="w-full rounded-2xl rounded-bl-md px-5 py-3"
+            className="w-full rounded-2xl rounded-bl-md px-4 py-2.5"
             style={{
               backgroundColor: 'var(--surface-card)',
               color: 'var(--text-primary)',
@@ -140,7 +140,7 @@ export function StreamingIndicator({
       {streamingMessage && (
         <div className="flex justify-start">
           <div
-            className="w-full rounded-2xl rounded-bl-md px-5 py-3"
+            className="w-full rounded-2xl rounded-bl-md px-4 py-2.5"
             style={{
               backgroundColor: 'var(--surface-card)',
               color: 'var(--text-primary)',
@@ -149,7 +149,7 @@ export function StreamingIndicator({
             {/* Show inline status bar when there's content AND a processing status (e.g., after tool execution) */}
             {agentModeEnabled && isStreaming && processingStatus && processingStatus !== 'Generating response...' && (
               <div
-                className="flex items-center gap-2 mb-3 pb-3"
+                className="flex items-center gap-2 mb-2 pb-2"
                 style={{ borderBottom: '1px solid var(--border)' }}
               >
                 <div className="relative w-4 h-4 flex-shrink-0">
@@ -201,7 +201,7 @@ export function StreamingIndicator({
       {streamingError && (
         <div className="flex justify-start">
           <div
-            className="w-full rounded-2xl rounded-bl-md px-5 py-3"
+            className="w-full rounded-2xl rounded-bl-md px-4 py-2.5"
             style={{
               backgroundColor: 'rgba(239, 68, 68, 0.1)',
               color: 'var(--text-primary)',
@@ -251,7 +251,7 @@ export function LoadingMessageSkeleton() {
   return (
     <div className="flex justify-start">
       <div
-        className="w-full rounded-2xl rounded-bl-md px-6 py-4"
+        className="w-full rounded-2xl rounded-bl-md px-4 py-3"
         style={{
           backgroundColor: 'var(--surface-card)',
           border: '1px solid var(--border)',
@@ -313,7 +313,7 @@ export function ImageGenerationLoadingSkeleton({ isGeneratingImage }: { isGenera
     return (
       <div className="flex justify-start">
         <div
-          className="w-full rounded-2xl rounded-bl-md px-6 py-4"
+          className="w-full rounded-2xl rounded-bl-md px-4 py-3"
           style={{
             backgroundColor: 'var(--surface-card)',
             border: '1px solid var(--border)',

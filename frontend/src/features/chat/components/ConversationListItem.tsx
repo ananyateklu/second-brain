@@ -1,22 +1,16 @@
-import { useMemo, useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ChatConversation } from '../types/chat';
 import { formatModelName } from '../../../utils/model-name-formatter';
 import { formatConversationDate } from '../../../utils/date-utils';
 import { useThemeStore } from '../../../store/theme-store';
-import { estimateTokenCount } from '../../../utils/token-utils';
-
-/**
- * Format token count for display (e.g., 1.2k, 15.3k)
- */
-function formatTokenCount(count: number): string {
-  if (count >= 1000000) {
-    return `${(count / 1000000).toFixed(1)}M`;
-  }
-  if (count >= 1000) {
-    return `${(count / 1000).toFixed(1)}k`;
-  }
-  return count.toString();
-}
+import anthropicLight from '../../../assets/anthropic-light.svg';
+import anthropicDark from '../../../assets/anthropic-dark.svg';
+import googleLogo from '../../../assets/google.svg';
+import ollamaLogo from '../../../assets/ollama.svg';
+import openaiLight from '../../../assets/openai-light.svg';
+import openaiDark from '../../../assets/openai-dark.svg';
+import xaiLight from '../../../assets/xai-light.svg';
+import xaiDark from '../../../assets/xai-dark.svg';
 
 /**
  * Custom circular checkbox component with animations
@@ -134,20 +128,25 @@ export function ConversationListItem({
   const isPlaceholder = conversation.id === 'placeholder-new-chat';
   const showCheckbox = isSelectionMode && !isPlaceholder;
 
-  // Calculate total tokens from all messages
-  // Use stored token counts if available, otherwise estimate from content
-  const totalTokens = useMemo(() => {
-    if (!conversation.messages || conversation.messages.length === 0) return 0;
-    return conversation.messages.reduce((sum, msg) => {
-      // Use stored token counts if available
-      const storedTokens = (msg.inputTokens || 0) + (msg.outputTokens || 0);
-      if (storedTokens > 0) {
-        return sum + storedTokens;
-      }
-      // Fall back to estimating from content
-      return sum + estimateTokenCount(msg.content);
-    }, 0);
-  }, [conversation.messages]);
+  // Get provider logo based on provider name and theme
+  const getProviderLogo = (providerName: string): string | null => {
+    const normalizedName = providerName.toLowerCase();
+
+    // Map provider names to logo IDs
+    if (normalizedName === 'openai') {
+      return isDarkMode ? openaiDark : openaiLight;
+    } else if (normalizedName === 'anthropic' || normalizedName === 'claude') {
+      return isDarkMode ? anthropicDark : anthropicLight;
+    } else if (normalizedName === 'google' || normalizedName === 'gemini') {
+      return googleLogo;
+    } else if (normalizedName === 'ollama') {
+      return ollamaLogo;
+    } else if (normalizedName === 'xai' || normalizedName === 'grok') {
+      return isDarkMode ? xaiDark : xaiLight;
+    }
+
+    return null;
+  };
 
   const handleClick = () => {
     if (isSelectionMode && !isPlaceholder) {
@@ -183,135 +182,103 @@ export function ConversationListItem({
       };
     }
     return {
-      width: '0.5px',
-      color: 'color-mix(in srgb, var(--border) 85%, transparent)',
+      width: '0.25px',
+      color: 'color-mix(in srgb, var(--border) 50%, transparent)',
     };
   };
 
   const leftBorder = getLeftBorderStyle();
 
   return (
-    <div
-      className={`group px-4 py-2 transition-all duration-300 relative ${isSelectionMode && isChecked ? 'selection-item-highlight' : ''}`}
-      style={{
-        backgroundColor: getBackgroundColor(),
-        borderLeftWidth: leftBorder.width,
-        borderLeftColor: leftBorder.color,
-        borderTopWidth: '0.5px',
-        borderTopColor: 'color-mix(in srgb, var(--border) 85%, transparent)',
-        borderRightWidth: '0.5px',
-        borderRightColor: 'color-mix(in srgb, var(--border) 85%, transparent)',
-        borderBottomWidth: '0.5px',
-        borderBottomColor: 'color-mix(in srgb, var(--border) 85%, transparent)',
-        cursor: isSelectionMode ? 'pointer' : 'pointer',
-        boxShadow: 'none',
-      }}
-      onClick={handleClick}
-      onMouseEnter={(e) => {
-        if (!isSelected && !(isSelectionMode && isChecked)) {
-          e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--surface-card) 50%, transparent)';
+    <>
+      <style>{`
+        .group:hover .conversation-title {
+          mask-image: linear-gradient(to right, black 0%, black calc(100% - 44px), transparent 100%);
+          -webkit-mask-image: linear-gradient(to right, black 0%, black calc(100% - 44px), transparent 100%);
         }
-      }}
-      onMouseLeave={(e) => {
-        if (!isSelected && !(isSelectionMode && isChecked)) {
-          e.currentTarget.style.backgroundColor = 'transparent';
-        }
-      }}
-    >
-      {/* Hover indicator - faded green bar on the left */}
-      {!isPlaceholder && (
-        <div
-          className="absolute left-0 top-0 bottom-0 w-1 opacity-0 group-hover:opacity-40 transition-opacity duration-200"
-          style={{
-            backgroundColor: 'var(--color-brand-500)',
-          }}
-        />
-      )}
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2.5 flex-1 min-w-0">
-            {showCheckbox && (
-              <CircularCheckbox
-                checked={isChecked}
-                onChange={() => onSelect(conversation.id)}
-                staggerIndex={staggerIndex}
-              />
-            )}
-            <h3
-              className="conversation-title text-sm font-normal flex-1 min-w-0 transition-all duration-200 truncate"
-              style={{
-                color: 'var(--text-primary)',
-                fontWeight: 400,
-              }}
-            >
-              {conversation.title}
-            </h3>
-          </div>
-          {!isPlaceholder && !isSelectionMode && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(conversation.id);
-              }}
-              className="p-1.5 rounded-lg transition-all duration-200 flex-shrink-0 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-95"
-              style={{
-                color: 'rgb(239, 68, 68)',
-                backgroundColor: 'transparent',
-                width: '28px',
-                height: '28px',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-              }}
-              title="Delete conversation"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+      `}</style>
+      <div
+        className={`group px-4 py-2 transition-all duration-300 relative ${isSelectionMode && isChecked ? 'selection-item-highlight' : ''}`}
+        style={{
+          backgroundColor: getBackgroundColor(),
+          borderLeftWidth: leftBorder.width,
+          borderLeftColor: leftBorder.color,
+          borderTopWidth: '0.1px',
+          borderTopColor: 'color-mix(in srgb, var(--border) 30%, transparent)',
+          borderRightWidth: '0.1px',
+          borderRightColor: 'color-mix(in srgb, var(--border) 80%, transparent)',
+          borderBottomWidth: '0.1px',
+          borderBottomColor: 'color-mix(in srgb, var(--border) 30%, transparent)',
+          cursor: isSelectionMode ? 'pointer' : 'pointer',
+          boxShadow: 'none',
+        }}
+        onClick={handleClick}
+        onMouseEnter={(e) => {
+          if (!isSelected && !(isSelectionMode && isChecked)) {
+            e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--surface-card) 50%, transparent)';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!isSelected && !(isSelectionMode && isChecked)) {
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }
+        }}
+      >
+        {/* Hover indicator - faded green bar on the left */}
+        {!isPlaceholder && (
+          <div
+            className="absolute left-0 top-0 bottom-0 w-1 opacity-0 group-hover:opacity-40 transition-opacity duration-200"
+            style={{
+              backgroundColor: 'var(--color-brand-500)',
+            }}
+          />
+        )}
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2 relative">
+            <div className="flex items-center gap-2.5 flex-1 min-w-0">
+              {showCheckbox && (
+                <CircularCheckbox
+                  checked={isChecked}
+                  onChange={() => onSelect(conversation.id)}
+                  staggerIndex={staggerIndex}
                 />
-              </svg>
-            </button>
-          )}
-        </div>
-        <div className="flex items-center justify-between gap-1.5">
-          <div className="flex items-center gap-1 flex-1 min-w-0">
-            <span
-              className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium truncate"
-              style={{
-                backgroundColor: isDarkMode
-                  ? 'color-mix(in srgb, var(--color-brand-100) 5%, transparent)'
-                  : 'color-mix(in srgb, var(--color-brand-100) 30%, transparent)',
-                color: isDarkMode ? 'var(--color-brand-300)' : 'var(--color-brand-600)',
-                opacity: isDarkMode ? 1 : 0.7,
-              }}
-            >
-              {formatModelName(conversation.model)}
-            </span>
-            {conversation.ragEnabled && (
-              <span
-                className="inline-flex items-center justify-center w-4 h-4 rounded flex-shrink-0"
+              )}
+              <h3
+                className="conversation-title text-sm font-normal flex-1 min-w-0 transition-all duration-200 overflow-hidden whitespace-nowrap pr-0 group-hover:pr-9"
                 style={{
-                  backgroundColor: isDarkMode
-                    ? 'color-mix(in srgb, var(--color-brand-100) 15%, transparent)'
-                    : 'color-mix(in srgb, var(--color-brand-100) 30%, transparent)',
-                  color: isDarkMode ? 'var(--color-brand-300)' : 'var(--color-brand-600)',
-                  opacity: isDarkMode ? 1 : 0.7,
+                  color: 'var(--text-primary)',
+                  fontWeight: 400,
+                  maskImage: 'linear-gradient(to right, black 0%, black calc(100% - 50px), transparent 100%)',
+                  WebkitMaskImage: 'linear-gradient(to right, black 0%, black calc(100% - 50px), transparent 100%)',
                 }}
-                title="RAG enabled"
+                title={conversation.title}
+              >
+                {conversation.title}
+              </h3>
+            </div>
+            {!isPlaceholder && !isSelectionMode && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(conversation.id);
+                }}
+                className="absolute right-0 p-1.5 rounded-lg transition-all duration-200 flex-shrink-0 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-95"
+                style={{
+                  color: 'rgb(239, 68, 68)',
+                  backgroundColor: 'transparent',
+                  width: '28px',
+                  height: '28px',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+                title="Delete conversation"
               >
                 <svg
-                  className="w-2.5 h-2.5"
+                  className="w-4 h-4"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -320,44 +287,16 @@ export function ConversationListItem({
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                   />
                 </svg>
-              </span>
-            )}
-            {conversation.agentEnabled && (
-              <span
-                className="inline-flex items-center justify-center w-4 h-4 rounded flex-shrink-0"
-                style={{
-                  backgroundColor: isDarkMode
-                    ? 'color-mix(in srgb, var(--color-brand-100) 15%, transparent)'
-                    : 'color-mix(in srgb, var(--color-brand-100) 30%, transparent)',
-                  color: isDarkMode ? 'var(--color-brand-300)' : 'var(--color-brand-600)',
-                  opacity: isDarkMode ? 1 : 0.7,
-                }}
-                title="Agent mode enabled"
-              >
-                <svg
-                  className="w-2.5 h-2.5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                  />
-                </svg>
-              </span>
+              </button>
             )}
           </div>
-          <div className="flex items-center gap-1 flex-shrink-0">
-            {/* Token count */}
-            {totalTokens > 0 && (
+          <div className="flex items-center justify-between gap-1.5">
+            <div className="flex items-center gap-1 flex-1 min-w-0">
               <span
-                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap"
+                className="inline-flex items-center gap-2 px-1.5 py-0.5 rounded text-[10px] font-medium truncate"
                 style={{
                   backgroundColor: isDarkMode
                     ? 'color-mix(in srgb, var(--color-brand-100) 5%, transparent)'
@@ -365,24 +304,35 @@ export function ConversationListItem({
                   color: isDarkMode ? 'var(--color-brand-300)' : 'var(--color-brand-600)',
                   opacity: isDarkMode ? 1 : 0.7,
                 }}
-                title={`${totalTokens.toLocaleString()} total tokens`}
               >
-                {formatTokenCount(totalTokens)} tokens
+                {(() => {
+                  const logo = getProviderLogo(conversation.provider);
+                  return logo ? (
+                    <img
+                      src={logo}
+                      alt={conversation.provider}
+                      className="w-2.5 h-2.5 flex-shrink-0 object-contain"
+                    />
+                  ) : null;
+                })()}
+                {formatModelName(conversation.model)}
               </span>
-            )}
-            {/* Date */}
-            <span
-              className="text-[10px] whitespace-nowrap"
-              style={{
-                color: 'var(--text-tertiary)',
-              }}
-            >
-              {formatConversationDate(conversation.updatedAt)}
-            </span>
+            </div>
+            <div className="flex items-center gap-1 flex-shrink-0">
+              {/* Date */}
+              <span
+                className="text-[10px] whitespace-nowrap"
+                style={{
+                  color: 'var(--text-tertiary)',
+                }}
+              >
+                {formatConversationDate(conversation.updatedAt)}
+              </span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 

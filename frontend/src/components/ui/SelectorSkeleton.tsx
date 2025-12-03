@@ -6,7 +6,7 @@ export function SelectorSkeleton({ text = 'Loading...' }: SelectorSkeletonProps)
   return (
     <div className="relative">
       <div
-        className="px-5 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 min-w-[180px] sm:min-w-[220px] justify-between animate-pulse"
+        className="px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2 min-w-[180px] sm:min-w-[220px] justify-between animate-pulse"
         style={{
           backgroundColor: 'var(--surface-card)',
           border: '1px solid var(--border)',

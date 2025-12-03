@@ -90,13 +90,18 @@ export function ChatSidebar({
 
   return (
     <div
-      className="border-r flex flex-col h-full flex-shrink-0 transition-all duration-300 ease-out w-72 md:w-[23rem]"
-      style={{ borderColor: 'var(--border)' }}
+      className="flex flex-col h-full flex-shrink-0 transition-all duration-300 ease-out w-72 md:w-[23rem]"
+      style={{
+        borderRightWidth: '0.1px',
+        borderRightColor: 'color-mix(in srgb, var(--border) 0%, transparent)',
+      }}
     >
       {/* Sidebar Header - Fixed */}
       <div
         className="flex-shrink-0 px-4 py-4.5 border-b flex items-center justify-between"
-        style={{ borderColor: 'var(--border)' }}
+        style={{ borderColor: 'var(--border)', 
+          borderRightWidth: '0.1px',
+          borderRightColor: 'color-mix(in srgb, var(--border) 80%, transparent)' }}
       >
         <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
           Conversations

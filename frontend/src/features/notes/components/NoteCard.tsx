@@ -180,11 +180,11 @@ export const NoteCard = memo(function NoteCard({
   }, [note.tags, displayContent]);
 
   // Styles based on variant
-  const containerPadding = isMicro ? 'p-3 rounded-2xl' : (isCompact ? 'p-4 rounded-3xl' : 'p-5 rounded-3xl');
-  const titleSize = isMicro ? 'text-xs' : (isCompact ? 'text-sm' : 'text-lg');
-  const contentFontSize = isMicro ? '12px' : (isCompact ? '0.75rem' : '0.875rem'); // Inline style for font size
-  const headerMargin = isMicro ? 'mb-1.5' : (isCompact ? 'mb-2' : 'mb-3');
-  const contentMargin = isMicro ? 'mb-2' : (isCompact ? 'mb-3' : 'mb-4');
+  const containerPadding = isMicro ? 'p-2 rounded-xl' : (isCompact ? 'p-4 rounded-3xl' : 'p-5 rounded-3xl');
+  const titleSize = isMicro ? 'text-[11px]' : (isCompact ? 'text-sm' : 'text-lg');
+  const contentFontSize = isMicro ? '10px' : (isCompact ? '0.75rem' : '0.875rem'); // Inline style for font size
+  const headerMargin = isMicro ? 'mb-1' : (isCompact ? 'mb-2' : 'mb-3');
+  const contentMargin = isMicro ? 'mb-1' : (isCompact ? 'mb-3' : 'mb-4');
 
   // Determine border and background based on selection state
   const getBorderColor = () => {

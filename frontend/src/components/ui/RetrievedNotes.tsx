@@ -75,10 +75,10 @@ export function RetrievedNotes({ notes }: RetrievedNotesProps) {
     : 0;
 
   return (
-    <div className="my-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+    <div className="my-3 animate-in fade-in slide-in-from-bottom-2 duration-500">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="group flex items-center justify-between w-full p-3 rounded-3xl border transition-all duration-200 hover:shadow-md"
+        className="group flex items-center justify-between w-full px-2.5 py-1.5 rounded-xl border transition-all duration-200 hover:shadow-sm"
         style={{
           backgroundColor: isExpanded
             ? 'var(--surface-card)'
@@ -86,38 +86,38 @@ export function RetrievedNotes({ notes }: RetrievedNotesProps) {
           borderColor: 'var(--border)',
         }}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <div
-            className="flex items-center justify-center w-8 h-8 rounded-full transition-transform group-hover:scale-110"
+            className="flex items-center justify-center w-5 h-5 rounded-full transition-transform group-hover:scale-110"
             style={{
               backgroundColor: 'var(--color-brand-100)',
               color: 'var(--color-brand-600)'
             }}
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
           </div>
-          <div className="flex flex-col items-start text-left">
-            <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-              Found {uniqueNoteCount} relevant note{uniqueNoteCount !== 1 ? 's' : ''}
+          <div className="flex items-center gap-2 text-left">
+            <span className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>
+              {uniqueNoteCount} note{uniqueNoteCount !== 1 ? 's' : ''}
               {totalChunkCount > uniqueNoteCount && (
-                <span className="font-normal" style={{ color: 'var(--text-tertiary)' }}> ({totalChunkCount} chunks)</span>
+                <span className="font-normal" style={{ color: 'var(--text-tertiary)' }}> · {totalChunkCount} chunks</span>
               )}
             </span>
-            <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-              Top match: <span style={{ color: 'var(--color-brand-600)', fontWeight: 600 }}>{topScore}%</span>
+            <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+              · <span style={{ color: 'var(--color-brand-600)', fontWeight: 600 }}>{topScore}%</span> match
             </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <div
-            className={`w-6 h-6 flex items-center justify-center rounded-full transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
+            className={`w-4 h-4 flex items-center justify-center rounded-full transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
             style={{ backgroundColor: 'var(--surface-hover)' }}
           >
             <svg
-              className="w-4 h-4"
+              className="w-3 h-3"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -130,20 +130,20 @@ export function RetrievedNotes({ notes }: RetrievedNotesProps) {
       </button>
 
       <div
-        className={`grid transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'grid-rows-[1fr] opacity-100 mt-3' : 'grid-rows-[0fr] opacity-0 mt-0'
+        className={`grid transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'grid-rows-[1fr] opacity-100 mt-2' : 'grid-rows-[0fr] opacity-0 mt-0'
           }`}
       >
-        <div className="min-h-0 p-3">
+        <div className="min-h-0 px-1">
           {isLoading ? (
-            <div className="p-4 text-center text-sm rounded-3xl border border-dashed" style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
+            <div className="p-2 text-center text-xs rounded-xl border border-dashed" style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
               Loading notes data...
             </div>
           ) : notesWithData.length === 0 ? (
-            <div className="p-4 text-center text-sm rounded-3xl border border-dashed" style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
+            <div className="p-2 text-center text-xs rounded-xl border border-dashed" style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
               Note data not available
             </div>
           ) : (
-            <div className="grid gap-2 grid-cols-1 sm:grid-cols-2">
+            <div className="grid gap-1.5 grid-cols-1 sm:grid-cols-2">
               {notesWithData.map(({ note, relevanceScore, chunkCount, content, createdOn }) => (
                 <NoteCard
                   key={note.id}

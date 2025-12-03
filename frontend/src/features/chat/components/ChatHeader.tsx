@@ -169,131 +169,136 @@ export function ChatHeader({
 
   return (
     <div
-      className="flex-shrink-0 flex items-center gap-3 px-4 pt-4.5 pb-4.5 border-b z-10"
+      className="flex-shrink-0 flex items-center gap-3 pt-4.5 pb-4.5 border-b z-10"
       style={{
         borderColor: 'var(--border)',
         backgroundColor: 'var(--surface-card)',
+        paddingLeft: '2rem',
+        paddingRight: '2rem',
       }}
     >
-      {/* Sidebar Toggle - Only show when sidebar is closed */}
-      {!showSidebar && (
-        <button
-          onClick={onToggleSidebar}
-          className="p-2 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
-          style={{
-            backgroundColor: 'var(--surface-card)',
-            color: 'var(--text-primary)',
-            border: '1px solid var(--border)',
-          }}
-          title="Show sidebar"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M13 5l7 7-7 7M5 5l7 7-7 7"
-            />
-          </svg>
-        </button>
-      )}
-
-      {/* Combined Model Selector */}
-      <div className="flex-shrink-0">
-        {isHealthLoading ? (
-          <SelectorSkeleton text="Loading..." />
-        ) : (
-          <CombinedModelSelector
-            providers={availableProviders}
-            selectedProvider={selectedProvider}
-            selectedModel={selectedModel}
-            onProviderChange={onProviderChange}
-            onModelChange={onModelChange}
-            disabled={isLoading || availableProviders.length === 0}
-          />
-        )}
-      </div>
-
-      {/* Separator */}
-      <div
-        className="h-6 w-px flex-shrink-0"
-        style={{ backgroundColor: 'var(--border)' }}
-      />
-
-      {/* Feature Mode Pills */}
-      <div className="flex items-center gap-2 flex-shrink-0">
-        {/* RAG Mode Pill */}
-        <FeatureModePill
-          featureId="rag"
-          label="RAG"
-          icon={<FeatureIcons.RAG />}
-          isActive={ragEnabled && !agentModeEnabled}
-          disabled={isLoading || agentModeEnabled || isImageGenerationMode}
-          activeColor={featureColors.rag}
-          popoverTitle="RAG Settings"
-          popoverWidth="280px"
-          badgeItems={ragBadgeItems}
-          popoverContent={
-            <RagSettingsPopover
-              ragEnabled={ragEnabled}
-              onRagToggle={onRagToggle}
-              selectedVectorStore={selectedVectorStore}
-              onVectorStoreChange={onVectorStoreChange}
-              disabled={isLoading}
-            />
-          }
-        />
-
-        {/* Agent Mode Pill */}
-        <FeatureModePill
-          featureId="agent"
-          label="Agent"
-          icon={<FeatureIcons.Agent />}
-          isActive={agentModeEnabled}
-          disabled={isLoading || isImageGenerationMode}
-          activeColor={featureColors.agent}
-          popoverTitle="Agent Settings"
-          popoverWidth="280px"
-          badgeItems={agentModeEnabled && agentBadgeItems.length > 0 ? agentBadgeItems : undefined}
-          popoverContent={
-            <AgentSettingsPopover
-              agentEnabled={agentModeEnabled}
-              onAgentToggle={onAgentModeChange}
-              agentRagEnabled={agentRagEnabled}
-              onAgentRagToggle={onAgentRagChange}
-              capabilities={popoverCapabilities}
-              disabled={isLoading}
-            />
-          }
-        />
-
-        {/* Image Mode Pill - Indicator only, active when image gen model is selected */}
-        {isImageGenerationMode && (
-          <div
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium"
+      {/* Left side: Sidebar Toggle, Model Selector, Feature Pills */}
+      <div className="flex items-center gap-3 flex-shrink-0">
+        {/* Sidebar Toggle - Only show when sidebar is closed */}
+        {!showSidebar && (
+          <button
+            onClick={onToggleSidebar}
+            className="p-2 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
             style={{
-              backgroundColor: featureColors.image.bg,
-              color: featureColors.image.text,
-              border: `1px solid ${featureColors.image.border}`,
-              boxShadow: `0 0 12px -4px ${featureColors.image.border}`,
+              backgroundColor: 'var(--surface-card)',
+              color: 'var(--text-primary)',
+              border: '1px solid var(--border)',
             }}
+            title="Show sidebar"
           >
-            <span className="flex-shrink-0 w-3.5 h-3.5 flex items-center justify-center">
-              <FeatureIcons.Image />
-            </span>
-            <span>Image</span>
-            <span
-              className="w-1.5 h-1.5 rounded-full animate-pulse flex-shrink-0"
-              style={{ backgroundColor: featureColors.image.dot }}
-            />
-          </div>
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 5l7 7-7 7M5 5l7 7-7 7"
+              />
+            </svg>
+          </button>
         )}
+
+        {/* Combined Model Selector */}
+        <div className="flex-shrink-0">
+          {isHealthLoading ? (
+            <SelectorSkeleton text="Loading..." />
+          ) : (
+            <CombinedModelSelector
+              providers={availableProviders}
+              selectedProvider={selectedProvider}
+              selectedModel={selectedModel}
+              onProviderChange={onProviderChange}
+              onModelChange={onModelChange}
+              disabled={isLoading || availableProviders.length === 0}
+            />
+          )}
+        </div>
+
+        {/* Separator */}
+        <div
+          className="h-6 w-px flex-shrink-0"
+          style={{ backgroundColor: 'var(--border)' }}
+        />
+
+        {/* Feature Mode Pills */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* RAG Mode Pill */}
+          <FeatureModePill
+            featureId="rag"
+            label="RAG"
+            icon={<FeatureIcons.RAG />}
+            isActive={ragEnabled && !agentModeEnabled}
+            disabled={isLoading || agentModeEnabled || isImageGenerationMode}
+            activeColor={featureColors.rag}
+            popoverTitle="RAG Settings"
+            popoverWidth="280px"
+            badgeItems={ragBadgeItems}
+            popoverContent={
+              <RagSettingsPopover
+                ragEnabled={ragEnabled}
+                onRagToggle={onRagToggle}
+                selectedVectorStore={selectedVectorStore}
+                onVectorStoreChange={onVectorStoreChange}
+                disabled={isLoading}
+              />
+            }
+          />
+
+          {/* Agent Mode Pill */}
+          <FeatureModePill
+            featureId="agent"
+            label="Agent"
+            icon={<FeatureIcons.Agent />}
+            isActive={agentModeEnabled}
+            disabled={isLoading || isImageGenerationMode}
+            activeColor={featureColors.agent}
+            popoverTitle="Agent Settings"
+            popoverWidth="280px"
+            badgeItems={agentModeEnabled && agentBadgeItems.length > 0 ? agentBadgeItems : undefined}
+            popoverContent={
+              <AgentSettingsPopover
+                agentEnabled={agentModeEnabled}
+                onAgentToggle={onAgentModeChange}
+                agentRagEnabled={agentRagEnabled}
+                onAgentRagToggle={onAgentRagChange}
+                capabilities={popoverCapabilities}
+                disabled={isLoading}
+              />
+            }
+          />
+
+          {/* Image Mode Pill - Indicator only, active when image gen model is selected */}
+          {isImageGenerationMode && (
+            <div
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium"
+              style={{
+                backgroundColor: featureColors.image.bg,
+                color: featureColors.image.text,
+                border: `1px solid ${featureColors.image.border}`,
+                boxShadow: `0 0 12px -4px ${featureColors.image.border}`,
+              }}
+            >
+              <span className="flex-shrink-0 w-3.5 h-3.5 flex items-center justify-center">
+                <FeatureIcons.Image />
+              </span>
+              <span>Image</span>
+              <span
+                className="w-1.5 h-1.5 rounded-full animate-pulse flex-shrink-0"
+                style={{ backgroundColor: featureColors.image.dot }}
+              />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Spacer */}
       <div className="flex-1 min-w-0" />
 
-      {/* Context Usage Indicator */}
+      {/* Right side: Context Usage Indicator */}
       <div className="flex-shrink-0">
         <ContextUsageIndicator
           contextUsage={contextUsage}

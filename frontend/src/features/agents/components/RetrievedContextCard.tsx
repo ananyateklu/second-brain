@@ -77,30 +77,30 @@ export function RetrievedContextCard({ retrievedNotes, isStreaming = false }: Re
       </div>
 
       {/* Content */}
-      <div className="text-sm">
+      <div className="text-xs">
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="flex items-center gap-2 w-full text-left hover:opacity-80 transition-opacity"
+          className="flex items-center gap-1.5 w-full text-left hover:opacity-80 transition-opacity"
         >
           <span 
             className="font-medium"
             style={{ color: 'var(--text-primary)' }}
           >
-            Found {retrievedNotes.length} relevant note{retrievedNotes.length !== 1 ? 's' : ''} for context
+            {retrievedNotes.length} note{retrievedNotes.length !== 1 ? 's' : ''} for context
           </span>
           
           {isStreaming ? (
-            <span className="text-xs ml-1 opacity-70" style={{ color: 'var(--color-brand-500)' }}>
+            <span className="text-[10px] opacity-70" style={{ color: 'var(--color-brand-500)' }}>
               Loading...
             </span>
           ) : (
-            <span className="text-xs ml-1" style={{ color: 'var(--text-tertiary)' }}>
-              Top match: <span style={{ color: 'var(--color-brand-600)', fontWeight: 600 }}>{topScore}%</span>
+            <span className="text-[10px]" style={{ color: 'var(--text-tertiary)' }}>
+              · <span style={{ color: 'var(--color-brand-600)', fontWeight: 600 }}>{topScore}%</span> match
             </span>
           )}
 
           <svg
-            className={`w-3 h-3 ml-1 transition-transform opacity-50 ${isExpanded ? 'rotate-180' : ''}`}
+            className={`w-2.5 h-2.5 ml-0.5 transition-transform opacity-50 ${isExpanded ? 'rotate-180' : ''}`}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -111,23 +111,23 @@ export function RetrievedContextCard({ retrievedNotes, isStreaming = false }: Re
         </button>
 
         {isExpanded && (
-          <div className="mt-2">
+          <div className="mt-1.5">
             {isLoading ? (
               <div 
-                className="p-3 text-center text-xs rounded-lg border border-dashed" 
+                className="p-2 text-center text-[10px] rounded-lg border border-dashed" 
                 style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
               >
                 Loading notes data...
               </div>
             ) : notesWithData.length === 0 ? (
               <div 
-                className="p-3 text-center text-xs rounded-lg border border-dashed" 
+                className="p-2 text-center text-[10px] rounded-lg border border-dashed" 
                 style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
               >
                 Note data not available
               </div>
             ) : (
-              <div className="grid gap-2 grid-cols-1 sm:grid-cols-2">
+              <div className="grid gap-1.5 grid-cols-1 sm:grid-cols-2">
                 {notesWithData.map(({ note, relevanceScore, content }) => (
                   <NoteCard
                     key={note.id}

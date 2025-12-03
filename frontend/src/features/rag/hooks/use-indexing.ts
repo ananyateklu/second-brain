@@ -12,7 +12,7 @@ export const useStartIndexing = () => {
   return useApiMutation<IndexingJobResponse, { userId?: string; embeddingProvider?: EmbeddingProvider; vectorStoreProvider?: VectorStoreProvider }>(
     async ({ userId, embeddingProvider, vectorStoreProvider }) => {
       const job = await ragService.startIndexing({ userId, embeddingProvider, vectorStoreProvider });
-      
+
       // Store the vector store provider for this job in localStorage so we can track it
       if (job.id && vectorStoreProvider) {
         localStorage.setItem(`indexing_job_${job.id}`, JSON.stringify({
@@ -20,14 +20,14 @@ export const useStartIndexing = () => {
           userId,
         }));
       }
-      
+
       return job;
     },
     {
       onSuccess: (job, variables) => {
         // Invalidate stats query for the specific user to refresh after indexing starts
         queryClient.invalidateQueries({ queryKey: QUERY_KEYS.indexing.stats(variables.userId) });
-        
+
         // Set up cleanup for when job completes
         const cleanup = setInterval(() => {
           const jobData = queryClient.getQueryData<IndexingJobResponse>(QUERY_KEYS.indexing.job(job.id));
@@ -36,7 +36,7 @@ export const useStartIndexing = () => {
             clearInterval(cleanup);
           }
         }, 2000);
-        
+
         // Also clean up after 5 minutes as a safety measure
         setTimeout(() => {
           clearInterval(cleanup);
@@ -117,7 +117,7 @@ export const useActiveIndexingVectorStores = (): Set<VectorStoreProvider> => {
   useEffect(() => {
     const checkActiveJobs = () => {
       const vectorStores = new Set<VectorStoreProvider>();
-      
+
       // Get all indexing job queries from cache
       const cache = queryClient.getQueryCache();
       cache.getAll().forEach((query) => {
@@ -126,15 +126,20 @@ export const useActiveIndexingVectorStores = (): Set<VectorStoreProvider> => {
         if (Array.isArray(queryKey) && queryKey[0] === 'indexing' && queryKey[1] === 'job' && queryKey[2]) {
           const jobId = queryKey[2] as string;
           const jobData = query.state.data as IndexingJobResponse | undefined;
-          
+
           // If job is active, check localStorage for vector store
           if (jobData && (jobData.status === 'running' || jobData.status === 'pending')) {
             const storedJob = localStorage.getItem(`indexing_job_${jobId}`);
             if (storedJob) {
               try {
                 const { vectorStoreProvider } = JSON.parse(storedJob);
-                if (vectorStoreProvider && (vectorStoreProvider === 'PostgreSQL' || vectorStoreProvider === 'Pinecone')) {
-                  vectorStores.add(vectorStoreProvider as VectorStoreProvider);
+                if (vectorStoreProvider) {
+                  if (vectorStoreProvider === 'Both') {
+                    vectorStores.add('PostgreSQL');
+                    vectorStores.add('Pinecone');
+                  } else if (vectorStoreProvider === 'PostgreSQL' || vectorStoreProvider === 'Pinecone') {
+                    vectorStores.add(vectorStoreProvider as VectorStoreProvider);
+                  }
                 }
               } catch (e) {
                 // Ignore parse errors
@@ -146,7 +151,7 @@ export const useActiveIndexingVectorStores = (): Set<VectorStoreProvider> => {
           }
         }
       });
-      
+
       setActiveVectorStores(vectorStores);
     };
 

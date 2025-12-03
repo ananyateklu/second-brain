@@ -2,6 +2,14 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { formatModelName } from '../../utils/model-name-formatter';
 import { groupModelsByCategory } from '../../utils/model-categorizer';
 import { useThemeStore } from '../../store/theme-store';
+import anthropicLight from '../../assets/anthropic-light.svg';
+import anthropicDark from '../../assets/anthropic-dark.svg';
+import googleLogo from '../../assets/google.svg';
+import ollamaLogo from '../../assets/ollama.svg';
+import openaiLight from '../../assets/openai-light.svg';
+import openaiDark from '../../assets/openai-dark.svg';
+import xaiLight from '../../assets/xai-light.svg';
+import xaiDark from '../../assets/xai-dark.svg';
 
 interface Provider {
   provider: string;
@@ -34,16 +42,37 @@ export function CombinedModelSelector({
   const selectedModelRef = useRef<HTMLButtonElement>(null);
   const { theme } = useThemeStore();
   const isBlueTheme = theme === 'blue';
+  const isDarkMode = theme === 'dark' || theme === 'blue';
+
+  // Get provider logo based on provider name and theme
+  const getProviderLogo = (providerName: string): string | null => {
+    const normalizedName = providerName.toLowerCase();
+
+    // Map provider names to logo IDs
+    if (normalizedName === 'openai') {
+      return isDarkMode ? openaiDark : openaiLight;
+    } else if (normalizedName === 'anthropic' || normalizedName === 'claude') {
+      return isDarkMode ? anthropicDark : anthropicLight;
+    } else if (normalizedName === 'google' || normalizedName === 'gemini') {
+      return googleLogo;
+    } else if (normalizedName === 'ollama') {
+      return ollamaLogo;
+    } else if (normalizedName === 'xai' || normalizedName === 'grok') {
+      return isDarkMode ? xaiDark : xaiLight;
+    }
+
+    return null;
+  };
 
   const selectedProviderData = providers.find((p) => p.provider === selectedProvider);
-  
+
   const availableModels = useMemo(
     () => selectedProviderData?.availableModels || [],
     [selectedProviderData?.availableModels]
   );
-  
+
   const groupedModels = useMemo(() => groupModelsByCategory(availableModels), [availableModels]);
-  
+
   const flatModelList = useMemo(() => {
     const flat: Array<{ type: 'model' | 'header'; value: string; category?: string }> = [];
     groupedModels.forEach(group => {
@@ -203,22 +232,39 @@ export function CombinedModelSelector({
         aria-expanded={isOpen}
         aria-haspopup="listbox"
       >
-        {/* Model icon */}
-        <svg 
-          className="w-4 h-4 flex-shrink-0 transition-colors" 
-          style={{ color: 'var(--text-secondary)' }}
-          fill="none" 
-          viewBox="0 0 24 24" 
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-          />
-        </svg>
-        
+        {/* Provider logo */}
+        {(() => {
+          if (selectedProvider) {
+            const logo = getProviderLogo(selectedProvider);
+            if (logo) {
+              return (
+                <img
+                  src={logo}
+                  alt={selectedProvider}
+                  className="w-4 h-4 flex-shrink-0 object-contain"
+                />
+              );
+            }
+          }
+          // Fallback icon when no provider selected or logo not found
+          return (
+            <svg
+              className="w-4 h-4 flex-shrink-0 transition-colors"
+              style={{ color: 'var(--text-secondary)' }}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+              />
+            </svg>
+          );
+        })()}
+
         <span className="truncate flex-1 text-left">
           {selectedProvider && selectedModel ? (
             <>
@@ -230,7 +276,7 @@ export function CombinedModelSelector({
             getDisplayText()
           )}
         </span>
-        
+
         <svg
           className={`w-4 h-4 transition-transform duration-200 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`}
           style={{ color: 'var(--text-tertiary)' }}
@@ -250,12 +296,12 @@ export function CombinedModelSelector({
             onClick={() => setIsOpen(false)}
             style={{ backgroundColor: 'rgba(0, 0, 0, 0.2)' }}
           />
-          
+
           <div
             ref={dropdownRef}
-            className="absolute top-full left-0 mt-2 w-[320px] rounded-xl border z-50 overflow-hidden"
+            className="absolute top-full left-0 mt-2 w-[420px] rounded-xl border z-50 overflow-hidden"
             style={{
-              backgroundColor: isBlueTheme 
+              backgroundColor: isBlueTheme
                 ? 'rgba(10, 22, 40, 0.98)'
                 : 'var(--surface-card-solid)',
               borderColor: 'var(--border)',
@@ -265,30 +311,37 @@ export function CombinedModelSelector({
             }}
           >
             {/* Provider Tabs */}
-            <div 
-              className="flex overflow-x-auto border-b"
-              style={{ 
+            <div
+              className="flex border-b"
+              style={{
                 borderColor: 'var(--border)',
-                scrollbarWidth: 'none',
               }}
             >
               {providers.map((provider) => {
                 const isSelected = provider.provider === selectedProvider;
+                const logo = getProviderLogo(provider.provider);
                 return (
                   <button
                     key={provider.provider}
                     type="button"
                     onClick={() => handleProviderSelect(provider.provider)}
-                    className="flex-shrink-0 px-4 py-2.5 text-sm font-medium transition-all duration-200 relative"
+                    className="flex-1 px-3 py-2.5 text-sm font-medium transition-all duration-200 relative"
                     style={{
                       color: isSelected ? 'var(--color-brand-400)' : 'var(--text-secondary)',
                       backgroundColor: 'transparent',
                     }}
                   >
-                    <span className="relative z-10 flex items-center gap-2">
+                    <span className="relative z-10 flex items-center justify-center gap-1.5">
+                      {logo && (
+                        <img 
+                          src={logo} 
+                          alt={provider.provider}
+                          className="w-2.5 h-2.5 flex-shrink-0 object-contain"
+                        />
+                      )}
                       {provider.provider}
                       {!provider.isHealthy && (
-                        <span 
+                        <span
                           className="w-2 h-2 rounded-full"
                           style={{ backgroundColor: 'var(--color-error)' }}
                           title="Provider unavailable"
@@ -296,7 +349,7 @@ export function CombinedModelSelector({
                       )}
                     </span>
                     {isSelected && (
-                      <span 
+                      <span
                         className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full"
                         style={{ backgroundColor: 'var(--color-brand-400)' }}
                       />
@@ -307,7 +360,7 @@ export function CombinedModelSelector({
             </div>
 
             {/* Models List */}
-            <div 
+            <div
               className="max-h-[320px] overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--border)] [&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--text-secondary)]"
               style={{
                 scrollbarWidth: 'thin',
@@ -315,7 +368,7 @@ export function CombinedModelSelector({
               }}
             >
               {groupedModels.length === 0 ? (
-                <div 
+                <div
                   className="px-4 py-8 text-center text-sm"
                   style={{ color: 'var(--text-tertiary)' }}
                 >
@@ -328,7 +381,7 @@ export function CombinedModelSelector({
                     <div
                       className="px-4 py-2 text-xs font-semibold uppercase tracking-wider sticky top-0"
                       style={{
-                        backgroundColor: isBlueTheme 
+                        backgroundColor: isBlueTheme
                           ? 'rgba(10, 22, 40, 0.98)'
                           : 'var(--surface-card-solid)',
                         color: 'var(--text-secondary)',
@@ -337,7 +390,7 @@ export function CombinedModelSelector({
                     >
                       {group.displayName}
                     </div>
-                    
+
                     {/* Models */}
                     {group.models.map((model) => {
                       const flatIndex = flatModelList.findIndex(item => item.type === 'model' && item.value === model);

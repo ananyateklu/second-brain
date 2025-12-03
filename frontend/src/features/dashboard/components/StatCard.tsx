@@ -40,13 +40,13 @@ export const StatCard = memo(function StatCard({ title, value, icon, subtitle, s
         <div className="flex-grow"></div>
         {subtitle ? (
           <div className="flex items-baseline justify-between">
-            <p className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+            <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
               {value}
             </p>
             {subtitle}
           </div>
         ) : (
-          <p className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+          <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
             {value}
           </p>
         )}

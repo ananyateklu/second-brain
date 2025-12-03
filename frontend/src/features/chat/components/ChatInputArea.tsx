@@ -207,7 +207,7 @@ export function ChatInputArea({
   const [smartPrompts, setSmartPrompts] = useState<SuggestedPrompt[] | null>(null);
   const [isLoadingPrompts, setIsLoadingPrompts] = useState(false);
   const [promptsGenerated, setPromptsGenerated] = useState(false);
-  const [showSmartPrompts, setShowSmartPrompts] = useState(true);
+  const [showSmartPrompts, setShowSmartPrompts] = useState(false);
 
   // Check if current provider supports image generation
   const supportsImageGeneration = useMemo(() => {
