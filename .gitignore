@@ -11,6 +11,12 @@ dist/
 build/
 out/
 
+# TypeScript build info
+*.tsbuildinfo
+
+# macOS dynamic libraries
+*.dylib
+
 # .NET
 bin/
 obj/

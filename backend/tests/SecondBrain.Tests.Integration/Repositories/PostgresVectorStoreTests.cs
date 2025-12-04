@@ -201,7 +201,7 @@ public class PostgresVectorStoreTests : IAsyncLifetime
         var results = await _sut.SearchAsync(queryEmbedding, "user-1", topK: 3, similarityThreshold: 0.0f);
 
         // Assert
-        results.Should().HaveCountLessOrEqualTo(3);
+        results.Should().HaveCountLessThanOrEqualTo(3);
     }
 
     [Fact]

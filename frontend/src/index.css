@@ -91,6 +91,15 @@ body {
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.6;
   transition: background-color 0.3s ease, color 0.3s ease;
+  /* Ensure the background fills the entire viewport for transparent windows */
+  background-color: var(--background);
+}
+
+/* Root element styling for Tauri transparent window */
+#root {
+  min-height: 100vh;
+  background: var(--page-background);
+  background-attachment: fixed;
 }
 
 /* Base typography */

@@ -11,7 +11,8 @@ import { getApiBaseUrl, TIMEOUTS, RETRY } from './constants';
 // Configuration
 // ============================================
 
-const API_BASE_URL = getApiBaseUrl();
+// Get API URL dynamically (don't cache - Tauri sets it after module load)
+const getApiUrl = () => getApiBaseUrl();
 
 /**
  * Default request configuration
@@ -328,7 +329,7 @@ export const apiClient = {
 
     requestInit = await applyRequestInterceptors(requestInit);
 
-    return fetchWithRetry<T>(`${API_BASE_URL}${endpoint}`, requestInit, mergedConfig);
+    return fetchWithRetry<T>(`${getApiUrl()}${endpoint}`, requestInit, mergedConfig);
   },
 
   /**
@@ -352,7 +353,7 @@ export const apiClient = {
 
     requestInit = await applyRequestInterceptors(requestInit);
 
-    return fetchWithRetry<T>(`${API_BASE_URL}${endpoint}`, requestInit, mergedConfig);
+    return fetchWithRetry<T>(`${getApiUrl()}${endpoint}`, requestInit, mergedConfig);
   },
 
   /**
@@ -376,7 +377,7 @@ export const apiClient = {
 
     requestInit = await applyRequestInterceptors(requestInit);
 
-    return fetchWithRetry<T>(`${API_BASE_URL}${endpoint}`, requestInit, mergedConfig);
+    return fetchWithRetry<T>(`${getApiUrl()}${endpoint}`, requestInit, mergedConfig);
   },
 
   /**
@@ -400,7 +401,7 @@ export const apiClient = {
 
     requestInit = await applyRequestInterceptors(requestInit);
 
-    return fetchWithRetry<T>(`${API_BASE_URL}${endpoint}`, requestInit, mergedConfig);
+    return fetchWithRetry<T>(`${getApiUrl()}${endpoint}`, requestInit, mergedConfig);
   },
 
   /**
@@ -422,7 +423,7 @@ export const apiClient = {
 
     requestInit = await applyRequestInterceptors(requestInit);
 
-    return fetchWithRetry<T>(`${API_BASE_URL}${endpoint}`, requestInit, mergedConfig);
+    return fetchWithRetry<T>(`${getApiUrl()}${endpoint}`, requestInit, mergedConfig);
   },
 
   /**
@@ -455,7 +456,7 @@ export const apiClient = {
 
     requestInit = await applyRequestInterceptors(requestInit);
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, requestInit);
+    const response = await fetch(`${getApiUrl()}${endpoint}`, requestInit);
 
     if (!response.ok) {
       const errorMessage = await parseErrorMessage(response);
@@ -470,7 +471,7 @@ export const apiClient = {
    * Get the raw URL for an endpoint (useful for SSE/streaming)
    */
   getUrl(endpoint: string): string {
-    return `${API_BASE_URL}${endpoint}`;
+    return `${getApiUrl()}${endpoint}`;
   },
 
   /**

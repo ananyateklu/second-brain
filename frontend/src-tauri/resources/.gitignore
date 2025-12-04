@@ -1,0 +1,11 @@
+# Ignore PostgreSQL binaries (bundled at build time)
+postgresql/
+
+# Ignore backend build artifacts (bundled at build time)
+backend/*
+!backend/.arch
+!backend/.gitkeep
+
+# Keep the directory structure
+!.gitignore
+!.gitkeep

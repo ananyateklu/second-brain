@@ -1,7 +1,15 @@
-import type { TooltipProps } from 'recharts';
 import { formatTokenCount } from '../utils/dashboard-utils';
 
-interface PieChartTooltipProps extends TooltipProps<number, string> {
+interface PayloadItem {
+  name?: string;
+  value?: number;
+  payload?: Record<string, unknown>;
+}
+
+interface PieChartTooltipProps {
+  active?: boolean;
+  payload?: PayloadItem[];
+  label?: string;
   isTokenUsage?: boolean;
   modelDataMap?: Map<string, { conversations: number; tokens: number }>;
   totalConversations?: number;

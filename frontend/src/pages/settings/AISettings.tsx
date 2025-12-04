@@ -4,9 +4,12 @@ import { useSettingsStore } from '../../store/settings-store';
 import { useAuthStore } from '../../store/auth-store';
 import { useOllamaDownloadStore, formatBytes, formatSpeed, formatTimeRemaining } from '../../store/ollama-download-store';
 import { Modal } from '../../components/ui/Modal';
+import { TauriProviderApiKeyInput, useTauriSecrets } from '../../components/ui/TauriApiKeysManager';
+import { TauriPineconeSetupModal, usePineconeConfigured } from '../../components/ui/TauriPineconeSetupModal';
 import { useAIHealth } from '../../features/ai/hooks/use-ai-health';
 import { formatModelName } from '../../utils/model-name-formatter';
 import { toast } from '../../hooks/use-toast';
+import { isTauri } from '../../lib/native-notifications';
 import anthropicLight from '../../assets/anthropic-light.svg';
 import anthropicDark from '../../assets/anthropic-dark.svg';
 import googleLogo from '../../assets/google.svg';
@@ -150,6 +153,9 @@ export function AISettings() {
     } = useSettingsStore();
     const user = useAuthStore((state) => state.user);
     const { data: healthData, isLoading: isHealthLoading, refetch: refetchHealth } = useAIHealth();
+    const { isProviderConfigured, refetch: refetchSecrets } = useTauriSecrets();
+    const { isConfigured: isPineconeConfigured, refetch: refetchPineconeConfig } = usePineconeConfigured();
+    const [showPineconeSetup, setShowPineconeSetup] = useState(false);
     const [selectedProvider, setSelectedProvider] = useState<{ id: string; name: string } | null>(null);
     const [isSavingVectorStore, setIsSavingVectorStore] = useState(false);
     const [isSavingOllama, setIsSavingOllama] = useState(false);
@@ -164,7 +170,7 @@ export function AISettings() {
     const completedDownloads = Object.values(downloads).filter(d => d.status === 'completed' || d.status === 'error' || d.status === 'cancelled');
 
     // Get Ollama health data to check which models are already downloaded
-    const ollamaHealth = healthData?.providers?.find(p => p.provider === 'Ollama');
+    const ollamaHealth = healthData?.providers?.find((p: { provider: string }) => p.provider === 'Ollama');
     const downloadedModels = ollamaHealth?.availableModels || [];
 
     // Sync localOllamaUrl with store value when it changes
@@ -190,7 +196,7 @@ export function AISettings() {
     const getProviderHealth = (providerId: string) => {
         if (!healthData?.providers) return null;
         return healthData.providers.find(
-            (h) => getProviderIdFromName(h.provider) === providerId
+            (h: { provider: string }) => getProviderIdFromName(h.provider) === providerId
         );
     };
 
@@ -434,10 +440,21 @@ export function AISettings() {
                                                 </div>
 
                                                 <div className="text-xs font-semibold text-right whitespace-nowrap flex items-center gap-1" style={{ color: 'var(--color-brand-600)' }}>
-                                                    Details
-                                                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                                                    </svg>
+                                                    {isTauri() && isDisabled && !isProviderConfigured(provider.id) ? (
+                                                        <>
+                                                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
+                                                            </svg>
+                                                            Click to configure
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            Details
+                                                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                                                            </svg>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </div>
 
@@ -613,12 +630,45 @@ export function AISettings() {
                                                                 {option.badge}
                                                             </span>
                                                         )}
+                                                        {/* Show "Not Configured" badge for Pinecone in Tauri mode */}
+                                                        {option.id === 'Pinecone' && isTauri() && !isPineconeConfigured && (
+                                                            <span
+                                                                className="text-[10px] font-semibold px-2 py-0.5 rounded-full border"
+                                                                style={{
+                                                                    border: '1px solid color-mix(in srgb, #f59e0b 30%, transparent)',
+                                                                    backgroundColor: 'color-mix(in srgb, #f59e0b 12%, transparent)',
+                                                                    color: '#f59e0b',
+                                                                }}
+                                                            >
+                                                                Not Configured
+                                                            </span>
+                                                        )}
                                                     </div>
                                                     <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
                                                         {option.description}
                                                     </p>
                                                 </div>
                                             </div>
+                                            {/* Setup Pinecone button */}
+                                            {option.id === 'Pinecone' && isTauri() && !isPineconeConfigured && (
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setShowPineconeSetup(true);
+                                                    }}
+                                                    className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center gap-1.5"
+                                                    style={{
+                                                        backgroundColor: 'var(--color-brand-600)',
+                                                        color: 'white',
+                                                    }}
+                                                >
+                                                    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
+                                                    </svg>
+                                                    Setup Pinecone
+                                                </button>
+                                            )}
                                         </div>
                                         <div className="flex flex-wrap gap-2">
                                             {option.features.map((feature) => (
@@ -825,7 +875,7 @@ export function AISettings() {
                                                     scrollbarColor: 'var(--border) transparent',
                                                 }}
                                             >
-                                                {health.availableModels.map((model) => (
+                                                {health.availableModels.map((model: string) => (
                                                     <code
                                                         key={model}
                                                         className="px-1.5 py-0.5 rounded text-[9px] font-medium whitespace-nowrap"
@@ -1103,7 +1153,7 @@ export function AISettings() {
                                                                     .filter(model => selectedModelCategory === null || model.category === selectedModelCategory)
                                                                     .map((model) => {
                                                                         const fullName = `${model.name}:${model.tag}`;
-                                                                        const isDownloaded = downloadedModels.some(m =>
+                                                                        const isDownloaded = downloadedModels.some((m: string) =>
                                                                             m.toLowerCase().includes(model.name.toLowerCase()) &&
                                                                             m.toLowerCase().includes(model.tag.toLowerCase())
                                                                         );
@@ -1316,8 +1366,19 @@ export function AISettings() {
                                         </div>
                                     )}
 
-                                    {/* Instructions */}
-                                    {isDisabled && (
+                                    {/* API Key Configuration for Tauri Desktop App */}
+                                    {isDisabled && isTauri() && (
+                                        <TauriProviderApiKeyInput
+                                            providerId={selectedProvider.id}
+                                            onSaveSuccess={() => {
+                                                refetchHealth();
+                                                refetchSecrets();
+                                            }}
+                                        />
+                                    )}
+
+                                    {/* Instructions for Web/Non-Tauri */}
+                                    {isDisabled && !isTauri() && (
                                         <div className="space-y-3">
                                             <div>
                                                 <h3 className="text-sm font-semibold mb-2 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
@@ -1385,25 +1446,16 @@ export function AISettings() {
 
                                     {!isDisabled && !health?.isHealthy && (
                                         <div className="space-y-3">
-                                            <div
-                                                className="p-4 rounded-lg border-l-4 flex gap-3"
-                                                style={{
-                                                    backgroundColor: 'var(--surface-elevated)',
-                                                    borderLeftColor: '#ef4444',
-                                                }}
-                                            >
-                                                <svg className="h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: '#ef4444' }}>
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                </svg>
-                                                <div>
-                                                    <p className="text-sm font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
-                                                        Provider is enabled but not working
-                                                    </p>
-                                                    <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
-                                                        {health?.errorMessage || 'There may be an issue with the API key or connection.'}
-                                                    </p>
-                                                </div>
-                                            </div>
+                                            {/* API Key Configuration for Tauri - Update key if needed */}
+                                            {isTauri() && (
+                                                <TauriProviderApiKeyInput
+                                                    providerId={selectedProvider.id}
+                                                    onSaveSuccess={() => {
+                                                        refetchHealth();
+                                                        refetchSecrets();
+                                                    }}
+                                                />
+                                            )}
 
                                             {/* Troubleshooting Steps */}
                                             <div
@@ -1503,6 +1555,15 @@ export function AISettings() {
                     </div>
                 </Modal>
             )}
+
+            {/* Pinecone Setup Modal */}
+            <TauriPineconeSetupModal
+                isOpen={showPineconeSetup}
+                onClose={() => setShowPineconeSetup(false)}
+                onSaveSuccess={() => {
+                    refetchPineconeConfig();
+                }}
+            />
         </div>
     );
 }

@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import { useIndexStats, useDeleteIndexedNotes, useActiveIndexingVectorStores } from '../../features/rag/hooks/use-indexing';
 import { IndexStatsData } from '../../types/rag';
 import { toast } from '../../hooks/use-toast';
+import { isTauri } from '../../lib/native-notifications';
+import { TauriPineconeSetupModal, usePineconeConfigured } from './TauriPineconeSetupModal';
 
 interface IndexingStatsProps {
   userId?: string;
@@ -477,6 +480,8 @@ function StatsCard({ title, stats, userId, vectorStoreProvider, isIndexing }: { 
 export function IndexingStats({ userId = 'default-user' }: IndexingStatsProps) {
   const { data: stats, isLoading } = useIndexStats(userId);
   const activeVectorStores = useActiveIndexingVectorStores();
+  const { isConfigured: isPineconeConfigured, refetch: refetchPineconeConfig } = usePineconeConfigured();
+  const [showPineconeSetup, setShowPineconeSetup] = useState(false);
 
   if (isLoading) {
     return (
@@ -558,21 +563,113 @@ export function IndexingStats({ userId = 'default-user' }: IndexingStatsProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-      <StatsCard
-        title="PostgreSQL"
-        stats={stats.postgreSQL}
-        userId={userId}
-        vectorStoreProvider="PostgreSQL"
-        isIndexing={activeVectorStores.has('PostgreSQL')}
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <StatsCard
+          title="PostgreSQL"
+          stats={stats.postgreSQL}
+          userId={userId}
+          vectorStoreProvider="PostgreSQL"
+          isIndexing={activeVectorStores.has('PostgreSQL')}
+        />
+        {/* Pinecone Card - Show setup button if not configured in Tauri mode */}
+        {isTauri() && !isPineconeConfigured ? (
+          <div
+            className="relative p-3 rounded-xl border overflow-hidden group transition-all duration-300"
+            style={{
+              backgroundColor: 'var(--surface-elevated)',
+              borderColor: 'var(--border)',
+            }}
+          >
+            {/* Background gradient */}
+            <div
+              className="absolute inset-0 opacity-5"
+              style={{
+                background: 'linear-gradient(135deg, var(--color-brand-500) 0%, transparent 100%)',
+              }}
+            />
+
+            <div className="relative">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <h4 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+                    Pinecone
+                  </h4>
+                  <span
+                    className="w-1.5 h-1.5 rounded-full"
+                    style={{
+                      backgroundColor: '#f59e0b',
+                      opacity: 0.8,
+                    }}
+                    title="Not configured"
+                  />
+                </div>
+                <span
+                  className="text-xs px-2 py-0.5 rounded-md font-medium border"
+                  style={{
+                    backgroundColor: 'color-mix(in srgb, #f59e0b 10%, transparent)',
+                    borderColor: 'color-mix(in srgb, #f59e0b 30%, transparent)',
+                    color: '#f59e0b',
+                  }}
+                >
+                  Not Configured
+                </span>
+              </div>
+
+              <div className="text-center py-4">
+                <div
+                  className="flex h-12 w-12 mx-auto items-center justify-center rounded-xl border mb-3"
+                  style={{
+                    backgroundColor: 'color-mix(in srgb, var(--color-brand-600) 8%, transparent)',
+                    borderColor: 'color-mix(in srgb, var(--color-brand-600) 20%, transparent)',
+                  }}
+                >
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--color-brand-600)' }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                  </svg>
+                </div>
+                <p className="text-sm font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
+                  Pinecone Not Setup
+                </p>
+                <p className="text-xs mb-4" style={{ color: 'var(--text-secondary)' }}>
+                  Configure Pinecone for scalable vector storage
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowPineconeSetup(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  style={{
+                    backgroundColor: 'var(--color-brand-600)',
+                    color: 'white',
+                  }}
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
+                  </svg>
+                  Setup Pinecone
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <StatsCard
+            title="Pinecone"
+            stats={stats.pinecone}
+            userId={userId}
+            vectorStoreProvider="Pinecone"
+            isIndexing={activeVectorStores.has('Pinecone')}
+          />
+        )}
+      </div>
+
+      {/* Pinecone Setup Modal */}
+      <TauriPineconeSetupModal
+        isOpen={showPineconeSetup}
+        onClose={() => setShowPineconeSetup(false)}
+        onSaveSuccess={() => {
+          refetchPineconeConfig();
+        }}
       />
-      <StatsCard
-        title="Pinecone"
-        stats={stats.pinecone}
-        userId={userId}
-        vectorStoreProvider="Pinecone"
-        isIndexing={activeVectorStores.has('Pinecone')}
-      />
-    </div>
+    </>
   );
 }

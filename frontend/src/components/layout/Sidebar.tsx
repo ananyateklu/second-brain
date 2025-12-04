@@ -1,11 +1,18 @@
 import { NavLink } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useUIStore } from '../../store/ui-store';
 import { useThemeStore } from '../../store/theme-store';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import logoLight from '../../assets/second-brain-logo-light-mode.png';
 import logoDark from '../../assets/second-brain-logo-dark-mode.png';
 import brainTopTab from '../../assets/brain-top-tab.png';
+
+/**
+ * Check if we're running in Tauri
+ */
+const isTauri = (): boolean => {
+  return '__TAURI_INTERNALS__' in window;
+};
 
 export function Sidebar() {
   const openCreateModal = useUIStore((state) => state.openCreateModal);
@@ -16,19 +23,34 @@ export function Sidebar() {
   const logo = theme === 'light' ? logoLight : logoDark;
 
   const [hoveredLink, setHoveredLink] = useState<string | null>(null);
+  const [isTauriApp, setIsTauriApp] = useState(false);
+
+  useEffect(() => {
+    setIsTauriApp(isTauri());
+  }, []);
 
   const isCollapsed = sidebarState === 'collapsed';
   const isExpanded = sidebarState === 'expanded';
   const isClosed = sidebarState === 'closed';
   const canCloseFromCollapsed = isCollapsed && previousSidebarState === 'expanded';
 
+  // Calculate top position and height based on Tauri mode
+  // In Tauri, we need to offset for the title bar (28px) plus some margin
+  const titleBarOffset = isTauriApp ? 28 : 0;
+  const topPosition = isTauriApp ? `calc(1rem + ${titleBarOffset}px)` : '1rem';
+  const sidebarHeight = isTauriApp ? `calc(100vh - 2rem - ${titleBarOffset}px)` : 'calc(100vh - 2rem)';
+
   // Green toggle button when sidebar is closed
   if (isClosed) {
+    // Calculate vertical center accounting for title bar
+    const centerOffset = isTauriApp ? `calc(50% + ${titleBarOffset / 2}px)` : '50%';
+    
     return (
       <button
         onClick={toggleSidebar}
-        className="hidden md:flex fixed left-0 top-1/2 -translate-y-1/2 z-30 w-8 h-16 items-center justify-center rounded-r-2xl transition-all duration-500 hover:w-10 hover:shadow-2xl active:scale-95 group overflow-hidden"
+        className="hidden md:flex fixed left-0 -translate-y-1/2 z-30 w-8 h-16 items-center justify-center rounded-r-2xl transition-all duration-500 hover:w-10 hover:shadow-2xl active:scale-95 group overflow-hidden"
         style={{
+          top: centerOffset,
           backgroundColor: 'var(--btn-primary-bg)',
           color: 'var(--btn-primary-text)',
           boxShadow: 'var(--btn-primary-shadow)',
@@ -59,9 +81,11 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`hidden md:flex sticky top-4 h-[calc(100vh-2rem)] ml-4 z-30 flex-col pb-6 rounded-3xl border overflow-hidden ${isCollapsed ? 'w-20' : 'w-72 px-6'
+      className={`hidden md:flex sticky ml-4 z-30 flex-col pb-6 rounded-3xl border overflow-hidden ${isCollapsed ? 'w-20' : 'w-72 px-6'
         }`}
       style={{
+        top: topPosition,
+        height: sidebarHeight,
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',
         boxShadow: 'var(--shadow-2xl), 0 0 80px -20px var(--color-primary-alpha)',

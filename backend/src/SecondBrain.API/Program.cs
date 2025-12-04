@@ -117,19 +117,34 @@ builder.Services.AddCustomHealthChecks();
 
 var app = builder.Build();
 
-// Apply database migrations on startup (development only)
-if (app.Environment.IsDevelopment())
+// Apply database schema on startup
+var isDesktopMode = Environment.GetEnvironmentVariable("SecondBrain__DesktopMode") == "true";
 {
     using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    
     try
     {
-        await dbContext.Database.MigrateAsync();
+        if (isDesktopMode)
+        {
+            // Desktop mode: use EnsureCreated to create schema without migrations
+            // This is appropriate for embedded databases that start fresh
+            logger.LogInformation("Desktop mode: Ensuring database schema exists...");
+            await dbContext.Database.EnsureCreatedAsync();
+            logger.LogInformation("Database schema ensured successfully.");
+        }
+        else if (app.Environment.IsDevelopment())
+        {
+            // Development mode: use migrations
+            logger.LogInformation("Applying database migrations...");
+            await dbContext.Database.MigrateAsync();
+            logger.LogInformation("Database migrations applied successfully.");
+        }
     }
     catch (Exception ex)
     {
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-        logger.LogWarning(ex, "Database migration failed. Database may not exist yet.");
+        logger.LogWarning(ex, "Database initialization failed. Error: {Message}", ex.Message);
     }
 }
 

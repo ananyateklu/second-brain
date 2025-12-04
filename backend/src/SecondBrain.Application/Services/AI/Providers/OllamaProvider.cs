@@ -115,7 +115,7 @@ public class OllamaProvider : IAIProvider
 
             // Consume the async enumerable to get the final response
             GenerateResponseStream? response = null;
-            await foreach (var stream in client.Generate(generateRequest))
+            await foreach (var stream in client.GenerateAsync(generateRequest, cancellationToken))
             {
                 response = stream;
             }
@@ -212,7 +212,7 @@ public class OllamaProvider : IAIProvider
 
             // Consume the async enumerable to get the final response
             ChatResponseStream? response = null;
-            await foreach (var stream in client.Chat(chatRequest))
+            await foreach (var stream in client.ChatAsync(chatRequest, cancellationToken))
             {
                 response = stream;
             }
@@ -309,7 +309,7 @@ public class OllamaProvider : IAIProvider
         IAsyncEnumerable<GenerateResponseStream?>? stream = null;
         try
         {
-            stream = client.Generate(generateRequest);
+            stream = client.GenerateAsync(generateRequest, cancellationToken);
         }
         catch (HttpRequestException ex) when (ex.InnerException is SocketException)
         {
@@ -384,7 +384,7 @@ public class OllamaProvider : IAIProvider
         IAsyncEnumerable<ChatResponseStream?>? stream = null;
         try
         {
-            stream = client.Chat(chatRequest);
+            stream = client.ChatAsync(chatRequest, cancellationToken);
         }
         catch (HttpRequestException ex) when (ex.InnerException is SocketException)
         {
@@ -448,7 +448,7 @@ public class OllamaProvider : IAIProvider
 
         try
         {
-            var models = await _defaultClient.ListLocalModels(cancellationToken);
+            var models = await _defaultClient.ListLocalModelsAsync(cancellationToken);
             return models != null && models.Any();
         }
         catch (HttpRequestException ex) when (ex.InnerException is SocketException)
@@ -523,7 +523,7 @@ public class OllamaProvider : IAIProvider
 
         try
         {
-            var models = await client.ListLocalModels(linkedCts.Token);
+            var models = await client.ListLocalModelsAsync(linkedCts.Token);
             stopwatch.Stop();
 
             var isHealthy = models != null && models.Any();
@@ -685,8 +685,8 @@ public class OllamaProvider : IAIProvider
         long lastCompletedBytes = 0;
         DateTime lastProgressTime = DateTime.UtcNow;
 
-        // Get the pull stream - note: PullModel doesn't throw on call, it throws on enumeration
-        var pullStream = client.PullModel(modelName, cancellationToken);
+        // Get the pull stream - note: PullModelAsync doesn't throw on call, it throws on enumeration
+        var pullStream = client.PullModelAsync(modelName, cancellationToken);
 
         // Use a separate enumerator to handle errors during enumeration
         var enumerator = pullStream.GetAsyncEnumerator(cancellationToken);
@@ -823,7 +823,7 @@ public class OllamaProvider : IAIProvider
         try
         {
             _logger.LogInformation("Deleting model: {ModelName} from {Url}", modelName, effectiveUrl);
-            await client.DeleteModel(modelName, cancellationToken);
+            await client.DeleteModelAsync(modelName, cancellationToken);
             _logger.LogInformation("Model deleted: {ModelName}", modelName);
             return (true, null);
         }

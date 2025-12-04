@@ -43,8 +43,8 @@ export interface ChatMessageListProps {
   isCreating: boolean;
   isGeneratingImage?: boolean;
   // Refs for scrolling
-  messagesContainerRef: RefObject<HTMLDivElement>;
-  messagesEndRef: RefObject<HTMLDivElement>;
+  messagesContainerRef: RefObject<HTMLDivElement | null>;
+  messagesEndRef: RefObject<HTMLDivElement | null>;
 }
 
 /**

@@ -1481,3 +1481,68 @@ button {
 .conversation-title {
   font-weight: 400 !important;
 }
+
+/* ========================================
+   macOS Title Bar Integration
+   ======================================== */
+
+/* Title bar drag region styling */
+.title-bar {
+  -webkit-app-region: drag;
+  app-region: drag;
+  /* Ensure the title bar is above all content but allows click-through */
+  pointer-events: auto;
+}
+
+/* Prevent text selection in drag region */
+.title-bar * {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Traffic light button spacer - prevents drag in that area */
+.traffic-light-spacer {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+/* Make interactive elements within title bar clickable */
+.title-bar button,
+.title-bar a,
+.title-bar input,
+.title-bar [data-interactive] {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+  pointer-events: auto;
+}
+
+/* macOS-specific window styling when transparent */
+@supports (-webkit-app-region: drag) {
+  /* Root styling for transparent window */
+  :root {
+    /* Ensure background is visible through transparent window */
+    --window-bg-opacity: 0.98;
+  }
+
+  /* Main app container styling for macOS */
+  #root {
+    min-height: 100vh;
+    background: var(--page-background);
+  }
+}
+
+/* Sidebar adjustments for macOS title bar */
+@supports (-webkit-app-region: drag) {
+  /* Add extra top padding to sidebar to clear title bar area */
+  .sidebar-macos-offset {
+    padding-top: calc(28px + 1rem);
+  }
+}
+
+/* Content area styling - ensure it fills properly */
+.app-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
