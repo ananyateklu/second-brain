@@ -67,6 +67,11 @@ public class AgentStreamEvent
     /// Retrieved notes from automatic context injection (for ContextRetrieval events)
     /// </summary>
     public List<RetrievedNoteContext>? RetrievedNotes { get; set; }
+    
+    /// <summary>
+    /// RAG query log ID for feedback submission (for ContextRetrieval events)
+    /// </summary>
+    public string? RagLogId { get; set; }
 }
 
 /// <summary>
@@ -79,6 +84,12 @@ public class RetrievedNoteContext
     public string Preview { get; set; } = string.Empty;
     public List<string> Tags { get; set; } = new();
     public float SimilarityScore { get; set; }
+    
+    /// <summary>
+    /// The full chunk content that was matched by RAG search.
+    /// This contains the actual relevant content (not truncated).
+    /// </summary>
+    public string? ChunkContent { get; set; }
 }
 
 public enum AgentEventType

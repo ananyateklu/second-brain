@@ -41,6 +41,8 @@ export interface AgentStreamState {
   inputTokens?: number;
   outputTokens?: number;
   streamDuration?: number;
+  /** RAG query log ID for feedback submission when agent uses auto context fetching */
+  ragLogId?: string;
 }
 
 /**
@@ -124,12 +126,21 @@ export interface AgentNotesResponse {
 }
 
 /**
+ * Context retrieval event data from agent auto-RAG
+ */
+export interface ContextRetrievalData {
+  notes: RetrievedNoteContext[];
+  ragLogId?: string;
+}
+
+/**
  * Agent streaming callbacks
  */
 export interface AgentStreamingCallbacks {
   onToken: (token: string) => void;
   onThinking?: (step: ThinkingStep) => void;
   onToolExecution?: (execution: ToolExecution) => void;
+  onContextRetrieval?: (data: ContextRetrievalData) => void;
   onStart?: () => void;
   onEnd?: (data: AgentEndData) => void;
   onError?: (error: Error) => void;

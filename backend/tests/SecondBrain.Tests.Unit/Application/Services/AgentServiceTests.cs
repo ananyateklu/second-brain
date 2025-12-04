@@ -11,10 +11,12 @@ namespace SecondBrain.Tests.Unit.Application.Services;
 public class AgentServiceTests
 {
     private readonly Mock<IOptions<AIProvidersSettings>> _mockSettings;
+    private readonly Mock<IOptions<RagSettings>> _mockRagSettings;
     private readonly Mock<INoteRepository> _mockNoteRepository;
     private readonly Mock<IRagService> _mockRagService;
     private readonly Mock<ILogger<AgentService>> _mockLogger;
     private readonly AIProvidersSettings _settings;
+    private readonly RagSettings _ragSettings;
     private readonly AgentService _sut;
 
     public AgentServiceTests()
@@ -32,11 +34,25 @@ public class AgentServiceTests
             Ollama = new OllamaSettings { Enabled = true, BaseUrl = "http://localhost:11434" }
         };
 
+        _ragSettings = new RagSettings
+        {
+            TopK = 5,
+            SimilarityThreshold = 0.3f,
+            EnableHybridSearch = true,
+            EnableQueryExpansion = true,
+            EnableHyDE = true,
+            EnableReranking = true
+        };
+
         _mockSettings = new Mock<IOptions<AIProvidersSettings>>();
         _mockSettings.Setup(s => s.Value).Returns(_settings);
 
+        _mockRagSettings = new Mock<IOptions<RagSettings>>();
+        _mockRagSettings.Setup(s => s.Value).Returns(_ragSettings);
+
         _sut = new AgentService(
             _mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -126,6 +142,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -181,6 +198,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -529,6 +547,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -576,6 +595,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -618,6 +638,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -649,6 +670,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -722,6 +744,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -763,6 +786,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -827,6 +851,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -869,6 +894,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -927,6 +953,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -970,6 +997,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -1013,6 +1041,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -1056,6 +1085,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -1097,6 +1127,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -1138,6 +1169,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -1179,6 +1211,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -1229,6 +1262,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -1275,6 +1309,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -1321,6 +1356,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -1369,6 +1405,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -1453,6 +1490,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -1495,6 +1533,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -1538,6 +1577,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -1581,6 +1621,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -1623,6 +1664,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -1706,6 +1748,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -1751,6 +1794,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -2187,6 +2231,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -2216,6 +2261,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -2244,6 +2290,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -2273,6 +2320,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -2302,6 +2350,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -2331,6 +2380,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -2360,6 +2410,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -2511,6 +2562,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -2555,6 +2607,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -2615,6 +2668,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -2658,6 +2712,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -2895,6 +2950,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -2950,6 +3006,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -3000,6 +3057,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -3029,6 +3087,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -3058,6 +3117,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -3087,6 +3147,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -3115,6 +3176,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object
@@ -3143,6 +3205,7 @@ public class AgentServiceTests
 
         var service = new AgentService(
             mockSettings.Object,
+            _mockRagSettings.Object,
             _mockNoteRepository.Object,
             _mockRagService.Object,
             _mockLogger.Object

@@ -80,6 +80,7 @@ export function useAgentStream() {
   const [toolExecutions, setToolExecutions] = useState<ToolExecution[]>([]);
   const [thinkingSteps, setThinkingSteps] = useState<ThinkingStep[]>([]);
   const [retrievedNotes, setRetrievedNotes] = useState<RetrievedNoteContext[]>([]);
+  const [ragLogId, setRagLogId] = useState<string | undefined>(undefined);
   const [processingStatus, setProcessingStatus] = useState<string | null>(null);
   const [inputTokens, setInputTokens] = useState<number | undefined>(undefined);
   const [outputTokens, setOutputTokens] = useState<number | undefined>(undefined);
@@ -97,6 +98,7 @@ export function useAgentStream() {
       setToolExecutions([]);
       setThinkingSteps([]);
       setRetrievedNotes([]);
+      setRagLogId(undefined);
       setProcessingStatus(null);
       completeThinkingBlocksRef.current.clear();
 
@@ -345,6 +347,10 @@ export function useAgentStream() {
                       const contextTokens = estimateContextTokens(contextData.retrievedNotes);
                       setInputTokens((prev) => (prev ?? 0) + contextTokens);
                     }
+                    // Capture ragLogId for feedback submission
+                    if (contextData.ragLogId) {
+                      setRagLogId(contextData.ragLogId);
+                    }
                   } catch (e) {
                     console.error('Failed to parse context_retrieval data:', e);
                   }
@@ -352,6 +358,18 @@ export function useAgentStream() {
                 break;
 
               case 'end':
+                if (data) {
+                  try {
+                    const endData = JSON.parse(data);
+                    // Capture ragLogId from end event (ensures we have it even if context_retrieval was missed)
+                    if (endData.ragLogId) {
+                      setRagLogId(endData.ragLogId);
+                    }
+                  } catch (e) {
+                    console.error('Failed to parse end data:', e);
+                  }
+                }
+
                 if (streamStartTimeRef.current) {
                   const duration = Date.now() - streamStartTimeRef.current;
                   setStreamDuration(duration);
@@ -438,6 +456,7 @@ export function useAgentStream() {
     toolExecutions,
     thinkingSteps,
     retrievedNotes,
+    ragLogId,
     processingStatus,
     inputTokens,
     outputTokens,

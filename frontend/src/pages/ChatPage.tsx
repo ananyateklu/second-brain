@@ -60,6 +60,7 @@ export function ChatPage() {
     inputTokens,
     outputTokens,
     streamDuration,
+    ragLogId,
 
     // Scroll
     messagesEndRef,
@@ -160,6 +161,7 @@ export function ChatPage() {
           inputTokens={inputTokens}
           outputTokens={outputTokens}
           streamDuration={streamDuration}
+          ragLogId={ragLogId}
           agentModeEnabled={agentModeEnabled}
           userName={user?.displayName}
           isSending={sendMessage.isPending}

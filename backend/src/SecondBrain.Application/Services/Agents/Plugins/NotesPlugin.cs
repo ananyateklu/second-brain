@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Text.Json;
 using Microsoft.SemanticKernel;
+using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.RAG;
 using SecondBrain.Core.Entities;
 using SecondBrain.Core.Interfaces;
@@ -11,16 +12,18 @@ public class NotesPlugin : IAgentPlugin
 {
     private readonly INoteRepository _noteRepository;
     private readonly IRagService? _ragService;
+    private readonly RagSettings? _ragSettings;
     private string _currentUserId = string.Empty;
     private bool _agentRagEnabled = true;
 
     // Maximum length for content preview in list operations
     private const int MaxPreviewLength = 200;
 
-    public NotesPlugin(INoteRepository noteRepository, IRagService? ragService = null)
+    public NotesPlugin(INoteRepository noteRepository, IRagService? ragService = null, RagSettings? ragSettings = null)
     {
         _noteRepository = noteRepository;
         _ragService = ragService;
+        _ragSettings = ragSettings;
     }
 
     /// <summary>
@@ -660,11 +663,14 @@ For simple additions, use AppendToNote instead.";
 
         try
         {
+            // Use configuration-based threshold for consistent quality with normal chat RAG
+            var similarityThreshold = _ragSettings?.SimilarityThreshold ?? 0.3f;
+            
             var ragContext = await _ragService.RetrieveContextAsync(
                 query,
                 _currentUserId,
                 topK: maxResults,
-                similarityThreshold: 0.3f);
+                similarityThreshold: similarityThreshold);
 
             if (!ragContext.RetrievedNotes.Any())
             {
@@ -678,22 +684,46 @@ For simple additions, use AppendToNote instead.";
                 .Select(g => g.OrderByDescending(r => r.SimilarityScore).First())
                 .ToList();
 
-            // Get note details for the retrieved notes (preview only)
+            // Get note details with FULL matched chunk content (not just preview)
             var noteData = new List<object>();
             foreach (var result in uniqueNoteResults)
             {
                 var note = await _noteRepository.GetByIdAsync(result.NoteId);
                 if (note != null && note.UserId == _currentUserId)
                 {
+                    // Parse the chunk content to extract meaningful information
+                    var parsedChunk = SecondBrain.Application.Utilities.NoteContentParser.Parse(result.Content);
+                    
+                    // Use chunk content that was actually matched by RAG (not generic preview)
+                    var chunkContent = parsedChunk.Content;
+                    if (string.IsNullOrWhiteSpace(chunkContent))
+                    {
+                        // Fallback: extract content from raw chunk
+                        chunkContent = ExtractContentFromChunk(result.Content);
+                    }
+
+                    // Build score information
+                    var scoreInfo = result.SimilarityScore;
+                    float? rerankScore = null;
+                    if (result.Metadata != null && result.Metadata.TryGetValue("rerankScore", out var rs) && rs is float rsFloat)
+                    {
+                        rerankScore = rsFloat;
+                    }
+
                     noteData.Add(new
                     {
                         id = note.Id,
                         title = note.Title,
+                        // Include the matched chunk content for context (this is what was actually found)
+                        matchedContent = chunkContent,
+                        // Also include a short preview for display
                         preview = GetContentPreview(note.Content),
                         tags = note.Tags,
                         createdAt = note.CreatedAt,
                         updatedAt = note.UpdatedAt,
-                        similarityScore = result.SimilarityScore
+                        similarityScore = scoreInfo,
+                        rerankScore = rerankScore,
+                        chunkIndex = result.ChunkIndex
                     });
                 }
             }
@@ -701,7 +731,7 @@ For simple additions, use AppendToNote instead.";
             var response = new
             {
                 type = "notes",
-                message = $"Found {noteData.Count} note(s) semantically related to \"{query}\". Use GetNote with the note ID to read full content.",
+                message = $"Found {noteData.Count} note(s) semantically related to \"{query}\". The 'matchedContent' field contains the relevant portion that matched your query.",
                 notes = noteData
             };
 
@@ -711,6 +741,41 @@ For simple additions, use AppendToNote instead.";
         {
             return $"Error performing semantic search: {ex.Message}";
         }
+    }
+
+    /// <summary>
+    /// Extracts meaningful content from a raw chunk, skipping metadata lines.
+    /// </summary>
+    private static string ExtractContentFromChunk(string? rawContent)
+    {
+        if (string.IsNullOrWhiteSpace(rawContent))
+            return string.Empty;
+
+        var lines = rawContent.Split('\n');
+        var contentLines = new List<string>();
+
+        foreach (var line in lines)
+        {
+            var trimmedLine = line.Trim();
+
+            // Skip metadata lines we already display separately
+            if (trimmedLine.StartsWith("Title:") ||
+                trimmedLine.StartsWith("Tags:") ||
+                trimmedLine.StartsWith("Created:") ||
+                trimmedLine.StartsWith("Last Updated:") ||
+                trimmedLine == "Content:")
+            {
+                continue;
+            }
+
+            // Add any other non-empty lines as content
+            if (!string.IsNullOrWhiteSpace(trimmedLine))
+            {
+                contentLines.Add(trimmedLine);
+            }
+        }
+
+        return string.Join("\n", contentLines).Trim();
     }
 
     [KernelFunction("DeleteNote")]

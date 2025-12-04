@@ -72,6 +72,8 @@ export interface ChatPageState {
   inputTokens?: number;
   outputTokens?: number;
   streamDuration?: number;
+  /** RAG query log ID for feedback submission (from agent auto-context or regular RAG) */
+  ragLogId?: string;
 
   // Scroll
   messagesEndRef: React.RefObject<HTMLDivElement>;
@@ -237,6 +239,7 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     inputTokens,
     outputTokens,
     streamDuration,
+    ragLogId,
     sendMessage: sendStreamingMessage,
     cancelStream,
     resetStream,
@@ -584,6 +587,7 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     inputTokens,
     outputTokens,
     streamDuration,
+    ragLogId,
 
     // Scroll
     messagesEndRef,

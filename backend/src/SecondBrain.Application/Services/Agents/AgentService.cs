@@ -47,30 +47,28 @@ internal class FunctionInvocationFilter : Microsoft.SemanticKernel.IFunctionInvo
 public class AgentService : IAgentService
 {
     private readonly AIProvidersSettings _settings;
+    private readonly RagSettings _ragSettings;
     private readonly INoteRepository _noteRepository;
     private readonly IRagService _ragService;
     private readonly ILogger<AgentService> _logger;
     private readonly Dictionary<string, IAgentPlugin> _plugins = new();
     private readonly QueryIntentDetector _intentDetector = new();
 
-    // Constants for context injection
-    private const int ContextRetrievalTopK = 3;
-    private const float ContextRetrievalThreshold = 0.4f;
-    private const int MaxPreviewLength = 300;
-
     public AgentService(
         IOptions<AIProvidersSettings> settings,
+        IOptions<RagSettings> ragSettings,
         INoteRepository noteRepository,
         IRagService ragService,
         ILogger<AgentService> logger)
     {
         _settings = settings.Value;
+        _ragSettings = ragSettings.Value;
         _noteRepository = noteRepository;
         _ragService = ragService;
         _logger = logger;
 
         // Register available plugins
-        RegisterPlugin(new NotesPlugin(noteRepository, ragService));
+        RegisterPlugin(new NotesPlugin(noteRepository, ragService, ragSettings.Value));
         // Future plugins can be registered here:
         // RegisterPlugin(new WebSearchPlugin(...));
         // RegisterPlugin(new CalendarPlugin(...));
@@ -214,7 +212,7 @@ public class AgentService : IAgentService
                 Content = "Searching your notes for relevant context..."
             };
 
-            var (contextMessage, retrievedNotes) = await TryRetrieveContextAsync(
+            var (contextMessage, retrievedNotes, ragLogId) = await TryRetrieveContextAsync(
                 lastUserMessage, request.UserId, HasNotesCapability(request), cancellationToken);
 
             if (contextMessage != null && retrievedNotes != null && retrievedNotes.Count > 0)
@@ -224,7 +222,8 @@ public class AgentService : IAgentService
                 {
                     Type = AgentEventType.ContextRetrieval,
                     Content = $"Found {retrievedNotes.Count} relevant note(s)",
-                    RetrievedNotes = retrievedNotes
+                    RetrievedNotes = retrievedNotes,
+                    RagLogId = ragLogId?.ToString()
                 };
 
                 // Inject context as a system message (after the main system prompt but before user messages)
@@ -560,7 +559,7 @@ public class AgentService : IAgentService
                 Content = "Searching your notes for relevant context..."
             };
 
-            var (contextMessage, retrievedNotes) = await TryRetrieveContextAsync(
+            var (contextMessage, retrievedNotes, ragLogId) = await TryRetrieveContextAsync(
                 lastUserMessageAnthropic, request.UserId, HasNotesCapability(request), cancellationToken);
 
             if (contextMessage != null && retrievedNotes != null && retrievedNotes.Count > 0)
@@ -570,7 +569,8 @@ public class AgentService : IAgentService
                 {
                     Type = AgentEventType.ContextRetrieval,
                     Content = $"Found {retrievedNotes.Count} relevant note(s)",
-                    RetrievedNotes = retrievedNotes
+                    RetrievedNotes = retrievedNotes,
+                    RagLogId = ragLogId?.ToString()
                 };
 
                 injectedContext = contextMessage;
@@ -1289,39 +1289,43 @@ public class AgentService : IAgentService
     /// <summary>
     /// Attempts to retrieve relevant note context for the user's query using semantic search.
     /// Returns null if no relevant context is found or if context retrieval is not applicable.
+    /// Also returns the RagLogId for feedback submission when analytics are enabled.
+    /// Uses the same RAG pipeline parameters as normal chat for consistent quality.
     /// </summary>
-    private async Task<(string? ContextMessage, List<RetrievedNoteContext>? RetrievedNotes)> TryRetrieveContextAsync(
+    private async Task<(string? ContextMessage, List<RetrievedNoteContext>? RetrievedNotes, Guid? RagLogId)> TryRetrieveContextAsync(
         string query,
         string userId,
         bool hasNotesCapability,
         CancellationToken cancellationToken)
     {
         if (!hasNotesCapability)
-            return (null, null);
+            return (null, null, null);
 
         if (!_intentDetector.ShouldRetrieveContext(query))
         {
             _logger.LogDebug("Query does not require context retrieval: {Query}",
                 query.Substring(0, Math.Min(50, query.Length)));
-            return (null, null);
+            return (null, null, null);
         }
 
         try
         {
-            _logger.LogInformation("Retrieving context for query: {Query}",
+            _logger.LogInformation("Retrieving context for query using RAG settings (TopK: {TopK}, Threshold: {Threshold}): {Query}",
+                _ragSettings.TopK, _ragSettings.SimilarityThreshold,
                 query.Substring(0, Math.Min(50, query.Length)));
 
+            // Use configuration-based parameters (same as normal chat) for consistent quality
             var ragContext = await _ragService.RetrieveContextAsync(
                 query,
                 userId,
-                topK: ContextRetrievalTopK,
-                similarityThreshold: ContextRetrievalThreshold,
+                topK: _ragSettings.TopK,
+                similarityThreshold: _ragSettings.SimilarityThreshold,
                 cancellationToken: cancellationToken);
 
             if (!ragContext.RetrievedNotes.Any())
             {
                 _logger.LogDebug("No relevant notes found for context injection");
-                return (null, null);
+                return (null, null, null);
             }
 
             // Deduplicate by NoteId, keeping highest score
@@ -1330,71 +1334,127 @@ public class AgentService : IAgentService
                 .Select(g => g.OrderByDescending(r => r.SimilarityScore).First())
                 .ToList();
 
-            // Build context message and retrieved notes list
+            // Build context message using rich formatting similar to normal chat RAG
             var retrievedNotes = new List<RetrievedNoteContext>();
             var contextBuilder = new StringBuilder();
             contextBuilder.AppendLine("---RELEVANT NOTES CONTEXT (use for answering)---");
+            contextBuilder.AppendLine();
 
+            var noteIndex = 1;
             foreach (var note in uniqueNotes)
             {
-                // Get full note for better preview
-                var fullNote = await _noteRepository.GetByIdAsync(note.NoteId);
-                if (fullNote == null || fullNote.UserId != userId)
-                    continue;
+                // Extract metadata from chunk content (uses same format as RagService)
+                var parsedNote = SecondBrain.Application.Utilities.NoteContentParser.Parse(note.Content);
+                
+                // Get tags from parsed content or note metadata
+                var tags = parsedNote.Tags?.Any() == true ? parsedNote.Tags : note.NoteTags;
+                var tagsStr = tags?.Any() == true ? $"Tags: {string.Join(", ", tags)}" : "";
 
-                var preview = GetContentPreview(fullNote.Content, MaxPreviewLength);
-                var tagsStr = fullNote.Tags.Any() ? $" [Tags: {string.Join(", ", fullNote.Tags)}]" : "";
+                // Build score information similar to normal chat
+                var scoreInfo = $"Relevance: {note.SimilarityScore:F2}";
+                if (note.Metadata != null)
+                {
+                    if (note.Metadata.TryGetValue("rerankScore", out var rerankScore) && rerankScore is float rs)
+                        scoreInfo = $"Relevance: {rs:F1}/10, Semantic: {note.SimilarityScore:F2}";
+                    else if (note.Metadata.TryGetValue("vectorScore", out var vectorScore) && vectorScore is float vs)
+                        scoreInfo = $"Semantic: {vs:F2}";
+                }
 
-                contextBuilder.AppendLine($"[Note: \"{fullNote.Title}\"] (relevance: {note.SimilarityScore:F2}){tagsStr}");
-                contextBuilder.AppendLine($"Preview: {preview}");
+                // Use the actual chunk content that was matched (not a preview of the full note)
+                // This is the key difference - we use the matched chunk content for accuracy
+                var contentToShow = parsedNote.Content;
+                if (string.IsNullOrWhiteSpace(contentToShow))
+                {
+                    // Fallback: extract content from raw chunk, skipping metadata lines
+                    contentToShow = ExtractContentFromChunk(note.Content);
+                }
+
+                contextBuilder.AppendLine($"=== NOTE {noteIndex} ({scoreInfo}) ===");
+                contextBuilder.AppendLine($"Title: {parsedNote.Title ?? note.NoteTitle}");
+                contextBuilder.AppendLine($"Note ID: {note.NoteId}");
+                if (!string.IsNullOrEmpty(tagsStr))
+                    contextBuilder.AppendLine(tagsStr);
+                if (parsedNote.CreatedDate.HasValue)
+                    contextBuilder.AppendLine($"Created: {parsedNote.CreatedDate:yyyy-MM-dd}");
+                if (parsedNote.UpdatedDate.HasValue)
+                    contextBuilder.AppendLine($"Last Updated: {parsedNote.UpdatedDate:yyyy-MM-dd}");
                 contextBuilder.AppendLine();
+                contextBuilder.AppendLine("Content:");
+                contextBuilder.AppendLine(contentToShow);
+                contextBuilder.AppendLine();
+
+                // Build preview for UI display (limited length)
+                var previewForUI = contentToShow.Length > 300 
+                    ? contentToShow.Substring(0, 300) + "..." 
+                    : contentToShow;
 
                 retrievedNotes.Add(new RetrievedNoteContext
                 {
                     NoteId = note.NoteId,
-                    Title = fullNote.Title,
-                    Preview = preview,
-                    Tags = fullNote.Tags.ToList(),
-                    SimilarityScore = note.SimilarityScore
+                    Title = parsedNote.Title ?? note.NoteTitle,
+                    Preview = previewForUI,
+                    Tags = tags?.ToList() ?? new List<string>(),
+                    SimilarityScore = note.SimilarityScore,
+                    ChunkContent = contentToShow  // Include full chunk content
                 });
+
+                noteIndex++;
             }
 
             contextBuilder.AppendLine("---END CONTEXT---");
-            contextBuilder.AppendLine("Use GetNote tool with the note ID if you need the full content of any note above.");
+            contextBuilder.AppendLine();
+            contextBuilder.AppendLine("INSTRUCTIONS:");
+            contextBuilder.AppendLine("- Answer using the information from the retrieved notes above.");
+            contextBuilder.AppendLine("- Cite notes by title when using their information: [Note Title]");
+            contextBuilder.AppendLine("- If you need more details from a note, use GetNote tool with the Note ID.");
+            contextBuilder.AppendLine("- If the context doesn't contain the answer, say so clearly.");
 
-            _logger.LogInformation("Injected context from {Count} notes", retrievedNotes.Count);
+            _logger.LogInformation("Injected rich context from {Count} notes with RagLogId: {RagLogId}", 
+                retrievedNotes.Count, ragContext.RagLogId);
 
-            return (contextBuilder.ToString(), retrievedNotes);
+            return (contextBuilder.ToString(), retrievedNotes, ragContext.RagLogId);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to retrieve context for query, proceeding without context");
-            return (null, null);
+            return (null, null, null);
         }
     }
 
     /// <summary>
-    /// Extracts a preview from note content - first portion limited to maxLength characters.
+    /// Extracts meaningful content from a raw chunk, skipping metadata lines.
+    /// Used as fallback when NoteContentParser doesn't find a Content section.
     /// </summary>
-    private static string GetContentPreview(string content, int maxLength)
+    private static string ExtractContentFromChunk(string? rawContent)
     {
-        if (string.IsNullOrWhiteSpace(content))
+        if (string.IsNullOrWhiteSpace(rawContent))
             return string.Empty;
 
-        // Clean up content
-        var cleaned = content.Trim();
+        var lines = rawContent.Split('\n');
+        var contentLines = new List<string>();
 
-        if (cleaned.Length <= maxLength)
-            return cleaned;
+        foreach (var line in lines)
+        {
+            var trimmedLine = line.Trim();
 
-        // Truncate at word boundary if possible
-        var truncated = cleaned.Substring(0, maxLength);
-        var lastSpace = truncated.LastIndexOf(' ');
+            // Skip metadata lines we already display separately
+            if (trimmedLine.StartsWith("Title:") ||
+                trimmedLine.StartsWith("Tags:") ||
+                trimmedLine.StartsWith("Created:") ||
+                trimmedLine.StartsWith("Last Updated:") ||
+                trimmedLine == "Content:")
+            {
+                continue;
+            }
 
-        if (lastSpace > maxLength * 0.7)
-            truncated = truncated.Substring(0, lastSpace);
+            // Add any other non-empty lines as content
+            if (!string.IsNullOrWhiteSpace(trimmedLine))
+            {
+                contentLines.Add(trimmedLine);
+            }
+        }
 
-        return truncated + "...";
+        return string.Join("\n", contentLines).Trim();
     }
 
     /// <summary>

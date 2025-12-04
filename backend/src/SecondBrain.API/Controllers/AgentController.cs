@@ -164,6 +164,8 @@ public class AgentController : ControllerBase
             var toolCalls = new List<ToolCall>();
             // Track retrieved notes from automatic context injection
             var retrievedNotes = new List<RetrievedNote>();
+            // Track RAG log ID for feedback submission
+            string? ragLogId = null;
             // Track pending tool calls to capture arguments from ToolCallStart
             // since ToolCallEnd events don't include arguments
             var pendingToolArguments = new Dictionary<string, string>();
@@ -260,6 +262,12 @@ public class AgentController : ControllerBase
                             }
                         }
 
+                        // Capture RAG log ID for feedback submission
+                        if (!string.IsNullOrEmpty(evt.RagLogId))
+                        {
+                            ragLogId = evt.RagLogId;
+                        }
+
                         var contextRetrievalJson = JsonSerializer.Serialize(new
                         {
                             message = evt.Content,
@@ -270,11 +278,13 @@ public class AgentController : ControllerBase
                                 preview = n.Preview,
                                 tags = n.Tags,
                                 similarityScore = n.SimilarityScore
-                            }).ToList()
+                            }).ToList(),
+                            ragLogId = evt.RagLogId
                         });
                         await Response.WriteAsync($"event: context_retrieval\ndata: {contextRetrievalJson}\n\n");
                         await Response.Body.FlushAsync(cancellationToken);
-                        _logger.LogDebug("Context retrieval event sent. NotesCount: {Count}", evt.RetrievedNotes?.Count ?? 0);
+                        _logger.LogDebug("Context retrieval event sent. NotesCount: {Count}, RagLogId: {RagLogId}", 
+                            evt.RetrievedNotes?.Count ?? 0, evt.RagLogId);
                         break;
 
                     case AgentEventType.Error:
@@ -286,7 +296,7 @@ public class AgentController : ControllerBase
 
             var durationMs = (DateTime.UtcNow - startTime).TotalMilliseconds;
 
-            // Add assistant message to conversation with tool calls and retrieved notes
+            // Add assistant message to conversation with tool calls, retrieved notes, and RAG log ID
             var assistantMessage = new ChatMessage
             {
                 Role = "assistant",
@@ -294,7 +304,8 @@ public class AgentController : ControllerBase
                 Timestamp = DateTime.UtcNow,
                 DurationMs = durationMs,
                 ToolCalls = toolCalls,
-                RetrievedNotes = retrievedNotes
+                RetrievedNotes = retrievedNotes,
+                RagLogId = ragLogId
             };
             conversation.Messages.Add(assistantMessage);
             conversation.UpdatedAt = DateTime.UtcNow;
@@ -303,13 +314,14 @@ public class AgentController : ControllerBase
             // Update conversation in database
             await _chatRepository.UpdateAsync(id, conversation);
 
-            // Send end event with retrieved notes count
+            // Send end event with retrieved notes count and RAG log ID for feedback
             var endData = JsonSerializer.Serialize(new
             {
                 conversationId = id,
                 messageId = conversation.Messages.Count - 1,
                 toolCallsCount = toolCalls.Count,
-                retrievedNotesCount = retrievedNotes.Count
+                retrievedNotesCount = retrievedNotes.Count,
+                ragLogId = ragLogId
             });
             await Response.WriteAsync($"event: end\ndata: {endData}\n\n");
             await Response.Body.FlushAsync(cancellationToken);

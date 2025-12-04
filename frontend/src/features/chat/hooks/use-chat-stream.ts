@@ -14,6 +14,8 @@ export interface StreamingState {
   inputTokens?: number;
   outputTokens?: number;
   streamDuration?: number; // Duration in milliseconds
+  /** RAG query log ID for feedback submission */
+  ragLogId?: string;
 }
 
 export function useChatStream() {
@@ -25,6 +27,7 @@ export function useChatStream() {
   const [inputTokens, setInputTokens] = useState<number | undefined>(undefined);
   const [outputTokens, setOutputTokens] = useState<number | undefined>(undefined);
   const [streamDuration, setStreamDuration] = useState<number | undefined>(undefined);
+  const [ragLogId, setRagLogId] = useState<string | undefined>(undefined);
   const abortControllerRef = useRef<AbortController | null>(null);
   const streamStartTimeRef = useRef<number | null>(null);
 
@@ -37,6 +40,7 @@ export function useChatStream() {
       setStreamingMessage('');
       setStreamingError(null);
       setRetrievedNotes([]);
+      setRagLogId(undefined);
 
       // Calculate input tokens for the user's message
       const estimatedInputTokens = estimateTokenCount(request.content);
@@ -66,7 +70,11 @@ export function useChatStream() {
             onRag: (notes: RagContextNote[]) => {
               setRetrievedNotes(notes);
             },
-            onEnd: (_data: unknown) => {
+            onEnd: (data: { ragLogId?: string } | undefined) => {
+              // Capture ragLogId from end data for feedback submission
+              if (data?.ragLogId) {
+                setRagLogId(data.ragLogId);
+              }
 
               // Calculate stream duration
               if (streamStartTimeRef.current) {
@@ -158,6 +166,7 @@ export function useChatStream() {
     setInputTokens(undefined);
     setOutputTokens(undefined);
     setStreamDuration(undefined);
+    setRagLogId(undefined);
     setIsStreaming(false);
     streamStartTimeRef.current = null;
   }, []);
@@ -171,6 +180,7 @@ export function useChatStream() {
     inputTokens,
     outputTokens,
     streamDuration,
+    ragLogId,
 
     // Actions
     sendStreamingMessage,

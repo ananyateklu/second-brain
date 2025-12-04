@@ -18,6 +18,8 @@ export interface CombinedStreamingState {
   inputTokens?: number;
   outputTokens?: number;
   streamDuration?: number;
+  /** RAG query log ID for feedback submission (from agent auto-context or regular RAG) */
+  ragLogId?: string;
 }
 
 export interface CombinedStreamingActions {
@@ -82,6 +84,7 @@ export function useCombinedStreaming(agentModeEnabled: boolean) {
     inputTokens: agentModeEnabled ? agentStream.inputTokens : chatStream.inputTokens,
     outputTokens: agentModeEnabled ? agentStream.outputTokens : chatStream.outputTokens,
     streamDuration: agentModeEnabled ? agentStream.streamDuration : chatStream.streamDuration,
+    ragLogId: agentModeEnabled ? agentStream.ragLogId : chatStream.ragLogId,
   };
 
   // Unified send message function

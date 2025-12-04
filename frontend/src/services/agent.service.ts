@@ -10,6 +10,7 @@ import type {
   AgentStreamingCallbacks,
   ToolExecution,
   ThinkingStep,
+  RetrievedNoteContext,
 } from '../types/agent';
 
 /**
@@ -179,6 +180,20 @@ export const agentService = {
             callbacks.onToolExecution?.(execution);
           } catch (e) {
             console.error('Failed to parse tool result data:', { data, error: e });
+          }
+        }
+        break;
+
+      case 'context_retrieval':
+        if (data) {
+          try {
+            const contextData = JSON.parse(data);
+            // Extract retrieved notes and ragLogId from the event
+            const notes: RetrievedNoteContext[] = contextData.retrievedNotes || [];
+            const ragLogId: string | undefined = contextData.ragLogId;
+            callbacks.onContextRetrieval?.({ notes, ragLogId });
+          } catch (e) {
+            console.error('Failed to parse context retrieval data:', { data, error: e });
           }
         }
         break;

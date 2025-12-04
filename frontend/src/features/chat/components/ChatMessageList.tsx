@@ -32,6 +32,8 @@ export interface ChatMessageListProps {
   inputTokens?: number;
   outputTokens?: number;
   streamDuration?: number;
+  /** RAG query log ID for feedback submission (from agent auto-context or regular RAG) */
+  ragLogId?: string;
   // Settings
   agentModeEnabled: boolean;
   // User info
@@ -62,6 +64,7 @@ export function ChatMessageList({
   inputTokens,
   outputTokens,
   streamDuration,
+  ragLogId,
   agentModeEnabled,
   userName,
   isSending,
@@ -133,6 +136,7 @@ export function ChatMessageList({
                 inputTokens={inputTokens}
                 outputTokens={outputTokens}
                 streamDuration={streamDuration}
+                streamingRagLogId={ragLogId}
               />
             ))}
 
@@ -187,6 +191,8 @@ interface MessageWithContextProps {
   inputTokens?: number;
   outputTokens?: number;
   streamDuration?: number;
+  /** RAG query log ID from streaming state (for last message before persisted) */
+  streamingRagLogId?: string;
 }
 
 /**
@@ -204,6 +210,7 @@ function MessageWithContext({
   inputTokens,
   outputTokens,
   streamDuration,
+  streamingRagLogId,
 }: MessageWithContextProps) {
   const isAssistantMessage = message.role === 'assistant';
   const isLastMessage = index === totalMessages - 1;
@@ -338,6 +345,7 @@ function MessageWithContext({
           streamingDuration={streamDuration}
           agentModeEnabled={agentModeEnabled}
           isLastMessage={isLastMessage}
+          ragLogId={isLastMessage && isAssistantMessage ? streamingRagLogId : undefined}
         />
       )}
 
