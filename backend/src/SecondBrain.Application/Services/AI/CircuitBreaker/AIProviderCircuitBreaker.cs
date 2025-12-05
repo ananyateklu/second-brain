@@ -28,6 +28,11 @@ public class AIProviderCircuitBreaker
     }
 
     /// <summary>
+    /// Gets the configured break duration for when the circuit is open.
+    /// </summary>
+    public TimeSpan BreakDuration => _settings.BreakDuration;
+
+    /// <summary>
     /// Executes an async operation through the circuit breaker for the specified provider.
     /// </summary>
     /// <typeparam name="T">The return type of the operation</typeparam>

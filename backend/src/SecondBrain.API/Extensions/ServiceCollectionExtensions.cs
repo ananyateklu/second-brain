@@ -2,6 +2,7 @@ using System.Text;
 using System.Threading.RateLimiting;
 using Asp.Versioning;
 using FluentValidation;
+using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +11,8 @@ using SecondBrain.API.Configuration;
 using SecondBrain.API.HealthChecks;
 using SecondBrain.API.Middleware;
 using SecondBrain.API.Services;
+using SecondBrain.Application.Behaviors;
+using SecondBrain.Application.Commands.Notes.CreateNote;
 using SecondBrain.Application.Services;
 using SecondBrain.Application.Services.Chat;
 using SecondBrain.Application.Services.Notes;
@@ -44,6 +47,19 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
         services.AddHttpClient();
+
+        // Register MediatR with pipeline behaviors
+        services.AddMediatR(cfg =>
+        {
+            // Register all handlers from the Application assembly
+            cfg.RegisterServicesFromAssembly(typeof(CreateNoteCommand).Assembly);
+
+            // Add pipeline behaviors (order matters - they execute in registration order)
+            cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
+            cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+        });
+
+        // Keep existing services for backward compatibility during migration
         services.AddScoped<INoteService, NoteService>();
         services.AddScoped<IChatConversationService, ChatConversationService>();
         services.AddScoped<INotesImportService, NotesImportService>();
@@ -355,7 +371,8 @@ public static class ServiceCollectionExtensions
     private static string GetRateLimitPartitionKey(HttpContext context)
     {
         // Prefer authenticated user ID over IP address
-        var userId = context.User?.Identity?.Name;
+        // Note: The custom ApiKeyAuthenticationMiddleware stores user ID in context.Items["UserId"]
+        var userId = context.Items["UserId"]?.ToString();
         if (!string.IsNullOrEmpty(userId))
         {
             return $"user:{userId}";
@@ -408,9 +425,11 @@ public static class ServiceCollectionExtensions
 
         services.AddMemoryCache(options =>
         {
-            // Set size limit based on configuration (convert MB to approximate entry count)
-            // Each embedding is ~6KB (1536 dimensions * 8 bytes), so 100MB = ~17000 entries
-            options.SizeLimit = cacheSettings.MaxMemorySizeMB * 1024 * 1024 / 6000;
+            // Set size limit in bytes (matching the Size set by CachedEmbeddingProvider)
+            // CachedEmbeddingProvider sets Size = embedding.Count * sizeof(double) + text.Length
+            // For 1536-dimension embeddings, each entry is ~12KB (1536 * 8 bytes + text)
+            // 100MB can store approximately 8,500 embeddings
+            options.SizeLimit = cacheSettings.MaxMemorySizeMB * 1024L * 1024L;
             options.CompactionPercentage = 0.25; // Remove 25% when limit reached
         });
 

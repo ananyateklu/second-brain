@@ -136,7 +136,7 @@ internal class CircuitBreakerAIProvider : IAIProvider
         if (state == CircuitBreakerState.Open)
         {
             var stateInfo = _circuitBreaker.GetStateInfo(ProviderName);
-            var retryAfter = stateInfo?.LastTransitionTime.AddSeconds(60) - DateTime.UtcNow;
+            var retryAfter = stateInfo?.LastTransitionTime.Add(_circuitBreaker.BreakDuration) - DateTime.UtcNow;
             throw new CircuitBreakerOpenException(ProviderName, retryAfter > TimeSpan.Zero ? retryAfter : null);
         }
 
@@ -156,7 +156,7 @@ internal class CircuitBreakerAIProvider : IAIProvider
         if (state == CircuitBreakerState.Open)
         {
             var stateInfo = _circuitBreaker.GetStateInfo(ProviderName);
-            var retryAfter = stateInfo?.LastTransitionTime.AddSeconds(60) - DateTime.UtcNow;
+            var retryAfter = stateInfo?.LastTransitionTime.Add(_circuitBreaker.BreakDuration) - DateTime.UtcNow;
             throw new CircuitBreakerOpenException(ProviderName, retryAfter > TimeSpan.Zero ? retryAfter : null);
         }
 

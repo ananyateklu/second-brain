@@ -63,7 +63,10 @@ public static class ResultExtensions
         );
     }
 
-    private static ActionResult<T> ToErrorActionResult<T>(Error error)
+    /// <summary>
+    /// Converts an Error to an ActionResult&lt;T&gt; with proper HTTP status code mapping
+    /// </summary>
+    public static ActionResult<T> ToErrorActionResult<T>(Error error)
     {
         var problemDetails = new ProblemDetails
         {
@@ -78,7 +81,10 @@ public static class ResultExtensions
         };
     }
 
-    private static ActionResult ToErrorActionResult(Error error)
+    /// <summary>
+    /// Converts an Error to an ActionResult with proper HTTP status code mapping
+    /// </summary>
+    public static ActionResult ToErrorActionResult(Error error)
     {
         var problemDetails = new ProblemDetails
         {
