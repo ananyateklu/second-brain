@@ -26,10 +26,12 @@ public class ApiKeyAuthenticationMiddleware
         IUserRepository userRepository,
         IJwtService jwtService)
     {
-        // Skip authentication for health check endpoints
+        // Skip authentication for health check endpoints - including versioned routes
         if (context.Request.Path.StartsWithSegments("/health") ||
             context.Request.Path.StartsWithSegments("/api/health") ||
-            context.Request.Path.StartsWithSegments("/api/ai/health"))
+            context.Request.Path.StartsWithSegments("/api/v1/health") ||
+            context.Request.Path.StartsWithSegments("/api/ai/health") ||
+            context.Request.Path.StartsWithSegments("/api/v1/ai/health"))
         {
             await _next(context);
             return;
