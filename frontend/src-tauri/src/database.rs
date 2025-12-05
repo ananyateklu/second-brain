@@ -432,3 +432,376 @@ impl Drop for PostgresManager {
         let _ = self.stop();
     }
 }
+
+// ============================================================
+// Unit Tests
+// ============================================================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::TempDir;
+
+    // ============================================================
+    // PostgresManager Construction Tests
+    // ============================================================
+
+    #[test]
+    fn test_postgres_manager_new() {
+        let temp_dir = TempDir::new().unwrap();
+        let app_data = temp_dir.path().to_path_buf();
+        let resource_dir = temp_dir.path().join("resources");
+
+        let manager = PostgresManager::new(app_data.clone(), resource_dir, 5433);
+
+        assert_eq!(manager.port, 5433);
+        assert_eq!(manager.data_dir, app_data.join("postgresql"));
+        assert!(!*manager.initialized.lock().unwrap());
+    }
+
+    #[test]
+    fn test_postgres_manager_custom_port() {
+        let temp_dir = TempDir::new().unwrap();
+        let manager = PostgresManager::new(
+            temp_dir.path().to_path_buf(),
+            temp_dir.path().to_path_buf(),
+            5555,
+        );
+
+        assert_eq!(manager.get_port(), 5555);
+    }
+
+    #[test]
+    fn test_postgres_manager_data_dir_path() {
+        let temp_dir = TempDir::new().unwrap();
+        let app_data = temp_dir.path().join("custom_app_data");
+
+        let manager = PostgresManager::new(app_data.clone(), temp_dir.path().to_path_buf(), 5433);
+
+        assert_eq!(manager.data_dir, app_data.join("postgresql"));
+    }
+
+    // ============================================================
+    // find_postgres_bin_dir Tests
+    // ============================================================
+
+    #[test]
+    fn test_find_postgres_bin_dir_returns_path() {
+        let temp_dir = TempDir::new().unwrap();
+        let bin_dir = PostgresManager::find_postgres_bin_dir(&temp_dir.path().to_path_buf());
+
+        // Should return a path (even if PostgreSQL isn't installed)
+        assert!(!bin_dir.as_os_str().is_empty());
+    }
+
+    #[test]
+    fn test_find_postgres_bin_dir_checks_known_paths() {
+        // This test verifies the function checks expected paths
+        let temp_dir = TempDir::new().unwrap();
+        let bin_dir = PostgresManager::find_postgres_bin_dir(&temp_dir.path().to_path_buf());
+
+        let path_str = bin_dir.to_string_lossy();
+
+        // Should be one of the expected paths or a fallback
+        let valid_prefixes = [
+            "/opt/homebrew/opt/postgresql",
+            "/usr/local/opt/postgresql",
+            "/usr/local/pgsql/bin",
+            "/Applications/Postgres.app",
+        ];
+
+        // Either found a valid path or returned the fallback
+        let is_valid = valid_prefixes
+            .iter()
+            .any(|prefix| path_str.contains(prefix));
+        // Even if not found, it should return a fallback path
+        assert!(is_valid || path_str.contains("postgresql"));
+    }
+
+    // ============================================================
+    // Connection String Tests
+    // ============================================================
+
+    #[test]
+    fn test_get_connection_string_format() {
+        let temp_dir = TempDir::new().unwrap();
+        let manager = PostgresManager::new(
+            temp_dir.path().to_path_buf(),
+            temp_dir.path().to_path_buf(),
+            5433,
+        );
+
+        let conn_str = manager.get_connection_string();
+
+        assert!(conn_str.contains("Host=localhost"));
+        assert!(conn_str.contains("Port=5433"));
+        assert!(conn_str.contains("Database=secondbrain"));
+        assert!(conn_str.contains("Username=secondbrain"));
+        assert!(conn_str.contains("Client Encoding=UTF8"));
+    }
+
+    #[test]
+    fn test_get_connection_string_with_different_ports() {
+        let temp_dir = TempDir::new().unwrap();
+
+        for port in [5432, 5433, 5434, 6543] {
+            let manager = PostgresManager::new(
+                temp_dir.path().to_path_buf(),
+                temp_dir.path().to_path_buf(),
+                port,
+            );
+
+            let conn_str = manager.get_connection_string();
+            assert!(conn_str.contains(&format!("Port={}", port)));
+        }
+    }
+
+    // ============================================================
+    // Database Initialization Tests
+    // ============================================================
+
+    #[test]
+    fn test_init_database_skips_if_exists() {
+        let temp_dir = TempDir::new().unwrap();
+        let data_dir = temp_dir.path().join("postgresql");
+
+        // Create data directory with PG_VERSION file
+        std::fs::create_dir_all(&data_dir).unwrap();
+        std::fs::write(data_dir.join("PG_VERSION"), "16").unwrap();
+
+        let manager = PostgresManager::new(
+            temp_dir.path().to_path_buf(),
+            temp_dir.path().to_path_buf(),
+            5433,
+        );
+
+        // Should succeed without running initdb
+        let result = manager.init_database();
+        assert!(result.is_ok());
+        assert!(*manager.initialized.lock().unwrap());
+    }
+
+    #[test]
+    fn test_init_database_returns_error_without_initdb() {
+        let temp_dir = TempDir::new().unwrap();
+
+        // Create a manager with a fake bin directory without initdb
+        let fake_bin = temp_dir.path().join("fake_bin");
+        std::fs::create_dir_all(&fake_bin).unwrap();
+
+        let manager = PostgresManager {
+            process: Mutex::new(None),
+            data_dir: temp_dir.path().join("postgresql"),
+            bin_dir: fake_bin,
+            port: 5433,
+            initialized: Mutex::new(false),
+        };
+
+        let result = manager.init_database();
+
+        // Should fail because initdb doesn't exist
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("initdb not found"));
+    }
+
+    // ============================================================
+    // PostgreSQL Configuration Tests
+    // ============================================================
+
+    #[test]
+    fn test_configure_postgresql_creates_files() {
+        let temp_dir = TempDir::new().unwrap();
+        let data_dir = temp_dir.path().join("postgresql");
+        std::fs::create_dir_all(&data_dir).unwrap();
+
+        let manager = PostgresManager {
+            process: Mutex::new(None),
+            data_dir: data_dir.clone(),
+            bin_dir: temp_dir.path().to_path_buf(),
+            port: 5433,
+            initialized: Mutex::new(false),
+        };
+
+        let result = manager.configure_postgresql();
+        assert!(result.is_ok());
+
+        // Verify postgresql.conf was created
+        let conf_path = data_dir.join("postgresql.conf");
+        assert!(conf_path.exists());
+
+        let conf_content = std::fs::read_to_string(&conf_path).unwrap();
+        assert!(conf_content.contains("listen_addresses = 'localhost'"));
+        assert!(conf_content.contains("port = 5433"));
+        assert!(conf_content.contains("client_encoding = 'UTF8'"));
+
+        // Verify pg_hba.conf was created
+        let hba_path = data_dir.join("pg_hba.conf");
+        assert!(hba_path.exists());
+
+        let hba_content = std::fs::read_to_string(&hba_path).unwrap();
+        assert!(hba_content.contains("127.0.0.1/32"));
+        assert!(hba_content.contains("trust"));
+    }
+
+    #[test]
+    fn test_configure_postgresql_port_substitution() {
+        let temp_dir = TempDir::new().unwrap();
+        let data_dir = temp_dir.path().join("postgresql");
+        std::fs::create_dir_all(&data_dir).unwrap();
+
+        let manager = PostgresManager {
+            process: Mutex::new(None),
+            data_dir: data_dir.clone(),
+            bin_dir: temp_dir.path().to_path_buf(),
+            port: 9999,
+            initialized: Mutex::new(false),
+        };
+
+        manager.configure_postgresql().unwrap();
+
+        let conf_content = std::fs::read_to_string(data_dir.join("postgresql.conf")).unwrap();
+        assert!(conf_content.contains("port = 9999"));
+    }
+
+    // ============================================================
+    // is_running Tests
+    // ============================================================
+
+    #[test]
+    fn test_is_running_returns_false_without_pg_isready() {
+        let temp_dir = TempDir::new().unwrap();
+
+        let manager = PostgresManager {
+            process: Mutex::new(None),
+            data_dir: temp_dir.path().to_path_buf(),
+            bin_dir: temp_dir.path().join("nonexistent"),
+            port: 5433,
+            initialized: Mutex::new(false),
+        };
+
+        assert!(!manager.is_running());
+    }
+
+    // ============================================================
+    // Start/Stop Lifecycle Tests
+    // ============================================================
+
+    #[test]
+    fn test_start_requires_initialization() {
+        let temp_dir = TempDir::new().unwrap();
+
+        let manager = PostgresManager {
+            process: Mutex::new(None),
+            data_dir: temp_dir.path().to_path_buf(),
+            bin_dir: temp_dir.path().to_path_buf(),
+            port: 5433,
+            initialized: Mutex::new(false),
+        };
+
+        let result = manager.start();
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Database not initialized"));
+    }
+
+    #[test]
+    fn test_stop_handles_no_process() {
+        let temp_dir = TempDir::new().unwrap();
+
+        let manager = PostgresManager {
+            process: Mutex::new(None),
+            data_dir: temp_dir.path().to_path_buf(),
+            bin_dir: temp_dir.path().to_path_buf(),
+            port: 5433,
+            initialized: Mutex::new(false),
+        };
+
+        // Should not panic when no process exists
+        let result = manager.stop();
+        assert!(result.is_ok());
+    }
+
+    // ============================================================
+    // Drop Implementation Tests
+    // ============================================================
+
+    #[test]
+    fn test_drop_calls_stop() {
+        let temp_dir = TempDir::new().unwrap();
+
+        {
+            let _manager = PostgresManager {
+                process: Mutex::new(None),
+                data_dir: temp_dir.path().to_path_buf(),
+                bin_dir: temp_dir.path().to_path_buf(),
+                port: 5433,
+                initialized: Mutex::new(false),
+            };
+            // Manager will be dropped here
+        }
+
+        // Test passes if no panic occurs during drop
+    }
+
+    // ============================================================
+    // Port Getter Tests
+    // ============================================================
+
+    #[test]
+    fn test_get_port() {
+        let temp_dir = TempDir::new().unwrap();
+
+        let manager = PostgresManager::new(
+            temp_dir.path().to_path_buf(),
+            temp_dir.path().to_path_buf(),
+            5555,
+        );
+
+        assert_eq!(manager.get_port(), 5555);
+    }
+
+    #[test]
+    fn test_get_port_different_values() {
+        let temp_dir = TempDir::new().unwrap();
+
+        for expected_port in [5432, 5433, 5434, 6543, 65535] {
+            let manager = PostgresManager::new(
+                temp_dir.path().to_path_buf(),
+                temp_dir.path().to_path_buf(),
+                expected_port,
+            );
+
+            assert_eq!(manager.get_port(), expected_port);
+        }
+    }
+
+    // ============================================================
+    // Process State Tests
+    // ============================================================
+
+    #[test]
+    fn test_process_starts_as_none() {
+        let temp_dir = TempDir::new().unwrap();
+
+        let manager = PostgresManager::new(
+            temp_dir.path().to_path_buf(),
+            temp_dir.path().to_path_buf(),
+            5433,
+        );
+
+        assert!(manager.process.lock().unwrap().is_none());
+    }
+
+    #[test]
+    fn test_initialized_starts_as_false() {
+        let temp_dir = TempDir::new().unwrap();
+
+        let manager = PostgresManager::new(
+            temp_dir.path().to_path_buf(),
+            temp_dir.path().to_path_buf(),
+            5433,
+        );
+
+        assert!(!*manager.initialized.lock().unwrap());
+    }
+}

@@ -11,7 +11,7 @@ use tauri::{
 };
 
 mod commands;
-mod database;
+pub mod database;
 
 use database::PostgresManager;
 
@@ -29,7 +29,7 @@ pub struct Secrets {
 }
 
 /// Load secrets from file
-fn load_secrets(app_data_dir: &PathBuf) -> Secrets {
+pub fn load_secrets(app_data_dir: &PathBuf) -> Secrets {
     let secrets_path = app_data_dir.join("secrets.json");
     
     if secrets_path.exists() {
@@ -57,7 +57,7 @@ fn load_secrets(app_data_dir: &PathBuf) -> Secrets {
 }
 
 /// Save secrets to file
-fn save_secrets(app_data_dir: &PathBuf, secrets: &Secrets) -> Result<(), String> {
+pub fn save_secrets(app_data_dir: &PathBuf, secrets: &Secrets) -> Result<(), String> {
     let secrets_path = app_data_dir.join("secrets.json");
     
     // Ensure the directory exists
@@ -880,4 +880,401 @@ pub fn run() {
                 _ => {}
             }
         });
+}
+
+// ============================================================
+// Unit Tests
+// ============================================================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::TempDir;
+
+    // ============================================================
+    // Secrets Struct Tests
+    // ============================================================
+
+    #[test]
+    fn test_secrets_default() {
+        let secrets = Secrets::default();
+        
+        assert!(secrets.openai_api_key.is_none());
+        assert!(secrets.anthropic_api_key.is_none());
+        assert!(secrets.gemini_api_key.is_none());
+        assert!(secrets.xai_api_key.is_none());
+        assert!(secrets.ollama_base_url.is_none());
+        assert!(secrets.pinecone_api_key.is_none());
+        assert!(secrets.pinecone_environment.is_none());
+        assert!(secrets.pinecone_index_name.is_none());
+    }
+
+    #[test]
+    fn test_secrets_serialization_roundtrip() {
+        let secrets = Secrets {
+            openai_api_key: Some("sk-test-key".to_string()),
+            anthropic_api_key: Some("sk-ant-test".to_string()),
+            gemini_api_key: None,
+            xai_api_key: Some("xai-test".to_string()),
+            ollama_base_url: Some("http://localhost:11434".to_string()),
+            pinecone_api_key: None,
+            pinecone_environment: None,
+            pinecone_index_name: None,
+        };
+
+        let json = serde_json::to_string(&secrets).unwrap();
+        let deserialized: Secrets = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(secrets.openai_api_key, deserialized.openai_api_key);
+        assert_eq!(secrets.anthropic_api_key, deserialized.anthropic_api_key);
+        assert_eq!(secrets.xai_api_key, deserialized.xai_api_key);
+        assert_eq!(secrets.ollama_base_url, deserialized.ollama_base_url);
+    }
+
+    #[test]
+    fn test_secrets_partial_json_parsing() {
+        // Test that partial JSON (missing fields) deserializes correctly
+        let json = r#"{"openai_api_key": "sk-test"}"#;
+        let secrets: Secrets = serde_json::from_str(json).unwrap();
+
+        assert_eq!(secrets.openai_api_key, Some("sk-test".to_string()));
+        assert!(secrets.anthropic_api_key.is_none());
+    }
+
+    #[test]
+    fn test_secrets_empty_json_parsing() {
+        let json = "{}";
+        let secrets: Secrets = serde_json::from_str(json).unwrap();
+        
+        assert!(secrets.openai_api_key.is_none());
+    }
+
+    #[test]
+    fn test_secrets_with_null_values() {
+        let json = r#"{"openai_api_key": null, "anthropic_api_key": "sk-ant-test"}"#;
+        let secrets: Secrets = serde_json::from_str(json).unwrap();
+
+        assert!(secrets.openai_api_key.is_none());
+        assert_eq!(secrets.anthropic_api_key, Some("sk-ant-test".to_string()));
+    }
+
+    // ============================================================
+    // load_secrets Function Tests
+    // ============================================================
+
+    #[test]
+    fn test_load_secrets_file_not_exists() {
+        let temp_dir = TempDir::new().unwrap();
+        let secrets = load_secrets(&temp_dir.path().to_path_buf());
+        
+        // Should return default secrets when file doesn't exist
+        assert!(secrets.openai_api_key.is_none());
+    }
+
+    #[test]
+    fn test_load_secrets_valid_file() {
+        let temp_dir = TempDir::new().unwrap();
+        let secrets_path = temp_dir.path().join("secrets.json");
+        
+        let test_secrets = r#"{
+            "openai_api_key": "sk-test-123",
+            "ollama_base_url": "http://localhost:11434"
+        }"#;
+        
+        std::fs::write(&secrets_path, test_secrets).unwrap();
+        
+        let secrets = load_secrets(&temp_dir.path().to_path_buf());
+        
+        assert_eq!(secrets.openai_api_key, Some("sk-test-123".to_string()));
+        assert_eq!(secrets.ollama_base_url, Some("http://localhost:11434".to_string()));
+    }
+
+    #[test]
+    fn test_load_secrets_invalid_json() {
+        let temp_dir = TempDir::new().unwrap();
+        let secrets_path = temp_dir.path().join("secrets.json");
+        
+        std::fs::write(&secrets_path, "not valid json {{{").unwrap();
+        
+        let secrets = load_secrets(&temp_dir.path().to_path_buf());
+        
+        // Should return default secrets on parse error
+        assert!(secrets.openai_api_key.is_none());
+    }
+
+    #[test]
+    fn test_load_secrets_empty_file() {
+        let temp_dir = TempDir::new().unwrap();
+        let secrets_path = temp_dir.path().join("secrets.json");
+        
+        std::fs::write(&secrets_path, "").unwrap();
+        
+        let secrets = load_secrets(&temp_dir.path().to_path_buf());
+        
+        // Should return default secrets on empty file
+        assert!(secrets.openai_api_key.is_none());
+    }
+
+    // ============================================================
+    // save_secrets Function Tests
+    // ============================================================
+
+    #[test]
+    fn test_save_secrets_creates_file() {
+        let temp_dir = TempDir::new().unwrap();
+        let secrets = Secrets {
+            openai_api_key: Some("sk-save-test".to_string()),
+            ..Default::default()
+        };
+
+        let result = save_secrets(&temp_dir.path().to_path_buf(), &secrets);
+        assert!(result.is_ok());
+
+        let secrets_path = temp_dir.path().join("secrets.json");
+        assert!(secrets_path.exists());
+
+        let contents = std::fs::read_to_string(&secrets_path).unwrap();
+        assert!(contents.contains("sk-save-test"));
+    }
+
+    #[test]
+    fn test_save_secrets_creates_directory() {
+        let temp_dir = TempDir::new().unwrap();
+        let nested_path = temp_dir.path().join("nested").join("deep");
+        
+        let secrets = Secrets::default();
+        let result = save_secrets(&nested_path, &secrets);
+        
+        assert!(result.is_ok());
+        assert!(nested_path.join("secrets.json").exists());
+    }
+
+    #[test]
+    fn test_save_secrets_overwrites_existing() {
+        let temp_dir = TempDir::new().unwrap();
+        
+        // Save first version
+        let secrets1 = Secrets {
+            openai_api_key: Some("first-key".to_string()),
+            ..Default::default()
+        };
+        save_secrets(&temp_dir.path().to_path_buf(), &secrets1).unwrap();
+
+        // Save second version
+        let secrets2 = Secrets {
+            openai_api_key: Some("second-key".to_string()),
+            ..Default::default()
+        };
+        save_secrets(&temp_dir.path().to_path_buf(), &secrets2).unwrap();
+
+        // Verify second version persisted
+        let loaded = load_secrets(&temp_dir.path().to_path_buf());
+        assert_eq!(loaded.openai_api_key, Some("second-key".to_string()));
+    }
+
+    #[test]
+    fn test_save_and_load_roundtrip() {
+        let temp_dir = TempDir::new().unwrap();
+        
+        let original = Secrets {
+            openai_api_key: Some("sk-openai".to_string()),
+            anthropic_api_key: Some("sk-anthropic".to_string()),
+            gemini_api_key: Some("gemini-key".to_string()),
+            xai_api_key: Some("xai-key".to_string()),
+            ollama_base_url: Some("http://custom:11434".to_string()),
+            pinecone_api_key: Some("pinecone-key".to_string()),
+            pinecone_environment: Some("us-east-1".to_string()),
+            pinecone_index_name: Some("my-index".to_string()),
+        };
+
+        save_secrets(&temp_dir.path().to_path_buf(), &original).unwrap();
+        let loaded = load_secrets(&temp_dir.path().to_path_buf());
+
+        assert_eq!(original.openai_api_key, loaded.openai_api_key);
+        assert_eq!(original.anthropic_api_key, loaded.anthropic_api_key);
+        assert_eq!(original.gemini_api_key, loaded.gemini_api_key);
+        assert_eq!(original.xai_api_key, loaded.xai_api_key);
+        assert_eq!(original.ollama_base_url, loaded.ollama_base_url);
+        assert_eq!(original.pinecone_api_key, loaded.pinecone_api_key);
+        assert_eq!(original.pinecone_environment, loaded.pinecone_environment);
+        assert_eq!(original.pinecone_index_name, loaded.pinecone_index_name);
+    }
+
+    // ============================================================
+    // AppState Tests
+    // ============================================================
+
+    #[test]
+    fn test_app_state_default() {
+        let state = AppState::default();
+        
+        assert!(state.backend_process.lock().unwrap().is_none());
+        assert_eq!(*state.backend_port.lock().unwrap(), 5001);
+        assert_eq!(*state.postgres_port.lock().unwrap(), 5433);
+        assert!(!*state.is_backend_ready.lock().unwrap());
+        assert!(!*state.is_postgres_ready.lock().unwrap());
+        assert!(state.postgres_manager.lock().unwrap().is_none());
+    }
+
+    #[test]
+    fn test_app_state_thread_safety() {
+        use std::sync::Arc;
+        use std::thread;
+
+        let state = Arc::new(AppState::default());
+        let mut handles = vec![];
+
+        // Spawn multiple threads that access the state
+        for i in 0..10 {
+            let state_clone = Arc::clone(&state);
+            let handle = thread::spawn(move || {
+                let mut port = state_clone.backend_port.lock().unwrap();
+                *port = 5001 + i;
+            });
+            handles.push(handle);
+        }
+
+        for handle in handles {
+            handle.join().unwrap();
+        }
+
+        // State should be accessible after concurrent modifications
+        let port = state.backend_port.lock().unwrap();
+        assert!(*port >= 5001 && *port <= 5010);
+    }
+
+    #[test]
+    fn test_app_state_backend_ready_flag() {
+        let state = AppState::default();
+        
+        assert!(!*state.is_backend_ready.lock().unwrap());
+        
+        *state.is_backend_ready.lock().unwrap() = true;
+        
+        assert!(*state.is_backend_ready.lock().unwrap());
+    }
+
+    #[test]
+    fn test_app_state_postgres_ready_flag() {
+        let state = AppState::default();
+        
+        assert!(!*state.is_postgres_ready.lock().unwrap());
+        
+        *state.is_postgres_ready.lock().unwrap() = true;
+        
+        assert!(*state.is_postgres_ready.lock().unwrap());
+    }
+
+    // ============================================================
+    // Connection String Generation Tests
+    // ============================================================
+
+    #[test]
+    fn test_connection_string_format() {
+        let postgres_port = 5433u16;
+        let connection_string = format!(
+            "Host=localhost;Port={};Database=secondbrain;Username=secondbrain;Trust Server Certificate=true;Client Encoding=UTF8",
+            postgres_port
+        );
+
+        assert!(connection_string.contains("Host=localhost"));
+        assert!(connection_string.contains("Port=5433"));
+        assert!(connection_string.contains("Database=secondbrain"));
+        assert!(connection_string.contains("Username=secondbrain"));
+        assert!(connection_string.contains("Client Encoding=UTF8"));
+    }
+
+    // ============================================================
+    // Backend URL Generation Tests
+    // ============================================================
+
+    #[test]
+    fn test_backend_url_format() {
+        let port = 5001u16;
+        let url = format!("http://localhost:{}/api", port);
+        
+        assert_eq!(url, "http://localhost:5001/api");
+    }
+
+    #[test]
+    fn test_health_url_format() {
+        let port = 5001u16;
+        let health_url = format!("http://localhost:{}/api/health", port);
+        
+        assert_eq!(health_url, "http://localhost:5001/api/health");
+    }
+
+    // ============================================================
+    // kill_process_on_port Tests (Unix-specific)
+    // ============================================================
+
+    #[cfg(unix)]
+    #[test]
+    fn test_kill_process_on_port_no_process() {
+        // Should not panic when no process is on the port
+        kill_process_on_port(59999); // Use unlikely port
+    }
+
+    // ============================================================
+    // Backend Path Discovery Tests
+    // ============================================================
+
+    #[test]
+    fn test_backend_executable_exists_check() {
+        let temp_dir = TempDir::new().unwrap();
+        let backend_path = temp_dir.path().join("backend").join("secondbrain-api");
+        
+        // Create parent directory but not the executable
+        std::fs::create_dir_all(backend_path.parent().unwrap()).unwrap();
+        
+        assert!(!backend_path.exists());
+    }
+
+    #[test]
+    fn test_backend_path_exists_when_file_created() {
+        let temp_dir = TempDir::new().unwrap();
+        let backend_dir = temp_dir.path().join("backend");
+        std::fs::create_dir_all(&backend_dir).unwrap();
+        
+        let backend_path = backend_dir.join("secondbrain-api");
+        std::fs::write(&backend_path, "dummy").unwrap();
+        
+        assert!(backend_path.exists());
+    }
+
+    // ============================================================
+    // Property-Based Tests (using proptest)
+    // ============================================================
+
+    #[cfg(test)]
+    mod proptest_tests {
+        use super::*;
+        use proptest::prelude::*;
+
+        proptest! {
+            #[test]
+            fn test_secrets_roundtrip_any_string(
+                openai in ".*",
+                anthropic in ".*",
+            ) {
+                let secrets = Secrets {
+                    openai_api_key: Some(openai.clone()),
+                    anthropic_api_key: Some(anthropic.clone()),
+                    ..Default::default()
+                };
+
+                let json = serde_json::to_string(&secrets).unwrap();
+                let deserialized: Secrets = serde_json::from_str(&json).unwrap();
+
+                prop_assert_eq!(secrets.openai_api_key, deserialized.openai_api_key);
+                prop_assert_eq!(secrets.anthropic_api_key, deserialized.anthropic_api_key);
+            }
+
+            #[test]
+            fn test_port_in_valid_range(port in 1024u16..65535u16) {
+                let url = format!("http://localhost:{}/api", port);
+                prop_assert!(url.contains(&port.to_string()));
+            }
+        }
+    }
 }

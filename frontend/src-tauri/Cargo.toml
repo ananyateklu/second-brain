@@ -41,6 +41,32 @@ thiserror = "2"
 cocoa = "0.26"
 objc = "0.2"
 
+[dev-dependencies]
+# Testing framework
+tokio-test = "0.4"
+
+# Temporary files and directories
+tempfile = "3.10"
+
+# Mock generation
+mockall = "0.12"
+
+# Assertions
+assert_cmd = "2.0"
+predicates = "3.1"
+
+# Async testing
+async-std = { version = "1.12", features = ["attributes"] }
+
+# Serialization testing
+serde_test = "1.0"
+
+# Property-based testing
+proptest = "1.4"
+
+# Snapshot testing
+insta = "1.38"
+
 [features]
 default = ["custom-protocol"]
 custom-protocol = ["tauri/custom-protocol"]
