@@ -249,5 +249,161 @@ public class SqlNoteRepository : INoteRepository
             throw new RepositoryException($"Failed to retrieve notes for user '{userId}'", ex);
         }
     }
+
+    // ============================================
+    // Soft Delete Operations
+    // ============================================
+
+    public async Task<bool> SoftDeleteAsync(string id, string deletedBy)
+    {
+        try
+        {
+            _logger.LogDebug("Soft deleting note. NoteId: {NoteId}, DeletedBy: {DeletedBy}", id, deletedBy);
+            var note = await _context.Notes.FirstOrDefaultAsync(n => n.Id == id);
+
+            if (note == null)
+            {
+                _logger.LogDebug("Note not found for soft deletion. NoteId: {NoteId}", id);
+                return false;
+            }
+
+            note.IsDeleted = true;
+            note.DeletedAt = DateTime.UtcNow;
+            note.DeletedBy = deletedBy;
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Note soft deleted successfully. NoteId: {NoteId}, DeletedBy: {DeletedBy}", id, deletedBy);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error soft deleting note. NoteId: {NoteId}", id);
+            throw new RepositoryException($"Failed to soft delete note with ID '{id}'", ex);
+        }
+    }
+
+    public async Task<int> SoftDeleteManyAsync(IEnumerable<string> ids, string userId)
+    {
+        try
+        {
+            var idList = ids.ToList();
+            _logger.LogDebug("Soft deleting multiple notes. Count: {Count}, UserId: {UserId}", idList.Count, userId);
+
+            var notes = await _context.Notes
+                .Where(n => idList.Contains(n.Id) && n.UserId == userId)
+                .ToListAsync();
+
+            if (notes.Count == 0)
+            {
+                _logger.LogDebug("No notes found for bulk soft deletion. UserId: {UserId}", userId);
+                return 0;
+            }
+
+            var now = DateTime.UtcNow;
+            foreach (var note in notes)
+            {
+                note.IsDeleted = true;
+                note.DeletedAt = now;
+                note.DeletedBy = userId;
+            }
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Bulk soft deleted notes successfully. Count: {Count}, UserId: {UserId}", notes.Count, userId);
+            return notes.Count;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error bulk soft deleting notes. UserId: {UserId}", userId);
+            throw new RepositoryException($"Failed to bulk soft delete notes for user '{userId}'", ex);
+        }
+    }
+
+    public async Task<bool> RestoreAsync(string id)
+    {
+        try
+        {
+            _logger.LogDebug("Restoring soft-deleted note. NoteId: {NoteId}", id);
+
+            // Use IgnoreQueryFilters to find soft-deleted notes
+            var note = await _context.Notes
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(n => n.Id == id && n.IsDeleted);
+
+            if (note == null)
+            {
+                _logger.LogDebug("Soft-deleted note not found for restoration. NoteId: {NoteId}", id);
+                return false;
+            }
+
+            note.IsDeleted = false;
+            note.DeletedAt = null;
+            note.DeletedBy = null;
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Note restored successfully. NoteId: {NoteId}", id);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error restoring note. NoteId: {NoteId}", id);
+            throw new RepositoryException($"Failed to restore note with ID '{id}'", ex);
+        }
+    }
+
+    public async Task<bool> HardDeleteAsync(string id)
+    {
+        try
+        {
+            _logger.LogDebug("Hard deleting note. NoteId: {NoteId}", id);
+
+            // Use IgnoreQueryFilters to find all notes including soft-deleted
+            var note = await _context.Notes
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(n => n.Id == id);
+
+            if (note == null)
+            {
+                _logger.LogDebug("Note not found for hard deletion. NoteId: {NoteId}", id);
+                return false;
+            }
+
+            _context.Notes.Remove(note);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Note hard deleted successfully. NoteId: {NoteId}", id);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error hard deleting note. NoteId: {NoteId}", id);
+            throw new RepositoryException($"Failed to hard delete note with ID '{id}'", ex);
+        }
+    }
+
+    public async Task<IEnumerable<Note>> GetDeletedByUserIdAsync(string userId)
+    {
+        try
+        {
+            _logger.LogDebug("Retrieving soft-deleted notes by userId. UserId: {UserId}", userId);
+
+            var notes = await _context.Notes
+                .IgnoreQueryFilters()
+                .AsNoTracking()
+                .Where(n => n.UserId == userId && n.IsDeleted)
+                .OrderByDescending(n => n.DeletedAt)
+                .ToListAsync();
+
+            _logger.LogDebug("Retrieved soft-deleted notes for user. UserId: {UserId}, Count: {Count}", userId, notes.Count);
+            return notes;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving soft-deleted notes by userId. UserId: {UserId}", userId);
+            throw new RepositoryException($"Failed to retrieve soft-deleted notes for user '{userId}'", ex);
+        }
+    }
 }
 

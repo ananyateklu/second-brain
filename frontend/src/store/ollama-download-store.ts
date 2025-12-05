@@ -1,182 +1,36 @@
-import { create } from 'zustand';
-import { aiService } from '../services/ai.service';
-import type { OllamaPullProgress, OllamaPullRequest } from '../types/ai';
+/**
+ * Ollama Download Store
+ * @deprecated Use useBoundStore from './bound-store' for new code.
+ * This file maintains backward compatibility with existing imports.
+ */
 
-export interface ModelDownload {
-  modelName: string;
-  ollamaBaseUrl?: string | null;
-  status: 'pending' | 'downloading' | 'completed' | 'error' | 'cancelled';
-  progress?: OllamaPullProgress;
-  errorMessage?: string;
-  startedAt: Date;
-  completedAt?: Date;
-  abortController?: AbortController;
-}
+import type { BoundStore } from './types';
+import type { StoreApi, UseBoundStore } from 'zustand';
+import { getStore } from './store-registry';
 
-interface OllamaDownloadState {
-  downloads: Record<string, ModelDownload>;
+// Re-export types for backward compatibility
+export type { ModelDownload } from './types';
 
-  // Actions
-  startDownload: (request: OllamaPullRequest) => void;
-  cancelDownload: (modelName: string) => void;
-  clearDownload: (modelName: string) => void;
-  clearCompletedDownloads: () => void;
-}
+// Re-export helper functions
+export { formatBytes, formatSpeed, formatTimeRemaining } from './slices/ollama-slice';
 
-// Helper to format bytes
-export function formatBytes(bytes: number, decimals = 2): string {
-  if (bytes === 0) return '0 Bytes';
+type BoundStoreType = UseBoundStore<StoreApi<BoundStore>>;
 
-  const k = 1024;
-  const dm = decimals < 0 ? 0 : decimals;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+// Create a callable proxy that forwards to the real store
+const createStoreProxy = (): BoundStoreType => {
+  const handler: ProxyHandler<BoundStoreType> = {
+    apply(_target, _thisArg, args: [((state: BoundStore) => unknown)?]) {
+      const store = getStore();
+      return args[0] ? store(args[0]) : store();
+    },
+    get(_target, prop: string | symbol) {
+      const store = getStore();
+      return Reflect.get(store, prop);
+    },
+  };
 
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return new Proxy((() => {}) as unknown as BoundStoreType, handler);
+};
 
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
-}
-
-// Helper to format download speed
-export function formatSpeed(bytesPerSecond: number): string {
-  return `${formatBytes(bytesPerSecond)}/s`;
-}
-
-// Helper to format time remaining
-export function formatTimeRemaining(seconds: number): string {
-  if (seconds < 60) {
-    return `${Math.round(seconds)}s`;
-  } else if (seconds < 3600) {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.round(seconds % 60);
-    return `${mins}m ${secs}s`;
-  } else {
-    const hours = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    return `${hours}h ${mins}m`;
-  }
-}
-
-export const useOllamaDownloadStore = create<OllamaDownloadState>((set, get) => ({
-  downloads: {},
-
-  startDownload: (request: OllamaPullRequest) => {
-    const key = request.modelName;
-
-    // Check if already downloading
-    const existing = get().downloads[key];
-    if (existing && existing.status === 'downloading') {
-      console.warn('Model already downloading:', { modelName: request.modelName });
-      return;
-    }
-
-    // Create the download entry
-    const download: ModelDownload = {
-      modelName: request.modelName,
-      ollamaBaseUrl: request.ollamaBaseUrl,
-      status: 'pending',
-      startedAt: new Date(),
-    };
-
-    set((state) => ({
-      downloads: {
-        ...state.downloads,
-        [key]: download,
-      },
-    }));
-
-    // Start the pull operation
-    const abortController = aiService.pullModel(request, {
-      onProgress: (progress: OllamaPullProgress) => {
-        set((state) => ({
-          downloads: {
-            ...state.downloads,
-            [key]: {
-              ...state.downloads[key],
-              status: 'downloading',
-              progress,
-            },
-          },
-        }));
-      },
-      onComplete: () => {
-        set((state) => ({
-          downloads: {
-            ...state.downloads,
-            [key]: {
-              ...state.downloads[key],
-              status: 'completed',
-              completedAt: new Date(),
-            },
-          },
-        }));
-      },
-      onError: (error: string) => {
-        set((state) => ({
-          downloads: {
-            ...state.downloads,
-            [key]: {
-              ...state.downloads[key],
-              status: 'error',
-              errorMessage: error,
-              completedAt: new Date(),
-            },
-          },
-        }));
-      },
-    });
-
-    // Store the abort controller
-    set((state) => ({
-      downloads: {
-        ...state.downloads,
-        [key]: {
-          ...state.downloads[key],
-          abortController,
-        },
-      },
-    }));
-  },
-
-  cancelDownload: (modelName: string) => {
-    const download = get().downloads[modelName];
-    if (download?.abortController) {
-      download.abortController.abort();
-    }
-
-    set((state) => ({
-      downloads: {
-        ...state.downloads,
-        [modelName]: {
-          ...state.downloads[modelName],
-          status: 'cancelled',
-          errorMessage: 'Download cancelled by user',
-          completedAt: new Date(),
-        },
-      },
-    }));
-  },
-
-  clearDownload: (modelName: string) => {
-    set((state) => {
-      const newDownloads = { ...state.downloads };
-      delete newDownloads[modelName];
-      return { downloads: newDownloads };
-    });
-  },
-
-  clearCompletedDownloads: () => {
-    set((state) => {
-      const newDownloads: Record<string, ModelDownload> = {};
-      for (const [key, download] of Object.entries(state.downloads)) {
-        if (download.status === 'downloading' || download.status === 'pending') {
-          newDownloads[key] = download;
-        }
-      }
-      return { downloads: newDownloads };
-    });
-  },
-}));
-
-
-
-
+// Re-export the combined store as useOllamaDownloadStore for backward compatibility
+export const useOllamaDownloadStore = createStoreProxy();

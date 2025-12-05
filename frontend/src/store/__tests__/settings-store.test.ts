@@ -384,10 +384,10 @@ describe('settings-store', () => {
 
         it('should select vector store provider', () => {
             // Arrange
-            useSettingsStore.setState({ vectorStoreProvider: 'qdrant' });
+            useSettingsStore.setState({ vectorStoreProvider: 'Pinecone' });
 
             // Act & Assert
-            expect(useSettingsStore.getState().vectorStoreProvider).toBe('qdrant');
+            expect(useSettingsStore.getState().vectorStoreProvider).toBe('Pinecone');
         });
     });
 });

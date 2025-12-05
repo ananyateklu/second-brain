@@ -62,7 +62,7 @@ export interface AuthState {
 export interface UserPreferences {
   chatProvider: string | null;
   chatModel: string | null;
-  vectorStoreProvider: string;
+  vectorStoreProvider: 'PostgreSQL' | 'Pinecone';
   defaultNoteView: 'list' | 'grid';
   itemsPerPage: number;
   fontSize: 'small' | 'medium' | 'large';
@@ -77,7 +77,7 @@ export interface UserPreferences {
 export interface UpdateUserPreferencesRequest {
   chatProvider?: string | null;
   chatModel?: string | null;
-  vectorStoreProvider?: string;
+  vectorStoreProvider?: 'PostgreSQL' | 'Pinecone';
   defaultNoteView?: 'list' | 'grid';
   itemsPerPage?: number;
   fontSize?: 'small' | 'medium' | 'large';

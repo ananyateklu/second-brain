@@ -48,9 +48,22 @@ namespace SecondBrain.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("deleted_by");
+
                     b.Property<bool>("ImageGenerationEnabled")
                         .HasColumnType("boolean")
                         .HasColumnName("image_generation_enabled");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deleted");
 
                     b.Property<string>("Model")
                         .IsRequired()
@@ -96,6 +109,9 @@ namespace SecondBrain.Infrastructure.Migrations
 
                     b.HasIndex("UserId")
                         .HasDatabaseName("ix_chat_conversations_user_id");
+
+                    b.HasIndex("UserId", "IsDeleted")
+                        .HasDatabaseName("ix_conversations_user_deleted");
 
                     b.HasIndex("UserId", "UpdatedAt")
                         .IsDescending(false, true)
@@ -333,6 +349,15 @@ namespace SecondBrain.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<string>("DeletedBy")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("deleted_by");
+
                     b.Property<string>("ExternalId")
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)")
@@ -346,6 +371,10 @@ namespace SecondBrain.Infrastructure.Migrations
                     b.Property<bool>("IsArchived")
                         .HasColumnType("boolean")
                         .HasColumnName("is_archived");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deleted");
 
                     b.Property<string>("Source")
                         .IsRequired()
@@ -391,6 +420,9 @@ namespace SecondBrain.Infrastructure.Migrations
 
                     b.HasIndex("UserId", "IsArchived")
                         .HasDatabaseName("ix_notes_user_archived");
+
+                    b.HasIndex("UserId", "IsDeleted")
+                        .HasDatabaseName("ix_notes_user_deleted");
 
                     b.HasIndex("UserId", "UpdatedAt")
                         .IsDescending(false, true)

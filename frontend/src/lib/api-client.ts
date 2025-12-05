@@ -3,7 +3,9 @@
  * Centralized HTTP client with typed responses, interceptors, and error handling
  */
 
-import { useAuthStore } from '../store/auth-store';
+// Import directly from bound-store to avoid circular dependency
+// auth-store re-exports useBoundStore, but importing it causes a cycle
+import { useBoundStore } from '../store/bound-store';
 import { ApiError, ApiErrorCode, RequestConfig } from '../types/api';
 import { getApiBaseUrl, TIMEOUTS, RETRY } from './constants';
 
@@ -76,7 +78,7 @@ export function addErrorInterceptor(interceptor: ErrorInterceptor): () => void {
  * Get authentication headers from the auth store
  */
 function getAuthHeaders(): HeadersInit {
-  const authStore = useAuthStore.getState();
+  const authStore = useBoundStore.getState();
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
   };
@@ -115,7 +117,7 @@ function getErrorCodeFromStatus(status: number): ApiErrorCode {
  */
 async function parseErrorMessage(response: Response): Promise<string> {
   const defaultMessage = `Failed to ${response.url.split('/').pop()?.split('?')[0] || 'complete request'}`;
-  
+
   try {
     const errorData = await response.json();
     if (errorData.error) return errorData.error;
@@ -131,7 +133,7 @@ async function parseErrorMessage(response: Response): Promise<string> {
  * Handle unauthorized response - redirect to login
  */
 function handleUnauthorized(): void {
-  const authStore = useAuthStore.getState();
+  const authStore = useBoundStore.getState();
   if (authStore.isAuthenticated) {
     authStore.signOut();
   }
@@ -209,7 +211,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
     const errorMessage = await parseErrorMessage(response);
     const errorCode = getErrorCodeFromStatus(response.status);
     const error = new ApiError(errorMessage, errorCode, response.status, response.statusText);
-    
+
     return applyErrorInterceptors(error);
   }
 
@@ -290,7 +292,7 @@ async function fetchWithRetry<T>(
  */
 function mergeAbortSignals(...signals: AbortSignal[]): AbortSignal {
   const controller = new AbortController();
-  
+
   for (const signal of signals) {
     if (signal.aborted) {
       controller.abort();
@@ -435,7 +437,7 @@ export const apiClient = {
     headers: HeadersInit = {},
     signal?: AbortSignal
   ): Promise<Response> {
-    const authStore = useAuthStore.getState();
+    const authStore = useBoundStore.getState();
     const requestHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
       'Accept': 'text/event-stream',

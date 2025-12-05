@@ -181,31 +181,105 @@ var isDesktopMode = Environment.GetEnvironmentVariable("SecondBrain__DesktopMode
 
     try
     {
+        logger.LogInformation("Checking database status...");
+
+        var canConnect = await dbContext.Database.CanConnectAsync();
+        if (!canConnect)
+        {
+            // Database doesn't exist - create it with migrations
+            logger.LogInformation("Database does not exist. Creating with migrations...");
+            await dbContext.Database.MigrateAsync();
+            logger.LogInformation("Database created successfully.");
+        }
+        else
+        {
+            // Database exists - check if it was created with EnsureCreated (no migrations history)
+            // or if it needs migration updates
+            try
+            {
+                var pendingMigrations = (await dbContext.Database.GetPendingMigrationsAsync()).ToList();
+                var appliedMigrations = (await dbContext.Database.GetAppliedMigrationsAsync()).ToList();
+
+                if (appliedMigrations.Count == 0 && pendingMigrations.Count > 0)
+                {
+                    // Database was likely created with EnsureCreated - need to apply schema updates manually
+                    logger.LogInformation("Detected database without migration history. Applying schema updates...");
+                    await ApplySoftDeleteColumnsIfMissing(dbContext, logger);
+
+                    // Mark all migrations as applied since the schema should now be current
+                    foreach (var migration in pendingMigrations)
+                    {
+                        await dbContext.Database.ExecuteSqlRawAsync(
+                            "INSERT INTO \"__EFMigrationsHistory\" (\"MigrationId\", \"ProductVersion\") VALUES ({0}, {1}) ON CONFLICT DO NOTHING",
+                            migration, "10.0.0");
+                    }
+                    logger.LogInformation("Schema updates applied successfully.");
+                }
+                else if (pendingMigrations.Count > 0)
+                {
+                    // Normal migration path
+                    logger.LogInformation("Applying {Count} pending migration(s): {Migrations}",
+                        pendingMigrations.Count, string.Join(", ", pendingMigrations));
+                    await dbContext.Database.MigrateAsync();
+                    logger.LogInformation("Database migrations applied successfully.");
+                }
+                else
+                {
+                    logger.LogInformation("Database is up-to-date. No pending migrations.");
+                }
+            }
+            catch (Exception ex) when (ex.Message.Contains("__EFMigrationsHistory"))
+            {
+                // Migrations history table doesn't exist - database was created with EnsureCreated
+                logger.LogInformation("Migrations history table not found. Applying schema updates...");
+                await ApplySoftDeleteColumnsIfMissing(dbContext, logger);
+
+                // Create migrations history and mark all as applied
+                await dbContext.Database.MigrateAsync();
+                logger.LogInformation("Schema updates applied successfully.");
+            }
+        }
+
         if (isDesktopMode)
         {
-            // Desktop mode: use EnsureCreated to create schema without migrations
-            // This is appropriate for embedded databases that start fresh
-            logger.LogInformation("Desktop mode: Ensuring database schema exists...");
-            await dbContext.Database.EnsureCreatedAsync();
-            logger.LogInformation("Database schema ensured successfully.");
-
-            // Ensure performance indexes exist (handles upgrades for existing databases)
+            // Desktop mode: also ensure performance indexes exist
             var indexInitializer = new DatabaseIndexInitializer(
                 dbContext,
                 scope.ServiceProvider.GetRequiredService<ILogger<DatabaseIndexInitializer>>());
             await indexInitializer.EnsureIndexesAsync();
         }
-        else if (app.Environment.IsDevelopment())
-        {
-            // Development mode: use migrations
-            logger.LogInformation("Applying database migrations...");
-            await dbContext.Database.MigrateAsync();
-            logger.LogInformation("Database migrations applied successfully.");
-        }
     }
     catch (Exception ex)
     {
         logger.LogWarning(ex, "Database initialization failed. Error: {Message}", ex.Message);
+    }
+}
+
+// Helper method to apply soft delete columns if they don't exist
+static async Task ApplySoftDeleteColumnsIfMissing(ApplicationDbContext dbContext, ILogger<Program> logger)
+{
+    var commands = new[]
+    {
+        "ALTER TABLE notes ADD COLUMN IF NOT EXISTS deleted_at timestamp with time zone",
+        "ALTER TABLE notes ADD COLUMN IF NOT EXISTS deleted_by character varying(128)",
+        "ALTER TABLE notes ADD COLUMN IF NOT EXISTS is_deleted boolean NOT NULL DEFAULT FALSE",
+        "ALTER TABLE chat_conversations ADD COLUMN IF NOT EXISTS deleted_at timestamp with time zone",
+        "ALTER TABLE chat_conversations ADD COLUMN IF NOT EXISTS deleted_by character varying(128)",
+        "ALTER TABLE chat_conversations ADD COLUMN IF NOT EXISTS is_deleted boolean NOT NULL DEFAULT FALSE",
+        "CREATE INDEX IF NOT EXISTS ix_notes_user_deleted ON notes (user_id, is_deleted)",
+        "CREATE INDEX IF NOT EXISTS ix_conversations_user_deleted ON chat_conversations (user_id, is_deleted)"
+    };
+
+    foreach (var command in commands)
+    {
+        try
+        {
+            await dbContext.Database.ExecuteSqlRawAsync(command);
+        }
+        catch (Exception ex)
+        {
+            logger.LogDebug("Command skipped (may already exist): {Command}. Error: {Error}", command, ex.Message);
+        }
     }
 }
 

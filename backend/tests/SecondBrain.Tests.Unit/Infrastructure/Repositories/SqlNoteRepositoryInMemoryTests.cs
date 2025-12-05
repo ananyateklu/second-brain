@@ -125,6 +125,64 @@ public class TestNoteRepository : INoteRepository
         return await _context.Notes.AsNoTracking()
             .FirstOrDefaultAsync(n => n.UserId == userId && n.ExternalId == externalId);
     }
+
+    // Soft delete methods (simplified implementations for testing)
+    public async Task<bool> SoftDeleteAsync(string id, string deletedBy)
+    {
+        var note = await _context.Notes.FirstOrDefaultAsync(n => n.Id == id);
+        if (note == null) return false;
+        note.IsDeleted = true;
+        note.DeletedAt = DateTime.UtcNow;
+        note.DeletedBy = deletedBy;
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<int> SoftDeleteManyAsync(IEnumerable<string> ids, string userId)
+    {
+        var idList = ids.ToList();
+        var notes = await _context.Notes
+            .Where(n => idList.Contains(n.Id) && n.UserId == userId)
+            .ToListAsync();
+        if (notes.Count == 0) return 0;
+        var now = DateTime.UtcNow;
+        foreach (var note in notes)
+        {
+            note.IsDeleted = true;
+            note.DeletedAt = now;
+            note.DeletedBy = userId;
+        }
+        await _context.SaveChangesAsync();
+        return notes.Count;
+    }
+
+    public async Task<bool> RestoreAsync(string id)
+    {
+        var note = await _context.Notes.FirstOrDefaultAsync(n => n.Id == id && n.IsDeleted);
+        if (note == null) return false;
+        note.IsDeleted = false;
+        note.DeletedAt = null;
+        note.DeletedBy = null;
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> HardDeleteAsync(string id)
+    {
+        var note = await _context.Notes.FirstOrDefaultAsync(n => n.Id == id);
+        if (note == null) return false;
+        _context.Notes.Remove(note);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<IEnumerable<Note>> GetDeletedByUserIdAsync(string userId)
+    {
+        return await _context.Notes.AsNoTracking()
+            .Where(n => n.UserId == userId && n.IsDeleted)
+            .OrderByDescending(n => n.DeletedAt)
+            .ToListAsync();
+    }
 }
 
 public class SqlNoteRepositoryInMemoryTests : IDisposable

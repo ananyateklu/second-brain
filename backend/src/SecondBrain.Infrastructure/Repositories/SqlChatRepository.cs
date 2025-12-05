@@ -414,5 +414,161 @@ public class SqlChatRepository : IChatRepository
             throw new RepositoryException($"Failed to add message to conversation with ID '{id}'", ex);
         }
     }
+
+    // ============================================
+    // Soft Delete Operations
+    // ============================================
+
+    public async Task<bool> SoftDeleteAsync(string id, string deletedBy)
+    {
+        try
+        {
+            _logger.LogDebug("Soft deleting conversation. ConversationId: {ConversationId}, DeletedBy: {DeletedBy}", id, deletedBy);
+            var conversation = await _context.ChatConversations.FirstOrDefaultAsync(c => c.Id == id);
+
+            if (conversation == null)
+            {
+                _logger.LogDebug("Conversation not found for soft deletion. ConversationId: {ConversationId}", id);
+                return false;
+            }
+
+            conversation.IsDeleted = true;
+            conversation.DeletedAt = DateTime.UtcNow;
+            conversation.DeletedBy = deletedBy;
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Conversation soft deleted successfully. ConversationId: {ConversationId}, DeletedBy: {DeletedBy}", id, deletedBy);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error soft deleting conversation. ConversationId: {ConversationId}", id);
+            throw new RepositoryException($"Failed to soft delete conversation with ID '{id}'", ex);
+        }
+    }
+
+    public async Task<int> SoftDeleteManyAsync(IEnumerable<string> ids, string userId)
+    {
+        try
+        {
+            var idList = ids.ToList();
+            _logger.LogDebug("Soft deleting multiple conversations. Count: {Count}, UserId: {UserId}", idList.Count, userId);
+
+            var conversations = await _context.ChatConversations
+                .Where(c => idList.Contains(c.Id) && c.UserId == userId)
+                .ToListAsync();
+
+            if (conversations.Count == 0)
+            {
+                _logger.LogDebug("No conversations found for bulk soft deletion. UserId: {UserId}", userId);
+                return 0;
+            }
+
+            var now = DateTime.UtcNow;
+            foreach (var conversation in conversations)
+            {
+                conversation.IsDeleted = true;
+                conversation.DeletedAt = now;
+                conversation.DeletedBy = userId;
+            }
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Bulk soft deleted conversations successfully. Count: {Count}, UserId: {UserId}", conversations.Count, userId);
+            return conversations.Count;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error bulk soft deleting conversations. UserId: {UserId}", userId);
+            throw new RepositoryException($"Failed to bulk soft delete conversations for user '{userId}'", ex);
+        }
+    }
+
+    public async Task<bool> RestoreAsync(string id)
+    {
+        try
+        {
+            _logger.LogDebug("Restoring soft-deleted conversation. ConversationId: {ConversationId}", id);
+
+            var conversation = await _context.ChatConversations
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(c => c.Id == id && c.IsDeleted);
+
+            if (conversation == null)
+            {
+                _logger.LogDebug("Soft-deleted conversation not found for restoration. ConversationId: {ConversationId}", id);
+                return false;
+            }
+
+            conversation.IsDeleted = false;
+            conversation.DeletedAt = null;
+            conversation.DeletedBy = null;
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Conversation restored successfully. ConversationId: {ConversationId}", id);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error restoring conversation. ConversationId: {ConversationId}", id);
+            throw new RepositoryException($"Failed to restore conversation with ID '{id}'", ex);
+        }
+    }
+
+    public async Task<bool> HardDeleteAsync(string id)
+    {
+        try
+        {
+            _logger.LogDebug("Hard deleting conversation. ConversationId: {ConversationId}", id);
+
+            var conversation = await _context.ChatConversations
+                .IgnoreQueryFilters()
+                .Include(c => c.Messages)
+                .FirstOrDefaultAsync(c => c.Id == id);
+
+            if (conversation == null)
+            {
+                _logger.LogDebug("Conversation not found for hard deletion. ConversationId: {ConversationId}", id);
+                return false;
+            }
+
+            _context.ChatConversations.Remove(conversation);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Conversation hard deleted successfully. ConversationId: {ConversationId}", id);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error hard deleting conversation. ConversationId: {ConversationId}", id);
+            throw new RepositoryException($"Failed to hard delete conversation with ID '{id}'", ex);
+        }
+    }
+
+    public async Task<IEnumerable<ChatConversation>> GetDeletedByUserIdAsync(string userId)
+    {
+        try
+        {
+            _logger.LogDebug("Retrieving soft-deleted conversations by userId. UserId: {UserId}", userId);
+
+            var conversations = await _context.ChatConversations
+                .IgnoreQueryFilters()
+                .Include(c => c.Messages)
+                .AsNoTracking()
+                .Where(c => c.UserId == userId && c.IsDeleted)
+                .OrderByDescending(c => c.DeletedAt)
+                .ToListAsync();
+
+            _logger.LogDebug("Retrieved soft-deleted conversations for user. UserId: {UserId}, Count: {Count}", userId, conversations.Count);
+            return conversations;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving soft-deleted conversations by userId. UserId: {UserId}", userId);
+            throw new RepositoryException($"Failed to retrieve soft-deleted conversations for user '{userId}'", ex);
+        }
+    }
 }
 

@@ -15,7 +15,7 @@ mod database;
 
 use database::PostgresManager;
 
-/// API secrets configuration stored in the app data directory
+/// API secrets configuration stored in file
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Secrets {
     pub openai_api_key: Option<String>,
@@ -28,7 +28,7 @@ pub struct Secrets {
     pub pinecone_index_name: Option<String>,
 }
 
-/// Load secrets from the app data directory
+/// Load secrets from file
 fn load_secrets(app_data_dir: &PathBuf) -> Secrets {
     let secrets_path = app_data_dir.join("secrets.json");
     
@@ -56,7 +56,7 @@ fn load_secrets(app_data_dir: &PathBuf) -> Secrets {
     Secrets::default()
 }
 
-/// Save secrets to the app data directory
+/// Save secrets to file
 fn save_secrets(app_data_dir: &PathBuf, secrets: &Secrets) -> Result<(), String> {
     let secrets_path = app_data_dir.join("secrets.json");
     
@@ -160,7 +160,7 @@ async fn restart_database(app: AppHandle) -> Result<(), String> {
     start_services_internal(&app).await
 }
 
-/// Get API secrets (returns masked values for security)
+/// Get API secrets
 #[tauri::command]
 async fn get_secrets(app: AppHandle) -> Result<Secrets, String> {
     let app_data_dir = app
@@ -189,7 +189,7 @@ async fn save_secrets_cmd(app: AppHandle, secrets: Secrets, restart: bool) -> Re
     Ok(())
 }
 
-/// Get the path to the secrets file
+/// Get the path to the secrets storage location
 #[tauri::command]
 async fn get_secrets_path(app: AppHandle) -> Result<String, String> {
     let app_data_dir = app

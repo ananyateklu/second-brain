@@ -33,6 +33,9 @@ public class ApplicationDbContext : DbContext
         // Configure Note entity
         modelBuilder.Entity<Note>(entity =>
         {
+            // Global query filter for soft deletes
+            entity.HasQueryFilter(e => !e.IsDeleted);
+
             entity.HasIndex(e => e.UserId).HasDatabaseName("ix_notes_user_id");
             entity.HasIndex(e => new { e.UserId, e.ExternalId }).HasDatabaseName("ix_notes_user_external");
             entity.HasIndex(e => e.CreatedAt).HasDatabaseName("ix_notes_created_at");
@@ -45,6 +48,9 @@ public class ApplicationDbContext : DbContext
                 .HasDatabaseName("ix_notes_user_folder");
             entity.HasIndex(e => new { e.UserId, e.IsArchived })
                 .HasDatabaseName("ix_notes_user_archived");
+            // Index for soft delete queries
+            entity.HasIndex(e => new { e.UserId, e.IsDeleted })
+                .HasDatabaseName("ix_notes_user_deleted");
         });
 
         // Configure User entity
@@ -69,12 +75,18 @@ public class ApplicationDbContext : DbContext
         // Configure ChatConversation entity
         modelBuilder.Entity<ChatConversation>(entity =>
         {
+            // Global query filter for soft deletes
+            entity.HasQueryFilter(e => !e.IsDeleted);
+
             entity.HasIndex(e => e.UserId).HasDatabaseName("ix_chat_conversations_user_id");
             entity.HasIndex(e => e.UpdatedAt).HasDatabaseName("ix_chat_conversations_updated_at");
             // Performance index for conversation listing (user + updated_at descending)
             entity.HasIndex(e => new { e.UserId, e.UpdatedAt })
                 .IsDescending(false, true)
                 .HasDatabaseName("ix_conversations_user_updated");
+            // Index for soft delete queries
+            entity.HasIndex(e => new { e.UserId, e.IsDeleted })
+                .HasDatabaseName("ix_conversations_user_deleted");
 
             // One-to-many relationship with ChatMessages
             entity.HasMany(c => c.Messages)
