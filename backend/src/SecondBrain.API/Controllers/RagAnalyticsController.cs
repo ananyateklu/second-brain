@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using SecondBrain.Application.DTOs.Requests;
 using SecondBrain.Application.DTOs.Responses;
@@ -11,7 +12,9 @@ namespace SecondBrain.API.Controllers;
 /// Based on best practices from production RAG systems for data-driven optimization
 /// </summary>
 [ApiController]
+[ApiVersion("1.0")]
 [Route("api/rag/analytics")]
+[Route("api/v{version:apiVersion}/rag/analytics")]
 [Produces("application/json")]
 public class RagAnalyticsController : ControllerBase
 {
@@ -197,7 +200,7 @@ public class RagAnalyticsController : ControllerBase
         try
         {
             IEnumerable<Core.Entities.RagQueryLog> logs;
-            
+
             if (feedbackOnly)
             {
                 logs = await _repository.GetWithFeedbackAsync(userId, since);

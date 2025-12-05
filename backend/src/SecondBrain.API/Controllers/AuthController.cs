@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using SecondBrain.API.Services;
 using SecondBrain.Core.Entities;
@@ -10,7 +11,9 @@ namespace SecondBrain.API.Controllers;
 /// Authentication endpoints for email/password authentication
 /// </summary>
 [ApiController]
+[ApiVersion("1.0")]
 [Route("api/[controller]")]
+[Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
 public class AuthController : ControllerBase
 {
@@ -61,7 +64,7 @@ public class AuthController : ControllerBase
         {
             // Check if user already exists
             var existingUser = await _userRepository.GetByEmailAsync(request.Email);
-            
+
             if (existingUser != null)
             {
                 _logger.LogWarning("Registration attempted with existing email: {Email}", request.Email);
@@ -73,18 +76,18 @@ public class AuthController : ControllerBase
             {
                 Email = request.Email.ToLowerInvariant().Trim(),
                 PasswordHash = _passwordService.HashPassword(request.Password),
-                DisplayName = !string.IsNullOrWhiteSpace(request.DisplayName) 
-                    ? request.DisplayName.Trim() 
+                DisplayName = !string.IsNullOrWhiteSpace(request.DisplayName)
+                    ? request.DisplayName.Trim()
                     : request.Email.Split('@')[0],
                 IsActive = true
             };
 
             var createdUser = await _userRepository.CreateAsync(newUser);
-            
+
             // Generate JWT token
             var token = _jwtService.GenerateToken(createdUser);
-            
-            _logger.LogInformation("New user registered. UserId: {UserId}, Email: {Email}", 
+
+            _logger.LogInformation("New user registered. UserId: {UserId}, Email: {Email}",
                 createdUser.Id, createdUser.Email);
 
             return Ok(new AuthResponse
@@ -124,7 +127,7 @@ public class AuthController : ControllerBase
         {
             // Get user by email
             var user = await _userRepository.GetByEmailAsync(request.Email.ToLowerInvariant().Trim());
-            
+
             if (user == null)
             {
                 _logger.LogWarning("Login attempted with non-existent email: {Email}", request.Email);
@@ -153,7 +156,7 @@ public class AuthController : ControllerBase
             // Generate JWT token
             var token = _jwtService.GenerateToken(user);
 
-            _logger.LogInformation("User logged in. UserId: {UserId}, Email: {Email}", 
+            _logger.LogInformation("User logged in. UserId: {UserId}, Email: {Email}",
                 user.Id, user.Email);
 
             return Ok(new AuthResponse
@@ -184,7 +187,7 @@ public class AuthController : ControllerBase
     public async Task<ActionResult<AuthResponse>> GetCurrentUser()
     {
         var userId = HttpContext.Items["UserId"]?.ToString();
-        
+
         if (string.IsNullOrEmpty(userId))
         {
             return Unauthorized(new { error = "Not authenticated" });
@@ -193,7 +196,7 @@ public class AuthController : ControllerBase
         try
         {
             var user = await _userRepository.GetByIdAsync(userId);
-            
+
             if (user == null)
             {
                 return Unauthorized(new { error = "User not found" });
@@ -226,7 +229,7 @@ public class AuthController : ControllerBase
     public async Task<ActionResult<ApiKeyResponse>> GenerateApiKey()
     {
         var userId = HttpContext.Items["UserId"]?.ToString();
-        
+
         if (string.IsNullOrEmpty(userId))
         {
             return Unauthorized(new { error = "Not authenticated" });
@@ -235,7 +238,7 @@ public class AuthController : ControllerBase
         try
         {
             var user = await _userRepository.GetByIdAsync(userId);
-            
+
             if (user == null)
             {
                 return Unauthorized(new { error = "User not found" });
@@ -246,7 +249,7 @@ public class AuthController : ControllerBase
             user.UpdatedAt = DateTime.UtcNow;
 
             await _userRepository.UpdateAsync(userId, user);
-            
+
             _logger.LogInformation("API key generated for user. UserId: {UserId}", userId);
 
             return Ok(new ApiKeyResponse
@@ -282,11 +285,11 @@ public class RegisterRequest
     [Required]
     [EmailAddress]
     public string Email { get; set; } = string.Empty;
-    
+
     [Required]
     [MinLength(6)]
     public string Password { get; set; } = string.Empty;
-    
+
     public string? DisplayName { get; set; }
 }
 
@@ -295,7 +298,7 @@ public class LoginRequest
     [Required]
     [EmailAddress]
     public string Email { get; set; } = string.Empty;
-    
+
     [Required]
     public string Password { get; set; } = string.Empty;
 }

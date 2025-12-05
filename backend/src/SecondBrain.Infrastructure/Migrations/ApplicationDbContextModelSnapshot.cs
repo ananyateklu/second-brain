@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
+using NpgsqlTypes;
 using Pgvector;
 using SecondBrain.Infrastructure.Data;
 
@@ -39,9 +40,17 @@ namespace SecondBrain.Infrastructure.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("agent_enabled");
 
+                    b.Property<bool>("AgentRagEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("agent_rag_enabled");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
+
+                    b.Property<bool>("ImageGenerationEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("image_generation_enabled");
 
                     b.Property<string>("Model")
                         .IsRequired()
@@ -88,7 +97,11 @@ namespace SecondBrain.Infrastructure.Migrations
                     b.HasIndex("UserId")
                         .HasDatabaseName("ix_chat_conversations_user_id");
 
-                    b.ToTable("chat_conversations", (string)null);
+                    b.HasIndex("UserId", "UpdatedAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_conversations_user_updated");
+
+                    b.ToTable("chat_conversations");
                 });
 
             modelBuilder.Entity("SecondBrain.Core.Entities.ChatMessage", b =>
@@ -120,6 +133,11 @@ namespace SecondBrain.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("output_tokens");
 
+                    b.Property<string>("RagFeedback")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("rag_feedback");
+
                     b.Property<string>("RagLogId")
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)")
@@ -143,7 +161,54 @@ namespace SecondBrain.Infrastructure.Migrations
                     b.HasIndex("Timestamp")
                         .HasDatabaseName("ix_chat_messages_timestamp");
 
-                    b.ToTable("chat_messages", (string)null);
+                    b.ToTable("chat_messages");
+                });
+
+            modelBuilder.Entity("SecondBrain.Core.Entities.GeneratedImageData", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("text")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Base64Data")
+                        .HasColumnType("text")
+                        .HasColumnName("base64_data");
+
+                    b.Property<int?>("Height")
+                        .HasColumnType("integer")
+                        .HasColumnName("height");
+
+                    b.Property<string>("MediaType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("media_type");
+
+                    b.Property<string>("MessageId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("message_id");
+
+                    b.Property<string>("RevisedPrompt")
+                        .HasColumnType("text")
+                        .HasColumnName("revised_prompt");
+
+                    b.Property<string>("Url")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)")
+                        .HasColumnName("url");
+
+                    b.Property<int?>("Width")
+                        .HasColumnType("integer")
+                        .HasColumnName("width");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MessageId")
+                        .HasDatabaseName("ix_generated_images_message_id");
+
+                    b.ToTable("generated_images");
                 });
 
             modelBuilder.Entity("SecondBrain.Core.Entities.IndexingJob", b =>
@@ -214,7 +279,7 @@ namespace SecondBrain.Infrastructure.Migrations
                     b.HasIndex("UserId", "CreatedAt")
                         .HasDatabaseName("ix_indexing_jobs_user_created");
 
-                    b.ToTable("indexing_jobs", (string)null);
+                    b.ToTable("indexing_jobs");
                 });
 
             modelBuilder.Entity("SecondBrain.Core.Entities.MessageImage", b =>
@@ -250,7 +315,7 @@ namespace SecondBrain.Infrastructure.Migrations
                     b.HasIndex("MessageId")
                         .HasDatabaseName("ix_message_images_message_id");
 
-                    b.ToTable("message_images", (string)null);
+                    b.ToTable("message_images");
                 });
 
             modelBuilder.Entity("SecondBrain.Core.Entities.Note", b =>
@@ -320,7 +385,18 @@ namespace SecondBrain.Infrastructure.Migrations
                     b.HasIndex("UserId", "ExternalId")
                         .HasDatabaseName("ix_notes_user_external");
 
-                    b.ToTable("notes", (string)null);
+                    b.HasIndex("UserId", "Folder")
+                        .HasDatabaseName("ix_notes_user_folder")
+                        .HasFilter("folder IS NOT NULL");
+
+                    b.HasIndex("UserId", "IsArchived")
+                        .HasDatabaseName("ix_notes_user_archived");
+
+                    b.HasIndex("UserId", "UpdatedAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_notes_user_updated");
+
+                    b.ToTable("notes");
                 });
 
             modelBuilder.Entity("SecondBrain.Core.Entities.NoteEmbedding", b =>
@@ -379,6 +455,10 @@ namespace SecondBrain.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("note_updated_at");
 
+                    b.Property<NpgsqlTsVector>("SearchVector")
+                        .HasColumnType("tsvector")
+                        .HasColumnName("search_vector");
+
                     b.Property<string>("UserId")
                         .IsRequired()
                         .HasMaxLength(128)
@@ -396,7 +476,146 @@ namespace SecondBrain.Infrastructure.Migrations
                     b.HasIndex("NoteId", "ChunkIndex")
                         .HasDatabaseName("ix_note_embeddings_note_chunk");
 
-                    b.ToTable("note_embeddings", (string)null);
+                    b.HasIndex("UserId", "NoteId")
+                        .HasDatabaseName("ix_embeddings_user_note");
+
+                    b.ToTable("note_embeddings");
+                });
+
+            modelBuilder.Entity("SecondBrain.Core.Entities.RagQueryLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<float?>("AvgBM25Score")
+                        .HasColumnType("real")
+                        .HasColumnName("avg_bm25_score");
+
+                    b.Property<float?>("AvgCosineScore")
+                        .HasColumnType("real")
+                        .HasColumnName("avg_cosine_score");
+
+                    b.Property<float?>("AvgRerankScore")
+                        .HasColumnType("real")
+                        .HasColumnName("avg_rerank_score");
+
+                    b.Property<int?>("BM25SearchTimeMs")
+                        .HasColumnType("integer")
+                        .HasColumnName("bm25_search_time_ms");
+
+                    b.Property<string>("ConversationId")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("conversation_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("FeedbackCategory")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("feedback_category");
+
+                    b.Property<string>("FeedbackComment")
+                        .HasColumnType("text")
+                        .HasColumnName("feedback_comment");
+
+                    b.Property<int?>("FinalCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("final_count");
+
+                    b.Property<bool>("HyDEEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("hyde_enabled");
+
+                    b.Property<bool>("HybridSearchEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("hybrid_search_enabled");
+
+                    b.Property<bool>("MultiQueryEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("multi_query_enabled");
+
+                    b.Property<string>("Query")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("query");
+
+                    b.Property<string>("QueryEmbeddingJson")
+                        .HasColumnType("text")
+                        .HasColumnName("query_embedding");
+
+                    b.Property<int?>("QueryEmbeddingTimeMs")
+                        .HasColumnType("integer")
+                        .HasColumnName("query_embedding_time_ms");
+
+                    b.Property<int?>("RerankTimeMs")
+                        .HasColumnType("integer")
+                        .HasColumnName("rerank_time_ms");
+
+                    b.Property<bool>("RerankingEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("reranking_enabled");
+
+                    b.Property<int?>("RetrievedCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("retrieved_count");
+
+                    b.Property<float?>("TopCosineScore")
+                        .HasColumnType("real")
+                        .HasColumnName("top_cosine_score");
+
+                    b.Property<float?>("TopRerankScore")
+                        .HasColumnType("real")
+                        .HasColumnName("top_rerank_score");
+
+                    b.Property<int?>("TopicCluster")
+                        .HasColumnType("integer")
+                        .HasColumnName("topic_cluster");
+
+                    b.Property<string>("TopicLabel")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("topic_label");
+
+                    b.Property<int?>("TotalTimeMs")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_time_ms");
+
+                    b.Property<string>("UserFeedback")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("user_feedback");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("user_id");
+
+                    b.Property<int?>("VectorSearchTimeMs")
+                        .HasColumnType("integer")
+                        .HasColumnName("vector_search_time_ms");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConversationId")
+                        .HasDatabaseName("ix_rag_query_logs_conversation");
+
+                    b.HasIndex("CreatedAt")
+                        .HasDatabaseName("ix_rag_query_logs_created_at");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_rag_query_logs_user_id");
+
+                    b.HasIndex("UserId", "CreatedAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_rag_logs_user_created");
+
+                    b.ToTable("rag_query_logs");
                 });
 
             modelBuilder.Entity("SecondBrain.Core.Entities.RetrievedNote", b =>
@@ -446,7 +665,7 @@ namespace SecondBrain.Infrastructure.Migrations
                     b.HasIndex("MessageId")
                         .HasDatabaseName("ix_retrieved_notes_message_id");
 
-                    b.ToTable("retrieved_notes", (string)null);
+                    b.ToTable("retrieved_notes");
                 });
 
             modelBuilder.Entity("SecondBrain.Core.Entities.ToolCall", b =>
@@ -490,7 +709,7 @@ namespace SecondBrain.Infrastructure.Migrations
                     b.HasIndex("MessageId")
                         .HasDatabaseName("ix_tool_calls_message_id");
 
-                    b.ToTable("tool_calls", (string)null);
+                    b.ToTable("tool_calls");
                 });
 
             modelBuilder.Entity("SecondBrain.Core.Entities.User", b =>
@@ -542,7 +761,7 @@ namespace SecondBrain.Infrastructure.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_users_email");
 
-                    b.ToTable("users", (string)null);
+                    b.ToTable("users");
                 });
 
             modelBuilder.Entity("SecondBrain.Core.Entities.UserPreferences", b =>
@@ -608,7 +827,7 @@ namespace SecondBrain.Infrastructure.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_user_preferences_user_id");
 
-                    b.ToTable("user_preferences", (string)null);
+                    b.ToTable("user_preferences");
                 });
 
             modelBuilder.Entity("SecondBrain.Core.Entities.ChatMessage", b =>
@@ -620,6 +839,17 @@ namespace SecondBrain.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Conversation");
+                });
+
+            modelBuilder.Entity("SecondBrain.Core.Entities.GeneratedImageData", b =>
+                {
+                    b.HasOne("SecondBrain.Core.Entities.ChatMessage", "Message")
+                        .WithMany("GeneratedImages")
+                        .HasForeignKey("MessageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Message");
                 });
 
             modelBuilder.Entity("SecondBrain.Core.Entities.MessageImage", b =>
@@ -673,6 +903,8 @@ namespace SecondBrain.Infrastructure.Migrations
 
             modelBuilder.Entity("SecondBrain.Core.Entities.ChatMessage", b =>
                 {
+                    b.Navigation("GeneratedImages");
+
                     b.Navigation("Images");
 
                     b.Navigation("RetrievedNotes");

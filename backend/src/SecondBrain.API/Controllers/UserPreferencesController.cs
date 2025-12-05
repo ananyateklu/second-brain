@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using SecondBrain.Application.DTOs.Requests;
 using SecondBrain.Application.DTOs.Responses;
@@ -6,7 +7,9 @@ using SecondBrain.Application.Services;
 namespace SecondBrain.API.Controllers;
 
 [ApiController]
+[ApiVersion("1.0")]
 [Route("api/[controller]")]
+[Route("api/v{version:apiVersion}/[controller]")]
 public class UserPreferencesController : ControllerBase
 {
     private readonly IUserPreferencesService _preferencesService;

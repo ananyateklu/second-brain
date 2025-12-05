@@ -1,6 +1,8 @@
 /**
  * Image Settings Bar Component
  * Shows image generation options when an image model is selected
+ * 
+ * Can be used standalone with props or with ChatInputContext
  */
 
 import {
@@ -8,36 +10,60 @@ import {
   QUALITY_OPTIONS,
   STYLE_OPTIONS,
 } from '../../../../utils/image-generation-models';
+import { useChatInputContext, type ImageModelInfo } from './ChatInputContext';
 
-export interface ImageModelInfo {
-  sizes: string[];
-  defaultSize: string;
-  supportsQuality: boolean;
-  supportsStyle: boolean;
-  description?: string;
-}
+export type { ImageModelInfo };
 
 export interface ChatImageSettingsBarProps {
-  modelInfo: ImageModelInfo;
-  size: string;
-  quality: string;
-  style: string;
-  onSizeChange: (size: string) => void;
-  onQualityChange: (quality: string) => void;
-  onStyleChange: (style: string) => void;
+  /** Model info (optional if using context) */
+  modelInfo?: ImageModelInfo;
+  /** Current size (optional if using context) */
+  size?: string;
+  /** Current quality (optional if using context) */
+  quality?: string;
+  /** Current style (optional if using context) */
+  style?: string;
+  /** Size change callback (optional if using context) */
+  onSizeChange?: (size: string) => void;
+  /** Quality change callback (optional if using context) */
+  onQualityChange?: (quality: string) => void;
+  /** Style change callback (optional if using context) */
+  onStyleChange?: (style: string) => void;
+  /** Whether controls are disabled */
   disabled?: boolean;
 }
 
 export function ChatImageSettingsBar({
-  modelInfo,
-  size,
-  quality,
-  style,
-  onSizeChange,
-  onQualityChange,
-  onStyleChange,
-  disabled = false,
+  modelInfo: propModelInfo,
+  size: propSize,
+  quality: propQuality,
+  style: propStyle,
+  onSizeChange: propOnSizeChange,
+  onQualityChange: propOnQualityChange,
+  onStyleChange: propOnStyleChange,
+  disabled: propDisabled,
 }: ChatImageSettingsBarProps) {
+  // Try to use context, but fall back to props
+  let contextValue: ReturnType<typeof useChatInputContext> | null = null;
+  try {
+    contextValue = useChatInputContext();
+  } catch {
+    // Not in a ChatInput context, use props
+  }
+
+  const modelInfo = propModelInfo ?? contextValue?.currentImageModelInfo;
+  const size = propSize ?? contextValue?.imageSettings.size ?? '1024x1024';
+  const quality = propQuality ?? contextValue?.imageSettings.quality ?? 'standard';
+  const style = propStyle ?? contextValue?.imageSettings.style ?? 'vivid';
+  const onSizeChange = propOnSizeChange ?? ((s: string) => contextValue?.onImageSettingsChange({ size: s }));
+  const onQualityChange = propOnQualityChange ?? ((q: string) => contextValue?.onImageSettingsChange({ quality: q }));
+  const onStyleChange = propOnStyleChange ?? ((s: string) => contextValue?.onImageSettingsChange({ style: s }));
+  const disabled = propDisabled ?? contextValue?.isGeneratingImage ?? false;
+  const isImageGenerationMode = contextValue?.isImageGenerationMode ?? true;
+
+  // Don't render if no model info or not in image generation mode
+  if (!modelInfo || !isImageGenerationMode) return null;
+
   return (
     <div
       className="mb-3 flex items-center gap-3 p-3 rounded-2xl animate-in slide-in-from-bottom-2 duration-200"

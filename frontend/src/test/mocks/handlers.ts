@@ -40,14 +40,57 @@ const mockConversations = [
   {
     id: 'conv-1',
     title: 'Test Conversation',
+    provider: 'OpenAI',
+    model: 'gpt-4o-mini',
+    ragEnabled: false,
+    agentEnabled: false,
     messages: [],
     createdAt: '2024-01-01T12:00:00Z',
     updatedAt: '2024-01-01T12:00:00Z',
   },
 ];
 
+const mockAIProviders = {
+  providers: [
+    {
+      name: 'OpenAI',
+      isEnabled: true,
+      models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo'],
+    },
+    {
+      name: 'Anthropic',
+      isEnabled: true,
+      models: ['claude-3-5-sonnet-latest', 'claude-3-5-haiku-latest'],
+    },
+    {
+      name: 'Ollama',
+      isEnabled: false,
+      models: [],
+    },
+  ],
+};
+
+const mockIndexingStats = {
+  totalNotes: 10,
+  indexedNotes: 8,
+  totalChunks: 45,
+  lastIndexedAt: '2024-01-15T12:00:00Z',
+};
+
+const mockRagAnalytics = {
+  totalQueries: 100,
+  queriesWithFeedback: 25,
+  positiveFeedback: 20,
+  negativeFeedback: 5,
+  positiveFeedbackRate: 0.8,
+  avgTotalTimeMs: 450,
+  avgRetrievedCount: 3.5,
+};
+
 export const handlers = [
-  // Auth endpoints
+  // ============================================
+  // Auth Endpoints
+  // ============================================
   http.post(`${API_BASE}/auth/login`, async () => {
     return HttpResponse.json(mockUser);
   }),
@@ -56,8 +99,19 @@ export const handlers = [
     return HttpResponse.json(mockUser);
   }),
 
-  // Notes endpoints
+  http.post(`${API_BASE}/auth/logout`, () => {
+    return new HttpResponse(null, { status: 204 });
+  }),
+
+  // ============================================
+  // Notes Endpoints
+  // ============================================
   http.get(`${API_BASE}/notes`, () => {
+    return HttpResponse.json(mockNotes);
+  }),
+
+  // Versioned route support
+  http.get(`${API_BASE}/v1/notes`, () => {
     return HttpResponse.json(mockNotes);
   }),
 
@@ -74,6 +128,7 @@ export const handlers = [
     const newNote = {
       id: `note-${Date.now()}`,
       ...body,
+      isArchived: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -98,8 +153,19 @@ export const handlers = [
     return new HttpResponse(null, { status: 404 });
   }),
 
-  // Chat endpoints
+  http.post(`${API_BASE}/notes/bulk-delete`, async ({ request }) => {
+    const body = await request.json() as { noteIds: string[] };
+    return HttpResponse.json({ deletedCount: body.noteIds.length });
+  }),
+
+  // ============================================
+  // Chat/Conversations Endpoints
+  // ============================================
   http.get(`${API_BASE}/chat/conversations`, () => {
+    return HttpResponse.json(mockConversations);
+  }),
+
+  http.get(`${API_BASE}/v1/chat/conversations`, () => {
     return HttpResponse.json(mockConversations);
   }),
 
@@ -115,7 +181,11 @@ export const handlers = [
     const body = await request.json() as Record<string, unknown>;
     const newConversation = {
       id: `conv-${Date.now()}`,
-      ...body,
+      title: body.title || 'New Conversation',
+      provider: body.provider || 'OpenAI',
+      model: body.model || 'gpt-4o-mini',
+      ragEnabled: body.ragEnabled || false,
+      agentEnabled: body.agentEnabled || false,
       messages: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -123,24 +193,222 @@ export const handlers = [
     return HttpResponse.json(newConversation, { status: 201 });
   }),
 
-  // AI Health endpoints
-  http.get(`${API_BASE}/ai/health`, () => {
+  http.delete(`${API_BASE}/chat/conversations/:id`, ({ params }) => {
+    const conversation = mockConversations.find((c) => c.id === params.id);
+    if (conversation) {
+      return new HttpResponse(null, { status: 204 });
+    }
+    return new HttpResponse(null, { status: 404 });
+  }),
+
+  http.post(`${API_BASE}/chat/conversations/bulk-delete`, async ({ request }) => {
+    const body = await request.json() as { conversationIds: string[] };
+    return HttpResponse.json({ deletedCount: body.conversationIds.length });
+  }),
+
+  // Chat message (non-streaming)
+  http.post(`${API_BASE}/chat/conversations/:id/messages`, async () => {
     return HttpResponse.json({
-      openai: { available: true },
-      anthropic: { available: true },
-      ollama: { available: false },
+      conversation: {
+        ...mockConversations[0],
+        messages: [
+          { role: 'user', content: 'Hello', timestamp: new Date().toISOString() },
+          { role: 'assistant', content: 'Hello! How can I help you?', timestamp: new Date().toISOString() },
+        ],
+      },
+      retrievedNotes: [],
     });
   }),
 
-  // Stats endpoints
-  http.get(`${API_BASE}/stats`, () => {
+  // Chat message streaming (SSE)
+  http.post(`${API_BASE}/chat/conversations/:id/messages/stream`, () => {
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      start(controller) {
+        // Send start event
+        controller.enqueue(encoder.encode('event: start\ndata: {"status":"streaming"}\n\n'));
+
+        // Simulate streaming tokens
+        const tokens = ['Hello', '!', ' How', ' can', ' I', ' help', ' you', ' today', '?'];
+        tokens.forEach((token, index) => {
+          setTimeout(() => {
+            controller.enqueue(encoder.encode(`data: ${token}\n\n`));
+
+            // Send end event after last token
+            if (index === tokens.length - 1) {
+              setTimeout(() => {
+                controller.enqueue(encoder.encode('event: end\ndata: {"conversationId":"conv-1","inputTokens":10,"outputTokens":9}\n\n'));
+                controller.close();
+              }, 10);
+            }
+          }, index * 10);
+        });
+      },
+    });
+
+    return new HttpResponse(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
+    });
+  }),
+
+  // Image generation providers
+  http.get(`${API_BASE}/chat/image-generation/providers`, () => {
+    return HttpResponse.json([
+      { provider: 'OpenAI', models: ['dall-e-3', 'dall-e-2'], isEnabled: true },
+      { provider: 'Gemini', models: ['gemini-image'], isEnabled: true },
+    ]);
+  }),
+
+  // ============================================
+  // AI Health Endpoints
+  // ============================================
+  http.get(`${API_BASE}/ai/health`, () => {
+    return HttpResponse.json(mockAIProviders);
+  }),
+
+  http.get(`${API_BASE}/ai/health/:provider`, ({ params }) => {
+    const provider = mockAIProviders.providers.find(
+      (p) => p.name.toLowerCase() === String(params.provider).toLowerCase()
+    );
+    if (provider) {
+      return HttpResponse.json(provider);
+    }
+    return new HttpResponse(null, { status: 404 });
+  }),
+
+  // ============================================
+  // Indexing Endpoints
+  // ============================================
+  http.get(`${API_BASE}/indexing/stats`, () => {
+    return HttpResponse.json(mockIndexingStats);
+  }),
+
+  http.post(`${API_BASE}/indexing/start`, () => {
+    return HttpResponse.json({
+      jobId: `job-${Date.now()}`,
+      status: 'started',
+      message: 'Indexing job started',
+    });
+  }),
+
+  http.get(`${API_BASE}/indexing/status/:jobId`, () => {
+    return HttpResponse.json({
+      status: 'completed',
+      progress: 100,
+      processedNotes: 10,
+      totalNotes: 10,
+    });
+  }),
+
+  // ============================================
+  // RAG Analytics Endpoints
+  // ============================================
+  http.get(`${API_BASE}/rag/analytics/stats`, () => {
+    return HttpResponse.json(mockRagAnalytics);
+  }),
+
+  http.get(`${API_BASE}/rag/analytics/logs`, () => {
+    return HttpResponse.json({
+      items: [
+        {
+          id: 'log-1',
+          query: 'What is TypeScript?',
+          totalTimeMs: 350,
+          userFeedback: 'thumbs_up',
+          createdAt: '2024-01-15T12:00:00Z',
+        },
+        {
+          id: 'log-2',
+          query: 'How to use React hooks?',
+          totalTimeMs: 420,
+          userFeedback: null,
+          createdAt: '2024-01-14T12:00:00Z',
+        },
+      ],
+      totalCount: 2,
+      page: 1,
+      pageSize: 10,
+    });
+  }),
+
+  http.post(`${API_BASE}/rag/analytics/feedback`, () => {
+    return new HttpResponse(null, { status: 204 });
+  }),
+
+  http.get(`${API_BASE}/rag/analytics/topics`, () => {
+    return HttpResponse.json([
+      { id: 0, label: 'Programming', queryCount: 45 },
+      { id: 1, label: 'AI/ML', queryCount: 30 },
+      { id: 2, label: 'DevOps', queryCount: 15 },
+    ]);
+  }),
+
+  // ============================================
+  // Stats Endpoints
+  // ============================================
+  http.get(`${API_BASE}/stats/dashboard`, () => {
     return HttpResponse.json({
       totalNotes: 10,
       totalConversations: 5,
       notesThisWeek: 3,
+      activeProviders: 2,
     });
+  }),
+
+  http.get(`${API_BASE}/stats/ai`, () => {
+    return HttpResponse.json({
+      totalTokensUsed: 15000,
+      totalRequests: 50,
+      averageResponseTime: 1200,
+    });
+  }),
+
+  http.get(`${API_BASE}/stats/notes`, () => {
+    return HttpResponse.json({
+      totalNotes: 10,
+      archivedNotes: 2,
+      notesWithTags: 8,
+      uniqueTags: 15,
+    });
+  }),
+
+  // ============================================
+  // User Preferences Endpoints
+  // ============================================
+  http.get(`${API_BASE}/userpreferences/:userId`, () => {
+    return HttpResponse.json({
+      theme: 'dark',
+      chatProvider: 'OpenAI',
+      chatModel: 'gpt-4o-mini',
+      vectorStore: 'PostgreSQL',
+      useRemoteOllama: false,
+    });
+  }),
+
+  http.put(`${API_BASE}/userpreferences/:userId`, async ({ request }) => {
+    const body = await request.json();
+    return HttpResponse.json(body);
+  }),
+
+  // ============================================
+  // Agent Endpoints
+  // ============================================
+  http.get(`${API_BASE}/agent/capabilities`, () => {
+    return HttpResponse.json([
+      { id: 'notes', displayName: 'Notes Management', description: 'Create, update, and search notes' },
+    ]);
+  }),
+
+  http.get(`${API_BASE}/agent/providers`, () => {
+    return HttpResponse.json([
+      { name: 'OpenAI', models: ['gpt-4o', 'gpt-4o-mini'] },
+    ]);
   }),
 ];
 
-export { mockNotes, mockUser, mockConversations };
+export { mockNotes, mockUser, mockConversations, mockAIProviders, mockIndexingStats, mockRagAnalytics };
 

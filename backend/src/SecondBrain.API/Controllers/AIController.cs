@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using SecondBrain.Application.DTOs.Requests;
 using SecondBrain.Application.DTOs.Responses;
@@ -11,7 +12,9 @@ using System.Text.Json;
 namespace SecondBrain.API.Controllers;
 
 [ApiController]
+[ApiVersion("1.0")]
 [Route("api/[controller]")]
+[Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
 public class AIController : ControllerBase
 {
@@ -62,7 +65,7 @@ public class AIController : ControllerBase
                 try
                 {
                     AIProviderHealth health;
-                    
+
                     // For Ollama, use the overload that accepts config overrides
                     if (provider.ProviderName == "Ollama" && ollamaConfigOverrides != null)
                     {
@@ -72,7 +75,7 @@ public class AIController : ControllerBase
                     {
                         health = await provider.GetHealthStatusAsync(cancellationToken);
                     }
-                    
+
                     healthChecks.Add(health);
                 }
                 catch (HttpRequestException ex) when (ex.InnerException is SocketException)
@@ -136,9 +139,9 @@ public class AIController : ControllerBase
         try
         {
             var aiProvider = _providerFactory.GetProvider(provider);
-            
+
             AIProviderHealth health;
-            
+
             // For Ollama, use the overload that accepts config overrides
             if (aiProvider.ProviderName == "Ollama" && useRemoteOllama && !string.IsNullOrWhiteSpace(ollamaBaseUrl))
             {
@@ -152,7 +155,7 @@ public class AIController : ControllerBase
             {
                 health = await aiProvider.GetHealthStatusAsync(cancellationToken);
             }
-            
+
             return Ok(health);
         }
         catch (ArgumentException)

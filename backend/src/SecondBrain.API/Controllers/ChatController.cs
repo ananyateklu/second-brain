@@ -1,4 +1,6 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using SecondBrain.Application.DTOs.Requests;
 using SecondBrain.Application.DTOs.Responses;
 using SecondBrain.Application.Exceptions;
@@ -15,7 +17,9 @@ using SecondBrain.Core.Interfaces;
 namespace SecondBrain.API.Controllers;
 
 [ApiController]
+[ApiVersion("1.0")]
 [Route("api/[controller]")]
+[Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
 public class ChatController : ControllerBase
 {
@@ -172,11 +176,13 @@ public class ChatController : ControllerBase
     /// Stream a message in a conversation and get AI response in real-time via SSE
     /// </summary>
     [HttpPost("conversations/{id}/messages/stream")]
+    [EnableRateLimiting("ai-requests")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task StreamMessage(
         string id,
         [FromBody] SendMessageRequest request,
@@ -855,11 +861,13 @@ public class ChatController : ControllerBase
     /// Generate an image in a conversation
     /// </summary>
     [HttpPost("conversations/{id}/generate-image")]
+    [EnableRateLimiting("image-generation")]
     [ProducesResponseType(typeof(ImageGenerationApiResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<ActionResult<ImageGenerationApiResponse>> GenerateImage(
         string id,
         [FromBody] GenerateImageRequest request,

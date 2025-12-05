@@ -1,21 +1,45 @@
 /**
  * Input Metrics Component
  * Displays character count, word count, and token estimates
+ * 
+ * Can be used standalone with props or with ChatInputContext
  */
 
+import { useChatInputContext } from './ChatInputContext';
+
 export interface ChatInputMetricsProps {
-  charCount: number;
-  wordCount: number;
-  tokenCount: number;
+  /** Character count (optional if using context) */
+  charCount?: number;
+  /** Word count (optional if using context) */
+  wordCount?: number;
+  /** Token count (optional if using context) */
+  tokenCount?: number;
+  /** Number of attached files (optional if using context) */
   attachedFileCount?: number;
 }
 
 export function ChatInputMetrics({
-  charCount,
-  wordCount,
-  tokenCount,
-  attachedFileCount = 0,
+  charCount: propCharCount,
+  wordCount: propWordCount,
+  tokenCount: propTokenCount,
+  attachedFileCount: propAttachedFileCount,
 }: ChatInputMetricsProps) {
+  // Try to use context, but fall back to props
+  let contextValue: ReturnType<typeof useChatInputContext> | null = null;
+  try {
+    contextValue = useChatInputContext();
+  } catch {
+    // Not in a ChatInput context, use props
+  }
+
+  const charCount = propCharCount ?? contextValue?.charCount ?? 0;
+  const wordCount = propWordCount ?? contextValue?.wordCount ?? 0;
+  const tokenCount = propTokenCount ?? contextValue?.inputTokenCount ?? 0;
+  const attachedFileCount = propAttachedFileCount ?? contextValue?.attachedFiles.length ?? 0;
+  const hasContent = contextValue?.hasContent ?? (charCount > 0 || attachedFileCount > 0);
+
+  if (!hasContent) return null;
+
   return (
     <div
       className="flex items-center justify-end gap-3 mt-2 pt-2 animate-in fade-in duration-200"

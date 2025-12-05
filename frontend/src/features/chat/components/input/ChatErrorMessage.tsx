@@ -1,14 +1,43 @@
 /**
  * Error Message Component
  * Displays error messages in the chat input area
+ * 
+ * Can be used standalone with props or with ChatInputContext
  */
 
+import { useChatInputContext } from './ChatInputContext';
+
 export interface ChatErrorMessageProps {
-  message: string;
+  /** Error message to display (optional if using context) */
+  message?: string;
+  /** Callback when error is dismissed */
   onDismiss?: () => void;
+  /** Which error type to show from context: 'file' or 'imageGen' */
+  errorType?: 'file' | 'imageGen';
 }
 
-export function ChatErrorMessage({ message, onDismiss }: ChatErrorMessageProps) {
+export function ChatErrorMessage({
+  message: propMessage,
+  onDismiss,
+  errorType = 'file',
+}: ChatErrorMessageProps) {
+  // Try to use context, but fall back to props
+  let contextValue: ReturnType<typeof useChatInputContext> | null = null;
+  try {
+    contextValue = useChatInputContext();
+  } catch {
+    // Not in a ChatInput context, use props
+  }
+
+  // Determine which error message to show
+  const message = propMessage ?? (
+    errorType === 'imageGen'
+      ? contextValue?.imageGenError
+      : contextValue?.fileError
+  );
+
+  if (!message) return null;
+
   return (
     <div
       className="mb-2 px-4 py-2.5 rounded-xl text-sm animate-in fade-in duration-200"

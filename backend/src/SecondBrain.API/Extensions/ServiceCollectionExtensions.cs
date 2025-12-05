@@ -1,6 +1,9 @@
 using System.Text;
+using System.Threading.RateLimiting;
+using Asp.Versioning;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using SecondBrain.API.Configuration;
@@ -13,6 +16,7 @@ using SecondBrain.Application.Services.Notes;
 using SecondBrain.Application.Services.Stats;
 using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.AI;
+using SecondBrain.Application.Services.AI.CircuitBreaker;
 using SecondBrain.Application.Services.AI.Interfaces;
 using SecondBrain.Application.Services.AI.Providers;
 using SecondBrain.Application.Services.Agents;
@@ -100,6 +104,7 @@ public static class ServiceCollectionExtensions
     {
         // Configure AI provider settings
         services.Configure<AIProvidersSettings>(configuration.GetSection(AIProvidersSettings.SectionName));
+        services.Configure<CircuitBreakerSettings>(configuration.GetSection(CircuitBreakerSettings.SectionName));
 
         // Register client factories for testability
         services.AddSingleton<IAnthropicClientFactory, AnthropicClientFactory>();
@@ -112,8 +117,20 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<OllamaProvider>();
         services.AddSingleton<GrokProvider>();
 
-        // Register the factory
-        services.AddSingleton<IAIProviderFactory, AIProviderFactory>();
+        // Register the base AI provider factory
+        services.AddSingleton<AIProviderFactory>();
+
+        // Register the circuit breaker as singleton (maintains state across requests)
+        services.AddSingleton<AIProviderCircuitBreaker>();
+
+        // Register the circuit breaker factory decorator as the IAIProviderFactory
+        services.AddSingleton<IAIProviderFactory>(sp =>
+        {
+            var innerFactory = sp.GetRequiredService<AIProviderFactory>();
+            var circuitBreaker = sp.GetRequiredService<AIProviderCircuitBreaker>();
+            var logger = sp.GetRequiredService<ILogger<CircuitBreakerAIProviderFactory>>();
+            return new CircuitBreakerAIProviderFactory(innerFactory, circuitBreaker, logger);
+        });
 
         // Register image generation providers
         services.AddSingleton<OpenAIImageProvider>();
@@ -224,6 +241,40 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
+    /// Configures API versioning with URL segment and header support
+    /// </summary>
+    public static IServiceCollection AddApiVersioningConfig(this IServiceCollection services)
+    {
+        services.AddApiVersioning(options =>
+        {
+            // Default to version 1.0 when not specified
+            options.DefaultApiVersion = new ApiVersion(1, 0);
+            options.AssumeDefaultVersionWhenUnspecified = true;
+
+            // Report supported versions in response headers
+            options.ReportApiVersions = true;
+
+            // Support multiple version readers
+            options.ApiVersionReader = ApiVersionReader.Combine(
+                // URL segment: /api/v1/notes
+                new UrlSegmentApiVersionReader(),
+                // Header: X-Api-Version: 1.0
+                new HeaderApiVersionReader("X-Api-Version"),
+                // Query string: ?api-version=1.0
+                new QueryStringApiVersionReader("api-version")
+            );
+        })
+        .AddApiExplorer(options =>
+        {
+            // Format the version as 'v'major[.minor]
+            options.GroupNameFormat = "'v'VVV";
+            options.SubstituteApiVersionInUrl = true;
+        });
+
+        return services;
+    }
+
+    /// <summary>
     /// Registers health checks
     /// </summary>
     public static IServiceCollection AddCustomHealthChecks(this IServiceCollection services)
@@ -232,6 +283,98 @@ public static class ServiceCollectionExtensions
             .AddCheck<PostgresHealthCheck>("postgresql");
 
         return services;
+    }
+
+    /// <summary>
+    /// Configures rate limiting policies
+    /// </summary>
+    public static IServiceCollection AddRateLimiting(this IServiceCollection services)
+    {
+        services.AddRateLimiter(options =>
+        {
+            // Global rate limiter - applies to all endpoints
+            options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: GetRateLimitPartitionKey(context),
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 100,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        QueueLimit = 0
+                    }));
+
+            // AI-specific rate limiter - more restrictive for expensive AI operations
+            options.AddPolicy("ai-requests", context =>
+                RateLimitPartition.GetSlidingWindowLimiter(
+                    partitionKey: GetRateLimitPartitionKey(context),
+                    factory: _ => new SlidingWindowRateLimiterOptions
+                    {
+                        PermitLimit = 20,
+                        Window = TimeSpan.FromMinutes(1),
+                        SegmentsPerWindow = 4,
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        QueueLimit = 2
+                    }));
+
+            // Image generation rate limiter - even more restrictive
+            options.AddPolicy("image-generation", context =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: GetRateLimitPartitionKey(context),
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 10,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                        QueueLimit = 0
+                    }));
+
+            // Configure rejection response
+            options.OnRejected = async (context, cancellationToken) =>
+            {
+                context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+                context.HttpContext.Response.Headers.RetryAfter = "60";
+
+                if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+                {
+                    context.HttpContext.Response.Headers.RetryAfter = ((int)retryAfter.TotalSeconds).ToString();
+                }
+
+                await context.HttpContext.Response.WriteAsJsonAsync(new
+                {
+                    error = "Rate limit exceeded",
+                    message = "Too many requests. Please try again later.",
+                    retryAfter = context.HttpContext.Response.Headers.RetryAfter.ToString()
+                }, cancellationToken);
+            };
+        });
+
+        return services;
+    }
+
+    private static string GetRateLimitPartitionKey(HttpContext context)
+    {
+        // Prefer authenticated user ID over IP address
+        var userId = context.User?.Identity?.Name;
+        if (!string.IsNullOrEmpty(userId))
+        {
+            return $"user:{userId}";
+        }
+
+        // Fall back to IP address for unauthenticated requests
+        var forwardedFor = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+        if (!string.IsNullOrEmpty(forwardedFor))
+        {
+            return $"ip:{forwardedFor.Split(',')[0].Trim()}";
+        }
+
+        var realIp = context.Request.Headers["X-Real-IP"].FirstOrDefault();
+        if (!string.IsNullOrEmpty(realIp))
+        {
+            return $"ip:{realIp}";
+        }
+
+        return $"ip:{context.Connection.RemoteIpAddress?.ToString() ?? "unknown"}";
     }
 
     /// <summary>
@@ -257,6 +400,19 @@ public static class ServiceCollectionExtensions
         // Configure RAG settings
         services.Configure<EmbeddingProvidersSettings>(configuration.GetSection(EmbeddingProvidersSettings.SectionName));
         services.Configure<RagSettings>(configuration.GetSection(RagSettings.SectionName));
+        services.Configure<CachedEmbeddingSettings>(configuration.GetSection(CachedEmbeddingSettings.SectionName));
+
+        // Configure memory cache for embedding caching
+        var cacheSettings = configuration.GetSection(CachedEmbeddingSettings.SectionName).Get<CachedEmbeddingSettings>()
+            ?? new CachedEmbeddingSettings();
+
+        services.AddMemoryCache(options =>
+        {
+            // Set size limit based on configuration (convert MB to approximate entry count)
+            // Each embedding is ~6KB (1536 dimensions * 8 bytes), so 100MB = ~17000 entries
+            options.SizeLimit = cacheSettings.MaxMemorySizeMB * 1024 * 1024 / 6000;
+            options.CompactionPercentage = 0.25; // Remove 25% when limit reached
+        });
 
         // Register embedding client factories for testability
         services.AddSingleton<SecondBrain.Application.Services.Embeddings.Interfaces.IOpenAIEmbeddingClientFactory,
@@ -274,8 +430,19 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IEmbeddingProvider, OllamaEmbeddingProvider>(sp => sp.GetRequiredService<OllamaEmbeddingProvider>());
         services.AddSingleton<IEmbeddingProvider, PineconeEmbeddingProvider>(sp => sp.GetRequiredService<PineconeEmbeddingProvider>());
 
-        // Register the embedding provider factory
-        services.AddSingleton<IEmbeddingProviderFactory, EmbeddingProviderFactory>();
+        // Register the base embedding provider factory
+        services.AddSingleton<EmbeddingProviderFactory>();
+
+        // Register the cached embedding provider factory as the IEmbeddingProviderFactory
+        // This decorates the base factory with caching capabilities
+        services.AddSingleton<IEmbeddingProviderFactory>(sp =>
+        {
+            var innerFactory = sp.GetRequiredService<EmbeddingProviderFactory>();
+            var cache = sp.GetRequiredService<Microsoft.Extensions.Caching.Memory.IMemoryCache>();
+            var logger = sp.GetRequiredService<ILogger<CachedEmbeddingProvider>>();
+            var settings = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<CachedEmbeddingSettings>>();
+            return new CachedEmbeddingProviderFactory(innerFactory, cache, logger, settings);
+        });
 
         // Register vector stores as concrete types (needed for CompositeVectorStore)
         services.AddScoped<PostgresVectorStore>();

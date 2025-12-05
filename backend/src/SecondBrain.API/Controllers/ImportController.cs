@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using SecondBrain.API.Utilities;
 using SecondBrain.Application.DTOs.Requests;
@@ -13,7 +14,9 @@ namespace SecondBrain.API.Controllers;
 /// Import endpoints for external data
 /// </summary>
 [ApiController]
+[ApiVersion("1.0")]
 [Route("api/[controller]")]
+[Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
 public class ImportController : ControllerBase
 {
@@ -47,7 +50,7 @@ public class ImportController : ControllerBase
 
         // Get authenticated user from middleware
         var userId = HttpContext.Items["UserId"]?.ToString();
-        
+
         if (string.IsNullOrEmpty(userId))
         {
             _logger.LogWarning("User not authenticated");
@@ -71,7 +74,7 @@ public class ImportController : ControllerBase
                 throw new ValidationException("notes", "No notes provided.");
             }
             _logger.LogInformation("Step 2 completed: Successfully parsed and normalized notes. NoteCount: {NoteCount}", notes.Count);
-            
+
             for (int i = 0; i < notes.Count; i++)
             {
                 var note = notes[i];

@@ -4,6 +4,9 @@ using SecondBrain.Infrastructure.Data;
 using Scalar.AspNetCore;
 using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
+using Serilog.Events;
+using Serilog.Formatting.Compact;
 
 // Load .env file from the root of the project if it exists
 // This allows running locally with the same environment variables as Docker
@@ -48,7 +51,7 @@ if (File.Exists(envPath))
     var pgDb = Environment.GetEnvironmentVariable("POSTGRES_DB") ?? "secondbrain";
     var pgUser = Environment.GetEnvironmentVariable("POSTGRES_USER") ?? "postgres";
     var pgPassword = Environment.GetEnvironmentVariable("POSTGRES_PASSWORD") ?? "postgres";
-    
+
     var connectionString = $"Host={pgHost};Port={pgPort};Database={pgDb};Username={pgUser};Password={pgPassword}";
     Environment.SetEnvironmentVariable("ConnectionStrings__DefaultConnection", connectionString);
 
@@ -83,7 +86,57 @@ if (File.Exists(envPath))
     if (!string.IsNullOrEmpty(allowLocal)) Environment.SetEnvironmentVariable("Cors__AllowLocalNetworkIps", allowLocal);
 }
 
+Console.WriteLine();
+Console.WriteLine("╔══════════════════════════════════════════════════════════╗");
+Console.WriteLine("║           Second Brain API - Starting...                 ║");
+Console.WriteLine("╚══════════════════════════════════════════════════════════╝");
+Console.WriteLine();
+
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure Serilog for structured logging
+var logsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
+Directory.CreateDirectory(logsPath);
+
+builder.Host.UseSerilog((context, services, configuration) =>
+{
+    configuration
+        .ReadFrom.Configuration(context.Configuration)
+        .ReadFrom.Services(services)
+        .Enrich.FromLogContext()
+        .Enrich.WithProperty("Application", "SecondBrain.API")
+        .Enrich.WithProperty("Environment", context.HostingEnvironment.EnvironmentName)
+        .Enrich.WithMachineName()
+        .WriteTo.Console(
+            outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}",
+            restrictedToMinimumLevel: LogEventLevel.Information)
+        .WriteTo.File(
+            new CompactJsonFormatter(),
+            Path.Combine(logsPath, "secondbrain-.json"),
+            rollingInterval: RollingInterval.Day,
+            retainedFileCountLimit: 30,
+            restrictedToMinimumLevel: LogEventLevel.Information)
+        .WriteTo.File(
+            Path.Combine(logsPath, "secondbrain-errors-.txt"),
+            rollingInterval: RollingInterval.Day,
+            retainedFileCountLimit: 30,
+            restrictedToMinimumLevel: LogEventLevel.Error,
+            outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] {Message:lj}{NewLine}{Exception}");
+
+    // Set minimum level based on environment
+    if (context.HostingEnvironment.IsDevelopment())
+    {
+        configuration.MinimumLevel.Debug()
+            .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+            .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning);
+    }
+    else
+    {
+        configuration.MinimumLevel.Information()
+            .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+            .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning);
+    }
+});
 
 // Configure Kestrel limits
 builder.WebHost.ConfigureKestrel(serverOptions =>
@@ -114,6 +167,8 @@ builder.Services.AddValidators();
 builder.Services.AddCustomCors(builder.Configuration);
 builder.Services.AddSwaggerDocumentation();
 builder.Services.AddCustomHealthChecks();
+builder.Services.AddRateLimiting();
+builder.Services.AddApiVersioningConfig();
 
 var app = builder.Build();
 
@@ -123,7 +178,7 @@ var isDesktopMode = Environment.GetEnvironmentVariable("SecondBrain__DesktopMode
     using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-    
+
     try
     {
         if (isDesktopMode)
@@ -133,6 +188,12 @@ var isDesktopMode = Environment.GetEnvironmentVariable("SecondBrain__DesktopMode
             logger.LogInformation("Desktop mode: Ensuring database schema exists...");
             await dbContext.Database.EnsureCreatedAsync();
             logger.LogInformation("Database schema ensured successfully.");
+
+            // Ensure performance indexes exist (handles upgrades for existing databases)
+            var indexInitializer = new DatabaseIndexInitializer(
+                dbContext,
+                scope.ServiceProvider.GetRequiredService<ILogger<DatabaseIndexInitializer>>());
+            await indexInitializer.EnsureIndexesAsync();
         }
         else if (app.Environment.IsDevelopment())
         {
@@ -156,7 +217,7 @@ if (app.Environment.IsDevelopment())
 }
 
 // Only use HTTPS redirection when HTTPS port is configured
-var httpsPort = builder.Configuration.GetValue<int?>("ASPNETCORE_HTTPS_PORT") 
+var httpsPort = builder.Configuration.GetValue<int?>("ASPNETCORE_HTTPS_PORT")
     ?? builder.Configuration.GetValue<int?>("Https:Port");
 if (httpsPort.HasValue)
 {
@@ -165,11 +226,30 @@ if (httpsPort.HasValue)
 
 app.UseCors("AllowFrontend");
 
+// Serilog request logging with enriched diagnostics
+app.UseSerilogRequestLogging(options =>
+{
+    options.MessageTemplate = "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
+    options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
+    {
+        diagnosticContext.Set("RequestHost", httpContext.Request.Host.Value);
+        diagnosticContext.Set("UserAgent", httpContext.Request.Headers.UserAgent.ToString());
+        diagnosticContext.Set("ClientIp", httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown");
+
+        // Add user ID if authenticated
+        var userId = httpContext.Items["UserId"]?.ToString();
+        if (!string.IsNullOrEmpty(userId))
+        {
+            diagnosticContext.Set("UserId", userId);
+        }
+    };
+});
+
 // Security headers
 app.UseSecurityHeaders();
 
-// Rate limiting
-app.UseRateLimiting();
+// Rate limiting (using built-in ASP.NET Core rate limiter)
+app.UseRateLimiter();
 
 // Custom middleware (logging, error handling, authentication)
 app.UseCustomMiddleware();
@@ -177,5 +257,37 @@ app.UseCustomMiddleware();
 // Map controllers and health checks
 app.MapControllers();
 app.MapHealthChecks("/api/health");
+
+// Display startup banner when server is ready
+app.Lifetime.ApplicationStarted.Register(() =>
+{
+    var urls = app.Urls;
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+
+    Console.WriteLine();
+    Console.WriteLine("╔══════════════════════════════════════════════════════════╗");
+    Console.WriteLine("║           Second Brain API - Running!                    ║");
+    Console.WriteLine("╠══════════════════════════════════════════════════════════╣");
+    foreach (var url in urls)
+    {
+        var paddedUrl = $"  {url}".PadRight(58);
+        Console.WriteLine($"║{paddedUrl}║");
+    }
+    Console.WriteLine("╠══════════════════════════════════════════════════════════╣");
+    Console.WriteLine("║  API Docs:  /scalar/v1                                   ║");
+    Console.WriteLine("║  Health:    /api/health                                  ║");
+    Console.WriteLine("╠══════════════════════════════════════════════════════════╣");
+    Console.WriteLine("║  Press Ctrl+C to shut down                               ║");
+    Console.WriteLine("╚══════════════════════════════════════════════════════════╝");
+    Console.WriteLine();
+
+    logger.LogInformation("Second Brain API started successfully on {Urls}", string.Join(", ", urls));
+});
+
+app.Lifetime.ApplicationStopping.Register(() =>
+{
+    Console.WriteLine();
+    Console.WriteLine("Second Brain API shutting down...");
+});
 
 app.Run();

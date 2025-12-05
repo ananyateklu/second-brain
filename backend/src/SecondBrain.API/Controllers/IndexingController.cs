@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using SecondBrain.Application.DTOs.Responses;
 using SecondBrain.Application.Services.RAG;
@@ -15,7 +16,9 @@ public static class VectorStoreKeys
 }
 
 [ApiController]
+[ApiVersion("1.0")]
 [Route("api/[controller]")]
+[Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
 public class IndexingController : ControllerBase
 {
@@ -149,11 +152,11 @@ public class IndexingController : ControllerBase
             {
                 var postgresStats = await _postgresStore.GetIndexStatsAsync(userId, cancellationToken);
                 var postgresIndexedWithTimestamps = await _postgresStore.GetIndexedNotesWithTimestampsAsync(userId, cancellationToken);
-                
+
                 // Calculate not indexed count
                 var postgresIndexedIds = postgresIndexedWithTimestamps.Keys.ToHashSet();
                 var postgresNotIndexedCount = allNotes.Count(n => !postgresIndexedIds.Contains(n.Id));
-                
+
                 // Calculate stale notes count (notes where UpdatedAt > NoteUpdatedAt in embedding)
                 var postgresStaleCount = 0;
                 foreach (var note in allNotes)
@@ -166,7 +169,7 @@ public class IndexingController : ControllerBase
                         }
                     }
                 }
-                
+
                 response.PostgreSQL = new IndexStatsData
                 {
                     TotalEmbeddings = postgresStats.TotalEmbeddings,
@@ -190,11 +193,11 @@ public class IndexingController : ControllerBase
             {
                 var pineconeStats = await _pineconeStore.GetIndexStatsAsync(userId, cancellationToken);
                 var pineconeIndexedWithTimestamps = await _pineconeStore.GetIndexedNotesWithTimestampsAsync(userId, cancellationToken);
-                
+
                 // Calculate not indexed count
                 var pineconeIndexedIds = pineconeIndexedWithTimestamps.Keys.ToHashSet();
                 var pineconeNotIndexedCount = allNotes.Count(n => !pineconeIndexedIds.Contains(n.Id));
-                
+
                 // Calculate stale notes count (notes where UpdatedAt > NoteUpdatedAt in embedding)
                 var pineconeStaleCount = 0;
                 foreach (var note in allNotes)
@@ -207,7 +210,7 @@ public class IndexingController : ControllerBase
                         }
                     }
                 }
-                
+
                 response.Pinecone = new IndexStatsData
                 {
                     TotalEmbeddings = pineconeStats.TotalEmbeddings,
@@ -306,18 +309,18 @@ public class IndexingController : ControllerBase
 
             if (!success)
             {
-                _logger.LogWarning("Failed to delete indexed notes. UserId: {UserId}, VectorStoreProvider: {VectorStoreProvider}", 
+                _logger.LogWarning("Failed to delete indexed notes. UserId: {UserId}, VectorStoreProvider: {VectorStoreProvider}",
                     userId, vectorStoreProvider);
                 return StatusCode(500, new { error = $"Failed to delete indexed notes from {storeName}" });
             }
 
-            _logger.LogInformation("Successfully deleted indexed notes. UserId: {UserId}, VectorStoreProvider: {VectorStoreProvider}", 
+            _logger.LogInformation("Successfully deleted indexed notes. UserId: {UserId}, VectorStoreProvider: {VectorStoreProvider}",
                 userId, vectorStoreProvider);
             return Ok(new { message = $"Successfully deleted indexed notes from {storeName}" });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting indexed notes. UserId: {UserId}, VectorStoreProvider: {VectorStoreProvider}", 
+            _logger.LogError(ex, "Error deleting indexed notes. UserId: {UserId}, VectorStoreProvider: {VectorStoreProvider}",
                 userId, vectorStoreProvider);
             return StatusCode(500, new { error = "Failed to delete indexed notes" });
         }

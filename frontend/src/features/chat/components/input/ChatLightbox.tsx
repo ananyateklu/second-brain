@@ -1,16 +1,37 @@
 /**
  * Lightbox Component
  * Full-screen image preview modal
+ * 
+ * Can be used standalone with props or with ChatInputContext
  */
 
 import { formatFileSize, type FileAttachment } from '../../../../utils/multimodal-models';
+import { useChatInputContext } from './ChatInputContext';
 
 export interface ChatLightboxProps {
-  image: FileAttachment;
-  onClose: () => void;
+  /** Image to display (optional if using context) */
+  image?: FileAttachment | null;
+  /** Callback when lightbox is closed (optional if using context) */
+  onClose?: () => void;
 }
 
-export function ChatLightbox({ image, onClose }: ChatLightboxProps) {
+export function ChatLightbox({
+  image: propImage,
+  onClose: propOnClose,
+}: ChatLightboxProps = {}) {
+  // Try to use context, but fall back to props
+  let contextValue: ReturnType<typeof useChatInputContext> | null = null;
+  try {
+    contextValue = useChatInputContext();
+  } catch {
+    // Not in a ChatInput context, use props
+  }
+
+  const image = propImage ?? contextValue?.lightboxImage;
+  const onClose = propOnClose ?? contextValue?.onLightboxClose ?? (() => { });
+
+  if (!image) return null;
+
   return (
     <div
       className="lightbox-overlay fixed inset-0 z-50 flex items-center justify-center p-8"

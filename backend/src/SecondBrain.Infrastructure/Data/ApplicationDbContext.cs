@@ -36,6 +36,15 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.UserId).HasDatabaseName("ix_notes_user_id");
             entity.HasIndex(e => new { e.UserId, e.ExternalId }).HasDatabaseName("ix_notes_user_external");
             entity.HasIndex(e => e.CreatedAt).HasDatabaseName("ix_notes_created_at");
+            // Performance indexes for common query patterns
+            entity.HasIndex(e => new { e.UserId, e.UpdatedAt })
+                .IsDescending(false, true)
+                .HasDatabaseName("ix_notes_user_updated");
+            entity.HasIndex(e => new { e.UserId, e.Folder })
+                .HasFilter("folder IS NOT NULL")
+                .HasDatabaseName("ix_notes_user_folder");
+            entity.HasIndex(e => new { e.UserId, e.IsArchived })
+                .HasDatabaseName("ix_notes_user_archived");
         });
 
         // Configure User entity
@@ -62,6 +71,10 @@ public class ApplicationDbContext : DbContext
         {
             entity.HasIndex(e => e.UserId).HasDatabaseName("ix_chat_conversations_user_id");
             entity.HasIndex(e => e.UpdatedAt).HasDatabaseName("ix_chat_conversations_updated_at");
+            // Performance index for conversation listing (user + updated_at descending)
+            entity.HasIndex(e => new { e.UserId, e.UpdatedAt })
+                .IsDescending(false, true)
+                .HasDatabaseName("ix_conversations_user_updated");
 
             // One-to-many relationship with ChatMessages
             entity.HasMany(c => c.Messages)
@@ -139,7 +152,9 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.NoteId).HasDatabaseName("ix_note_embeddings_note_id");
             entity.HasIndex(e => e.UserId).HasDatabaseName("ix_note_embeddings_user_id");
             entity.HasIndex(e => new { e.NoteId, e.ChunkIndex }).HasDatabaseName("ix_note_embeddings_note_chunk");
-            
+            // Performance index for vector search by user
+            entity.HasIndex(e => new { e.UserId, e.NoteId }).HasDatabaseName("ix_embeddings_user_note");
+
             // Configure tsvector for full-text search (GIN index created via SQL migration)
             entity.Property(e => e.SearchVector)
                 .HasColumnType("tsvector");
@@ -151,6 +166,10 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.UserId).HasDatabaseName("ix_rag_query_logs_user_id");
             entity.HasIndex(e => e.CreatedAt).HasDatabaseName("ix_rag_query_logs_created_at");
             entity.HasIndex(e => e.ConversationId).HasDatabaseName("ix_rag_query_logs_conversation");
+            // Performance index for RAG analytics queries
+            entity.HasIndex(e => new { e.UserId, e.CreatedAt })
+                .IsDescending(false, true)
+                .HasDatabaseName("ix_rag_logs_user_created");
         });
     }
 }

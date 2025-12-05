@@ -145,7 +145,35 @@ export const API_ENDPOINTS = {
 // Query Keys
 // ============================================
 
+// Re-export all query key utilities and types from the dedicated module
+export {
+  // Filter types
+  type NoteFilters,
+  type ConversationFilters,
+  type RagLogFilters,
+  type IndexingFilters,
+  type AIHealthConfig,
+  // Individual key factories
+  noteKeys,
+  conversationKeys,
+  aiHealthKeys,
+  indexingKeys,
+  ragAnalyticsKeys,
+  statsKeys,
+  userPreferencesKeys,
+  imageGenerationKeys,
+  agentKeys,
+  // Unified keys object
+  queryKeys,
+  // Utility functions
+  createInvalidationPattern,
+  matchesQueryKey,
+} from './query-keys';
+
 /**
+ * @deprecated Use the typed query key factories from './query-keys' instead.
+ * This is maintained for backward compatibility.
+ * 
  * React Query cache keys organized by domain
  * Using factory pattern for consistent key generation
  */
