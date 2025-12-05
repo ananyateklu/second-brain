@@ -167,6 +167,21 @@ public class CachedEmbeddingProvider : IEmbeddingProvider
             return batchResponse;
         }
 
+        // Validate that the provider returned the expected number of embeddings
+        if (batchResponse.Embeddings.Count != uncachedTextsList.Count)
+        {
+            _logger.LogError(
+                "Embedding count mismatch. Expected: {Expected}, Received: {Received}. Provider: {Provider}",
+                uncachedTextsList.Count, batchResponse.Embeddings.Count, ProviderName);
+
+            return new BatchEmbeddingResponse
+            {
+                Success = false,
+                Error = $"Provider returned {batchResponse.Embeddings.Count} embeddings but {uncachedTextsList.Count} were requested",
+                Provider = ProviderName
+            };
+        }
+
         totalTokensUsed = batchResponse.TotalTokensUsed;
 
         // Cache and populate results
