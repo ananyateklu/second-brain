@@ -1,3 +1,8 @@
+/**
+ * NoteVersionTimeline
+ * Visual timeline component displaying note version history
+ */
+
 import { formatDistanceToNow } from 'date-fns';
 import type { NoteVersion } from '../../../types/notes';
 
@@ -20,7 +25,6 @@ export function NoteVersionTimeline({
     <div className="space-y-4">
       {versions.map((version, index) => {
         const isCurrent = version.versionNumber === currentVersion;
-        const previousVersion = versions[index + 1];
 
         return (
           <div
@@ -38,20 +42,9 @@ export function NoteVersionTimeline({
             {/* Timeline dot */}
             <div
               className={`absolute left-0 top-1 w-4 h-4 rounded-full border-2 ${isCurrent
-                ? 'bg-brand-600 border-brand-600'
-                : 'bg-surface-card border-gray-400'
+                  ? 'bg-[var(--color-brand-600)] border-[var(--color-brand-600)]'
+                  : 'bg-[var(--surface-card)] border-gray-400'
                 }`}
-              style={
-                isCurrent
-                  ? {
-                    backgroundColor: 'var(--color-brand-600)',
-                    borderColor: 'var(--color-brand-600)',
-                  }
-                  : {
-                    backgroundColor: 'var(--surface-card)',
-                    borderColor: 'var(--border)',
-                  }
-              }
             />
 
             {/* Version card */}
@@ -66,7 +59,7 @@ export function NoteVersionTimeline({
                 <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
                   Version {version.versionNumber}
                   {isCurrent && (
-                    <span className="ml-2 text-xs px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: 'var(--color-brand-600)' }}>
+                    <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-[var(--color-brand-600)] text-white">
                       Current
                     </span>
                   )}
@@ -89,36 +82,17 @@ export function NoteVersionTimeline({
               {/* Actions */}
               {!isCurrent && (
                 <div className="flex gap-2">
-                  {previousVersion && (
-                    <button
-                      onClick={() => onCompare(version.versionNumber, currentVersion)}
-                      className="text-xs px-2 py-1 rounded border transition-colors hover:bg-surface-hover"
-                      style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                      }}
-                    >
-                      Compare
-                    </button>
-                  )}
+                  <button
+                    onClick={() => onCompare(version.versionNumber, currentVersion)}
+                    className="text-xs px-2 py-1 rounded border transition-colors hover:bg-[var(--surface-hover)]"
+                    style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+                  >
+                    Compare
+                  </button>
                   <button
                     onClick={() => onRestore(version.versionNumber)}
                     disabled={isRestoring}
-                    className="text-xs px-2 py-1 rounded text-white transition-colors hover:bg-brand-700 disabled:opacity-50"
-                    style={{ backgroundColor: 'var(--color-brand-600)' }}
-                    onMouseEnter={(e) => {
-                      if (!isRestoring) {
-                        e.currentTarget.style.backgroundColor = 'var(--color-brand-700)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isRestoring) {
-                        e.currentTarget.style.backgroundColor = 'var(--color-brand-600)';
-                      }
-                    }}
+                    className="text-xs px-2 py-1 rounded bg-[var(--color-brand-600)] text-white transition-colors hover:bg-[var(--color-brand-700)] disabled:opacity-50"
                   >
                     {isRestoring ? 'Restoring...' : 'Restore'}
                   </button>

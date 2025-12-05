@@ -15,7 +15,7 @@ import { EditNoteModal } from '../features/notes/components/EditNoteModal';
 import { useAuthStore } from '../store/auth-store';
 import { useSendMessage } from '../features/chat/hooks/use-chat';
 import { useStartSession, useEndSession, collectDeviceInfo } from '../features/chat/hooks/use-chat-sessions';
-import { getApiBaseUrl } from '../lib/constants';
+import { getApiBaseUrl, API_ENDPOINTS } from '../lib/constants';
 import type { VectorStoreProvider } from '../types/rag';
 
 /**
@@ -29,11 +29,13 @@ export function ChatPage() {
   const user = useAuthStore((state) => state.user);
   const sendMessage = useSendMessage();
   const [isTauriApp, setIsTauriApp] = useState(false);
+
+  // Session tracking hooks (PostgreSQL 18 Temporal Features)
   const { mutate: startSession } = useStartSession();
   const { mutate: endSession } = useEndSession();
   const sessionIdRef = useRef<string | null>(null);
   const messageCountRef = useRef({ sent: 0, received: 0 });
-  const initialMessageCountRef = useRef({ sent: 0, received: 0 });
+  const previousConversationIdRef = useRef<string | null>(null);
 
   // Check if running in Tauri
   useEffect(() => {
@@ -118,26 +120,23 @@ export function ChatPage() {
     cancelStream,
   } = useChatPageState();
 
-  // Track message counts from conversation (only messages sent/received during this session)
+  // Start session when conversation is selected (PostgreSQL 18 Temporal Features)
   useEffect(() => {
-    if (conversation?.messages && sessionIdRef.current) {
-      const userMessages = conversation.messages.filter(m => m.role === 'user').length;
-      const assistantMessages = conversation.messages.filter(m => m.role === 'assistant').length;
-      // Calculate delta from initial counts (only count messages during this session)
-      messageCountRef.current.sent = Math.max(0, userMessages - initialMessageCountRef.current.sent);
-      messageCountRef.current.received = Math.max(0, assistantMessages - initialMessageCountRef.current.received);
-    }
-  }, [conversation?.messages]);
-
-  // Start session when conversation is selected
-  useEffect(() => {
-    if (conversationId && !sessionIdRef.current && !isNewChat) {
-      // Store initial message counts before starting session
-      const initialSent = conversation?.messages?.filter(m => m.role === 'user').length || 0;
-      const initialReceived = conversation?.messages?.filter(m => m.role === 'assistant').length || 0;
-      initialMessageCountRef.current = { sent: initialSent, received: initialReceived };
+    // End previous session if switching conversations
+    if (previousConversationIdRef.current && previousConversationIdRef.current !== conversationId && sessionIdRef.current) {
+      endSession({
+        sessionId: sessionIdRef.current,
+        data: {
+          messagesSent: messageCountRef.current.sent,
+          messagesReceived: messageCountRef.current.received,
+        },
+      });
+      sessionIdRef.current = null;
       messageCountRef.current = { sent: 0, received: 0 };
+    }
 
+    // Start new session if we have a conversation and no active session
+    if (conversationId && !sessionIdRef.current) {
       startSession(
         {
           conversationId,
@@ -152,36 +151,11 @@ export function ChatPage() {
       );
     }
 
-    // Cleanup on unmount or conversation change
+    previousConversationIdRef.current = conversationId;
+
+    // Cleanup on unmount
     return () => {
       if (sessionIdRef.current) {
-        const sessionId = sessionIdRef.current;
-        const counts = {
-          messagesSent: messageCountRef.current.sent,
-          messagesReceived: messageCountRef.current.received,
-        };
-
-        // Reset refs immediately
-        sessionIdRef.current = null;
-        messageCountRef.current = { sent: 0, received: 0 };
-        initialMessageCountRef.current = { sent: 0, received: 0 };
-
-        // End session (fire and forget - don't wait for response)
-        endSession({
-          sessionId,
-          data: counts,
-        });
-      }
-    };
-  }, [conversationId, isNewChat, startSession, endSession, conversation?.messages]);
-
-  // Handle tab close - use endSession mutation (sendBeacon doesn't support auth headers)
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      if (sessionIdRef.current) {
-        // Use the mutation directly - it will use fetch with proper auth headers
-        // Note: This may not complete if the page is closing, but it's the best we can do
-        // The backend will handle session timeouts for abandoned sessions
         endSession({
           sessionId: sessionIdRef.current,
           data: {
@@ -189,12 +163,45 @@ export function ChatPage() {
             messagesReceived: messageCountRef.current.received,
           },
         });
+        sessionIdRef.current = null;
+      }
+    };
+  }, [conversationId, startSession, endSession]);
+
+  // Handle beforeunload for tab/window close
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (sessionIdRef.current) {
+        // Use sendBeacon for reliable cleanup when tab is closing
+        const apiUrl = getApiBaseUrl();
+        navigator.sendBeacon(
+          `${apiUrl}${API_ENDPOINTS.CHAT.SESSIONS.END(sessionIdRef.current)}`,
+          JSON.stringify({
+            messagesSent: messageCountRef.current.sent,
+            messagesReceived: messageCountRef.current.received,
+          })
+        );
       }
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [endSession]);
+  }, []);
+
+  // Track message counts (increment when streaming ends)
+  useEffect(() => {
+    if (!isStreaming && streamingMessage && sessionIdRef.current) {
+      // A message was just completed
+      messageCountRef.current.received++;
+    }
+  }, [isStreaming, streamingMessage]);
+
+  // Track sent messages
+  useEffect(() => {
+    if (pendingMessage && sessionIdRef.current) {
+      messageCountRef.current.sent++;
+    }
+  }, [pendingMessage]);
 
   return (
     <div

@@ -58,7 +58,7 @@ interface DashboardData {
   aiStats: ReturnType<typeof useAIStats>['data'];
   totalTokens: number;
 
-  // Session Stats
+  // Session Stats (PostgreSQL 18 Temporal Features)
   sessionStats: SessionStats | undefined;
 
   // Model usage
@@ -86,7 +86,7 @@ interface DashboardData {
 export function useDashboardData(): DashboardData {
   const { data: notes, isLoading: isNotesLoading, error: notesError } = useNotes();
   const { data: aiStats, isLoading: isAIStatsLoading } = useAIStats();
-  const { data: sessionStats, isLoading: sessionStatsLoading } = useSessionStats();
+  const { data: sessionStats, isLoading: isSessionStatsLoading } = useSessionStats();
 
   // Get cached colors
   const colors = getThemeColors();
@@ -266,7 +266,7 @@ export function useDashboardData(): DashboardData {
   }, [aiStats]);
 
   return {
-    isLoading: isNotesLoading || isAIStatsLoading || sessionStatsLoading,
+    isLoading: isNotesLoading || isAIStatsLoading || isSessionStatsLoading,
     error: notesError,
     notes,
     stats,
