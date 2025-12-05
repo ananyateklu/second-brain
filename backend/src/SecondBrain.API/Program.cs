@@ -325,14 +325,32 @@ static async Task<bool> DoCoreTablesExist(ApplicationDbContext dbContext)
             WHERE table_schema = 'public' 
             AND table_name IN ('notes', 'users', 'chat_conversations')";
 
-        using var connection = dbContext.Database.GetDbConnection();
-        await connection.OpenAsync();
-        using var command = connection.CreateCommand();
-        command.CommandText = tableCheckSql;
-        var result = await command.ExecuteScalarAsync();
+        // GetDbConnection() returns EF Core's managed connection - do NOT dispose it
+        var connection = dbContext.Database.GetDbConnection();
+        var wasOpen = connection.State == System.Data.ConnectionState.Open;
 
-        // We expect at least 3 core tables to exist
-        return result != null && Convert.ToInt32(result) >= 3;
+        if (!wasOpen)
+        {
+            await connection.OpenAsync();
+        }
+
+        try
+        {
+            using var command = connection.CreateCommand();
+            command.CommandText = tableCheckSql;
+            var result = await command.ExecuteScalarAsync();
+
+            // We expect at least 3 core tables to exist
+            return result != null && Convert.ToInt32(result) >= 3;
+        }
+        finally
+        {
+            // Restore connection to its original state if we opened it
+            if (!wasOpen && connection.State == System.Data.ConnectionState.Open)
+            {
+                await connection.CloseAsync();
+            }
+        }
     }
     catch
     {
