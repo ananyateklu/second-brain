@@ -526,7 +526,8 @@ public static class ApplicationBuilderExtensions
     {
         app.UseMiddleware<RequestLoggingMiddleware>();
         app.UseMiddleware<GlobalExceptionMiddleware>();
-        app.UseMiddleware<ApiKeyAuthenticationMiddleware>();
+        // Note: ApiKeyAuthenticationMiddleware is registered separately in Program.cs
+        // before rate limiting so that user-based rate limiting works correctly
 
         return app;
     }

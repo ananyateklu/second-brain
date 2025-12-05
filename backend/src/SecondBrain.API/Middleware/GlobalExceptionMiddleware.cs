@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using SecondBrain.Application.DTOs.Responses;
 using SecondBrain.Application.Exceptions;
+using SecondBrain.Application.Services.AI.CircuitBreaker;
 using ValidationException = SecondBrain.Application.Exceptions.ValidationException;
 
 namespace SecondBrain.API.Middleware;
@@ -69,6 +70,14 @@ public class GlobalExceptionMiddleware
                 Timestamp = DateTime.UtcNow,
                 TraceId = context.TraceIdentifier
             },
+            CircuitBreakerOpenException circuitBreakerEx => new ErrorResponse
+            {
+                StatusCode = (int)HttpStatusCode.ServiceUnavailable,
+                Message = circuitBreakerEx.Message,
+                Details = _environment.IsDevelopment() ? circuitBreakerEx.StackTrace : null,
+                Timestamp = DateTime.UtcNow,
+                TraceId = context.TraceIdentifier
+            },
             _ => new ErrorResponse
             {
                 StatusCode = (int)HttpStatusCode.InternalServerError,
@@ -82,6 +91,12 @@ public class GlobalExceptionMiddleware
         };
 
         context.Response.StatusCode = errorResponse.StatusCode;
+
+        // Set Retry-After header for circuit breaker exceptions
+        if (exception is CircuitBreakerOpenException cbEx && cbEx.RetryAfter.HasValue)
+        {
+            context.Response.Headers.RetryAfter = ((int)cbEx.RetryAfter.Value.TotalSeconds).ToString();
+        }
 
         var options = new JsonSerializerOptions
         {

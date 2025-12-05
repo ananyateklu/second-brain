@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using SecondBrain.API.Middleware;
 using SecondBrain.Application.DTOs.Responses;
 using SecondBrain.Application.Exceptions;
+using SecondBrain.Application.Services.AI.CircuitBreaker;
 
 namespace SecondBrain.Tests.Unit.API.Middleware;
 
@@ -228,6 +229,124 @@ public class GlobalExceptionMiddlewareTests
         var response = await ReadResponseBody<ErrorResponse>(context);
         response.StatusCode.Should().Be(400);
         response.ValidationErrors.Should().NotBeNull();
+    }
+
+    #endregion
+
+    #region CircuitBreakerOpenException Tests
+
+    [Fact]
+    public async Task InvokeAsync_WhenCircuitBreakerOpenException_Returns503()
+    {
+        // Arrange
+        _mockEnvironment.Setup(e => e.EnvironmentName).Returns("Production");
+
+        RequestDelegate next = context => throw new CircuitBreakerOpenException("OpenAI");
+
+        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object);
+        var context = CreateHttpContext();
+
+        // Act
+        await middleware.InvokeAsync(context);
+
+        // Assert
+        context.Response.StatusCode.Should().Be((int)HttpStatusCode.ServiceUnavailable);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_WhenCircuitBreakerOpenException_ReturnsCorrectMessage()
+    {
+        // Arrange
+        _mockEnvironment.Setup(e => e.EnvironmentName).Returns("Production");
+
+        RequestDelegate next = context => throw new CircuitBreakerOpenException("Anthropic");
+
+        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object);
+        var context = CreateHttpContext();
+
+        // Act
+        await middleware.InvokeAsync(context);
+
+        // Assert
+        var response = await ReadResponseBody<ErrorResponse>(context);
+        response.Message.Should().Contain("Anthropic");
+        response.Message.Should().Contain("Circuit breaker");
+        response.StatusCode.Should().Be(503);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_WhenCircuitBreakerOpenException_WithRetryAfter_SetsRetryAfterHeader()
+    {
+        // Arrange
+        _mockEnvironment.Setup(e => e.EnvironmentName).Returns("Production");
+        var retryAfter = TimeSpan.FromSeconds(60);
+
+        RequestDelegate next = context => throw new CircuitBreakerOpenException("OpenAI", retryAfter);
+
+        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object);
+        var context = CreateHttpContext();
+
+        // Act
+        await middleware.InvokeAsync(context);
+
+        // Assert
+        context.Response.Headers.RetryAfter.ToString().Should().Be("60");
+    }
+
+    [Fact]
+    public async Task InvokeAsync_WhenCircuitBreakerOpenException_WithoutRetryAfter_DoesNotSetRetryAfterHeader()
+    {
+        // Arrange
+        _mockEnvironment.Setup(e => e.EnvironmentName).Returns("Production");
+
+        RequestDelegate next = context => throw new CircuitBreakerOpenException("Gemini");
+
+        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object);
+        var context = CreateHttpContext();
+
+        // Act
+        await middleware.InvokeAsync(context);
+
+        // Assert
+        context.Response.Headers.RetryAfter.ToString().Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task InvokeAsync_WhenCircuitBreakerOpenException_InDevelopment_IncludesStackTrace()
+    {
+        // Arrange
+        _mockEnvironment.Setup(e => e.EnvironmentName).Returns("Development");
+
+        RequestDelegate next = context => throw new CircuitBreakerOpenException("OpenAI", TimeSpan.FromSeconds(30));
+
+        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object);
+        var context = CreateHttpContext();
+
+        // Act
+        await middleware.InvokeAsync(context);
+
+        // Assert
+        var response = await ReadResponseBody<ErrorResponse>(context);
+        response.Details.Should().NotBeNullOrEmpty();
+    }
+
+    [Fact]
+    public async Task InvokeAsync_WhenCircuitBreakerOpenException_InProduction_ExcludesStackTrace()
+    {
+        // Arrange
+        _mockEnvironment.Setup(e => e.EnvironmentName).Returns("Production");
+
+        RequestDelegate next = context => throw new CircuitBreakerOpenException("OpenAI");
+
+        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object);
+        var context = CreateHttpContext();
+
+        // Act
+        await middleware.InvokeAsync(context);
+
+        // Assert
+        var response = await ReadResponseBody<ErrorResponse>(context);
+        response.Details.Should().BeNull();
     }
 
     #endregion

@@ -322,10 +322,14 @@ app.UseSerilogRequestLogging(options =>
 // Security headers
 app.UseSecurityHeaders();
 
+// Authentication must run before rate limiting so user-based rate limiting works
+// (GetRateLimitPartitionKey checks context.Items["UserId"] set by ApiKeyAuthenticationMiddleware)
+app.UseMiddleware<ApiKeyAuthenticationMiddleware>();
+
 // Rate limiting (using built-in ASP.NET Core rate limiter)
 app.UseRateLimiter();
 
-// Custom middleware (logging, error handling, authentication)
+// Custom middleware (logging, error handling)
 app.UseCustomMiddleware();
 
 // Map controllers and health checks
