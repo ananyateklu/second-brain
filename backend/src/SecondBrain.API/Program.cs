@@ -95,8 +95,35 @@ Console.WriteLine();
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure Serilog for structured logging
-var logsPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
+// Determine the appropriate logs directory based on the runtime environment
+var logsPath = GetLogsDirectory();
 Directory.CreateDirectory(logsPath);
+
+// Helper function to get the appropriate logs directory
+// macOS app bundles are read-only after code signing, so logs must go to Application Support
+static string GetLogsDirectory()
+{
+    var baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
+
+    // Check if running inside a macOS .app bundle
+    // App bundles have paths like: /Applications/Second Brain.app/Contents/MacOS/
+    if (baseDirectory.Contains(".app/Contents/", StringComparison.OrdinalIgnoreCase) &&
+        OperatingSystem.IsMacOS())
+    {
+        // Use ~/Library/Application Support/com.secondbrain.desktop/logs
+        var appSupportPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        if (string.IsNullOrEmpty(appSupportPath))
+        {
+            // Fallback: construct path manually
+            var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            appSupportPath = Path.Combine(home, "Library", "Application Support");
+        }
+        return Path.Combine(appSupportPath, "com.secondbrain.desktop", "logs");
+    }
+
+    // For development, Docker, or non-macOS deployments, use the base directory
+    return Path.Combine(baseDirectory, "logs");
+}
 
 builder.Host.UseSerilog((context, services, configuration) =>
 {
