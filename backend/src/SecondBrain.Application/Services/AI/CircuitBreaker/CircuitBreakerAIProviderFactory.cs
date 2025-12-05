@@ -140,10 +140,14 @@ internal class CircuitBreakerAIProvider : IAIProvider
             throw new CircuitBreakerOpenException(ProviderName, retryAfter > TimeSpan.Zero ? retryAfter : null);
         }
 
-        return await _circuitBreaker.ExecuteAsync(
+        // Wrap the stream creation in circuit breaker
+        var innerStream = await _circuitBreaker.ExecuteAsync(
             ProviderName,
             async ct => await _innerProvider.StreamCompletionAsync(request, ct),
             cancellationToken);
+
+        // Return a wrapper that monitors enumeration for failures
+        return WrapStreamWithCircuitBreaker(innerStream, cancellationToken);
     }
 
     public async Task<IAsyncEnumerable<string>> StreamChatCompletionAsync(
@@ -160,9 +164,59 @@ internal class CircuitBreakerAIProvider : IAIProvider
             throw new CircuitBreakerOpenException(ProviderName, retryAfter > TimeSpan.Zero ? retryAfter : null);
         }
 
-        return await _circuitBreaker.ExecuteAsync(
+        // Wrap the stream creation in circuit breaker
+        var innerStream = await _circuitBreaker.ExecuteAsync(
             ProviderName,
             async ct => await _innerProvider.StreamChatCompletionAsync(messages, settings, ct),
             cancellationToken);
+
+        // Return a wrapper that monitors enumeration for failures
+        return WrapStreamWithCircuitBreaker(innerStream, cancellationToken);
+    }
+
+    /// <summary>
+    /// Wraps an async enumerable stream to track failures during enumeration.
+    /// This ensures network failures during streaming are recorded by the circuit breaker.
+    /// </summary>
+    private async IAsyncEnumerable<string> WrapStreamWithCircuitBreaker(
+        IAsyncEnumerable<string> innerStream,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        // Track if we've started enumeration to distinguish connection vs streaming failures
+        var enumerator = innerStream.GetAsyncEnumerator(cancellationToken);
+        try
+        {
+            while (true)
+            {
+                bool hasNext;
+                try
+                {
+                    // Execute each MoveNextAsync through circuit breaker to track streaming failures
+                    hasNext = await _circuitBreaker.ExecuteAsync(
+                        ProviderName,
+                        async _ => await enumerator.MoveNextAsync(),
+                        cancellationToken);
+                }
+                catch (CircuitBreakerOpenException)
+                {
+                    // Re-throw circuit breaker exceptions as-is
+                    throw;
+                }
+                catch (OperationCanceledException)
+                {
+                    // Don't treat cancellation as a failure
+                    throw;
+                }
+
+                if (!hasNext)
+                    break;
+
+                yield return enumerator.Current;
+            }
+        }
+        finally
+        {
+            await enumerator.DisposeAsync();
+        }
     }
 }
