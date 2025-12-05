@@ -9,12 +9,14 @@ namespace SecondBrain.Tests.Unit.API.Controllers;
 public class StatsControllerTests
 {
     private readonly Mock<IStatsService> _mockStatsService;
+    private readonly Mock<IToolCallAnalyticsService> _mockToolCallAnalyticsService;
     private readonly StatsController _sut;
 
     public StatsControllerTests()
     {
         _mockStatsService = new Mock<IStatsService>();
-        _sut = new StatsController(_mockStatsService.Object);
+        _mockToolCallAnalyticsService = new Mock<IToolCallAnalyticsService>();
+        _sut = new StatsController(_mockStatsService.Object, _mockToolCallAnalyticsService.Object);
         SetupUnauthenticatedUser();
     }
 

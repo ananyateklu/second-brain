@@ -65,6 +65,14 @@ public static class ServiceCollectionExtensions
         services.AddScoped<INotesImportService, NotesImportService>();
         services.AddScoped<IUserPreferencesService, UserPreferencesService>();
         services.AddScoped<IStatsService, StatsService>();
+
+        // Tool call analytics service (PostgreSQL 18 JSON_TABLE)
+        services.AddScoped<IToolCallAnalyticsService, ToolCallAnalyticsService>();
+
+        // PostgreSQL 18 Temporal Features - Version History and Session Tracking
+        services.AddScoped<INoteVersionService, NoteVersionService>();
+        services.AddScoped<IChatSessionService, ChatSessionService>();
+
         return services;
     }
 
@@ -196,6 +204,13 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IChatRepository, SqlChatRepository>();
         services.AddScoped<INoteEmbeddingRepository, SqlNoteEmbeddingRepository>();
         services.AddScoped<IIndexingJobRepository, SqlIndexingJobRepository>();
+
+        // Tool call analytics repository (PostgreSQL 18 JSON_TABLE)
+        services.AddScoped<IToolCallAnalyticsRepository, SqlToolCallAnalyticsRepository>();
+
+        // PostgreSQL 18 Temporal Features - Version History and Session Tracking Repositories
+        services.AddScoped<INoteVersionRepository, SqlNoteVersionRepository>();
+        services.AddScoped<IChatSessionRepository, SqlChatSessionRepository>();
 
         return services;
     }
@@ -484,11 +499,19 @@ public static class ServiceCollectionExtensions
         // Register note embedding search repository for BM25 search
         services.AddScoped<INoteEmbeddingSearchRepository, SqlNoteEmbeddingSearchRepository>();
 
-        // Register BM25 search service for hybrid search
+        // Register BM25 search services
+        // Original in-memory BM25 service (fallback for non-PG18 environments)
+        services.AddScoped<BM25SearchService>();
         services.AddScoped<IBM25SearchService, BM25SearchService>();
+
+        // Native PostgreSQL 18 BM25 service using ts_rank_cd (better performance for large datasets)
+        services.AddScoped<INativeBM25SearchService, NativeBM25SearchService>();
 
         // Register hybrid search service (combines vector + BM25 with RRF fusion)
         services.AddScoped<IHybridSearchService, HybridSearchService>();
+
+        // Register native hybrid search service (PostgreSQL 18 optimized - single-query RRF)
+        services.AddScoped<INativeHybridSearchService, NativeHybridSearchService>();
 
         // Register query expansion service (HyDE + multi-query)
         services.AddScoped<IQueryExpansionService, QueryExpansionService>();

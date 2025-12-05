@@ -12,7 +12,7 @@ public class RagQueryLog
 {
     [Key]
     [Column("id")]
-    public Guid Id { get; set; } = Guid.NewGuid();
+    public Guid Id { get; set; } = Guid.CreateVersion7();
 
     [Required]
     [Column("user_id")]

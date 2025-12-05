@@ -18,6 +18,11 @@ import type {
   StreamingCallbacks,
   GenerateSuggestedPromptsRequest,
   SuggestedPromptsResponse,
+  ChatSession,
+  SessionStats,
+  SessionHistory,
+  StartSessionRequest,
+  EndSessionRequest,
 } from '../types/chat';
 import type { RagContextNote } from '../types/rag';
 
@@ -87,11 +92,11 @@ export const chatService = {
     const url = `${apiUrl}${API_ENDPOINTS.CHAT.STREAM_MESSAGES(conversationId)}`;
 
     const authStore = useAuthStore.getState();
-    
+
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
     };
-    
+
     if (authStore.token) {
       headers['Authorization'] = `Bearer ${authStore.token}`;
     }
@@ -296,6 +301,88 @@ export const chatService = {
       API_ENDPOINTS.CHAT.SUGGESTED_PROMPTS,
       request
     );
+  },
+
+  // ============================================
+  // Chat Session Tracking (PostgreSQL 18 Temporal Features)
+  // ============================================
+
+  /**
+   * Start a new chat session
+   * @param conversationId - The conversation to track
+   * @param deviceInfo - Optional JSON string with device information
+   * @param userAgent - Optional user agent string
+   */
+  async startSession(
+    conversationId: string,
+    deviceInfo?: string,
+    userAgent?: string
+  ): Promise<ChatSession> {
+    const request: StartSessionRequest = {
+      conversationId,
+      deviceInfo,
+      userAgent,
+    };
+    return apiClient.post<ChatSession>(API_ENDPOINTS.CHAT.SESSIONS.START, request);
+  },
+
+  /**
+   * End an active chat session
+   * @param sessionId - The session ID to end
+   * @param data - Optional final counts for the session
+   */
+  async endSession(
+    sessionId: string,
+    data?: EndSessionRequest
+  ): Promise<void> {
+    return apiClient.post<void>(API_ENDPOINTS.CHAT.SESSIONS.END(sessionId), data || {});
+  },
+
+  /**
+   * Get chat session statistics for the authenticated user
+   */
+  async getSessionStats(): Promise<SessionStats> {
+    return apiClient.get<SessionStats>(API_ENDPOINTS.CHAT.SESSIONS.STATS);
+  },
+
+  /**
+   * Get all active sessions for the authenticated user
+   */
+  async getActiveSessions(): Promise<ChatSession[]> {
+    return apiClient.get<ChatSession[]>(API_ENDPOINTS.CHAT.SESSIONS.ACTIVE);
+  },
+
+  /**
+   * Get session history for a specific conversation
+   * @param conversationId - The conversation ID
+   * @param skip - Number of sessions to skip (pagination)
+   * @param take - Number of sessions to return (pagination)
+   */
+  async getConversationSessions(
+    conversationId: string,
+    skip?: number,
+    take?: number
+  ): Promise<SessionHistory> {
+    let url = API_ENDPOINTS.CHAT.SESSIONS.BY_CONVERSATION(conversationId);
+    const params: string[] = [];
+    if (skip !== undefined) params.push(`skip=${skip}`);
+    if (take !== undefined) params.push(`take=${take}`);
+    if (params.length > 0) url += `?${params.join('&')}`;
+    return apiClient.get<SessionHistory>(url);
+  },
+
+  /**
+   * Get session history for the authenticated user
+   * @param since - Optional start date filter (ISO string)
+   * @param until - Optional end date filter (ISO string)
+   */
+  async getSessionHistory(since?: string, until?: string): Promise<SessionHistory> {
+    let url = API_ENDPOINTS.CHAT.SESSIONS.HISTORY;
+    const params: string[] = [];
+    if (since) params.push(`since=${encodeURIComponent(since)}`);
+    if (until) params.push(`until=${encodeURIComponent(until)}`);
+    if (params.length > 0) url += `?${params.join('&')}`;
+    return apiClient.get<SessionHistory>(url);
   },
 
   // ============================================

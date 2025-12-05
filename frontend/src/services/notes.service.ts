@@ -12,6 +12,10 @@ import type {
   UpdateNoteRequest,
   ImportNoteRequest,
   ImportNotesResponse,
+  NoteVersionHistory,
+  NoteVersion,
+  NoteVersionDiff,
+  RestoreVersionResponse,
 } from '../types/notes';
 
 /**
@@ -100,21 +104,21 @@ export const notesService = {
    */
   validateNote(input: Partial<CreateNoteRequest>): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
-    
+
     if (!input.title?.trim()) {
       errors.push('Title is required');
     } else if (input.title.length > 200) {
       errors.push('Title must be less than 200 characters');
     }
-    
+
     if (input.content && input.content.length > 100000) {
       errors.push('Content must be less than 100,000 characters');
     }
-    
+
     if (input.tags && input.tags.length > 20) {
       errors.push('Maximum 20 tags allowed');
     }
-    
+
     if (input.tags) {
       for (const tag of input.tags) {
         if (tag.length > 50) {
@@ -123,7 +127,7 @@ export const notesService = {
         }
       }
     }
-    
+
     return { valid: errors.length === 0, errors };
   },
 
@@ -136,13 +140,13 @@ export const notesService = {
     mode: 'title' | 'content' | 'both' = 'both'
   ): Note[] {
     if (!query.trim()) return notes;
-    
+
     const lowerQuery = query.toLowerCase();
-    
+
     return notes.filter((note) => {
       const titleMatch = note.title.toLowerCase().includes(lowerQuery);
       const contentMatch = note.content.toLowerCase().includes(lowerQuery);
-      
+
       switch (mode) {
         case 'title':
           return titleMatch;
@@ -172,7 +176,7 @@ export const notesService = {
     sortBy: 'newest' | 'oldest' | 'title-asc' | 'title-desc'
   ): Note[] {
     const sorted = [...notes];
-    
+
     sorted.sort((a, b) => {
       switch (sortBy) {
         case 'newest':
@@ -187,7 +191,7 @@ export const notesService = {
           return 0;
       }
     });
-    
+
     return sorted;
   },
 
@@ -238,6 +242,56 @@ export const notesService = {
       ...update,
       updatedAt: new Date().toISOString(),
     };
+  },
+
+  // ============================================
+  // Note Version History (PostgreSQL 18 Temporal Features)
+  // ============================================
+
+  /**
+   * Get version history for a note
+   * Returns all versions with metadata about each version
+   */
+  async getVersionHistory(noteId: string): Promise<NoteVersionHistory> {
+    return apiClient.get<NoteVersionHistory>(API_ENDPOINTS.NOTES.VERSIONS(noteId));
+  },
+
+  /**
+   * Get the state of a note at a specific point in time
+   * @param noteId - The note ID
+   * @param timestamp - ISO timestamp to retrieve version at
+   */
+  async getVersionAtTime(noteId: string, timestamp: string): Promise<NoteVersion> {
+    const url = `${API_ENDPOINTS.NOTES.VERSION_AT(noteId)}?timestamp=${encodeURIComponent(timestamp)}`;
+    return apiClient.get<NoteVersion>(url);
+  },
+
+  /**
+   * Compare two versions of a note
+   * @param noteId - The note ID
+   * @param fromVersion - Earlier version number
+   * @param toVersion - Later version number
+   */
+  async getVersionDiff(
+    noteId: string,
+    fromVersion: number,
+    toVersion: number
+  ): Promise<NoteVersionDiff> {
+    const url = `${API_ENDPOINTS.NOTES.VERSION_DIFF(noteId)}?fromVersion=${fromVersion}&toVersion=${toVersion}`;
+    return apiClient.get<NoteVersionDiff>(url);
+  },
+
+  /**
+   * Restore a note to a previous version
+   * Creates a new version with the content from the target version
+   * @param noteId - The note ID
+   * @param targetVersion - Version number to restore to
+   */
+  async restoreVersion(noteId: string, targetVersion: number): Promise<RestoreVersionResponse> {
+    return apiClient.post<RestoreVersionResponse>(
+      API_ENDPOINTS.NOTES.RESTORE_VERSION(noteId),
+      { targetVersion }
+    );
   },
 };
 

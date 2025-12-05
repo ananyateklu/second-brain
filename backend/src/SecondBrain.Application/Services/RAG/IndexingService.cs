@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.Embeddings;
 using SecondBrain.Application.Services.VectorStore;
+using SecondBrain.Core.Common;
 using SecondBrain.Core.Entities;
 using SecondBrain.Core.Interfaces;
 using SecondBrain.Core.Models;
@@ -60,7 +61,7 @@ public class IndexingService : IIndexingService
         // Create indexing job with totalNotes already set
         var job = new IndexingJob
         {
-            Id = Guid.NewGuid().ToString(),
+            Id = UuidV7.NewId(),
             UserId = userId,
             Status = IndexingStatus.Pending,
             EmbeddingProvider = provider,
@@ -131,13 +132,13 @@ public class IndexingService : IIndexingService
             // Fetch notes for the specific user (multi-tenant)
             var allNotes = (await noteRepository.GetByUserIdAsync(job.UserId)).ToList();
             var currentNoteIds = allNotes.Select(n => n.Id).ToHashSet();
-            
+
             _logger.LogInformation("Found {TotalNotes} total notes. Checking for deleted notes and changes...", allNotes.Count);
 
             // Cleanup: Remove embeddings for notes that no longer exist in the database
             var indexedNoteIds = await vectorStore.GetIndexedNoteIdsAsync(job.UserId, CancellationToken.None);
             var deletedNoteIds = indexedNoteIds.Except(currentNoteIds).ToList();
-            
+
             if (deletedNoteIds.Any())
             {
                 _logger.LogInformation("Found {Count} deleted notes to remove from index", deletedNoteIds.Count);
@@ -159,7 +160,7 @@ public class IndexingService : IIndexingService
             // First pass: identify notes that need re-indexing (incremental indexing)
             var notesToIndex = new List<Note>();
             var skippedCount = 0;
-            
+
             foreach (var note in allNotes)
             {
                 var existingUpdatedAt = await vectorStore.GetNoteUpdatedAtAsync(note.Id, CancellationToken.None);
@@ -180,7 +181,7 @@ public class IndexingService : IIndexingService
             job.DeletedNotes = deletedNoteIds.Count;
             await indexingJobRepository.UpdateAsync(jobId, job);
 
-            _logger.LogInformation("Starting indexing. JobId: {JobId}, NotesToIndex: {NotesToIndex}, Skipped: {Skipped}, Deleted: {Deleted}", 
+            _logger.LogInformation("Starting indexing. JobId: {JobId}, NotesToIndex: {NotesToIndex}, Skipped: {Skipped}, Deleted: {Deleted}",
                 jobId, notesToIndex.Count, skippedCount, deletedNoteIds.Count);
 
             // Second pass: index only the notes that need it

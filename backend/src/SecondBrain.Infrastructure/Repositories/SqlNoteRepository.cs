@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using SecondBrain.Core.Common;
 using SecondBrain.Core.Entities;
 using SecondBrain.Core.Interfaces;
 using SecondBrain.Infrastructure.Data;
@@ -74,7 +75,7 @@ public class SqlNoteRepository : INoteRepository
 
         if (string.IsNullOrEmpty(note.Id))
         {
-            note.Id = Guid.NewGuid().ToString();
+            note.Id = UuidV7.NewId();
         }
 
         // Only set timestamps if they haven't been explicitly provided (e.g., for imports)

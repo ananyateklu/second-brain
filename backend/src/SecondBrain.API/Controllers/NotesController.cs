@@ -10,6 +10,7 @@ using SecondBrain.Application.DTOs.Requests;
 using SecondBrain.Application.DTOs.Responses;
 using SecondBrain.Application.Queries.Notes.GetAllNotes;
 using SecondBrain.Application.Queries.Notes.GetNoteById;
+using SecondBrain.Application.Services.Notes;
 
 namespace SecondBrain.API.Controllers;
 
@@ -24,11 +25,16 @@ namespace SecondBrain.API.Controllers;
 public class NotesController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly INoteVersionService _versionService;
     private readonly ILogger<NotesController> _logger;
 
-    public NotesController(IMediator mediator, ILogger<NotesController> logger)
+    public NotesController(
+        IMediator mediator,
+        INoteVersionService versionService,
+        ILogger<NotesController> logger)
     {
         _mediator = mediator;
+        _versionService = versionService;
         _logger = logger;
     }
 
@@ -209,5 +215,205 @@ public class NotesController : ControllerBase
         return result.Match<ActionResult>(
             deletedCount => Ok(new { deletedCount, message = $"Successfully deleted {deletedCount} note(s)" }),
             error => ResultExtensions.ToErrorActionResult(error));
+    }
+
+    // =========================================================================
+    // Note Version History Endpoints (PostgreSQL 18 Temporal Features)
+    // =========================================================================
+
+    /// <summary>
+    /// Get version history for a note
+    /// </summary>
+    /// <param name="id">Note ID</param>
+    /// <param name="skip">Number of versions to skip</param>
+    /// <param name="take">Number of versions to take</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Version history</returns>
+    [HttpGet("{id}/versions")]
+    [ProducesResponseType(typeof(NoteVersionHistoryResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<NoteVersionHistoryResponse>> GetVersionHistory(
+        string id,
+        [FromQuery] int skip = 0,
+        [FromQuery] int take = 50,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = HttpContext.Items["UserId"]?.ToString();
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { error = "Not authenticated" });
+        }
+
+        // Verify the note belongs to the user
+        var noteResult = await _mediator.Send(new GetNoteByIdQuery(id, userId), cancellationToken);
+        if (!noteResult.IsSuccess)
+        {
+            return ResultExtensions.ToErrorActionResult<NoteVersionHistoryResponse>(noteResult.Error!);
+        }
+
+        var history = await _versionService.GetVersionHistoryAsync(id, skip, take, cancellationToken);
+        return Ok(history);
+    }
+
+    /// <summary>
+    /// Get a specific version of a note by version number
+    /// </summary>
+    /// <param name="id">Note ID</param>
+    /// <param name="versionNumber">Version number</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Note version</returns>
+    [HttpGet("{id}/versions/{versionNumber:int}")]
+    [ProducesResponseType(typeof(NoteVersionResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<NoteVersionResponse>> GetVersion(
+        string id,
+        int versionNumber,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = HttpContext.Items["UserId"]?.ToString();
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { error = "Not authenticated" });
+        }
+
+        // Verify the note belongs to the user
+        var noteResult = await _mediator.Send(new GetNoteByIdQuery(id, userId), cancellationToken);
+        if (!noteResult.IsSuccess)
+        {
+            return ResultExtensions.ToErrorActionResult<NoteVersionResponse>(noteResult.Error!);
+        }
+
+        var version = await _versionService.GetVersionByNumberAsync(id, versionNumber, cancellationToken);
+        if (version == null)
+        {
+            return NotFound(new { error = $"Version {versionNumber} not found for note {id}" });
+        }
+
+        return Ok(version);
+    }
+
+    /// <summary>
+    /// Get note content as it was at a specific point in time
+    /// </summary>
+    /// <param name="id">Note ID</param>
+    /// <param name="timestamp">Point in time (ISO 8601 format)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Note version at that time</returns>
+    [HttpGet("{id}/versions/at")]
+    [ProducesResponseType(typeof(NoteVersionResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<NoteVersionResponse>> GetVersionAtTime(
+        string id,
+        [FromQuery] DateTime timestamp,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = HttpContext.Items["UserId"]?.ToString();
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { error = "Not authenticated" });
+        }
+
+        // Verify the note belongs to the user
+        var noteResult = await _mediator.Send(new GetNoteByIdQuery(id, userId), cancellationToken);
+        if (!noteResult.IsSuccess)
+        {
+            return ResultExtensions.ToErrorActionResult<NoteVersionResponse>(noteResult.Error!);
+        }
+
+        var version = await _versionService.GetVersionAtTimeAsync(id, timestamp, cancellationToken);
+        if (version == null)
+        {
+            return NotFound(new { error = $"No version found for note {id} at {timestamp:O}" });
+        }
+
+        return Ok(version);
+    }
+
+    /// <summary>
+    /// Compare two versions of a note
+    /// </summary>
+    /// <param name="id">Note ID</param>
+    /// <param name="fromVersion">Earlier version number</param>
+    /// <param name="toVersion">Later version number</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Version diff</returns>
+    [HttpGet("{id}/versions/diff")]
+    [ProducesResponseType(typeof(NoteVersionDiffResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<NoteVersionDiffResponse>> GetVersionDiff(
+        string id,
+        [FromQuery] int fromVersion,
+        [FromQuery] int toVersion,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = HttpContext.Items["UserId"]?.ToString();
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { error = "Not authenticated" });
+        }
+
+        // Verify the note belongs to the user
+        var noteResult = await _mediator.Send(new GetNoteByIdQuery(id, userId), cancellationToken);
+        if (!noteResult.IsSuccess)
+        {
+            return ResultExtensions.ToErrorActionResult<NoteVersionDiffResponse>(noteResult.Error!);
+        }
+
+        var diff = await _versionService.GetVersionDiffAsync(id, fromVersion, toVersion, cancellationToken);
+        if (diff == null)
+        {
+            return NotFound(new { error = $"One or both versions not found for note {id}" });
+        }
+
+        return Ok(diff);
+    }
+
+    /// <summary>
+    /// Restore a note to a previous version
+    /// </summary>
+    /// <param name="id">Note ID</param>
+    /// <param name="request">Restore request with target version</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>New version number</returns>
+    [HttpPost("{id}/versions/restore")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult> RestoreVersion(
+        string id,
+        [FromBody] RestoreVersionRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = HttpContext.Items["UserId"]?.ToString();
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { error = "Not authenticated" });
+        }
+
+        // Verify the note belongs to the user
+        var noteResult = await _mediator.Send(new GetNoteByIdQuery(id, userId), cancellationToken);
+        if (!noteResult.IsSuccess)
+        {
+            return ResultExtensions.ToErrorActionResult(noteResult.Error!);
+        }
+
+        try
+        {
+            var newVersionNumber = await _versionService.RestoreVersionAsync(id, request.TargetVersion, userId, cancellationToken);
+            return Ok(new
+            {
+                message = $"Note restored to version {request.TargetVersion}",
+                newVersionNumber,
+                noteId = id
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return NotFound(new { error = ex.Message });
+        }
     }
 }

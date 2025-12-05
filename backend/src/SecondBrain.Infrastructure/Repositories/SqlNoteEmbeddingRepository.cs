@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using SecondBrain.Core.Common;
 using SecondBrain.Core.Entities;
 using SecondBrain.Core.Interfaces;
 using SecondBrain.Infrastructure.Data;
@@ -26,7 +27,7 @@ public class SqlNoteEmbeddingRepository : INoteEmbeddingRepository
 
             if (string.IsNullOrEmpty(embedding.Id))
             {
-                embedding.Id = Guid.NewGuid().ToString();
+                embedding.Id = UuidV7.NewId();
             }
 
             embedding.CreatedAt = DateTime.UtcNow;
@@ -56,7 +57,7 @@ public class SqlNoteEmbeddingRepository : INoteEmbeddingRepository
             {
                 if (string.IsNullOrEmpty(embedding.Id))
                 {
-                    embedding.Id = Guid.NewGuid().ToString();
+                    embedding.Id = UuidV7.NewId();
                 }
                 embedding.CreatedAt = now;
             }

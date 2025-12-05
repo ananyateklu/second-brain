@@ -216,6 +216,20 @@ export const ragAnalyticsKeys = {
 } as const;
 
 /**
+ * Filters for tool call analytics queries
+ */
+export interface ToolAnalyticsFilters {
+  /** Number of days to look back */
+  daysBack?: number;
+  /** Start date for custom range */
+  startDate?: string;
+  /** End date for custom range */
+  endDate?: string;
+  /** Filter by specific tool name */
+  toolName?: string;
+}
+
+/**
  * Query keys for statistics
  */
 export const statsKeys = {
@@ -230,6 +244,15 @@ export const statsKeys = {
 
   /** Key for dashboard stats */
   dashboard: () => [...statsKeys.all, 'dashboard'] as const,
+
+  /** Key for tool call analytics (PostgreSQL 18 JSON_TABLE) */
+  tools: (filters?: ToolAnalyticsFilters) => [...statsKeys.all, 'tools', filters] as const,
+
+  /** Key for tool action breakdown */
+  toolActions: (filters?: ToolAnalyticsFilters) => [...statsKeys.all, 'tool-actions', filters] as const,
+
+  /** Key for tool errors */
+  toolErrors: (topN?: number, daysBack?: number) => [...statsKeys.all, 'tool-errors', { topN, daysBack }] as const,
 } as const;
 
 /**
@@ -277,6 +300,59 @@ export const agentKeys = {
 } as const;
 
 // ============================================
+// PostgreSQL 18 Temporal Feature Query Keys
+// ============================================
+
+/**
+ * Query keys for note version history (PostgreSQL 18 temporal tables)
+ */
+export const noteVersionKeys = {
+  /** Root key for all note version queries */
+  all: ['noteVersions'] as const,
+
+  /** Key for version history of a specific note */
+  history: (noteId: string) => [...noteVersionKeys.all, 'history', noteId] as const,
+
+  /** Key for version at a specific point in time */
+  atTime: (noteId: string, timestamp: string) => [...noteVersionKeys.all, 'at', noteId, timestamp] as const,
+
+  /** Key for version diff between two versions */
+  diff: (noteId: string, fromVersion: number, toVersion: number) =>
+    [...noteVersionKeys.all, 'diff', noteId, fromVersion, toVersion] as const,
+} as const;
+
+/**
+ * Filters for chat session history queries
+ */
+export interface ChatSessionFilters {
+  /** Start date filter */
+  since?: string;
+  /** End date filter */
+  until?: string;
+}
+
+/**
+ * Query keys for chat session tracking (PostgreSQL 18 temporal tables)
+ */
+export const chatSessionKeys = {
+  /** Root key for all chat session queries */
+  all: ['chatSessions'] as const,
+
+  /** Key for session statistics */
+  stats: () => [...chatSessionKeys.all, 'stats'] as const,
+
+  /** Key for active sessions */
+  active: () => [...chatSessionKeys.all, 'active'] as const,
+
+  /** Key for session history */
+  history: (filters?: ChatSessionFilters) => [...chatSessionKeys.all, 'history', filters] as const,
+
+  /** Key for sessions by conversation */
+  byConversation: (conversationId: string, skip?: number, take?: number) =>
+    [...chatSessionKeys.all, 'conversation', conversationId, { skip, take }] as const,
+} as const;
+
+// ============================================
 // Unified Query Keys Export
 // ============================================
 
@@ -294,6 +370,9 @@ export const queryKeys = {
   userPreferences: userPreferencesKeys,
   imageGeneration: imageGenerationKeys,
   agent: agentKeys,
+  // PostgreSQL 18 Temporal Features
+  noteVersions: noteVersionKeys,
+  chatSessions: chatSessionKeys,
 
   // Legacy support - maps to conversationKeys.legacy
   conversation: conversationKeys.legacy,
@@ -334,6 +413,12 @@ export type ImageGenerationQueryKey = typeof imageGenerationKeys['all'] | Return
 
 /** Type for agent query keys */
 export type AgentQueryKey = typeof agentKeys['all'] | ReturnType<FunctionMembers<typeof agentKeys>>;
+
+/** Type for note version query keys */
+export type NoteVersionQueryKey = typeof noteVersionKeys['all'] | ReturnType<FunctionMembers<typeof noteVersionKeys>>;
+
+/** Type for chat session query keys */
+export type ChatSessionQueryKey = typeof chatSessionKeys['all'] | ReturnType<FunctionMembers<typeof chatSessionKeys>>;
 
 // ============================================
 // Utility Functions

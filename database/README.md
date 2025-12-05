@@ -45,7 +45,49 @@ make && sudo make install
 
 ## Quick Start
 
-### Option 1: Run Master Script
+### Option 1: Use Migration Script (Recommended)
+
+The `migrate.sh` script handles both Docker and Desktop PostgreSQL databases with migration tracking:
+
+```bash
+# Show migration status for both databases
+./database/migrate.sh status
+
+# Run pending migrations on both databases
+./database/migrate.sh run
+
+# Run on specific database only
+./database/migrate.sh --docker run    # Docker (port 5432)
+./database/migrate.sh --desktop run   # Desktop (port 5433)
+
+# For Docker, set password via environment variable
+POSTGRES_PASSWORD=yourpass ./database/migrate.sh status
+
+# Initialize tracking for existing databases (without re-running migrations)
+./database/migrate.sh init
+
+# Run a specific migration script
+./database/migrate.sh script 13
+
+# Compare schemas between Docker and Desktop databases
+POSTGRES_PASSWORD=yourpass ./database/migrate.sh diff
+
+# Sync indexes between databases
+./database/migrate.sh sync-to-docker    # Desktop → Docker
+./database/migrate.sh sync-to-desktop   # Docker → Desktop
+
+# Database maintenance
+./database/migrate.sh backup            # Create backups
+./database/migrate.sh stats             # Show statistics
+./database/migrate.sh validate          # Verify schema
+./database/migrate.sh export-schema     # Export schema SQL
+./database/migrate.sh test              # Quick connection test
+
+# Rollback a migration
+./database/migrate.sh rollback 13       # Rollback migration 13
+```
+
+### Option 2: Run Master Script (Manual)
 
 ```bash
 # From the database directory
@@ -53,7 +95,7 @@ cd database
 psql -d secondbrain -f schema.sql
 ```
 
-### Option 2: Run Individual Scripts
+### Option 3: Run Individual Scripts (Manual)
 
 ```bash
 psql -d secondbrain -f 00_extensions.sql
@@ -69,9 +111,10 @@ psql -d secondbrain -f 09_rag_analytics.sql
 psql -d secondbrain -f 10_brainstorm.sql
 psql -d secondbrain -f 11_message_images.sql
 psql -d secondbrain -f 12_agent_rag_enabled.sql
+psql -d secondbrain -f 13_postgresql_18_features.sql
 ```
 
-### Option 3: From psql Prompt
+### Option 4: From psql Prompt
 
 ```sql
 \c secondbrain
@@ -298,7 +341,7 @@ USING hnsw (embedding vector_cosine_ops);
 
 | File | Description |
 |------|-------------|
-| `00_extensions.sql` | pgvector extension setup |
+| `00_extensions.sql` | pgvector + pg_stat_statements extensions |
 | `01_users.sql` | users, user_preferences tables |
 | `02_notes.sql` | notes table (with soft delete columns) |
 | `03_note_embeddings.sql` | Vector embeddings table with note_updated_at |
@@ -311,7 +354,10 @@ USING hnsw (embedding vector_cosine_ops);
 | `10_brainstorm.sql` | Brainstorm sessions and results tables |
 | `11_message_images.sql` | User-uploaded message images table |
 | `12_agent_rag_enabled.sql` | agent_rag_enabled column for chat_conversations |
-| `schema.sql` | Master script (runs all 13 scripts) |
+| `13_postgresql_18_features.sql` | **PostgreSQL 18 features: UUIDv7, JSONB, optimized indexes** |
+| `13_postgresql_18_features_rollback.sql` | Rollback script for PG18 features |
+| `migrate.sh` | **Migration script for Docker + Desktop databases** |
+| `schema.sql` | Master script (runs all 14 scripts) |
 | `POSTGRESQL_18_FEATURES.md` | **PostgreSQL 18 features guide and migration instructions** |
 
 ## Notes

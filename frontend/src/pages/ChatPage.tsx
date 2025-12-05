@@ -5,7 +5,7 @@
  * Refactored to use consolidated state hook for better maintainability
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useChatPageState } from '../features/chat/hooks/use-chat-page-state';
 import { ChatSidebar } from '../features/chat/components/ChatSidebar';
 import { ChatHeader } from '../features/chat/components/ChatHeader';
@@ -14,6 +14,8 @@ import { ChatInputArea } from '../features/chat/components/ChatInputArea';
 import { EditNoteModal } from '../features/notes/components/EditNoteModal';
 import { useAuthStore } from '../store/auth-store';
 import { useSendMessage } from '../features/chat/hooks/use-chat';
+import { useStartSession, useEndSession, collectDeviceInfo } from '../features/chat/hooks/use-chat-sessions';
+import { getApiBaseUrl } from '../lib/constants';
 import type { VectorStoreProvider } from '../types/rag';
 
 /**
@@ -27,6 +29,11 @@ export function ChatPage() {
   const user = useAuthStore((state) => state.user);
   const sendMessage = useSendMessage();
   const [isTauriApp, setIsTauriApp] = useState(false);
+  const { mutate: startSession } = useStartSession();
+  const { mutate: endSession } = useEndSession();
+  const sessionIdRef = useRef<string | null>(null);
+  const messageCountRef = useRef({ sent: 0, received: 0 });
+  const initialMessageCountRef = useRef({ sent: 0, received: 0 });
 
   // Check if running in Tauri
   useEffect(() => {
@@ -111,6 +118,84 @@ export function ChatPage() {
     cancelStream,
   } = useChatPageState();
 
+  // Track message counts from conversation (only messages sent/received during this session)
+  useEffect(() => {
+    if (conversation?.messages && sessionIdRef.current) {
+      const userMessages = conversation.messages.filter(m => m.role === 'user').length;
+      const assistantMessages = conversation.messages.filter(m => m.role === 'assistant').length;
+      // Calculate delta from initial counts (only count messages during this session)
+      messageCountRef.current.sent = Math.max(0, userMessages - initialMessageCountRef.current.sent);
+      messageCountRef.current.received = Math.max(0, assistantMessages - initialMessageCountRef.current.received);
+    }
+  }, [conversation?.messages]);
+
+  // Start session when conversation is selected
+  useEffect(() => {
+    if (conversationId && !sessionIdRef.current && !isNewChat) {
+      // Store initial message counts before starting session
+      const initialSent = conversation?.messages?.filter(m => m.role === 'user').length || 0;
+      const initialReceived = conversation?.messages?.filter(m => m.role === 'assistant').length || 0;
+      initialMessageCountRef.current = { sent: initialSent, received: initialReceived };
+      messageCountRef.current = { sent: 0, received: 0 };
+
+      startSession(
+        {
+          conversationId,
+          deviceInfo: collectDeviceInfo(),
+          userAgent: navigator.userAgent,
+        },
+        {
+          onSuccess: (session) => {
+            sessionIdRef.current = session.id;
+          },
+        }
+      );
+    }
+
+    // Cleanup on unmount or conversation change
+    return () => {
+      if (sessionIdRef.current) {
+        const sessionId = sessionIdRef.current;
+        const counts = {
+          messagesSent: messageCountRef.current.sent,
+          messagesReceived: messageCountRef.current.received,
+        };
+
+        // Reset refs immediately
+        sessionIdRef.current = null;
+        messageCountRef.current = { sent: 0, received: 0 };
+        initialMessageCountRef.current = { sent: 0, received: 0 };
+
+        // End session (fire and forget - don't wait for response)
+        endSession({
+          sessionId,
+          data: counts,
+        });
+      }
+    };
+  }, [conversationId, isNewChat, startSession, endSession, conversation?.messages]);
+
+  // Handle tab close - use endSession mutation (sendBeacon doesn't support auth headers)
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (sessionIdRef.current) {
+        // Use the mutation directly - it will use fetch with proper auth headers
+        // Note: This may not complete if the page is closing, but it's the best we can do
+        // The backend will handle session timeouts for abandoned sessions
+        endSession({
+          sessionId: sessionIdRef.current,
+          data: {
+            messagesSent: messageCountRef.current.sent,
+            messagesReceived: messageCountRef.current.received,
+          },
+        });
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [endSession]);
+
   return (
     <div
       ref={containerRef}
@@ -119,8 +204,8 @@ export function ChatPage() {
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',
         boxShadow: 'var(--shadow-2xl)',
-        height: isTauriApp 
-          ? `calc(100vh - 2rem - ${titleBarOffset}px)` 
+        height: isTauriApp
+          ? `calc(100vh - 2rem - ${titleBarOffset}px)`
           : 'calc(100vh - 2rem)',
       }}
     >

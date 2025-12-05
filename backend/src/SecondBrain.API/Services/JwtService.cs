@@ -4,6 +4,7 @@ using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using SecondBrain.API.Configuration;
+using SecondBrain.Core.Common;
 using SecondBrain.Core.Entities;
 
 namespace SecondBrain.API.Services;
@@ -43,7 +44,7 @@ public class JwtService : IJwtService
             new Claim(JwtRegisteredClaimNames.Sub, user.Id),
             new Claim(JwtRegisteredClaimNames.Email, user.Email),
             new Claim("displayName", user.DisplayName),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new Claim(JwtRegisteredClaimNames.Jti, UuidV7.NewId()),
             new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
         };
 
@@ -57,7 +58,7 @@ public class JwtService : IJwtService
 
         var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
         _logger.LogDebug("JWT token generated for user. UserId: {UserId}", user.Id);
-        
+
         return tokenString;
     }
 

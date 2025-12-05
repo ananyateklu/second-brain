@@ -64,6 +64,13 @@ public class RagSettings
     public float BM25Weight { get; set; } = 0.3f;
     public int RRFConstant { get; set; } = 60; // Standard RRF k constant
 
+    /// <summary>
+    /// Use PostgreSQL 18 native hybrid search (single-query RRF).
+    /// When enabled, combines vector and BM25 search in a single SQL query for better performance.
+    /// Requires PostgreSQL 18 with Async I/O and proper indexes (HNSW, GIN).
+    /// </summary>
+    public bool EnableNativeHybridSearch { get; set; } = true;
+
     // Query Expansion Settings
     public bool EnableQueryExpansion { get; set; } = true;
     public bool EnableHyDE { get; set; } = true; // Hypothetical Document Embeddings

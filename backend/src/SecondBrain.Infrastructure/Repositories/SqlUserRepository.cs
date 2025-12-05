@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using SecondBrain.Core.Common;
 using SecondBrain.Core.Entities;
 using SecondBrain.Core.Interfaces;
 using SecondBrain.Infrastructure.Data;
@@ -104,7 +105,7 @@ public class SqlUserRepository : IUserRepository
 
             if (string.IsNullOrWhiteSpace(user.Id))
             {
-                user.Id = Guid.NewGuid().ToString();
+                user.Id = UuidV7.NewId();
             }
 
             user.CreatedAt = DateTime.UtcNow;
@@ -115,7 +116,7 @@ public class SqlUserRepository : IUserRepository
             {
                 if (string.IsNullOrWhiteSpace(user.Preferences.Id))
                 {
-                    user.Preferences.Id = Guid.NewGuid().ToString();
+                    user.Preferences.Id = UuidV7.NewId();
                 }
                 user.Preferences.UserId = user.Id;
             }
@@ -162,7 +163,7 @@ public class SqlUserRepository : IUserRepository
                 if (existingUser.Preferences == null)
                 {
                     // Create new preferences
-                    user.Preferences.Id = Guid.NewGuid().ToString();
+                    user.Preferences.Id = UuidV7.NewId();
                     user.Preferences.UserId = id;
                     existingUser.Preferences = user.Preferences;
                 }

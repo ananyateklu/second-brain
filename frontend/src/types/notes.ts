@@ -100,3 +100,67 @@ export interface NotesFilterState {
  */
 export type NoteSearchMode = 'title' | 'content' | 'both';
 
+// ============================================
+// Note Version History Types (PostgreSQL 18 Temporal Features)
+// ============================================
+
+/**
+ * A single version of a note (aligned with backend NoteVersionResponse)
+ */
+export interface NoteVersion {
+  noteId: string;
+  versionNumber: number;
+  isCurrent: boolean;
+  validFrom: string;
+  validTo: string | null;
+  title: string;
+  content: string;
+  tags: string[];
+  isArchived: boolean;
+  folder: string | null;
+  modifiedBy: string;
+  changeSummary: string | null;
+  createdAt: string;
+}
+
+/**
+ * Note version history response (aligned with backend NoteVersionHistoryResponse)
+ */
+export interface NoteVersionHistory {
+  noteId: string;
+  totalVersions: number;
+  currentVersion: number;
+  versions: NoteVersion[];
+}
+
+/**
+ * Note version diff comparison (aligned with backend NoteVersionDiffResponse)
+ */
+export interface NoteVersionDiff {
+  noteId: string;
+  fromVersion: NoteVersion;
+  toVersion: NoteVersion;
+  titleChanged: boolean;
+  contentChanged: boolean;
+  tagsChanged: boolean;
+  archivedChanged: boolean;
+  folderChanged: boolean;
+  tagsAdded: string[];
+  tagsRemoved: string[];
+}
+
+/**
+ * Request to restore a note to a previous version
+ */
+export interface RestoreVersionRequest {
+  targetVersion: number;
+}
+
+/**
+ * Response from restoring a note version
+ */
+export interface RestoreVersionResponse {
+  message: string;
+  newVersionNumber: number;
+  noteId: string;
+}

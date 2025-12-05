@@ -10,14 +10,15 @@ namespace SecondBrain.Tests.Integration.Fixtures;
 public class PostgresFixture : IAsyncLifetime
 {
     private PostgreSqlContainer _container = null!;
-    
+
     public string ConnectionString => _container.GetConnectionString();
 
     public async Task InitializeAsync()
     {
-        // Use pgvector/pgvector:pg16 image to have pgvector extension available
+        // Use pgvector/pgvector:pg18 image for PostgreSQL 18 features
+        // Required for: uuidv7(), JSON_TABLE, and other PG18 features
         _container = new PostgreSqlBuilder()
-            .WithImage("pgvector/pgvector:pg16")
+            .WithImage("pgvector/pgvector:pg18")
             .WithDatabase("secondbrain_test")
             .WithUsername("testuser")
             .WithPassword("testpassword")

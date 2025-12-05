@@ -16,6 +16,7 @@ public class RagService : IRagService
     private readonly IEmbeddingProviderFactory _embeddingProviderFactory;
     private readonly IVectorStore _vectorStore;
     private readonly IHybridSearchService _hybridSearchService;
+    private readonly INativeHybridSearchService? _nativeHybridSearchService;
     private readonly IQueryExpansionService _queryExpansionService;
     private readonly IRerankerService _rerankerService;
     private readonly IRagAnalyticsService? _analyticsService;
@@ -26,6 +27,7 @@ public class RagService : IRagService
         IEmbeddingProviderFactory embeddingProviderFactory,
         IVectorStore vectorStore,
         IHybridSearchService hybridSearchService,
+        INativeHybridSearchService? nativeHybridSearchService,
         IQueryExpansionService queryExpansionService,
         IRerankerService rerankerService,
         IRagAnalyticsService? analyticsService,
@@ -35,6 +37,7 @@ public class RagService : IRagService
         _embeddingProviderFactory = embeddingProviderFactory;
         _vectorStore = vectorStore;
         _hybridSearchService = hybridSearchService;
+        _nativeHybridSearchService = nativeHybridSearchService;
         _queryExpansionService = queryExpansionService;
         _rerankerService = rerankerService;
         _analyticsService = analyticsService;
@@ -204,20 +207,37 @@ public class RagService : IRagService
             ? _settings.InitialRetrievalCount
             : _settings.TopK;
 
+        // Use native hybrid search if enabled and available (PostgreSQL 18 optimized)
+        var useNativeHybrid = _settings.EnableNativeHybridSearch && _nativeHybridSearchService != null;
+
+        if (useNativeHybrid)
+        {
+            _logger.LogDebug("Using native PostgreSQL 18 hybrid search (single-query RRF)");
+        }
+
         // Search with original embedding
-        var originalResults = await _hybridSearchService.SearchAsync(
-            query, embeddings.OriginalEmbedding, userId, retrievalCount,
-            similarityThreshold, cancellationToken);
+        var originalResults = useNativeHybrid
+            ? await _nativeHybridSearchService!.SearchAsync(
+                query, embeddings.OriginalEmbedding, userId, retrievalCount,
+                similarityThreshold, cancellationToken)
+            : await _hybridSearchService.SearchAsync(
+                query, embeddings.OriginalEmbedding, userId, retrievalCount,
+                similarityThreshold, cancellationToken);
         allResults.AddRange(originalResults);
 
         // Search with HyDE embedding if available
         if (embeddings.HyDEEmbedding != null && embeddings.HyDEEmbedding.Any())
         {
             _logger.LogDebug("Executing HyDE search with hypothetical document");
-            var hydeResults = await _hybridSearchService.SearchAsync(
-                embeddings.HypotheticalDocument ?? query,
-                embeddings.HyDEEmbedding, userId, retrievalCount,
-                similarityThreshold, cancellationToken);
+            var hydeResults = useNativeHybrid
+                ? await _nativeHybridSearchService!.SearchAsync(
+                    embeddings.HypotheticalDocument ?? query,
+                    embeddings.HyDEEmbedding, userId, retrievalCount,
+                    similarityThreshold, cancellationToken)
+                : await _hybridSearchService.SearchAsync(
+                    embeddings.HypotheticalDocument ?? query,
+                    embeddings.HyDEEmbedding, userId, retrievalCount,
+                    similarityThreshold, cancellationToken);
 
             // Merge results, boosting HyDE findings slightly
             foreach (var result in hydeResults)
@@ -249,9 +269,13 @@ public class RagService : IRagService
                 _logger.LogDebug("Executing multi-query search #{Index}: {Query}",
                     i + 1, variationQuery.Substring(0, Math.Min(30, variationQuery.Length)));
 
-                var variationResults = await _hybridSearchService.SearchAsync(
-                    variationQuery, variationEmbedding, userId, retrievalCount / 2,
-                    similarityThreshold, cancellationToken);
+                var variationResults = useNativeHybrid
+                    ? await _nativeHybridSearchService!.SearchAsync(
+                        variationQuery, variationEmbedding, userId, retrievalCount / 2,
+                        similarityThreshold, cancellationToken)
+                    : await _hybridSearchService.SearchAsync(
+                        variationQuery, variationEmbedding, userId, retrievalCount / 2,
+                        similarityThreshold, cancellationToken);
 
                 foreach (var result in variationResults)
                 {

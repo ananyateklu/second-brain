@@ -8,6 +8,7 @@ import { useNoteForm, formDataToNote, noteToFormData } from '../hooks/use-note-f
 import { formatRelativeDate } from '../../../utils/date-utils';
 import { useThemeStore } from '../../../store/theme-store';
 import { NOTES_FOLDERS } from '../../../lib/constants';
+import { NoteVersionHistoryPanel } from './NoteVersionHistoryPanel';
 
 export function EditNoteModal() {
   const isOpen = useUIStore((state) => state.isEditModalOpen);
@@ -24,6 +25,7 @@ export function EditNoteModal() {
   const [isArchived, setIsArchived] = useState(editingNote?.isArchived ?? false);
   const [currentFolder, setCurrentFolder] = useState<string | undefined>(editingNote?.folder);
   const [isFolderDropdownOpen, setIsFolderDropdownOpen] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   // Get unique folders from all notes
   const availableFolders = useMemo(() => {
@@ -265,6 +267,20 @@ export function EditNoteModal() {
             )}
           </div>
 
+          {/* History Button */}
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => setIsHistoryOpen(true)}
+            title="View version history"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            History
+          </Button>
+
           {/* Archive/Unarchive Button */}
           <Button
             type="button"
@@ -327,6 +343,19 @@ export function EditNoteModal() {
           isSubmitting={isSubmitting}
         />
       </form>
+
+      {/* Version History Panel */}
+      {isHistoryOpen && editingNote && (
+        <NoteVersionHistoryPanel
+          noteId={editingNote.id}
+          isOpen={isHistoryOpen}
+          onClose={() => setIsHistoryOpen(false)}
+          onRestore={() => {
+            // Refresh the note data after restore
+            closeModal();
+          }}
+        />
+      )}
     </Modal>
   );
 }

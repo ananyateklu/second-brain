@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useNotes } from '../../notes/hooks/use-notes-query';
 import { useAIStats } from '../../stats/hooks/use-stats';
+import { useSessionStats } from '../../chat/hooks/use-chat-sessions';
 import { calculateStats, getChartData, getChatUsageChartData } from '../../../utils/stats-utils';
 import { formatModelName } from '../../../utils/model-name-formatter';
 import { parse, subDays, startOfDay, isBefore } from 'date-fns';
@@ -10,6 +11,7 @@ import {
   getRegularChartColor,
   getImageGenChartColor,
 } from '../utils/dashboard-utils';
+import type { SessionStats } from '../../../types/chat';
 
 interface ModelUsageEntry {
   name: string;
@@ -47,25 +49,28 @@ interface DashboardData {
   // Loading and error states
   isLoading: boolean;
   error: Error | null;
-  
+
   // Notes data
   notes: ReturnType<typeof useNotes>['data'];
   stats: NotesStats | null;
-  
+
   // AI Stats
   aiStats: ReturnType<typeof useAIStats>['data'];
   totalTokens: number;
-  
+
+  // Session Stats
+  sessionStats: SessionStats | undefined;
+
   // Model usage
   modelUsageData: ModelUsageEntry[];
-  
+
   // Colors
   colors: string[];
   ragChartColor: string;
   regularChartColor: string;
   agentChartColor: string;
   imageGenChartColor: string;
-  
+
   // Chart data generators (need time range as input)
   getNotesChartData: (timeRange: number) => ChartDataPoint[];
   getChatUsageData: (timeRange: number) => ChatUsageDataPoint[];
@@ -81,6 +86,7 @@ interface DashboardData {
 export function useDashboardData(): DashboardData {
   const { data: notes, isLoading: isNotesLoading, error: notesError } = useNotes();
   const { data: aiStats, isLoading: isAIStatsLoading } = useAIStats();
+  const { data: sessionStats, isLoading: sessionStatsLoading } = useSessionStats();
 
   // Get cached colors
   const colors = getThemeColors();
@@ -123,9 +129,9 @@ export function useDashboardData(): DashboardData {
   // Chat usage data generator
   const getChatUsageData = useMemo(() => {
     return (timeRange: number): ChatUsageDataPoint[] => {
-      if (!aiStats?.dailyRagConversationCounts || 
-          !aiStats?.dailyNonRagConversationCounts || 
-          !aiStats?.dailyAgentConversationCounts) {
+      if (!aiStats?.dailyRagConversationCounts ||
+        !aiStats?.dailyNonRagConversationCounts ||
+        !aiStats?.dailyAgentConversationCounts) {
         return [];
       }
 
@@ -152,7 +158,7 @@ export function useDashboardData(): DashboardData {
       const cutoffDate = startOfDay(subDays(new Date(), timeRange));
 
       // Helper to parse yyyy-MM-dd as local date
-      const parseDateKey = (dateStr: string): Date => 
+      const parseDateKey = (dateStr: string): Date =>
         parse(dateStr, 'yyyy-MM-dd', new Date());
 
       // Aggregate daily model usage counts within the time range
@@ -241,7 +247,7 @@ export function useDashboardData(): DashboardData {
           aggregatedModels: smallSlices,
         };
         mainSlices.push(othersEntry);
-        
+
         // Add "Others" to model data map
         modelDataMap.set('Others', {
           conversations: othersEntry.value,
@@ -260,12 +266,13 @@ export function useDashboardData(): DashboardData {
   }, [aiStats]);
 
   return {
-    isLoading: isNotesLoading || isAIStatsLoading,
+    isLoading: isNotesLoading || isAIStatsLoading || sessionStatsLoading,
     error: notesError,
     notes,
     stats,
     aiStats,
     totalTokens,
+    sessionStats,
     modelUsageData,
     colors,
     ragChartColor,

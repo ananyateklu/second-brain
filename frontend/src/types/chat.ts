@@ -270,3 +270,82 @@ export interface SuggestedPromptsResponse {
   model: string;
 }
 
+// ============================================
+// Chat Session Types (PostgreSQL 18 Temporal Features)
+// ============================================
+
+/**
+ * Device information for a chat session
+ */
+export interface SessionDeviceInfo {
+  browser?: string;
+  browserVersion?: string;
+  operatingSystem?: string;
+  deviceType?: string;
+  platform?: string;
+  isMobile?: boolean;
+  isDesktop?: boolean;
+  isTauriApp?: boolean;
+}
+
+/**
+ * Chat session entity (aligned with backend ChatSessionResponse)
+ */
+export interface ChatSession {
+  id: string;
+  userId: string;
+  conversationId: string;
+  isActive: boolean;
+  startedAt: string;
+  endedAt: string | null;
+  durationMinutes: number;
+  messagesSent: number;
+  messagesReceived: number;
+  tokensUsed: number;
+  deviceInfo: SessionDeviceInfo | null;
+  createdAt: string;
+}
+
+/**
+ * Session statistics (aligned with backend SessionStatsResponse)
+ */
+export interface SessionStats {
+  totalSessions: number;
+  totalMessagesSent: number;
+  totalMessagesReceived: number;
+  totalTokensUsed: number;
+  avgSessionDurationMinutes: number;
+  uniqueConversations: number;
+  firstSessionAt: string | null;
+  lastSessionAt: string | null;
+  activeSessions: number;
+}
+
+/**
+ * Session history response (aligned with backend SessionHistoryResponse)
+ */
+export interface SessionHistory {
+  conversationId?: string;
+  userId?: string;
+  totalCount: number;
+  sessions: ChatSession[];
+}
+
+/**
+ * Request to start a chat session
+ */
+export interface StartSessionRequest {
+  conversationId: string;
+  deviceInfo?: string;
+  userAgent?: string;
+}
+
+/**
+ * Request to end a chat session
+ */
+export interface EndSessionRequest {
+  messagesSent?: number;
+  messagesReceived?: number;
+  tokensUsed?: number;
+}
+

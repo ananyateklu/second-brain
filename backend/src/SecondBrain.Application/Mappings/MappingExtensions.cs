@@ -1,5 +1,6 @@
 using SecondBrain.Application.DTOs.Requests;
 using SecondBrain.Application.DTOs.Responses;
+using SecondBrain.Core.Common;
 using SecondBrain.Core.Entities;
 
 namespace SecondBrain.Application.Mappings;
@@ -37,7 +38,7 @@ public static class MappingExtensions
     {
         return new Note
         {
-            Id = Guid.NewGuid().ToString(),
+            Id = UuidV7.NewId(),
             Title = request.Title,
             Content = request.Content,
             Tags = request.Tags,
@@ -115,7 +116,7 @@ public static class MappingExtensions
     {
         return new Note
         {
-            Id = Guid.NewGuid().ToString(),
+            Id = UuidV7.NewId(),
             UserId = userId,
             ExternalId = request.ExternalId,
             Source = request.Source,

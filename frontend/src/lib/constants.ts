@@ -67,6 +67,11 @@ export const API_ENDPOINTS = {
     BY_ID: (id: string) => `/notes/${id}`,
     BULK_DELETE: '/notes/bulk-delete',
     IMPORT: '/notes/import',
+    // Note Version History (PostgreSQL 18 Temporal Features)
+    VERSIONS: (id: string) => `/notes/${id}/versions`,
+    VERSION_AT: (id: string) => `/notes/${id}/versions/at`,
+    VERSION_DIFF: (id: string) => `/notes/${id}/versions/diff`,
+    RESTORE_VERSION: (id: string) => `/notes/${id}/versions/restore`,
   },
 
   // Chat / Conversations
@@ -84,6 +89,15 @@ export const API_ENDPOINTS = {
       return model ? `${base}?model=${encodeURIComponent(model)}` : base;
     },
     SUGGESTED_PROMPTS: '/chat/suggested-prompts',
+    // Chat Session Tracking (PostgreSQL 18 Temporal Features)
+    SESSIONS: {
+      START: '/chat/sessions/start',
+      END: (sessionId: string) => `/chat/sessions/${sessionId}/end`,
+      STATS: '/chat/sessions/stats',
+      ACTIVE: '/chat/sessions/active',
+      HISTORY: '/chat/sessions/history',
+      BY_CONVERSATION: (id: string) => `/chat/conversations/${id}/sessions`,
+    },
   },
 
   // AI
@@ -126,6 +140,10 @@ export const API_ENDPOINTS = {
     AI: '/stats/ai',
     NOTES: '/stats/notes',
     DASHBOARD: '/stats/dashboard',
+    // Tool Call Analytics (PostgreSQL 18 JSON_TABLE)
+    TOOLS: '/stats/tools',
+    TOOLS_ACTIONS: '/stats/tools/actions',
+    TOOLS_ERRORS: '/stats/tools/errors',
   },
 
   // User Preferences
@@ -153,6 +171,8 @@ export {
   type RagLogFilters,
   type IndexingFilters,
   type AIHealthConfig,
+  type ToolAnalyticsFilters,
+  type ChatSessionFilters,
   // Individual key factories
   noteKeys,
   conversationKeys,
@@ -163,6 +183,9 @@ export {
   userPreferencesKeys,
   imageGenerationKeys,
   agentKeys,
+  // PostgreSQL 18 Temporal Feature key factories
+  noteVersionKeys,
+  chatSessionKeys,
   // Unified keys object
   queryKeys,
   // Utility functions

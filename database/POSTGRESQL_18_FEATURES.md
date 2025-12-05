@@ -7,17 +7,18 @@ This comprehensive guide documents PostgreSQL 18's new features and provides ste
 ## Table of Contents
 
 1. [Executive Summary](#1-executive-summary)
-2. [High-Impact Features for Second Brain](#2-high-impact-features-for-second-brain)
-3. [JSON/JSONB Enhancements](#3-jsonjsonb-enhancements)
-4. [SQL Statement Enhancements](#4-sql-statement-enhancements)
-5. [Temporal Features](#5-temporal-features)
-6. [Full-Text Search Improvements](#6-full-text-search-improvements)
-7. [Performance Tuning](#7-performance-tuning)
-8. [Monitoring & Observability](#8-monitoring--observability)
-9. [Implementation Roadmap](#9-implementation-roadmap)
-10. [Migration Scripts](#10-migration-scripts)
-11. [Backend Code Updates](#11-backend-code-updates)
-12. [Testing & Validation](#12-testing--validation)
+2. [Implementation Status](#2-implementation-status)
+3. [High-Impact Features for Second Brain](#3-high-impact-features-for-second-brain)
+4. [JSON/JSONB Enhancements](#4-jsonjsonb-enhancements)
+5. [SQL Statement Enhancements](#5-sql-statement-enhancements)
+6. [Temporal Features](#6-temporal-features)
+7. [Full-Text Search Improvements](#7-full-text-search-improvements)
+8. [Performance Tuning](#8-performance-tuning)
+9. [Monitoring & Observability](#9-monitoring--observability)
+10. [Implementation Roadmap](#10-implementation-roadmap)
+11. [Migration Scripts](#11-migration-scripts)
+12. [Backend Code Updates](#12-backend-code-updates)
+13. [Testing & Validation](#13-testing--validation)
 
 ---
 
@@ -42,19 +43,150 @@ PostgreSQL 18 represents a major leap forward with features specifically benefic
 
 ### Current Stack Compatibility
 
-| Component | Current Version | Required for PG18 |
-|-----------|-----------------|-------------------|
-| PostgreSQL | 18.x | ✅ Already using |
-| pgvector | 0.7.x | Upgrade to 0.8.x |
-| Npgsql | 8.x | Upgrade to 10.x |
-| EF Core | 8.x | Upgrade to 10.x |
-| .NET | 8/9 | .NET 9 recommended |
+| Component | Current Version | Required for PG18 | Status |
+|-----------|-----------------|-------------------|--------|
+| PostgreSQL | 18.x | 18.x | ✅ Ready |
+| pgvector | 0.8.x | 0.8.x | ✅ Ready |
+| Npgsql | 10.0 | 10.x | ✅ Ready |
+| EF Core | 10.0 | 10.x | ✅ Ready |
+| .NET | 10.0 | .NET 9+ | ✅ Ready |
 
 ---
 
-## 2. High-Impact Features for Second Brain
+## 2. Implementation Status
 
-### 2.1 UUIDv7 Migration
+This section tracks which PostgreSQL 18 features have been implemented in Second Brain and which are pending.
+
+### 2.1 Implemented Features
+
+| Category | Feature | Status | Implementation Files |
+|----------|---------|--------|---------------------|
+| **Configuration** | Async I/O (io_method, io_workers) | Done | `docker-compose.yml` |
+| **Configuration** | Parallel query settings | Done | `docker-compose.yml` |
+| **Configuration** | pg_stat_statements monitoring | Done | `database/00_extensions.sql`, `docker-compose.yml` |
+| **Configuration** | Memory optimization (shared_buffers, work_mem) | Done | `docker-compose.yml` |
+| **Configuration** | SSD optimization (random_page_cost) | Done | `docker-compose.yml` |
+| **Schema** | UUIDv7 columns (parallel to existing PKs) | Done | `database/13_postgresql_18_features.sql` |
+| **Schema** | UUIDv7 indexes | Done | `database/13_postgresql_18_features.sql` |
+| **Schema** | HNSW index optimization (m=24, ef_construction=128) | Done | `database/13_postgresql_18_features.sql` |
+| **Schema** | GIN index parallel build for search_vector | Done | `database/13_postgresql_18_features.sql` |
+| **Schema** | JSONB columns for tool_calls (arguments_jsonb, result_jsonb) | Done | `database/13_postgresql_18_features.sql` |
+| **Schema** | GIN indexes for JSONB columns | Done | `database/13_postgresql_18_features.sql` |
+| **Schema** | Skip-scan optimized indexes | Done | `database/13_postgresql_18_features.sql` |
+| **Schema** | `compute_search_vector()` helper function | Done | `database/13_postgresql_18_features.sql` |
+| **Schema** | `get_pg18_feature_status()` monitoring function | Done | `database/13_postgresql_18_features.sql` |
+| **Schema** | `get_secondbrain_stats()` monitoring function | Done | `database/13_postgresql_18_features.sql` |
+| **Code** | MERGE-based upsert (UpsertWithMergeAsync) | Done | `backend/.../VectorStore/PostgresVectorStore.cs` |
+| **Code** | Batch MERGE upsert (UpsertBatchWithMergeAsync) | Done | `backend/.../VectorStore/PostgresVectorStore.cs` |
+| **Code** | Native BM25 search service | Done | `backend/.../Services/RAG/NativeBM25SearchService.cs` |
+| **Code** | Native BM25 repository implementation | Done | `backend/.../Repositories/SqlNoteEmbeddingSearchRepository.cs` |
+| **Code** | ts_headline for search result highlighting | Done | `backend/.../Repositories/SqlNoteEmbeddingSearchRepository.cs` |
+| **Code** | UUIDv7 generator utility class | Done | `backend/.../Core/Common/UuidV7.cs` |
+| **Code** | UUIDv7 entity properties (UuidV7 column mapping) | Done | `backend/.../Core/Entities/*.cs` |
+| **Code** | ApplicationDbContext UUIDv7 default configuration | Done | `backend/.../Infrastructure/Data/ApplicationDbContext.cs` |
+| **Code** | Replace Guid.NewGuid() with UuidV7.NewId() | Done | All repositories, services, controllers |
+| **Code** | Npgsql 10.x / EF Core 10.x (already at 10.0) | Done | All `.csproj` files |
+| **Code** | JSON_TABLE analytics queries | Done | `backend/.../Services/Stats/ToolCallAnalyticsService.cs`, `backend/.../Repositories/SqlToolCallAnalyticsRepository.cs` |
+| **Schema** | JSON_TABLE analytics functions | Done | `database/14_tool_call_analytics.sql` |
+| **API** | Tool analytics endpoints | Done | `backend/.../Controllers/StatsController.cs` |
+| **Frontend** | Tool analytics types & service | Done | `frontend/src/types/stats.ts`, `frontend/src/services/stats.service.ts` |
+| **Code** | NativeHybridSearchService | Done | `backend/.../Services/RAG/NativeHybridSearchService.cs` |
+| **Code** | Native hybrid search repository method | Done | `backend/.../Repositories/SqlNoteEmbeddingSearchRepository.cs` |
+| **Code** | RagService native hybrid search integration | Done | `backend/.../Services/RAG/RagService.cs` |
+| **Config** | EnableNativeHybridSearch setting | Done | `backend/.../Configuration/EmbeddingProvidersSettings.cs` |
+| **Schema** | Temporal constraints (WITHOUT OVERLAPS) | Done | `database/15_temporal_features.sql` |
+| **Schema** | Note version history table (note_versions) | Done | `database/15_temporal_features.sql` |
+| **Schema** | Chat session tracking (chat_sessions) | Done | `database/15_temporal_features.sql` |
+| **Schema** | Temporal helper functions | Done | `database/15_temporal_features.sql` |
+| **Code** | NoteVersion entity with NpgsqlRange | Done | `backend/.../Core/Entities/NoteVersion.cs` |
+| **Code** | ChatSession entity with NpgsqlRange | Done | `backend/.../Core/Entities/ChatSession.cs` |
+| **Code** | NoteVersionRepository (temporal queries) | Done | `backend/.../Repositories/SqlNoteVersionRepository.cs` |
+| **Code** | ChatSessionRepository (temporal queries) | Done | `backend/.../Repositories/SqlChatSessionRepository.cs` |
+| **Code** | NoteVersionService | Done | `backend/.../Services/Notes/NoteVersionService.cs` |
+| **Code** | ChatSessionService | Done | `backend/.../Services/Chat/ChatSessionService.cs` |
+| **API** | Note version history endpoints | Done | `backend/.../Controllers/NotesController.cs` |
+| **API** | Chat session tracking endpoints | Done | `backend/.../Controllers/ChatController.cs` |
+| **Frontend** | Note version types | Done | `frontend/src/types/notes.ts` |
+| **Frontend** | Chat session types | Done | `frontend/src/types/chat.ts` |
+| **Frontend** | Note version API endpoints | Done | `frontend/src/lib/constants.ts` |
+| **Frontend** | Chat session API endpoints | Done | `frontend/src/lib/constants.ts` |
+| **Frontend** | Note version query keys | Done | `frontend/src/lib/query-keys.ts` |
+| **Frontend** | Chat session query keys | Done | `frontend/src/lib/query-keys.ts` |
+| **Frontend** | Note version service methods | Done | `frontend/src/services/notes.service.ts` |
+| **Frontend** | Chat session service methods | Done | `frontend/src/services/chat.service.ts` |
+| **Frontend** | Note version React hooks | Done | `frontend/src/features/notes/hooks/use-note-versions.ts` |
+| **Frontend** | Chat session React hooks | Done | `frontend/src/features/chat/hooks/use-chat-sessions.ts` |
+
+### 2.2 Pending Features
+
+| Category | Feature | Priority | Notes |
+|----------|---------|----------|-------|
+| **Schema** | Virtual generated columns | Low | Lower priority - stored columns currently work |
+| **Migration** | Full UUIDv7 primary key migration | Low | Breaking change, requires application updates |
+
+### 2.3 Quick Verification
+
+Run these commands to verify PostgreSQL 18 features are working:
+
+```sql
+-- Check feature status
+SELECT * FROM get_pg18_feature_status();
+
+-- Verify UUIDv7 is available
+SELECT uuidv7();
+
+-- Check Async I/O configuration
+SHOW io_method;
+SHOW io_workers;
+
+-- Verify HNSW index exists
+SELECT indexname, indexdef FROM pg_indexes WHERE indexname = 'ix_embeddings_hnsw';
+
+-- Check JSONB columns
+SELECT column_name, data_type FROM information_schema.columns 
+WHERE table_name = 'tool_calls' AND column_name LIKE '%jsonb';
+
+-- Get application stats
+SELECT * FROM get_secondbrain_stats();
+
+-- Verify temporal tables exist
+SELECT table_name FROM information_schema.tables 
+WHERE table_name IN ('note_versions', 'chat_sessions');
+
+-- Check temporal helper functions
+SELECT routine_name FROM information_schema.routines 
+WHERE routine_name IN ('get_current_note_version', 'create_note_version', 
+                       'start_chat_session', 'end_chat_session');
+
+-- Verify WITHOUT OVERLAPS constraints
+SELECT conname, contype FROM pg_constraint 
+WHERE conname LIKE '%temporal%' OR conname LIKE '%overlaps%';
+```
+
+### 2.4 Implementation Progress Summary
+
+| Phase | Description | Status | Completion |
+|-------|-------------|--------|------------|
+| **Phase 1** | Configuration (Docker, PostgreSQL settings) | Complete | 100% |
+| **Phase 2** | Schema Enhancements (UUIDv7, indexes, JSONB) | Complete | 100% |
+| **Phase 3** | Code Updates (MERGE, Native BM25, UUIDv7 C#, JSON_TABLE Analytics, Native Hybrid Search) | Complete | 100% |
+| **Phase 4** | Temporal Features (note_versions, chat_sessions, WITHOUT OVERLAPS) | Complete | 100% |
+| **Phase 5** | Frontend Integration (types, services, hooks for temporal features) | Complete | 100% |
+
+#### Overall Progress
+
+100% of high-impact features implemented. All PostgreSQL 18 features are now fully integrated across backend and frontend, including temporal features for note version history and chat session tracking.
+
+Only optional enhancements remain:
+
+- Virtual generated columns (lower priority - stored columns work well)
+- Full UUIDv7 primary key migration (breaking change, requires application updates)
+
+---
+
+## 3. High-Impact Features for Second Brain
+
+### 3.1 UUIDv7 Migration
 
 #### Current State
 
@@ -196,7 +328,7 @@ CREATE UNIQUE INDEX CONCURRENTLY ix_notes_new_id ON notes(new_id);
 
 ---
 
-### 2.2 Async I/O (AIO) Subsystem
+### 3.2 Async I/O (AIO) Subsystem
 
 #### Overview
 
@@ -275,7 +407,7 @@ WHERE backend_type = 'io worker';
 
 ---
 
-### 2.3 pgvector 0.8 Improvements
+### 3.3 pgvector 0.8 Improvements
 
 #### Iterative Index Scans
 
@@ -355,9 +487,9 @@ ALTER EXTENSION vector UPDATE TO '0.8.0';
 
 ---
 
-## 3. JSON/JSONB Enhancements
+## 4. JSON/JSONB Enhancements
 
-### 3.1 JSON_TABLE Function
+### 4.1 JSON_TABLE Function
 
 #### JSON_TABLE Overview
 
@@ -485,7 +617,7 @@ GROUP BY tool_name, action
 ORDER BY call_count DESC;
 ```
 
-### 3.2 Enhanced JSON Path Expressions
+### 4.2 Enhanced JSON Path Expressions
 
 ```sql
 -- Find conversations where agent used specific tools
@@ -513,7 +645,7 @@ WHERE jsonb_path_exists(
 );
 ```
 
-### 3.3 Schema Migration to JSONB
+### 4.3 Schema Migration to JSONB
 
 Consider migrating TEXT JSON columns to native JSONB:
 
@@ -542,9 +674,9 @@ CHECK (arguments_jsonb IS NOT NULL AND jsonb_typeof(arguments_jsonb) = 'object')
 
 ---
 
-## 4. SQL Statement Enhancements
+## 5. SQL Statement Enhancements
 
-### 4.1 MERGE with RETURNING (OLD/NEW)
+### 5.1 MERGE with RETURNING (OLD/NEW)
 
 #### Current Upsert Pattern in PostgresVectorStore
 
@@ -641,7 +773,7 @@ RETURNING merge_action(), id;
 DROP TABLE staging_embeddings;
 ```
 
-### 4.2 Virtual Generated Columns
+### 5.2 Virtual Generated Columns
 
 #### Current: Trigger-Based Search Vector
 
@@ -711,7 +843,7 @@ ON note_embeddings USING GIN(search_vector);
 | Maintenance | Manual | Automatic | Automatic |
 | Performance | Good | Best for rare access | Best for frequent access |
 
-### 4.3 Skip Scan Lookups
+### 5.3 Skip Scan Lookups
 
 #### Skip Scan Overview
 
@@ -750,9 +882,9 @@ SELECT DISTINCT user_id FROM note_embeddings;
 
 ---
 
-## 5. Temporal Features
+## 6. Temporal Features
 
-### 5.1 Temporal Constraints (WITHOUT OVERLAPS)
+### 6.1 Temporal Constraints (WITHOUT OVERLAPS)
 
 #### Use Case: Note Version History
 
@@ -832,7 +964,7 @@ WHERE note_id = '01234567-89ab-cdef-0123-456789abcdef'
 ORDER BY lower(valid_period) DESC;
 ```
 
-### 5.2 Temporal Foreign Keys
+### 6.2 Temporal Foreign Keys
 
 ```sql
 -- Address validity periods
@@ -860,9 +992,9 @@ CREATE TABLE orders (
 
 ---
 
-## 6. Full-Text Search Improvements
+## 7. Full-Text Search Improvements
 
-### 6.1 Native PostgreSQL BM25
+### 7.1 Native PostgreSQL BM25
 
 #### Current Implementation (In-Memory)
 
@@ -936,7 +1068,7 @@ SELECT * FROM note_embeddings
 WHERE search_vector @@ to_tsquery('english', 'neural <2> network');
 ```
 
-### 6.2 Parallel GIN Index Builds
+### 7.2 Parallel GIN Index Builds
 
 ```sql
 -- Configure parallel workers for index builds
@@ -957,7 +1089,7 @@ SELECT
 FROM pg_stat_progress_create_index p;
 ```
 
-### 6.3 Hybrid Search with Native BM25
+### 7.3 Hybrid Search with Native BM25
 
 ```sql
 -- Complete hybrid search query using RRF
@@ -1017,9 +1149,9 @@ LIMIT @top_k;
 
 ---
 
-## 7. Performance Tuning
+## 8. Performance Tuning
 
-### 7.1 PostgreSQL 18 Configuration
+### 8.1 PostgreSQL 18 Configuration
 
 ```ini
 # postgresql.conf - Optimized for Second Brain workloads
@@ -1113,7 +1245,7 @@ pg_stat_statements.max = 10000
 pg_stat_statements.track = all
 ```
 
-### 7.2 Docker Compose Configuration
+### 8.2 Docker Compose Configuration
 
 ```yaml
 # docker-compose.yml - PostgreSQL 18 optimized
@@ -1177,7 +1309,7 @@ services:
       retries: 5
 ```
 
-### 7.3 Index Optimization Strategy
+### 8.3 Index Optimization Strategy
 
 ```sql
 -- Analyze current index usage
@@ -1222,9 +1354,9 @@ LIMIT 20;
 
 ---
 
-## 8. Monitoring & Observability
+## 9. Monitoring & Observability
 
-### 8.1 pg_stat_statements Improvements
+### 9.1 pg_stat_statements Improvements
 
 #### Enable Extension
 
@@ -1271,7 +1403,7 @@ ORDER BY (parallel_workers_to_launch - parallel_workers_launched) DESC
 LIMIT 10;
 ```
 
-### 8.2 RAG-Specific Monitoring Queries
+### 9.2 RAG-Specific Monitoring Queries
 
 ```sql
 -- Vector search performance
@@ -1315,7 +1447,7 @@ GROUP BY date_trunc('hour', created_at)
 ORDER BY hour DESC;
 ```
 
-### 8.3 Async I/O Monitoring
+### 9.3 Async I/O Monitoring
 
 ```sql
 -- Monitor async I/O activity
@@ -1335,7 +1467,7 @@ WHERE reads > 0 OR writes > 0
 ORDER BY read_time + write_time DESC;
 ```
 
-### 8.4 Connection Pooling Monitoring
+### 9.4 Connection Pooling Monitoring
 
 ```sql
 -- Active connections by state
@@ -1364,7 +1496,7 @@ WHERE state != 'idle'
 ORDER BY duration DESC;
 ```
 
-### 8.5 Monitoring Dashboard Queries
+### 9.5 Monitoring Dashboard Queries
 
 ```sql
 -- Create a monitoring function for Second Brain
@@ -1411,7 +1543,7 @@ SELECT * FROM get_secondbrain_stats();
 
 ---
 
-## 9. Implementation Roadmap
+## 10. Implementation Roadmap
 
 ### Phase 1: Configuration (Low Risk) - Week 1
 
@@ -1474,9 +1606,9 @@ SELECT * FROM get_secondbrain_stats();
 
 ---
 
-## 10. Migration Scripts
+## 11. Migration Scripts
 
-### 10.1 Initial Setup Script
+### 11.1 Initial Setup Script
 
 Create `database/13_postgresql_18_features.sql`:
 
@@ -1719,7 +1851,7 @@ SELECT * FROM get_pg18_feature_status();
 \echo '============================================'
 ```
 
-### 10.2 Rollback Script
+### 11.2 Rollback Script
 
 Create `database/13_postgresql_18_features_rollback.sql`:
 
@@ -1782,9 +1914,9 @@ DROP FUNCTION IF EXISTS compute_search_vector(TEXT, TEXT);
 
 ---
 
-## 11. Backend Code Updates
+## 12. Backend Code Updates
 
-### 11.1 ApplicationDbContext Updates
+### 12.1 ApplicationDbContext Updates
 
 ```csharp
 // backend/src/SecondBrain.Infrastructure/Data/ApplicationDbContext.cs
@@ -1829,7 +1961,7 @@ public class ApplicationDbContext : DbContext
 }
 ```
 
-### 11.2 PostgresVectorStore with MERGE
+### 12.2 PostgresVectorStore with MERGE
 
 ```csharp
 // backend/src/SecondBrain.Infrastructure/VectorStore/PostgresVectorStore.cs
@@ -1932,7 +2064,7 @@ public class PostgresVectorStore : IVectorStore
 }
 ```
 
-### 11.3 Native BM25 Search Service
+### 12.3 Native BM25 Search Service
 
 ```csharp
 // backend/src/SecondBrain.Application/Services/RAG/NativeBM25SearchService.cs
@@ -2076,57 +2208,82 @@ public class BM25SearchResultWithHighlight : BM25SearchResult
 }
 ```
 
-### 11.4 Hybrid Search with Native SQL
+### 12.4 Native Hybrid Search Service (IMPLEMENTED)
+
+The `NativeHybridSearchService` combines vector similarity and BM25 full-text search using Reciprocal Rank Fusion (RRF) in a single database query, optimized for PostgreSQL 18.
+
+**Key Benefits:**
+
+- Single round-trip to database (vs 2 queries in standard HybridSearchService)
+- RRF calculation in SQL for efficiency
+- Leverages PostgreSQL 18 Async I/O for parallel CTE execution
+- Uses HNSW index for vector search and GIN index for full-text search
+
+**Configuration:**
+
+```json
+{
+  "RAG": {
+    "EnableNativeHybridSearch": true,
+    "VectorWeight": 0.7,
+    "BM25Weight": 0.3,
+    "RRFConstant": 60
+  }
+}
+```
+
+**Interface:**
 
 ```csharp
 // backend/src/SecondBrain.Application/Services/RAG/NativeHybridSearchService.cs
-
-/// <summary>
-/// Hybrid search using native PostgreSQL 18 features
-/// Combines vector search and full-text search using Reciprocal Rank Fusion
-/// </summary>
-public class NativeHybridSearchService : IHybridSearchService
+public interface INativeHybridSearchService
 {
-    public async Task<List<HybridSearchResult>> SearchAsync(
+    Task<List<HybridSearchResult>> SearchAsync(
         string query,
         List<double> queryEmbedding,
         string userId,
         int topK,
         float similarityThreshold = 0.3f,
-        CancellationToken cancellationToken = default)
-    {
-        var sql = @"
-            WITH vector_results AS (
-                SELECT 
-                    id,
-                    note_id,
-                    content,
-                    note_title,
-                    note_tags,
-                    chunk_index,
-                    1 - (embedding <=> @queryEmbedding::vector) AS vector_score,
-                    ROW_NUMBER() OVER (ORDER BY embedding <=> @queryEmbedding::vector) AS vector_rank
-                FROM note_embeddings
-                WHERE user_id = @userId
-                  AND embedding IS NOT NULL
-                ORDER BY embedding <=> @queryEmbedding::vector
-                LIMIT @initialK
-            ),
-            bm25_results AS (
-                SELECT 
-                    id,
-                    note_id,
-                    content,
-                    note_title,
-                    note_tags,
-                    chunk_index,
-                    ts_rank_cd(search_vector, plainto_tsquery('english', @query), 32) AS bm25_score,
-                    ROW_NUMBER() OVER (
-                        ORDER BY ts_rank_cd(search_vector, plainto_tsquery('english', @query), 32) DESC
-                    ) AS bm25_rank
-                FROM note_embeddings
-                WHERE user_id = @userId
-                  AND search_vector @@ plainto_tsquery('english', @query)
+        CancellationToken cancellationToken = default);
+    
+    Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default);
+}
+```
+
+**SQL Query (executed in a single round-trip):**
+
+```sql
+WITH vector_results AS (
+    SELECT
+        id,
+        note_id,
+        content,
+        note_title,
+        note_tags,
+        chunk_index,
+        1 - (embedding <=> @queryEmbedding::vector) AS vector_score,
+        ROW_NUMBER() OVER (ORDER BY embedding <=> @queryEmbedding::vector) AS vector_rank
+    FROM note_embeddings
+    WHERE user_id = @userId
+      AND embedding IS NOT NULL
+    ORDER BY embedding <=> @queryEmbedding::vector
+    LIMIT @initialK
+),
+bm25_results AS (
+    SELECT
+        id,
+        note_id,
+        content,
+        note_title,
+        note_tags,
+        chunk_index,
+        ts_rank_cd(search_vector, plainto_tsquery('english', @query), 32) AS bm25_score,
+        ROW_NUMBER() OVER (
+            ORDER BY ts_rank_cd(search_vector, plainto_tsquery('english', @query), 32) DESC
+        ) AS bm25_rank
+    FROM note_embeddings
+    WHERE user_id = @userId
+      AND search_vector @@ plainto_tsquery('english', @query)
                 LIMIT @initialK
             )
             SELECT 
@@ -2147,21 +2304,60 @@ public class NativeHybridSearchService : IHybridSearchService
                 b.id IS NOT NULL AS found_in_bm25
             FROM vector_results v
             FULL OUTER JOIN bm25_results b ON v.id = b.id
-            ORDER BY rrf_score DESC
-            LIMIT @topK";
+    ORDER BY rrf_score DESC
+    LIMIT @topK
+)
+SELECT 
+    COALESCE(v.id, b.id) AS id,
+    COALESCE(v.note_id, b.note_id) AS note_id,
+    COALESCE(v.content, b.content) AS content,
+    COALESCE(v.note_title, b.note_title) AS note_title,
+    COALESCE(v.note_tags, b.note_tags) AS note_tags,
+    COALESCE(v.chunk_index, b.chunk_index) AS chunk_index,
+    COALESCE(v.vector_score, 0)::real AS vector_score,
+    COALESCE(b.bm25_score, 0)::real AS bm25_score,
+    COALESCE(v.vector_rank, 1000)::int AS vector_rank,
+    COALESCE(b.bm25_rank, 1000)::int AS bm25_rank,
+    -- RRF Score: weighted sum of 1/(k+rank) for each ranking
+    (COALESCE(1.0 / (@rrfK + v.vector_rank), 0) * @vectorWeight +
+     COALESCE(1.0 / (@rrfK + b.bm25_rank), 0) * @bm25Weight)::real AS rrf_score,
+    v.id IS NOT NULL AS found_in_vector,
+    b.id IS NOT NULL AS found_in_bm25
+FROM vector_results v
+FULL OUTER JOIN bm25_results b ON v.id = b.id
+ORDER BY rrf_score DESC
+LIMIT @topK;
+```
 
-        // Execute query with parameters
-        // Map results to HybridSearchResult
-        throw new NotImplementedException("Add full implementation");
-    }
+**Repository Method:**
+
+See `SqlNoteEmbeddingSearchRepository.SearchWithNativeHybridAsync()` for the full implementation that:
+
+- Sanitizes the query for PostgreSQL tsquery
+- Converts embedding to vector string format
+- Executes the hybrid search query
+- Maps results to `NativeHybridSearchResult`
+
+**Usage in RagService:**
+
+The `RagService` automatically uses native hybrid search when enabled:
+
+```csharp
+// Controlled by EnableNativeHybridSearch setting
+var useNativeHybrid = _settings.EnableNativeHybridSearch && _nativeHybridSearchService != null;
+
+if (useNativeHybrid)
+{
+    _logger.LogDebug("Using native PostgreSQL 18 hybrid search (single-query RRF)");
+    var results = await _nativeHybridSearchService.SearchAsync(...);
 }
 ```
 
 ---
 
-## 12. Testing & Validation
+## 13. Testing & Validation
 
-### 12.1 Feature Verification Queries
+### 13.1 Feature Verification Queries
 
 ```sql
 -- Verify PostgreSQL 18 is running
@@ -2192,7 +2388,7 @@ SHOW io_workers;
 SHOW effective_io_concurrency;
 ```
 
-### 12.2 Performance Benchmarks
+### 13.2 Performance Benchmarks
 
 ```sql
 -- Vector search benchmark
@@ -2229,7 +2425,7 @@ FROM vector_results v FULL OUTER JOIN bm25_results b ON v.id = b.id
 ORDER BY rrf DESC LIMIT 10;
 ```
 
-### 12.3 Integration Test Checklist
+### 13.3 Integration Test Checklist
 
 | Test Case | Status | Notes |
 |-----------|--------|-------|
@@ -2242,7 +2438,7 @@ ORDER BY rrf DESC LIMIT 10;
 | pg_stat_statements tracks queries | | Check after running queries |
 | Async I/O is active | | Check pg_aios view |
 
-### 12.4 Load Testing Queries
+### 13.4 Load Testing Queries
 
 ```sql
 -- Generate test embeddings (for load testing)

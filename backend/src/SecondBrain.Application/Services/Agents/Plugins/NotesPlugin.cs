@@ -3,6 +3,7 @@ using System.Text.Json;
 using Microsoft.SemanticKernel;
 using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.RAG;
+using SecondBrain.Core.Common;
 using SecondBrain.Core.Entities;
 using SecondBrain.Core.Interfaces;
 
@@ -286,7 +287,7 @@ For simple additions, use AppendToNote instead.";
         {
             var note = new Note
             {
-                Id = Guid.NewGuid().ToString(),
+                Id = UuidV7.NewId(),
                 Title = title.Trim(),
                 Content = content.Trim(),
                 Tags = string.IsNullOrWhiteSpace(tags)
@@ -665,7 +666,7 @@ For simple additions, use AppendToNote instead.";
         {
             // Use configuration-based threshold for consistent quality with normal chat RAG
             var similarityThreshold = _ragSettings?.SimilarityThreshold ?? 0.3f;
-            
+
             var ragContext = await _ragService.RetrieveContextAsync(
                 query,
                 _currentUserId,
@@ -693,7 +694,7 @@ For simple additions, use AppendToNote instead.";
                 {
                     // Parse the chunk content to extract meaningful information
                     var parsedChunk = SecondBrain.Application.Utilities.NoteContentParser.Parse(result.Content);
-                    
+
                     // Use chunk content that was actually matched by RAG (not generic preview)
                     var chunkContent = parsedChunk.Content;
                     if (string.IsNullOrWhiteSpace(chunkContent))
@@ -1571,7 +1572,7 @@ For simple additions, use AppendToNote instead.";
 
             var duplicateNote = new Note
             {
-                Id = Guid.NewGuid().ToString(),
+                Id = UuidV7.NewId(),
                 Title = duplicateTitle,
                 Content = sourceNote.Content,
                 Tags = new List<string>(sourceNote.Tags),

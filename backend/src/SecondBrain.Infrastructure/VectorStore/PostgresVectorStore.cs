@@ -1,13 +1,21 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Npgsql;
+using NpgsqlTypes;
 using Pgvector;
 using Pgvector.EntityFrameworkCore;
+using SecondBrain.Core.Common;
 using SecondBrain.Core.Entities;
 using SecondBrain.Core.Interfaces;
 using SecondBrain.Core.Models;
 using SecondBrain.Infrastructure.Data;
 
 namespace SecondBrain.Infrastructure.VectorStore;
+
+/// <summary>
+/// Result of a MERGE upsert operation
+/// </summary>
+public record MergeUpsertResult(bool Success, bool WasInsert, string? Id, string? Action);
 
 public class PostgresVectorStore : IVectorStore
 {
@@ -20,6 +28,157 @@ public class PostgresVectorStore : IVectorStore
     {
         _context = context;
         _logger = logger;
+    }
+
+    /// <summary>
+    /// Upsert embedding using PostgreSQL 18 MERGE statement for atomic operations.
+    /// This is more efficient than separate SELECT + INSERT/UPDATE as it's a single atomic operation.
+    /// </summary>
+    public async Task<MergeUpsertResult> UpsertWithMergeAsync(
+        NoteEmbedding embedding,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var embeddingId = string.IsNullOrEmpty(embedding.Id) ? UuidV7.NewId() : embedding.Id;
+
+            // PostgreSQL 18 MERGE statement with RETURNING
+            var sql = @"
+                MERGE INTO note_embeddings AS target
+                USING (SELECT 
+                    @id AS id, 
+                    @noteId AS note_id, 
+                    @userId AS user_id,
+                    @chunkIndex AS chunk_index, 
+                    @content AS content, 
+                    @embedding AS embedding,
+                    @provider AS embedding_provider, 
+                    @model AS embedding_model, 
+                    @noteTitle AS note_title,
+                    @noteTags AS note_tags, 
+                    @noteUpdatedAt AS note_updated_at
+                ) AS source
+                ON target.id = source.id
+                WHEN MATCHED THEN
+                    UPDATE SET
+                        note_id = source.note_id,
+                        user_id = source.user_id,
+                        chunk_index = source.chunk_index,
+                        content = source.content,
+                        embedding = source.embedding,
+                        embedding_provider = source.embedding_provider,
+                        embedding_model = source.embedding_model,
+                        note_title = source.note_title,
+                        note_tags = source.note_tags,
+                        note_updated_at = source.note_updated_at,
+                        search_vector = setweight(to_tsvector('english', COALESCE(source.note_title, '')), 'A') ||
+                                       setweight(to_tsvector('english', COALESCE(source.content, '')), 'B')
+                WHEN NOT MATCHED THEN
+                    INSERT (id, note_id, user_id, chunk_index, content, embedding,
+                            embedding_provider, embedding_model, note_title, note_tags,
+                            note_updated_at, created_at, search_vector)
+                    VALUES (source.id, source.note_id, source.user_id, source.chunk_index,
+                            source.content, source.embedding, source.embedding_provider,
+                            source.embedding_model, source.note_title, source.note_tags,
+                            source.note_updated_at, NOW(),
+                            setweight(to_tsvector('english', COALESCE(source.note_title, '')), 'A') ||
+                            setweight(to_tsvector('english', COALESCE(source.content, '')), 'B'))
+                RETURNING merge_action() AS action, id";
+
+            var connection = _context.Database.GetDbConnection();
+            await using var command = (NpgsqlCommand)connection.CreateCommand();
+            command.CommandText = sql;
+
+            // Convert embedding to float array for pgvector
+            float[]? embeddingArray = null;
+            if (embedding.Embedding != null)
+            {
+                embeddingArray = embedding.Embedding.ToArray();
+            }
+
+            command.Parameters.Add(new NpgsqlParameter("@id", NpgsqlDbType.Text) { Value = embeddingId });
+            command.Parameters.Add(new NpgsqlParameter("@noteId", NpgsqlDbType.Varchar) { Value = embedding.NoteId });
+            command.Parameters.Add(new NpgsqlParameter("@userId", NpgsqlDbType.Varchar) { Value = embedding.UserId });
+            command.Parameters.Add(new NpgsqlParameter("@chunkIndex", NpgsqlDbType.Integer) { Value = embedding.ChunkIndex });
+            command.Parameters.Add(new NpgsqlParameter("@content", NpgsqlDbType.Text) { Value = embedding.Content });
+            command.Parameters.Add(new NpgsqlParameter("@embedding", NpgsqlDbType.Array | NpgsqlDbType.Real) { Value = embeddingArray ?? (object)DBNull.Value });
+            command.Parameters.Add(new NpgsqlParameter("@provider", NpgsqlDbType.Varchar) { Value = embedding.EmbeddingProvider });
+            command.Parameters.Add(new NpgsqlParameter("@model", NpgsqlDbType.Varchar) { Value = embedding.EmbeddingModel });
+            command.Parameters.Add(new NpgsqlParameter("@noteTitle", NpgsqlDbType.Varchar) { Value = embedding.NoteTitle });
+            command.Parameters.Add(new NpgsqlParameter("@noteTags", NpgsqlDbType.Array | NpgsqlDbType.Text) { Value = embedding.NoteTags?.ToArray() ?? Array.Empty<string>() });
+            command.Parameters.Add(new NpgsqlParameter("@noteUpdatedAt", NpgsqlDbType.TimestampTz) { Value = embedding.NoteUpdatedAt });
+
+            if (connection.State != System.Data.ConnectionState.Open)
+            {
+                await connection.OpenAsync(cancellationToken);
+            }
+
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+
+            if (await reader.ReadAsync(cancellationToken))
+            {
+                var action = reader.GetString(0);
+                var id = reader.GetString(1);
+                var wasInsert = action.Equals("INSERT", StringComparison.OrdinalIgnoreCase);
+
+                _logger.LogDebug("MERGE upsert completed. Action: {Action}, Id: {Id}", action, id);
+                return new MergeUpsertResult(true, wasInsert, id, action);
+            }
+
+            return new MergeUpsertResult(false, false, null, null);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "MERGE upsert failed for embedding. EmbeddingId: {EmbeddingId}", embedding.Id);
+            return new MergeUpsertResult(false, false, null, null);
+        }
+    }
+
+    /// <summary>
+    /// Batch upsert using PostgreSQL 18 MERGE with a staging approach.
+    /// More efficient than individual MERGE operations for multiple embeddings.
+    /// </summary>
+    public async Task<int> UpsertBatchWithMergeAsync(
+        IEnumerable<NoteEmbedding> embeddings,
+        CancellationToken cancellationToken = default)
+    {
+        var embeddingsList = embeddings.ToList();
+        if (embeddingsList.Count == 0)
+        {
+            return 0;
+        }
+
+        int successCount = 0;
+
+        try
+        {
+            // For batch operations, we use individual MERGE calls but within a transaction
+            // This is more reliable than complex staging table approaches
+            await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+
+            foreach (var embedding in embeddingsList)
+            {
+                var result = await UpsertWithMergeAsync(embedding, cancellationToken);
+                if (result.Success)
+                {
+                    successCount++;
+                }
+            }
+
+            await transaction.CommitAsync(cancellationToken);
+
+            _logger.LogInformation(
+                "Batch MERGE upsert completed. Total: {Total}, Success: {Success}",
+                embeddingsList.Count, successCount);
+
+            return successCount;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Batch MERGE upsert failed. Processed: {Processed}/{Total}",
+                successCount, embeddingsList.Count);
+            return successCount;
+        }
     }
 
     public async Task<bool> UpsertAsync(
@@ -50,7 +209,7 @@ public class PostgresVectorStore : IVectorStore
                 // Create new
                 if (string.IsNullOrEmpty(embedding.Id))
                 {
-                    embedding.Id = Guid.NewGuid().ToString();
+                    embedding.Id = UuidV7.NewId();
                 }
                 embedding.CreatedAt = DateTime.UtcNow;
                 _context.NoteEmbeddings.Add(embedding);
@@ -97,7 +256,7 @@ public class PostgresVectorStore : IVectorStore
                 {
                     if (string.IsNullOrEmpty(embedding.Id))
                     {
-                        embedding.Id = Guid.NewGuid().ToString();
+                        embedding.Id = UuidV7.NewId();
                     }
                     embedding.CreatedAt = now;
                     _context.NoteEmbeddings.Add(embedding);

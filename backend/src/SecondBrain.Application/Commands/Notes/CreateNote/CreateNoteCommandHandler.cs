@@ -32,7 +32,7 @@ public class CreateNoteCommandHandler : IRequestHandler<CreateNoteCommand, Resul
 
         var note = new Note
         {
-            Id = Guid.NewGuid().ToString(),
+            Id = UuidV7.NewId(),
             Title = request.Title,
             Content = request.Content,
             Tags = request.Tags,

@@ -23,18 +23,27 @@ public class ApplicationDbContext : DbContext
     public DbSet<NoteEmbedding> NoteEmbeddings { get; set; } = null!;
     public DbSet<RagQueryLog> RagQueryLogs { get; set; } = null!;
 
+    // PostgreSQL 18 Temporal Tables
+    public DbSet<NoteVersion> NoteVersions { get; set; } = null!;
+    public DbSet<ChatSession> ChatSessions { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        // Enable pgvector extension
+        // Enable PostgreSQL extensions
         modelBuilder.HasPostgresExtension("vector");
+        modelBuilder.HasPostgresExtension("uuid-ossp");
 
         // Configure Note entity
         modelBuilder.Entity<Note>(entity =>
         {
             // Global query filter for soft deletes
             entity.HasQueryFilter(e => !e.IsDeleted);
+
+            // Configure UUIDv7 with database default (PostgreSQL 18)
+            entity.Property(e => e.UuidV7)
+                .HasDefaultValueSql("uuidv7()");
 
             entity.HasIndex(e => e.UserId).HasDatabaseName("ix_notes_user_id");
             entity.HasIndex(e => new { e.UserId, e.ExternalId }).HasDatabaseName("ix_notes_user_external");
@@ -78,6 +87,10 @@ public class ApplicationDbContext : DbContext
             // Global query filter for soft deletes
             entity.HasQueryFilter(e => !e.IsDeleted);
 
+            // Configure UUIDv7 with database default (PostgreSQL 18)
+            entity.Property(e => e.UuidV7)
+                .HasDefaultValueSql("uuidv7()");
+
             entity.HasIndex(e => e.UserId).HasDatabaseName("ix_chat_conversations_user_id");
             entity.HasIndex(e => e.UpdatedAt).HasDatabaseName("ix_chat_conversations_updated_at");
             // Performance index for conversation listing (user + updated_at descending)
@@ -100,6 +113,10 @@ public class ApplicationDbContext : DbContext
         {
             // Matching query filter for parent conversation's soft delete
             entity.HasQueryFilter(m => !m.Conversation!.IsDeleted);
+
+            // Configure UUIDv7 with database default (PostgreSQL 18)
+            entity.Property(e => e.UuidV7)
+                .HasDefaultValueSql("uuidv7()");
 
             entity.HasIndex(e => e.ConversationId).HasDatabaseName("ix_chat_messages_conversation_id");
             entity.HasIndex(e => e.Timestamp).HasDatabaseName("ix_chat_messages_timestamp");
@@ -176,6 +193,10 @@ public class ApplicationDbContext : DbContext
         // Configure NoteEmbedding entity
         modelBuilder.Entity<NoteEmbedding>(entity =>
         {
+            // Configure UUIDv7 with database default (PostgreSQL 18)
+            entity.Property(e => e.UuidV7)
+                .HasDefaultValueSql("uuidv7()");
+
             entity.HasIndex(e => e.NoteId).HasDatabaseName("ix_note_embeddings_note_id");
             entity.HasIndex(e => e.UserId).HasDatabaseName("ix_note_embeddings_user_id");
             entity.HasIndex(e => new { e.NoteId, e.ChunkIndex }).HasDatabaseName("ix_note_embeddings_note_chunk");
@@ -197,6 +218,81 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => new { e.UserId, e.CreatedAt })
                 .IsDescending(false, true)
                 .HasDatabaseName("ix_rag_logs_user_created");
+        });
+
+        // =========================================================================
+        // PostgreSQL 18 Temporal Tables Configuration
+        // =========================================================================
+
+        // Configure NoteVersion entity (temporal table with WITHOUT OVERLAPS)
+        modelBuilder.Entity<NoteVersion>(entity =>
+        {
+            // EF Core uses the Id column as primary key
+            // The database enforces (note_id, valid_period WITHOUT OVERLAPS) as exclusion constraint
+            entity.HasKey(e => e.Id);
+
+            // Configure tstzrange column
+            entity.Property(e => e.ValidPeriod)
+                .HasColumnType("tstzrange")
+                .IsRequired();
+
+            // Configure tags array
+            entity.Property(e => e.Tags)
+                .HasColumnType("text[]")
+                .HasDefaultValueSql("'{}'::text[]");
+
+            // Indexes (created via SQL migration, declared here for documentation)
+            entity.HasIndex(e => e.NoteId).HasDatabaseName("ix_note_versions_note_id");
+            entity.HasIndex(e => e.ModifiedBy).HasDatabaseName("ix_note_versions_modified_by");
+            entity.HasIndex(e => e.CreatedAt)
+                .IsDescending(true)
+                .HasDatabaseName("ix_note_versions_created_at");
+
+            // Note: The GiST index on valid_period and WITHOUT OVERLAPS constraint
+            // are created via SQL migration as EF Core doesn't natively support them
+
+            // Optional navigation to avoid query filter warnings
+            // (Note has soft delete filter, NoteVersion does not)
+            entity.HasOne(e => e.Note)
+                .WithMany()
+                .HasForeignKey(e => e.NoteId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Configure ChatSession entity (temporal table with WITHOUT OVERLAPS)
+        modelBuilder.Entity<ChatSession>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            // Configure tstzrange column
+            entity.Property(e => e.SessionPeriod)
+                .HasColumnType("tstzrange")
+                .IsRequired();
+
+            // Configure JSONB column
+            entity.Property(e => e.DeviceInfo)
+                .HasColumnType("jsonb");
+
+            // Indexes
+            entity.HasIndex(e => e.UserId).HasDatabaseName("ix_chat_sessions_user_id");
+            entity.HasIndex(e => e.ConversationId).HasDatabaseName("ix_chat_sessions_conversation_id");
+            entity.HasIndex(e => e.CreatedAt)
+                .IsDescending(true)
+                .HasDatabaseName("ix_chat_sessions_created_at");
+            entity.HasIndex(e => new { e.UserId, e.ConversationId })
+                .HasDatabaseName("ix_chat_sessions_user_conversation");
+
+            // Note: The GiST index on session_period and the WITHOUT OVERLAPS constraint
+            // are created via SQL migration as EF Core doesn't natively support them
+
+            // Optional navigation to avoid query filter warnings
+            // (ChatConversation has soft delete filter, ChatSession does not)
+            entity.HasOne(e => e.Conversation)
+                .WithMany()
+                .HasForeignKey(e => e.ConversationId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

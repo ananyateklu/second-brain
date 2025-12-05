@@ -11,6 +11,7 @@ using SecondBrain.Application.Services.AI.Models;
 using SecondBrain.Application.Services.Chat;
 using SecondBrain.Application.Services.RAG;
 using SecondBrain.Application.Utilities;
+using SecondBrain.Core.Common;
 using SecondBrain.Core.Entities;
 using SecondBrain.Core.Interfaces;
 
@@ -24,6 +25,7 @@ namespace SecondBrain.API.Controllers;
 public class ChatController : ControllerBase
 {
     private readonly IChatConversationService _chatService;
+    private readonly IChatSessionService _sessionService;
     private readonly IChatRepository _chatRepository;
     private readonly INoteRepository _noteRepository;
     private readonly IAIProviderFactory _providerFactory;
@@ -34,6 +36,7 @@ public class ChatController : ControllerBase
 
     public ChatController(
         IChatConversationService chatService,
+        IChatSessionService sessionService,
         IChatRepository chatRepository,
         INoteRepository noteRepository,
         IAIProviderFactory providerFactory,
@@ -43,6 +46,7 @@ public class ChatController : ControllerBase
         ILogger<ChatController> logger)
     {
         _chatService = chatService;
+        _sessionService = sessionService;
         _chatRepository = chatRepository;
         _noteRepository = noteRepository;
         _providerFactory = providerFactory;
@@ -949,7 +953,7 @@ public class ChatController : ControllerBase
             // Add user message for the prompt
             var userMessage = new Core.Entities.ChatMessage
             {
-                Id = Guid.NewGuid().ToString(),
+                Id = UuidV7.NewId(),
                 Role = "user",
                 Content = $"[Image Generation Request]\n{request.Prompt}",
                 Timestamp = DateTime.UtcNow,
@@ -962,7 +966,7 @@ public class ChatController : ControllerBase
                 ? $"[Generated Image]\nRevised prompt: {result.Images.First().RevisedPrompt}"
                 : "[Generated Image]";
 
-            var assistantMessageId = Guid.NewGuid().ToString();
+            var assistantMessageId = UuidV7.NewId();
             var assistantMessage = new Core.Entities.ChatMessage
             {
                 Id = assistantMessageId,
@@ -972,7 +976,7 @@ public class ChatController : ControllerBase
                 ConversationId = id,
                 GeneratedImages = result.Images.Select(img => new Core.Entities.GeneratedImageData
                 {
-                    Id = Guid.NewGuid().ToString(),
+                    Id = UuidV7.NewId(),
                     MessageId = assistantMessageId,
                     Base64Data = img.Base64Data,
                     Url = img.Url,
@@ -1330,6 +1334,224 @@ Generate prompts that would be genuinely useful for exploring this content.";
                 Category = "explore"
             }
         };
+    }
+
+    // =========================================================================
+    // Chat Session Tracking Endpoints (PostgreSQL 18 Temporal Features)
+    // =========================================================================
+
+    /// <summary>
+    /// Start a new chat session for a conversation
+    /// </summary>
+    [HttpPost("sessions/start")]
+    [ProducesResponseType(typeof(ChatSessionResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<ChatSessionResponse>> StartSession(
+        [FromBody] StartSessionRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = HttpContext.Items["UserId"]?.ToString();
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { error = "Not authenticated" });
+        }
+
+        if (string.IsNullOrWhiteSpace(request.ConversationId))
+        {
+            return BadRequest(new { error = "Conversation ID is required" });
+        }
+
+        try
+        {
+            // Get user agent and IP from request
+            var userAgent = Request.Headers.UserAgent.ToString();
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+
+            var session = await _sessionService.StartSessionAsync(
+                userId,
+                request.ConversationId,
+                request.DeviceInfo,
+                userAgent,
+                ipAddress,
+                cancellationToken);
+
+            return Ok(session);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error starting session. UserId: {UserId}, ConversationId: {ConversationId}",
+                userId, request.ConversationId);
+            return StatusCode(500, new { error = "Failed to start session" });
+        }
+    }
+
+    /// <summary>
+    /// End an active chat session
+    /// </summary>
+    [HttpPost("sessions/{sessionId}/end")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult> EndSession(
+        string sessionId,
+        [FromBody] EndSessionRequest? request = null,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = HttpContext.Items["UserId"]?.ToString();
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { error = "Not authenticated" });
+        }
+
+        try
+        {
+            var ended = await _sessionService.EndSessionAsync(
+                sessionId,
+                request?.MessagesSent,
+                request?.MessagesReceived,
+                request?.TokensUsed,
+                cancellationToken);
+
+            if (!ended)
+            {
+                return NotFound(new { error = "Session not found or already ended" });
+            }
+
+            return Ok(new { message = "Session ended successfully" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error ending session. SessionId: {SessionId}", sessionId);
+            return StatusCode(500, new { error = "Failed to end session" });
+        }
+    }
+
+    /// <summary>
+    /// Get session statistics for the authenticated user
+    /// </summary>
+    [HttpGet("sessions/stats")]
+    [ProducesResponseType(typeof(SessionStatsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<SessionStatsResponse>> GetSessionStats(
+        [FromQuery] DateTime? since = null,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = HttpContext.Items["UserId"]?.ToString();
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { error = "Not authenticated" });
+        }
+
+        try
+        {
+            var stats = await _sessionService.GetUserStatsAsync(userId, since, cancellationToken);
+            return Ok(stats);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting session stats. UserId: {UserId}", userId);
+            return StatusCode(500, new { error = "Failed to get session stats" });
+        }
+    }
+
+    /// <summary>
+    /// Get active sessions for the authenticated user
+    /// </summary>
+    [HttpGet("sessions/active")]
+    [ProducesResponseType(typeof(List<ChatSessionResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<List<ChatSessionResponse>>> GetActiveSessions(
+        CancellationToken cancellationToken = default)
+    {
+        var userId = HttpContext.Items["UserId"]?.ToString();
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { error = "Not authenticated" });
+        }
+
+        try
+        {
+            var sessions = await _sessionService.GetActiveSessionsAsync(userId, cancellationToken);
+            return Ok(sessions);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting active sessions. UserId: {UserId}", userId);
+            return StatusCode(500, new { error = "Failed to get active sessions" });
+        }
+    }
+
+    /// <summary>
+    /// Get session history for a conversation
+    /// </summary>
+    [HttpGet("conversations/{id}/sessions")]
+    [ProducesResponseType(typeof(SessionHistoryResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<SessionHistoryResponse>> GetConversationSessions(
+        string id,
+        [FromQuery] int skip = 0,
+        [FromQuery] int take = 50,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = HttpContext.Items["UserId"]?.ToString();
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { error = "Not authenticated" });
+        }
+
+        try
+        {
+            // Verify conversation belongs to user
+            var conversation = await _chatRepository.GetByIdAsync(id);
+            if (conversation == null)
+            {
+                return NotFound(new { error = $"Conversation '{id}' not found" });
+            }
+
+            if (conversation.UserId != userId)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { error = "Access denied" });
+            }
+
+            var history = await _sessionService.GetConversationSessionHistoryAsync(id, skip, take, cancellationToken);
+            return Ok(history);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting conversation sessions. ConversationId: {ConversationId}", id);
+            return StatusCode(500, new { error = "Failed to get session history" });
+        }
+    }
+
+    /// <summary>
+    /// Get user's session history within a time range
+    /// </summary>
+    [HttpGet("sessions/history")]
+    [ProducesResponseType(typeof(SessionHistoryResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<SessionHistoryResponse>> GetUserSessionHistory(
+        [FromQuery] DateTime since,
+        [FromQuery] DateTime? until = null,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = HttpContext.Items["UserId"]?.ToString();
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new { error = "Not authenticated" });
+        }
+
+        try
+        {
+            var history = await _sessionService.GetUserSessionHistoryAsync(userId, since, until, cancellationToken);
+            return Ok(history);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting user session history. UserId: {UserId}", userId);
+            return StatusCode(500, new { error = "Failed to get session history" });
+        }
     }
 }
 

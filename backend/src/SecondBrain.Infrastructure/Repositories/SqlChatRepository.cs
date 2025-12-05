@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using SecondBrain.Core.Common;
 using SecondBrain.Core.Entities;
 using SecondBrain.Core.Interfaces;
 using SecondBrain.Infrastructure.Data;
@@ -88,7 +89,7 @@ public class SqlChatRepository : IChatRepository
 
             if (string.IsNullOrEmpty(conversation.Id))
             {
-                conversation.Id = Guid.NewGuid().ToString();
+                conversation.Id = UuidV7.NewId();
             }
 
             conversation.CreatedAt = DateTime.UtcNow;
@@ -99,7 +100,7 @@ public class SqlChatRepository : IChatRepository
             {
                 if (string.IsNullOrEmpty(message.Id))
                 {
-                    message.Id = Guid.NewGuid().ToString();
+                    message.Id = UuidV7.NewId();
                 }
                 message.ConversationId = conversation.Id;
 
@@ -107,7 +108,7 @@ public class SqlChatRepository : IChatRepository
                 {
                     if (string.IsNullOrEmpty(toolCall.Id))
                     {
-                        toolCall.Id = Guid.NewGuid().ToString();
+                        toolCall.Id = UuidV7.NewId();
                     }
                     toolCall.MessageId = message.Id;
                 }
@@ -116,7 +117,7 @@ public class SqlChatRepository : IChatRepository
                 {
                     if (string.IsNullOrEmpty(toolCall.Id))
                     {
-                        toolCall.Id = Guid.NewGuid().ToString();
+                        toolCall.Id = UuidV7.NewId();
                     }
                     toolCall.MessageId = message.Id;
                 }
@@ -125,7 +126,7 @@ public class SqlChatRepository : IChatRepository
                 {
                     if (string.IsNullOrEmpty(retrievedNote.Id))
                     {
-                        retrievedNote.Id = Guid.NewGuid().ToString();
+                        retrievedNote.Id = UuidV7.NewId();
                     }
                     retrievedNote.MessageId = message.Id;
                 }
@@ -134,7 +135,7 @@ public class SqlChatRepository : IChatRepository
                 {
                     if (string.IsNullOrEmpty(image.Id))
                     {
-                        image.Id = Guid.NewGuid().ToString();
+                        image.Id = UuidV7.NewId();
                     }
                     image.MessageId = message.Id;
                 }
@@ -143,7 +144,7 @@ public class SqlChatRepository : IChatRepository
                 {
                     if (string.IsNullOrEmpty(generatedImage.Id))
                     {
-                        generatedImage.Id = Guid.NewGuid().ToString();
+                        generatedImage.Id = UuidV7.NewId();
                     }
                     generatedImage.MessageId = message.Id;
                 }
@@ -202,7 +203,7 @@ public class SqlChatRepository : IChatRepository
             {
                 if (string.IsNullOrEmpty(message.Id))
                 {
-                    message.Id = Guid.NewGuid().ToString();
+                    message.Id = UuidV7.NewId();
                 }
                 message.ConversationId = id;
 
@@ -210,7 +211,7 @@ public class SqlChatRepository : IChatRepository
                 {
                     if (string.IsNullOrEmpty(toolCall.Id))
                     {
-                        toolCall.Id = Guid.NewGuid().ToString();
+                        toolCall.Id = UuidV7.NewId();
                     }
                     toolCall.MessageId = message.Id;
                 }
@@ -219,7 +220,7 @@ public class SqlChatRepository : IChatRepository
                 {
                     if (string.IsNullOrEmpty(toolCall.Id))
                     {
-                        toolCall.Id = Guid.NewGuid().ToString();
+                        toolCall.Id = UuidV7.NewId();
                     }
                     toolCall.MessageId = message.Id;
                 }
@@ -228,7 +229,7 @@ public class SqlChatRepository : IChatRepository
                 {
                     if (string.IsNullOrEmpty(retrievedNote.Id))
                     {
-                        retrievedNote.Id = Guid.NewGuid().ToString();
+                        retrievedNote.Id = UuidV7.NewId();
                     }
                     retrievedNote.MessageId = message.Id;
                 }
@@ -237,7 +238,7 @@ public class SqlChatRepository : IChatRepository
                 {
                     if (string.IsNullOrEmpty(image.Id))
                     {
-                        image.Id = Guid.NewGuid().ToString();
+                        image.Id = UuidV7.NewId();
                     }
                     image.MessageId = message.Id;
                 }
@@ -246,7 +247,7 @@ public class SqlChatRepository : IChatRepository
                 {
                     if (string.IsNullOrEmpty(generatedImage.Id))
                     {
-                        generatedImage.Id = Guid.NewGuid().ToString();
+                        generatedImage.Id = UuidV7.NewId();
                     }
                     generatedImage.MessageId = message.Id;
                 }
@@ -350,7 +351,7 @@ public class SqlChatRepository : IChatRepository
 
             if (string.IsNullOrEmpty(message.Id))
             {
-                message.Id = Guid.NewGuid().ToString();
+                message.Id = UuidV7.NewId();
             }
             message.ConversationId = id;
             message.Timestamp = DateTime.UtcNow;
@@ -359,7 +360,7 @@ public class SqlChatRepository : IChatRepository
             {
                 if (string.IsNullOrEmpty(toolCall.Id))
                 {
-                    toolCall.Id = Guid.NewGuid().ToString();
+                    toolCall.Id = UuidV7.NewId();
                 }
                 toolCall.MessageId = message.Id;
             }
@@ -368,7 +369,7 @@ public class SqlChatRepository : IChatRepository
             {
                 if (string.IsNullOrEmpty(toolCall.Id))
                 {
-                    toolCall.Id = Guid.NewGuid().ToString();
+                    toolCall.Id = UuidV7.NewId();
                 }
                 toolCall.MessageId = message.Id;
             }
@@ -377,7 +378,7 @@ public class SqlChatRepository : IChatRepository
             {
                 if (string.IsNullOrEmpty(retrievedNote.Id))
                 {
-                    retrievedNote.Id = Guid.NewGuid().ToString();
+                    retrievedNote.Id = UuidV7.NewId();
                 }
                 retrievedNote.MessageId = message.Id;
             }
@@ -386,7 +387,7 @@ public class SqlChatRepository : IChatRepository
             {
                 if (string.IsNullOrEmpty(image.Id))
                 {
-                    image.Id = Guid.NewGuid().ToString();
+                    image.Id = UuidV7.NewId();
                 }
                 image.MessageId = message.Id;
             }
@@ -395,7 +396,7 @@ public class SqlChatRepository : IChatRepository
             {
                 if (string.IsNullOrEmpty(generatedImage.Id))
                 {
-                    generatedImage.Id = Guid.NewGuid().ToString();
+                    generatedImage.Id = UuidV7.NewId();
                 }
                 generatedImage.MessageId = message.Id;
             }

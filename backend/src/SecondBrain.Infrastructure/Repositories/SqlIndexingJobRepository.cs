@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using SecondBrain.Core.Common;
 using SecondBrain.Core.Entities;
 using SecondBrain.Core.Interfaces;
 using SecondBrain.Infrastructure.Data;
@@ -26,7 +27,7 @@ public class SqlIndexingJobRepository : IIndexingJobRepository
 
             if (string.IsNullOrEmpty(job.Id))
             {
-                job.Id = Guid.NewGuid().ToString();
+                job.Id = UuidV7.NewId();
             }
 
             job.CreatedAt = DateTime.UtcNow;

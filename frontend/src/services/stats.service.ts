@@ -11,6 +11,10 @@ import type {
   ChartDataPoint,
   PieChartData,
   ModelUsageData,
+  ToolCallAnalytics,
+  ToolActionStats,
+  ToolErrorStats,
+  ToolCallAnalyticsRequest,
 } from '../types/stats';
 
 /**
@@ -22,6 +26,132 @@ export const statsService = {
    */
   async getAIStats(): Promise<AIUsageStats> {
     return apiClient.get<AIUsageStats>(API_ENDPOINTS.STATS.AI);
+  },
+
+  // ============================================
+  // Tool Call Analytics API Functions
+  // ============================================
+
+  /**
+   * Get comprehensive tool call analytics
+   * Uses PostgreSQL 18 JSON_TABLE for efficient JSONB analysis
+   */
+  async getToolCallAnalytics(
+    request?: ToolCallAnalyticsRequest
+  ): Promise<ToolCallAnalytics> {
+    const params = new URLSearchParams();
+    if (request?.daysBack) params.append('daysBack', request.daysBack.toString());
+    if (request?.startDate) params.append('startDate', request.startDate);
+    if (request?.endDate) params.append('endDate', request.endDate);
+
+    const query = params.toString();
+    const url = query
+      ? `${API_ENDPOINTS.STATS.TOOLS}?${query}`
+      : API_ENDPOINTS.STATS.TOOLS;
+
+    return apiClient.get<ToolCallAnalytics>(url);
+  },
+
+  /**
+   * Get tool usage breakdown by action type
+   */
+  async getToolActionBreakdown(
+    daysBack?: number,
+    toolName?: string
+  ): Promise<ToolActionStats[]> {
+    const params = new URLSearchParams();
+    if (daysBack) params.append('daysBack', daysBack.toString());
+    if (toolName) params.append('toolName', toolName);
+
+    const query = params.toString();
+    const url = query
+      ? `${API_ENDPOINTS.STATS.TOOLS_ACTIONS}?${query}`
+      : API_ENDPOINTS.STATS.TOOLS_ACTIONS;
+
+    return apiClient.get<ToolActionStats[]>(url);
+  },
+
+  /**
+   * Get top errors from failed tool calls
+   */
+  async getTopToolErrors(
+    topN?: number,
+    daysBack?: number
+  ): Promise<ToolErrorStats[]> {
+    const params = new URLSearchParams();
+    if (topN) params.append('topN', topN.toString());
+    if (daysBack) params.append('daysBack', daysBack.toString());
+
+    const query = params.toString();
+    const url = query
+      ? `${API_ENDPOINTS.STATS.TOOLS_ERRORS}?${query}`
+      : API_ENDPOINTS.STATS.TOOLS_ERRORS;
+
+    return apiClient.get<ToolErrorStats[]>(url);
+  },
+
+  // ============================================
+  // Tool Analytics Helper Functions
+  // ============================================
+
+  /**
+   * Convert tool daily calls to chart data
+   */
+  convertToolCallsToChartData(
+    dailyCalls: Record<string, number>,
+    days: number = 30
+  ): ChartDataPoint[] {
+    return this.convertToChartData(dailyCalls, days);
+  },
+
+  /**
+   * Convert tool success rates to chart data
+   */
+  convertSuccessRatesToChartData(
+    dailyRates: Record<string, number>,
+    days: number = 30
+  ): ChartDataPoint[] {
+    const result: ChartDataPoint[] = [];
+    const today = new Date();
+
+    for (let i = days - 1; i >= 0; i--) {
+      const date = subDays(today, i);
+      const dateStr = format(date, 'yyyy-MM-dd');
+
+      result.push({
+        date: dateStr,
+        value: dailyRates[dateStr] ?? 100, // Default to 100% if no data
+        label: this.formatDateLabel(dateStr),
+      });
+    }
+
+    return result;
+  },
+
+  /**
+   * Get tool usage trend (last 7 days vs previous 7 days)
+   */
+  getToolCallTrend(dailyCalls: Record<string, number>): {
+    current: number;
+    previous: number;
+    percentageChange: number;
+  } {
+    const sortedDates = Object.keys(dailyCalls).sort().reverse();
+
+    let current = 0;
+    let previous = 0;
+
+    for (let i = 0; i < 7 && i < sortedDates.length; i++) {
+      current += dailyCalls[sortedDates[i]] || 0;
+    }
+
+    for (let i = 7; i < 14 && i < sortedDates.length; i++) {
+      previous += dailyCalls[sortedDates[i]] || 0;
+    }
+
+    const percentageChange = previous > 0 ? ((current - previous) / previous) * 100 : 0;
+
+    return { current, previous, percentageChange };
   },
 
   // ============================================
@@ -37,19 +167,19 @@ export const statsService = {
   ): ChartDataPoint[] {
     const result: ChartDataPoint[] = [];
     const today = new Date();
-    
+
     for (let i = days - 1; i >= 0; i--) {
       const date = subDays(today, i);
       // Use date-fns format for local date formatting
       const dateStr = format(date, 'yyyy-MM-dd');
-      
+
       result.push({
         date: dateStr,
         value: dailyCounts[dateStr] || 0,
         label: this.formatDateLabel(dateStr),
       });
     }
-    
+
     return result;
   },
 
@@ -60,7 +190,7 @@ export const statsService = {
     providerCounts: Record<string, number>
   ): PieChartData[] {
     const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#00C49F'];
-    
+
     return Object.entries(providerCounts)
       .map(([name, value], index) => ({
         name,
@@ -78,7 +208,7 @@ export const statsService = {
     tokenCounts: Record<string, number>
   ): ModelUsageData[] {
     const totalUsage = Object.values(modelCounts).reduce((a, b) => a + b, 0);
-    
+
     return Object.entries(modelCounts)
       .map(([model, count]) => {
         const [provider, modelName] = this.parseModelName(model);

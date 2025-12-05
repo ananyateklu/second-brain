@@ -15,6 +15,7 @@ public class RagServiceTests
     private readonly Mock<IEmbeddingProviderFactory> _mockEmbeddingProviderFactory;
     private readonly Mock<IVectorStore> _mockVectorStore;
     private readonly Mock<IHybridSearchService> _mockHybridSearchService;
+    private readonly Mock<INativeHybridSearchService> _mockNativeHybridSearchService;
     private readonly Mock<IQueryExpansionService> _mockQueryExpansionService;
     private readonly Mock<IRerankerService> _mockRerankerService;
     private readonly Mock<IRagAnalyticsService> _mockRagAnalyticsService;
@@ -28,6 +29,7 @@ public class RagServiceTests
         _mockEmbeddingProviderFactory = new Mock<IEmbeddingProviderFactory>();
         _mockVectorStore = new Mock<IVectorStore>();
         _mockHybridSearchService = new Mock<IHybridSearchService>();
+        _mockNativeHybridSearchService = new Mock<INativeHybridSearchService>();
         _mockQueryExpansionService = new Mock<IQueryExpansionService>();
         _mockRerankerService = new Mock<IRerankerService>();
         _mockRagAnalyticsService = new Mock<IRagAnalyticsService>();
@@ -38,7 +40,8 @@ public class RagServiceTests
         {
             TopK = 5,
             SimilarityThreshold = 0.7f,
-            MaxContextLength = 4000
+            MaxContextLength = 4000,
+            EnableNativeHybridSearch = false // Use standard hybrid search in tests
         };
 
         // Setup default embedding provider
@@ -52,6 +55,7 @@ public class RagServiceTests
             _mockEmbeddingProviderFactory.Object,
             _mockVectorStore.Object,
             _mockHybridSearchService.Object,
+            _mockNativeHybridSearchService.Object,
             _mockQueryExpansionService.Object,
             _mockRerankerService.Object,
             _mockRagAnalyticsService.Object,
@@ -69,7 +73,7 @@ public class RagServiceTests
         var userId = "user-123";
         var query = "How do I implement authentication?";
         var embedding = new List<double> { 0.1, 0.2, 0.3 };
-        
+
         var expandedEmbeddings = new ExpandedQueryEmbeddings
         {
             OriginalQuery = query,

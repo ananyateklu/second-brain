@@ -76,3 +76,72 @@ export interface ModelUsageData {
   percentage: number;
 }
 
+// ============================================================================
+// Tool Call Analytics Types (PostgreSQL 18 JSON_TABLE)
+// ============================================================================
+
+/**
+ * Comprehensive tool call analytics response
+ * Aligned with backend ToolCallAnalyticsResponse
+ */
+export interface ToolCallAnalytics {
+  totalToolCalls: number;
+  successRate: number;
+  averageExecutionTimeMs: number;
+  toolUsageByName: ToolUsageStats[];
+  toolUsageByAction: ToolActionStats[];
+  dailyToolCalls: Record<string, number>;
+  dailySuccessRates: Record<string, number>;
+  topErrors: ToolErrorStats[];
+  hourlyDistribution: Record<number, number>;
+}
+
+/**
+ * Statistics for a specific tool
+ */
+export interface ToolUsageStats {
+  toolName: string;
+  callCount: number;
+  successCount: number;
+  failureCount: number;
+  successRate: number;
+  percentageOfTotal: number;
+  firstUsed?: string;
+  lastUsed?: string;
+}
+
+/**
+ * Statistics for a specific tool action
+ */
+export interface ToolActionStats {
+  toolName: string;
+  action: string;
+  callCount: number;
+  successCount: number;
+  successRate: number;
+  percentageOfTool: number;
+}
+
+/**
+ * Statistics for tool call errors
+ */
+export interface ToolErrorStats {
+  toolName: string;
+  errorType: string;
+  errorMessage: string;
+  occurrenceCount: number;
+  firstOccurrence?: string;
+  lastOccurrence?: string;
+}
+
+/**
+ * Request parameters for filtering tool call analytics
+ */
+export interface ToolCallAnalyticsRequest {
+  startDate?: string;
+  endDate?: string;
+  toolName?: string;
+  action?: string;
+  daysBack?: number;
+}
+

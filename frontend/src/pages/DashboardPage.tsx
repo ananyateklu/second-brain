@@ -20,6 +20,7 @@ export function DashboardPage() {
     stats,
     aiStats,
     totalTokens,
+    sessionStats,
     modelUsageData,
     colors,
     ragChartColor,
@@ -95,6 +96,7 @@ export function DashboardPage() {
         stats={stats}
         aiStats={aiStats}
         totalTokens={totalTokens}
+        sessionStats={sessionStats}
       />
 
       {/* Charts Section - Side by Side */}

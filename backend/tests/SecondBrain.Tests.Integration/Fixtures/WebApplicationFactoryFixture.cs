@@ -35,9 +35,10 @@ public class WebApplicationFactoryFixture : WebApplicationFactory<Program>, IAsy
 
     public async Task InitializeAsync()
     {
-        // Start PostgreSQL container with pgvector
+        // Start PostgreSQL 18 container with pgvector
+        // Required for PostgreSQL 18 features: uuidv7(), JSON_TABLE, etc.
         _container = new PostgreSqlBuilder()
-            .WithImage("pgvector/pgvector:pg16")
+            .WithImage("pgvector/pgvector:pg18")
             .WithDatabase("secondbrain_integration_test")
             .WithUsername("testuser")
             .WithPassword("testpassword")

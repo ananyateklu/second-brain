@@ -6,6 +6,39 @@ services:
       - POSTGRES_USER=${POSTGRES_USER:-postgres}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
       - POSTGRES_DB=${POSTGRES_DB:-secondbrain}
+    command:
+      - "postgres"
+      # Memory Settings
+      - "-c"
+      - "shared_buffers=1GB"
+      - "-c"
+      - "effective_cache_size=3GB"
+      - "-c"
+      - "work_mem=64MB"
+      - "-c"
+      - "maintenance_work_mem=512MB"
+      # Async I/O (PostgreSQL 18)
+      - "-c"
+      - "io_method=worker"
+      - "-c"
+      - "io_workers=4"
+      - "-c"
+      - "effective_io_concurrency=200"
+      - "-c"
+      - "maintenance_io_concurrency=10"
+      # Parallel Query
+      - "-c"
+      - "max_parallel_workers_per_gather=2"
+      - "-c"
+      - "max_parallel_workers=4"
+      - "-c"
+      - "max_parallel_maintenance_workers=2"
+      # SSD Optimization
+      - "-c"
+      - "random_page_cost=1.1"
+      # Monitoring
+      - "-c"
+      - "shared_preload_libraries=pg_stat_statements"
     volumes:
       - postgres_data:/var/lib/postgresql
       - ./database/00_extensions.sql:/docker-entrypoint-initdb.d/00_extensions.sql:ro
@@ -21,11 +54,20 @@ services:
       - ./database/10_brainstorm.sql:/docker-entrypoint-initdb.d/10_brainstorm.sql:ro
       - ./database/11_message_images.sql:/docker-entrypoint-initdb.d/11_message_images.sql:ro
       - ./database/12_agent_rag_enabled.sql:/docker-entrypoint-initdb.d/12_agent_rag_enabled.sql:ro
+      - ./database/13_postgresql_18_features.sql:/docker-entrypoint-initdb.d/13_postgresql_18_features.sql:ro
     ports:
       - "5432:5432"
     restart: unless-stopped
     networks:
       - secondbrain-network
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 1G
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-secondbrain}"]
       interval: 10s

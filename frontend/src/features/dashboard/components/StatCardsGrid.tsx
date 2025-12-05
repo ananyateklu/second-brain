@@ -2,6 +2,7 @@ import { useMemo, ReactNode } from 'react';
 import { StatCard } from './StatCard';
 import { formatTokenCount } from '../utils/dashboard-utils';
 import type { AIUsageStats } from '../../../types/stats';
+import type { SessionStats } from '../../../types/chat';
 
 interface NotesStats {
   totalNotes: number;
@@ -14,6 +15,7 @@ interface StatCardsGridProps {
   stats: NotesStats | null;
   aiStats: AIUsageStats | undefined;
   totalTokens: number;
+  sessionStats?: SessionStats;
 }
 
 interface StatConfig {
@@ -79,7 +81,25 @@ const ImageIcon = () => (
   </svg>
 );
 
-export function StatCardsGrid({ stats, aiStats, totalTokens }: StatCardsGridProps) {
+const SessionIcon = () => (
+  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
+const TimerIcon = () => (
+  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
+const ActivityIcon = () => (
+  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+  </svg>
+);
+
+export function StatCardsGrid({ stats, aiStats, totalTokens, sessionStats }: StatCardsGridProps) {
   const statsConfig = useMemo<StatConfig[]>(() => [
     {
       title: 'Total Notes',
@@ -165,7 +185,28 @@ export function StatCardsGrid({ stats, aiStats, totalTokens }: StatCardsGridProp
       icon: <ChartIcon />,
       show: !!aiStats,
     },
-  ], [stats, aiStats, totalTokens]);
+    {
+      title: 'Total Sessions',
+      value: sessionStats?.totalSessions || 0,
+      icon: <SessionIcon />,
+      show: !!sessionStats,
+    },
+    {
+      title: 'Avg Session Duration',
+      value: sessionStats ? `${sessionStats.avgSessionDurationMinutes.toFixed(1)} min` : '0 min',
+      icon: <TimerIcon />,
+      show: !!sessionStats,
+    },
+    {
+      title: 'Active Sessions',
+      value: sessionStats?.activeSessions || 0,
+      icon: <ActivityIcon />,
+      subtitle: sessionStats?.activeSessions ? (
+        <span className="text-green-500 animate-pulse text-xs">● Live</span>
+      ) : undefined,
+      show: !!sessionStats,
+    },
+  ], [stats, aiStats, totalTokens, sessionStats]);
 
   return (
     <div
