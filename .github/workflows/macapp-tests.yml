@@ -111,13 +111,12 @@ jobs:
         working-directory: frontend
         run: pnpm install
 
-      - name: Build Tauri app (debug)
+      - name: Build Tauri app (debug, no code signing)
         working-directory: frontend
-        run: pnpm tauri build --debug
+        run: pnpm tauri build --debug --bundles app
         env:
-          APPLE_SIGNING_IDENTITY: ""
-          APPLE_CERTIFICATE: ""
-          APPLE_CERTIFICATE_PASSWORD: ""
+          # Skip code signing for CI builds
+          CI: true
 
   coverage:
     runs-on: macos-latest

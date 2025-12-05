@@ -72,11 +72,13 @@ pub fn sample_secrets_json() -> String {
 }
 
 /// Invalid JSON for error testing
+#[allow(dead_code)]
 pub fn invalid_json() -> &'static str {
     "{ invalid json {"
 }
 
 /// Empty secrets JSON
+#[allow(dead_code)]
 pub fn empty_secrets_json() -> &'static str {
     "{}"
 }

@@ -51,7 +51,7 @@ public class GeminiProviderTests
     public void Constructor_WhenEnabledWithApiKey_CreatesClient()
     {
         // Arrange
-        SetupSettings(enabled: true, apiKey: "fake-gemini-test-key");
+        SetupSettings(enabled: true, apiKey: "AIzaSyFakeTestKeyForUnitTesting12345678");
 
         // Act
         var provider = CreateProvider();
@@ -170,8 +170,8 @@ public class GeminiProviderTests
     public async Task GenerateChatCompletionAsync_WithOnlySystemMessage_ReturnsError()
     {
         // Arrange - need enabled with client to reach the validation
-        // Gemini SDK requires API key to be exactly 39 characters
-        SetupSettings(enabled: true, apiKey: "fake-gemini-39char-key-1234567890123456");
+        // Gemini SDK requires API key to start with 'AIza'
+        SetupSettings(enabled: true, apiKey: "AIzaSyFakeTestKeyForUnitTesting12345678");
         var provider = CreateProvider();
         var messages = new List<SecondBrain.Application.Services.AI.Models.ChatMessage>
         {
@@ -284,8 +284,8 @@ public class GeminiProviderTests
     public async Task StreamChatCompletionAsync_WithOnlySystemMessage_ReturnsEmptyEnumerable()
     {
         // Arrange - need enabled with client to reach the validation
-        // Gemini SDK requires API key to be exactly 39 characters
-        SetupSettings(enabled: true, apiKey: "fake-gemini-39char-key-1234567890123456");
+        // Gemini SDK requires API key to start with 'AIza'
+        SetupSettings(enabled: true, apiKey: "AIzaSyFakeTestKeyForUnitTesting12345678");
         var provider = CreateProvider();
         var messages = new List<SecondBrain.Application.Services.AI.Models.ChatMessage>
         {
