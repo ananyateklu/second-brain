@@ -81,8 +81,8 @@ public class GlobalExceptionMiddleware
             _ => new ErrorResponse
             {
                 StatusCode = (int)HttpStatusCode.InternalServerError,
-                Message = _environment.IsDevelopment() 
-                    ? exception.Message 
+                Message = _environment.IsDevelopment()
+                    ? exception.Message
                     : "An internal server error occurred.",
                 Details = _environment.IsDevelopment() ? exception.StackTrace : null,
                 Timestamp = DateTime.UtcNow,
