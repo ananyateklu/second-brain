@@ -231,12 +231,27 @@ var isDesktopMode = Environment.GetEnvironmentVariable("SecondBrain__DesktopMode
             catch (Exception ex) when (ex.Message.Contains("__EFMigrationsHistory"))
             {
                 // Migrations history table doesn't exist - database was created with EnsureCreated
-                logger.LogInformation("Migrations history table not found. Applying schema updates...");
+                logger.LogInformation("Migrations history table not found. Creating migrations history table and applying schema updates...");
                 await ApplySoftDeleteColumnsIfMissing(dbContext, logger);
 
-                // Create migrations history and mark all as applied
-                await dbContext.Database.MigrateAsync();
-                logger.LogInformation("Schema updates applied successfully.");
+                // Create the migrations history table manually
+                await dbContext.Database.ExecuteSqlRawAsync(@"
+                    CREATE TABLE IF NOT EXISTS ""__EFMigrationsHistory"" (
+                        ""MigrationId"" character varying(150) NOT NULL,
+                        ""ProductVersion"" character varying(32) NOT NULL,
+                        CONSTRAINT ""PK___EFMigrationsHistory"" PRIMARY KEY (""MigrationId"")
+                    )");
+
+                // Get all migrations from the assembly and mark them as applied
+                // (since the schema was created with EnsureCreated, all tables already exist)
+                var allMigrations = dbContext.Database.GetMigrations().ToList();
+                foreach (var migration in allMigrations)
+                {
+                    await dbContext.Database.ExecuteSqlRawAsync(
+                        "INSERT INTO \"__EFMigrationsHistory\" (\"MigrationId\", \"ProductVersion\") VALUES ({0}, {1}) ON CONFLICT DO NOTHING",
+                        migration, "10.0.0");
+                }
+                logger.LogInformation("Migrations history table created and {Count} migration(s) marked as applied.", allMigrations.Count);
             }
         }
 

@@ -5,12 +5,12 @@ on:
     branches: [main, mac-app]
     paths:
       - 'frontend/src-tauri/**'
-      - '.github/workflows/tauri-tests.yml'
+      - '.github/workflows/macapp-tests.yml'
   pull_request:
     branches: [main]
     paths:
       - 'frontend/src-tauri/**'
-      - '.github/workflows/tauri-tests.yml'
+      - '.github/workflows/macapp-tests.yml'
 
 env:
   CARGO_TERM_COLOR: always
