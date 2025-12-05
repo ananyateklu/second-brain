@@ -1,5 +1,6 @@
 using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 using SecondBrain.Application.DTOs.Responses;
 using SecondBrain.Application.Services.RAG;
 using SecondBrain.Core.Interfaces;
@@ -88,6 +89,7 @@ public class IndexingController : ControllerBase
     /// Get status of an indexing job
     /// </summary>
     [HttpGet("status/{jobId}")]
+    [OutputCache(Duration = 5)] // Short cache for job status
     [ProducesResponseType(typeof(IndexingJobResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<IndexingJobResponse>> GetIndexingStatus(
@@ -133,6 +135,7 @@ public class IndexingController : ControllerBase
     /// Get index statistics for a user from both PostgreSQL and Pinecone
     /// </summary>
     [HttpGet("stats")]
+    [OutputCache(PolicyName = "IndexingStats")]
     [ProducesResponseType(typeof(IndexStatsResponse), StatusCodes.Status200OK)]
     public async Task<ActionResult<IndexStatsResponse>> GetIndexStats(
         [FromQuery] string userId = "default-user",

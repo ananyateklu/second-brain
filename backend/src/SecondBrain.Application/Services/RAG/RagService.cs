@@ -5,6 +5,7 @@ using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.Embeddings;
 using SecondBrain.Application.Services.RAG.Models;
 using SecondBrain.Application.Services.VectorStore;
+using SecondBrain.Application.Telemetry;
 using SecondBrain.Application.Utilities;
 using SecondBrain.Core.Interfaces;
 using SecondBrain.Core.Models;
@@ -58,10 +59,22 @@ public class RagService : IRagService
         var metrics = new RagQueryMetrics { Query = query, UserId = userId, ConversationId = conversationId };
         var totalStopwatch = Stopwatch.StartNew();
 
+        // Start RAG pipeline activity for distributed tracing
+        using var activity = ApplicationTelemetry.StartRAGActivity("RAG.RetrieveContext", userId);
+        activity?.SetTag("rag.query.length", query.Length);
+        activity?.SetTag("rag.conversation_id", conversationId);
+        activity?.SetTag("rag.hybrid_search", _settings.EnableHybridSearch);
+        activity?.SetTag("rag.hyde", _settings.EnableHyDE);
+        activity?.SetTag("rag.query_expansion", _settings.EnableQueryExpansion);
+        activity?.SetTag("rag.reranking", _settings.EnableReranking);
+
         try
         {
             var effectiveTopK = topK ?? _settings.TopK;
             var effectiveThreshold = similarityThreshold ?? _settings.SimilarityThreshold;
+
+            activity?.SetTag("rag.top_k", effectiveTopK);
+            activity?.SetTag("rag.threshold", effectiveThreshold);
 
             _logger.LogInformation(
                 "Starting enhanced RAG pipeline. UserId: {UserId}, Query: {Query}, TopK: {TopK}, " +
@@ -74,42 +87,68 @@ public class RagService : IRagService
             if (!string.IsNullOrWhiteSpace(vectorStoreProvider) && _vectorStore is CompositeVectorStore compositeStore)
             {
                 compositeStore.SetProviderOverride(vectorStoreProvider);
+                activity?.SetTag("rag.vector_store", vectorStoreProvider);
             }
 
             // Step 1: Query Expansion (HyDE + Multi-Query)
             var embeddingStopwatch = Stopwatch.StartNew();
-            var expandedEmbeddings = await GetQueryEmbeddingsAsync(query, cancellationToken);
+            ExpandedQueryEmbeddings expandedEmbeddings;
+            using (var embeddingActivity = ApplicationTelemetry.RAGPipelineSource.StartActivity("RAG.QueryExpansion"))
+            {
+                expandedEmbeddings = await GetQueryEmbeddingsAsync(query, cancellationToken);
+                embeddingActivity?.SetTag("rag.expansion.hyde_used", expandedEmbeddings.HyDEEmbedding?.Any() == true);
+                embeddingActivity?.SetTag("rag.expansion.multi_query_count", expandedEmbeddings.MultiQueryEmbeddings.Count);
+            }
             embeddingStopwatch.Stop();
             metrics.QueryEmbeddingTimeMs = (int)embeddingStopwatch.ElapsedMilliseconds;
             context.TotalTokensUsed = expandedEmbeddings.TotalTokensUsed;
 
+            ApplicationTelemetry.RAGQueryExpansionDuration.Record(embeddingStopwatch.ElapsedMilliseconds);
+
             if (expandedEmbeddings.OriginalEmbedding.Count == 0)
             {
                 _logger.LogWarning("Failed to generate query embedding");
+                activity?.SetStatus(ActivityStatusCode.Error, "Failed to generate embedding");
                 return context;
             }
 
             // Step 2: Hybrid Search (Vector + BM25 with RRF)
             var searchStopwatch = Stopwatch.StartNew();
-            var hybridResults = await ExecuteHybridSearchAsync(
-                query, expandedEmbeddings, userId, effectiveThreshold, cancellationToken);
+            List<HybridSearchResult> hybridResults;
+            using (var searchActivity = ApplicationTelemetry.RAGPipelineSource.StartActivity("RAG.HybridSearch"))
+            {
+                hybridResults = await ExecuteHybridSearchAsync(
+                    query, expandedEmbeddings, userId, effectiveThreshold, cancellationToken);
+                searchActivity?.SetTag("rag.search.results", hybridResults.Count);
+            }
             searchStopwatch.Stop();
             metrics.VectorSearchTimeMs = (int)searchStopwatch.ElapsedMilliseconds;
             metrics.RetrievedCount = hybridResults.Count;
 
+            ApplicationTelemetry.RAGVectorSearchDuration.Record(searchStopwatch.ElapsedMilliseconds);
+
             if (!hybridResults.Any())
             {
                 _logger.LogInformation("No results from hybrid search. UserId: {UserId}", userId);
+                activity?.SetTag("rag.results", 0);
                 await LogAnalyticsAsync(metrics, context, cancellationToken);
                 return context;
             }
 
             // Step 3: Reranking
             var rerankStopwatch = Stopwatch.StartNew();
-            var rerankedResults = await _rerankerService.RerankAsync(
-                query, hybridResults, effectiveTopK, cancellationToken);
+            List<RerankedResult> rerankedResults;
+            using (var rerankActivity = ApplicationTelemetry.RAGPipelineSource.StartActivity("RAG.Reranking"))
+            {
+                rerankedResults = await _rerankerService.RerankAsync(
+                    query, hybridResults, effectiveTopK, cancellationToken);
+                rerankActivity?.SetTag("rag.rerank.input_count", hybridResults.Count);
+                rerankActivity?.SetTag("rag.rerank.output_count", rerankedResults.Count);
+            }
             rerankStopwatch.Stop();
             metrics.RerankTimeMs = (int)rerankStopwatch.ElapsedMilliseconds;
+
+            ApplicationTelemetry.RAGRerankDuration.Record(rerankStopwatch.ElapsedMilliseconds);
 
             // Convert reranked results to VectorSearchResult for compatibility
             var finalResults = rerankedResults.Select(r => new VectorSearchResult
@@ -163,6 +202,24 @@ public class RagService : IRagService
             metrics.MultiQueryEnabled = _settings.EnableQueryExpansion;
             metrics.RerankingEnabled = _settings.EnableReranking;
 
+            // Set activity tags for final results
+            activity?.SetTag("rag.results", finalResults.Count);
+            activity?.SetTag("rag.top_score", metrics.TopCosineScore);
+            activity?.SetTag("rag.avg_rerank_score", metrics.AvgRerankScore);
+            activity?.SetStatus(ActivityStatusCode.Ok);
+
+            // Record telemetry metrics
+            ApplicationTelemetry.RecordRAGQuery(
+                documentsRetrieved: finalResults.Count,
+                totalDurationMs: metrics.TotalTimeMs ?? 0,
+                vectorSearchMs: metrics.VectorSearchTimeMs,
+                bm25SearchMs: metrics.BM25SearchTimeMs,
+                rerankMs: metrics.RerankTimeMs,
+                avgRelevanceScore: metrics.AvgRerankScore,
+                hybridEnabled: metrics.HybridSearchEnabled,
+                hydeEnabled: metrics.HyDEEnabled,
+                rerankEnabled: metrics.RerankingEnabled);
+
             // Log analytics and capture the log ID for feedback
             context.RagLogId = await LogAnalyticsAsync(metrics, context, cancellationToken);
 
@@ -170,6 +227,7 @@ public class RagService : IRagService
         }
         catch (Exception ex)
         {
+            activity?.RecordException(ex);
             _logger.LogError(ex, "Error in RAG pipeline. UserId: {UserId}, Query: {Query}", userId, query);
             return context;
         }

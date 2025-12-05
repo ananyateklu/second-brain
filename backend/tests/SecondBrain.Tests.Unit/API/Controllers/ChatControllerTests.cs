@@ -17,6 +17,7 @@ namespace SecondBrain.Tests.Unit.API.Controllers;
 public class ChatControllerTests
 {
     private readonly Mock<IChatConversationService> _mockChatService;
+    private readonly Mock<IChatSessionService> _mockSessionService;
     private readonly Mock<IChatRepository> _mockChatRepository;
     private readonly Mock<INoteRepository> _mockNoteRepository;
     private readonly Mock<IAIProviderFactory> _mockProviderFactory;
@@ -29,6 +30,7 @@ public class ChatControllerTests
     public ChatControllerTests()
     {
         _mockChatService = new Mock<IChatConversationService>();
+        _mockSessionService = new Mock<IChatSessionService>();
         _mockChatRepository = new Mock<IChatRepository>();
         _mockNoteRepository = new Mock<INoteRepository>();
         _mockProviderFactory = new Mock<IAIProviderFactory>();
@@ -39,6 +41,7 @@ public class ChatControllerTests
 
         _sut = new ChatController(
             _mockChatService.Object,
+            _mockSessionService.Object,
             _mockChatRepository.Object,
             _mockNoteRepository.Object,
             _mockProviderFactory.Object,

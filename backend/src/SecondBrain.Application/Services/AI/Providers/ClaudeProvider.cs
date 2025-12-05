@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.AI.Interfaces;
 using SecondBrain.Application.Services.AI.Models;
+using SecondBrain.Application.Telemetry;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
@@ -79,6 +80,12 @@ public class ClaudeProvider : IAIProvider
             };
         }
 
+        var model = request.Model ?? _settings.DefaultModel;
+        using var activity = ApplicationTelemetry.StartAIProviderActivity("Claude.GenerateCompletion", ProviderName, model);
+        activity?.SetTag("ai.prompt.length", request.Prompt.Length);
+
+        var stopwatch = Stopwatch.StartNew();
+
         try
         {
             var messages = new List<Message>
@@ -89,7 +96,7 @@ public class ClaudeProvider : IAIProvider
             var parameters = new MessageParameters
             {
                 Messages = messages,
-                Model = request.Model ?? _settings.DefaultModel,
+                Model = model,
                 MaxTokens = request.MaxTokens ?? _settings.MaxTokens,
                 Temperature = (decimal?)(request.Temperature ?? _settings.Temperature),
                 Stream = false
@@ -102,17 +109,30 @@ public class ClaudeProvider : IAIProvider
                 .OfType<Anthropic.SDK.Messaging.TextContent>()
                 .FirstOrDefault();
 
+            stopwatch.Stop();
+            var tokensUsed = response.Usage.InputTokens + response.Usage.OutputTokens;
+
+            activity?.SetTag("ai.tokens.total", tokensUsed);
+            activity?.SetTag("ai.tokens.input", response.Usage.InputTokens);
+            activity?.SetTag("ai.tokens.output", response.Usage.OutputTokens);
+            activity?.SetStatus(ActivityStatusCode.Ok);
+            ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, true, tokensUsed);
+
             return new AIResponse
             {
                 Success = true,
                 Content = textContent?.Text ?? string.Empty,
                 Model = response.Model,
-                TokensUsed = response.Usage.InputTokens + response.Usage.OutputTokens,
+                TokensUsed = tokensUsed,
                 Provider = ProviderName
             };
         }
         catch (Exception ex)
         {
+            stopwatch.Stop();
+            activity?.RecordException(ex);
+            ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, false);
+
             _logger.LogError(ex, "Error generating completion from Claude");
             return new AIResponse
             {
@@ -138,19 +158,26 @@ public class ClaudeProvider : IAIProvider
             };
         }
 
+        var model = settings?.Model ?? _settings.DefaultModel;
+        var messageList = messages.ToList();
+        using var activity = ApplicationTelemetry.StartAIProviderActivity("Claude.GenerateChatCompletion", ProviderName, model);
+        activity?.SetTag("ai.messages.count", messageList.Count);
+
+        var stopwatch = Stopwatch.StartNew();
+
         try
         {
-            var claudeMessages = messages
+            var claudeMessages = messageList
                 .Where(m => m.Role.ToLower() != "system")
                 .Select(m => ConvertToClaudeMessage(m))
                 .ToList();
 
-            var systemMessage = messages.FirstOrDefault(m => m.Role.ToLower() == "system");
+            var systemMessage = messageList.FirstOrDefault(m => m.Role.ToLower() == "system");
 
             var parameters = new MessageParameters
             {
                 Messages = claudeMessages,
-                Model = settings?.Model ?? _settings.DefaultModel,
+                Model = model,
                 MaxTokens = settings?.MaxTokens ?? _settings.MaxTokens,
                 Temperature = (decimal?)(settings?.Temperature ?? _settings.Temperature),
                 Stream = false
@@ -171,17 +198,30 @@ public class ClaudeProvider : IAIProvider
                 .OfType<Anthropic.SDK.Messaging.TextContent>()
                 .FirstOrDefault();
 
+            stopwatch.Stop();
+            var tokensUsed = response.Usage.InputTokens + response.Usage.OutputTokens;
+
+            activity?.SetTag("ai.tokens.total", tokensUsed);
+            activity?.SetTag("ai.tokens.input", response.Usage.InputTokens);
+            activity?.SetTag("ai.tokens.output", response.Usage.OutputTokens);
+            activity?.SetStatus(ActivityStatusCode.Ok);
+            ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, true, tokensUsed);
+
             return new AIResponse
             {
                 Success = true,
                 Content = textContent?.Text ?? string.Empty,
                 Model = response.Model,
-                TokensUsed = response.Usage.InputTokens + response.Usage.OutputTokens,
+                TokensUsed = tokensUsed,
                 Provider = ProviderName
             };
         }
         catch (Exception ex)
         {
+            stopwatch.Stop();
+            activity?.RecordException(ex);
+            ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, false);
+
             _logger.LogError(ex, "Error generating chat completion from Claude");
             return new AIResponse
             {
@@ -211,6 +251,14 @@ public class ClaudeProvider : IAIProvider
         if (_client == null)
             yield break;
 
+        var model = request.Model ?? _settings.DefaultModel;
+        using var activity = ApplicationTelemetry.StartAIProviderActivity("Claude.StreamCompletion", ProviderName, model);
+        activity?.SetTag("ai.prompt.length", request.Prompt.Length);
+        activity?.SetTag("ai.streaming", true);
+
+        var stopwatch = Stopwatch.StartNew();
+        var firstTokenReceived = false;
+
         var messages = new List<Message>
         {
             new Message(RoleType.User, request.Prompt)
@@ -219,21 +267,36 @@ public class ClaudeProvider : IAIProvider
         var parameters = new MessageParameters
         {
             Messages = messages,
-            Model = request.Model ?? _settings.DefaultModel,
+            Model = model,
             MaxTokens = request.MaxTokens ?? _settings.MaxTokens,
             Temperature = (decimal?)(request.Temperature ?? _settings.Temperature),
             Stream = true
         };
 
+        var tokenCount = 0;
         await foreach (var messageChunk in _client.Messages.StreamClaudeMessageAsync(
             parameters,
             cancellationToken))
         {
             if (messageChunk.Delta?.Text != null)
             {
+                if (!firstTokenReceived)
+                {
+                    firstTokenReceived = true;
+                    ApplicationTelemetry.AIStreamingFirstTokenDuration.Record(
+                        stopwatch.ElapsedMilliseconds,
+                        new("provider", ProviderName),
+                        new("model", model));
+                }
+                tokenCount++;
                 yield return messageChunk.Delta.Text;
             }
         }
+
+        stopwatch.Stop();
+        activity?.SetTag("ai.tokens.output", tokenCount);
+        activity?.SetStatus(ActivityStatusCode.Ok);
+        ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, true);
     }
 
     public async Task<IAsyncEnumerable<string>> StreamChatCompletionAsync(
@@ -257,17 +320,26 @@ public class ClaudeProvider : IAIProvider
         if (_client == null)
             yield break;
 
-        var claudeMessages = messages
+        var model = settings?.Model ?? _settings.DefaultModel;
+        var messageList = messages.ToList();
+        using var activity = ApplicationTelemetry.StartAIProviderActivity("Claude.StreamChatCompletion", ProviderName, model);
+        activity?.SetTag("ai.messages.count", messageList.Count);
+        activity?.SetTag("ai.streaming", true);
+
+        var stopwatch = Stopwatch.StartNew();
+        var firstTokenReceived = false;
+
+        var claudeMessages = messageList
             .Where(m => m.Role.ToLower() != "system")
             .Select(m => ConvertToClaudeMessage(m))
             .ToList();
 
-        var systemMessage = messages.FirstOrDefault(m => m.Role.ToLower() == "system");
+        var systemMessage = messageList.FirstOrDefault(m => m.Role.ToLower() == "system");
 
         var parameters = new MessageParameters
         {
             Messages = claudeMessages,
-            Model = settings?.Model ?? _settings.DefaultModel,
+            Model = model,
             MaxTokens = settings?.MaxTokens ?? _settings.MaxTokens,
             Temperature = (decimal?)(settings?.Temperature ?? _settings.Temperature),
             Stream = true
@@ -281,15 +353,30 @@ public class ClaudeProvider : IAIProvider
             };
         }
 
+        var tokenCount = 0;
         await foreach (var messageChunk in _client.Messages.StreamClaudeMessageAsync(
             parameters,
             cancellationToken))
         {
             if (messageChunk.Delta?.Text != null)
             {
+                if (!firstTokenReceived)
+                {
+                    firstTokenReceived = true;
+                    ApplicationTelemetry.AIStreamingFirstTokenDuration.Record(
+                        stopwatch.ElapsedMilliseconds,
+                        new("provider", ProviderName),
+                        new("model", model));
+                }
+                tokenCount++;
                 yield return messageChunk.Delta.Text;
             }
         }
+
+        stopwatch.Stop();
+        activity?.SetTag("ai.tokens.output", tokenCount);
+        activity?.SetStatus(ActivityStatusCode.Ok);
+        ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, true);
     }
 
     /// <summary>

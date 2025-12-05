@@ -1,7 +1,9 @@
+using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.Embeddings;
+using SecondBrain.Application.Telemetry;
 using SecondBrain.Core.Interfaces;
 using SecondBrain.Core.Models;
 
@@ -32,20 +34,20 @@ public class HybridSearchResult
     public string NoteTitle { get; set; } = string.Empty;
     public List<string> NoteTags { get; set; } = new();
     public int ChunkIndex { get; set; }
-    
+
     // Individual scores
     public float VectorScore { get; set; }
     public float BM25Score { get; set; }
     public int VectorRank { get; set; }
     public int BM25Rank { get; set; }
-    
+
     // Combined RRF score
     public float RRFScore { get; set; }
-    
+
     // Source flags
     public bool FoundInVectorSearch { get; set; }
     public bool FoundInBM25Search { get; set; }
-    
+
     public Dictionary<string, object> Metadata { get; set; } = new();
 }
 
@@ -79,6 +81,13 @@ public class HybridSearchService : IHybridSearchService
         float similarityThreshold = 0.3f,
         CancellationToken cancellationToken = default)
     {
+        using var activity = ApplicationTelemetry.RAGPipelineSource.StartActivity("HybridSearch.Search", ActivityKind.Internal);
+        activity?.SetTag("rag.user_id", userId);
+        activity?.SetTag("rag.top_k", topK);
+        activity?.SetTag("rag.hybrid_enabled", _settings.EnableHybridSearch);
+
+        var stopwatch = Stopwatch.StartNew();
+
         _logger.LogInformation(
             "Starting hybrid search. UserId: {UserId}, Query: {Query}, TopK: {TopK}, HybridEnabled: {HybridEnabled}",
             userId, query.Substring(0, Math.Min(50, query.Length)), topK, _settings.EnableHybridSearch);
@@ -86,7 +95,12 @@ public class HybridSearchService : IHybridSearchService
         // If hybrid search is disabled, fall back to vector-only search
         if (!_settings.EnableHybridSearch)
         {
-            return await VectorOnlySearchAsync(queryEmbedding, userId, topK, similarityThreshold, cancellationToken);
+            var vectorOnlyResults = await VectorOnlySearchAsync(queryEmbedding, userId, topK, similarityThreshold, cancellationToken);
+            stopwatch.Stop();
+            activity?.SetTag("rag.results", vectorOnlyResults.Count);
+            activity?.SetTag("rag.search_type", "vector_only");
+            ApplicationTelemetry.RAGVectorSearchDuration.Record(stopwatch.ElapsedMilliseconds);
+            return vectorOnlyResults;
         }
 
         // Retrieve more results initially for fusion (e.g., 3x topK from each source)
@@ -95,11 +109,22 @@ public class HybridSearchService : IHybridSearchService
 
         // Run searches sequentially to avoid DbContext concurrency issues
         // (DbContext is not thread-safe and both services share the same scoped instance)
+        var vectorStopwatch = Stopwatch.StartNew();
         var vectorResults = await _vectorStore.SearchAsync(
             queryEmbedding, userId, initialRetrievalCount, similarityThreshold, cancellationToken);
-        
+        vectorStopwatch.Stop();
+        ApplicationTelemetry.RAGVectorSearchDuration.Record(vectorStopwatch.ElapsedMilliseconds);
+
+        var bm25Stopwatch = Stopwatch.StartNew();
         var bm25Results = await _bm25SearchService.SearchAsync(
             query, userId, initialRetrievalCount, cancellationToken);
+        bm25Stopwatch.Stop();
+        ApplicationTelemetry.RAGBM25SearchDuration.Record(bm25Stopwatch.ElapsedMilliseconds);
+
+        activity?.SetTag("rag.vector_results", vectorResults.Count);
+        activity?.SetTag("rag.bm25_results", bm25Results.Count);
+        activity?.SetTag("rag.vector_time_ms", vectorStopwatch.ElapsedMilliseconds);
+        activity?.SetTag("rag.bm25_time_ms", bm25Stopwatch.ElapsedMilliseconds);
 
         _logger.LogInformation(
             "Search results retrieved. VectorResults: {VectorCount}, BM25Results: {BM25Count}",
@@ -110,6 +135,12 @@ public class HybridSearchService : IHybridSearchService
 
         // Return top K results
         var finalResults = fusedResults.Take(topK).ToList();
+
+        stopwatch.Stop();
+        activity?.SetTag("rag.results", finalResults.Count);
+        activity?.SetTag("rag.top_rrf_score", finalResults.FirstOrDefault()?.RRFScore ?? 0);
+        activity?.SetTag("rag.search_type", "hybrid");
+        activity?.SetStatus(ActivityStatusCode.Ok);
 
         _logger.LogInformation(
             "Hybrid search completed. FinalResults: {Count}, TopRRFScore: {TopScore:F4}",

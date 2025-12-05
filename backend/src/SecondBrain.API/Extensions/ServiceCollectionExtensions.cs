@@ -1,16 +1,25 @@
+using System.IO.Compression;
 using System.Text;
 using System.Threading.RateLimiting;
 using Asp.Versioning;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.IdentityModel.Tokens;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using SecondBrain.API.Configuration;
 using SecondBrain.API.HealthChecks;
 using SecondBrain.API.Middleware;
+using SecondBrain.API.Serialization;
 using SecondBrain.API.Services;
+using SecondBrain.API.Telemetry;
 using SecondBrain.Application.Behaviors;
 using SecondBrain.Application.Commands.Notes.CreateNote;
 using SecondBrain.Application.Services;
@@ -32,6 +41,7 @@ using SecondBrain.Core.Interfaces;
 using SecondBrain.Infrastructure.Data;
 using SecondBrain.Infrastructure.Repositories;
 using SecondBrain.Infrastructure.VectorStore;
+using SecondBrain.API.Caching;
 using SecondBrain.API.Controllers;
 
 namespace SecondBrain.API.Extensions;
@@ -47,6 +57,9 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
         services.AddHttpClient();
+
+        // Register TimeProvider for testable time-dependent services
+        services.AddSingleton(TimeProvider.System);
 
         // Register MediatR with pipeline behaviors
         services.AddMediatR(cfg =>
@@ -145,7 +158,13 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<AIProviderFactory>();
 
         // Register the circuit breaker as singleton (maintains state across requests)
-        services.AddSingleton<AIProviderCircuitBreaker>();
+        services.AddSingleton<AIProviderCircuitBreaker>(sp =>
+        {
+            var logger = sp.GetRequiredService<ILogger<AIProviderCircuitBreaker>>();
+            var settings = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<CircuitBreakerSettings>>();
+            var timeProvider = sp.GetRequiredService<TimeProvider>();
+            return new AIProviderCircuitBreaker(logger, settings, timeProvider);
+        });
 
         // Register the circuit breaker factory decorator as the IAIProviderFactory
         services.AddSingleton<IAIProviderFactory>(sp =>
@@ -153,7 +172,8 @@ public static class ServiceCollectionExtensions
             var innerFactory = sp.GetRequiredService<AIProviderFactory>();
             var circuitBreaker = sp.GetRequiredService<AIProviderCircuitBreaker>();
             var logger = sp.GetRequiredService<ILogger<CircuitBreakerAIProviderFactory>>();
-            return new CircuitBreakerAIProviderFactory(innerFactory, circuitBreaker, logger);
+            var timeProvider = sp.GetRequiredService<TimeProvider>();
+            return new CircuitBreakerAIProviderFactory(innerFactory, circuitBreaker, logger, timeProvider);
         });
 
         // Register image generation providers
@@ -306,12 +326,27 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Registers health checks
+    /// Registers health checks for database, AI providers, vector store, and memory
     /// </summary>
     public static IServiceCollection AddCustomHealthChecks(this IServiceCollection services)
     {
         services.AddHealthChecks()
-            .AddCheck<PostgresHealthCheck>("postgresql");
+            // Database health check
+            .AddCheck<PostgresHealthCheck>("postgresql",
+                failureStatus: Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Unhealthy,
+                tags: new[] { "db", "ready" })
+            // AI provider health check
+            .AddCheck<AIProviderHealthCheck>("ai-providers",
+                failureStatus: Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Degraded,
+                tags: new[] { "ai", "ready" })
+            // Vector store health check
+            .AddCheck<VectorStoreHealthCheck>("vector-store",
+                failureStatus: Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Degraded,
+                tags: new[] { "vectorstore", "ready" })
+            // Memory pressure health check
+            .AddCheck<MemoryHealthCheck>("memory",
+                failureStatus: Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Degraded,
+                tags: new[] { "memory", "live" });
 
         return services;
     }
@@ -425,6 +460,188 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
+    /// Configures OpenTelemetry for distributed tracing and metrics
+    /// </summary>
+    public static IServiceCollection AddOpenTelemetryServices(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment environment)
+    {
+        var otlpEndpoint = configuration["OpenTelemetry:OtlpEndpoint"] ?? "http://localhost:4317";
+        var exportToConsole = configuration.GetValue<bool>("OpenTelemetry:ExportToConsole", environment.IsDevelopment());
+
+        services.AddOpenTelemetry()
+            .ConfigureResource(resource => resource
+                .AddService(
+                    serviceName: TelemetryConfiguration.ServiceName,
+                    serviceVersion: TelemetryConfiguration.ServiceVersion)
+                .AddAttributes(new Dictionary<string, object>
+                {
+                    ["deployment.environment"] = environment.EnvironmentName
+                }))
+            .WithTracing(tracing =>
+            {
+                // Auto-instrumentation
+                tracing.AddAspNetCoreInstrumentation(options =>
+                {
+                    options.RecordException = true;
+                    options.Filter = httpContext =>
+                    {
+                        // Don't trace health check endpoints
+                        var path = httpContext.Request.Path.Value;
+                        return path != null && !path.StartsWith("/health") && !path.StartsWith("/api/health");
+                    };
+                })
+                .AddHttpClientInstrumentation(options =>
+                {
+                    options.RecordException = true;
+                    // Enrich with AI provider info
+                    options.EnrichWithHttpRequestMessage = (activity, request) =>
+                    {
+                        if (request.RequestUri?.Host.Contains("openai") == true)
+                            activity.SetTag("ai.provider", "OpenAI");
+                        else if (request.RequestUri?.Host.Contains("anthropic") == true)
+                            activity.SetTag("ai.provider", "Anthropic");
+                        else if (request.RequestUri?.Host.Contains("googleapis") == true)
+                            activity.SetTag("ai.provider", "Gemini");
+                        else if (request.RequestUri?.Host.Contains("x.ai") == true)
+                            activity.SetTag("ai.provider", "Grok");
+                    };
+                })
+                .AddEntityFrameworkCoreInstrumentation(options =>
+                {
+                    options.SetDbStatementForText = true;
+                })
+                // Custom activity sources
+                .AddSource(TelemetryConfiguration.AIProviderSource.Name)
+                .AddSource(TelemetryConfiguration.RAGPipelineSource.Name)
+                .AddSource(TelemetryConfiguration.AgentSource.Name)
+                .AddSource(TelemetryConfiguration.EmbeddingSource.Name)
+                .AddSource(TelemetryConfiguration.ChatSource.Name);
+
+                // Exporters
+                if (exportToConsole)
+                {
+                    tracing.AddConsoleExporter();
+                }
+
+                tracing.AddOtlpExporter(options =>
+                {
+                    options.Endpoint = new Uri(otlpEndpoint);
+                });
+            })
+            .WithMetrics(metrics => metrics
+                .AddAspNetCoreInstrumentation()
+                .AddHttpClientInstrumentation()
+                .AddMeter(TelemetryConfiguration.AIMetrics.Name)
+                .AddMeter(TelemetryConfiguration.RAGMetrics.Name)
+                .AddMeter(TelemetryConfiguration.CacheMetrics.Name)
+                .AddOtlpExporter());
+
+        return services;
+    }
+
+    /// <summary>
+    /// Configures HybridCache for two-tier caching with stampede protection
+    /// </summary>
+    public static IServiceCollection AddHybridCacheServices(this IServiceCollection services, IConfiguration configuration)
+    {
+#pragma warning disable EXTEXP0018 // HybridCache is experimental in .NET 9
+        services.AddHybridCache(options =>
+        {
+            options.MaximumPayloadBytes = 1024 * 1024; // 1MB max item size
+            options.MaximumKeyLength = 256;
+            options.DefaultEntryOptions = new HybridCacheEntryOptions
+            {
+                Expiration = TimeSpan.FromMinutes(30),
+                LocalCacheExpiration = TimeSpan.FromMinutes(5)
+            };
+        });
+#pragma warning restore EXTEXP0018
+
+        return services;
+    }
+
+    /// <summary>
+    /// Configures response compression (Brotli and GZip)
+    /// </summary>
+    public static IServiceCollection AddResponseCompressionServices(this IServiceCollection services)
+    {
+        services.AddResponseCompression(options =>
+        {
+            options.EnableForHttps = true;
+            options.Providers.Add<BrotliCompressionProvider>();
+            options.Providers.Add<GzipCompressionProvider>();
+
+            // MIME types to compress
+            options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[]
+            {
+                "application/json",
+                "text/plain",
+                "text/event-stream", // SSE responses
+                "application/javascript",
+                "text/css"
+            });
+        });
+
+        services.Configure<BrotliCompressionProviderOptions>(options =>
+        {
+            options.Level = CompressionLevel.Fastest; // Balance speed vs. ratio
+        });
+
+        services.Configure<GzipCompressionProviderOptions>(options =>
+        {
+            options.Level = CompressionLevel.Fastest;
+        });
+
+        return services;
+    }
+
+    /// <summary>
+    /// Configures output caching for read endpoints
+    /// </summary>
+    public static IServiceCollection AddOutputCachingServices(this IServiceCollection services)
+    {
+        services.AddOutputCache(options =>
+        {
+            // Default policy
+            options.AddBasePolicy(builder => builder.Expire(TimeSpan.FromMinutes(1)));
+
+            // AI Health check caching - short duration since status can change
+            options.AddPolicy("AIHealth", builder =>
+                builder.Expire(TimeSpan.FromSeconds(30))
+                       .SetVaryByQuery("ollamaBaseUrl", "useRemoteOllama")
+                       .SetVaryByRouteValue("provider")
+                       .Tag("ai-health"));
+
+            // Stats caching - moderate duration
+            options.AddPolicy("Stats", builder =>
+                builder.Expire(TimeSpan.FromMinutes(5))
+                       .SetVaryByQuery("userId")
+                       .Tag("stats"));
+
+            // User notes caching - varies by query parameters
+            options.AddPolicy("UserNotes", builder =>
+                builder.Expire(TimeSpan.FromMinutes(2))
+                       .SetVaryByQuery("folder", "includeArchived", "search")
+                       .Tag("notes"));
+
+            // RAG analytics caching - longer duration
+            options.AddPolicy("RagAnalytics", builder =>
+                builder.Expire(TimeSpan.FromMinutes(10))
+                       .Tag("rag-analytics"));
+
+            // Indexing stats caching
+            options.AddPolicy("IndexingStats", builder =>
+                builder.Expire(TimeSpan.FromMinutes(5))
+                       .SetVaryByQuery("userId")
+                       .Tag("indexing"));
+        });
+
+        // Register cache invalidator service
+        services.AddScoped<ICacheInvalidator, OutputCacheInvalidator>();
+
+        return services;
+    }
+
+    /// <summary>
     /// Registers RAG (Retrieval-Augmented Generation) services
     /// </summary>
     public static IServiceCollection AddRagServices(this IServiceCollection services, IConfiguration configuration)
@@ -468,11 +685,11 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<EmbeddingProviderFactory>();
 
         // Register the cached embedding provider factory as the IEmbeddingProviderFactory
-        // This decorates the base factory with caching capabilities
+        // This decorates the base factory with HybridCache for two-tier caching with stampede protection
         services.AddSingleton<IEmbeddingProviderFactory>(sp =>
         {
             var innerFactory = sp.GetRequiredService<EmbeddingProviderFactory>();
-            var cache = sp.GetRequiredService<Microsoft.Extensions.Caching.Memory.IMemoryCache>();
+            var cache = sp.GetRequiredService<Microsoft.Extensions.Caching.Hybrid.HybridCache>();
             var logger = sp.GetRequiredService<ILogger<CachedEmbeddingProvider>>();
             var settings = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<CachedEmbeddingSettings>>();
             return new CachedEmbeddingProviderFactory(innerFactory, cache, logger, settings);

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -5,6 +6,7 @@ using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.AI;
 using SecondBrain.Application.Services.AI.Interfaces;
 using SecondBrain.Application.Services.AI.Models;
+using SecondBrain.Application.Telemetry;
 
 namespace SecondBrain.Application.Services.RAG;
 
@@ -85,13 +87,22 @@ public class RerankerService : IRerankerService
             return new List<RerankedResult>();
         }
 
+        using var activity = ApplicationTelemetry.RAGPipelineSource.StartActivity("Reranker.Rerank", ActivityKind.Internal);
+        activity?.SetTag("rag.rerank.input_count", results.Count);
+        activity?.SetTag("rag.rerank.top_k", topK);
+        activity?.SetTag("rag.rerank.enabled", _settings.EnableReranking);
+
+        var stopwatch = Stopwatch.StartNew();
+
         // If reranking is disabled, just convert and return top K
         if (!_settings.EnableReranking)
         {
-            return results
+            var unrankedResults = results
                 .Take(topK)
                 .Select((r, i) => ConvertToRerankedResult(r, i + 1, 0, false))
                 .ToList();
+            activity?.SetTag("rag.rerank.skipped", true);
+            return unrankedResults;
         }
 
         _logger.LogInformation(
@@ -103,11 +114,14 @@ public class RerankerService : IRerankerService
         {
             _logger.LogWarning("Reranking provider {Provider} not available, returning unranked results",
                 _settings.RerankingProvider);
+            activity?.SetTag("rag.rerank.provider_unavailable", true);
             return results
                 .Take(topK)
                 .Select((r, i) => ConvertToRerankedResult(r, i + 1, 0, false))
                 .ToList();
         }
+
+        activity?.SetTag("rag.rerank.provider", _settings.RerankingProvider);
 
         var rerankedResults = new List<RerankedResult>();
 
@@ -142,6 +156,18 @@ public class RerankerService : IRerankerService
                 return r;
             })
             .ToList();
+
+        stopwatch.Stop();
+        activity?.SetTag("rag.rerank.output_count", sortedResults.Count);
+        activity?.SetTag("rag.rerank.duration_ms", stopwatch.ElapsedMilliseconds);
+        if (sortedResults.Any())
+        {
+            activity?.SetTag("rag.rerank.avg_score", sortedResults.Average(r => r.RelevanceScore));
+            activity?.SetTag("rag.rerank.max_score", sortedResults.Max(r => r.RelevanceScore));
+        }
+        activity?.SetStatus(ActivityStatusCode.Ok);
+
+        ApplicationTelemetry.RAGRerankDuration.Record(stopwatch.ElapsedMilliseconds);
 
         // Log reranking impact
         LogRerankingImpact(results, sortedResults);

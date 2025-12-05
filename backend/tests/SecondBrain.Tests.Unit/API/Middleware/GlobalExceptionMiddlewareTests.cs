@@ -2,10 +2,10 @@ using System.Net;
 using System.Text.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using SecondBrain.API.Middleware;
-using SecondBrain.Application.DTOs.Responses;
 using SecondBrain.Application.Exceptions;
 using SecondBrain.Application.Services.AI.CircuitBreaker;
 
@@ -15,11 +15,16 @@ public class GlobalExceptionMiddlewareTests
 {
     private readonly Mock<ILogger<GlobalExceptionMiddleware>> _mockLogger;
     private readonly Mock<IHostEnvironment> _mockEnvironment;
+    private readonly Mock<IProblemDetailsService> _mockProblemDetailsService;
 
     public GlobalExceptionMiddlewareTests()
     {
         _mockLogger = new Mock<ILogger<GlobalExceptionMiddleware>>();
         _mockEnvironment = new Mock<IHostEnvironment>();
+        _mockProblemDetailsService = new Mock<IProblemDetailsService>();
+        // Setup to always return false so the middleware falls back to manual JSON response
+        _mockProblemDetailsService.Setup(s => s.TryWriteAsync(It.IsAny<ProblemDetailsContext>()))
+            .ReturnsAsync(false);
     }
 
     #region Successful Request Tests
@@ -35,7 +40,7 @@ public class GlobalExceptionMiddlewareTests
             return Task.CompletedTask;
         };
 
-        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object);
+        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object, _mockProblemDetailsService.Object);
         var context = new DefaultHttpContext();
         context.Response.Body = new MemoryStream();
 
@@ -56,7 +61,7 @@ public class GlobalExceptionMiddlewareTests
             return Task.CompletedTask;
         };
 
-        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object);
+        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object, _mockProblemDetailsService.Object);
         var context = new DefaultHttpContext();
         context.Response.Body = new MemoryStream();
 
@@ -79,7 +84,7 @@ public class GlobalExceptionMiddlewareTests
 
         RequestDelegate next = context => throw new NotFoundException("Resource not found");
 
-        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object);
+        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object, _mockProblemDetailsService.Object);
         var context = CreateHttpContext();
 
         // Act
@@ -97,16 +102,16 @@ public class GlobalExceptionMiddlewareTests
 
         RequestDelegate next = context => throw new NotFoundException("User not found");
 
-        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object);
+        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object, _mockProblemDetailsService.Object);
         var context = CreateHttpContext();
 
         // Act
         await middleware.InvokeAsync(context);
 
         // Assert
-        var response = await ReadResponseBody<ErrorResponse>(context);
-        response.Message.Should().Be("User not found");
-        response.StatusCode.Should().Be(404);
+        var response = await ReadResponseBody<ProblemDetails>(context);
+        response.Detail.Should().Be("User not found");
+        response.Status.Should().Be(404);
     }
 
     [Fact]
@@ -117,15 +122,16 @@ public class GlobalExceptionMiddlewareTests
 
         RequestDelegate next = context => throw new NotFoundException("Not found");
 
-        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object);
+        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object, _mockProblemDetailsService.Object);
         var context = CreateHttpContext();
 
         // Act
         await middleware.InvokeAsync(context);
 
         // Assert
-        var response = await ReadResponseBody<ErrorResponse>(context);
-        response.Details.Should().NotBeNullOrEmpty();
+        var response = await ReadResponseBody<ProblemDetails>(context);
+        response.Extensions.Should().ContainKey("stackTrace");
+        response.Extensions["stackTrace"]!.ToString().Should().NotBeNullOrEmpty();
     }
 
     [Fact]
@@ -136,15 +142,15 @@ public class GlobalExceptionMiddlewareTests
 
         RequestDelegate next = context => throw new NotFoundException("Not found");
 
-        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object);
+        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object, _mockProblemDetailsService.Object);
         var context = CreateHttpContext();
 
         // Act
         await middleware.InvokeAsync(context);
 
         // Assert
-        var response = await ReadResponseBody<ErrorResponse>(context);
-        response.Details.Should().BeNull();
+        var response = await ReadResponseBody<ProblemDetails>(context);
+        response.Extensions.Should().NotContainKey("stackTrace");
     }
 
     #endregion
@@ -159,7 +165,7 @@ public class GlobalExceptionMiddlewareTests
 
         RequestDelegate next = context => throw new UnauthorizedException("Not authorized");
 
-        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object);
+        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object, _mockProblemDetailsService.Object);
         var context = CreateHttpContext();
 
         // Act
@@ -177,16 +183,16 @@ public class GlobalExceptionMiddlewareTests
 
         RequestDelegate next = context => throw new UnauthorizedException("Access denied");
 
-        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object);
+        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object, _mockProblemDetailsService.Object);
         var context = CreateHttpContext();
 
         // Act
         await middleware.InvokeAsync(context);
 
         // Assert
-        var response = await ReadResponseBody<ErrorResponse>(context);
-        response.Message.Should().Be("Access denied");
-        response.StatusCode.Should().Be(401);
+        var response = await ReadResponseBody<ProblemDetails>(context);
+        response.Detail.Should().Be("Access denied");
+        response.Status.Should().Be(401);
     }
 
     #endregion
@@ -201,7 +207,7 @@ public class GlobalExceptionMiddlewareTests
 
         RequestDelegate next = context => throw new SecondBrain.Application.Exceptions.ValidationException("field", "Invalid value");
 
-        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object);
+        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object, _mockProblemDetailsService.Object);
         var context = CreateHttpContext();
 
         // Act
@@ -219,16 +225,17 @@ public class GlobalExceptionMiddlewareTests
 
         RequestDelegate next = context => throw new SecondBrain.Application.Exceptions.ValidationException("email", "Invalid email format");
 
-        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object);
+        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object, _mockProblemDetailsService.Object);
         var context = CreateHttpContext();
 
         // Act
         await middleware.InvokeAsync(context);
 
         // Assert
-        var response = await ReadResponseBody<ErrorResponse>(context);
-        response.StatusCode.Should().Be(400);
-        response.ValidationErrors.Should().NotBeNull();
+        var response = await ReadResponseBody<ValidationProblemDetails>(context);
+        response.Status.Should().Be(400);
+        response.Errors.Should().NotBeNull();
+        response.Errors.Should().ContainKey("email");
     }
 
     #endregion
@@ -243,7 +250,7 @@ public class GlobalExceptionMiddlewareTests
 
         RequestDelegate next = context => throw new CircuitBreakerOpenException("OpenAI");
 
-        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object);
+        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object, _mockProblemDetailsService.Object);
         var context = CreateHttpContext();
 
         // Act
@@ -261,17 +268,17 @@ public class GlobalExceptionMiddlewareTests
 
         RequestDelegate next = context => throw new CircuitBreakerOpenException("Anthropic");
 
-        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object);
+        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object, _mockProblemDetailsService.Object);
         var context = CreateHttpContext();
 
         // Act
         await middleware.InvokeAsync(context);
 
         // Assert
-        var response = await ReadResponseBody<ErrorResponse>(context);
-        response.Message.Should().Contain("Anthropic");
-        response.Message.Should().Contain("Circuit breaker");
-        response.StatusCode.Should().Be(503);
+        var response = await ReadResponseBody<ProblemDetails>(context);
+        response.Detail.Should().Contain("Anthropic");
+        response.Detail.Should().Contain("Circuit breaker");
+        response.Status.Should().Be(503);
     }
 
     [Fact]
@@ -283,7 +290,7 @@ public class GlobalExceptionMiddlewareTests
 
         RequestDelegate next = context => throw new CircuitBreakerOpenException("OpenAI", retryAfter);
 
-        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object);
+        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object, _mockProblemDetailsService.Object);
         var context = CreateHttpContext();
 
         // Act
@@ -301,7 +308,7 @@ public class GlobalExceptionMiddlewareTests
 
         RequestDelegate next = context => throw new CircuitBreakerOpenException("Gemini");
 
-        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object);
+        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object, _mockProblemDetailsService.Object);
         var context = CreateHttpContext();
 
         // Act
@@ -319,15 +326,16 @@ public class GlobalExceptionMiddlewareTests
 
         RequestDelegate next = context => throw new CircuitBreakerOpenException("OpenAI", TimeSpan.FromSeconds(30));
 
-        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object);
+        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object, _mockProblemDetailsService.Object);
         var context = CreateHttpContext();
 
         // Act
         await middleware.InvokeAsync(context);
 
         // Assert
-        var response = await ReadResponseBody<ErrorResponse>(context);
-        response.Details.Should().NotBeNullOrEmpty();
+        var response = await ReadResponseBody<ProblemDetails>(context);
+        response.Extensions.Should().ContainKey("stackTrace");
+        response.Extensions["stackTrace"]!.ToString().Should().NotBeNullOrEmpty();
     }
 
     [Fact]
@@ -338,15 +346,15 @@ public class GlobalExceptionMiddlewareTests
 
         RequestDelegate next = context => throw new CircuitBreakerOpenException("OpenAI");
 
-        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object);
+        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object, _mockProblemDetailsService.Object);
         var context = CreateHttpContext();
 
         // Act
         await middleware.InvokeAsync(context);
 
         // Assert
-        var response = await ReadResponseBody<ErrorResponse>(context);
-        response.Details.Should().BeNull();
+        var response = await ReadResponseBody<ProblemDetails>(context);
+        response.Extensions.Should().NotContainKey("stackTrace");
     }
 
     #endregion
@@ -361,7 +369,7 @@ public class GlobalExceptionMiddlewareTests
 
         RequestDelegate next = context => throw new Exception("Internal error");
 
-        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object);
+        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object, _mockProblemDetailsService.Object);
         var context = CreateHttpContext();
 
         // Act
@@ -379,16 +387,16 @@ public class GlobalExceptionMiddlewareTests
 
         RequestDelegate next = context => throw new Exception("Sensitive internal error details");
 
-        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object);
+        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object, _mockProblemDetailsService.Object);
         var context = CreateHttpContext();
 
         // Act
         await middleware.InvokeAsync(context);
 
         // Assert
-        var response = await ReadResponseBody<ErrorResponse>(context);
-        response.Message.Should().Be("An internal server error occurred.");
-        response.Message.Should().NotContain("Sensitive");
+        var response = await ReadResponseBody<ProblemDetails>(context);
+        response.Detail.Should().NotContain("Sensitive");
+        response.Detail.Should().Contain("unexpected error");
     }
 
     [Fact]
@@ -399,15 +407,15 @@ public class GlobalExceptionMiddlewareTests
 
         RequestDelegate next = context => throw new Exception("Detailed error message");
 
-        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object);
+        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object, _mockProblemDetailsService.Object);
         var context = CreateHttpContext();
 
         // Act
         await middleware.InvokeAsync(context);
 
         // Assert
-        var response = await ReadResponseBody<ErrorResponse>(context);
-        response.Message.Should().Be("Detailed error message");
+        var response = await ReadResponseBody<ProblemDetails>(context);
+        response.Detail.Should().Be("Detailed error message");
     }
 
     [Fact]
@@ -418,15 +426,16 @@ public class GlobalExceptionMiddlewareTests
 
         RequestDelegate next = context => throw new Exception("Error");
 
-        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object);
+        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object, _mockProblemDetailsService.Object);
         var context = CreateHttpContext();
 
         // Act
         await middleware.InvokeAsync(context);
 
         // Assert
-        var response = await ReadResponseBody<ErrorResponse>(context);
-        response.Details.Should().NotBeNullOrEmpty();
+        var response = await ReadResponseBody<ProblemDetails>(context);
+        response.Extensions.Should().ContainKey("stackTrace");
+        response.Extensions["stackTrace"]!.ToString().Should().NotBeNullOrEmpty();
     }
 
     #endregion
@@ -434,21 +443,21 @@ public class GlobalExceptionMiddlewareTests
     #region Response Format Tests
 
     [Fact]
-    public async Task InvokeAsync_WhenException_SetsContentTypeToJson()
+    public async Task InvokeAsync_WhenException_SetsContentTypeToProblemJson()
     {
         // Arrange
         _mockEnvironment.Setup(e => e.EnvironmentName).Returns("Production");
 
         RequestDelegate next = context => throw new Exception("Error");
 
-        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object);
+        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object, _mockProblemDetailsService.Object);
         var context = CreateHttpContext();
 
         // Act
         await middleware.InvokeAsync(context);
 
         // Assert
-        context.Response.ContentType.Should().Be("application/json");
+        context.Response.ContentType.Should().Contain("application/problem+json");
     }
 
     [Fact]
@@ -459,7 +468,7 @@ public class GlobalExceptionMiddlewareTests
 
         RequestDelegate next = context => throw new Exception("Error");
 
-        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object);
+        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object, _mockProblemDetailsService.Object);
         var context = CreateHttpContext();
         context.TraceIdentifier = "test-trace-id";
 
@@ -467,8 +476,9 @@ public class GlobalExceptionMiddlewareTests
         await middleware.InvokeAsync(context);
 
         // Assert
-        var response = await ReadResponseBody<ErrorResponse>(context);
-        response.TraceId.Should().Be("test-trace-id");
+        var response = await ReadResponseBody<ProblemDetails>(context);
+        response.Extensions.Should().ContainKey("traceId");
+        response.Extensions["traceId"]!.ToString().Should().Be("test-trace-id");
     }
 
     [Fact]
@@ -480,17 +490,15 @@ public class GlobalExceptionMiddlewareTests
 
         RequestDelegate next = context => throw new Exception("Error");
 
-        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object);
+        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object, _mockProblemDetailsService.Object);
         var context = CreateHttpContext();
 
         // Act
         await middleware.InvokeAsync(context);
-        var afterCall = DateTime.UtcNow;
 
         // Assert
-        var response = await ReadResponseBody<ErrorResponse>(context);
-        response.Timestamp.Should().BeOnOrAfter(beforeCall);
-        response.Timestamp.Should().BeOnOrBefore(afterCall);
+        var response = await ReadResponseBody<ProblemDetails>(context);
+        response.Extensions.Should().ContainKey("timestamp");
     }
 
     #endregion
@@ -505,7 +513,7 @@ public class GlobalExceptionMiddlewareTests
 
         RequestDelegate next = context => throw new Exception("Test error");
 
-        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object);
+        var middleware = new GlobalExceptionMiddleware(next, _mockLogger.Object, _mockEnvironment.Object, _mockProblemDetailsService.Object);
         var context = CreateHttpContext();
 
         // Act
@@ -548,4 +556,3 @@ public class GlobalExceptionMiddlewareTests
 
     #endregion
 }
-

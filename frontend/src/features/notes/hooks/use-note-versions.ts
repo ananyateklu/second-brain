@@ -11,7 +11,7 @@ import type {
   NoteVersionDiff,
   RestoreVersionResponse,
 } from '../../../types/notes';
-import { useApiQuery, useConditionalQuery } from '../../../hooks/use-api-query';
+import { useConditionalQuery } from '../../../hooks/use-api-query';
 import { useApiMutation } from '../../../hooks/use-api-mutation';
 import { noteVersionKeys, noteKeys } from '../../../lib/query-keys';
 

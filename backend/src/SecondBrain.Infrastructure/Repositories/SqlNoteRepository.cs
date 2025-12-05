@@ -407,4 +407,3 @@ public class SqlNoteRepository : INoteRepository
         }
     }
 }
-

@@ -1,5 +1,6 @@
 using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OutputCaching;
 using SecondBrain.Application.DTOs.Requests;
 using SecondBrain.Application.DTOs.Responses;
 using SecondBrain.Application.Services.AI.Interfaces;
@@ -39,6 +40,7 @@ public class AIController : ControllerBase
     /// <param name="useRemoteOllama">Whether to use the remote Ollama URL</param>
     /// <param name="cancellationToken">Cancellation token</param>
     [HttpGet("health")]
+    [OutputCache(PolicyName = "AIHealth")]
     [ProducesResponseType(typeof(AIHealthResponse), StatusCodes.Status200OK)]
     public async Task<ActionResult<AIHealthResponse>> GetAllProvidersHealth(
         [FromQuery] string? ollamaBaseUrl = null,
@@ -128,6 +130,7 @@ public class AIController : ControllerBase
     /// <param name="useRemoteOllama">Whether to use the remote Ollama URL</param>
     /// <param name="cancellationToken">Cancellation token</param>
     [HttpGet("health/{provider}")]
+    [OutputCache(PolicyName = "AIHealth")]
     [ProducesResponseType(typeof(AIProviderHealth), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<AIProviderHealth>> GetProviderHealth(
@@ -257,6 +260,7 @@ public class AIController : ControllerBase
     /// List all available AI providers
     /// </summary>
     [HttpGet("providers")]
+    [OutputCache(PolicyName = "AIHealth")]
     [ProducesResponseType(typeof(IEnumerable<ProviderInfo>), StatusCodes.Status200OK)]
     public ActionResult<IEnumerable<ProviderInfo>> GetProviders()
     {

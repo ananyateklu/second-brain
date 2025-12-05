@@ -1,5 +1,10 @@
+using System.Text.Json;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using SecondBrain.API.Extensions;
 using SecondBrain.API.Middleware;
+using SecondBrain.API.Serialization;
+using SecondBrain.API.Telemetry;
 using SecondBrain.Infrastructure.Data;
 using Scalar.AspNetCore;
 using DotNetEnv;
@@ -131,9 +136,11 @@ builder.Host.UseSerilog((context, services, configuration) =>
         .ReadFrom.Configuration(context.Configuration)
         .ReadFrom.Services(services)
         .Enrich.FromLogContext()
-        .Enrich.WithProperty("Application", "SecondBrain.API")
+        .Enrich.WithProperty("Application", TelemetryConfiguration.ServiceName)
         .Enrich.WithProperty("Environment", context.HostingEnvironment.EnvironmentName)
         .Enrich.WithMachineName()
+        // Add trace context from OpenTelemetry Activity
+        .Enrich.With(new TraceIdEnricher())
         .WriteTo.Console(
             outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}",
             restrictedToMinimumLevel: LogEventLevel.Information)
@@ -148,20 +155,22 @@ builder.Host.UseSerilog((context, services, configuration) =>
             rollingInterval: RollingInterval.Day,
             retainedFileCountLimit: 30,
             restrictedToMinimumLevel: LogEventLevel.Error,
-            outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] {Message:lj}{NewLine}{Exception}");
+            outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz}] [{Level:u3}] [{TraceId}:{SpanId}] {Message:lj}{NewLine}{Exception}");
 
     // Set minimum level based on environment
     if (context.HostingEnvironment.IsDevelopment())
     {
         configuration.MinimumLevel.Debug()
             .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
-            .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning);
+            .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
+            .MinimumLevel.Override("OpenTelemetry", LogEventLevel.Warning);
     }
     else
     {
         configuration.MinimumLevel.Information()
             .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
-            .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning);
+            .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
+            .MinimumLevel.Override("OpenTelemetry", LogEventLevel.Warning);
     }
 });
 
@@ -179,11 +188,15 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
+        // Use source-generated JSON context for better performance
+        options.JsonSerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonContext.Default);
         // Use camelCase for JSON serialization to match JavaScript/TypeScript conventions
         options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
         // Don't ignore null values - include them in responses for consistency
         options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.Never;
     });
+
+// Core configuration and infrastructure
 builder.Services.AddAppConfiguration(builder.Configuration);
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddJwtAuth(builder.Configuration);
@@ -191,11 +204,31 @@ builder.Services.AddApplicationServices();
 builder.Services.AddAIServices(builder.Configuration);
 builder.Services.AddRagServices(builder.Configuration);
 builder.Services.AddValidators();
+
+// Performance and observability
+builder.Services.AddOpenTelemetryServices(builder.Configuration, builder.Environment);
+builder.Services.AddHybridCacheServices(builder.Configuration);
+builder.Services.AddResponseCompressionServices();
+builder.Services.AddOutputCachingServices();
+
+// API infrastructure
 builder.Services.AddCustomCors(builder.Configuration);
 builder.Services.AddSwaggerDocumentation();
 builder.Services.AddCustomHealthChecks();
 builder.Services.AddRateLimiting();
 builder.Services.AddApiVersioningConfig();
+
+// Problem Details for RFC 9457 compliant error responses
+builder.Services.AddProblemDetails(options =>
+{
+    options.CustomizeProblemDetails = context =>
+    {
+        context.ProblemDetails.Instance = context.HttpContext.Request.Path;
+        context.ProblemDetails.Extensions["traceId"] =
+            System.Diagnostics.Activity.Current?.Id ?? context.HttpContext.TraceIdentifier;
+        context.ProblemDetails.Extensions["timestamp"] = DateTime.UtcNow;
+    };
+});
 
 var app = builder.Build();
 
@@ -545,6 +578,9 @@ if (httpsPort.HasValue)
     app.UseHttpsRedirection();
 }
 
+// Response compression (before routing for maximum effectiveness)
+app.UseResponseCompression();
+
 app.UseCors("AllowFrontend");
 
 // Serilog request logging with enriched diagnostics
@@ -579,9 +615,58 @@ app.UseRateLimiter();
 // Custom middleware (logging, error handling)
 app.UseCustomMiddleware();
 
-// Map controllers and health checks
+// Output caching (after authentication so cache can vary by user)
+app.UseOutputCache();
+
+// Map controllers
 app.MapControllers();
-app.MapHealthChecks("/api/health");
+
+// Map health check endpoints with detailed JSON responses
+app.MapHealthChecks("/api/health", new HealthCheckOptions
+{
+    ResponseWriter = WriteDetailedHealthCheckResponse
+});
+
+app.MapHealthChecks("/api/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready"),
+    ResponseWriter = WriteDetailedHealthCheckResponse
+});
+
+app.MapHealthChecks("/api/health/live", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("live"),
+    ResponseWriter = WriteDetailedHealthCheckResponse
+});
+
+// Health check response writer
+static async Task WriteDetailedHealthCheckResponse(HttpContext context, HealthReport report)
+{
+    context.Response.ContentType = "application/json";
+
+    var response = new HealthCheckResponse
+    {
+        Status = report.Status.ToString(),
+        Duration = report.TotalDuration.TotalMilliseconds,
+        Checks = report.Entries.Select(e => new HealthCheckEntry
+        {
+            Name = e.Key,
+            Status = e.Value.Status.ToString(),
+            Duration = e.Value.Duration.TotalMilliseconds,
+            Description = e.Value.Description,
+            Data = e.Value.Data?.ToDictionary(d => d.Key, d => d.Value),
+            Exception = e.Value.Exception?.Message
+        }).ToList()
+    };
+
+    var options = new JsonSerializerOptions
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        WriteIndented = true
+    };
+
+    await context.Response.WriteAsync(JsonSerializer.Serialize(response, options));
+}
 
 // Display startup banner when server is ready
 app.Lifetime.ApplicationStarted.Register(() =>

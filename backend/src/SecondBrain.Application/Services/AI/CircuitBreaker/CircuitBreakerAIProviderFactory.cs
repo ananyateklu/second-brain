@@ -15,16 +15,19 @@ public class CircuitBreakerAIProviderFactory : IAIProviderFactory
     private readonly IAIProviderFactory _innerFactory;
     private readonly AIProviderCircuitBreaker _circuitBreaker;
     private readonly ILogger<CircuitBreakerAIProviderFactory> _logger;
+    private readonly TimeProvider _timeProvider;
     private readonly ConcurrentDictionary<string, CircuitBreakerAIProvider> _wrappedProviders;
 
     public CircuitBreakerAIProviderFactory(
         IAIProviderFactory innerFactory,
         AIProviderCircuitBreaker circuitBreaker,
-        ILogger<CircuitBreakerAIProviderFactory> logger)
+        ILogger<CircuitBreakerAIProviderFactory> logger,
+        TimeProvider? timeProvider = null)
     {
         _innerFactory = innerFactory ?? throw new ArgumentNullException(nameof(innerFactory));
         _circuitBreaker = circuitBreaker ?? throw new ArgumentNullException(nameof(circuitBreaker));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _timeProvider = timeProvider ?? TimeProvider.System;
         _wrappedProviders = new ConcurrentDictionary<string, CircuitBreakerAIProvider>(StringComparer.OrdinalIgnoreCase);
     }
 
@@ -34,7 +37,7 @@ public class CircuitBreakerAIProviderFactory : IAIProviderFactory
         {
             var innerProvider = _innerFactory.GetProvider(name);
             _logger.LogDebug("Wrapping AI provider {Provider} with circuit breaker", name);
-            return new CircuitBreakerAIProvider(innerProvider, _circuitBreaker);
+            return new CircuitBreakerAIProvider(innerProvider, _circuitBreaker, _timeProvider);
         });
     }
 
@@ -74,13 +77,16 @@ internal class CircuitBreakerAIProvider : IAIProvider
 {
     private readonly IAIProvider _innerProvider;
     private readonly AIProviderCircuitBreaker _circuitBreaker;
+    private readonly TimeProvider _timeProvider;
 
     public CircuitBreakerAIProvider(
         IAIProvider innerProvider,
-        AIProviderCircuitBreaker circuitBreaker)
+        AIProviderCircuitBreaker circuitBreaker,
+        TimeProvider? timeProvider = null)
     {
         _innerProvider = innerProvider;
         _circuitBreaker = circuitBreaker;
+        _timeProvider = timeProvider ?? TimeProvider.System;
     }
 
     public string ProviderName => _innerProvider.ProviderName;
@@ -138,7 +144,7 @@ internal class CircuitBreakerAIProvider : IAIProvider
             var snapshot = stateInfo.GetSnapshot();
             if (snapshot.State == CircuitBreakerState.Open)
             {
-                var retryAfter = snapshot.LastTransitionTime.Add(_circuitBreaker.BreakDuration) - DateTime.UtcNow;
+                var retryAfter = snapshot.LastTransitionTime.Add(_circuitBreaker.BreakDuration) - _timeProvider.GetUtcNow().DateTime;
                 throw new CircuitBreakerOpenException(ProviderName, retryAfter > TimeSpan.Zero ? retryAfter : null);
             }
         }
@@ -165,7 +171,7 @@ internal class CircuitBreakerAIProvider : IAIProvider
             var snapshot = stateInfo.GetSnapshot();
             if (snapshot.State == CircuitBreakerState.Open)
             {
-                var retryAfter = snapshot.LastTransitionTime.Add(_circuitBreaker.BreakDuration) - DateTime.UtcNow;
+                var retryAfter = snapshot.LastTransitionTime.Add(_circuitBreaker.BreakDuration) - _timeProvider.GetUtcNow().DateTime;
                 throw new CircuitBreakerOpenException(ProviderName, retryAfter > TimeSpan.Zero ? retryAfter : null);
             }
         }

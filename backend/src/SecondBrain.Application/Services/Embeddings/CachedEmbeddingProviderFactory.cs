@@ -1,26 +1,26 @@
 using System.Collections.Concurrent;
-using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using SecondBrain.Application.Configuration;
 
 namespace SecondBrain.Application.Services.Embeddings;
 
 /// <summary>
-/// Factory that creates cached embedding providers by decorating the underlying providers with caching.
+/// Factory that creates cached embedding providers by decorating the underlying providers with HybridCache.
 /// Maintains a pool of cached providers to ensure consistent caching behavior.
+/// HybridCache provides two-tier caching with stampede protection.
 /// </summary>
 public class CachedEmbeddingProviderFactory : IEmbeddingProviderFactory
 {
     private readonly IEmbeddingProviderFactory _innerFactory;
-    private readonly IMemoryCache _cache;
+    private readonly HybridCache _cache;
     private readonly ILogger<CachedEmbeddingProvider> _logger;
     private readonly CachedEmbeddingSettings _settings;
     private readonly ConcurrentDictionary<string, CachedEmbeddingProvider> _cachedProviders;
 
     public CachedEmbeddingProviderFactory(
         IEmbeddingProviderFactory innerFactory,
-        IMemoryCache cache,
+        HybridCache cache,
         ILogger<CachedEmbeddingProvider> logger,
         IOptions<CachedEmbeddingSettings> settings)
     {
@@ -41,13 +41,19 @@ public class CachedEmbeddingProviderFactory : IEmbeddingProviderFactory
         return _cachedProviders.GetOrAdd(providerName, name =>
         {
             var innerProvider = _innerFactory.GetProvider(name);
-            var cacheDuration = TimeSpan.FromHours(_settings.CacheDurationHours);
+            var localExpiration = TimeSpan.FromMinutes(_settings.LocalCacheMinutes);
+            var distributedExpiration = TimeSpan.FromHours(_settings.CacheDurationHours);
 
             _logger.LogInformation(
-                "Creating cached embedding provider. Provider: {Provider}, Model: {Model}, CacheDuration: {Duration}h",
-                innerProvider.ProviderName, innerProvider.ModelName, _settings.CacheDurationHours);
+                "Creating cached embedding provider with HybridCache. Provider: {Provider}, Model: {Model}, LocalCache: {Local}m, DistributedCache: {Distributed}h",
+                innerProvider.ProviderName, innerProvider.ModelName, _settings.LocalCacheMinutes, _settings.CacheDurationHours);
 
-            return new CachedEmbeddingProvider(innerProvider, _cache, _logger, cacheDuration);
+            return new CachedEmbeddingProvider(
+                innerProvider,
+                _cache,
+                _logger,
+                localExpiration,
+                distributedExpiration);
         });
     }
 
@@ -86,12 +92,18 @@ public class CachedEmbeddingSettings
     public bool EnableCaching { get; set; } = true;
 
     /// <summary>
-    /// How long to cache embeddings in hours. Default is 24 hours.
+    /// How long to cache embeddings in hours (distributed/L2 cache). Default is 24 hours.
     /// </summary>
     public int CacheDurationHours { get; set; } = 24;
 
     /// <summary>
-    /// Maximum memory size for the cache in megabytes. Default is 100 MB.
+    /// How long to cache embeddings in local memory (L1 cache) in minutes. Default is 10 minutes.
+    /// Local cache is faster but limited in size.
+    /// </summary>
+    public int LocalCacheMinutes { get; set; } = 10;
+
+    /// <summary>
+    /// Maximum memory size for the local cache in megabytes. Default is 100 MB.
     /// </summary>
     public int MaxMemorySizeMB { get; set; } = 100;
 }

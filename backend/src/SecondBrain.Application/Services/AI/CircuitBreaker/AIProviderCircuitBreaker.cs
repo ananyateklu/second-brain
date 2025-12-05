@@ -16,13 +16,16 @@ public class AIProviderCircuitBreaker
     private readonly ConcurrentDictionary<string, CircuitBreakerStateInfo> _stateInfo;
     private readonly ILogger<AIProviderCircuitBreaker> _logger;
     private readonly CircuitBreakerSettings _settings;
+    private readonly TimeProvider _timeProvider;
 
     public AIProviderCircuitBreaker(
         ILogger<AIProviderCircuitBreaker> logger,
-        IOptions<CircuitBreakerSettings> settings)
+        IOptions<CircuitBreakerSettings> settings,
+        TimeProvider? timeProvider = null)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _settings = settings?.Value ?? new CircuitBreakerSettings();
+        _timeProvider = timeProvider ?? TimeProvider.System;
         _circuitBreakers = new ConcurrentDictionary<string, ResiliencePipeline>(StringComparer.OrdinalIgnoreCase);
         _stateInfo = new ConcurrentDictionary<string, CircuitBreakerStateInfo>(StringComparer.OrdinalIgnoreCase);
     }
@@ -63,7 +66,7 @@ public class AIProviderCircuitBreaker
             {
                 // Use GetSnapshot for consistent read of LastTransitionTime
                 var snapshot = stateInfo.GetSnapshot();
-                retryAfter = snapshot.LastTransitionTime.Add(_settings.BreakDuration) - DateTime.UtcNow;
+                retryAfter = snapshot.LastTransitionTime.Add(_settings.BreakDuration) - _timeProvider.GetUtcNow().DateTime;
             }
 
             _logger.LogWarning(
@@ -126,7 +129,7 @@ public class AIProviderCircuitBreaker
     {
         if (_stateInfo.TryGetValue(providerName, out var info))
         {
-            info.Reset();
+            info.Reset(_timeProvider);
 
             _logger.LogInformation(
                 "Circuit breaker manually reset for provider {Provider}",
@@ -141,7 +144,7 @@ public class AIProviderCircuitBreaker
     {
         return _circuitBreakers.GetOrAdd(providerName, name =>
         {
-            var stateInfo = _stateInfo.GetOrAdd(name, _ => new CircuitBreakerStateInfo());
+            var stateInfo = _stateInfo.GetOrAdd(name, _ => new CircuitBreakerStateInfo(_timeProvider));
 
             var pipeline = new ResiliencePipelineBuilder()
                 .AddCircuitBreaker(new CircuitBreakerStrategyOptions
@@ -162,7 +165,7 @@ public class AIProviderCircuitBreaker
                     }),
                     OnOpened = args =>
                     {
-                        stateInfo.TransitionToOpen(args.Outcome.Exception);
+                        stateInfo.TransitionToOpen(args.Outcome.Exception, _timeProvider);
 
                         _logger.LogWarning(
                             "Circuit breaker OPENED for provider {Provider}. Duration: {Duration}. Last error: {Error}",
@@ -172,7 +175,7 @@ public class AIProviderCircuitBreaker
                     },
                     OnClosed = args =>
                     {
-                        stateInfo.TransitionToClosed();
+                        stateInfo.TransitionToClosed(_timeProvider);
 
                         _logger.LogInformation(
                             "Circuit breaker CLOSED for provider {Provider}. Service recovered.",
@@ -182,7 +185,7 @@ public class AIProviderCircuitBreaker
                     },
                     OnHalfOpened = args =>
                     {
-                        stateInfo.TransitionToHalfOpen();
+                        stateInfo.TransitionToHalfOpen(_timeProvider);
 
                         _logger.LogInformation(
                             "Circuit breaker HALF-OPEN for provider {Provider}. Testing recovery...",
@@ -231,10 +234,17 @@ public enum CircuitBreakerState
 public class CircuitBreakerStateInfo
 {
     private readonly object _lock = new();
+    private readonly TimeProvider _timeProvider;
     private CircuitBreakerState _state = CircuitBreakerState.Closed;
     private int _failureCount;
-    private DateTime _lastTransitionTime = DateTime.UtcNow;
+    private DateTime _lastTransitionTime;
     private Exception? _lastException;
+
+    public CircuitBreakerStateInfo(TimeProvider? timeProvider = null)
+    {
+        _timeProvider = timeProvider ?? TimeProvider.System;
+        _lastTransitionTime = _timeProvider.GetUtcNow().DateTime;
+    }
 
     /// <summary>
     /// Current state of the circuit breaker.
@@ -287,12 +297,13 @@ public class CircuitBreakerStateInfo
     /// <summary>
     /// Atomically updates the state to Open with associated metadata.
     /// </summary>
-    internal void TransitionToOpen(Exception? exception)
+    internal void TransitionToOpen(Exception? exception, TimeProvider? timeProvider = null)
     {
+        var tp = timeProvider ?? _timeProvider;
         lock (_lock)
         {
             _state = CircuitBreakerState.Open;
-            _lastTransitionTime = DateTime.UtcNow;
+            _lastTransitionTime = tp.GetUtcNow().DateTime;
             _lastException = exception;
         }
     }
@@ -300,12 +311,13 @@ public class CircuitBreakerStateInfo
     /// <summary>
     /// Atomically updates the state to Closed and resets failure tracking.
     /// </summary>
-    internal void TransitionToClosed()
+    internal void TransitionToClosed(TimeProvider? timeProvider = null)
     {
+        var tp = timeProvider ?? _timeProvider;
         lock (_lock)
         {
             _state = CircuitBreakerState.Closed;
-            _lastTransitionTime = DateTime.UtcNow;
+            _lastTransitionTime = tp.GetUtcNow().DateTime;
             _failureCount = 0;
             _lastException = null;
         }
@@ -314,25 +326,27 @@ public class CircuitBreakerStateInfo
     /// <summary>
     /// Atomically updates the state to HalfOpen.
     /// </summary>
-    internal void TransitionToHalfOpen()
+    internal void TransitionToHalfOpen(TimeProvider? timeProvider = null)
     {
+        var tp = timeProvider ?? _timeProvider;
         lock (_lock)
         {
             _state = CircuitBreakerState.HalfOpen;
-            _lastTransitionTime = DateTime.UtcNow;
+            _lastTransitionTime = tp.GetUtcNow().DateTime;
         }
     }
 
     /// <summary>
     /// Atomically resets the circuit breaker state.
     /// </summary>
-    internal void Reset()
+    internal void Reset(TimeProvider? timeProvider = null)
     {
+        var tp = timeProvider ?? _timeProvider;
         lock (_lock)
         {
             _state = CircuitBreakerState.Closed;
             _failureCount = 0;
-            _lastTransitionTime = DateTime.UtcNow;
+            _lastTransitionTime = tp.GetUtcNow().DateTime;
             _lastException = null;
         }
     }

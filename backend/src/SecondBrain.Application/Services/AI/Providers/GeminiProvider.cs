@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.AI.Interfaces;
 using SecondBrain.Application.Services.AI.Models;
+using SecondBrain.Application.Telemetry;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
@@ -63,10 +64,15 @@ public class GeminiProvider : IAIProvider
             };
         }
 
+        var modelName = request.Model ?? _settings.DefaultModel;
+        using var activity = ApplicationTelemetry.StartAIProviderActivity("Gemini.GenerateCompletion", ProviderName, modelName);
+        activity?.SetTag("ai.prompt.length", request.Prompt.Length);
+
+        var stopwatch = Stopwatch.StartNew();
+
         try
         {
-            var model = _client.GenerativeModel(
-                model: request.Model ?? _settings.DefaultModel);
+            var model = _client.GenerativeModel(model: modelName);
 
             var generationConfig = new GenerationConfig
             {
@@ -80,17 +86,28 @@ public class GeminiProvider : IAIProvider
                 request.Prompt,
                 generationConfig: generationConfig);
 
+            stopwatch.Stop();
+            var tokensUsed = response?.UsageMetadata?.TotalTokenCount ?? 0;
+
+            activity?.SetTag("ai.tokens.total", tokensUsed);
+            activity?.SetStatus(ActivityStatusCode.Ok);
+            ApplicationTelemetry.RecordAIRequest(ProviderName, modelName, stopwatch.ElapsedMilliseconds, true, tokensUsed);
+
             return new AIResponse
             {
                 Success = true,
                 Content = response?.Text ?? string.Empty,
-                Model = request.Model ?? _settings.DefaultModel,
-                TokensUsed = response?.UsageMetadata?.TotalTokenCount ?? 0,
+                Model = modelName,
+                TokensUsed = tokensUsed,
                 Provider = ProviderName
             };
         }
         catch (Exception ex)
         {
+            stopwatch.Stop();
+            activity?.RecordException(ex);
+            ApplicationTelemetry.RecordAIRequest(ProviderName, modelName, stopwatch.ElapsedMilliseconds, false);
+
             _logger.LogError(ex, "Error generating completion from Gemini");
             return new AIResponse
             {
@@ -116,10 +133,16 @@ public class GeminiProvider : IAIProvider
             };
         }
 
+        var modelName = settings?.Model ?? _settings.DefaultModel;
+        var messageList = messages.ToList();
+        using var activity = ApplicationTelemetry.StartAIProviderActivity("Gemini.GenerateChatCompletion", ProviderName, modelName);
+        activity?.SetTag("ai.messages.count", messageList.Count);
+
+        var stopwatch = Stopwatch.StartNew();
+
         try
         {
-            var model = _client.GenerativeModel(
-                model: settings?.Model ?? _settings.DefaultModel);
+            var model = _client.GenerativeModel(model: modelName);
 
             var generationConfig = new GenerationConfig
             {
@@ -128,9 +151,6 @@ public class GeminiProvider : IAIProvider
                 TopP = _settings.TopP,
                 TopK = _settings.TopK
             };
-
-            // Convert messages to Gemini format with proper conversation history
-            var messageList = messages.ToList();
 
             // Separate system messages from conversation
             var systemMessage = messageList.FirstOrDefault(m => m.Role.ToLower() == "system");
@@ -147,9 +167,12 @@ public class GeminiProvider : IAIProvider
 
             if (lastMessage?.Images != null && lastMessage.Images.Count > 0)
             {
+                activity?.SetTag("ai.multimodal", true);
+                activity?.SetTag("ai.images.count", lastMessage.Images.Count);
+
                 // Build multimodal prompt for Gemini with images
                 var textPrompt = BuildGeminiTextPrompt(conversationMessages, systemMessage);
-                
+
                 // Generate content with text and images using Parts
                 var parts = new List<IPart> { new TextData { Text = textPrompt } };
                 foreach (var image in lastMessage.Images)
@@ -181,17 +204,28 @@ public class GeminiProvider : IAIProvider
                 response = await model.GenerateContent(fullPrompt, generationConfig: generationConfig);
             }
 
+            stopwatch.Stop();
+            var tokensUsed = response?.UsageMetadata?.TotalTokenCount ?? 0;
+
+            activity?.SetTag("ai.tokens.total", tokensUsed);
+            activity?.SetStatus(ActivityStatusCode.Ok);
+            ApplicationTelemetry.RecordAIRequest(ProviderName, modelName, stopwatch.ElapsedMilliseconds, true, tokensUsed);
+
             return new AIResponse
             {
                 Success = true,
                 Content = response?.Text ?? string.Empty,
-                Model = settings?.Model ?? _settings.DefaultModel,
-                TokensUsed = response?.UsageMetadata?.TotalTokenCount ?? 0,
+                Model = modelName,
+                TokensUsed = tokensUsed,
                 Provider = ProviderName
             };
         }
         catch (Exception ex)
         {
+            stopwatch.Stop();
+            activity?.RecordException(ex);
+            ApplicationTelemetry.RecordAIRequest(ProviderName, modelName, stopwatch.ElapsedMilliseconds, false);
+
             _logger.LogError(ex, "Error generating chat completion from Gemini");
             return new AIResponse
             {
@@ -221,8 +255,15 @@ public class GeminiProvider : IAIProvider
         if (_client == null)
             yield break;
 
-        var model = _client.GenerativeModel(
-            model: request.Model ?? _settings.DefaultModel);
+        var modelName = request.Model ?? _settings.DefaultModel;
+        using var activity = ApplicationTelemetry.StartAIProviderActivity("Gemini.StreamCompletion", ProviderName, modelName);
+        activity?.SetTag("ai.prompt.length", request.Prompt.Length);
+        activity?.SetTag("ai.streaming", true);
+
+        var stopwatch = Stopwatch.StartNew();
+        var firstTokenReceived = false;
+
+        var model = _client.GenerativeModel(model: modelName);
 
         var generationConfig = new GenerationConfig
         {
@@ -232,15 +273,30 @@ public class GeminiProvider : IAIProvider
             TopK = _settings.TopK
         };
 
+        var tokenCount = 0;
         await foreach (var chunk in model.GenerateContentStream(
             request.Prompt,
             generationConfig: generationConfig))
         {
             if (!string.IsNullOrEmpty(chunk?.Text))
             {
+                if (!firstTokenReceived)
+                {
+                    firstTokenReceived = true;
+                    ApplicationTelemetry.AIStreamingFirstTokenDuration.Record(
+                        stopwatch.ElapsedMilliseconds,
+                        new("provider", ProviderName),
+                        new("model", modelName));
+                }
+                tokenCount++;
                 yield return chunk.Text;
             }
         }
+
+        stopwatch.Stop();
+        activity?.SetTag("ai.tokens.output", tokenCount);
+        activity?.SetStatus(ActivityStatusCode.Ok);
+        ApplicationTelemetry.RecordAIRequest(ProviderName, modelName, stopwatch.ElapsedMilliseconds, true);
     }
 
     public Task<IAsyncEnumerable<string>> StreamChatCompletionAsync(
@@ -264,8 +320,16 @@ public class GeminiProvider : IAIProvider
         if (_client == null)
             yield break;
 
-        var model = _client.GenerativeModel(
-            model: settings?.Model ?? _settings.DefaultModel);
+        var modelName = settings?.Model ?? _settings.DefaultModel;
+        var messageList = messages.ToList();
+        using var activity = ApplicationTelemetry.StartAIProviderActivity("Gemini.StreamChatCompletion", ProviderName, modelName);
+        activity?.SetTag("ai.messages.count", messageList.Count);
+        activity?.SetTag("ai.streaming", true);
+
+        var stopwatch = Stopwatch.StartNew();
+        var firstTokenReceived = false;
+
+        var model = _client.GenerativeModel(model: modelName);
 
         var generationConfig = new GenerationConfig
         {
@@ -275,9 +339,6 @@ public class GeminiProvider : IAIProvider
             TopK = _settings.TopK
         };
 
-        // Convert messages to Gemini format with proper conversation history
-        var messageList = messages.ToList();
-
         // Separate system messages from conversation
         var systemMessage = messageList.FirstOrDefault(m => m.Role.ToLower() == "system");
         var conversationMessages = messageList.Where(m => m.Role.ToLower() != "system").ToList();
@@ -285,13 +346,18 @@ public class GeminiProvider : IAIProvider
         if (conversationMessages.Count == 0)
             yield break;
 
+        var tokenCount = 0;
+
         // Check if the last message has images (multimodal)
         var lastMessage = conversationMessages.LastOrDefault();
         if (lastMessage?.Images != null && lastMessage.Images.Count > 0)
         {
+            activity?.SetTag("ai.multimodal", true);
+            activity?.SetTag("ai.images.count", lastMessage.Images.Count);
+
             // Build multimodal prompt for Gemini with images
             var textPrompt = BuildGeminiTextPrompt(conversationMessages, systemMessage);
-            
+
             // Generate content with text and images using Parts
             var parts = new List<IPart> { new TextData { Text = textPrompt } };
             foreach (var image in lastMessage.Images)
@@ -299,13 +365,22 @@ public class GeminiProvider : IAIProvider
                 // Add inline image data as Part
                 parts.Add(new InlineData { MimeType = image.MediaType, Data = image.Base64Data });
             }
-            
+
             await foreach (var chunk in model.GenerateContentStream(
                 parts,
                 generationConfig: generationConfig))
             {
                 if (!string.IsNullOrEmpty(chunk?.Text))
                 {
+                    if (!firstTokenReceived)
+                    {
+                        firstTokenReceived = true;
+                        ApplicationTelemetry.AIStreamingFirstTokenDuration.Record(
+                            stopwatch.ElapsedMilliseconds,
+                            new("provider", ProviderName),
+                            new("model", modelName));
+                    }
+                    tokenCount++;
                     yield return chunk.Text;
                 }
             }
@@ -336,10 +411,24 @@ public class GeminiProvider : IAIProvider
             {
                 if (!string.IsNullOrEmpty(chunk?.Text))
                 {
+                    if (!firstTokenReceived)
+                    {
+                        firstTokenReceived = true;
+                        ApplicationTelemetry.AIStreamingFirstTokenDuration.Record(
+                            stopwatch.ElapsedMilliseconds,
+                            new("provider", ProviderName),
+                            new("model", modelName));
+                    }
+                    tokenCount++;
                     yield return chunk.Text;
                 }
             }
         }
+
+        stopwatch.Stop();
+        activity?.SetTag("ai.tokens.output", tokenCount);
+        activity?.SetStatus(ActivityStatusCode.Ok);
+        ApplicationTelemetry.RecordAIRequest(ProviderName, modelName, stopwatch.ElapsedMilliseconds, true);
     }
 
     /// <summary>

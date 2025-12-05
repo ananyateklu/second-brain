@@ -1,22 +1,25 @@
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
-using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Logging;
 using SecondBrain.Application.Services.Embeddings.Models;
+using SecondBrain.Application.Telemetry;
 
 namespace SecondBrain.Application.Services.Embeddings;
 
 /// <summary>
-/// Decorator that adds caching to any embedding provider.
+/// Decorator that adds caching to any embedding provider using HybridCache.
+/// HybridCache provides two-tier caching (L1 memory + L2 distributed) with stampede protection.
 /// Embeddings are deterministic for the same input, so caching significantly reduces API costs.
 /// </summary>
 public class CachedEmbeddingProvider : IEmbeddingProvider
 {
     private readonly IEmbeddingProvider _innerProvider;
-    private readonly IMemoryCache _cache;
+    private readonly HybridCache _cache;
     private readonly ILogger<CachedEmbeddingProvider> _logger;
-    private readonly TimeSpan _cacheDuration;
+    private readonly TimeSpan _localCacheExpiration;
+    private readonly TimeSpan _distributedCacheExpiration;
 
     /// <summary>
     /// Cache key prefix to namespace embedding cache entries
@@ -25,14 +28,16 @@ public class CachedEmbeddingProvider : IEmbeddingProvider
 
     public CachedEmbeddingProvider(
         IEmbeddingProvider innerProvider,
-        IMemoryCache cache,
+        HybridCache cache,
         ILogger<CachedEmbeddingProvider> logger,
-        TimeSpan? cacheDuration = null)
+        TimeSpan? localCacheExpiration = null,
+        TimeSpan? distributedCacheExpiration = null)
     {
         _innerProvider = innerProvider ?? throw new ArgumentNullException(nameof(innerProvider));
         _cache = cache ?? throw new ArgumentNullException(nameof(cache));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _cacheDuration = cacheDuration ?? TimeSpan.FromHours(24); // Default 24 hours
+        _localCacheExpiration = localCacheExpiration ?? TimeSpan.FromMinutes(10);
+        _distributedCacheExpiration = distributedCacheExpiration ?? TimeSpan.FromHours(24);
     }
 
     public string ProviderName => _innerProvider.ProviderName;
@@ -54,46 +59,63 @@ public class CachedEmbeddingProvider : IEmbeddingProvider
         }
 
         var cacheKey = GenerateCacheKey(text);
+        var cacheHit = true;
+        var stopwatch = Stopwatch.StartNew();
 
-        // Try to get from cache
-        if (_cache.TryGetValue<EmbeddingResponse>(cacheKey, out var cachedResponse) && cachedResponse != null)
+        // HybridCache.GetOrCreateAsync handles stampede protection automatically
+        // Multiple concurrent requests for the same key will share a single factory execution
+        var response = await _cache.GetOrCreateAsync(
+            cacheKey,
+            async ct =>
+            {
+                cacheHit = false;
+                _logger.LogDebug(
+                    "Embedding cache miss. Provider: {Provider}, Model: {Model}, TextLength: {Length}",
+                    ProviderName, ModelName, text.Length);
+
+                // Generate embedding from provider
+                var result = await _innerProvider.GenerateEmbeddingAsync(text, ct);
+
+                if (result.Success)
+                {
+                    _logger.LogDebug(
+                        "Embedding cached. Provider: {Provider}, Model: {Model}, Dimensions: {Dimensions}, TokensUsed: {Tokens}",
+                        ProviderName, ModelName, result.Embedding.Count, result.TokensUsed);
+                }
+
+                return result;
+            },
+            new HybridCacheEntryOptions
+            {
+                LocalCacheExpiration = _localCacheExpiration,
+                Expiration = _distributedCacheExpiration
+            },
+            cancellationToken: cancellationToken);
+
+        stopwatch.Stop();
+
+        // Record telemetry
+        if (cacheHit)
         {
+            ApplicationTelemetry.RecordCacheHit("embedding");
             _logger.LogDebug(
                 "Embedding cache hit. Provider: {Provider}, Model: {Model}, TextLength: {Length}",
                 ProviderName, ModelName, text.Length);
 
-            // Return a copy to prevent cache mutation
+            // Return a copy with zero tokens since no API call was made
             return new EmbeddingResponse
             {
-                Success = cachedResponse.Success,
-                Embedding = new List<double>(cachedResponse.Embedding),
-                Error = cachedResponse.Error,
+                Success = response.Success,
+                Embedding = new List<double>(response.Embedding),
+                Error = response.Error,
                 TokensUsed = 0, // No tokens used for cached response
-                Provider = cachedResponse.Provider
+                Provider = response.Provider
             };
         }
-
-        _logger.LogDebug(
-            "Embedding cache miss. Provider: {Provider}, Model: {Model}, TextLength: {Length}",
-            ProviderName, ModelName, text.Length);
-
-        // Generate embedding from provider
-        var response = await _innerProvider.GenerateEmbeddingAsync(text, cancellationToken);
-
-        // Cache successful responses
-        if (response.Success)
+        else
         {
-            var cacheOptions = new MemoryCacheEntryOptions
-            {
-                AbsoluteExpirationRelativeToNow = _cacheDuration,
-                Size = response.Embedding.Count * sizeof(double) + text.Length // Approximate memory size
-            };
-
-            _cache.Set(cacheKey, response, cacheOptions);
-
-            _logger.LogDebug(
-                "Embedding cached. Provider: {Provider}, Model: {Model}, Dimensions: {Dimensions}, TokensUsed: {Tokens}",
-                ProviderName, ModelName, response.Embedding.Count, response.TokensUsed);
+            ApplicationTelemetry.RecordCacheMiss("embedding");
+            ApplicationTelemetry.RecordEmbeddingGeneration(ProviderName, stopwatch.ElapsedMilliseconds);
         }
 
         return response;
@@ -117,16 +139,36 @@ public class CachedEmbeddingProvider : IEmbeddingProvider
         var results = new List<List<double>>(textList.Count);
         var uncachedTexts = new List<(int Index, string Text)>();
         var totalTokensUsed = 0;
+        var cacheHits = 0;
 
-        // Check cache for each text
+        // Check cache for each text (using GetOrCreateAsync for each to benefit from stampede protection)
         for (int i = 0; i < textList.Count; i++)
         {
             var text = textList[i];
             var cacheKey = GenerateCacheKey(text);
+            var index = i; // Capture for closure
 
-            if (_cache.TryGetValue<EmbeddingResponse>(cacheKey, out var cached) && cached?.Success == true)
+            // Use a local flag to track cache hits
+            var wasHit = true;
+
+            var cachedResponse = await _cache.GetOrCreateAsync(
+                cacheKey,
+                async ct =>
+                {
+                    wasHit = false;
+                    return new EmbeddingResponse { Success = false }; // Placeholder for uncached
+                },
+                new HybridCacheEntryOptions
+                {
+                    LocalCacheExpiration = _localCacheExpiration,
+                    Expiration = _distributedCacheExpiration
+                },
+                cancellationToken: cancellationToken);
+
+            if (wasHit && cachedResponse?.Success == true)
             {
-                results.Add(new List<double>(cached.Embedding));
+                results.Add(new List<double>(cachedResponse.Embedding));
+                cacheHits++;
                 _logger.LogDebug(
                     "Batch embedding cache hit for item {Index}. Provider: {Provider}",
                     i, ProviderName);
@@ -137,6 +179,12 @@ public class CachedEmbeddingProvider : IEmbeddingProvider
                 results.Add(new List<double>()); // Placeholder
             }
         }
+
+        // Record cache metrics
+        for (int i = 0; i < cacheHits; i++)
+            ApplicationTelemetry.RecordCacheHit("embedding");
+        for (int i = 0; i < uncachedTexts.Count; i++)
+            ApplicationTelemetry.RecordCacheMiss("embedding");
 
         // If all cached, return immediately
         if (!uncachedTexts.Any())
@@ -159,8 +207,12 @@ public class CachedEmbeddingProvider : IEmbeddingProvider
             textList.Count - uncachedTexts.Count, uncachedTexts.Count, ProviderName);
 
         // Generate embeddings for uncached texts
+        var stopwatch = Stopwatch.StartNew();
         var uncachedTextsList = uncachedTexts.Select(x => x.Text).ToList();
         var batchResponse = await _innerProvider.GenerateEmbeddingsAsync(uncachedTextsList, cancellationToken);
+        stopwatch.Stop();
+
+        ApplicationTelemetry.RecordEmbeddingGeneration(ProviderName, stopwatch.ElapsedMilliseconds, uncachedTextsList.Count);
 
         if (!batchResponse.Success)
         {
@@ -193,7 +245,7 @@ public class CachedEmbeddingProvider : IEmbeddingProvider
             // Update result
             results[originalIndex] = embedding;
 
-            // Cache individual embedding
+            // Cache individual embedding using SetAsync
             var cacheKey = GenerateCacheKey(text);
             var embeddingResponse = new EmbeddingResponse
             {
@@ -203,13 +255,15 @@ public class CachedEmbeddingProvider : IEmbeddingProvider
                 TokensUsed = 0 // Token count is for the batch, not individual
             };
 
-            var cacheOptions = new MemoryCacheEntryOptions
-            {
-                AbsoluteExpirationRelativeToNow = _cacheDuration,
-                Size = embedding.Count * sizeof(double) + text.Length
-            };
-
-            _cache.Set(cacheKey, embeddingResponse, cacheOptions);
+            await _cache.SetAsync(
+                cacheKey,
+                embeddingResponse,
+                new HybridCacheEntryOptions
+                {
+                    LocalCacheExpiration = _localCacheExpiration,
+                    Expiration = _distributedCacheExpiration
+                },
+                cancellationToken: cancellationToken);
         }
 
         return new BatchEmbeddingResponse

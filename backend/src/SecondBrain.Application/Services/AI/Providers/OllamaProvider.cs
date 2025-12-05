@@ -6,6 +6,7 @@ using OllamaSharp.Models.Chat;
 using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.AI.Interfaces;
 using SecondBrain.Application.Services.AI.Models;
+using SecondBrain.Application.Telemetry;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net.Sockets;
@@ -99,11 +100,18 @@ public class OllamaProvider : IAIProvider
             };
         }
 
+        var model = request.Model ?? _settings.DefaultModel;
+        using var activity = ApplicationTelemetry.StartAIProviderActivity("Ollama.GenerateCompletion", ProviderName, model);
+        activity?.SetTag("ai.prompt.length", request.Prompt.Length);
+        activity?.SetTag("ollama.url", effectiveUrl);
+
+        var stopwatch = Stopwatch.StartNew();
+
         try
         {
             var generateRequest = new GenerateRequest
             {
-                Model = request.Model ?? _settings.DefaultModel,
+                Model = model,
                 Prompt = request.Prompt,
                 Stream = false,
                 Options = new RequestOptions
@@ -125,17 +133,25 @@ public class OllamaProvider : IAIProvider
                 throw new InvalidOperationException("No response from Ollama");
             }
 
+            stopwatch.Stop();
+            activity?.SetStatus(ActivityStatusCode.Ok);
+            ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, true);
+
             return new AIResponse
             {
                 Success = true,
                 Content = response.Response ?? string.Empty,
-                Model = request.Model ?? _settings.DefaultModel,
+                Model = model,
                 TokensUsed = 0, // Token counting not available in current OllamaSharp version
                 Provider = ProviderName
             };
         }
         catch (HttpRequestException ex) when (ex.InnerException is SocketException)
         {
+            stopwatch.Stop();
+            activity?.RecordException(ex);
+            ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, false);
+
             _logger.LogWarning(ex, "Ollama completion failed - service unreachable (connection refused)");
             return new AIResponse
             {
@@ -146,6 +162,10 @@ public class OllamaProvider : IAIProvider
         }
         catch (HttpRequestException ex)
         {
+            stopwatch.Stop();
+            activity?.RecordException(ex);
+            ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, false);
+
             _logger.LogWarning(ex, "Ollama completion failed - service unreachable");
             return new AIResponse
             {
@@ -156,6 +176,10 @@ public class OllamaProvider : IAIProvider
         }
         catch (SocketException ex)
         {
+            stopwatch.Stop();
+            activity?.RecordException(ex);
+            ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, false);
+
             _logger.LogWarning(ex, "Ollama completion failed - socket connection refused");
             return new AIResponse
             {
@@ -166,6 +190,10 @@ public class OllamaProvider : IAIProvider
         }
         catch (Exception ex)
         {
+            stopwatch.Stop();
+            activity?.RecordException(ex);
+            ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, false);
+
             _logger.LogError(ex, "Error generating completion from Ollama");
             return new AIResponse
             {
@@ -194,13 +222,21 @@ public class OllamaProvider : IAIProvider
             };
         }
 
+        var model = settings?.Model ?? _settings.DefaultModel;
+        var messageList = messages.ToList();
+        using var activity = ApplicationTelemetry.StartAIProviderActivity("Ollama.GenerateChatCompletion", ProviderName, model);
+        activity?.SetTag("ai.messages.count", messageList.Count);
+        activity?.SetTag("ollama.url", effectiveUrl);
+
+        var stopwatch = Stopwatch.StartNew();
+
         try
         {
-            var chatMessages = messages.Select(m => ConvertToOllamaMessage(m)).ToList();
+            var chatMessages = messageList.Select(m => ConvertToOllamaMessage(m)).ToList();
 
             var chatRequest = new ChatRequest
             {
-                Model = settings?.Model ?? _settings.DefaultModel,
+                Model = model,
                 Messages = chatMessages,
                 Stream = false,
                 Options = new RequestOptions
@@ -222,17 +258,25 @@ public class OllamaProvider : IAIProvider
                 throw new InvalidOperationException("No response from Ollama");
             }
 
+            stopwatch.Stop();
+            activity?.SetStatus(ActivityStatusCode.Ok);
+            ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, true);
+
             return new AIResponse
             {
                 Success = true,
                 Content = response.Message?.Content ?? string.Empty,
-                Model = settings?.Model ?? _settings.DefaultModel,
+                Model = model,
                 TokensUsed = 0, // Token counting not available in current OllamaSharp version
                 Provider = ProviderName
             };
         }
         catch (HttpRequestException ex) when (ex.InnerException is SocketException)
         {
+            stopwatch.Stop();
+            activity?.RecordException(ex);
+            ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, false);
+
             _logger.LogWarning(ex, "Ollama chat completion failed - service unreachable (connection refused)");
             return new AIResponse
             {
@@ -243,6 +287,10 @@ public class OllamaProvider : IAIProvider
         }
         catch (HttpRequestException ex)
         {
+            stopwatch.Stop();
+            activity?.RecordException(ex);
+            ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, false);
+
             _logger.LogWarning(ex, "Ollama chat completion failed - service unreachable");
             return new AIResponse
             {
@@ -253,6 +301,10 @@ public class OllamaProvider : IAIProvider
         }
         catch (SocketException ex)
         {
+            stopwatch.Stop();
+            activity?.RecordException(ex);
+            ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, false);
+
             _logger.LogWarning(ex, "Ollama chat completion failed - socket connection refused");
             return new AIResponse
             {
@@ -263,6 +315,10 @@ public class OllamaProvider : IAIProvider
         }
         catch (Exception ex)
         {
+            stopwatch.Stop();
+            activity?.RecordException(ex);
+            ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, false);
+
             _logger.LogError(ex, "Error generating chat completion from Ollama");
             return new AIResponse
             {
@@ -294,9 +350,17 @@ public class OllamaProvider : IAIProvider
         OllamaApiClient client,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
+        var model = request.Model ?? _settings.DefaultModel;
+        using var activity = ApplicationTelemetry.StartAIProviderActivity("Ollama.StreamCompletion", ProviderName, model);
+        activity?.SetTag("ai.prompt.length", request.Prompt.Length);
+        activity?.SetTag("ai.streaming", true);
+
+        var stopwatch = Stopwatch.StartNew();
+        var firstTokenReceived = false;
+
         var generateRequest = new GenerateRequest
         {
-            Model = request.Model ?? _settings.DefaultModel,
+            Model = model,
             Prompt = request.Prompt,
             Stream = true,
             Options = new RequestOptions
@@ -313,21 +377,25 @@ public class OllamaProvider : IAIProvider
         }
         catch (HttpRequestException ex) when (ex.InnerException is SocketException)
         {
+            activity?.RecordException(ex);
             _logger.LogWarning(ex, "Ollama streaming failed - service unreachable (connection refused)");
             yield break;
         }
         catch (HttpRequestException ex)
         {
+            activity?.RecordException(ex);
             _logger.LogWarning(ex, "Ollama streaming failed - service unreachable");
             yield break;
         }
         catch (SocketException ex)
         {
+            activity?.RecordException(ex);
             _logger.LogWarning(ex, "Ollama streaming failed - socket connection refused");
             yield break;
         }
         catch (Exception ex)
         {
+            activity?.RecordException(ex);
             _logger.LogError(ex, "Ollama streaming failed with unexpected error");
             yield break;
         }
@@ -335,13 +403,28 @@ public class OllamaProvider : IAIProvider
         if (stream == null)
             yield break;
 
+        var tokenCount = 0;
         await foreach (var chunk in stream)
         {
             if (!string.IsNullOrEmpty(chunk?.Response))
             {
+                if (!firstTokenReceived)
+                {
+                    firstTokenReceived = true;
+                    ApplicationTelemetry.AIStreamingFirstTokenDuration.Record(
+                        stopwatch.ElapsedMilliseconds,
+                        new("provider", ProviderName),
+                        new("model", model));
+                }
+                tokenCount++;
                 yield return chunk.Response;
             }
         }
+
+        stopwatch.Stop();
+        activity?.SetTag("ai.tokens.output", tokenCount);
+        activity?.SetStatus(ActivityStatusCode.Ok);
+        ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, true);
     }
 
     public Task<IAsyncEnumerable<string>> StreamChatCompletionAsync(
@@ -367,11 +450,20 @@ public class OllamaProvider : IAIProvider
         OllamaApiClient client,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        var chatMessages = messages.Select(m => ConvertToOllamaMessage(m)).ToList();
+        var model = settings?.Model ?? _settings.DefaultModel;
+        var messageList = messages.ToList();
+        using var activity = ApplicationTelemetry.StartAIProviderActivity("Ollama.StreamChatCompletion", ProviderName, model);
+        activity?.SetTag("ai.messages.count", messageList.Count);
+        activity?.SetTag("ai.streaming", true);
+
+        var stopwatch = Stopwatch.StartNew();
+        var firstTokenReceived = false;
+
+        var chatMessages = messageList.Select(m => ConvertToOllamaMessage(m)).ToList();
 
         var chatRequest = new ChatRequest
         {
-            Model = settings?.Model ?? _settings.DefaultModel,
+            Model = model,
             Messages = chatMessages,
             Stream = true,
             Options = new RequestOptions
@@ -388,21 +480,25 @@ public class OllamaProvider : IAIProvider
         }
         catch (HttpRequestException ex) when (ex.InnerException is SocketException)
         {
+            activity?.RecordException(ex);
             _logger.LogWarning(ex, "Ollama chat streaming failed - service unreachable (connection refused)");
             yield break;
         }
         catch (HttpRequestException ex)
         {
+            activity?.RecordException(ex);
             _logger.LogWarning(ex, "Ollama chat streaming failed - service unreachable");
             yield break;
         }
         catch (SocketException ex)
         {
+            activity?.RecordException(ex);
             _logger.LogWarning(ex, "Ollama chat streaming failed - socket connection refused");
             yield break;
         }
         catch (Exception ex)
         {
+            activity?.RecordException(ex);
             _logger.LogError(ex, "Ollama chat streaming failed with unexpected error");
             yield break;
         }
@@ -410,13 +506,28 @@ public class OllamaProvider : IAIProvider
         if (stream == null)
             yield break;
 
+        var tokenCount = 0;
         await foreach (var chunk in stream)
         {
             if (!string.IsNullOrEmpty(chunk?.Message?.Content))
             {
+                if (!firstTokenReceived)
+                {
+                    firstTokenReceived = true;
+                    ApplicationTelemetry.AIStreamingFirstTokenDuration.Record(
+                        stopwatch.ElapsedMilliseconds,
+                        new("provider", ProviderName),
+                        new("model", model));
+                }
+                tokenCount++;
                 yield return chunk.Message.Content;
             }
         }
+
+        stopwatch.Stop();
+        activity?.SetTag("ai.tokens.output", tokenCount);
+        activity?.SetStatus(ActivityStatusCode.Ok);
+        ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, true);
     }
 
     /// <summary>
@@ -691,7 +802,7 @@ public class OllamaProvider : IAIProvider
         // Use a separate enumerator to handle errors during enumeration
         var enumerator = pullStream.GetAsyncEnumerator(cancellationToken);
         OllamaPullProgress? errorProgress = null;
-        
+
         try
         {
             while (true)

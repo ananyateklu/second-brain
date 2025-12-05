@@ -5,6 +5,7 @@ using OpenAI.Chat;
 using SecondBrain.Application.Configuration;
 using SecondBrain.Application.Services.AI.Interfaces;
 using SecondBrain.Application.Services.AI.Models;
+using SecondBrain.Application.Telemetry;
 using System.ClientModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -74,6 +75,12 @@ public class OpenAIProvider : IAIProvider
             };
         }
 
+        var model = request.Model ?? _settings.DefaultModel;
+        using var activity = ApplicationTelemetry.StartAIProviderActivity("OpenAI.GenerateCompletion", ProviderName, model);
+        activity?.SetTag("ai.prompt.length", request.Prompt.Length);
+
+        var stopwatch = Stopwatch.StartNew();
+
         try
         {
             var messages = new List<OpenAIChatMessage>
@@ -99,12 +106,19 @@ public class OpenAIProvider : IAIProvider
                 chatOptions,
                 cancellationToken);
 
+            stopwatch.Stop();
+            var tokensUsed = response.Value.Usage.TotalTokenCount;
+
+            activity?.SetTag("ai.tokens.total", tokensUsed);
+            activity?.SetStatus(ActivityStatusCode.Ok);
+            ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, true, tokensUsed);
+
             return new AIResponse
             {
                 Success = true,
                 Content = response.Value.Content[0].Text,
                 Model = _settings.DefaultModel,
-                TokensUsed = response.Value.Usage.TotalTokenCount,
+                TokensUsed = tokensUsed,
                 Provider = ProviderName
             };
         }
@@ -129,17 +143,29 @@ public class OpenAIProvider : IAIProvider
                     chatOptions,
                     cancellationToken);
 
+                stopwatch.Stop();
+                var tokensUsed = response.Value.Usage.TotalTokenCount;
+
+                activity?.SetTag("ai.tokens.total", tokensUsed);
+                activity?.SetTag("ai.retry", true);
+                activity?.SetStatus(ActivityStatusCode.Ok);
+                ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, true, tokensUsed);
+
                 return new AIResponse
                 {
                     Success = true,
                     Content = response.Value.Content[0].Text,
                     Model = _settings.DefaultModel,
-                    TokensUsed = response.Value.Usage.TotalTokenCount,
+                    TokensUsed = tokensUsed,
                     Provider = ProviderName
                 };
             }
             catch (Exception retryEx)
             {
+                stopwatch.Stop();
+                activity?.RecordException(retryEx);
+                ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, false);
+
                 _logger.LogError(retryEx, "Error generating completion from OpenAI after retry");
                 return new AIResponse
                 {
@@ -151,6 +177,10 @@ public class OpenAIProvider : IAIProvider
         }
         catch (Exception ex)
         {
+            stopwatch.Stop();
+            activity?.RecordException(ex);
+            ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, false);
+
             _logger.LogError(ex, "Error generating completion from OpenAI");
             return new AIResponse
             {
@@ -176,9 +206,16 @@ public class OpenAIProvider : IAIProvider
             };
         }
 
+        var model = settings?.Model ?? _settings.DefaultModel;
+        using var activity = ApplicationTelemetry.StartAIProviderActivity("OpenAI.GenerateChatCompletion", ProviderName, model);
+        var messageList = messages.ToList();
+        activity?.SetTag("ai.messages.count", messageList.Count);
+
+        var stopwatch = Stopwatch.StartNew();
+
         try
         {
-            var chatMessages = messages.Select(m => ConvertToOpenAIMessage(m)).ToList();
+            var chatMessages = messageList.Select(m => ConvertToOpenAIMessage(m)).ToList();
 
             var chatOptions = new ChatCompletionOptions
             {
@@ -198,12 +235,19 @@ public class OpenAIProvider : IAIProvider
                 chatOptions,
                 cancellationToken);
 
+            stopwatch.Stop();
+            var tokensUsed = response.Value.Usage.TotalTokenCount;
+
+            activity?.SetTag("ai.tokens.total", tokensUsed);
+            activity?.SetStatus(ActivityStatusCode.Ok);
+            ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, true, tokensUsed);
+
             return new AIResponse
             {
                 Success = true,
                 Content = response.Value.Content[0].Text,
                 Model = _settings.DefaultModel,
-                TokensUsed = response.Value.Usage.TotalTokenCount,
+                TokensUsed = tokensUsed,
                 Provider = ProviderName
             };
         }
@@ -213,7 +257,7 @@ public class OpenAIProvider : IAIProvider
             _logger.LogWarning("Model does not support temperature parameter, retrying without it");
             try
             {
-                var chatMessages = messages.Select(m => m.Role.ToLower() switch
+                var chatMessages = messageList.Select(m => m.Role.ToLower() switch
                 {
                     "system" => (OpenAIChatMessage)new SystemChatMessage(m.Content),
                     "assistant" => new AssistantChatMessage(m.Content),
@@ -230,17 +274,29 @@ public class OpenAIProvider : IAIProvider
                     chatOptions,
                     cancellationToken);
 
+                stopwatch.Stop();
+                var tokensUsed = response.Value.Usage.TotalTokenCount;
+
+                activity?.SetTag("ai.tokens.total", tokensUsed);
+                activity?.SetTag("ai.retry", true);
+                activity?.SetStatus(ActivityStatusCode.Ok);
+                ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, true, tokensUsed);
+
                 return new AIResponse
                 {
                     Success = true,
                     Content = response.Value.Content[0].Text,
                     Model = _settings.DefaultModel,
-                    TokensUsed = response.Value.Usage.TotalTokenCount,
+                    TokensUsed = tokensUsed,
                     Provider = ProviderName
                 };
             }
             catch (Exception retryEx)
             {
+                stopwatch.Stop();
+                activity?.RecordException(retryEx);
+                ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, false);
+
                 _logger.LogError(retryEx, "Error generating chat completion from OpenAI after retry");
                 return new AIResponse
                 {
@@ -252,6 +308,10 @@ public class OpenAIProvider : IAIProvider
         }
         catch (Exception ex)
         {
+            stopwatch.Stop();
+            activity?.RecordException(ex);
+            ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, false);
+
             _logger.LogError(ex, "Error generating chat completion from OpenAI");
             return new AIResponse
             {
@@ -281,6 +341,14 @@ public class OpenAIProvider : IAIProvider
         if (_client == null)
             yield break;
 
+        var model = request.Model ?? _settings.DefaultModel;
+        using var activity = ApplicationTelemetry.StartAIProviderActivity("OpenAI.StreamCompletion", ProviderName, model);
+        activity?.SetTag("ai.prompt.length", request.Prompt.Length);
+        activity?.SetTag("ai.streaming", true);
+
+        var stopwatch = Stopwatch.StartNew();
+        var firstTokenReceived = false;
+
         var messages = new List<OpenAIChatMessage>
         {
             new UserChatMessage(request.Prompt)
@@ -303,13 +371,28 @@ public class OpenAIProvider : IAIProvider
             chatOptions,
             cancellationToken);
 
+        var tokenCount = 0;
         await foreach (var update in stream)
         {
             foreach (var contentPart in update.ContentUpdate)
             {
+                if (!firstTokenReceived)
+                {
+                    firstTokenReceived = true;
+                    ApplicationTelemetry.AIStreamingFirstTokenDuration.Record(
+                        stopwatch.ElapsedMilliseconds,
+                        new("provider", ProviderName),
+                        new("model", model));
+                }
+                tokenCount++;
                 yield return contentPart.Text;
             }
         }
+
+        stopwatch.Stop();
+        activity?.SetTag("ai.tokens.output", tokenCount);
+        activity?.SetStatus(ActivityStatusCode.Ok);
+        ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, true);
     }
 
     public Task<IAsyncEnumerable<string>> StreamChatCompletionAsync(
@@ -333,7 +416,16 @@ public class OpenAIProvider : IAIProvider
         if (_client == null)
             yield break;
 
-        var chatMessages = messages.Select(m => ConvertToOpenAIMessage(m)).ToList();
+        var model = settings?.Model ?? _settings.DefaultModel;
+        var messageList = messages.ToList();
+        using var activity = ApplicationTelemetry.StartAIProviderActivity("OpenAI.StreamChatCompletion", ProviderName, model);
+        activity?.SetTag("ai.messages.count", messageList.Count);
+        activity?.SetTag("ai.streaming", true);
+
+        var stopwatch = Stopwatch.StartNew();
+        var firstTokenReceived = false;
+
+        var chatMessages = messageList.Select(m => ConvertToOpenAIMessage(m)).ToList();
 
         var chatOptions = new ChatCompletionOptions
         {
@@ -348,13 +440,28 @@ public class OpenAIProvider : IAIProvider
             chatOptions,
             cancellationToken);
 
+        var tokenCount = 0;
         await foreach (var update in stream)
         {
             foreach (var contentPart in update.ContentUpdate)
             {
+                if (!firstTokenReceived)
+                {
+                    firstTokenReceived = true;
+                    ApplicationTelemetry.AIStreamingFirstTokenDuration.Record(
+                        stopwatch.ElapsedMilliseconds,
+                        new("provider", ProviderName),
+                        new("model", model));
+                }
+                tokenCount++;
                 yield return contentPart.Text;
             }
         }
+
+        stopwatch.Stop();
+        activity?.SetTag("ai.tokens.output", tokenCount);
+        activity?.SetStatus(ActivityStatusCode.Ok);
+        ApplicationTelemetry.RecordAIRequest(ProviderName, model, stopwatch.ElapsedMilliseconds, true);
     }
 
     /// <summary>

@@ -11,6 +11,7 @@ using SecondBrain.Application.DTOs.Requests;
 using SecondBrain.Application.DTOs.Responses;
 using SecondBrain.Application.Queries.Notes.GetAllNotes;
 using SecondBrain.Application.Queries.Notes.GetNoteById;
+using SecondBrain.Application.Services.Notes;
 using SecondBrain.Core.Common;
 
 namespace SecondBrain.Tests.Unit.API.Controllers;
@@ -18,14 +19,16 @@ namespace SecondBrain.Tests.Unit.API.Controllers;
 public class NotesControllerTests
 {
     private readonly Mock<IMediator> _mockMediator;
+    private readonly Mock<INoteVersionService> _mockVersionService;
     private readonly Mock<ILogger<NotesController>> _mockLogger;
     private readonly NotesController _sut;
 
     public NotesControllerTests()
     {
         _mockMediator = new Mock<IMediator>();
+        _mockVersionService = new Mock<INoteVersionService>();
         _mockLogger = new Mock<ILogger<NotesController>>();
-        _sut = new NotesController(_mockMediator.Object, _mockLogger.Object);
+        _sut = new NotesController(_mockMediator.Object, _mockVersionService.Object, _mockLogger.Object);
     }
 
     #region GetAllNotes Tests
