@@ -45,7 +45,7 @@ public class GetNoteByIdQueryHandler : IRequestHandler<GetNoteByIdQuery, Result<
                 request.UserId, request.NoteId, note.UserId);
 
             return Result<NoteResponse>.Failure(
-                new Error("Unauthorized", "Access denied to this note"));
+                Error.Forbidden("Access denied to this note"));
         }
 
         return Result<NoteResponse>.Success(note.ToResponse());

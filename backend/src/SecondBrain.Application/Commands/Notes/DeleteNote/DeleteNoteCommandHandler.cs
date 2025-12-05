@@ -43,7 +43,7 @@ public class DeleteNoteCommandHandler : IRequestHandler<DeleteNoteCommand, Resul
                 request.UserId, request.NoteId, existingNote.UserId);
 
             return Result.Failure(
-                new Error("Unauthorized", "Access denied to this note"));
+                Error.Forbidden("Access denied to this note"));
         }
 
         var deleted = await _noteRepository.DeleteAsync(request.NoteId);

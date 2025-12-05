@@ -46,7 +46,7 @@ public class UpdateNoteCommandHandler : IRequestHandler<UpdateNoteCommand, Resul
                 request.UserId, request.NoteId, existingNote.UserId);
 
             return Result<NoteResponse>.Failure(
-                new Error("Unauthorized", "Access denied to this note"));
+                Error.Forbidden("Access denied to this note"));
         }
 
         // Create an UpdateNoteRequest to use existing mapping logic

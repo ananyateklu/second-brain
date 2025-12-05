@@ -1,3 +1,4 @@
+using System.Reflection;
 using FluentValidation;
 using MediatR;
 using SecondBrain.Core.Common;
@@ -53,7 +54,12 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
 
                 // Create Result<T>.Failure(error) using reflection
                 var resultType = responseType;
-                var failureMethod = resultType.GetMethod("Failure", new[] { typeof(Error) });
+                var failureMethod = resultType.GetMethod(
+                    "Failure",
+                    BindingFlags.Public | BindingFlags.Static,
+                    null,
+                    new[] { typeof(Error) },
+                    null);
 
                 if (failureMethod != null)
                 {

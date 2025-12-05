@@ -23,6 +23,7 @@ public class CreateNoteRequestValidator : AbstractValidator<CreateNoteRequest>
             .WithMessage("Content must not exceed 1,000,000 characters");
 
         RuleFor(x => x.Tags)
+            .Cascade(CascadeMode.Stop)
             .NotNull()
             .WithMessage("Tags list cannot be null")
             .Must(tags => tags.Count <= 50)
