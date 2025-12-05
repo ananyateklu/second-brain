@@ -1,8 +1,13 @@
+/* eslint-disable react-refresh/only-export-components */
 /**
  * ChatInput Compound Component
  * 
  * A composable chat input that follows the compound component pattern.
  * All sub-components share state through ChatInputContext.
+ * 
+ * This file is a barrel file that re-exports all compound components.
+ * The eslint-disable is intentional as this pattern requires exporting
+ * both components and non-components (context, hooks, types).
  * 
  * @example
  * ```tsx

@@ -3,7 +3,8 @@ import { useIndexStats, useDeleteIndexedNotes, useActiveIndexingVectorStores } f
 import { IndexStatsData } from '../../types/rag';
 import { toast } from '../../hooks/use-toast';
 import { isTauri } from '../../lib/native-notifications';
-import { TauriPineconeSetupModal, usePineconeConfigured } from './TauriPineconeSetupModal';
+import { TauriPineconeSetupModal } from './TauriPineconeSetupModal';
+import { usePineconeConfigured } from './use-pinecone-configured';
 
 interface IndexingStatsProps {
   userId?: string;

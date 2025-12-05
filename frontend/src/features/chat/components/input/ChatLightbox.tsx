@@ -6,7 +6,7 @@
  */
 
 import { formatFileSize, type FileAttachment } from '../../../../utils/multimodal-models';
-import { useChatInputContext } from './ChatInputContext';
+import { useChatInputContextSafe } from './ChatInputContext';
 
 export interface ChatLightboxProps {
   /** Image to display (optional if using context) */
@@ -19,13 +19,8 @@ export function ChatLightbox({
   image: propImage,
   onClose: propOnClose,
 }: ChatLightboxProps = {}) {
-  // Try to use context, but fall back to props
-  let contextValue: ReturnType<typeof useChatInputContext> | null = null;
-  try {
-    contextValue = useChatInputContext();
-  } catch {
-    // Not in a ChatInput context, use props
-  }
+  // Use safe context hook - returns null if not in ChatInput context
+  const contextValue = useChatInputContextSafe();
 
   const image = propImage ?? contextValue?.lightboxImage;
   const onClose = propOnClose ?? contextValue?.onLightboxClose ?? (() => { });

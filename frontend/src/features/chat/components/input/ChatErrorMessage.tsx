@@ -5,7 +5,7 @@
  * Can be used standalone with props or with ChatInputContext
  */
 
-import { useChatInputContext } from './ChatInputContext';
+import { useChatInputContextSafe } from './ChatInputContext';
 
 export interface ChatErrorMessageProps {
   /** Error message to display (optional if using context) */
@@ -21,13 +21,8 @@ export function ChatErrorMessage({
   onDismiss,
   errorType = 'file',
 }: ChatErrorMessageProps) {
-  // Try to use context, but fall back to props
-  let contextValue: ReturnType<typeof useChatInputContext> | null = null;
-  try {
-    contextValue = useChatInputContext();
-  } catch {
-    // Not in a ChatInput context, use props
-  }
+  // Use safe context hook - returns null if not in ChatInput context
+  const contextValue = useChatInputContextSafe();
 
   // Determine which error message to show
   const message = propMessage ?? (

@@ -49,43 +49,6 @@ const API_KEY_FIELDS: ApiKeyField[] = [
   { key: 'pinecone_index_name', label: 'Pinecone Index Name', placeholder: 'second-brain', type: 'text', group: 'vectorstore' },
 ];
 
-// Hook to load and manage secrets
-export function useTauriSecrets() {
-  const [secrets, setSecrets] = useState<Secrets>({});
-  const [isLoading, setIsLoading] = useState(true);
-
-  const loadSecrets = useCallback(async () => {
-    if (!isTauri()) {
-      setIsLoading(false);
-      return;
-    }
-    try {
-      setIsLoading(true);
-      const loadedSecrets = await getSecrets();
-      setSecrets(loadedSecrets);
-    } catch (error) {
-      console.error('Failed to load secrets:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadSecrets();
-  }, [loadSecrets]);
-
-  const isProviderConfigured = useCallback((providerId: string): boolean => {
-    const secretKey = PROVIDER_SECRET_KEYS[providerId];
-    if (!secretKey) return true; // Unknown provider, assume configured
-    const value = secrets[secretKey];
-    // For Ollama, empty is OK (uses default local)
-    if (providerId === 'ollama') return true;
-    return !!value && value.trim() !== '';
-  }, [secrets]);
-
-  return { secrets, isLoading, isProviderConfigured, refetch: loadSecrets };
-}
-
 // Single provider API key input for the modal
 interface TauriProviderApiKeyInputProps {
   providerId: string;

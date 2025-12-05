@@ -8,20 +8,6 @@ const isTauri = (): boolean => {
 };
 
 /**
- * Hook to get the title bar height for proper content spacing
- */
-export function useTitleBarHeight(): number {
-    const [isTauriApp, setIsTauriApp] = useState(false);
-
-    useEffect(() => {
-        setIsTauriApp(isTauri());
-    }, []);
-
-    // Return 28px (macOS standard) for Tauri, 0 for web
-    return isTauriApp ? 28 : 0;
-}
-
-/**
  * TitleBar component that provides a draggable region for macOS window controls
  * This creates a seamless title bar that blends with the app's design
  */

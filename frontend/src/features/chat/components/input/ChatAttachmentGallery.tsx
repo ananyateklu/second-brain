@@ -7,7 +7,7 @@
 
 import { type FileAttachment, formatFileSize } from '../../../../utils/multimodal-models';
 import { FILE_ICONS } from './file-icons';
-import { useChatInputContext } from './ChatInputContext';
+import { useChatInputContextSafe } from './ChatInputContext';
 
 export interface ChatAttachmentGalleryProps {
   /** Files to display (optional if using context) */
@@ -26,13 +26,8 @@ export function ChatAttachmentGallery({
   onAddMore: propOnAddMore,
   onImageClick: propOnImageClick,
 }: ChatAttachmentGalleryProps) {
-  // Try to use context, but fall back to props
-  let contextValue: ReturnType<typeof useChatInputContext> | null = null;
-  try {
-    contextValue = useChatInputContext();
-  } catch {
-    // Not in a ChatInput context, use props
-  }
+  // Use safe context hook - returns null if not in ChatInput context
+  const contextValue = useChatInputContextSafe();
 
   const files = propFiles ?? contextValue?.attachedFiles ?? [];
   const onRemoveFile = propOnRemoveFile ?? contextValue?.onRemoveFile ?? (() => { });

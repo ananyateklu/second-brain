@@ -141,7 +141,7 @@ export const useActiveIndexingVectorStores = (): Set<VectorStoreProvider> => {
                     vectorStores.add(vectorStoreProvider as VectorStoreProvider);
                   }
                 }
-              } catch (e) {
+              } catch {
                 // Ignore parse errors
               }
             }

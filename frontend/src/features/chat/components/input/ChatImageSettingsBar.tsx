@@ -10,7 +10,7 @@ import {
   QUALITY_OPTIONS,
   STYLE_OPTIONS,
 } from '../../../../utils/image-generation-models';
-import { useChatInputContext, type ImageModelInfo } from './ChatInputContext';
+import { useChatInputContextSafe, type ImageModelInfo } from './ChatInputContext';
 
 export type { ImageModelInfo };
 
@@ -43,13 +43,8 @@ export function ChatImageSettingsBar({
   onStyleChange: propOnStyleChange,
   disabled: propDisabled,
 }: ChatImageSettingsBarProps) {
-  // Try to use context, but fall back to props
-  let contextValue: ReturnType<typeof useChatInputContext> | null = null;
-  try {
-    contextValue = useChatInputContext();
-  } catch {
-    // Not in a ChatInput context, use props
-  }
+  // Use safe context hook - returns null if not in ChatInput context
+  const contextValue = useChatInputContextSafe();
 
   const modelInfo = propModelInfo ?? contextValue?.currentImageModelInfo;
   const size = propSize ?? contextValue?.imageSettings.size ?? '1024x1024';

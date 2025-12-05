@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { FORMATTING_ACTIONS, type FormattingAction } from './formatting-actions';
-import { useChatInputContext } from './ChatInputContext';
+import { useChatInputContextSafe } from './ChatInputContext';
 
 export interface ChatFormattingToolbarProps {
   /** Callback for formatting (optional if using context) */
@@ -20,13 +20,8 @@ export function ChatFormattingToolbar({
   onFormat: propOnFormat,
   actions = FORMATTING_ACTIONS,
 }: ChatFormattingToolbarProps) {
-  // Try to use context, but fall back to props
-  let contextValue: ReturnType<typeof useChatInputContext> | null = null;
-  try {
-    contextValue = useChatInputContext();
-  } catch {
-    // Not in a ChatInput context, use props
-  }
+  // Use safe context hook - returns null if not in ChatInput context
+  const contextValue = useChatInputContextSafe();
 
   const onFormat = propOnFormat ?? contextValue?.onFormat ?? (() => { });
   const showToolbar = contextValue?.showToolbar ?? true;

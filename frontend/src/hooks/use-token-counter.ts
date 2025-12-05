@@ -186,7 +186,7 @@ export function estimateTokensSync(text: string, model?: string): number {
   }
 
   // Detect code-heavy text
-  const codeCharacters = (text.match(/[{}()\[\]<>:;=+\-*/%&|^~!?@#$\\]/g) || []).length;
+  const codeCharacters = (text.match(/[{}()[\]<>:;=+\-*/%&|^~!?@#$\\]/g) || []).length;
   const codeRatio = codeCharacters / text.length;
   if (codeRatio > 0.1) {
     charsPerToken = 3;

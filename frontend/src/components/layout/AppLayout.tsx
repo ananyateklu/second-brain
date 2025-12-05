@@ -2,7 +2,8 @@ import { ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
-import { TitleBar, useTitleBarHeight } from './TitleBar';
+import { TitleBar } from './TitleBar';
+import { useTitleBarHeight } from './use-title-bar-height';
 import { CreateNoteModal } from '../../features/notes/components/CreateNoteModal';
 
 interface AppLayoutProps {

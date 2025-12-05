@@ -6,7 +6,7 @@
  */
 
 import type { Note } from '../../../notes/types/note';
-import { useChatInputContext } from './ChatInputContext';
+import { useChatInputContextSafe } from './ChatInputContext';
 
 export interface ChatMentionsDropdownProps {
   /** Notes to display (optional if using context) */
@@ -22,13 +22,8 @@ export function ChatMentionsDropdown({
   selectedIndex: propSelectedIndex,
   onSelect: propOnSelect,
 }: ChatMentionsDropdownProps) {
-  // Try to use context, but fall back to props
-  let contextValue: ReturnType<typeof useChatInputContext> | null = null;
-  try {
-    contextValue = useChatInputContext();
-  } catch {
-    // Not in a ChatInput context, use props
-  }
+  // Use safe context hook - returns null if not in ChatInput context
+  const contextValue = useChatInputContextSafe();
 
   const notes = propNotes ?? contextValue?.filteredNotes ?? [];
   const selectedIndex = propSelectedIndex ?? contextValue?.mentionIndex ?? 0;

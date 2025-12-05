@@ -1,6 +1,10 @@
+/* eslint-disable react-refresh/only-export-components */
 /**
  * ChatInput Context
  * Provides shared state and handlers for compound ChatInput components
+ * 
+ * This file exports context and hooks, not components.
+ * The eslint-disable is intentional as this is a context provider file.
  */
 
 import { createContext, useContext, type RefObject } from 'react';
@@ -117,6 +121,10 @@ export interface ChatInputContextValue {
 
 const ChatInputContext = createContext<ChatInputContextValue | null>(null);
 
+/**
+ * Hook that throws if used outside of ChatInput context.
+ * Use this when the component MUST be inside a ChatInput.Root.
+ */
 export function useChatInputContext() {
   const context = useContext(ChatInputContext);
   if (!context) {
@@ -125,6 +133,14 @@ export function useChatInputContext() {
     );
   }
   return context;
+}
+
+/**
+ * Safe hook that returns null if used outside of ChatInput context.
+ * Use this when the component can work both with props and context.
+ */
+export function useChatInputContextSafe(): ChatInputContextValue | null {
+  return useContext(ChatInputContext);
 }
 
 export { ChatInputContext };

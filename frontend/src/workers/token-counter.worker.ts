@@ -57,7 +57,7 @@ function estimateTokens(text: string, model?: string): number {
   }
 
   // Detect if text is mostly code (has many special characters)
-  const codeCharacters = (text.match(/[{}()\[\]<>:;=+\-*/%&|^~!?@#$\\]/g) || []).length;
+  const codeCharacters = (text.match(/[{}()[\]<>:;=+\-*/%&|^~!?@#$\\]/g) || []).length;
   const codeRatio = codeCharacters / text.length;
   if (codeRatio > 0.1) {
     charsPerToken = 3;
