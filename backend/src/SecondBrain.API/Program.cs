@@ -201,18 +201,41 @@ var app = builder.Build();
 
                 if (appliedMigrations.Count == 0 && pendingMigrations.Count > 0)
                 {
-                    // Database was likely created with EnsureCreated - need to apply schema updates manually
-                    logger.LogInformation("Detected database without migration history. Applying schema updates...");
-                    await ApplySoftDeleteColumnsIfMissing(dbContext, logger);
+                    // Check if core tables actually exist (EnsureCreated scenario)
+                    var tablesExist = await DoCoreTablesExist(dbContext);
 
-                    // Mark all migrations as applied since the schema should now be current
-                    foreach (var migration in pendingMigrations)
+                    if (tablesExist)
                     {
-                        await dbContext.Database.ExecuteSqlRawAsync(
-                            "INSERT INTO \"__EFMigrationsHistory\" (\"MigrationId\", \"ProductVersion\") VALUES ({0}, {1}) ON CONFLICT DO NOTHING",
-                            migration, "10.0.0");
+                        // Database was created with EnsureCreated - tables exist, apply schema updates
+                        logger.LogInformation("Detected database with existing tables but no migration history. Applying schema updates...");
+                        var schemaUpdatesSucceeded = await ApplySoftDeleteColumnsIfMissing(dbContext, logger);
+
+                        if (schemaUpdatesSucceeded)
+                        {
+                            // Only mark migrations as applied if schema updates succeeded
+                            foreach (var migration in pendingMigrations)
+                            {
+                                await dbContext.Database.ExecuteSqlRawAsync(
+                                    "INSERT INTO \"__EFMigrationsHistory\" (\"MigrationId\", \"ProductVersion\") VALUES ({0}, {1}) ON CONFLICT DO NOTHING",
+                                    migration, "10.0.0");
+                            }
+                            logger.LogInformation("Schema updates applied and {Count} migration(s) marked as applied.", pendingMigrations.Count);
+                        }
+                        else
+                        {
+                            // Schema updates failed - tables might not exist as expected, run full migrations
+                            logger.LogWarning("Schema updates failed. Running full migration to ensure database consistency...");
+                            await dbContext.Database.MigrateAsync();
+                            logger.LogInformation("Database migrations applied successfully.");
+                        }
                     }
-                    logger.LogInformation("Schema updates applied successfully.");
+                    else
+                    {
+                        // Database exists but is empty - run full migrations
+                        logger.LogInformation("Database exists but core tables are missing. Running migrations to create schema...");
+                        await dbContext.Database.MigrateAsync();
+                        logger.LogInformation("Database schema created successfully via migrations.");
+                    }
                 }
                 else if (pendingMigrations.Count > 0)
                 {
@@ -229,28 +252,52 @@ var app = builder.Build();
             }
             catch (Exception ex) when (ex.Message.Contains("__EFMigrationsHistory"))
             {
-                // Migrations history table doesn't exist - database was created with EnsureCreated
-                logger.LogInformation("Migrations history table not found. Creating migrations history table and applying schema updates...");
-                await ApplySoftDeleteColumnsIfMissing(dbContext, logger);
+                // Migrations history table doesn't exist - check if tables were created with EnsureCreated
+                logger.LogInformation("Migrations history table not found. Checking database state...");
 
-                // Create the migrations history table manually
-                await dbContext.Database.ExecuteSqlRawAsync(@"
-                    CREATE TABLE IF NOT EXISTS ""__EFMigrationsHistory"" (
-                        ""MigrationId"" character varying(150) NOT NULL,
-                        ""ProductVersion"" character varying(32) NOT NULL,
-                        CONSTRAINT ""PK___EFMigrationsHistory"" PRIMARY KEY (""MigrationId"")
-                    )");
+                var tablesExist = await DoCoreTablesExist(dbContext);
 
-                // Get all migrations from the assembly and mark them as applied
-                // (since the schema was created with EnsureCreated, all tables already exist)
-                var allMigrations = dbContext.Database.GetMigrations().ToList();
-                foreach (var migration in allMigrations)
+                if (tablesExist)
                 {
-                    await dbContext.Database.ExecuteSqlRawAsync(
-                        "INSERT INTO \"__EFMigrationsHistory\" (\"MigrationId\", \"ProductVersion\") VALUES ({0}, {1}) ON CONFLICT DO NOTHING",
-                        migration, "10.0.0");
+                    // Tables exist but no migration history - database was created with EnsureCreated
+                    logger.LogInformation("Core tables found. Applying schema updates and creating migration history...");
+                    var schemaUpdatesSucceeded = await ApplySoftDeleteColumnsIfMissing(dbContext, logger);
+
+                    if (schemaUpdatesSucceeded)
+                    {
+                        // Create the migrations history table manually
+                        await dbContext.Database.ExecuteSqlRawAsync(@"
+                            CREATE TABLE IF NOT EXISTS ""__EFMigrationsHistory"" (
+                                ""MigrationId"" character varying(150) NOT NULL,
+                                ""ProductVersion"" character varying(32) NOT NULL,
+                                CONSTRAINT ""PK___EFMigrationsHistory"" PRIMARY KEY (""MigrationId"")
+                            )");
+
+                        // Mark all migrations as applied since tables already exist
+                        var allMigrations = dbContext.Database.GetMigrations().ToList();
+                        foreach (var migration in allMigrations)
+                        {
+                            await dbContext.Database.ExecuteSqlRawAsync(
+                                "INSERT INTO \"__EFMigrationsHistory\" (\"MigrationId\", \"ProductVersion\") VALUES ({0}, {1}) ON CONFLICT DO NOTHING",
+                                migration, "10.0.0");
+                        }
+                        logger.LogInformation("Migrations history table created and {Count} migration(s) marked as applied.", allMigrations.Count);
+                    }
+                    else
+                    {
+                        // Schema updates failed - run full migrations for consistency
+                        logger.LogWarning("Schema updates failed. Running full migration...");
+                        await dbContext.Database.MigrateAsync();
+                        logger.LogInformation("Database migrations applied successfully.");
+                    }
                 }
-                logger.LogInformation("Migrations history table created and {Count} migration(s) marked as applied.", allMigrations.Count);
+                else
+                {
+                    // Database is empty - run full migrations to create all tables
+                    logger.LogInformation("Database is empty. Running migrations to create schema...");
+                    await dbContext.Database.MigrateAsync();
+                    logger.LogInformation("Database schema created successfully via migrations.");
+                }
             }
         }
 
@@ -267,8 +314,35 @@ var app = builder.Build();
     }
 }
 
+// Helper method to check if core tables exist in the database
+static async Task<bool> DoCoreTablesExist(ApplicationDbContext dbContext)
+{
+    try
+    {
+        // Check if the 'notes' and 'users' tables exist (core tables that should always exist)
+        var tableCheckSql = @"
+            SELECT COUNT(*) FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+            AND table_name IN ('notes', 'users', 'chat_conversations')";
+
+        using var connection = dbContext.Database.GetDbConnection();
+        await connection.OpenAsync();
+        using var command = connection.CreateCommand();
+        command.CommandText = tableCheckSql;
+        var result = await command.ExecuteScalarAsync();
+
+        // We expect at least 3 core tables to exist
+        return result != null && Convert.ToInt32(result) >= 3;
+    }
+    catch
+    {
+        return false;
+    }
+}
+
 // Helper method to apply soft delete columns if they don't exist
-static async Task ApplySoftDeleteColumnsIfMissing(ApplicationDbContext dbContext, ILogger<Program> logger)
+// Returns true if all commands succeeded, false if any critical command failed
+static async Task<bool> ApplySoftDeleteColumnsIfMissing(ApplicationDbContext dbContext, ILogger<Program> logger)
 {
     var commands = new[]
     {
@@ -282,6 +356,7 @@ static async Task ApplySoftDeleteColumnsIfMissing(ApplicationDbContext dbContext
         "CREATE INDEX IF NOT EXISTS ix_conversations_user_deleted ON chat_conversations (user_id, is_deleted)"
     };
 
+    var allSucceeded = true;
     foreach (var command in commands)
     {
         try
@@ -290,9 +365,22 @@ static async Task ApplySoftDeleteColumnsIfMissing(ApplicationDbContext dbContext
         }
         catch (Exception ex)
         {
-            logger.LogDebug("Command skipped (may already exist): {Command}. Error: {Error}", command, ex.Message);
+            // If the error indicates the table doesn't exist, this is a critical failure
+            // (not just a "column already exists" type error)
+            if (ex.Message.Contains("does not exist", StringComparison.OrdinalIgnoreCase) ||
+                ex.Message.Contains("relation") && ex.Message.Contains("does not exist", StringComparison.OrdinalIgnoreCase))
+            {
+                logger.LogWarning("Schema update failed - table may not exist: {Command}. Error: {Error}", command, ex.Message);
+                allSucceeded = false;
+            }
+            else
+            {
+                logger.LogDebug("Command skipped (may already exist): {Command}. Error: {Error}", command, ex.Message);
+            }
         }
     }
+
+    return allSucceeded;
 }
 
 // Configure middleware pipeline

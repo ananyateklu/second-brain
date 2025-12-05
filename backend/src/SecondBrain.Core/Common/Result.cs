@@ -44,7 +44,12 @@ public class Result<T>
     /// <summary>
     /// Creates a successful result with the given value
     /// </summary>
-    public static Result<T> Success(T value) => new(value);
+    /// <exception cref="ArgumentNullException">Thrown when value is null</exception>
+    public static Result<T> Success(T value)
+    {
+        ArgumentNullException.ThrowIfNull(value, nameof(value));
+        return new(value);
+    }
 
     /// <summary>
     /// Creates a failed result with the given error
@@ -109,9 +114,14 @@ public class Result<T>
         => IsSuccess ? Value! : throw new InvalidOperationException(Error?.Message ?? "Operation failed");
 
     /// <summary>
-    /// Implicit conversion from value to successful Result
+    /// Implicit conversion from value to successful Result.
     /// </summary>
-    public static implicit operator Result<T>(T value) => Success(value);
+    /// <exception cref="ArgumentNullException">Thrown when value is null. Use Result&lt;T&gt;.Failure() for error cases.</exception>
+    public static implicit operator Result<T>(T value)
+    {
+        ArgumentNullException.ThrowIfNull(value, nameof(value));
+        return Success(value);
+    }
 
     /// <summary>
     /// Implicit conversion from Error to failed Result
