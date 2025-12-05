@@ -26,7 +26,7 @@ We will use **CQRS (Command Query Responsibility Segregation)** implemented with
 
 ### Pattern Overview
 
-```
+```text
 ┌─────────────┐     ┌──────────────┐     ┌─────────────┐
 │ Controller  │────▶│   MediatR    │────▶│   Handler   │
 │             │     │  (Mediator)  │     │             │

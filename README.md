@@ -4,9 +4,47 @@
 
 <img src="frontend/src/assets/second-brain-logo-dark-mode.png" alt="Second Brain Logo - Dark Mode" width="200"/>
 
+[![Backend Tests](https://github.com/ananyateklu/second-brain/actions/workflows/backend-tests.yml/badge.svg)](https://github.com/ananyateklu/second-brain/actions/workflows/backend-tests.yml)
+[![Frontend Tests](https://github.com/ananyateklu/second-brain/actions/workflows/frontend-tests.yml/badge.svg)](https://github.com/ananyateklu/second-brain/actions/workflows/frontend-tests.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![.NET](https://img.shields.io/badge/.NET-10.0-512BD4)](https://dotnet.microsoft.com/)
+[![React](https://img.shields.io/badge/React-18-61DAFB)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6)](https://www.typescriptlang.org/)
+[![Tauri](https://img.shields.io/badge/Tauri-2.0-FFC131)](https://tauri.app/)
+
 </div>
 
 Intelligent knowledge management with AI-powered chat, smart notes, AI agents, advanced RAG (Retrieval-Augmented Generation) with hybrid search, and multi-provider image generation.
+
+## TL;DR
+
+```bash
+# Clone and run with Docker (fastest way to get started)
+git clone https://github.com/ananyateklu/second-brain.git && cd second-brain
+cp .env.example .env  # Edit with your AI provider API keys
+docker-compose up -d  # Access at http://localhost:3000
+```
+
+## Table of Contents
+
+- [Screenshots](#screenshots)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Prerequisites](#prerequisites)
+- [Quick Start](#quick-start)
+  - [Docker Compose](#4-run-with-docker-compose-recommended)
+  - [Local Development](#5-run-locally-development)
+  - [Desktop App (macOS)](#6-run-as-desktop-app-macos)
+- [Authentication](#authentication)
+- [API Endpoints](#api-endpoints)
+- [Configuration](#configuration)
+- [Development](#development)
+- [Environment Variables Reference](#environment-variables-reference)
+- [iOS Sync](#ios-sync)
+- [Troubleshooting](#troubleshooting)
+- [Architecture](#architecture)
+- [License](#license)
+- [Support](#support)
 
 ## Screenshots
 
@@ -46,7 +84,8 @@ Intelligent knowledge management with AI-powered chat, smart notes, AI agents, a
 - **AI Chat**: Multi-provider AI chat (OpenAI, Claude, Gemini, Ollama, Grok) with streaming responses
 - **AI Agents**: Agent mode with tool execution for automated note management
 - **AI Provider Health**: Real-time monitoring of AI provider status
-- **iOS Import**: Import notes from iPhone/iPad via Shortcuts
+- **macOS Desktop App**: Native desktop application built with Tauri 2.0 featuring bundled backend, embedded database, and offline capability
+- **iOS Sync**: Bidirectional sync with iPhone/iPad via iOS Shortcuts
 - **Analytics Dashboard**: Track your notes, AI usage, and token consumption
 
 ### Advanced RAG Features
@@ -81,6 +120,13 @@ Intelligent knowledge management with AI-powered chat, smart notes, AI agents, a
 - **Rich Text Editor**: TipTap
 - **Charts**: Recharts
 
+### Desktop App (macOS)
+
+- **Framework**: Tauri 2.0 (Rust + WebKit)
+- **Backend**: Bundled .NET self-contained executable
+- **Database**: PostgreSQL 17 (Homebrew) with pgvector on port 5433
+- **Distribution**: DMG installer, universal binary (Intel + Apple Silicon)
+
 ## Prerequisites
 
 - **Docker & Docker Compose** (recommended for deployment)
@@ -94,7 +140,7 @@ Intelligent knowledge management with AI-powered chat, smart notes, AI agents, a
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/second-brain.git
+git clone https://github.com/ananyateklu/second-brain.git
 cd second-brain
 ```
 
@@ -237,6 +283,40 @@ pnpm dev
 
 Frontend runs at `http://localhost:3000`
 
+### 6. Run as Desktop App (macOS)
+
+The desktop app bundles everything into a single native application.
+
+#### Desktop Prerequisites
+
+```bash
+# Install PostgreSQL 17 with pgvector
+brew install postgresql@17 pgvector
+
+# Install Rust toolchain (if not already installed)
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+rustup target add aarch64-apple-darwin x86_64-apple-darwin
+```
+
+#### Build and Run
+
+```bash
+# Build backend for macOS
+./backend/publish-mac.sh
+
+# Build and run desktop app
+cd frontend
+pnpm tauri dev      # Development mode
+pnpm tauri build    # Production DMG
+```
+
+The app stores data in `~/Library/Application Support/com.secondbrain.desktop/`:
+
+- `secrets.json` - API keys (configured via Settings)
+- `postgresql/` - Database files
+
+See [ADR 007](docs/adr/007-tauri-macos-desktop-app.md) for full architecture details.
+
 ## Authentication
 
 ### Email/Password Authentication
@@ -253,12 +333,15 @@ Second Brain uses a database-backed authentication system with JWT tokens:
 - **JWT Tokens**: HS256 signed tokens with configurable expiry
 - **Secure Storage**: Passwords are never stored in plain text
 
-### API Key for iOS Import
+### API Key Generation
+
+For iOS sync and external API access:
 
 1. Click on your profile picture in the top right
 2. Select "Generate API Key"
 3. Copy and save your API key securely
-4. See [IOS_IMPORT_GUIDE.md](./IOS_IMPORT_GUIDE.md) for iOS Shortcuts setup
+
+See [iOS Sync](#ios-sync) section for mobile setup.
 
 ## API Endpoints
 
@@ -481,20 +564,6 @@ Configure in `appsettings.json` or via environment variables:
 
 ## Development
 
-### Backend Development
-
-```bash
-cd backend/src/SecondBrain.API
-dotnet watch run
-```
-
-### Frontend Development
-
-```bash
-cd frontend
-pnpm dev
-```
-
 ### Running Tests
 
 ```bash
@@ -507,29 +576,7 @@ cd frontend
 pnpm test
 ```
 
-## Deployment
-
-### Using Docker Compose (Recommended)
-
-```bash
-docker-compose up -d
-```
-
-### Backend (Docker)
-
-```bash
-cd backend
-docker build -t second-brain-api -f Dockerfile .
-docker run -p 8080:8080 second-brain-api
-```
-
-### Frontend (Docker)
-
-```bash
-cd frontend
-docker build -t second-brain-frontend -f Dockerfile .
-docker run -p 80:80 second-brain-frontend
-```
+See [Quick Start](#quick-start) for development server commands.
 
 ## Environment Variables Reference
 
@@ -568,14 +615,19 @@ docker run -p 80:80 second-brain-frontend
 |----------|-------------|----------|
 | `VITE_API_URL` | Backend API URL | No (uses proxy in dev) |
 
-## iOS Import
+## iOS Sync
 
-See [IOS_IMPORT_GUIDE.md](./IOS_IMPORT_GUIDE.md) for detailed instructions on:
+Sync notes between your iPhone/iPad and Second Brain using iOS Shortcuts.
 
-- Generating API keys
-- Creating iOS Shortcuts
-- Importing notes from iPhone/iPad
-- Troubleshooting common issues
+**Features:**
+
+- Import notes from Apple Notes (single or batch)
+- Export notes back to Apple Notes or Files app
+- Automatic duplicate detection via external IDs
+- Preserves timestamps and folder structure
+- Automation support for scheduled sync
+
+See [iOS Notes Sync Guide](./docs/ios-notes-sync-guide.md) for setup instructions and [ADR 008](./docs/adr/008-ios-shortcuts-integration.md) for architecture details.
 
 ## Troubleshooting
 
@@ -649,7 +701,21 @@ Before running, verify:
 - Restart browser after trusting
 - For Chrome, navigate to `chrome://flags/#allow-insecure-localhost`
 
+### Ports Reference
+
+| Service | Port | Notes |
+|---------|------|-------|
+| Frontend (dev) | 3000 | Vite dev server or nginx |
+| Frontend HTTPS | 443 | nginx with SSL |
+| Backend API | 5001 | ASP.NET Core (local dev) |
+| Backend API (Docker) | 8080 | Internal container port |
+| PostgreSQL (Web/Docker) | 5432 | Standard PostgreSQL port |
+| PostgreSQL (Desktop) | 5433 | Non-standard to avoid conflicts |
+| Ollama | 11434 | Local AI models |
+
 ## Architecture
+
+### Web Deployment
 
 ```text
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
@@ -668,6 +734,29 @@ Before running, verify:
                └─────────────────┘                                              └─────────────────┘
 ```
 
+### Desktop App Architecture
+
+```text
+┌──────────────────────────────────────────────────────────────┐
+│                    Second Brain.app                          │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │         Tauri Shell (Rust) - Service Lifecycle         │ │
+│  └────────────────────────────────────────────────────────┘ │
+│                          │ IPC                               │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │              React Frontend (WebView)                  │ │
+│  └────────────────────────────────────────────────────────┘ │
+│                          │ localhost:5001                    │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │         .NET Backend (Sidecar Process)                 │ │
+│  └────────────────────────────────────────────────────────┘ │
+│                          │                                   │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │         PostgreSQL (port 5433) + pgvector              │ │
+│  └────────────────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────────────────┘
+```
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
@@ -677,5 +766,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 For issues and questions:
 
 - Open an issue on GitHub
-- Check [IOS_IMPORT_GUIDE.md](./IOS_IMPORT_GUIDE.md) for iOS-specific help
-- Review troubleshooting section above
+- Review the [Troubleshooting](#troubleshooting) section above

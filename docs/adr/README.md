@@ -57,6 +57,8 @@ What is the change that we're proposing and/or doing?
 | [004](004-ai-provider-factory-pattern.md) | AI Provider Factory Pattern | Accepted | 2024-12 |
 | [005](005-result-pattern-error-handling.md) | Result Pattern for Error Handling | Accepted | 2024-12 |
 | [006](006-cqrs-mediatr-pattern.md) | CQRS with MediatR | Accepted | 2024-12 |
+| [007](007-tauri-macos-desktop-app.md) | Tauri macOS Desktop App | Accepted | 2025-12 |
+| [008](008-ios-shortcuts-integration.md) | iOS Shortcuts Integration | Accepted | 2025-12 |
 
 ## Creating a New ADR
 

@@ -26,7 +26,7 @@ We needed an architecture that:
 
 We will use **Clean Architecture** (also known as Onion Architecture) with four layers:
 
-```
+```text
 ┌─────────────────────────────────────┐
 │            API Layer                │  ← Controllers, Middleware
 ├─────────────────────────────────────┤
