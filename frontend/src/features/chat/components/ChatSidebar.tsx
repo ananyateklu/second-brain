@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { ChatConversation } from '../types/chat';
-import { ConversationListItem } from './ConversationListItem';
+import { VirtualizedConversationList } from './VirtualizedConversationList';
 
 export interface ChatSidebarProps {
   conversations: ChatConversation[];
@@ -99,9 +99,11 @@ export function ChatSidebar({
       {/* Sidebar Header - Fixed */}
       <div
         className="flex-shrink-0 px-4 py-4.5 border-b flex items-center justify-between"
-        style={{ borderColor: 'var(--border)', 
+        style={{
+          borderColor: 'var(--border)',
           borderRightWidth: '0.1px',
-          borderRightColor: 'color-mix(in srgb, var(--border) 80%, transparent)' }}
+          borderRightColor: 'color-mix(in srgb, var(--border) 80%, transparent)'
+        }}
       >
         <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
           Conversations
@@ -275,7 +277,7 @@ export function ChatSidebar({
         </div>
       )}
 
-      {/* Conversations List - Scrollable */}
+      {/* Conversations List - Scrollable with Virtual Scrolling */}
       <div className="flex-1 overflow-y-auto min-h-0 [scrollbar-width:thin] [scrollbar-color:var(--color-brand-400)_transparent] [&::-webkit-scrollbar]:w-0.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-brand-400)] [&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--color-brand-300)]">
         {conversations.length === 0 ? (
           <div className="text-center py-8 px-4" style={{ color: 'var(--text-secondary)' }}>
@@ -283,25 +285,17 @@ export function ChatSidebar({
             <p className="text-xs mt-2">Start a new chat to begin</p>
           </div>
         ) : (
-          <div className="pb-2">
-            {conversations
-              .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-              .map((conv, index) => (
-                <ConversationListItem
-                  key={conv.id}
-                  conversation={conv}
-                  isSelected={
-                    selectedConversationId === conv.id ||
-                    (conv.id === 'placeholder-new-chat' && isNewChat && !selectedConversationId)
-                  }
-                  isSelectionMode={isSelectionMode}
-                  isChecked={selectedIds.has(conv.id)}
-                  onSelect={isSelectionMode ? handleToggleSelection : onSelectConversation}
-                  onDelete={onDeleteConversation}
-                  staggerIndex={index}
-                />
-              ))}
-          </div>
+          <VirtualizedConversationList
+            conversations={conversations}
+            selectedConversationId={selectedConversationId}
+            isNewChat={isNewChat}
+            isSelectionMode={isSelectionMode}
+            selectedIds={selectedIds}
+            onSelectConversation={onSelectConversation}
+            onDeleteConversation={onDeleteConversation}
+            onToggleSelection={handleToggleSelection}
+            enableVirtualization={conversations.length >= 30}
+          />
         )}
       </div>
     </div>

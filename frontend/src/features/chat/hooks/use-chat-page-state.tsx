@@ -36,7 +36,7 @@ export interface ChatPageState {
   inputValue: string;
   showSidebar: boolean;
   isGeneratingImage: boolean;
-  containerRef: React.RefObject<HTMLDivElement>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
 
   // Provider Selection
   selectedProvider: string;
@@ -76,8 +76,8 @@ export interface ChatPageState {
   ragLogId?: string;
 
   // Scroll
-  messagesEndRef: React.RefObject<HTMLDivElement>;
-  messagesContainerRef: React.RefObject<HTMLDivElement>;
+  messagesEndRef: React.RefObject<HTMLDivElement | null>;
+  messagesContainerRef: React.RefObject<HTMLDivElement | null>;
 
   // Computed
   isLoading: boolean;

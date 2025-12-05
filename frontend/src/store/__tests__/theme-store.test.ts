@@ -4,6 +4,8 @@
  */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+// Import bound-store first to register the store in the registry
+import '../bound-store';
 import { useThemeStore } from '../theme-store';
 
 // Mock resetThemeColorCache

@@ -200,7 +200,7 @@ public class ChunkingServiceTests
         var chunks = _sut.ChunkText(text, 50, 10);
 
         // Assert
-        chunks.Should().HaveCountGreaterOrEqualTo(1);
+        chunks.Should().HaveCountGreaterThanOrEqualTo(1);
     }
 
     [Fact]
@@ -254,7 +254,7 @@ public class ChunkingServiceTests
         var chunks = _sut.ChunkText(text, 500, 50);
 
         // Assert
-        chunks.Should().HaveCountGreaterOrEqualTo(1);
+        chunks.Should().HaveCountGreaterThanOrEqualTo(1);
         // Each chunk should ideally end at a sentence boundary
     }
 
@@ -330,7 +330,7 @@ public class ChunkingServiceTests
         // Assert
         foreach (var chunk in chunks)
         {
-            chunk.TokenCount.Should().BeLessOrEqualTo(60); // Allow some slack for overlap handling
+            chunk.TokenCount.Should().BeLessThanOrEqualTo(60); // Allow some slack for overlap handling
         }
     }
 
@@ -349,7 +349,7 @@ public class ChunkingServiceTests
 
         // Assert
         // Empty after splitting should return empty list or single empty chunk
-        chunks.Count.Should().BeLessOrEqualTo(1);
+        chunks.Count.Should().BeLessThanOrEqualTo(1);
     }
 
     [Fact]
@@ -362,7 +362,7 @@ public class ChunkingServiceTests
         var chunks = _sut.ChunkText(text, 500, 50);
 
         // Assert
-        chunks.Should().HaveCountGreaterOrEqualTo(1);
+        chunks.Should().HaveCountGreaterThanOrEqualTo(1);
         chunks[0].Content.Should().NotBeNullOrEmpty();
     }
 
@@ -390,7 +390,7 @@ public class ChunkingServiceTests
         var chunks = _sut.ChunkText(text, 500, 50);
 
         // Assert
-        chunks.Should().HaveCountGreaterOrEqualTo(1);
+        chunks.Should().HaveCountGreaterThanOrEqualTo(1);
         chunks[0].Content.Should().Contain("你好世界");
     }
 
@@ -405,7 +405,7 @@ public class ChunkingServiceTests
         var chunks = _sut.ChunkNote(note);
 
         // Assert
-        chunks.Should().HaveCountGreaterOrEqualTo(1);
+        chunks.Should().HaveCountGreaterThanOrEqualTo(1);
         chunks[0].Content.Should().NotContain("Tags:");
     }
 
@@ -420,7 +420,7 @@ public class ChunkingServiceTests
         var chunks = _sut.ChunkNote(note);
 
         // Assert
-        chunks.Should().HaveCountGreaterOrEqualTo(1);
+        chunks.Should().HaveCountGreaterThanOrEqualTo(1);
     }
 
     #endregion

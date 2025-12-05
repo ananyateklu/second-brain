@@ -116,7 +116,7 @@ export function ToastItem({ toast, index }: ToastItemProps) {
   const [progress, setProgress] = useState(100);
   const startTimeRef = useRef(Date.now());
   const remainingTimeRef = useRef(toast.duration);
-  const animationFrameRef = useRef<number>();
+  const animationFrameRef = useRef<number | undefined>(undefined);
 
   const handleDismiss = useCallback(() => {
     toast.onDismiss?.();

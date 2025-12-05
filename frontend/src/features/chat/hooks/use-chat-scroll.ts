@@ -2,8 +2,8 @@ import { useRef, useEffect } from 'react';
 import { PendingMessage } from '../hooks/use-chat-conversation-manager';
 
 export interface ChatScrollRefs {
-  messagesEndRef: React.RefObject<HTMLDivElement>;
-  messagesContainerRef: React.RefObject<HTMLDivElement>;
+  messagesEndRef: React.RefObject<HTMLDivElement | null>;
+  messagesContainerRef: React.RefObject<HTMLDivElement | null>;
 }
 
 export interface ChatScrollOptions {

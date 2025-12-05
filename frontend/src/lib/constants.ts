@@ -14,10 +14,39 @@ export const DEFAULT_USER_ID = 'default-user';
 // ============================================
 
 /**
+ * Global API URL that can be set dynamically (for Tauri)
+ */
+let _apiBaseUrl: string | null = null;
+
+/**
  * Get the base API URL from environment or default
+ * In Tauri, this comes from the Rust backend
+ * In web mode, this uses the Vite proxy or environment variable
  */
 export const getApiBaseUrl = (): string => {
+  // Check for dynamically set URL (Tauri mode)
+  if (_apiBaseUrl) {
+    return _apiBaseUrl;
+  }
+
+  // Check for Tauri URL set on window
+  if (typeof window !== 'undefined' && '__TAURI_API_URL__' in window) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (window as any).__TAURI_API_URL__ as string;
+  }
+
   return import.meta.env.VITE_API_URL || '/api';
+};
+
+/**
+ * Set the API base URL (called from Tauri setup)
+ */
+export const setApiBaseUrl = (url: string): void => {
+  _apiBaseUrl = url;
+  if (typeof window !== 'undefined') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).__TAURI_API_URL__ = url;
+  }
 };
 
 /**
@@ -68,7 +97,7 @@ export const API_ENDPOINTS = {
   // Agent
   AGENT: {
     CHAT: (conversationId: string) => `/agent/chat/${conversationId}`,
-    STREAM: (conversationId: string) => `/agent/stream/${conversationId}`,
+    STREAM: (conversationId: string) => `/agent/conversations/${conversationId}/messages/stream`,
     CAPABILITIES: '/agent/capabilities',
     PROVIDERS: '/agent/providers',
   },
@@ -116,7 +145,35 @@ export const API_ENDPOINTS = {
 // Query Keys
 // ============================================
 
+// Re-export all query key utilities and types from the dedicated module
+export {
+  // Filter types
+  type NoteFilters,
+  type ConversationFilters,
+  type RagLogFilters,
+  type IndexingFilters,
+  type AIHealthConfig,
+  // Individual key factories
+  noteKeys,
+  conversationKeys,
+  aiHealthKeys,
+  indexingKeys,
+  ragAnalyticsKeys,
+  statsKeys,
+  userPreferencesKeys,
+  imageGenerationKeys,
+  agentKeys,
+  // Unified keys object
+  queryKeys,
+  // Utility functions
+  createInvalidationPattern,
+  matchesQueryKey,
+} from './query-keys';
+
 /**
+ * @deprecated Use the typed query key factories from './query-keys' instead.
+ * This is maintained for backward compatibility.
+ * 
  * React Query cache keys organized by domain
  * Using factory pattern for consistent key generation
  */

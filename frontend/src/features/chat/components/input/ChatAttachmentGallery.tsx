@@ -1,25 +1,41 @@
 /**
  * Attachment Gallery Component
  * Displays attached files with preview, removal, and lightbox functionality
+ * 
+ * Can be used standalone with props or with ChatInputContext
  */
 
 import { type FileAttachment, formatFileSize } from '../../../../utils/multimodal-models';
 import { FILE_ICONS } from './file-icons';
+import { useChatInputContextSafe } from './ChatInputContext';
 
 export interface ChatAttachmentGalleryProps {
-  files: FileAttachment[];
-  onRemoveFile: (fileId: string) => void;
-  onAddMore: () => void;
+  /** Files to display (optional if using context) */
+  files?: FileAttachment[];
+  /** Callback when file is removed (optional if using context) */
+  onRemoveFile?: (fileId: string) => void;
+  /** Callback when add more is clicked (optional if using context) */
+  onAddMore?: () => void;
+  /** Callback when image is clicked for lightbox (optional if using context) */
   onImageClick?: (file: FileAttachment) => void;
 }
 
 export function ChatAttachmentGallery({
-  files,
-  onRemoveFile,
-  onAddMore,
-  onImageClick,
+  files: propFiles,
+  onRemoveFile: propOnRemoveFile,
+  onAddMore: propOnAddMore,
+  onImageClick: propOnImageClick,
 }: ChatAttachmentGalleryProps) {
-  if (files.length === 0) return null;
+  // Use safe context hook - returns null if not in ChatInput context
+  const contextValue = useChatInputContextSafe();
+
+  const files = propFiles ?? contextValue?.attachedFiles ?? [];
+  const onRemoveFile = propOnRemoveFile ?? contextValue?.onRemoveFile ?? (() => { });
+  const onAddMore = propOnAddMore ?? (() => contextValue?.fileInputRef.current?.click());
+  const onImageClick = propOnImageClick ?? contextValue?.onLightboxOpen;
+  const isImageGenerationMode = contextValue?.isImageGenerationMode ?? false;
+
+  if (files.length === 0 || isImageGenerationMode) return null;
 
   return (
     <div

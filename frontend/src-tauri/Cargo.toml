@@ -1,0 +1,79 @@
+[package]
+name = "second-brain"
+version = "2.0.0"
+description = "AI-powered knowledge management system"
+authors = ["Second Brain Team"]
+edition = "2021"
+rust-version = "1.77"
+
+[lib]
+name = "app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.5", features = [] }
+
+[dependencies]
+tauri = { version = "2.9", features = [
+    "tray-icon",
+    "image-png"
+] }
+tauri-plugin-shell = "2.3"
+tauri-plugin-fs = "2.4"
+tauri-plugin-dialog = "2.4"
+tauri-plugin-notification = "2.3"
+tauri-plugin-clipboard-manager = "2.3"
+tauri-plugin-process = "2.3"
+tauri-plugin-os = "2.3"
+tauri-plugin-single-instance = "2.3"
+tauri-plugin-log = { version = "2.7", features = ["colored"] }
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+log = "0.4"
+env_logger = "0.11"
+directories = "6"
+reqwest = { version = "0.12", features = ["json"] }
+thiserror = "2"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+cocoa = "0.26"
+objc = "0.2"
+
+[dev-dependencies]
+# Testing framework
+tokio-test = "0.4"
+
+# Temporary files and directories
+tempfile = "3.10"
+
+# Mock generation
+mockall = "0.12"
+
+# Assertions
+assert_cmd = "2.0"
+predicates = "3.1"
+
+# Async testing
+async-std = { version = "1.12", features = ["attributes"] }
+
+# Serialization testing
+serde_test = "1.0"
+
+# Property-based testing
+proptest = "1.4"
+
+# Snapshot testing
+insta = "1.38"
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true

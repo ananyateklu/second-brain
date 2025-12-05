@@ -1,9 +1,25 @@
 /**
  * Drag Overlay Component
  * Shows a visual indicator when dragging files over the chat input
+ * 
+ * Can be used standalone or with ChatInputContext
  */
 
-export function ChatDragOverlay() {
+import { useChatInputContextSafe } from './ChatInputContext';
+
+export interface ChatDragOverlayProps {
+  /** Whether to show the overlay (optional if using context) */
+  visible?: boolean;
+}
+
+export function ChatDragOverlay({ visible: propVisible }: ChatDragOverlayProps = {}) {
+  // Use safe context hook - returns null if not in ChatInput context
+  const contextValue = useChatInputContextSafe();
+
+  const visible = propVisible ?? contextValue?.isDragging ?? false;
+
+  if (!visible) return null;
+
   return (
     <div
       className="absolute inset-0 flex items-center justify-center rounded-3xl z-30 animate-in fade-in duration-150"

@@ -11,6 +11,10 @@ public class GeminiProviderTests
     private readonly Mock<IHttpClientFactory> _mockHttpClientFactory;
     private readonly Mock<ILogger<GeminiProvider>> _mockLogger;
 
+    // Fake API key for testing - NOT a real key, format satisfies Gemini SDK validation (39 chars, starts with AIza)
+    // ggignore
+    private const string FakeGeminiApiKey = "AIzaSyFAKE_TEST_KEY_DO_NOT_USE_12345678";
+
     public GeminiProviderTests()
     {
         _mockSettings = new Mock<IOptions<AIProvidersSettings>>();
@@ -51,7 +55,7 @@ public class GeminiProviderTests
     public void Constructor_WhenEnabledWithApiKey_CreatesClient()
     {
         // Arrange
-        SetupSettings(enabled: true, apiKey: "AIza-test-key");
+        SetupSettings(enabled: true, apiKey: FakeGeminiApiKey);
 
         // Act
         var provider = CreateProvider();
@@ -170,7 +174,7 @@ public class GeminiProviderTests
     public async Task GenerateChatCompletionAsync_WithOnlySystemMessage_ReturnsError()
     {
         // Arrange - need enabled with client to reach the validation
-        SetupSettings(enabled: true, apiKey: "AIza-test-key");
+        SetupSettings(enabled: true, apiKey: FakeGeminiApiKey);
         var provider = CreateProvider();
         var messages = new List<SecondBrain.Application.Services.AI.Models.ChatMessage>
         {
@@ -283,7 +287,7 @@ public class GeminiProviderTests
     public async Task StreamChatCompletionAsync_WithOnlySystemMessage_ReturnsEmptyEnumerable()
     {
         // Arrange - need enabled with client to reach the validation
-        SetupSettings(enabled: true, apiKey: "AIza-test-key");
+        SetupSettings(enabled: true, apiKey: FakeGeminiApiKey);
         var provider = CreateProvider();
         var messages = new List<SecondBrain.Application.Services.AI.Models.ChatMessage>
         {

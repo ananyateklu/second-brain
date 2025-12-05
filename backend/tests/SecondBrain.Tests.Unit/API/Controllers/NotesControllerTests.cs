@@ -1,25 +1,31 @@
+using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using SecondBrain.API.Controllers;
+using SecondBrain.Application.Commands.Notes.BulkDeleteNotes;
+using SecondBrain.Application.Commands.Notes.CreateNote;
+using SecondBrain.Application.Commands.Notes.DeleteNote;
+using SecondBrain.Application.Commands.Notes.UpdateNote;
 using SecondBrain.Application.DTOs.Requests;
 using SecondBrain.Application.DTOs.Responses;
-using SecondBrain.Application.Exceptions;
-using SecondBrain.Application.Services.Notes;
+using SecondBrain.Application.Queries.Notes.GetAllNotes;
+using SecondBrain.Application.Queries.Notes.GetNoteById;
+using SecondBrain.Core.Common;
 
 namespace SecondBrain.Tests.Unit.API.Controllers;
 
 public class NotesControllerTests
 {
-    private readonly Mock<INoteService> _mockNoteService;
+    private readonly Mock<IMediator> _mockMediator;
     private readonly Mock<ILogger<NotesController>> _mockLogger;
     private readonly NotesController _sut;
 
     public NotesControllerTests()
     {
-        _mockNoteService = new Mock<INoteService>();
+        _mockMediator = new Mock<IMediator>();
         _mockLogger = new Mock<ILogger<NotesController>>();
-        _sut = new NotesController(_mockNoteService.Object, _mockLogger.Object);
+        _sut = new NotesController(_mockMediator.Object, _mockLogger.Object);
     }
 
     #region GetAllNotes Tests
@@ -36,8 +42,10 @@ public class NotesControllerTests
             CreateNoteResponse("note-1", userId, "First Note"),
             CreateNoteResponse("note-2", userId, "Second Note")
         };
-        _mockNoteService.Setup(s => s.GetAllNotesAsync(userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(notes);
+
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<GetAllNotesQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<IEnumerable<NoteResponse>>.Success(notes));
 
         // Act
         var result = await _sut.GetAllNotes();
@@ -87,8 +95,9 @@ public class NotesControllerTests
         SetupAuthenticatedUser(userId);
 
         var note = CreateNoteResponse(noteId, userId, "Test Note");
-        _mockNoteService.Setup(s => s.GetNoteByIdAsync(noteId, userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(note);
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<GetNoteByIdQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<NoteResponse>.Success(note));
 
         // Act
         var result = await _sut.GetNoteById(noteId);
@@ -100,18 +109,23 @@ public class NotesControllerTests
     }
 
     [Fact]
-    public async Task GetNoteById_WhenNoteDoesNotExist_ThrowsNotFoundException()
+    public async Task GetNoteById_WhenNoteDoesNotExist_ReturnsNotFound()
     {
         // Arrange
         var userId = "user-123";
         var noteId = "non-existent";
         SetupAuthenticatedUser(userId);
 
-        _mockNoteService.Setup(s => s.GetNoteByIdAsync(noteId, userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((NoteResponse?)null);
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<GetNoteByIdQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<NoteResponse>.Failure(new Error("NotFound", "Note not found")));
 
-        // Act & Assert
-        await Assert.ThrowsAsync<NotFoundException>(() => _sut.GetNoteById(noteId));
+        // Act
+        var result = await _sut.GetNoteById(noteId);
+
+        // Assert
+        var objectResult = result.Result.Should().BeOfType<ObjectResult>().Subject;
+        objectResult.StatusCode.Should().Be(StatusCodes.Status404NotFound);
     }
 
     [Fact]
@@ -122,15 +136,16 @@ public class NotesControllerTests
         var noteId = "note-1";
         SetupAuthenticatedUser(userId);
 
-        _mockNoteService.Setup(s => s.GetNoteByIdAsync(noteId, userId, It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new UnauthorizedException("Access denied"));
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<GetNoteByIdQuery>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<NoteResponse>.Failure(new Error("Unauthorized", "Access denied")));
 
         // Act
         var result = await _sut.GetNoteById(noteId);
 
         // Assert
-        var forbiddenResult = result.Result.Should().BeOfType<ObjectResult>().Subject;
-        forbiddenResult.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+        var objectResult = result.Result.Should().BeOfType<ObjectResult>().Subject;
+        objectResult.StatusCode.Should().Be(StatusCodes.Status401Unauthorized);
     }
 
     [Fact]
@@ -165,8 +180,9 @@ public class NotesControllerTests
         };
 
         var createdNote = CreateNoteResponse("created-note-id", userId, "New Note");
-        _mockNoteService.Setup(s => s.CreateNoteAsync(request, userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(createdNote);
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<CreateNoteCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<NoteResponse>.Success(createdNote));
 
         // Act
         var result = await _sut.CreateNote(request);
@@ -196,7 +212,7 @@ public class NotesControllerTests
     }
 
     [Fact]
-    public async Task CreateNote_CallsServiceWithCorrectParameters()
+    public async Task CreateNote_CallsMediatorWithCorrectCommand()
     {
         // Arrange
         var userId = "user-123";
@@ -211,21 +227,22 @@ public class NotesControllerTests
             Folder = "Work"
         };
 
-        _mockNoteService.Setup(s => s.CreateNoteAsync(It.IsAny<CreateNoteRequest>(), userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(CreateNoteResponse("id", userId, "Test"));
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<CreateNoteCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<NoteResponse>.Success(CreateNoteResponse("id", userId, "Test")));
 
         // Act
         await _sut.CreateNote(request);
 
         // Assert
-        _mockNoteService.Verify(s => s.CreateNoteAsync(
-            It.Is<CreateNoteRequest>(r =>
-                r.Title == "Test" &&
-                r.Content == "Content" &&
-                r.Tags.Contains("tag") &&
-                r.IsArchived == true &&
-                r.Folder == "Work"),
-            userId,
+        _mockMediator.Verify(m => m.Send(
+            It.Is<CreateNoteCommand>(c =>
+                c.Title == "Test" &&
+                c.Content == "Content" &&
+                c.Tags.Contains("tag") &&
+                c.IsArchived == true &&
+                c.Folder == "Work" &&
+                c.UserId == userId),
             It.IsAny<CancellationToken>()),
             Times.Once);
     }
@@ -249,8 +266,9 @@ public class NotesControllerTests
         };
 
         var updatedNote = CreateNoteResponse(noteId, userId, "Updated Title");
-        _mockNoteService.Setup(s => s.UpdateNoteAsync(noteId, request, userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(updatedNote);
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<UpdateNoteCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<NoteResponse>.Success(updatedNote));
 
         // Act
         var result = await _sut.UpdateNote(noteId, request);
@@ -262,37 +280,43 @@ public class NotesControllerTests
     }
 
     [Fact]
-    public async Task UpdateNote_WhenNoteDoesNotExist_ThrowsNotFoundException()
+    public async Task UpdateNote_WhenNoteDoesNotExist_ReturnsNotFound()
     {
         // Arrange
         var userId = "user-123";
         var noteId = "non-existent";
         SetupAuthenticatedUser(userId);
 
-        _mockNoteService.Setup(s => s.UpdateNoteAsync(noteId, It.IsAny<UpdateNoteRequest>(), userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((NoteResponse?)null);
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<UpdateNoteCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<NoteResponse>.Failure(new Error("NotFound", "Note not found")));
 
-        // Act & Assert
-        await Assert.ThrowsAsync<NotFoundException>(() => _sut.UpdateNote(noteId, new UpdateNoteRequest()));
+        // Act
+        var result = await _sut.UpdateNote(noteId, new UpdateNoteRequest());
+
+        // Assert
+        var objectResult = result.Result.Should().BeOfType<ObjectResult>().Subject;
+        objectResult.StatusCode.Should().Be(StatusCodes.Status404NotFound);
     }
 
     [Fact]
-    public async Task UpdateNote_WhenUnauthorizedAccess_ReturnsForbidden()
+    public async Task UpdateNote_WhenUnauthorizedAccess_ReturnsUnauthorized()
     {
         // Arrange
         var userId = "user-123";
         var noteId = "note-1";
         SetupAuthenticatedUser(userId);
 
-        _mockNoteService.Setup(s => s.UpdateNoteAsync(noteId, It.IsAny<UpdateNoteRequest>(), userId, It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new UnauthorizedException("Access denied"));
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<UpdateNoteCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<NoteResponse>.Failure(new Error("Unauthorized", "Access denied")));
 
         // Act
         var result = await _sut.UpdateNote(noteId, new UpdateNoteRequest());
 
         // Assert
-        var forbiddenResult = result.Result.Should().BeOfType<ObjectResult>().Subject;
-        forbiddenResult.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+        var objectResult = result.Result.Should().BeOfType<ObjectResult>().Subject;
+        objectResult.StatusCode.Should().Be(StatusCodes.Status401Unauthorized);
     }
 
     [Fact]
@@ -320,8 +344,9 @@ public class NotesControllerTests
         var noteId = "note-1";
         SetupAuthenticatedUser(userId);
 
-        _mockNoteService.Setup(s => s.DeleteNoteAsync(noteId, userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<DeleteNoteCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success());
 
         // Act
         var result = await _sut.DeleteNote(noteId);
@@ -331,37 +356,43 @@ public class NotesControllerTests
     }
 
     [Fact]
-    public async Task DeleteNote_WhenNoteDoesNotExist_ThrowsNotFoundException()
+    public async Task DeleteNote_WhenNoteDoesNotExist_ReturnsNotFound()
     {
         // Arrange
         var userId = "user-123";
         var noteId = "non-existent";
         SetupAuthenticatedUser(userId);
 
-        _mockNoteService.Setup(s => s.DeleteNoteAsync(noteId, userId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(false);
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<DeleteNoteCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure(new Error("NotFound", "Note not found")));
 
-        // Act & Assert
-        await Assert.ThrowsAsync<NotFoundException>(() => _sut.DeleteNote(noteId));
+        // Act
+        var result = await _sut.DeleteNote(noteId);
+
+        // Assert
+        var objectResult = result.Should().BeOfType<ObjectResult>().Subject;
+        objectResult.StatusCode.Should().Be(StatusCodes.Status404NotFound);
     }
 
     [Fact]
-    public async Task DeleteNote_WhenUnauthorizedAccess_ReturnsForbidden()
+    public async Task DeleteNote_WhenUnauthorizedAccess_ReturnsUnauthorized()
     {
         // Arrange
         var userId = "user-123";
         var noteId = "note-1";
         SetupAuthenticatedUser(userId);
 
-        _mockNoteService.Setup(s => s.DeleteNoteAsync(noteId, userId, It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new UnauthorizedException("Access denied"));
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<DeleteNoteCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure(new Error("Unauthorized", "Access denied")));
 
         // Act
         var result = await _sut.DeleteNote(noteId);
 
         // Assert
-        var forbiddenResult = result.Should().BeOfType<ObjectResult>().Subject;
-        forbiddenResult.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+        var objectResult = result.Should().BeOfType<ObjectResult>().Subject;
+        objectResult.StatusCode.Should().Be(StatusCodes.Status401Unauthorized);
     }
 
     [Fact]
@@ -372,6 +403,63 @@ public class NotesControllerTests
 
         // Act
         var result = await _sut.DeleteNote("note-1");
+
+        // Assert
+        result.Should().BeOfType<UnauthorizedObjectResult>();
+    }
+
+    #endregion
+
+    #region BulkDeleteNotes Tests
+
+    [Fact]
+    public async Task BulkDeleteNotes_WhenSuccessful_ReturnsOkWithCount()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedUser(userId);
+
+        var request = new BulkDeleteNotesRequest { NoteIds = new List<string> { "note-1", "note-2" } };
+
+        _mockMediator
+            .Setup(m => m.Send(It.IsAny<BulkDeleteNotesCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<int>.Success(2));
+
+        // Act
+        var result = await _sut.BulkDeleteNotes(request);
+
+        // Assert
+        var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
+        var value = okResult.Value;
+        value.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task BulkDeleteNotes_WhenNoNoteIds_ReturnsBadRequest()
+    {
+        // Arrange
+        var userId = "user-123";
+        SetupAuthenticatedUser(userId);
+
+        var request = new BulkDeleteNotesRequest { NoteIds = new List<string>() };
+
+        // Act
+        var result = await _sut.BulkDeleteNotes(request);
+
+        // Assert
+        result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public async Task BulkDeleteNotes_WhenNotAuthenticated_ReturnsUnauthorized()
+    {
+        // Arrange
+        SetupUnauthenticatedUser();
+
+        var request = new BulkDeleteNotesRequest { NoteIds = new List<string> { "note-1" } };
+
+        // Act
+        var result = await _sut.BulkDeleteNotes(request);
 
         // Assert
         result.Should().BeOfType<UnauthorizedObjectResult>();
@@ -419,4 +507,3 @@ public class NotesControllerTests
 
     #endregion
 }
-

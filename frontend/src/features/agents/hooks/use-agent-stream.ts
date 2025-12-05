@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../../store/auth-store';
 import { ToolExecution, ThinkingStep, AgentMessageRequest, RetrievedNoteContext } from '../types/agent-types';
 import { estimateTokenCount } from '../../../utils/token-utils';
+import { getApiBaseUrl, API_ENDPOINTS } from '../../../lib/constants';
 
 // Parse thinking blocks from streaming message
 // Returns array of thinking steps, including incomplete ones (without closing tag)
@@ -111,8 +112,8 @@ export function useAgentStream() {
       // Create abort controller for cancellation
       abortControllerRef.current = new AbortController();
 
-      const apiUrl = import.meta.env.VITE_API_URL || '/api';
-      const url = `${apiUrl}/agent/conversations/${conversationId}/messages/stream`;
+      const apiUrl = getApiBaseUrl();
+      const url = `${apiUrl}${API_ENDPOINTS.AGENT.STREAM(conversationId)}`;
 
       // Get auth token from store
       const authStore = useAuthStore.getState();

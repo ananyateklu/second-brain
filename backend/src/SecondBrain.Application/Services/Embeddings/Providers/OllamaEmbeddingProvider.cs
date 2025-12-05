@@ -142,7 +142,7 @@ public class OllamaEmbeddingProvider : IEmbeddingProvider
 
         try
         {
-            var models = await _client.ListLocalModels();
+            var models = await _client.ListLocalModelsAsync(cancellationToken);
             return models.Any(m => m.Name.Contains(_settings.Model));
         }
         catch
@@ -151,4 +151,3 @@ public class OllamaEmbeddingProvider : IEmbeddingProvider
         }
     }
 }
-

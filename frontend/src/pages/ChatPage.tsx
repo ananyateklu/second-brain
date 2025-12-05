@@ -5,6 +5,7 @@
  * Refactored to use consolidated state hook for better maintainability
  */
 
+import { useEffect, useState } from 'react';
 import { useChatPageState } from '../features/chat/hooks/use-chat-page-state';
 import { ChatSidebar } from '../features/chat/components/ChatSidebar';
 import { ChatHeader } from '../features/chat/components/ChatHeader';
@@ -15,9 +16,25 @@ import { useAuthStore } from '../store/auth-store';
 import { useSendMessage } from '../features/chat/hooks/use-chat';
 import type { VectorStoreProvider } from '../types/rag';
 
+/**
+ * Check if we're running in Tauri
+ */
+const isTauri = (): boolean => {
+  return '__TAURI_INTERNALS__' in window;
+};
+
 export function ChatPage() {
   const user = useAuthStore((state) => state.user);
   const sendMessage = useSendMessage();
+  const [isTauriApp, setIsTauriApp] = useState(false);
+
+  // Check if running in Tauri
+  useEffect(() => {
+    setIsTauriApp(isTauri());
+  }, []);
+
+  // Calculate title bar offset for chat container height
+  const titleBarOffset = isTauriApp ? 28 : 0;
 
   // Consolidated chat page state
   const {
@@ -102,7 +119,9 @@ export function ChatPage() {
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',
         boxShadow: 'var(--shadow-2xl)',
-        height: 'calc(100vh - 2rem)',
+        height: isTauriApp 
+          ? `calc(100vh - 2rem - ${titleBarOffset}px)` 
+          : 'calc(100vh - 2rem)',
       }}
     >
       {/* Sidebar */}

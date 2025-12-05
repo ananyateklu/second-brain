@@ -1,15 +1,27 @@
 /**
  * Test Setup File
- * Configures testing environment with jest-dom matchers and global mocks
+ * Configures testing environment with jest-dom matchers, MSW server, and global mocks
  */
 
 import '@testing-library/jest-dom';
 import { afterEach, beforeAll, afterAll, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
+import { server } from './mocks/server';
 
-// Cleanup after each test
+// Start MSW server before all tests
+beforeAll(() => {
+    server.listen({ onUnhandledRequest: 'warn' });
+});
+
+// Reset handlers after each test (important for test isolation)
 afterEach(() => {
     cleanup();
+    server.resetHandlers();
+});
+
+// Close MSW server after all tests
+afterAll(() => {
+    server.close();
 });
 
 // Mock window.matchMedia

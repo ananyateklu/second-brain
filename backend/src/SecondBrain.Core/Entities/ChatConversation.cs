@@ -1,11 +1,12 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
+using SecondBrain.Core.Interfaces;
 
 namespace SecondBrain.Core.Entities;
 
 [Table("chat_conversations")]
-public class ChatConversation
+public class ChatConversation : ISoftDeletable
 {
     [Key]
     [Column("id")]
@@ -51,6 +52,17 @@ public class ChatConversation
 
     [Column("updated_at")]
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    // Soft delete properties
+    [Column("is_deleted")]
+    public bool IsDeleted { get; set; } = false;
+
+    [Column("deleted_at")]
+    public DateTime? DeletedAt { get; set; }
+
+    [Column("deleted_by")]
+    [MaxLength(128)]
+    public string? DeletedBy { get; set; }
 
     // Navigation property for messages (stored in separate table)
     public List<ChatMessage> Messages { get; set; } = new();

@@ -1,4 +1,6 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using SecondBrain.Application.Services;
 using SecondBrain.Application.Services.Agents;
 using SecondBrain.Application.Services.Agents.Models;
@@ -10,7 +12,9 @@ using System.Text.Json;
 namespace SecondBrain.API.Controllers;
 
 [ApiController]
+[ApiVersion("1.0")]
 [Route("api/[controller]")]
+[Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
 public class AgentController : ControllerBase
 {
@@ -35,10 +39,12 @@ public class AgentController : ControllerBase
     /// Stream an agent message with tool execution capabilities
     /// </summary>
     [HttpPost("conversations/{id}/messages/stream")]
+    [EnableRateLimiting("ai-requests")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task StreamAgentMessage(
         string id,
         [FromBody] AgentMessageRequest request,
@@ -283,7 +289,7 @@ public class AgentController : ControllerBase
                         });
                         await Response.WriteAsync($"event: context_retrieval\ndata: {contextRetrievalJson}\n\n");
                         await Response.Body.FlushAsync(cancellationToken);
-                        _logger.LogDebug("Context retrieval event sent. NotesCount: {Count}, RagLogId: {RagLogId}", 
+                        _logger.LogDebug("Context retrieval event sent. NotesCount: {Count}, RagLogId: {RagLogId}",
                             evt.RetrievedNotes?.Count ?? 0, evt.RagLogId);
                         break;
 

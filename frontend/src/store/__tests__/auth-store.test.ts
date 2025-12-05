@@ -4,6 +4,8 @@
  */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+// Import bound-store first to register the store in the registry
+import '../bound-store';
 import { useAuthStore } from '../auth-store';
 import { authService } from '../../services/auth.service';
 import { userPreferencesService } from '../../services/user-preferences.service';
@@ -22,6 +24,24 @@ vi.mock('../../services/user-preferences.service', () => ({
     userPreferencesService: {
         loadAndMergePreferences: vi.fn(),
         clearLocalPreferences: vi.fn(),
+        createDebouncedSync: vi.fn(() => vi.fn()),
+        syncToBackend: vi.fn(),
+        getUserIdFromStorage: vi.fn(),
+        validateItemsPerPage: vi.fn((count: number) => Math.max(10, Math.min(100, count))),
+        validateFontSize: vi.fn((size: string) => ['small', 'medium', 'large'].includes(size) ? size : 'medium'),
+        validateVectorStoreProvider: vi.fn((provider: string) => provider),
+        validatePreferences: vi.fn((prefs: Record<string, unknown>) => prefs),
+    },
+    DEFAULT_PREFERENCES: {
+        chatProvider: null,
+        chatModel: null,
+        vectorStoreProvider: 'chromadb',
+        defaultNoteView: 'grid',
+        itemsPerPage: 20,
+        fontSize: 'medium',
+        enableNotifications: true,
+        ollamaRemoteUrl: null,
+        useRemoteOllama: false,
     },
 }));
 

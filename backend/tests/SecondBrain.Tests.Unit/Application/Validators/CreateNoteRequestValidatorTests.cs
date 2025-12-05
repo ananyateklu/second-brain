@@ -165,17 +165,18 @@ public class CreateNoteRequestValidatorTests
     #region Tags Validation Tests
 
     [Fact]
-    public void Tags_WhenNull_ShouldThrowOrHaveValidationError()
+    public void Tags_WhenNull_ShouldHaveValidationError()
     {
         // Arrange
         var request = new CreateNoteRequest { Title = "Valid", Content = "Valid", Tags = null! };
 
-        // Act & Assert
-        // Note: The current validator implementation doesn't use CascadeMode, so the Must rules
-        // execute even when NotNull fails, causing a NullReferenceException.
-        // This test documents the current behavior.
-        var act = () => _sut.TestValidate(request);
-        act.Should().Throw<NullReferenceException>();
+        // Act
+        var result = _sut.TestValidate(request);
+
+        // Assert
+        // With CascadeMode.Stop, validation stops after NotNull fails and returns a proper error
+        result.ShouldHaveValidationErrorFor(x => x.Tags)
+            .WithErrorMessage("Tags list cannot be null");
     }
 
     [Fact]

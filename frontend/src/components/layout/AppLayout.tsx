@@ -2,6 +2,8 @@ import { ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
+import { TitleBar } from './TitleBar';
+import { useTitleBarHeight } from './use-title-bar-height';
 import { CreateNoteModal } from '../../features/notes/components/CreateNoteModal';
 
 interface AppLayoutProps {
@@ -10,6 +12,7 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation();
+  const titleBarHeight = useTitleBarHeight();
   const isChatPage = location.pathname === '/chat';
   const isDirectoryPage = location.pathname === '/directory';
   const isAnalyticsPage = location.pathname === '/analytics';
@@ -20,8 +23,13 @@ export function AppLayout({ children }: AppLayoutProps) {
       className="min-h-screen flex flex-col md:flex-row"
       style={{
         background: 'transparent',
+        // Add padding for the title bar when in Tauri
+        paddingTop: titleBarHeight > 0 ? `${titleBarHeight}px` : undefined,
       }}
     >
+      {/* macOS Title Bar - provides drag region */}
+      <TitleBar />
+
       <Sidebar />
 
       <div className="flex-1 flex flex-col min-w-0 transition-all duration-300">

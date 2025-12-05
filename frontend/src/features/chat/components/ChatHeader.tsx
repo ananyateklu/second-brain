@@ -1,7 +1,8 @@
 import { ReactNode, useMemo } from 'react';
 import { CombinedModelSelector } from '../../../components/ui/CombinedModelSelector';
 import { SelectorSkeleton } from '../../../components/ui/SelectorSkeleton';
-import { FeatureModePill, featureColors, FeatureIcons } from '../../../components/ui/FeatureModePill';
+import { FeatureModePill } from '../../../components/ui/FeatureModePill';
+import { featureColors, FeatureIcons } from '../../../components/ui/feature-mode-constants';
 import { RagSettingsPopover } from '../../../components/ui/RagSettingsPopover';
 import { AgentSettingsPopover } from '../../../components/ui/AgentSettingsPopover';
 import { ContextUsageIndicator } from '../../../components/ui/ContextUsageIndicator';

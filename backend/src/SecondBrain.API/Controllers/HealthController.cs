@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 
 namespace SecondBrain.API.Controllers;
@@ -6,7 +7,9 @@ namespace SecondBrain.API.Controllers;
 /// Health check endpoints
 /// </summary>
 [ApiController]
+[ApiVersion("1.0")]
 [Route("api/[controller]")]
+[Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
 public class HealthController : ControllerBase
 {
@@ -26,7 +29,7 @@ public class HealthController : ControllerBase
     public IActionResult GetHealth()
     {
         var databaseProvider = _configuration["DatabaseProvider"] ?? "Firestore";
-        
+
         return Ok(new
         {
             status = "healthy",

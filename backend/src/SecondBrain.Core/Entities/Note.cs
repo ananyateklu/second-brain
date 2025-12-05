@@ -1,10 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using SecondBrain.Core.Interfaces;
 
 namespace SecondBrain.Core.Entities;
 
 [Table("notes")]
-public class Note
+public class Note : ISoftDeletable
 {
     [Key]
     [Column("id")]
@@ -44,4 +45,15 @@ public class Note
     [Column("folder")]
     [MaxLength(256)]
     public string? Folder { get; set; }
+
+    // Soft delete properties
+    [Column("is_deleted")]
+    public bool IsDeleted { get; set; } = false;
+
+    [Column("deleted_at")]
+    public DateTime? DeletedAt { get; set; }
+
+    [Column("deleted_by")]
+    [MaxLength(128)]
+    public string? DeletedBy { get; set; }
 }

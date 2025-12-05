@@ -29,6 +29,7 @@ public class ImportNoteRequestValidator : AbstractValidator<ImportNoteRequest>
             .WithMessage("Source must not exceed 100 characters");
 
         RuleFor(x => x.Tags)
+            .Cascade(CascadeMode.Stop)
             .NotNull()
             .WithMessage("Tags list cannot be null")
             .Must(tags => tags.Count <= 50)

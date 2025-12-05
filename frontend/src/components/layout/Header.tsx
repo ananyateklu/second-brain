@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useUIStore } from '../../store/ui-store';
 import { useThemeStore } from '../../store/theme-store';
@@ -6,6 +6,13 @@ import { ThemeToggle } from '../ui/ThemeToggle';
 import { UserMenu } from '../ui/UserMenu';
 import logoLight from '../../assets/second-brain-logo-light-mode.png';
 import logoDark from '../../assets/second-brain-logo-dark-mode.png';
+
+/**
+ * Check if we're running in Tauri
+ */
+const isTauri = (): boolean => {
+  return '__TAURI_INTERNALS__' in window;
+};
 
 // Map routes to page titles
 const getPageTitle = (pathname: string): string => {
@@ -31,10 +38,19 @@ export function Header() {
   const { theme } = useThemeStore();
   const logo = theme === 'light' ? logoLight : logoDark;
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const [isTauriApp, setIsTauriApp] = useState(false);
+
+  // Check if running in Tauri
+  useEffect(() => {
+    setIsTauriApp(isTauri());
+  }, []);
 
   const pageTitle = getPageTitle(location.pathname);
   const isNotesPage = location.pathname === '/notes';
   const isSettingsPage = location.pathname.startsWith('/settings');
+  
+  // Calculate title bar offset for desktop header
+  const titleBarOffset = isTauriApp ? 28 : 0;
 
   // Focus search input on mount if on notes page
   useEffect(() => {
@@ -76,7 +92,13 @@ export function Header() {
   return (
     <>
       {/* Mobile Header */}
-      <div className="md:hidden sticky top-0 z-40 w-full pt-4 sm:pt-6 px-2 sm:px-4">
+      <div 
+        className="md:hidden sticky z-40 w-full px-2 sm:px-4"
+        style={{
+          top: isTauriApp ? `${titleBarOffset}px` : '0',
+          paddingTop: isTauriApp ? '0.5rem' : '1rem',
+        }}
+      >
         <header
           className="mx-auto max-w-[95%] sm:max-w-[92%] rounded-[2.5rem] backdrop-blur-xl shadow-xl"
           style={{
@@ -159,8 +181,9 @@ export function Header() {
 
       {/* Desktop Header */}
       <header
-        className="hidden md:flex sticky top-0 z-50 justify-between md:px-6 transition-all duration-300 w-full backdrop-blur-md"
+        className="hidden md:flex sticky z-50 justify-between md:px-6 transition-all duration-300 w-full backdrop-blur-md"
         style={{
+          top: isTauriApp ? `${titleBarOffset}px` : '0',
           backgroundColor: 'transparent',
           paddingTop: '1rem',
           paddingBottom: '0.5rem',

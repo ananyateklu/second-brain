@@ -1,0 +1,141 @@
+/**
+ * Authentication Slice
+ * Manages user authentication state
+ */
+
+// Import directly to avoid circular deps through services barrel export
+import { authService } from '../../services/auth.service';
+import { userPreferencesService } from '../../services/user-preferences.service';
+import type { AuthSlice, SliceCreator } from '../types';
+
+export const createAuthSlice: SliceCreator<AuthSlice> = (set, get) => ({
+  // Initial state
+  user: null,
+  token: null,
+  isLoading: false,
+  isAuthenticated: false,
+  error: null,
+
+  // ============================================
+  // Auth Actions
+  // ============================================
+
+  login: async (email: string, password: string) => {
+    set({ isLoading: true, error: null });
+
+    try {
+      // Validate input
+      const validation = authService.validateLoginForm(email, password);
+      if (!validation.valid) {
+        throw new Error(validation.errors[0]);
+      }
+
+      // Call auth service
+      const response = await authService.login({ email, password });
+      const user = authService.extractUser(response);
+
+      set({
+        user,
+        token: response.token,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+      });
+
+      // Load user preferences from backend
+      try {
+        await userPreferencesService.loadAndMergePreferences(response.userId);
+      } catch (prefError) {
+        console.error('Error loading user preferences:', { error: prefError });
+        // Don't fail auth if preferences fail to load
+      }
+    } catch (error) {
+      console.error('Login error:', { error });
+      set({
+        isLoading: false,
+        error: error instanceof Error ? error.message : 'Failed to login',
+      });
+      throw error;
+    }
+  },
+
+  register: async (email: string, password: string, displayName?: string) => {
+    set({ isLoading: true, error: null });
+
+    try {
+      // Call auth service
+      const response = await authService.register({ email, password, displayName });
+      const user = authService.extractUser(response);
+
+      set({
+        user,
+        token: response.token,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+      });
+
+      // Load user preferences from backend
+      try {
+        await userPreferencesService.loadAndMergePreferences(response.userId);
+      } catch (prefError) {
+        console.error('Error loading user preferences:', { error: prefError });
+        // Don't fail auth if preferences fail to load
+      }
+    } catch (error) {
+      console.error('Registration error:', { error });
+      set({
+        isLoading: false,
+        error: error instanceof Error ? error.message : 'Failed to register',
+      });
+      throw error;
+    }
+  },
+
+  signOut: () => {
+    set({
+      user: null,
+      token: null,
+      isAuthenticated: false,
+      error: null,
+    });
+
+    // Clear local preferences
+    userPreferencesService.clearLocalPreferences();
+
+    // Reset settings to defaults
+    get().resetSettings();
+  },
+
+  // ============================================
+  // User Actions
+  // ============================================
+
+  setUser: (user) => {
+    set({ user, isAuthenticated: !!user });
+  },
+
+  setToken: (token) => {
+    set({ token });
+  },
+
+  // ============================================
+  // Error Handling
+  // ============================================
+
+  clearError: () => {
+    set({ error: null });
+  },
+
+  setError: (error) => {
+    set({ error });
+  },
+
+  // ============================================
+  // Loading State
+  // ============================================
+
+  setLoading: (isLoading) => {
+    set({ isLoading });
+  },
+});

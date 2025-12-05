@@ -4,6 +4,9 @@ import { NoteListItem } from './NoteListItem';
 import { Note } from '../types/note';
 import { NotesViewMode } from '../../../store/ui-store';
 
+// Re-export the virtualized version for performance-critical use cases
+export { VirtualizedNoteList } from './VirtualizedNoteList';
+
 interface NoteListProps {
   notes: Note[];
   viewMode?: NotesViewMode;
@@ -12,6 +15,10 @@ interface NoteListProps {
   onNoteSelect?: (noteId: string) => void;
 }
 
+/**
+ * NoteList - Standard note list component without virtualization.
+ * For large lists (50+ notes), consider using VirtualizedNoteList instead.
+ */
 export const NoteList = memo(function NoteList({
   notes,
   viewMode = 'card',

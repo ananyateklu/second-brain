@@ -1,73 +1,30 @@
-import { create } from 'zustand';
-import { resetThemeColorCache } from '../utils/theme-colors';
+/**
+ * Theme Store
+ * @deprecated Use useBoundStore from './bound-store' for new code.
+ * This file maintains backward compatibility with existing imports.
+ */
 
-type Theme = 'light' | 'dark' | 'blue';
+import type { BoundStore } from './types';
+import type { StoreApi, UseBoundStore } from 'zustand';
+import { getStore } from './store-registry';
 
-interface ThemeStore {
-  theme: Theme;
-  setTheme: (theme: Theme) => void;
-  toggleTheme: () => void;
-}
+type BoundStoreType = UseBoundStore<StoreApi<BoundStore>>;
 
-const THEME_STORAGE_KEY = 'second-brain-theme';
+// Create a callable proxy that forwards to the real store
+const createStoreProxy = (): BoundStoreType => {
+  const handler: ProxyHandler<BoundStoreType> = {
+    apply(_target, _thisArg, args: [((state: BoundStore) => unknown)?]) {
+      const store = getStore();
+      return args[0] ? store(args[0]) : store();
+    },
+    get(_target, prop: string | symbol) {
+      const store = getStore();
+      return Reflect.get(store, prop);
+    },
+  };
 
-// Load theme from localStorage
-const loadTheme = (): Theme => {
-  if (typeof window === 'undefined') return 'light';
-  const stored = localStorage.getItem(THEME_STORAGE_KEY);
-  if (stored === 'light' || stored === 'dark' || stored === 'blue') {
-    return stored;
-  }
-  return 'light';
+  return new Proxy((() => { }) as unknown as BoundStoreType, handler);
 };
 
-// Save theme to localStorage
-const saveTheme = (theme: Theme) => {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(THEME_STORAGE_KEY, theme);
-};
-
-// Initialize theme from storage
-const initialTheme = loadTheme();
-
-export const useThemeStore = create<ThemeStore>((set, get) => ({
-  theme: initialTheme,
-  
-  setTheme: (theme: Theme) => {
-    set({ theme });
-    saveTheme(theme);
-    document.documentElement.setAttribute('data-theme', theme);
-    
-    // Also manage the 'dark' class for Tailwind's dark mode
-    // Both 'dark' and 'blue' themes use dark mode styling
-    if (theme === 'dark' || theme === 'blue') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-    
-    // Reset color cache when theme changes
-    resetThemeColorCache();
-  },
-  
-  toggleTheme: () => {
-    const currentTheme = get().theme;
-    // Cycle through: light -> dark -> blue -> light
-    const themeOrder: Theme[] = ['light', 'dark', 'blue'];
-    const currentIndex = themeOrder.indexOf(currentTheme);
-    const nextIndex = (currentIndex + 1) % themeOrder.length;
-    const newTheme = themeOrder[nextIndex];
-    get().setTheme(newTheme);
-  },
-}));
-
-// Apply initial theme on load
-if (typeof window !== 'undefined') {
-  document.documentElement.setAttribute('data-theme', initialTheme);
-  if (initialTheme === 'dark' || initialTheme === 'blue') {
-    document.documentElement.classList.add('dark');
-  } else {
-    document.documentElement.classList.remove('dark');
-  }
-}
-
+// Re-export the combined store as useThemeStore for backward compatibility
+export const useThemeStore = createStoreProxy();

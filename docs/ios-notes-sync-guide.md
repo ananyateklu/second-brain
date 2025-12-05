@@ -2,6 +2,8 @@
 
 Sync notes between your iPhone/iPad and Second Brain using iOS Shortcuts. This guide walks you through setting up automatic or manual note syncing—both importing from Apple Notes to Second Brain and exporting from Second Brain to your iPhone.
 
+> **Architecture Decision**: See [ADR 008](adr/008-ios-shortcuts-integration.md) for the rationale behind using iOS Shortcuts for mobile sync.
+
 ## Table of Contents
 
 - [Overview](#overview)
@@ -28,6 +30,7 @@ Sync notes between your iPhone/iPad and Second Brain using iOS Shortcuts. This g
 Second Brain provides API endpoints for both importing and exporting notes. The iOS Shortcuts app can interact with these endpoints to sync your notes seamlessly.
 
 **Key Features:**
+
 - Import single notes or batch import entire folders from Apple Notes
 - Export all notes or specific notes from Second Brain to your iPhone
 - Automatic duplicate detection using external IDs
@@ -60,7 +63,7 @@ The API key allows the iOS Shortcut to authenticate with Second Brain without st
 4. Click **"Generate New API Key"**
 5. **Copy and save** your API key securely
 
-> ⚠️ **Security Note:** Your API key grants full access to your notes. Keep it private and never share it publicly.
+> **Security Note:** Your API key grants full access to your notes. Keep it private and never share it publicly.
 
 ### Via API (Alternative)
 
@@ -78,6 +81,7 @@ curl -X POST https://your-domain.com/api/auth/generate-api-key \
 ```
 
 Response:
+
 ```json
 {
   "apiKey": "abc123def456...",
@@ -105,38 +109,45 @@ This shortcut imports the currently selected note to Second Brain.
 
 Add these actions in order:
 
-**Action 1: Find Notes**
+##### Action 1: Find Notes
+
 - Search for `Find Notes` action
 - Configure:
   - Filter: `None` (or filter by folder if desired)
   - Sort by: `Modification Date`
   - Limit: `1`
-  - ☑️ Check **"Choose from List"** (this lets you pick a note)
+  - Check **"Choose from List"** (this lets you pick a note)
 
-**Action 2: Get Details of Notes**
+##### Action 2: Get Details of Notes
+
 - Search for `Get Details of Notes`
 - Get: `Name` of `Notes` (from previous action)
 - Tap on it and add to a variable called `noteTitle`
 
-**Action 3: Get Details of Notes (again)**
+##### Action 3: Get Details of Notes (again)
+
 - Add another `Get Details of Notes`
 - Get: `Body` of `Notes`
 - Add to variable called `noteBody`
 
-**Action 4: Get Details of Notes (again)**
+##### Action 4: Get Details of Notes (again)
+
 - Get: `Folder` of `Notes`
 - Add to variable called `noteFolder`
 
-**Action 5: Get Details of Notes (again)**
+##### Action 5: Get Details of Notes (again)
+
 - Get: `Creation Date` of `Notes`
 - Format as **RFC 2822** (or leave as is)
 - Add to variable called `noteCreated`
 
-**Action 6: Get Details of Notes (again)**
+##### Action 6: Get Details of Notes (again)
+
 - Get: `Modification Date` of `Notes`
 - Add to variable called `noteModified`
 
-**Action 7: Text (JSON Body)**
+##### Action 7: Text (JSON Body)
+
 - Add a `Text` action
 - Enter this JSON template:
 
@@ -153,7 +164,8 @@ Add these actions in order:
 
 Replace the `{variables}` with actual Shortcut variables by tapping and selecting them.
 
-**Action 8: Get Contents of URL**
+##### Action 8: Get Contents of URL
+
 - Search for `Get Contents of URL`
 - URL: `https://your-domain.com/api/import/notes`
 - Method: `POST`
@@ -162,12 +174,14 @@ Replace the `{variables}` with actual Shortcut variables by tapping and selectin
   - `Content-Type`: `application/json`
 - Request Body: `File` → Select the `Text` from the previous action
 
-**Action 9: Show Notification (Optional)**
+##### Action 9: Show Notification (Optional)
+
 - Add `Show Notification`
 - Title: `Note Imported`
 - Body: `{noteTitle} was imported successfully`
 
 #### Save Your Shortcut
+
 - Tap **"Done"**
 - Name it: **"Import Note to Second Brain"**
 
@@ -177,21 +191,24 @@ Replace the `{variables}` with actual Shortcut variables by tapping and selectin
 
 This shortcut imports all notes from a specific folder.
 
-#### Build the Shortcut
+#### Build the Shortcut (Option B)
 
-**Action 1: Find Notes**
+##### Action 1: Find Notes (Folder Import)
+
 - Search for `Find Notes`
 - Filter: `Folder` `is` `[Your Folder Name]`
 - Sort by: `Modification Date`
 - Limit: `Get All Notes`
 
-**Action 2: Repeat with Each**
+##### Action 2: Repeat with Each
+
 - Add `Repeat with Each`
 - Repeat with each item in `Notes`
 
 **Inside the Repeat Loop, add:**
 
-**Action 3-7: Get Note Details** (Same as Option A)
+##### Action 3-7: Get Note Details (Same as Option A)
+
 - Get Name → `noteTitle`
 - Get Body → `noteBody`
 - Get Folder → `noteFolder`
@@ -199,7 +216,8 @@ This shortcut imports all notes from a specific folder.
 - Get Creation Date → `noteCreated`
 - Get Modification Date → `noteModified`
 
-**Action 8: Text (JSON)**
+##### Action 8: Text (JSON)
+
 ```json
 {
   "title": "{noteTitle}",
@@ -212,22 +230,26 @@ This shortcut imports all notes from a specific folder.
 }
 ```
 
-**Action 9: Add to Variable**
+##### Action 9: Add to Variable
+
 - Add the JSON text to a variable called `allNotes`
 
-**End Repeat**
+##### End Repeat
 
-**Action 10: Combine Text**
+##### Action 10: Combine Text
+
 - Combine `allNotes` with custom separator: `,`
 
-**Action 11: Text (Wrap in Array)**
+##### Action 11: Text (Wrap in Array)
+
 ```json
 {
   "notes": [{combinedNotes}]
 }
 ```
 
-**Action 12: Get Contents of URL**
+##### Action 12: Get Contents of URL
+
 - URL: `https://your-domain.com/api/import/notes`
 - Method: `POST`
 - Headers:
@@ -235,7 +257,8 @@ This shortcut imports all notes from a specific folder.
   - `Content-Type`: `application/json`
 - Request Body: The wrapped JSON
 
-**Action 13: Show Result**
+##### Action 13: Show Result
+
 - Show the API response to see import statistics
 
 ---
@@ -248,7 +271,7 @@ Use these shortcuts to fetch notes from Second Brain and save them to your iPhon
 
 This shortcut fetches all your notes from Second Brain and displays them in a list.
 
-#### Build the Shortcut
+#### Build the Shortcut (Export All)
 
 1. Open the **Shortcuts** app on your iPhone/iPad
 2. Tap the **+** button to create a new shortcut
@@ -256,49 +279,59 @@ This shortcut fetches all your notes from Second Brain and displays them in a li
 
 Add these actions in order:
 
-**Action 1: Get Contents of URL**
+##### Action 1: Get Contents of URL
+
 - Search for `Get Contents of URL`
 - URL: `https://your-domain.com/api/notes`
 - Method: `GET`
 - Headers:
   - `Authorization`: `ApiKey YOUR_API_KEY_HERE`
 
-**Action 2: Get Dictionary from Input**
+##### Action 2: Get Dictionary from Input
+
 - Search for `Get Dictionary from Input`
 - Input: `Contents of URL` (from previous action)
 
-**Action 3: Choose from List**
+##### Action 3: Choose from List
+
 - Search for `Choose from List`
 - Input: `Dictionary` (the array of notes)
 - Prompt: `Select a note`
 
-**Action 4: Get Dictionary Value**
+##### Action 4: Get Dictionary Value
+
 - Search for `Get Dictionary Value`
 - Get: `Value` for `title` in `Chosen Item`
 - Save to variable: `noteTitle`
 
-**Action 5: Get Dictionary Value (again)**
+##### Action 5: Get Dictionary Value (again)
+
 - Get: `Value` for `content` in `Chosen Item`
 - Save to variable: `noteContent`
 
-**Action 6: Get Dictionary Value (again)**
+##### Action 6: Get Dictionary Value (again)
+
 - Get: `Value` for `folder` in `Chosen Item`
 - Save to variable: `noteFolder`
 
-**Action 7: Get Dictionary Value (again)**
+##### Action 7: Get Dictionary Value (again)
+
 - Get: `Value` for `tags` in `Chosen Item`
 - Save to variable: `noteTags`
 
-**Action 8: Create Note (Apple Notes)**
+##### Action 8: Create Note (Apple Notes)
+
 - Search for `Create Note`
 - Body: `{noteContent}`
 - Folder: `{noteFolder}` (or choose a specific folder)
 
-**Action 9: Show Notification**
+##### Action 9: Show Notification
+
 - Title: `Note Exported`
 - Body: `{noteTitle} saved to Apple Notes`
 
-#### Save Your Shortcut
+#### Save Your Shortcut (Export)
+
 - Tap **"Done"**
 - Name it: **"Export Notes from Second Brain"**
 
@@ -308,37 +341,44 @@ Add these actions in order:
 
 If you know the specific note ID, you can fetch it directly.
 
-#### Build the Shortcut
+#### Build the Shortcut (Export by ID)
 
-**Action 1: Ask for Input**
+##### Action 1: Ask for Input
+
 - Search for `Ask for Input`
 - Prompt: `Enter Note ID`
 - Input Type: `Text`
 - Save to variable: `noteId`
 
-**Action 2: Text**
+##### Action 2: Text
+
 - Add a `Text` action
 - Enter: `https://your-domain.com/api/notes/{noteId}`
 - Replace `{noteId}` with the variable from Action 1
 
-**Action 3: Get Contents of URL**
+##### Action 3: Get Contents of URL
+
 - URL: `Text` (from previous action)
 - Method: `GET`
 - Headers:
   - `Authorization`: `ApiKey YOUR_API_KEY_HERE`
 
-**Action 4: Get Dictionary from Input**
+##### Action 4: Get Dictionary from Input
+
 - Input: `Contents of URL`
 
-**Action 5: Get Dictionary Value**
+##### Action 5: Get Dictionary Value
+
 - Get: `Value` for `title` in `Dictionary`
 - Save to variable: `noteTitle`
 
-**Action 6: Get Dictionary Value**
+##### Action 6: Get Dictionary Value
+
 - Get: `Value` for `content` in `Dictionary`
 - Save to variable: `noteContent`
 
-**Action 7: Quick Look or Create Note**
+##### Action 7: Quick Look or Create Note
+
 - Option A: Use `Quick Look` to preview the note
 - Option B: Use `Create Note` to save to Apple Notes
 
@@ -348,43 +388,52 @@ If you know the specific note ID, you can fetch it directly.
 
 This shortcut displays a formatted list of notes with titles and folders for easy browsing.
 
-#### Build the Shortcut
+#### Build the Shortcut (Browse and Select)
 
-**Action 1: Get Contents of URL**
+##### Action 1: Get Contents of URL (Browse)
+
 - URL: `https://your-domain.com/api/notes`
 - Method: `GET`
 - Headers:
   - `Authorization`: `ApiKey YOUR_API_KEY_HERE`
 
-**Action 2: Repeat with Each**
+##### Action 2: Repeat with Each (Browse)
+
 - Repeat with each item in `Contents of URL`
 
 **Inside the Repeat Loop:**
 
-**Action 3: Get Dictionary Value**
+##### Action 3: Get Dictionary Value (Title)
+
 - Get: `Value` for `title` in `Repeat Item`
 - Save to variable: `title`
 
-**Action 4: Get Dictionary Value**
+##### Action 4: Get Dictionary Value (Folder)
+
 - Get: `Value` for `folder` in `Repeat Item`
 - Save to variable: `folder`
 
-**Action 5: Text**
+##### Action 5: Text (Format)
+
 - Enter: `{title} ({folder})`
 
-**Action 6: Add to Variable**
+##### Action 6: Add to Variable (Browse)
+
 - Add `Text` to variable: `noteList`
 
-**End Repeat**
+##### End Repeat (Browse)
 
-**Action 7: Choose from List**
+##### Action 7: Choose from List
+
 - Choose from: `noteList`
 - Prompt: `Select a note to export`
 
-**Action 8: Get Item from List**
+##### Action 8: Get Item from List
+
 - Get: `Item at Index` matching the chosen index from `Contents of URL`
 
-**Action 9: Get Dictionary Values and Create Note**
+##### Action 9: Get Dictionary Values and Create Note
+
 - Extract `title`, `content`, `folder`, `tags` from the selected item
 - Use `Create Note` to save to Apple Notes
 
@@ -396,7 +445,8 @@ Instead of saving to Apple Notes, you can save notes as text or markdown files:
 
 **Replace the "Create Note" action with:**
 
-**Action: Save File**
+#### Action: Save File
+
 - Search for `Save File`
 - Input: `{noteContent}`
 - Destination: `iCloud Drive` or `On My iPhone`
@@ -419,7 +469,7 @@ Instead of saving to Apple Notes, you can save notes as text or markdown files:
 ### Add to Share Sheet (Import Only)
 
 1. Open your import shortcut in edit mode
-2. Tap the **ⓘ** info button at the top
+2. Tap the **info** button at the top
 3. Enable **"Show in Share Sheet"**
 4. Set input types to **"Notes"**
 
@@ -428,7 +478,7 @@ Now you can share a note directly from the Notes app to Second Brain!
 ### Add to Home Screen
 
 1. Open your shortcut in edit mode
-2. Tap the **ⓘ** info button
+2. Tap the **info** button
 3. Tap **"Add to Home Screen"**
 4. Choose an icon and name
 5. Tap **"Add"**
@@ -443,13 +493,13 @@ This works great for quick access to both import and export shortcuts!
 
 All endpoints require authentication. Include one of these headers:
 
-```
+```text
 Authorization: ApiKey YOUR_API_KEY
 ```
 
 or
 
-```
+```text
 Authorization: Bearer YOUR_JWT_TOKEN
 ```
 
@@ -457,13 +507,14 @@ Authorization: Bearer YOUR_JWT_TOKEN
 
 ### Import Endpoint
 
-```
+```text
 POST /api/import/notes
 ```
 
 #### Request Body
 
 **Single Note:**
+
 ```json
 {
   "title": "My Note Title",
@@ -478,6 +529,7 @@ POST /api/import/notes
 ```
 
 **Batch Import:**
+
 ```json
 {
   "notes": [
@@ -499,7 +551,7 @@ POST /api/import/notes
 
 | Field | Required | Type | Description |
 |-------|----------|------|-------------|
-| `title` | ✅ Yes | string | Note title |
+| `title` | Yes | string | Note title |
 | `body` / `content` | No | string | Note content (supports both field names) |
 | `folder` | No | string | Folder/category name |
 | `id` / `external_id` | No | string/number | Unique identifier for duplicate detection |
@@ -552,19 +604,21 @@ POST /api/import/notes
 
 #### Get All Notes
 
-```
+```text
 GET /api/notes
 ```
 
 Returns all notes for the authenticated user.
 
 **Example Request (cURL):**
+
 ```bash
 curl -X GET https://your-domain.com/api/notes \
   -H "Authorization: ApiKey YOUR_API_KEY"
 ```
 
 **Response:**
+
 ```json
 [
   {
@@ -598,19 +652,21 @@ curl -X GET https://your-domain.com/api/notes \
 
 #### Get Single Note by ID
 
-```
+```text
 GET /api/notes/{id}
 ```
 
 Returns a specific note by its ID.
 
 **Example Request (cURL):**
+
 ```bash
 curl -X GET https://your-domain.com/api/notes/550e8400-e29b-41d4-a716-446655440000 \
   -H "Authorization: ApiKey YOUR_API_KEY"
 ```
 
 **Response:**
+
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
@@ -654,6 +710,7 @@ curl -X GET https://your-domain.com/api/notes/550e8400-e29b-41d4-a716-4466554400
 **Cause:** Invalid or missing API key
 
 **Solution:**
+
 1. Verify your API key is correct
 2. Check the Authorization header format: `ApiKey YOUR_KEY` (note the space)
 3. Generate a new API key if needed
@@ -663,6 +720,7 @@ curl -X GET https://your-domain.com/api/notes/550e8400-e29b-41d4-a716-4466554400
 **Cause:** Empty request body or invalid JSON
 
 **Solution:**
+
 1. Ensure the JSON is properly formatted
 2. Verify the `title` field is included (it's required)
 3. Check that variables are properly inserted in the JSON template
@@ -672,6 +730,7 @@ curl -X GET https://your-domain.com/api/notes/550e8400-e29b-41d4-a716-4466554400
 **Cause:** Import succeeded but notes aren't visible
 
 **Solution:**
+
 1. Check the API response for the actual status
 2. Refresh the notes page in Second Brain
 3. Check if notes were imported to a specific folder
@@ -681,6 +740,7 @@ curl -X GET https://your-domain.com/api/notes/550e8400-e29b-41d4-a716-4466554400
 **Cause:** Missing `id` field for duplicate detection
 
 **Solution:**
+
 1. Include the note's unique identifier in the `id` field
 2. Use `Get Details of Notes` → `Identifier` in your shortcut
 
@@ -689,6 +749,7 @@ curl -X GET https://your-domain.com/api/notes/550e8400-e29b-41d4-a716-4466554400
 **Cause:** Unsupported date format
 
 **Solution:**
+
 1. Use RFC 2822 format: `Mon, 13 Jan 2025 18:28:35 -0600`
 2. Or ISO 8601: `2025-01-13T18:28:35-06:00`
 3. Format dates using Shortcuts' date formatting options
@@ -698,6 +759,7 @@ curl -X GET https://your-domain.com/api/notes/550e8400-e29b-41d4-a716-4466554400
 **Cause:** No notes exist or API key belongs to different user
 
 **Solution:**
+
 1. Verify you have notes in your Second Brain account
 2. Check that you're using the correct API key
 3. Try logging into the web interface to confirm notes exist
@@ -707,6 +769,7 @@ curl -X GET https://your-domain.com/api/notes/550e8400-e29b-41d4-a716-4466554400
 **Cause:** Missing "Get Dictionary from Input" action
 
 **Solution:**
+
 1. Add `Get Dictionary from Input` after `Get Contents of URL`
 2. This converts the JSON response into a list Shortcuts can display
 
@@ -715,6 +778,7 @@ curl -X GET https://your-domain.com/api/notes/550e8400-e29b-41d4-a716-4466554400
 **Cause:** Incorrect dictionary key names
 
 **Solution:**
+
 1. Use exact field names: `title`, `content`, `folder`, `tags`, `id`
 2. Note: The export uses `content`, not `body`
 3. Tags are returned as an array, not a comma-separated string
@@ -732,7 +796,7 @@ curl -X POST https://your-domain.com/api/import/notes \
   -d '{"title": "Test Note", "body": "This is a test"}'
 ```
 
-4. **Test Export with cURL:**
+1. **Test Export with cURL:**
 
 ```bash
 # Get all notes
@@ -766,6 +830,7 @@ You can set up automatic syncing using iOS Automations:
 ### Example: Daily Import Sync
 
 Create an automation that:
+
 - Triggers at 8:00 PM daily
 - Runs your "Import All Notes" shortcut
 - Sends a notification with results
@@ -773,6 +838,7 @@ Create an automation that:
 ### Example: Daily Export Backup
 
 Create an automation that:
+
 - Triggers at 9:00 PM daily
 - Runs a modified export shortcut that saves all notes to Files app
 - Creates a backup of your Second Brain notes on your device
@@ -809,11 +875,9 @@ You can filter exported notes in your shortcut:
 
 If you encounter issues not covered here:
 
-1. Check the [main README](./README.md) for general setup
+1. Check the [main README](../README.md) for general setup
 2. Review the API logs for detailed error messages
 3. Open an issue on GitHub with:
    - Your shortcut configuration (screenshot)
    - The API response you're receiving
    - iOS version and device
-
----

@@ -410,6 +410,66 @@ public class TestChatRepository : IChatRepository
             throw new RepositoryException($"Failed to add message to conversation with ID '{id}'", ex);
         }
     }
+
+    // Soft delete methods (simplified implementations for testing)
+    public async Task<bool> SoftDeleteAsync(string id, string deletedBy)
+    {
+        var conversation = await _context.ChatConversations.FirstOrDefaultAsync(c => c.Id == id);
+        if (conversation == null) return false;
+        conversation.IsDeleted = true;
+        conversation.DeletedAt = DateTime.UtcNow;
+        conversation.DeletedBy = deletedBy;
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<int> SoftDeleteManyAsync(IEnumerable<string> ids, string userId)
+    {
+        var idList = ids.ToList();
+        var conversations = await _context.ChatConversations
+            .Where(c => idList.Contains(c.Id) && c.UserId == userId)
+            .ToListAsync();
+        if (conversations.Count == 0) return 0;
+        var now = DateTime.UtcNow;
+        foreach (var conversation in conversations)
+        {
+            conversation.IsDeleted = true;
+            conversation.DeletedAt = now;
+            conversation.DeletedBy = userId;
+        }
+        await _context.SaveChangesAsync();
+        return conversations.Count;
+    }
+
+    public async Task<bool> RestoreAsync(string id)
+    {
+        var conversation = await _context.ChatConversations.FirstOrDefaultAsync(c => c.Id == id && c.IsDeleted);
+        if (conversation == null) return false;
+        conversation.IsDeleted = false;
+        conversation.DeletedAt = null;
+        conversation.DeletedBy = null;
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> HardDeleteAsync(string id)
+    {
+        var conversation = await _context.ChatConversations.Include(c => c.Messages).FirstOrDefaultAsync(c => c.Id == id);
+        if (conversation == null) return false;
+        _context.ChatConversations.Remove(conversation);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<IEnumerable<ChatConversation>> GetDeletedByUserIdAsync(string userId)
+    {
+        return await _context.ChatConversations
+            .Include(c => c.Messages)
+            .AsNoTracking()
+            .Where(c => c.UserId == userId && c.IsDeleted)
+            .OrderByDescending(c => c.DeletedAt)
+            .ToListAsync();
+    }
 }
 
 public class SqlChatRepositoryInMemoryTests : IDisposable

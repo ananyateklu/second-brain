@@ -1,20 +1,33 @@
 /**
  * Formatting Toolbar Component
  * Provides markdown formatting options for chat input
+ * 
+ * Can be used standalone with props or with ChatInputContext
  */
 
 import React from 'react';
 import { FORMATTING_ACTIONS, type FormattingAction } from './formatting-actions';
+import { useChatInputContextSafe } from './ChatInputContext';
 
 export interface ChatFormattingToolbarProps {
-  onFormat: (before: string, after: string) => void;
+  /** Callback for formatting (optional if using context) */
+  onFormat?: (before: string, after: string) => void;
+  /** Custom formatting actions */
   actions?: FormattingAction[];
 }
 
 export function ChatFormattingToolbar({
-  onFormat,
+  onFormat: propOnFormat,
   actions = FORMATTING_ACTIONS,
 }: ChatFormattingToolbarProps) {
+  // Use safe context hook - returns null if not in ChatInput context
+  const contextValue = useChatInputContextSafe();
+
+  const onFormat = propOnFormat ?? contextValue?.onFormat ?? (() => { });
+  const showToolbar = contextValue?.showToolbar ?? true;
+
+  if (!showToolbar) return null;
+
   return (
     <div
       className="formatting-toolbar mb-2 flex items-center gap-1 px-3 py-2 rounded-xl"

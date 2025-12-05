@@ -79,7 +79,7 @@ psql -d secondbrain -f 11_message_images.sql
 
 ### Entity Relationship Diagram
 
-```
+```text
 ┌─────────────────┐
 │     users       │
 ├─────────────────┤         ┌──────────────────────┐
@@ -284,4 +284,3 @@ USING hnsw (embedding vector_cosine_ops);
 - Foreign keys use `ON DELETE CASCADE` for automatic cleanup
 - The schema matches Entity Framework Core migrations in `backend/src/SecondBrain.Infrastructure/Migrations/`
 - Hybrid search uses Reciprocal Rank Fusion (RRF) to combine vector and BM25 results
-

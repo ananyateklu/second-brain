@@ -1,25 +1,34 @@
+using Asp.Versioning;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using SecondBrain.API.Extensions;
+using SecondBrain.Application.Commands.Notes.BulkDeleteNotes;
+using SecondBrain.Application.Commands.Notes.CreateNote;
+using SecondBrain.Application.Commands.Notes.DeleteNote;
+using SecondBrain.Application.Commands.Notes.UpdateNote;
 using SecondBrain.Application.DTOs.Requests;
 using SecondBrain.Application.DTOs.Responses;
-using SecondBrain.Application.Exceptions;
-using SecondBrain.Application.Services.Notes;
+using SecondBrain.Application.Queries.Notes.GetAllNotes;
+using SecondBrain.Application.Queries.Notes.GetNoteById;
 
 namespace SecondBrain.API.Controllers;
 
 /// <summary>
-/// Notes management endpoints
+/// Notes management endpoints using CQRS pattern with MediatR
 /// </summary>
 [ApiController]
+[ApiVersion("1.0")]
 [Route("api/[controller]")]
+[Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
 public class NotesController : ControllerBase
 {
-    private readonly INoteService _noteService;
+    private readonly IMediator _mediator;
     private readonly ILogger<NotesController> _logger;
 
-    public NotesController(INoteService noteService, ILogger<NotesController> logger)
+    public NotesController(IMediator mediator, ILogger<NotesController> logger)
     {
-        _noteService = noteService;
+        _mediator = mediator;
         _logger = logger;
     }
 
@@ -39,16 +48,10 @@ public class NotesController : ControllerBase
             return Unauthorized(new { error = "Not authenticated" });
         }
 
-        try
-        {
-            var notes = await _noteService.GetAllNotesAsync(userId, cancellationToken);
-            return Ok(notes);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving notes for user. UserId: {UserId}", userId);
-            throw;
-        }
+        var query = new GetAllNotesQuery(userId);
+        var result = await _mediator.Send(query, cancellationToken);
+
+        return result.ToActionResult();
     }
 
     /// <summary>
@@ -71,30 +74,10 @@ public class NotesController : ControllerBase
             return Unauthorized(new { error = "Not authenticated" });
         }
 
-        try
-        {
-            var note = await _noteService.GetNoteByIdAsync(id, userId, cancellationToken);
+        var query = new GetNoteByIdQuery(id, userId);
+        var result = await _mediator.Send(query, cancellationToken);
 
-            if (note == null)
-            {
-                throw new NotFoundException("Note", id);
-            }
-
-            return Ok(note);
-        }
-        catch (UnauthorizedException)
-        {
-            return StatusCode(StatusCodes.Status403Forbidden, new { error = "Access denied" });
-        }
-        catch (NotFoundException)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving note. NoteId: {NoteId}, UserId: {UserId}", id, userId);
-            throw;
-        }
+        return result.ToActionResult();
     }
 
     /// <summary>
@@ -116,16 +99,19 @@ public class NotesController : ControllerBase
             return Unauthorized(new { error = "Not authenticated" });
         }
 
-        try
-        {
-            var note = await _noteService.CreateNoteAsync(request, userId, cancellationToken);
-            return CreatedAtAction(nameof(GetNoteById), new { id = note.Id }, note);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error creating note for user. UserId: {UserId}", userId);
-            throw;
-        }
+        var command = new CreateNoteCommand(
+            request.Title,
+            request.Content,
+            request.Tags,
+            request.IsArchived,
+            request.Folder,
+            userId);
+
+        var result = await _mediator.Send(command, cancellationToken);
+
+        return result.Match<ActionResult<NoteResponse>>(
+            note => CreatedAtAction(nameof(GetNoteById), new { id = note.Id }, note),
+            error => result.ToActionResult());
     }
 
     /// <summary>
@@ -150,30 +136,19 @@ public class NotesController : ControllerBase
             return Unauthorized(new { error = "Not authenticated" });
         }
 
-        try
-        {
-            var note = await _noteService.UpdateNoteAsync(id, request, userId, cancellationToken);
+        var command = new UpdateNoteCommand(
+            id,
+            request.Title,
+            request.Content,
+            request.Tags,
+            request.IsArchived,
+            request.Folder,
+            request.UpdateFolder,
+            userId);
 
-            if (note == null)
-            {
-                throw new NotFoundException("Note", id);
-            }
+        var result = await _mediator.Send(command, cancellationToken);
 
-            return Ok(note);
-        }
-        catch (UnauthorizedException)
-        {
-            return StatusCode(StatusCodes.Status403Forbidden, new { error = "Access denied" });
-        }
-        catch (NotFoundException)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error updating note. NoteId: {NoteId}, UserId: {UserId}", id, userId);
-            throw;
-        }
+        return result.ToActionResult();
     }
 
     /// <summary>
@@ -196,30 +171,10 @@ public class NotesController : ControllerBase
             return Unauthorized(new { error = "Not authenticated" });
         }
 
-        try
-        {
-            var deleted = await _noteService.DeleteNoteAsync(id, userId, cancellationToken);
+        var command = new DeleteNoteCommand(id, userId);
+        var result = await _mediator.Send(command, cancellationToken);
 
-            if (!deleted)
-            {
-                throw new NotFoundException("Note", id);
-            }
-
-            return NoContent();
-        }
-        catch (UnauthorizedException)
-        {
-            return StatusCode(StatusCodes.Status403Forbidden, new { error = "Access denied" });
-        }
-        catch (NotFoundException)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error deleting note. NoteId: {NoteId}, UserId: {UserId}", id, userId);
-            throw;
-        }
+        return result.ToActionResult();
     }
 
     /// <summary>
@@ -248,21 +203,11 @@ public class NotesController : ControllerBase
             return BadRequest(new { error = "At least one note ID is required" });
         }
 
-        try
-        {
-            _logger.LogInformation("Bulk deleting {Count} notes for user {UserId}",
-                request.NoteIds.Count, userId);
+        var command = new BulkDeleteNotesCommand(request.NoteIds, userId);
+        var result = await _mediator.Send(command, cancellationToken);
 
-            var deletedCount = await _noteService.BulkDeleteNotesAsync(
-                request.NoteIds, userId, cancellationToken);
-
-            return Ok(new { deletedCount, message = $"Successfully deleted {deletedCount} note(s)" });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error bulk deleting notes. Count: {Count}, UserId: {UserId}",
-                request.NoteIds.Count, userId);
-            return StatusCode(500, new { error = "Failed to delete notes" });
-        }
+        return result.Match<ActionResult>(
+            deletedCount => Ok(new { deletedCount, message = $"Successfully deleted {deletedCount} note(s)" }),
+            error => ResultExtensions.ToErrorActionResult(error));
     }
 }
