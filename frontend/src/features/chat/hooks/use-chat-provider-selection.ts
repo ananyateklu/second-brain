@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useAIHealth } from '../../ai/hooks/use-ai-health';
 import { useSettingsStore } from '../../../store/settings-store';
 import { useAuthStore } from '../../../store/auth-store';
@@ -49,15 +49,21 @@ export function useChatProviderSelection(): ProviderSelectionState & ProviderSel
     }
   }, [user?.userId, loadPreferencesFromBackend]);
 
-  // Sync selected provider/model with settings store
+  // Sync selected provider/model with settings store using refs to track previous values
+  const prevSavedProviderRef = useRef(savedChatProvider);
   useEffect(() => {
-    if (savedChatProvider && savedChatProvider !== selectedProvider) {
+    if (savedChatProvider && savedChatProvider !== selectedProvider && savedChatProvider !== prevSavedProviderRef.current) {
+      prevSavedProviderRef.current = savedChatProvider;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Valid sync from external store
       setSelectedProvider(savedChatProvider);
     }
   }, [savedChatProvider, selectedProvider]);
 
+  const prevSavedModelRef = useRef(savedChatModel);
   useEffect(() => {
-    if (savedChatModel && savedChatModel !== selectedModel) {
+    if (savedChatModel && savedChatModel !== selectedModel && savedChatModel !== prevSavedModelRef.current) {
+      prevSavedModelRef.current = savedChatModel;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Valid sync from external store
       setSelectedModel(savedChatModel);
     }
   }, [savedChatModel, selectedModel]);
@@ -66,16 +72,16 @@ export function useChatProviderSelection(): ProviderSelectionState & ProviderSel
   const availableProviders = useMemo(() => (
     Array.isArray(healthData?.providers)
       ? healthData.providers
-          .filter((p) => p && p.isHealthy)
-          .map((p) => ({
-            ...p,
-            provider: typeof p.provider === 'string' ? p.provider : String(p.provider || ''),
-            availableModels: Array.isArray(p.availableModels)
-              ? p.availableModels.filter((m): m is string => typeof m === 'string')
-              : [],
-          }))
+        .filter((p) => p && p.isHealthy)
+        .map((p) => ({
+          ...p,
+          provider: typeof p.provider === 'string' ? p.provider : String(p.provider || ''),
+          availableModels: Array.isArray(p.availableModels)
+            ? p.availableModels.filter((m): m is string => typeof m === 'string')
+            : [],
+        }))
       : []
-  ), [healthData?.providers]);
+  ), [healthData]);
 
   // Get available models for selected provider
   const availableModels = useMemo(() =>
@@ -84,15 +90,19 @@ export function useChatProviderSelection(): ProviderSelectionState & ProviderSel
   );
 
   // Auto-select first provider and preferred default model (only if no saved preferences)
+  const hasAutoSelectedRef = useRef(false);
   useEffect(() => {
-    if (availableProviders.length > 0 && !selectedProvider) {
+    if (availableProviders.length > 0 && !selectedProvider && !hasAutoSelectedRef.current) {
+      hasAutoSelectedRef.current = true;
       const firstProvider = availableProviders[0];
       const newProvider = firstProvider.provider;
-      const availableModels = firstProvider.availableModels || [];
-      const newModel = getDefaultModelForProvider(newProvider, availableModels);
+      const providerModels = firstProvider.availableModels || [];
+      const newModel = getDefaultModelForProvider(newProvider, providerModels);
 
+      /* eslint-disable react-hooks/set-state-in-effect -- Valid initial state sync from external data */
       setSelectedProvider(newProvider);
       setSelectedModel(newModel);
+      /* eslint-enable react-hooks/set-state-in-effect */
 
       // Save to settings store (local only, no backend sync for auto-init)
       setChatProvider(newProvider);
@@ -103,15 +113,19 @@ export function useChatProviderSelection(): ProviderSelectionState & ProviderSel
   // Auto-correct model if it's invalid for the current provider
   // This handles: 1) provider change via dropdown, 2) invalid saved preferences
   // When loading a conversation via setProviderAndModel, the model will be valid, so no correction occurs
+  const prevSelectedProviderRef = useRef(selectedProvider);
   useEffect(() => {
+    // Only auto-correct when provider changes or model is invalid
     if (availableModels.length > 0 && !availableModels.includes(selectedModel)) {
       // Use preferred default model for the provider, fallback to first available
       const newModel = getDefaultModelForProvider(selectedProvider, availableModels);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Valid state correction for invalid model
       setSelectedModel(newModel);
 
       // Save to settings store (local only, no backend sync for auto-correction)
       setChatModel(newModel);
     }
+    prevSelectedProviderRef.current = selectedProvider;
   }, [selectedProvider, availableModels, selectedModel, setChatModel]);
 
   // Handle provider change with persistence
@@ -123,7 +137,7 @@ export function useChatProviderSelection(): ProviderSelectionState & ProviderSel
     if (user?.userId) {
       syncPreferencesToBackend(user.userId).catch(console.error);
     }
-  }, [user?.userId, setChatProvider, syncPreferencesToBackend]);
+  }, [user, setChatProvider, syncPreferencesToBackend]);
 
   // Handle model change with persistence
   const handleModelChange = useCallback((model: string) => {
@@ -134,7 +148,7 @@ export function useChatProviderSelection(): ProviderSelectionState & ProviderSel
     if (user?.userId) {
       syncPreferencesToBackend(user.userId).catch(console.error);
     }
-  }, [user?.userId, setChatModel, syncPreferencesToBackend]);
+  }, [user, setChatModel, syncPreferencesToBackend]);
 
   // Set both provider and model (used when selecting a conversation)
   const setProviderAndModel = useCallback((provider: string, model: string) => {

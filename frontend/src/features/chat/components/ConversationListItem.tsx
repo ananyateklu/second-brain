@@ -29,11 +29,14 @@ function CircularCheckbox({
 
   useEffect(() => {
     if (prevCheckedRef.current !== checked) {
+      // Trigger animation for checkbox state change - valid UI animation
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsAnimating(true);
       const timer = setTimeout(() => setIsAnimating(false), 250);
       prevCheckedRef.current = checked;
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [checked]);
 
   return (

@@ -31,14 +31,16 @@ export function ChatSidebar({
   const [toggleAnimation, setToggleAnimation] = useState<'in' | 'out' | null>(null);
   const prevSelectionModeRef = useRef(isSelectionMode);
 
-  // Track selection mode changes for animation
+  // Track selection mode changes for animation - valid UI state sync
   useEffect(() => {
     if (prevSelectionModeRef.current !== isSelectionMode) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setToggleAnimation(isSelectionMode ? 'in' : 'out');
       const timer = setTimeout(() => setToggleAnimation(null), 300);
       prevSelectionModeRef.current = isSelectionMode;
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [isSelectionMode]);
 
   // Filter out placeholder conversations for selection

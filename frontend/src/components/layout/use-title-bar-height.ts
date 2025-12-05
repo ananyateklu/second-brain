@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 /**
  * Check if we're running in Tauri
@@ -11,11 +11,8 @@ const isTauri = (): boolean => {
  * Hook to get the title bar height for proper content spacing
  */
 export function useTitleBarHeight(): number {
-    const [isTauriApp, setIsTauriApp] = useState(false);
-
-    useEffect(() => {
-        setIsTauriApp(isTauri());
-    }, []);
+    // Use lazy initialization to avoid setState in useEffect
+    const [isTauriApp] = useState(() => isTauri());
 
     // Return 28px (macOS standard) for Tauri, 0 for web
     return isTauriApp ? 28 : 0;

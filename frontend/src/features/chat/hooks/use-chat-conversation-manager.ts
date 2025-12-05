@@ -65,12 +65,20 @@ export function useChatConversationManager(
   const bulkDeleteMutation = useBulkDeleteConversations();
 
   // Auto-load most recent conversation on mount (but not when user explicitly starts new chat)
+  // Use a ref to track if we've auto-loaded to avoid repeated state updates
+  const hasAutoLoadedRef = useRef(false);
   useEffect(() => {
-    if (conversations && conversations.length > 0 && !conversationId && !isNewChat) {
+    if (conversations && conversations.length > 0 && !conversationId && !isNewChat && !hasAutoLoadedRef.current) {
+      hasAutoLoadedRef.current = true;
       const mostRecent = conversations.reduce((prev, current) =>
         new Date(current.updatedAt) > new Date(prev.updatedAt) ? current : prev
       );
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Valid initial state sync from external data
       setConversationIdState(mostRecent.id);
+    }
+    // Reset the ref when starting a new chat
+    if (isNewChat) {
+      hasAutoLoadedRef.current = false;
     }
   }, [conversations, conversationId, isNewChat]);
 
@@ -193,7 +201,7 @@ export function useChatConversationManager(
       try {
         // Use bulk delete endpoint - single API call instead of multiple
         const result = await bulkDeleteMutation.mutateAsync(ids);
-        
+
         toast.success(`${result.deletedCount} conversation${result.deletedCount !== 1 ? 's' : ''} deleted`);
 
         // Determine next conversation to select after bulk deletion
@@ -244,7 +252,7 @@ export function useChatConversationManager(
         setPendingMessage(null);
       }
     }
-  }, [pendingMessage, conversation?.messages]);
+  }, [pendingMessage, conversation]);
 
   return {
     // State

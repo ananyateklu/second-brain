@@ -28,7 +28,8 @@ const isTauri = (): boolean => {
 export function ChatPage() {
   const user = useAuthStore((state) => state.user);
   const sendMessage = useSendMessage();
-  const [isTauriApp, setIsTauriApp] = useState(false);
+  // Use lazy initialization to avoid setState in useEffect
+  const [isTauriApp] = useState(() => isTauri());
 
   // Session tracking hooks (PostgreSQL 18 Temporal Features)
   const { mutate: startSession } = useStartSession();
@@ -36,11 +37,6 @@ export function ChatPage() {
   const sessionIdRef = useRef<string | null>(null);
   const messageCountRef = useRef({ sent: 0, received: 0 });
   const previousConversationIdRef = useRef<string | null>(null);
-
-  // Check if running in Tauri
-  useEffect(() => {
-    setIsTauriApp(isTauri());
-  }, []);
 
   // Calculate title bar offset for chat container height
   const titleBarOffset = isTauriApp ? 28 : 0;

@@ -73,15 +73,18 @@ export function ChatMessageList({
   messagesContainerRef,
   messagesEndRef,
 }: ChatMessageListProps) {
+  // Get messages array for memoization
+  const messages = conversation?.messages;
+
   // Check if any assistant message in the conversation matches the streaming message
   // This is used to prevent double rendering
   const hasMatchingPersistedMessage = useMemo(() => {
-    if (isStreaming || !streamingMessage || !conversation?.messages) {
+    if (isStreaming || !streamingMessage || !messages) {
       return false;
     }
 
     // Check if any assistant message matches the streaming message
-    return conversation.messages.some(
+    return messages.some(
       (msg) =>
         msg.role === 'assistant' &&
         (msg.content === streamingMessage ||
@@ -91,22 +94,22 @@ export function ChatMessageList({
             (msg.content.trim().startsWith(streamingMessage.trim().substring(0, Math.min(100, streamingMessage.trim().length))) ||
               msg.content.trim().includes(streamingMessage.trim().substring(0, Math.min(50, streamingMessage.trim().length))))))
     );
-  }, [isStreaming, streamingMessage, conversation?.messages]);
+  }, [isStreaming, streamingMessage, messages]);
 
   // Check if the pending user message already exists in the persisted messages
   // This prevents showing duplicate user messages
   const hasMatchingPendingUserMessage = useMemo(() => {
-    if (!pendingMessage || !conversation?.messages) {
+    if (!pendingMessage || !messages) {
       return false;
     }
 
     // Check if any user message matches the pending message
-    return conversation.messages.some(
+    return messages.some(
       (msg) =>
         msg.role === 'user' &&
         (msg.content === pendingMessage.content || msg.content.trim() === pendingMessage.content.trim())
     );
-  }, [pendingMessage, conversation?.messages]);
+  }, [pendingMessage, messages]);
 
   const hasNoMessages =
     !conversation ||
@@ -268,7 +271,7 @@ function MessageWithContext({
   }, [isAssistantMessage, isLastMessage, isStreaming, streamingMessage, message.content]);
 
   const hasToolCalls = !!(isAssistantMessage && message.toolCalls && message.toolCalls.length > 0);
-  
+
   // Check for retrieved notes (from agent context injection)
   const hasRetrievedNotes = !!(isAssistantMessage && message.retrievedNotes && message.retrievedNotes.length > 0);
 
@@ -318,7 +321,8 @@ function MessageWithContext({
             key={`${index}-thinking-${thinkingIndex}`}
             step={{
               content: thinkingContent,
-              timestamp: new Date(message.timestamp || Date.now()),
+              // Use message timestamp, fallback to empty string which will be handled by Date constructor
+              timestamp: new Date(message.timestamp || new Date().toISOString()),
             }}
           />
         ))}

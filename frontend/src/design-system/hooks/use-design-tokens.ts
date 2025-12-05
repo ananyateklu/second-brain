@@ -102,21 +102,26 @@ export function useDesignTokens(): UseDesignTokensReturn {
    * Get computed value of a CSS variable
    */
   const getComputedValue = useCallback((tokenValue: string): string => {
-    if (!isCSSVariable(tokenValue)) {
-      return tokenValue;
-    }
+    // Inner recursive function to resolve CSS variables
+    const resolveValue = (value: string): string => {
+      if (!isCSSVariable(value)) {
+        return value;
+      }
 
-    const varName = extractVariableName(tokenValue);
-    if (!varName) return tokenValue;
+      const varName = extractVariableName(value);
+      if (!varName) return value;
 
-    const computed = getCSSVariable(varName);
+      const computed = getCSSVariable(varName);
 
-    // If the computed value is also a CSS variable, resolve it recursively
-    if (isCSSVariable(computed)) {
-      return getComputedValue(computed);
-    }
+      // If the computed value is also a CSS variable, resolve it recursively
+      if (isCSSVariable(computed)) {
+        return resolveValue(computed);
+      }
 
-    return computed || tokenValue;
+      return computed || value;
+    };
+
+    return resolveValue(tokenValue);
   }, []);
 
   /**
@@ -140,13 +145,18 @@ export function useDesignTokens(): UseDesignTokensReturn {
  * Hook for a single token value with live updates
  */
 export function useTokenValue(tokenValue: string): string {
-  const [value, setValue] = useState(tokenValue);
   const { getComputedValue, theme } = useDesignTokens();
+  // Compute initial value lazily, re-compute when theme changes
+  const [value, setValue] = useState(() =>
+    isCSSVariable(tokenValue) ? getComputedValue(tokenValue) : tokenValue
+  );
 
   useEffect(() => {
-    // Re-compute when theme changes
+    // Re-compute when theme changes - valid external state sync
     if (isCSSVariable(tokenValue)) {
-      setValue(getComputedValue(tokenValue));
+      const newValue = getComputedValue(tokenValue);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setValue(prev => prev !== newValue ? newValue : prev);
     }
   }, [tokenValue, theme, getComputedValue]);
 

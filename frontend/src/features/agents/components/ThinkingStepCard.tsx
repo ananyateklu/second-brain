@@ -10,11 +10,13 @@ interface ThinkingStepCardProps {
 
 export function ThinkingStepCard({ step, isStreaming = false }: ThinkingStepCardProps) {
   // Start expanded when streaming, collapsed otherwise
+  // Use functional update to auto-expand when streaming starts
   const [isExpanded, setIsExpanded] = useState(isStreaming);
 
-  // Auto-expand when streaming starts
+  // Auto-expand when streaming starts - valid prop sync for UI state
   useEffect(() => {
     if (isStreaming) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsExpanded(true);
     }
   }, [isStreaming]);
@@ -30,9 +32,9 @@ export function ThinkingStepCard({ step, isStreaming = false }: ThinkingStepCard
   return (
     <div className="relative pl-12 py-2 group">
       {/* Icon on the timeline */}
-      <div 
+      <div
         className="absolute left-2.5 top-2.5 w-5 h-5 rounded-full flex items-center justify-center z-10 border transition-colors"
-        style={{ 
+        style={{
           backgroundColor: 'var(--surface-card)',
           borderColor: 'var(--border)'
         }}
@@ -48,7 +50,7 @@ export function ThinkingStepCard({ step, isStreaming = false }: ThinkingStepCard
           onClick={() => setIsExpanded(!isExpanded)}
           className="flex items-center gap-2 w-full text-left hover:opacity-80 transition-opacity"
         >
-          <span 
+          <span
             className="font-medium"
             style={{ color: 'var(--text-secondary)' }}
           >
@@ -56,7 +58,7 @@ export function ThinkingStepCard({ step, isStreaming = false }: ThinkingStepCard
           </span>
           {/* Show streaming indicator when actively streaming */}
           {isStreaming && (
-            <span 
+            <span
               className="inline-block w-1.5 h-1.5 rounded-full animate-pulse"
               style={{ backgroundColor: 'var(--color-brand-500)' }}
             />
@@ -76,9 +78,9 @@ export function ThinkingStepCard({ step, isStreaming = false }: ThinkingStepCard
         </button>
 
         {isExpanded && (
-          <div 
+          <div
             className="mt-2 p-3 rounded-lg text-xs font-mono overflow-x-auto"
-            style={{ 
+            style={{
               backgroundColor: 'var(--surface-card)',
               color: 'var(--text-secondary)',
               border: '1px solid var(--border)'

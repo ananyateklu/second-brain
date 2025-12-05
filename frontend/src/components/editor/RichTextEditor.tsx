@@ -44,7 +44,11 @@ const SuggestionList = forwardRef((props: SuggestionListProps, ref) => {
     }
   };
 
-  useEffect(() => setSelectedIndex(0), [props.items]);
+  // Reset selected index when items change - this is a valid prop sync pattern
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSelectedIndex(0);
+  }, [props.items]);
 
   useImperativeHandle(ref, () => ({
     onKeyDown: ({ event }: { event: KeyboardEvent }) => {
@@ -120,7 +124,7 @@ function isHtml(content: string): boolean {
 // Helper function to detect markdown patterns
 function hasMarkdownPatterns(content: string): boolean {
   if (!content) return false;
-  
+
   // Check for common markdown patterns
   const markdownPatterns = [
     /^#{1,6}\s+/m,                    // Headers: # Header
@@ -139,7 +143,7 @@ function hasMarkdownPatterns(content: string): boolean {
     /^\|.*\|$/m,                      // Tables: |col1|col2|
     /^\s*-\s*\[[ x]\]/mi,             // Task lists: - [ ] or - [x]
   ];
-  
+
   return markdownPatterns.some(pattern => pattern.test(content));
 }
 
@@ -152,7 +156,7 @@ function markdownToHtml(markdown: string): string {
       breaks: true,
       gfm: true
     }) as string;
-    
+
     // Post-process HTML for TipTap compatibility
     // Convert task lists to TipTap format
     html = html.replace(
@@ -163,13 +167,13 @@ function markdownToHtml(markdown: string): string {
       /<li><input\s+disabled(?:="[^"]*")?\s+type="checkbox"(?:="[^"]*")?>\s*/gi,
       '<li data-type="taskItem" data-checked="false">'
     );
-    
+
     // Wrap task list items in task list ul
     html = html.replace(
       /<ul>\s*(<li data-type="taskItem")/gi,
       '<ul data-type="taskList">$1'
     );
-    
+
     return html;
   } catch (error) {
     console.error('Error converting markdown to HTML:', { error, markdown });
@@ -209,7 +213,7 @@ export function RichTextEditor({
     const lines = content.split('\n');
     const paragraphs = [];
     let currentParagraph: string[] = [];
-    
+
     for (const line of lines) {
       if (line.trim() === '') {
         if (currentParagraph.length > 0) {
@@ -220,12 +224,12 @@ export function RichTextEditor({
         currentParagraph.push(line);
       }
     }
-    
+
     // Add remaining paragraph
     if (currentParagraph.length > 0) {
       paragraphs.push(`<p>${currentParagraph.join('<br>')}</p>`);
     }
-    
+
     return paragraphs.length > 0 ? paragraphs.join('') : '<p></p>';
   }, [content]);
 

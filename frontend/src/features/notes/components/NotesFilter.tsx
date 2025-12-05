@@ -3,6 +3,51 @@ import { Note } from '../types/note';
 import { useThemeStore } from '../../../store/theme-store';
 import { NotesViewMode } from '../../../store/ui-store';
 
+// DropdownButton component defined outside the main component to avoid recreation during render
+interface DropdownButtonProps {
+  label: string;
+  isOpen: boolean;
+  onClick: () => void;
+  count?: number;
+}
+
+function DropdownButton({ label, isOpen, onClick, count }: DropdownButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2"
+      style={{
+        backgroundColor: isOpen ? 'var(--color-brand-600)' : 'var(--surface-elevated)',
+        color: isOpen ? '#ffffff' : 'var(--text-primary)',
+        border: `1px solid ${isOpen ? 'var(--color-brand-600)' : 'var(--border)'}`,
+        boxShadow: isOpen ? 'var(--shadow-lg), 0 0 20px -10px var(--color-primary-alpha)' : 'var(--shadow-md)',
+      }}
+    >
+      <span>{label}</span>
+      {count !== undefined && count > 0 && (
+        <span
+          className="px-2 py-0.5 rounded-full text-xs font-semibold"
+          style={{
+            backgroundColor: isOpen ? '#ffffff' : 'var(--color-brand-600)',
+            color: isOpen ? 'var(--color-brand-600)' : '#ffffff',
+          }}
+        >
+          {count}
+        </span>
+      )}
+      <svg
+        className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      </svg>
+    </button>
+  );
+}
+
 export type DateFilter = 'all' | 'today' | 'yesterday' | 'last7days' | 'last30days' | 'last90days' | 'custom';
 export type SortOption = 'newest' | 'oldest' | 'title-asc' | 'title-desc';
 export type ArchiveFilter = 'all' | 'archived' | 'not-archived';
@@ -38,7 +83,7 @@ export function NotesFilter({ notes, filterState, onFilterChange, viewMode = 'ca
   const filterRef = useRef<HTMLDivElement>(null);
   const { theme } = useThemeStore();
   const isBlueTheme = theme === 'blue';
-  
+
   const dateDropdownRef = useRef<HTMLDivElement>(null);
   const tagDropdownRef = useRef<HTMLDivElement>(null);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
@@ -75,7 +120,7 @@ export function NotesFilter({ notes, filterState, onFilterChange, viewMode = 'ca
   }, []);
 
   // Memoize expensive tag calculation - only recalculate when notes array changes
-  const allTags = useMemo(() => 
+  const allTags = useMemo(() =>
     Array.from(new Set(notes.flatMap(note => note.tags || []))).sort(),
     [notes]
   );
@@ -179,7 +224,7 @@ export function NotesFilter({ notes, filterState, onFilterChange, viewMode = 'ca
     const newTags = filterState.selectedTags.includes(tag)
       ? filterState.selectedTags.filter(t => t !== tag)
       : [...filterState.selectedTags, tag];
-    
+
     onFilterChange({
       ...filterState,
       selectedTags: newTags,
@@ -220,66 +265,21 @@ export function NotesFilter({ notes, filterState, onFilterChange, viewMode = 'ca
     });
   };
 
-  const hasActiveFilters = 
+  const hasActiveFilters =
     filterState.dateFilter !== 'all' ||
     filterState.selectedTags.length > 0 ||
     filterState.sortBy !== 'newest' ||
     filterState.archiveFilter !== 'all' ||
     (filterState.selectedFolder !== null && filterState.selectedFolder !== undefined);
 
-  const DropdownButton = ({ 
-    label, 
-    isOpen, 
-    onClick, 
-    count 
-  }: { 
-    label: string; 
-    isOpen: boolean; 
-    onClick: () => void;
-    count?: number;
-  }) => (
-    <button
-      type="button"
-      onClick={onClick}
-      className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2"
-      style={{
-        backgroundColor: isOpen ? 'var(--color-brand-600)' : 'var(--surface-elevated)',
-        color: isOpen ? '#ffffff' : 'var(--text-primary)',
-        border: `1px solid ${isOpen ? 'var(--color-brand-600)' : 'var(--border)'}`,
-        boxShadow: isOpen ? 'var(--shadow-lg), 0 0 20px -10px var(--color-primary-alpha)' : 'var(--shadow-md)',
-      }}
-    >
-      <span>{label}</span>
-      {count !== undefined && count > 0 && (
-        <span
-          className="px-2 py-0.5 rounded-full text-xs font-semibold"
-          style={{
-            backgroundColor: isOpen ? '#ffffff' : 'var(--color-brand-600)',
-            color: isOpen ? 'var(--color-brand-600)' : '#ffffff',
-          }}
-        >
-          {count}
-        </span>
-      )}
-      <svg
-        className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-      </svg>
-    </button>
-  );
-
   const renderDropdownMenu = (isOpen: boolean, children: React.ReactNode) => {
     if (!isOpen) return null;
-    
+
     return (
       <div
         className="absolute top-full left-0 mt-2 min-w-[200px] max-w-[calc(100vw-3rem)] rounded-2xl border shadow-2xl z-50"
         style={{
-          backgroundColor: isBlueTheme 
+          backgroundColor: isBlueTheme
             ? 'rgba(10, 22, 40, 0.98)' // Darker blue for blue theme - less transparent
             : 'var(--surface-card-solid)',
           borderColor: 'var(--border)',
@@ -295,7 +295,7 @@ export function NotesFilter({ notes, filterState, onFilterChange, viewMode = 'ca
   };
 
   return (
-    <div 
+    <div
       ref={filterRef}
       className="flex flex-wrap items-center gap-3 px-4 md:px-6 py-4 sticky"
       style={{
@@ -345,12 +345,12 @@ export function NotesFilter({ notes, filterState, onFilterChange, viewMode = 'ca
                   }
                 }}
               >
-                {filter === 'all' ? 'All time' : 
-                 filter === 'today' ? 'Today' :
-                 filter === 'yesterday' ? 'Yesterday' :
-                 filter === 'last7days' ? 'Last 7 days' :
-                 filter === 'last30days' ? 'Last 30 days' :
-                 'Last 90 days'}
+                {filter === 'all' ? 'All time' :
+                  filter === 'today' ? 'Today' :
+                    filter === 'yesterday' ? 'Yesterday' :
+                      filter === 'last7days' ? 'Last 7 days' :
+                        filter === 'last30days' ? 'Last 30 days' :
+                          'Last 90 days'}
               </button>
             ))}
             <button
@@ -501,9 +501,9 @@ export function NotesFilter({ notes, filterState, onFilterChange, viewMode = 'ca
                 }}
               >
                 {sort === 'newest' ? 'Newest first' :
-                 sort === 'oldest' ? 'Oldest first' :
-                 sort === 'title-asc' ? 'Title A-Z' :
-                 'Title Z-A'}
+                  sort === 'oldest' ? 'Oldest first' :
+                    sort === 'title-asc' ? 'Title A-Z' :
+                      'Title Z-A'}
               </button>
             ))}
           </div>
@@ -545,8 +545,8 @@ export function NotesFilter({ notes, filterState, onFilterChange, viewMode = 'ca
                 }}
               >
                 {filter === 'all' ? 'All notes' :
-                 filter === 'archived' ? 'Archived' :
-                 'Not archived'}
+                  filter === 'archived' ? 'Archived' :
+                    'Not archived'}
               </button>
             ))}
           </div>

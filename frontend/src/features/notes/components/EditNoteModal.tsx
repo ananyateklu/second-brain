@@ -36,11 +36,15 @@ export function EditNoteModal() {
     return Array.from(new Set(folders)).sort();
   }, [allNotes]);
 
-  // Sync local states with editingNote
+  // Sync local states with editingNote - use ref to track previous note ID
+  const prevNoteIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (editingNote) {
+    if (editingNote && editingNote.id !== prevNoteIdRef.current) {
+      prevNoteIdRef.current = editingNote.id;
+      /* eslint-disable react-hooks/set-state-in-effect -- Valid state sync from prop data */
       setIsArchived(editingNote.isArchived);
       setCurrentFolder(editingNote.folder);
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [editingNote]);
 

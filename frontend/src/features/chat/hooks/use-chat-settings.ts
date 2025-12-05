@@ -57,7 +57,7 @@ export function useChatSettings(options: UseChatSettingsOptions): ChatSettingsSt
   const [agentModeEnabled, setAgentModeEnabledLocal] = useState<boolean>(false);
   const [agentRagEnabled, setAgentRagEnabledLocal] = useState<boolean>(true);
   const [notesCapabilityEnabled, setNotesCapabilityEnabledLocal] = useState<boolean>(false);
-  
+
   // Track the last conversation ID to only sync on conversation change, not on data updates
   const lastLoadedConversationId = useRef<string | null>(null);
 
@@ -66,29 +66,40 @@ export function useChatSettings(options: UseChatSettingsOptions): ChatSettingsSt
   useEffect(() => {
     if (conversation && conversation.id !== lastLoadedConversationId.current) {
       lastLoadedConversationId.current = conversation.id;
-      setRagEnabledLocal(conversation.ragEnabled);
-      if (conversation.vectorStoreProvider) {
-        setSelectedVectorStoreLocal(conversation.vectorStoreProvider as 'PostgreSQL' | 'Pinecone');
-      }
-      // Load agent settings from conversation
-      setAgentModeEnabledLocal(conversation.agentEnabled);
-      // Default to true for conversations created before this feature
-      setAgentRagEnabledLocal(conversation.agentRagEnabled ?? true);
+      // Batch all state updates together
+      const ragEnabled = conversation.ragEnabled;
+      const vectorStore = conversation.vectorStoreProvider as 'PostgreSQL' | 'Pinecone' | undefined;
+      const agentEnabled = conversation.agentEnabled;
+      const agentRagEnabled = conversation.agentRagEnabled ?? true;
       const capabilities = parseAgentCapabilities(conversation.agentCapabilities);
+
+      /* eslint-disable react-hooks/set-state-in-effect -- Valid state sync from conversation data */
+      setRagEnabledLocal(ragEnabled);
+      if (vectorStore) {
+        setSelectedVectorStoreLocal(vectorStore);
+      }
+      setAgentModeEnabledLocal(agentEnabled);
+      setAgentRagEnabledLocal(agentRagEnabled);
       setNotesCapabilityEnabledLocal(capabilities.includes('notes'));
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [conversation]);
 
   // When starting a new chat, reset to defaults
+  const prevIsNewChatRef = useRef(isNewChat);
   useEffect(() => {
-    if (!conversationId && isNewChat) {
+    // Only reset when transitioning to new chat state
+    if (!conversationId && isNewChat && !prevIsNewChatRef.current) {
       lastLoadedConversationId.current = null; // Reset the ref for new chats
+      /* eslint-disable react-hooks/set-state-in-effect -- Valid state reset for new chat */
       setRagEnabledLocal(false);
       setSelectedVectorStoreLocal(defaultVectorStore as 'PostgreSQL' | 'Pinecone');
       setAgentModeEnabledLocal(false);
       setAgentRagEnabledLocal(true); // Default to true for new chats
       setNotesCapabilityEnabledLocal(false);
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
+    prevIsNewChatRef.current = isNewChat;
   }, [conversationId, isNewChat, defaultVectorStore]);
 
   // Handle agent mode enabled change - save to conversation

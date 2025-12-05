@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/auth-store';
 import brainLogo from '../assets/brain-top-tab.png';
@@ -21,10 +21,15 @@ export function LoginPage() {
     }
   }, [isAuthenticated, navigate]);
 
+  // Clear errors on mode change - use ref to track previous mode
+  const prevIsRegisterModeRef = useRef(isRegisterMode);
   useEffect(() => {
-    // Clear errors on mode change
-    clearError();
-    setValidationError(null);
+    if (prevIsRegisterModeRef.current !== isRegisterMode) {
+      prevIsRegisterModeRef.current = isRegisterMode;
+      clearError();
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Valid state reset on mode change
+      setValidationError(null);
+    }
   }, [isRegisterMode, clearError]);
 
   useEffect(() => {

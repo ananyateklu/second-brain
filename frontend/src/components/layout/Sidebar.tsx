@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useUIStore } from '../../store/ui-store';
 import { useThemeStore } from '../../store/theme-store';
 import { ThemeToggle } from '../ui/ThemeToggle';
@@ -23,11 +23,8 @@ export function Sidebar() {
   const logo = theme === 'light' ? logoLight : logoDark;
 
   const [hoveredLink, setHoveredLink] = useState<string | null>(null);
-  const [isTauriApp, setIsTauriApp] = useState(false);
-
-  useEffect(() => {
-    setIsTauriApp(isTauri());
-  }, []);
+  // Use lazy initialization to avoid setState in useEffect
+  const [isTauriApp] = useState(() => isTauri());
 
   const isCollapsed = sidebarState === 'collapsed';
   const isExpanded = sidebarState === 'expanded';
@@ -44,7 +41,7 @@ export function Sidebar() {
   if (isClosed) {
     // Calculate vertical center accounting for title bar
     const centerOffset = isTauriApp ? `calc(50% + ${titleBarOffset / 2}px)` : '50%';
-    
+
     return (
       <button
         onClick={toggleSidebar}

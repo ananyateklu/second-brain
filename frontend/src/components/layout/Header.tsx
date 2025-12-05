@@ -38,17 +38,13 @@ export function Header() {
   const { theme } = useThemeStore();
   const logo = theme === 'light' ? logoLight : logoDark;
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const [isTauriApp, setIsTauriApp] = useState(false);
-
-  // Check if running in Tauri
-  useEffect(() => {
-    setIsTauriApp(isTauri());
-  }, []);
+  // Use lazy initialization to avoid setState in useEffect
+  const [isTauriApp] = useState(() => isTauri());
 
   const pageTitle = getPageTitle(location.pathname);
   const isNotesPage = location.pathname === '/notes';
   const isSettingsPage = location.pathname.startsWith('/settings');
-  
+
   // Calculate title bar offset for desktop header
   const titleBarOffset = isTauriApp ? 28 : 0;
 
@@ -92,7 +88,7 @@ export function Header() {
   return (
     <>
       {/* Mobile Header */}
-      <div 
+      <div
         className="md:hidden sticky z-40 w-full px-2 sm:px-4"
         style={{
           top: isTauriApp ? `${titleBarOffset}px` : '0',
@@ -275,10 +271,10 @@ export function Header() {
 
           {/* Settings Navigation - Only on Settings pages */}
           {isSettingsPage && (
-            <div 
+            <div
               className="flex items-center p-1 rounded-xl border transition-all duration-200"
-              style={{ 
-                backgroundColor: 'var(--surface-elevated)', 
+              style={{
+                backgroundColor: 'var(--surface-elevated)',
                 borderColor: 'var(--border)',
                 boxShadow: 'var(--shadow-sm)',
               }}
@@ -287,12 +283,12 @@ export function Header() {
                 to="/settings/general"
                 className={({ isActive }) => `px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] ${isActive ? 'font-semibold' : 'font-medium'}`}
                 style={({ isActive }) => ({
-                  backgroundColor: isActive 
-                    ? 'color-mix(in srgb, var(--color-brand-600) 15%, transparent)' 
+                  backgroundColor: isActive
+                    ? 'color-mix(in srgb, var(--color-brand-600) 15%, transparent)'
                     : 'transparent',
                   color: isActive ? 'var(--color-brand-600)' : 'var(--text-secondary)',
-                  boxShadow: isActive 
-                    ? '0 2px 8px color-mix(in srgb, var(--color-brand-900) 15%, transparent)' 
+                  boxShadow: isActive
+                    ? '0 2px 8px color-mix(in srgb, var(--color-brand-900) 15%, transparent)'
                     : 'none',
                 })}
                 onMouseEnter={(e) => {
@@ -322,12 +318,12 @@ export function Header() {
                 to="/settings/ai"
                 className={({ isActive }) => `px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] ${isActive ? 'font-semibold' : 'font-medium'}`}
                 style={({ isActive }) => ({
-                  backgroundColor: isActive 
-                    ? 'color-mix(in srgb, var(--color-brand-600) 15%, transparent)' 
+                  backgroundColor: isActive
+                    ? 'color-mix(in srgb, var(--color-brand-600) 15%, transparent)'
                     : 'transparent',
                   color: isActive ? 'var(--color-brand-600)' : 'var(--text-secondary)',
-                  boxShadow: isActive 
-                    ? '0 2px 8px color-mix(in srgb, var(--color-brand-900) 15%, transparent)' 
+                  boxShadow: isActive
+                    ? '0 2px 8px color-mix(in srgb, var(--color-brand-900) 15%, transparent)'
                     : 'none',
                 })}
                 onMouseEnter={(e) => {
@@ -356,12 +352,12 @@ export function Header() {
                 to="/settings/rag"
                 className={({ isActive }) => `px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] ${isActive ? 'font-semibold' : 'font-medium'}`}
                 style={({ isActive }) => ({
-                  backgroundColor: isActive 
-                    ? 'color-mix(in srgb, var(--color-brand-600) 15%, transparent)' 
+                  backgroundColor: isActive
+                    ? 'color-mix(in srgb, var(--color-brand-600) 15%, transparent)'
                     : 'transparent',
                   color: isActive ? 'var(--color-brand-600)' : 'var(--text-secondary)',
-                  boxShadow: isActive 
-                    ? '0 2px 8px color-mix(in srgb, var(--color-brand-900) 15%, transparent)' 
+                  boxShadow: isActive
+                    ? '0 2px 8px color-mix(in srgb, var(--color-brand-900) 15%, transparent)'
                     : 'none',
                 })}
                 onMouseEnter={(e) => {

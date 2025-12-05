@@ -114,7 +114,9 @@ export function ToastItem({ toast, index }: ToastItemProps) {
   const { removeToast } = useToastContext();
   const [isPaused, setIsPaused] = useState(false);
   const [progress, setProgress] = useState(100);
-  const startTimeRef = useRef(Date.now());
+  // Use state with lazy initializer to capture start time on mount
+  const [startTime] = useState(() => Date.now());
+  const startTimeRef = useRef(startTime);
   const remainingTimeRef = useRef(toast.duration);
   const animationFrameRef = useRef<number | undefined>(undefined);
 

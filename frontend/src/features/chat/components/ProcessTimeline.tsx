@@ -15,9 +15,10 @@ export function ProcessTimeline({
 }: ProcessTimelineProps) {
     const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
-    // Auto-expand when streaming starts
+    // Auto-expand when streaming starts - valid prop sync for UI state
     useEffect(() => {
         if (isStreaming) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setIsExpanded(true);
         }
     }, [isStreaming]);

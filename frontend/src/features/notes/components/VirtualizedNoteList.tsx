@@ -52,6 +52,7 @@ export const VirtualizedNoteList = memo(function VirtualizedNoteList({
   const columnCount = getColumnCount();
   const rowCount = viewMode === 'list' ? notes.length : Math.ceil(notes.length / columnCount);
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Virtual is safe to use here
   const virtualizer = useVirtualizer({
     count: rowCount,
     getScrollElement: () => parentRef.current,

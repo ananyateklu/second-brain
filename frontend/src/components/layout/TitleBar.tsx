@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 /**
  * Check if we're running in Tauri
@@ -12,11 +12,8 @@ const isTauri = (): boolean => {
  * This creates a seamless title bar that blends with the app's design
  */
 export function TitleBar() {
-    const [isTauriApp, setIsTauriApp] = useState(false);
-
-    useEffect(() => {
-        setIsTauriApp(isTauri());
-    }, []);
+    // Use lazy initialization to avoid setState in useEffect
+    const [isTauriApp] = useState(() => isTauri());
 
     // Don't render anything if not in Tauri
     if (!isTauriApp) {

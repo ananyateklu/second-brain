@@ -3,7 +3,7 @@
  * Folder-based hierarchical view of notes with ChatPage-style UI
  */
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useNotes } from '../features/notes/hooks/use-notes-query';
 import { Note } from '../features/notes/types/note';
 import { NoteListItem } from '../features/notes/components/NoteListItem';
@@ -27,12 +27,8 @@ export function NotesDirectoryPage() {
   const { data: notes, isLoading, error } = useNotes();
   const theme = useThemeStore((state) => state.theme);
   const isDarkMode = theme === 'dark' || theme === 'blue';
-  const [isTauriApp, setIsTauriApp] = useState(false);
-
-  // Check if running in Tauri
-  useEffect(() => {
-    setIsTauriApp(isTauri());
-  }, []);
+  // Use lazy initialization to avoid setState in useEffect
+  const [isTauriApp] = useState(() => isTauri());
 
   // Calculate title bar offset for container height
   const titleBarOffset = isTauriApp ? 28 : 0;
@@ -131,8 +127,8 @@ export function NotesDirectoryPage() {
           backgroundColor: 'var(--surface-card)',
           borderColor: 'var(--border)',
           boxShadow: 'var(--shadow-2xl)',
-          height: isTauriApp 
-            ? `calc(100vh - 2rem - ${titleBarOffset}px)` 
+          height: isTauriApp
+            ? `calc(100vh - 2rem - ${titleBarOffset}px)`
             : 'calc(100vh - 2rem)',
         }}
       >
@@ -177,8 +173,8 @@ export function NotesDirectoryPage() {
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',
         boxShadow: 'var(--shadow-2xl)',
-        height: isTauriApp 
-          ? `calc(100vh - 2rem - ${titleBarOffset}px)` 
+        height: isTauriApp
+          ? `calc(100vh - 2rem - ${titleBarOffset}px)`
           : 'calc(100vh - 2rem)',
       }}
     >
