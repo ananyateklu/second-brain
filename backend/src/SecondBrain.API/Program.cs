@@ -207,8 +207,8 @@ var app = builder.Build();
                     if (tablesExist)
                     {
                         // Database was created with EnsureCreated - tables exist, apply schema updates
-                        logger.LogInformation("Detected database with existing tables but no migration history. Applying schema updates...");
-                        var schemaUpdatesSucceeded = await ApplySoftDeleteColumnsIfMissing(dbContext, logger);
+                        logger.LogInformation("Detected database with existing tables but no migration history. Applying all migration schema updates...");
+                        var schemaUpdatesSucceeded = await ApplyAllMigrationSchemaIfMissing(dbContext, logger);
 
                         if (schemaUpdatesSucceeded)
                         {
@@ -260,8 +260,8 @@ var app = builder.Build();
                 if (tablesExist)
                 {
                     // Tables exist but no migration history - database was created with EnsureCreated
-                    logger.LogInformation("Core tables found. Applying schema updates and creating migration history...");
-                    var schemaUpdatesSucceeded = await ApplySoftDeleteColumnsIfMissing(dbContext, logger);
+                    logger.LogInformation("Core tables found. Applying all migration schema updates and creating migration history...");
+                    var schemaUpdatesSucceeded = await ApplyAllMigrationSchemaIfMissing(dbContext, logger);
 
                     if (schemaUpdatesSucceeded)
                     {
@@ -358,12 +358,49 @@ static async Task<bool> DoCoreTablesExist(ApplicationDbContext dbContext)
     }
 }
 
-// Helper method to apply soft delete columns if they don't exist
+// Helper method to apply ALL schema changes from migrations if they don't exist
+// This ensures databases created with EnsureCreated() have all columns/tables before marking migrations as applied
 // Returns true if all commands succeeded, false if any critical command failed
-static async Task<bool> ApplySoftDeleteColumnsIfMissing(ApplicationDbContext dbContext, ILogger<Program> logger)
+static async Task<bool> ApplyAllMigrationSchemaIfMissing(ApplicationDbContext dbContext, ILogger<Program> logger)
 {
+    // Schema changes from all migrations (in order):
+    // 1. InitialCreate - creates core tables (handled by EnsureCreated)
+    // 2. AddPasswordAuth - adds password_hash, drops firebase_uid
+    // 3. AddMessageImages - creates message_images table
+    // 4. AddOllamaRemoteSettings - adds ollama remote columns to user_preferences
+    // 5. AddRagLogIdToMessages - adds rag_log_id to chat_messages
+    // 6. AddPerformanceIndexes - adds performance indexes (handled by DatabaseIndexInitializer)
+    // 7. AddSoftDeleteSupport - adds soft delete columns
+
     var commands = new[]
     {
+        // === AddPasswordAuth migration ===
+        // Add password_hash column to users (if missing)
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash character varying(256)",
+        // Note: We don't drop firebase_uid if it exists - schema may have been created without it
+        
+        // === AddMessageImages migration ===
+        // Create message_images table if it doesn't exist
+        @"CREATE TABLE IF NOT EXISTS message_images (
+            id text NOT NULL,
+            message_id character varying(128) NOT NULL,
+            base64_data text NOT NULL,
+            media_type character varying(100) NOT NULL,
+            file_name character varying(255),
+            CONSTRAINT ""PK_message_images"" PRIMARY KEY (id),
+            CONSTRAINT ""FK_message_images_chat_messages_message_id"" FOREIGN KEY (message_id) 
+                REFERENCES chat_messages(id) ON DELETE CASCADE
+        )",
+        "CREATE INDEX IF NOT EXISTS ix_message_images_message_id ON message_images (message_id)",
+        
+        // === AddOllamaRemoteSettings migration ===
+        "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS ollama_remote_url character varying(256)",
+        "ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS use_remote_ollama boolean NOT NULL DEFAULT FALSE",
+        
+        // === AddRagLogIdToMessages migration ===
+        "ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS rag_log_id character varying(128)",
+        
+        // === AddSoftDeleteSupport migration ===
         "ALTER TABLE notes ADD COLUMN IF NOT EXISTS deleted_at timestamp with time zone",
         "ALTER TABLE notes ADD COLUMN IF NOT EXISTS deleted_by character varying(128)",
         "ALTER TABLE notes ADD COLUMN IF NOT EXISTS is_deleted boolean NOT NULL DEFAULT FALSE",
