@@ -72,9 +72,13 @@ describe('useNotes hook integration tests', () => {
         wrapper: createWrapper(queryClient),
       });
 
-      await waitFor(() => {
-        expect(result.current.isError).toBe(true);
-      });
+      // Wait longer because useApiQuery has its own retry logic (up to 2 retries)
+      await waitFor(
+        () => {
+          expect(result.current.isError).toBe(true);
+        },
+        { timeout: 5000 }
+      );
     });
 
     it('should handle empty notes list', async () => {

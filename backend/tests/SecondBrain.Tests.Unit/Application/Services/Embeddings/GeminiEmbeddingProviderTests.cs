@@ -48,7 +48,7 @@ public class GeminiEmbeddingProviderTests
     public void Constructor_WhenEnabledWithApiKey_IsEnabled()
     {
         // Arrange
-        SetupSettings(enabled: true, apiKey: "AIza-test-key");
+        SetupSettings(enabled: true, apiKey: "fake-gemini-test-key");
 
         // Act
         var provider = CreateProvider();
@@ -161,7 +161,8 @@ public class GeminiEmbeddingProviderTests
     public async Task GenerateEmbeddingAsync_WhenEnabled_ReturnsNotImplementedError()
     {
         // Arrange
-        SetupSettings(enabled: true, apiKey: "AIza-test-key");
+        // Gemini SDK requires API key to be exactly 39 characters
+        SetupSettings(enabled: true, apiKey: "AIzaSyAB12345678901234567890123456789AB");
         var provider = CreateProvider();
 
         // Act
@@ -179,7 +180,7 @@ public class GeminiEmbeddingProviderTests
     {
         // Arrange - Provider is enabled but text is empty
         // When not enabled, it returns the "not enabled" error before checking text
-        SetupSettings(enabled: true, apiKey: "AIza-test-key");
+        SetupSettings(enabled: true, apiKey: "fake-gemini-test-key");
         var provider = CreateProvider();
 
         // Act
@@ -194,7 +195,7 @@ public class GeminiEmbeddingProviderTests
     public async Task GenerateEmbeddingAsync_WhenTextWhitespace_ReturnsError()
     {
         // Arrange
-        SetupSettings(enabled: true, apiKey: "AIza-test-key");
+        SetupSettings(enabled: true, apiKey: "fake-gemini-test-key");
         var provider = CreateProvider();
 
         // Act
@@ -246,7 +247,7 @@ public class GeminiEmbeddingProviderTests
     public async Task GenerateEmbeddingsAsync_WhenTextsEmpty_ReturnsError()
     {
         // Arrange
-        SetupSettings(enabled: true, apiKey: "AIza-test-key");
+        SetupSettings(enabled: true, apiKey: "fake-gemini-test-key");
         var provider = CreateProvider();
 
         // Act
@@ -261,7 +262,7 @@ public class GeminiEmbeddingProviderTests
     public async Task GenerateEmbeddingsAsync_WhenEnabled_ReturnsNotImplementedError()
     {
         // Arrange
-        SetupSettings(enabled: true, apiKey: "AIza-test-key");
+        SetupSettings(enabled: true, apiKey: "fake-gemini-test-key");
         var provider = CreateProvider();
         var texts = new List<string> { "Text 1", "Text 2" };
 
@@ -310,7 +311,7 @@ public class GeminiEmbeddingProviderTests
     public async Task IsAvailableAsync_WhenEnabled_ReturnsFalseAsNotImplemented()
     {
         // Arrange
-        SetupSettings(enabled: true, apiKey: "AIza-test-key");
+        SetupSettings(enabled: true, apiKey: "fake-gemini-test-key");
         var provider = CreateProvider();
 
         // Act

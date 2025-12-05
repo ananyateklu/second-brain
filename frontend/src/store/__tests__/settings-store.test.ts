@@ -4,6 +4,8 @@
  */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+// Import bound-store first to register the store in the registry
+import '../bound-store';
 import { useSettingsStore } from '../settings-store';
 import { userPreferencesService, DEFAULT_PREFERENCES } from '../../services/user-preferences.service';
 

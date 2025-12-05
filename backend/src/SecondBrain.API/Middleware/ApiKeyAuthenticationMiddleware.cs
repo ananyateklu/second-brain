@@ -22,7 +22,7 @@ public class ApiKeyAuthenticationMiddleware
     }
 
     public async Task InvokeAsync(
-        HttpContext context, 
+        HttpContext context,
         IUserRepository userRepository,
         IJwtService jwtService)
     {
@@ -36,7 +36,7 @@ public class ApiKeyAuthenticationMiddleware
         }
 
         // Skip authentication for Swagger/OpenAPI endpoints
-        if (context.Request.Path.StartsWithSegments("/swagger") || 
+        if (context.Request.Path.StartsWithSegments("/swagger") ||
             context.Request.Path.StartsWithSegments("/openapi") ||
             context.Request.Path.StartsWithSegments("/api/docs") ||
             context.Request.Path.StartsWithSegments("/scalar"))
@@ -45,11 +45,13 @@ public class ApiKeyAuthenticationMiddleware
             return;
         }
 
-        // Skip authentication for auth endpoints (login, register)
+        // Skip authentication for auth endpoints (login, register) - including versioned routes
         if (context.Request.Path.StartsWithSegments("/auth/login") ||
             context.Request.Path.StartsWithSegments("/auth/register") ||
             context.Request.Path.StartsWithSegments("/api/auth/login") ||
-            context.Request.Path.StartsWithSegments("/api/auth/register"))
+            context.Request.Path.StartsWithSegments("/api/auth/register") ||
+            context.Request.Path.StartsWithSegments("/api/v1/auth/login") ||
+            context.Request.Path.StartsWithSegments("/api/v1/auth/register"))
         {
             await _next(context);
             return;
@@ -65,12 +67,12 @@ public class ApiKeyAuthenticationMiddleware
         }
 
         var header = authHeader.ToString();
-        
+
         // Try JWT token authentication (Bearer <jwt_token>)
         if (header.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
         {
             var token = header.Substring("Bearer ".Length).Trim();
-            
+
             if (string.IsNullOrWhiteSpace(token))
             {
                 _logger.LogWarning("Empty Bearer token");
@@ -83,7 +85,7 @@ public class ApiKeyAuthenticationMiddleware
             {
                 // Validate JWT token
                 var principal = jwtService.ValidateToken(token);
-                
+
                 if (principal == null)
                 {
                     _logger.LogWarning("Invalid JWT token");
@@ -94,10 +96,10 @@ public class ApiKeyAuthenticationMiddleware
 
                 // Get user ID from token claims
                 // Note: JWT "sub" claim gets mapped to ClaimTypes.NameIdentifier by .NET's JWT handler
-                var userIdClaim = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value 
+                var userIdClaim = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value
                     ?? principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
                     ?? principal.FindFirst("sub")?.Value;
-                
+
                 if (string.IsNullOrEmpty(userIdClaim))
                 {
                     _logger.LogWarning("Token missing user ID claim");
@@ -108,7 +110,7 @@ public class ApiKeyAuthenticationMiddleware
 
                 // Get user from database to verify they still exist and are active
                 var user = await userRepository.GetByIdAsync(userIdClaim);
-                
+
                 if (user == null)
                 {
                     _logger.LogWarning("User not found for token. UserId: {UserId}", userIdClaim);
