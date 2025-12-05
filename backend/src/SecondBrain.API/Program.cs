@@ -173,7 +173,6 @@ builder.Services.AddApiVersioningConfig();
 var app = builder.Build();
 
 // Apply database schema on startup
-var isDesktopMode = Environment.GetEnvironmentVariable("SecondBrain__DesktopMode") == "true";
 {
     using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -255,14 +254,12 @@ var isDesktopMode = Environment.GetEnvironmentVariable("SecondBrain__DesktopMode
             }
         }
 
-        if (isDesktopMode)
-        {
-            // Desktop mode: also ensure performance indexes exist
-            var indexInitializer = new DatabaseIndexInitializer(
-                dbContext,
-                scope.ServiceProvider.GetRequiredService<ILogger<DatabaseIndexInitializer>>());
-            await indexInitializer.EnsureIndexesAsync();
-        }
+        // Ensure performance indexes exist for all deployment modes
+        // This is safe to call on every startup - uses IF NOT EXISTS for all indexes
+        var indexInitializer = new DatabaseIndexInitializer(
+            dbContext,
+            scope.ServiceProvider.GetRequiredService<ILogger<DatabaseIndexInitializer>>());
+        await indexInitializer.EnsureIndexesAsync();
     }
     catch (Exception ex)
     {

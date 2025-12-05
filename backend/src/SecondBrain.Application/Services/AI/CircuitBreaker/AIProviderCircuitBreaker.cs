@@ -57,7 +57,14 @@ public class AIProviderCircuitBreaker
         catch (BrokenCircuitException ex)
         {
             var stateInfo = GetStateInfo(providerName);
-            var retryAfter = stateInfo?.LastTransitionTime.Add(_settings.BreakDuration) - DateTime.UtcNow;
+            TimeSpan? retryAfter = null;
+
+            if (stateInfo != null)
+            {
+                // Use GetSnapshot for consistent read of LastTransitionTime
+                var snapshot = stateInfo.GetSnapshot();
+                retryAfter = snapshot.LastTransitionTime.Add(_settings.BreakDuration) - DateTime.UtcNow;
+            }
 
             _logger.LogWarning(
                 "Circuit breaker open for provider {Provider}. Retry after: {RetryAfter}",
@@ -119,9 +126,7 @@ public class AIProviderCircuitBreaker
     {
         if (_stateInfo.TryGetValue(providerName, out var info))
         {
-            info.State = CircuitBreakerState.Closed;
-            info.FailureCount = 0;
-            info.LastTransitionTime = DateTime.UtcNow;
+            info.Reset();
 
             _logger.LogInformation(
                 "Circuit breaker manually reset for provider {Provider}",
@@ -157,9 +162,7 @@ public class AIProviderCircuitBreaker
                     }),
                     OnOpened = args =>
                     {
-                        stateInfo.State = CircuitBreakerState.Open;
-                        stateInfo.LastTransitionTime = DateTime.UtcNow;
-                        stateInfo.LastException = args.Outcome.Exception;
+                        stateInfo.TransitionToOpen(args.Outcome.Exception);
 
                         _logger.LogWarning(
                             "Circuit breaker OPENED for provider {Provider}. Duration: {Duration}. Last error: {Error}",
@@ -169,10 +172,7 @@ public class AIProviderCircuitBreaker
                     },
                     OnClosed = args =>
                     {
-                        stateInfo.State = CircuitBreakerState.Closed;
-                        stateInfo.LastTransitionTime = DateTime.UtcNow;
-                        stateInfo.FailureCount = 0;
-                        stateInfo.LastException = null;
+                        stateInfo.TransitionToClosed();
 
                         _logger.LogInformation(
                             "Circuit breaker CLOSED for provider {Provider}. Service recovered.",
@@ -182,8 +182,7 @@ public class AIProviderCircuitBreaker
                     },
                     OnHalfOpened = args =>
                     {
-                        stateInfo.State = CircuitBreakerState.HalfOpen;
-                        stateInfo.LastTransitionTime = DateTime.UtcNow;
+                        stateInfo.TransitionToHalfOpen();
 
                         _logger.LogInformation(
                             "Circuit breaker HALF-OPEN for provider {Provider}. Testing recovery...",
@@ -226,28 +225,117 @@ public enum CircuitBreakerState
 
 /// <summary>
 /// Detailed state information for a circuit breaker.
+/// Thread-safe: all property access is synchronized to prevent torn reads
+/// and ensure consistent snapshots across concurrent access.
 /// </summary>
 public class CircuitBreakerStateInfo
 {
+    private readonly object _lock = new();
+    private CircuitBreakerState _state = CircuitBreakerState.Closed;
+    private int _failureCount;
+    private DateTime _lastTransitionTime = DateTime.UtcNow;
+    private Exception? _lastException;
+
     /// <summary>
     /// Current state of the circuit breaker.
     /// </summary>
-    public CircuitBreakerState State { get; set; } = CircuitBreakerState.Closed;
+    public CircuitBreakerState State
+    {
+        get { lock (_lock) return _state; }
+        set { lock (_lock) _state = value; }
+    }
 
     /// <summary>
     /// Number of consecutive failures.
     /// </summary>
-    public int FailureCount { get; set; }
+    public int FailureCount
+    {
+        get { lock (_lock) return _failureCount; }
+        set { lock (_lock) _failureCount = value; }
+    }
 
     /// <summary>
     /// Time of the last state transition.
     /// </summary>
-    public DateTime LastTransitionTime { get; set; } = DateTime.UtcNow;
+    public DateTime LastTransitionTime
+    {
+        get { lock (_lock) return _lastTransitionTime; }
+        set { lock (_lock) _lastTransitionTime = value; }
+    }
 
     /// <summary>
     /// The last exception that contributed to opening the circuit.
     /// </summary>
-    public Exception? LastException { get; set; }
+    public Exception? LastException
+    {
+        get { lock (_lock) return _lastException; }
+        set { lock (_lock) _lastException = value; }
+    }
+
+    /// <summary>
+    /// Gets a consistent snapshot of all state values atomically.
+    /// Use this when you need to read multiple properties consistently.
+    /// </summary>
+    public (CircuitBreakerState State, int FailureCount, DateTime LastTransitionTime, Exception? LastException) GetSnapshot()
+    {
+        lock (_lock)
+        {
+            return (_state, _failureCount, _lastTransitionTime, _lastException);
+        }
+    }
+
+    /// <summary>
+    /// Atomically updates the state to Open with associated metadata.
+    /// </summary>
+    internal void TransitionToOpen(Exception? exception)
+    {
+        lock (_lock)
+        {
+            _state = CircuitBreakerState.Open;
+            _lastTransitionTime = DateTime.UtcNow;
+            _lastException = exception;
+        }
+    }
+
+    /// <summary>
+    /// Atomically updates the state to Closed and resets failure tracking.
+    /// </summary>
+    internal void TransitionToClosed()
+    {
+        lock (_lock)
+        {
+            _state = CircuitBreakerState.Closed;
+            _lastTransitionTime = DateTime.UtcNow;
+            _failureCount = 0;
+            _lastException = null;
+        }
+    }
+
+    /// <summary>
+    /// Atomically updates the state to HalfOpen.
+    /// </summary>
+    internal void TransitionToHalfOpen()
+    {
+        lock (_lock)
+        {
+            _state = CircuitBreakerState.HalfOpen;
+            _lastTransitionTime = DateTime.UtcNow;
+        }
+    }
+
+    /// <summary>
+    /// Atomically resets the circuit breaker state.
+    /// </summary>
+    internal void Reset()
+    {
+        lock (_lock)
+        {
+            _state = CircuitBreakerState.Closed;
+            _failureCount = 0;
+            _lastTransitionTime = DateTime.UtcNow;
+            _lastException = null;
+        }
+    }
 }
 
 /// <summary>
