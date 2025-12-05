@@ -131,13 +131,16 @@ internal class CircuitBreakerAIProvider : IAIProvider
         AIRequest request,
         CancellationToken cancellationToken = default)
     {
-        // Check circuit state before starting
-        var state = _circuitBreaker.GetState(ProviderName);
-        if (state == CircuitBreakerState.Open)
+        // Check circuit state before starting - use GetSnapshot() for atomic read
+        var stateInfo = _circuitBreaker.GetStateInfo(ProviderName);
+        if (stateInfo != null)
         {
-            var stateInfo = _circuitBreaker.GetStateInfo(ProviderName);
-            var retryAfter = stateInfo?.LastTransitionTime.Add(_circuitBreaker.BreakDuration) - DateTime.UtcNow;
-            throw new CircuitBreakerOpenException(ProviderName, retryAfter > TimeSpan.Zero ? retryAfter : null);
+            var snapshot = stateInfo.GetSnapshot();
+            if (snapshot.State == CircuitBreakerState.Open)
+            {
+                var retryAfter = snapshot.LastTransitionTime.Add(_circuitBreaker.BreakDuration) - DateTime.UtcNow;
+                throw new CircuitBreakerOpenException(ProviderName, retryAfter > TimeSpan.Zero ? retryAfter : null);
+            }
         }
 
         // Wrap the stream creation in circuit breaker
@@ -155,13 +158,16 @@ internal class CircuitBreakerAIProvider : IAIProvider
         AIRequest? settings = null,
         CancellationToken cancellationToken = default)
     {
-        // Check circuit state before starting
-        var state = _circuitBreaker.GetState(ProviderName);
-        if (state == CircuitBreakerState.Open)
+        // Check circuit state before starting - use GetSnapshot() for atomic read
+        var stateInfo = _circuitBreaker.GetStateInfo(ProviderName);
+        if (stateInfo != null)
         {
-            var stateInfo = _circuitBreaker.GetStateInfo(ProviderName);
-            var retryAfter = stateInfo?.LastTransitionTime.Add(_circuitBreaker.BreakDuration) - DateTime.UtcNow;
-            throw new CircuitBreakerOpenException(ProviderName, retryAfter > TimeSpan.Zero ? retryAfter : null);
+            var snapshot = stateInfo.GetSnapshot();
+            if (snapshot.State == CircuitBreakerState.Open)
+            {
+                var retryAfter = snapshot.LastTransitionTime.Add(_circuitBreaker.BreakDuration) - DateTime.UtcNow;
+                throw new CircuitBreakerOpenException(ProviderName, retryAfter > TimeSpan.Zero ? retryAfter : null);
+            }
         }
 
         // Wrap the stream creation in circuit breaker

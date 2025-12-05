@@ -54,7 +54,12 @@ public class Result<T>
     /// <summary>
     /// Creates a failed result with the given error
     /// </summary>
-    public static Result<T> Failure(Error error) => new(error);
+    /// <exception cref="ArgumentNullException">Thrown when error is null</exception>
+    public static Result<T> Failure(Error error)
+    {
+        ArgumentNullException.ThrowIfNull(error, nameof(error));
+        return new(error);
+    }
 
     /// <summary>
     /// Creates a failed result with the given error code and message
@@ -145,7 +150,17 @@ public class Result
     }
 
     public static Result Success() => new(true);
-    public static Result Failure(Error error) => new(false, error);
+
+    /// <summary>
+    /// Creates a failed result with the given error
+    /// </summary>
+    /// <exception cref="ArgumentNullException">Thrown when error is null</exception>
+    public static Result Failure(Error error)
+    {
+        ArgumentNullException.ThrowIfNull(error, nameof(error));
+        return new(false, error);
+    }
+
     public static Result Failure(string code, string message) => new(false, new Error(code, message));
 
     public TResult Match<TResult>(
