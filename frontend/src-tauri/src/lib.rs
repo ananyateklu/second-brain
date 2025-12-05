@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::io::{BufRead, BufReader};
-use std::path::PathBuf;
+use std::path::Path;
 use std::process::{Child, Command, Stdio};
 use std::sync::{Arc, Mutex};
 use tauri::{
@@ -28,7 +28,7 @@ pub struct Secrets {
 }
 
 /// Load secrets from file
-pub fn load_secrets(app_data_dir: &PathBuf) -> Secrets {
+pub fn load_secrets(app_data_dir: &Path) -> Secrets {
     let secrets_path = app_data_dir.join("secrets.json");
 
     if secrets_path.exists() {
@@ -57,7 +57,7 @@ pub fn load_secrets(app_data_dir: &PathBuf) -> Secrets {
 }
 
 /// Save secrets to file
-pub fn save_secrets(app_data_dir: &PathBuf, secrets: &Secrets) -> Result<(), String> {
+pub fn save_secrets(app_data_dir: &Path, secrets: &Secrets) -> Result<(), String> {
     let secrets_path = app_data_dir.join("secrets.json");
 
     // Ensure the directory exists
