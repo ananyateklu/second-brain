@@ -447,10 +447,12 @@ static async Task<bool> ApplyAllMigrationSchemaIfMissing(ApplicationDbContext db
         }
         catch (Exception ex)
         {
-            // If the error indicates the table doesn't exist, this is a critical failure
+            // If the error indicates the table/relation doesn't exist, this is a critical failure
             // (not just a "column already exists" type error)
-            if (ex.Message.Contains("does not exist", StringComparison.OrdinalIgnoreCase) ||
-                ex.Message.Contains("relation") && ex.Message.Contains("does not exist", StringComparison.OrdinalIgnoreCase))
+            // PostgreSQL errors look like: relation "table_name" does not exist
+            if ((ex.Message.Contains("table", StringComparison.OrdinalIgnoreCase) ||
+                 ex.Message.Contains("relation", StringComparison.OrdinalIgnoreCase)) &&
+                ex.Message.Contains("does not exist", StringComparison.OrdinalIgnoreCase))
             {
                 logger.LogWarning("Schema update failed - table may not exist: {Command}. Error: {Error}", command, ex.Message);
                 allSucceeded = false;
