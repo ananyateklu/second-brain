@@ -171,7 +171,7 @@ public class GeminiProviderTests
     {
         // Arrange - need enabled with client to reach the validation
         // Gemini SDK requires API key to be exactly 39 characters
-        SetupSettings(enabled: true, apiKey: "AIzaSyAB12345678901234567890123456789AB");
+        SetupSettings(enabled: true, apiKey: "fake-gemini-39char-key-1234567890123456");
         var provider = CreateProvider();
         var messages = new List<SecondBrain.Application.Services.AI.Models.ChatMessage>
         {
@@ -285,7 +285,7 @@ public class GeminiProviderTests
     {
         // Arrange - need enabled with client to reach the validation
         // Gemini SDK requires API key to be exactly 39 characters
-        SetupSettings(enabled: true, apiKey: "AIzaSyAB12345678901234567890123456789AB");
+        SetupSettings(enabled: true, apiKey: "fake-gemini-39char-key-1234567890123456");
         var provider = CreateProvider();
         var messages = new List<SecondBrain.Application.Services.AI.Models.ChatMessage>
         {
