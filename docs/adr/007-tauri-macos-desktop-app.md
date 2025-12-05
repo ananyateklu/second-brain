@@ -106,7 +106,7 @@ Uses system-installed PostgreSQL (Homebrew) rather than bundling PostgreSQL bina
 
 - Avoids macOS code signing/notarization issues with bundled binaries
 - Reduces app bundle size significantly
-- PostgreSQL 17 (preferred) or 16 with pgvector extension
+- PostgreSQL 18 with pgvector extension required
 - Data stored in `~/Library/Application Support/com.secondbrain.desktop/postgresql/`
 - Uses port 5433 to avoid conflicts with system PostgreSQL on 5432
 
@@ -217,7 +217,7 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 rustup target add aarch64-apple-darwin x86_64-apple-darwin
 
 # Install PostgreSQL and pgvector
-brew install postgresql@17 pgvector
+brew install postgresql@18 pgvector
 
 # Install Node.js and pnpm
 brew install node
@@ -249,10 +249,10 @@ open ~/Library/Application\ Support/com.secondbrain.desktop/
 cat ~/Library/Application\ Support/com.secondbrain.desktop/secrets.json
 
 # Check PostgreSQL status
-/opt/homebrew/opt/postgresql@17/bin/pg_isready -h localhost -p 5433
+/opt/homebrew/opt/postgresql@18/bin/pg_isready -h localhost -p 5433
 
 # Connect to database
-/opt/homebrew/opt/postgresql@17/bin/psql -h localhost -p 5433 -U secondbrain -d secondbrain
+/opt/homebrew/opt/postgresql@18/bin/psql -h localhost -p 5433 -U secondbrain -d secondbrain
 
 # View logs
 cat ~/Library/Logs/com.secondbrain.desktop/*.log | tail -100

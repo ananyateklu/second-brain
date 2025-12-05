@@ -9,7 +9,7 @@
 -- Message images table - stores user-uploaded images attached to chat messages
 CREATE TABLE IF NOT EXISTS message_images (
     id TEXT PRIMARY KEY,
-    message_id TEXT NOT NULL,
+    message_id VARCHAR(128) NOT NULL,
     base64_data TEXT NOT NULL,
     media_type VARCHAR(100) NOT NULL,
     file_name VARCHAR(255),

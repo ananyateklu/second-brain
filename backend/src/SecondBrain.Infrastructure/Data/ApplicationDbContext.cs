@@ -98,6 +98,9 @@ public class ApplicationDbContext : DbContext
         // Configure ChatMessage entity
         modelBuilder.Entity<ChatMessage>(entity =>
         {
+            // Matching query filter for parent conversation's soft delete
+            entity.HasQueryFilter(m => !m.Conversation!.IsDeleted);
+
             entity.HasIndex(e => e.ConversationId).HasDatabaseName("ix_chat_messages_conversation_id");
             entity.HasIndex(e => e.Timestamp).HasDatabaseName("ix_chat_messages_timestamp");
 
@@ -129,24 +132,36 @@ public class ApplicationDbContext : DbContext
         // Configure ToolCall entity
         modelBuilder.Entity<ToolCall>(entity =>
         {
+            // Matching query filter for parent message's conversation soft delete
+            entity.HasQueryFilter(t => !t.Message!.Conversation!.IsDeleted);
+
             entity.HasIndex(e => e.MessageId).HasDatabaseName("ix_tool_calls_message_id");
         });
 
         // Configure RetrievedNote entity
         modelBuilder.Entity<RetrievedNote>(entity =>
         {
+            // Matching query filter for parent message's conversation soft delete
+            entity.HasQueryFilter(r => !r.Message!.Conversation!.IsDeleted);
+
             entity.HasIndex(e => e.MessageId).HasDatabaseName("ix_retrieved_notes_message_id");
         });
 
         // Configure MessageImage entity
         modelBuilder.Entity<MessageImage>(entity =>
         {
+            // Matching query filter for parent message's conversation soft delete
+            entity.HasQueryFilter(i => !i.Message!.Conversation!.IsDeleted);
+
             entity.HasIndex(e => e.MessageId).HasDatabaseName("ix_message_images_message_id");
         });
 
         // Configure GeneratedImageData entity
         modelBuilder.Entity<GeneratedImageData>(entity =>
         {
+            // Matching query filter for parent message's conversation soft delete
+            entity.HasQueryFilter(g => !g.Message!.Conversation!.IsDeleted);
+
             entity.HasIndex(e => e.MessageId).HasDatabaseName("ix_generated_images_message_id");
         });
 

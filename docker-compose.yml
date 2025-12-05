@@ -1,13 +1,13 @@
 services:
   postgres:
-    image: pgvector/pgvector:pg16
+    image: pgvector/pgvector:pg18
     container_name: secondbrain-postgres
     environment:
       - POSTGRES_USER=${POSTGRES_USER:-postgres}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
       - POSTGRES_DB=${POSTGRES_DB:-secondbrain}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
       - ./database/00_extensions.sql:/docker-entrypoint-initdb.d/00_extensions.sql:ro
       - ./database/01_users.sql:/docker-entrypoint-initdb.d/01_users.sql:ro
       - ./database/02_notes.sql:/docker-entrypoint-initdb.d/02_notes.sql:ro
@@ -16,6 +16,11 @@ services:
       - ./database/05_indexing_jobs.sql:/docker-entrypoint-initdb.d/05_indexing_jobs.sql:ro
       - ./database/06_indexes.sql:/docker-entrypoint-initdb.d/06_indexes.sql:ro
       - ./database/07_generated_images.sql:/docker-entrypoint-initdb.d/07_generated_images.sql:ro
+      - ./database/08_search_vectors.sql:/docker-entrypoint-initdb.d/08_search_vectors.sql:ro
+      - ./database/09_rag_analytics.sql:/docker-entrypoint-initdb.d/09_rag_analytics.sql:ro
+      - ./database/10_brainstorm.sql:/docker-entrypoint-initdb.d/10_brainstorm.sql:ro
+      - ./database/11_message_images.sql:/docker-entrypoint-initdb.d/11_message_images.sql:ro
+      - ./database/12_agent_rag_enabled.sql:/docker-entrypoint-initdb.d/12_agent_rag_enabled.sql:ro
     ports:
       - "5432:5432"
     restart: unless-stopped

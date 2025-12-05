@@ -17,41 +17,24 @@ POSTGRES_BIN=""
 POSTGRES_LIB=""
 POSTGRES_SHARE=""
 
-# Check common installation paths
-if [ -d "/opt/homebrew/opt/postgresql@16" ]; then
+# Check PostgreSQL 18 installation paths (no fallback to older versions)
+if [ -d "/opt/homebrew/opt/postgresql@18" ]; then
     # Apple Silicon Homebrew
-    POSTGRES_HOME="/opt/homebrew/opt/postgresql@16"
+    POSTGRES_HOME="/opt/homebrew/opt/postgresql@18"
     POSTGRES_BIN="$POSTGRES_HOME/bin"
     POSTGRES_LIB="$POSTGRES_HOME/lib"
     POSTGRES_SHARE="$POSTGRES_HOME/share"
-elif [ -d "/usr/local/opt/postgresql@16" ]; then
+elif [ -d "/usr/local/opt/postgresql@18" ]; then
     # Intel Homebrew
-    POSTGRES_HOME="/usr/local/opt/postgresql@16"
+    POSTGRES_HOME="/usr/local/opt/postgresql@18"
     POSTGRES_BIN="$POSTGRES_HOME/bin"
     POSTGRES_LIB="$POSTGRES_HOME/lib"
     POSTGRES_SHARE="$POSTGRES_HOME/share"
-elif [ -d "/opt/homebrew/opt/postgresql" ]; then
-    # Generic Homebrew PostgreSQL (Apple Silicon)
-    POSTGRES_HOME="/opt/homebrew/opt/postgresql"
-    POSTGRES_BIN="$POSTGRES_HOME/bin"
-    POSTGRES_LIB="$POSTGRES_HOME/lib"
-    POSTGRES_SHARE="$POSTGRES_HOME/share"
-elif [ -d "/usr/local/opt/postgresql" ]; then
-    # Generic Homebrew PostgreSQL (Intel)
-    POSTGRES_HOME="/usr/local/opt/postgresql"
-    POSTGRES_BIN="$POSTGRES_HOME/bin"
-    POSTGRES_LIB="$POSTGRES_HOME/lib"
-    POSTGRES_SHARE="$POSTGRES_HOME/share"
-elif command -v pg_config &> /dev/null; then
-    # Use pg_config to find PostgreSQL
-    POSTGRES_BIN="$(pg_config --bindir)"
-    POSTGRES_LIB="$(pg_config --libdir)"
-    POSTGRES_SHARE="$(pg_config --sharedir)"
 else
-    echo "❌ PostgreSQL not found!"
+    echo "❌ PostgreSQL 18 not found!"
     echo ""
-    echo "Please install PostgreSQL 16:"
-    echo "  brew install postgresql@16"
+    echo "Please install PostgreSQL 18:"
+    echo "  brew install postgresql@18 pgvector"
     echo ""
     exit 1
 fi
@@ -105,10 +88,10 @@ fi
 echo ""
 echo "📦 Copying PostgreSQL share files..."
 
-# Check for versioned share directory (e.g., postgresql@16)
-if [ -d "$POSTGRES_SHARE/postgresql@16" ]; then
-    cp -R "$POSTGRES_SHARE/postgresql@16" "$RESOURCE_DIR/share/postgresql"
-    echo "  ✓ postgresql@16 data"
+# Check for versioned share directory (e.g., postgresql@18)
+if [ -d "$POSTGRES_SHARE/postgresql@18" ]; then
+    cp -R "$POSTGRES_SHARE/postgresql@18" "$RESOURCE_DIR/share/postgresql"
+    echo "  ✓ postgresql@18 data"
 elif [ -d "$POSTGRES_SHARE/postgresql" ]; then
     cp -R "$POSTGRES_SHARE/postgresql" "$RESOURCE_DIR/share/"
     echo "  ✓ postgresql data"
@@ -117,7 +100,7 @@ else
 fi
 
 # Also copy timezone data if available
-if [ -d "$POSTGRES_SHARE/postgresql@16/timezone" ]; then
+if [ -d "$POSTGRES_SHARE/postgresql@18/timezone" ]; then
     echo "  ✓ timezone data included"
 fi
 
@@ -125,10 +108,10 @@ fi
 PGVECTOR_LIB=""
 if [ -f "$POSTGRES_LIB/postgresql/vector.so" ]; then
     PGVECTOR_LIB="$POSTGRES_LIB/postgresql/vector.so"
-elif [ -f "/opt/homebrew/lib/postgresql@16/vector.so" ]; then
-    PGVECTOR_LIB="/opt/homebrew/lib/postgresql@16/vector.so"
-elif [ -f "/usr/local/lib/postgresql@16/vector.so" ]; then
-    PGVECTOR_LIB="/usr/local/lib/postgresql@16/vector.so"
+elif [ -f "/opt/homebrew/lib/postgresql@18/vector.so" ]; then
+    PGVECTOR_LIB="/opt/homebrew/lib/postgresql@18/vector.so"
+elif [ -f "/usr/local/lib/postgresql@18/vector.so" ]; then
+    PGVECTOR_LIB="/usr/local/lib/postgresql@18/vector.so"
 fi
 
 if [ -n "$PGVECTOR_LIB" ] && [ -f "$PGVECTOR_LIB" ]; then

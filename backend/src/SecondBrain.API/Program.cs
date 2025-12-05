@@ -396,7 +396,7 @@ static async Task<bool> ApplyAllMigrationSchemaIfMissing(ApplicationDbContext db
     // 3. AddMessageImages - creates message_images table
     // 4. AddOllamaRemoteSettings - adds ollama remote columns to user_preferences
     // 5. AddRagLogIdToMessages - adds rag_log_id to chat_messages
-    // 6. AddPerformanceIndexes - adds performance indexes (handled by DatabaseIndexInitializer)
+    // 6. AddPerformanceIndexes - adds rag_query_logs, generated_images, search_vector, etc.
     // 7. AddSoftDeleteSupport - adds soft delete columns
 
     var commands = new[]
@@ -426,6 +426,69 @@ static async Task<bool> ApplyAllMigrationSchemaIfMissing(ApplicationDbContext db
         
         // === AddRagLogIdToMessages migration ===
         "ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS rag_log_id character varying(128)",
+        
+        // === AddPerformanceIndexes migration ===
+        // Add search_vector column to note_embeddings
+        "ALTER TABLE note_embeddings ADD COLUMN IF NOT EXISTS search_vector tsvector",
+        
+        // Add rag_feedback column to chat_messages
+        "ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS rag_feedback character varying(20)",
+        
+        // Add agent_rag_enabled and image_generation_enabled columns to chat_conversations
+        "ALTER TABLE chat_conversations ADD COLUMN IF NOT EXISTS agent_rag_enabled boolean NOT NULL DEFAULT FALSE",
+        "ALTER TABLE chat_conversations ADD COLUMN IF NOT EXISTS image_generation_enabled boolean NOT NULL DEFAULT FALSE",
+        
+        // Create generated_images table
+        @"CREATE TABLE IF NOT EXISTS generated_images (
+            id text NOT NULL,
+            message_id character varying(128) NOT NULL,
+            base64_data text,
+            url character varying(2048),
+            revised_prompt text,
+            media_type character varying(100) NOT NULL,
+            width integer,
+            height integer,
+            CONSTRAINT ""PK_generated_images"" PRIMARY KEY (id),
+            CONSTRAINT ""FK_generated_images_chat_messages_message_id"" FOREIGN KEY (message_id) 
+                REFERENCES chat_messages(id) ON DELETE CASCADE
+        )",
+        "CREATE INDEX IF NOT EXISTS ix_generated_images_message_id ON generated_images (message_id)",
+        
+        // Create rag_query_logs table for RAG analytics
+        @"CREATE TABLE IF NOT EXISTS rag_query_logs (
+            id uuid NOT NULL DEFAULT gen_random_uuid(),
+            user_id character varying(255) NOT NULL,
+            conversation_id character varying(255),
+            query text NOT NULL,
+            query_embedding_time_ms integer,
+            vector_search_time_ms integer,
+            bm25_search_time_ms integer,
+            rerank_time_ms integer,
+            total_time_ms integer,
+            retrieved_count integer,
+            final_count integer,
+            avg_cosine_score real,
+            avg_bm25_score real,
+            avg_rerank_score real,
+            top_cosine_score real,
+            top_rerank_score real,
+            hybrid_search_enabled boolean NOT NULL DEFAULT FALSE,
+            hyde_enabled boolean NOT NULL DEFAULT FALSE,
+            multi_query_enabled boolean NOT NULL DEFAULT FALSE,
+            reranking_enabled boolean NOT NULL DEFAULT FALSE,
+            user_feedback character varying(20),
+            feedback_category character varying(50),
+            feedback_comment text,
+            created_at timestamp with time zone NOT NULL DEFAULT NOW(),
+            topic_cluster integer,
+            topic_label character varying(100),
+            query_embedding text,
+            CONSTRAINT ""PK_rag_query_logs"" PRIMARY KEY (id)
+        )",
+        "CREATE INDEX IF NOT EXISTS ix_rag_query_logs_user_id ON rag_query_logs (user_id)",
+        "CREATE INDEX IF NOT EXISTS ix_rag_query_logs_created_at ON rag_query_logs (created_at)",
+        "CREATE INDEX IF NOT EXISTS ix_rag_query_logs_conversation ON rag_query_logs (conversation_id)",
+        "CREATE INDEX IF NOT EXISTS ix_rag_logs_user_created ON rag_query_logs (user_id, created_at DESC)",
         
         // === AddSoftDeleteSupport migration ===
         "ALTER TABLE notes ADD COLUMN IF NOT EXISTS deleted_at timestamp with time zone",

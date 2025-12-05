@@ -16,6 +16,13 @@
 
 Intelligent knowledge management with AI-powered chat, smart notes, AI agents, advanced RAG (Retrieval-Augmented Generation) with hybrid search, and multi-provider image generation.
 
+## Technical Highlights
+
+- **Production-grade RAG pipeline** with HyDE, hybrid search (vector + BM25), RRF fusion, and LLM reranking
+- **Multi-provider AI architecture** supporting 5 LLM providers with circuit breaker resilience
+- **Native macOS app** via Tauri 2.0 with embedded PostgreSQL and bundled .NET backend
+- **Clean Architecture** backend with CQRS/MediatR, Result pattern, and comprehensive error handling
+
 ## TL;DR
 
 ```bash
@@ -30,7 +37,7 @@ docker-compose up -d  # Access at http://localhost:3000
 - [Screenshots](#screenshots)
 - [Features](#features)
 - [Tech Stack](#tech-stack)
-- [Prerequisites](#prerequisites)
+- [Project Structure](#project-structure)
 - [Quick Start](#quick-start)
   - [Docker Compose](#4-run-with-docker-compose-recommended)
   - [Local Development](#5-run-locally-development)
@@ -39,12 +46,10 @@ docker-compose up -d  # Access at http://localhost:3000
 - [API Endpoints](#api-endpoints)
 - [Configuration](#configuration)
 - [Development](#development)
-- [Environment Variables Reference](#environment-variables-reference)
 - [iOS Sync](#ios-sync)
 - [Troubleshooting](#troubleshooting)
 - [Architecture](#architecture)
 - [License](#license)
-- [Support](#support)
 
 ## Screenshots
 
@@ -124,8 +129,32 @@ docker-compose up -d  # Access at http://localhost:3000
 
 - **Framework**: Tauri 2.0 (Rust + WebKit)
 - **Backend**: Bundled .NET self-contained executable
-- **Database**: PostgreSQL 17 (Homebrew) with pgvector on port 5433
+- **Database**: PostgreSQL 18 (Homebrew) with pgvector on port 5433
 - **Distribution**: DMG installer, universal binary (Intel + Apple Silicon)
+
+## Project Structure
+
+```text
+second-brain/
+├── backend/
+│   └── src/
+│       ├── SecondBrain.API/          # Controllers, middleware, Program.cs
+│       ├── SecondBrain.Application/  # Services, CQRS commands/queries, DTOs
+│       ├── SecondBrain.Core/         # Entities, interfaces, Result pattern
+│       └── SecondBrain.Infrastructure/ # EF Core, repositories
+├── frontend/
+│   └── src/
+│       ├── features/                 # Domain modules (chat, notes, agents, rag)
+│       ├── services/                 # API service layer
+│       ├── store/                    # Zustand slices (auth, settings, theme)
+│       ├── components/               # Shared UI components
+│       └── lib/                      # API client, router, Tauri bridge
+├── frontend/src-tauri/              # Rust desktop app shell
+├── database/                        # SQL schema files
+└── docs/adr/                        # Architecture Decision Records
+```
+
+**Key Patterns**: Clean Architecture (backend), CQRS with MediatR, Result pattern for errors, Factory pattern for AI providers, Slice-based Zustand store. See `docs/adr/` for detailed rationale.
 
 ## Prerequisites
 
@@ -290,8 +319,8 @@ The desktop app bundles everything into a single native application.
 #### Desktop Prerequisites
 
 ```bash
-# Install PostgreSQL 17 with pgvector
-brew install postgresql@17 pgvector
+# Install PostgreSQL 18 with pgvector
+brew install postgresql@18 pgvector
 
 # Install Rust toolchain (if not already installed)
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
@@ -345,105 +374,20 @@ See [iOS Sync](#ios-sync) section for mobile setup.
 
 ## API Endpoints
 
-### Authentication Endpoints
+The API follows RESTful conventions with JWT authentication. Key endpoint groups:
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/auth/register` | POST | Register with email and password |
-| `/api/auth/login` | POST | Login with email and password |
-| `/api/auth/me` | GET | Get current authenticated user |
-| `/api/auth/generate-api-key` | POST | Generate API key for external access |
+| Group | Base Path | Description |
+|-------|-----------|-------------|
+| Auth | `/api/auth` | Registration, login, API key generation |
+| Notes | `/api/notes` | CRUD operations, bulk delete, import |
+| Chat | `/api/chat` | Conversations, streaming messages (SSE), image generation |
+| Agents | `/api/agent` | Agent mode with tool execution |
+| AI | `/api/ai` | Provider health, completions |
+| Indexing | `/api/indexing` | RAG indexing jobs and stats |
+| RAG Analytics | `/api/rag/analytics` | Query logs, feedback, topic clustering |
+| Stats | `/api/stats` | AI usage statistics |
 
-### Notes
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/notes` | GET | Get all notes (authenticated user) |
-| `/api/notes/{id}` | GET | Get specific note |
-| `/api/notes` | POST | Create note |
-| `/api/notes/{id}` | PUT | Update note |
-| `/api/notes/{id}` | DELETE | Delete note |
-| `/api/notes/bulk-delete` | POST | Bulk delete notes |
-
-### Chat
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/chat/conversations` | GET | Get all conversations |
-| `/api/chat/conversations/{id}` | GET | Get specific conversation |
-| `/api/chat/conversations` | POST | Create conversation |
-| `/api/chat/conversations/{id}/messages` | POST | Send message |
-| `/api/chat/conversations/{id}/messages/stream` | POST | Stream message (SSE) |
-| `/api/chat/conversations/{id}/settings` | PATCH | Update conversation settings |
-| `/api/chat/conversations/{id}` | DELETE | Delete conversation |
-| `/api/chat/conversations/{id}/generate-image` | POST | Generate image in conversation |
-| `/api/chat/image-generation/providers` | GET | Get available image providers |
-| `/api/chat/image-generation/providers/{provider}/sizes` | GET | Get supported sizes for provider |
-
-### AI Agents
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/agent/conversations/{id}/messages/stream` | POST | Stream agent message with tool execution |
-| `/api/agent/supported-providers` | GET | Get providers supporting agent mode |
-| `/api/agent/capabilities` | GET | Get available agent capabilities |
-
-### AI Provider Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/ai/health` | GET | Get health status for all AI providers |
-| `/api/ai/health/{provider}` | GET | Get health status for specific provider |
-| `/api/ai/providers` | GET | List all AI providers |
-| `/api/ai/providers/enabled` | GET | List enabled AI providers |
-| `/api/ai/generate/{provider}` | POST | Generate completion |
-| `/api/ai/chat/{provider}` | POST | Generate chat completion |
-
-### Indexing (RAG)
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/indexing/start` | POST | Start indexing notes for RAG |
-| `/api/indexing/status/{jobId}` | GET | Get indexing job status |
-| `/api/indexing/stats` | GET | Get index statistics (PostgreSQL + Pinecone) |
-| `/api/indexing/reindex/{noteId}` | POST | Reindex a specific note |
-| `/api/indexing/notes` | DELETE | Delete all indexed notes for user |
-
-### RAG Analytics
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/rag/analytics/feedback` | POST | Submit feedback for a RAG response |
-| `/api/rag/analytics/stats` | GET | Get RAG performance statistics |
-| `/api/rag/analytics/logs` | GET | Get paginated RAG query logs |
-| `/api/rag/analytics/logs/{id}` | GET | Get specific RAG query log |
-| `/api/rag/analytics/cluster` | POST | Run topic clustering on queries |
-| `/api/rag/analytics/topics` | GET | Get topic statistics |
-
-### Import
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/import/notes` | POST | Import notes (requires API key or JWT token) |
-
-### Stats
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/stats/ai` | GET | Get AI usage statistics |
-
-### User Preferences
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/userpreferences/{userId}` | GET | Get user preferences |
-| `/api/userpreferences/{userId}` | PUT | Update user preferences |
-
-### Health Check
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/health` | GET | Application health check |
+**Full API documentation available at `/swagger` when running the backend.**
 
 ## Configuration
 
@@ -464,103 +408,17 @@ Configure in `appsettings.json`:
 
 ### AI Providers
 
-Configure in `appsettings.json` or via environment variables:
+Configure in `appsettings.json` or via environment variables. Each provider supports:
 
-```json
-{
-  "AIProviders": {
-    "OpenAI": {
-      "Enabled": true,
-      "ApiKey": "",
-      "BaseUrl": "https://api.openai.com/v1",
-      "DefaultModel": "gpt-4o-mini",
-      "MaxTokens": 4096,
-      "Temperature": 0.7
-    },
-    "Gemini": {
-      "Enabled": true,
-      "ApiKey": "",
-      "DefaultModel": "gemini-2.0-flash"
-    },
-    "Anthropic": {
-      "Enabled": true,
-      "ApiKey": "",
-      "DefaultModel": "claude-3-5-haiku-latest"
-    },
-    "Ollama": {
-      "Enabled": true,
-      "BaseUrl": "http://localhost:11434",
-      "DefaultModel": "qwen3:4b"
-    },
-    "XAI": {
-      "Enabled": true,
-      "ApiKey": "",
-      "DefaultModel": "grok-3-mini"
-    }
-  }
-}
-```
+| Provider | Config Keys | Default Model |
+|----------|-------------|---------------|
+| OpenAI | `ApiKey`, `DefaultModel`, `MaxTokens`, `Temperature` | `gpt-4o-mini` |
+| Anthropic | `ApiKey`, `DefaultModel` | `claude-3-5-haiku-latest` |
+| Gemini | `ApiKey`, `DefaultModel` | `gemini-2.0-flash` |
+| Ollama | `BaseUrl`, `DefaultModel` | `qwen3:4b` |
+| X.AI | `ApiKey`, `DefaultModel` | `grok-3-mini` |
 
-### Embedding Providers
-
-```json
-{
-  "EmbeddingProviders": {
-    "DefaultProvider": "OpenAI",
-    "OpenAI": {
-      "Enabled": true,
-      "Model": "text-embedding-3-small",
-      "Dimensions": 1536
-    },
-    "Gemini": {
-      "Enabled": false,
-      "Model": "models/text-embedding-004",
-      "Dimensions": 768
-    },
-    "Ollama": {
-      "Enabled": false,
-      "Model": "nomic-embed-text",
-      "Dimensions": 768
-    }
-  }
-}
-```
-
-### RAG Configuration
-
-```json
-{
-  "RAG": {
-    "ChunkSize": 500,
-    "ChunkOverlap": 100,
-    "TopK": 5,
-    "SimilarityThreshold": 0.3,
-    "MaxContextLength": 4000,
-    "EnableChunking": true,
-    "VectorStoreProvider": "PostgreSQL",
-    
-    "EnableHybridSearch": true,
-    "VectorWeight": 0.7,
-    "BM25Weight": 0.3,
-    "RRFConstant": 60,
-    
-    "EnableQueryExpansion": true,
-    "EnableHyDE": true,
-    "MultiQueryCount": 3,
-    
-    "EnableReranking": true,
-    "InitialRetrievalCount": 20,
-    "RerankingProvider": "OpenAI",
-    
-    "EnableSemanticChunking": true,
-    "MinChunkSize": 100,
-    "MaxChunkSize": 800,
-    
-    "EnableAnalytics": true,
-    "LogDetailedMetrics": false
-  }
-}
-```
+See `backend/src/SecondBrain.API/appsettings.json` for full configuration options including embedding providers and RAG settings.
 
 ## Development
 
@@ -577,43 +435,6 @@ pnpm test
 ```
 
 See [Quick Start](#quick-start) for development server commands.
-
-## Environment Variables Reference
-
-### PostgreSQL
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `POSTGRES_USER` | PostgreSQL username | `postgres` |
-| `POSTGRES_PASSWORD` | PostgreSQL password | `postgres` |
-| `POSTGRES_DB` | Database name | `secondbrain` |
-
-### Backend Variables
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `ConnectionStrings__DefaultConnection` | PostgreSQL connection string | Yes |
-| `Jwt__SecretKey` | JWT signing secret (min 32 chars) | Yes |
-| `Jwt__Issuer` | JWT issuer | No (default: SecondBrain) |
-| `Jwt__Audience` | JWT audience | No (default: SecondBrainUsers) |
-| `Jwt__ExpiryMinutes` | Token expiry in minutes | No (default: 1440) |
-| `OPENAI_API_KEY` | OpenAI API key | At least one AI provider |
-| `ANTHROPIC_API_KEY` | Anthropic (Claude) API key | At least one AI provider |
-| `GEMINI_API_KEY` | Google Gemini API key | At least one AI provider |
-| `XAI_API_KEY` | X.AI (Grok) API key | At least one AI provider |
-| `VECTOR_STORE_PROVIDER` | Vector store provider (PostgreSQL/Pinecone) | No (default: PostgreSQL) |
-| `PINECONE_API_KEY` | Pinecone API key | No (if using PostgreSQL) |
-| `PINECONE_ENVIRONMENT` | Pinecone environment | No |
-| `PINECONE_INDEX_NAME` | Pinecone index name | No |
-| `CORS_ALLOWED_ORIGINS` | Comma-separated allowed origins | Yes |
-| `OLLAMA_BASE_URL` | Ollama server URL | No (default: <http://localhost:11434>) |
-| `ASPNETCORE_ENVIRONMENT` | Environment mode | No (default: Production) |
-
-### Frontend Variables
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `VITE_API_URL` | Backend API URL | No (uses proxy in dev) |
 
 ## iOS Sync
 
@@ -647,7 +468,7 @@ Before running, verify:
 
 - Verify PostgreSQL container is running: `docker-compose ps`
 - Check connection string format: `Host=localhost;Port=5432;Database=secondbrain;Username=postgres;Password=yourpassword`
-- Ensure pgvector extension is installed (automatic with `pgvector/pgvector:pg16` image)
+- Ensure pgvector extension is installed (automatic with `pgvector/pgvector:pg18` image)
 - Check logs: `docker-compose logs postgres`
 
 ### Authentication Issues
@@ -723,47 +544,40 @@ Before running, verify:
 │   React/Vite    │     │   (port 3000)   │     │  ASP.NET Core   │
 └─────────────────┘     └─────────────────┘     └────────┬────────┘
                                                          │
-                        ┌────────────────────────────────┴────────────────────────────────┐
-                        │                                                                 │
-                        ▼                                                                 ▼
-               ┌─────────────────┐                                              ┌─────────────────┐
-               │   PostgreSQL    │                                              │  AI Providers   │
-               │   + pgvector    │                                              │ OpenAI, Claude  │
-               │   (Users, Notes,│                                              │ Gemini, Ollama  │
-               │    Embeddings)  │                                              │     Grok        │
-               └─────────────────┘                                              └─────────────────┘
+                                    ┌────────────────────┴────────────────────┐
+                                    │                                         │
+                                    ▼                                         ▼
+                           ┌─────────────────┐                       ┌─────────────────┐
+                           │   PostgreSQL    │                       │  AI Providers   │
+                           │   + pgvector    │                       │  OpenAI, Claude │
+                           │  (Users, Notes, │                       │  Gemini, Ollama │
+                           │   Embeddings)   │                       │      Grok       │
+                           └─────────────────┘                       └─────────────────┘
 ```
 
 ### Desktop App Architecture
 
 ```text
-┌──────────────────────────────────────────────────────────────┐
-│                    Second Brain.app                          │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │         Tauri Shell (Rust) - Service Lifecycle         │ │
-│  └────────────────────────────────────────────────────────┘ │
-│                          │ IPC                               │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │              React Frontend (WebView)                  │ │
-│  └────────────────────────────────────────────────────────┘ │
-│                          │ localhost:5001                    │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │         .NET Backend (Sidecar Process)                 │ │
-│  └────────────────────────────────────────────────────────┘ │
-│                          │                                   │
-│  ┌────────────────────────────────────────────────────────┐ │
-│  │         PostgreSQL (port 5433) + pgvector              │ │
-│  └────────────────────────────────────────────────────────┘ │
-└──────────────────────────────────────────────────────────────┘
+          ┌──────────────────────────────────────────────────────────────┐
+          │                    Second Brain.app                          │
+          │  ┌────────────────────────────────────────────────────────┐  │
+          │  │         Tauri Shell (Rust) - Service Lifecycle         │  │
+          │  └────────────────────────────────────────────────────────┘  │
+          │                          │ IPC                               │
+          │  ┌────────────────────────────────────────────────────────┐  │
+          │  │              React Frontend (WebView)                  │  │
+          │  └────────────────────────────────────────────────────────┘  │
+          │                          │ localhost:5001                    │
+          │  ┌────────────────────────────────────────────────────────┐  │
+          │  │         .NET Backend (Sidecar Process)                 │  │
+          │  └────────────────────────────────────────────────────────┘  │
+          │                          │                                   │
+          │  ┌────────────────────────────────────────────────────────┐  │
+          │  │         PostgreSQL (port 5433) + pgvector              │  │
+          │  └────────────────────────────────────────────────────────┘  │
+          └──────────────────────────────────────────────────────────────┘
 ```
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Support
-
-For issues and questions:
-
-- Open an issue on GitHub
-- Review the [Troubleshooting](#troubleshooting) section above

@@ -40,8 +40,8 @@ jobs:
 
       - name: Install PostgreSQL (for integration tests)
         run: |
-          brew install postgresql@17
-          echo "/opt/homebrew/opt/postgresql@17/bin" >> $GITHUB_PATH
+          brew install postgresql@18 pgvector
+          echo "/opt/homebrew/opt/postgresql@18/bin" >> $GITHUB_PATH
 
       - name: Create minimal frontend dist for Tauri compilation
         run: |
@@ -83,7 +83,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Install pnpm
         run: npm install -g pnpm
@@ -130,8 +130,8 @@ jobs:
 
       - name: Install PostgreSQL
         run: |
-          brew install postgresql@17
-          echo "/opt/homebrew/opt/postgresql@17/bin" >> $GITHUB_PATH
+          brew install postgresql@18 pgvector
+          echo "/opt/homebrew/opt/postgresql@18/bin" >> $GITHUB_PATH
 
       - name: Cache Cargo
         uses: actions/cache@v4

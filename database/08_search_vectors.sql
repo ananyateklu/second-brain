@@ -58,25 +58,25 @@ CREATE TABLE IF NOT EXISTS rag_query_logs (
     retrieved_count INT,
     final_count INT,
     
-    -- Score metrics for correlation analysis
-    avg_cosine_score FLOAT,
-    avg_bm25_score FLOAT,
-    avg_rerank_score FLOAT,
-    top_cosine_score FLOAT,
-    top_rerank_score FLOAT,
+    -- Score metrics for correlation analysis (REAL matches C# float)
+    avg_cosine_score REAL,
+    avg_bm25_score REAL,
+    avg_rerank_score REAL,
+    top_cosine_score REAL,
+    top_rerank_score REAL,
     
-    -- Feature flags for this query
-    hybrid_search_enabled BOOLEAN DEFAULT true,
-    hyde_enabled BOOLEAN DEFAULT false,
-    multi_query_enabled BOOLEAN DEFAULT false,
-    reranking_enabled BOOLEAN DEFAULT false,
+    -- Feature flags for this query (NOT NULL to match EF Core entity)
+    hybrid_search_enabled BOOLEAN NOT NULL DEFAULT true,
+    hyde_enabled BOOLEAN NOT NULL DEFAULT false,
+    multi_query_enabled BOOLEAN NOT NULL DEFAULT false,
+    reranking_enabled BOOLEAN NOT NULL DEFAULT false,
     
     -- User feedback (critical for improvement analysis)
     user_feedback VARCHAR(20), -- 'thumbs_up', 'thumbs_down', null
     feedback_category VARCHAR(50), -- 'wrong_info', 'missing_context', 'irrelevant', etc.
     feedback_comment TEXT,
     
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
 -- Indexes for analytics queries

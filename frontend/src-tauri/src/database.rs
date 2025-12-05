@@ -30,27 +30,14 @@ impl PostgresManager {
         }
     }
 
-    /// Find PostgreSQL bin directory from system installations
-    /// For now, we use system PostgreSQL rather than bundling to avoid macOS permission issues
-    /// PostgreSQL 17+ is preferred for pgvector support
+    /// Find PostgreSQL 18 bin directory from system installations
+    /// Requires PostgreSQL 18 with pgvector extension
     fn find_postgres_bin_dir(_resource_dir: &PathBuf) -> PathBuf {
         let possible_paths = vec![
-            // Homebrew PostgreSQL 17 (Apple Silicon) - preferred for pgvector
-            PathBuf::from("/opt/homebrew/opt/postgresql@17/bin"),
-            // Homebrew PostgreSQL 16 (Apple Silicon)
-            PathBuf::from("/opt/homebrew/opt/postgresql@16/bin"),
-            // Homebrew PostgreSQL (Apple Silicon, generic)
-            PathBuf::from("/opt/homebrew/opt/postgresql/bin"),
-            // Homebrew PostgreSQL 17 (Intel)
-            PathBuf::from("/usr/local/opt/postgresql@17/bin"),
-            // Homebrew PostgreSQL 16 (Intel)
-            PathBuf::from("/usr/local/opt/postgresql@16/bin"),
-            // Homebrew PostgreSQL (Intel, generic)
-            PathBuf::from("/usr/local/opt/postgresql/bin"),
-            // Standard PostgreSQL installation
-            PathBuf::from("/usr/local/pgsql/bin"),
-            // Postgres.app
-            PathBuf::from("/Applications/Postgres.app/Contents/Versions/latest/bin"),
+            // Homebrew PostgreSQL 18 (Apple Silicon)
+            PathBuf::from("/opt/homebrew/opt/postgresql@18/bin"),
+            // Homebrew PostgreSQL 18 (Intel)
+            PathBuf::from("/usr/local/opt/postgresql@18/bin"),
         ];
 
         for path in &possible_paths {
@@ -58,17 +45,17 @@ impl PostgresManager {
             let postgres = path.join("postgres");
 
             if initdb.exists() && postgres.exists() {
-                log::info!("Found PostgreSQL at {:?}", path);
+                log::info!("Found PostgreSQL 18 at {:?}", path);
                 return path.clone();
             }
         }
 
         // Return the first path as fallback (will fail later with helpful error)
-        log::warn!("PostgreSQL not found in system paths. Please install PostgreSQL 16: brew install postgresql@16");
+        log::warn!("PostgreSQL 18 not found. Please install: brew install postgresql@18 pgvector");
         possible_paths
             .first()
             .cloned()
-            .unwrap_or_else(|| PathBuf::from("/opt/homebrew/opt/postgresql@16/bin"))
+            .unwrap_or_else(|| PathBuf::from("/opt/homebrew/opt/postgresql@18/bin"))
     }
 
     /// Initialize the database directory if it doesn't exist
@@ -89,7 +76,7 @@ impl PostgresManager {
         let initdb_path = self.bin_dir.join("initdb");
 
         if !initdb_path.exists() {
-            return Err(format!("initdb not found at {:?}. Please install PostgreSQL 16: brew install postgresql@16", initdb_path));
+            return Err(format!("initdb not found at {:?}. Please install PostgreSQL 18: brew install postgresql@18", initdb_path));
         }
 
         log::info!("Running initdb from {:?}", initdb_path);
@@ -567,7 +554,7 @@ mod tests {
 
         // Create data directory with PG_VERSION file
         std::fs::create_dir_all(&data_dir).unwrap();
-        std::fs::write(data_dir.join("PG_VERSION"), "16").unwrap();
+        std::fs::write(data_dir.join("PG_VERSION"), "18").unwrap();
 
         let manager = PostgresManager::new(
             temp_dir.path().to_path_buf(),

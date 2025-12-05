@@ -87,34 +87,76 @@ public class DatabaseIndexInitializer
 
     private async Task<bool> TableExistsAsync(string tableName, CancellationToken cancellationToken)
     {
-        var sql = @"
-            SELECT EXISTS (
-                SELECT FROM information_schema.tables 
-                WHERE table_schema = 'public' 
-                AND table_name = {0}
-            )";
+        var connection = _context.Database.GetDbConnection();
+        var needsClose = connection.State != System.Data.ConnectionState.Open;
 
-        var result = await _context.Database
-            .SqlQueryRaw<bool>(sql, tableName)
-            .FirstOrDefaultAsync(cancellationToken);
+        if (needsClose)
+        {
+            await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+        }
 
-        return result;
+        try
+        {
+            await using var command = connection.CreateCommand();
+            command.CommandText = @"
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_schema = 'public' 
+                    AND table_name = @tableName
+                )";
+
+            var parameter = command.CreateParameter();
+            parameter.ParameterName = "@tableName";
+            parameter.Value = tableName;
+            command.Parameters.Add(parameter);
+
+            var result = await command.ExecuteScalarAsync(cancellationToken);
+            return result is true;
+        }
+        finally
+        {
+            if (needsClose && connection.State == System.Data.ConnectionState.Open)
+            {
+                await connection.CloseAsync();
+            }
+        }
     }
 
     private async Task<bool> IndexExistsAsync(string indexName, CancellationToken cancellationToken)
     {
-        var sql = @"
-            SELECT EXISTS (
-                SELECT FROM pg_indexes 
-                WHERE schemaname = 'public' 
-                AND indexname = {0}
-            )";
+        var connection = _context.Database.GetDbConnection();
+        var needsClose = connection.State != System.Data.ConnectionState.Open;
 
-        var result = await _context.Database
-            .SqlQueryRaw<bool>(sql, indexName)
-            .FirstOrDefaultAsync(cancellationToken);
+        if (needsClose)
+        {
+            await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+        }
 
-        return result;
+        try
+        {
+            await using var command = connection.CreateCommand();
+            command.CommandText = @"
+                SELECT EXISTS (
+                    SELECT FROM pg_indexes 
+                    WHERE schemaname = 'public' 
+                    AND indexname = @indexName
+                )";
+
+            var parameter = command.CreateParameter();
+            parameter.ParameterName = "@indexName";
+            parameter.Value = indexName;
+            command.Parameters.Add(parameter);
+
+            var result = await command.ExecuteScalarAsync(cancellationToken);
+            return result is true;
+        }
+        finally
+        {
+            if (needsClose && connection.State == System.Data.ConnectionState.Open)
+            {
+                await connection.CloseAsync();
+            }
+        }
     }
 
     private record IndexDefinition(string TableName, string IndexName, string CreateSql);

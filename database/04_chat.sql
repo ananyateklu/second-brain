@@ -21,7 +21,11 @@ CREATE TABLE IF NOT EXISTS chat_conversations (
     vector_store_provider VARCHAR(50),
     user_id VARCHAR(128) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    -- Soft delete columns
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+    deleted_at TIMESTAMP WITH TIME ZONE,
+    deleted_by VARCHAR(128)
 );
 
 -- Chat messages table - stores individual messages in conversations
@@ -88,6 +92,9 @@ COMMENT ON COLUMN chat_conversations.agent_enabled IS 'Whether agent mode is ena
 COMMENT ON COLUMN chat_conversations.image_generation_enabled IS 'Whether this conversation is for image generation';
 COMMENT ON COLUMN chat_conversations.agent_capabilities IS 'JSON array of enabled agent capability IDs (e.g., ["notes"])';
 COMMENT ON COLUMN chat_conversations.vector_store_provider IS 'Vector store used for RAG';
+COMMENT ON COLUMN chat_conversations.is_deleted IS 'Soft delete flag - when true, conversation is considered deleted';
+COMMENT ON COLUMN chat_conversations.deleted_at IS 'Timestamp when the conversation was soft deleted';
+COMMENT ON COLUMN chat_conversations.deleted_by IS 'User ID who deleted the conversation';
 
 COMMENT ON TABLE chat_messages IS 'Individual messages within conversations';
 COMMENT ON COLUMN chat_messages.role IS 'Message role (user or assistant)';

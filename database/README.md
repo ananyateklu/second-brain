@@ -2,19 +2,40 @@
 
 PostgreSQL database schema for the Second Brain application with pgvector support for semantic search.
 
+## PostgreSQL 18 Features Guide
+
+**New!** We have a comprehensive guide for leveraging PostgreSQL 18's cutting-edge features to maximize performance:
+
+**[POSTGRESQL_18_FEATURES.md](./POSTGRESQL_18_FEATURES.md)** - Complete implementation guide covering:
+
+| Feature | Benefit | Impact |
+|---------|---------|--------|
+| **UUIDv7** | Time-ordered primary keys | 4x faster index performance |
+| **Async I/O** | Concurrent I/O operations | 2-3x faster scans |
+| **pgvector 0.8** | Iterative index scans | Better filtered queries |
+| **JSON_TABLE** | SQL/JSON standard | Cleaner JSON querying |
+| **MERGE with RETURNING** | Atomic upserts | Single-operation updates |
+| **Virtual Generated Columns** | Computed columns | Reduced trigger overhead |
+| **Parallel GIN Builds** | Multi-threaded indexing | 50-70% faster builds |
+| **Temporal Constraints** | Non-overlapping ranges | Audit trail support |
+
+The guide includes step-by-step migration scripts, code examples, and a phased implementation roadmap.
+
+---
+
 ## Prerequisites
 
-- PostgreSQL 14 or higher
-- pgvector extension installed (`CREATE EXTENSION vector`)
+- PostgreSQL 18 or higher (required for latest features)
+- pgvector 0.8+ extension installed (`CREATE EXTENSION vector`)
 
 ### Installing pgvector
 
 ```bash
-# On macOS with Homebrew
-brew install pgvector
+# On macOS with Homebrew (installs PostgreSQL 18 + pgvector)
+brew install postgresql@18 pgvector
 
-# On Ubuntu/Debian
-sudo apt install postgresql-14-pgvector
+# On Ubuntu/Debian (adjust version as needed)
+sudo apt install postgresql-18-pgvector
 
 # Or build from source
 git clone https://github.com/pgvector/pgvector.git
@@ -47,6 +68,7 @@ psql -d secondbrain -f 08_search_vectors.sql
 psql -d secondbrain -f 09_rag_analytics.sql
 psql -d secondbrain -f 10_brainstorm.sql
 psql -d secondbrain -f 11_message_images.sql
+psql -d secondbrain -f 12_agent_rag_enabled.sql
 ```
 
 ### Option 3: From psql Prompt
@@ -64,9 +86,9 @@ psql -d secondbrain -f 11_message_images.sql
 |-------|-------------|
 | `users` | User accounts |
 | `user_preferences` | User settings (1:1 with users) |
-| `notes` | User notes with tags |
-| `note_embeddings` | Vector embeddings for RAG |
-| `chat_conversations` | AI chat sessions |
+| `notes` | User notes with tags (supports soft delete) |
+| `note_embeddings` | Vector embeddings for RAG with BM25 search |
+| `chat_conversations` | AI chat sessions (supports soft delete) |
 | `chat_messages` | Individual chat messages |
 | `tool_calls` | Agent tool executions |
 | `retrieved_notes` | RAG context per message |
@@ -77,6 +99,8 @@ psql -d secondbrain -f 11_message_images.sql
 | `brainstorm_results` | AI-generated brainstorm outputs |
 | `message_images` | User-uploaded images for vision models |
 
+**Note:** The `__EFMigrationsHistory` table is also created by Entity Framework Core at runtime.
+
 ### Entity Relationship Diagram
 
 ```text
@@ -85,8 +109,8 @@ psql -d secondbrain -f 11_message_images.sql
 ├─────────────────┤         ┌──────────────────────┐
 │ id (PK)         │────────▶│  user_preferences    │
 │ email           │   1:1   │  user_id (FK)        │
-│ password_hash   │         └──────────────────────┘
-│ display_name    │
+│ password_hash   │         │  smart_prompts_*     │
+│ display_name    │         └──────────────────────┘
 │ api_key         │
 └─────────────────┘
         │
@@ -99,7 +123,9 @@ psql -d secondbrain -f 11_message_images.sql
 │ title           │   1:N   │ embedding (vector)   │
 │ content         │         │ chunk_index          │
 │ tags[]          │         │ search_vector        │
-│ user_id         │         └──────────────────────┘
+│ user_id         │         │ note_updated_at      │
+│ is_deleted      │         └──────────────────────┘
+│ deleted_at      │
 └─────────────────┘
 
 ┌─────────────────────┐
@@ -111,19 +137,20 @@ psql -d secondbrain -f 11_message_images.sql
 │ model               │         │ conversation_id  │
 │ rag_enabled         │         │ role             │
 │ agent_enabled       │         │ content          │
-│ user_id             │         └────────┬─────────┘
-└─────────────────────┘                  │
-                                         │ 1:N
-                    ┌────────────────────┼────────────────────┐
-                    │                    │                    │
-          ┌─────────▼──────┐   ┌────────▼────────┐  ┌───────▼────────┐
-          │   tool_calls   │   │ retrieved_notes │  │generated_images│
-          ├────────────────┤   ├─────────────────┤  ├────────────────┤
-          │ message_id(FK) │   │ message_id (FK) │  │ message_id(FK) │
-          │ tool_name      │   │ note_id         │  │ base64_data    │
-          │ arguments      │   │ relevance_score │  │ revised_prompt │
-          │ result         │   │ chunk_content   │  │ width, height  │
-          └────────────────┘   └─────────────────┘  └────────────────┘
+│ agent_rag_enabled   │         └────────┬─────────┘
+│ image_gen_enabled   │                  │
+│ is_deleted          │                  │ 1:N
+│ user_id             │  ┌───────────────┼───────────────────┐
+└─────────────────────┘  │               │                   │
+                         │               │                   │
+          ┌──────────────▼──┐  ┌────────▼────────┐  ┌───────▼────────┐
+          │   tool_calls    │  │ retrieved_notes │  │generated_images│
+          ├─────────────────┤  ├─────────────────┤  ├────────────────┤
+          │ message_id(FK)  │  │ message_id (FK) │  │ message_id(FK) │
+          │ tool_name       │  │ note_id         │  │ base64_data    │
+          │ arguments       │  │ relevance_score │  │ revised_prompt │
+          │ result          │  │ chunk_content   │  │ width, height  │
+          └─────────────────┘  └─────────────────┘  └────────────────┘
                                                             │
                                                             │
                                              ┌──────────────▼──────────────┐
@@ -180,12 +207,19 @@ psql -d secondbrain -f 11_message_images.sql
 | notes | ix_notes_user_id | BTREE | Filter by user |
 | notes | ix_notes_user_external | BTREE | Import lookups |
 | notes | ix_notes_created_at | BTREE | Sort by date |
+| notes | ix_notes_user_updated | BTREE | User + updated sort |
+| notes | ix_notes_user_folder | BTREE | User + folder filter |
+| notes | ix_notes_user_archived | BTREE | User + archived filter |
+| notes | ix_notes_user_deleted | BTREE | Soft delete queries |
 | note_embeddings | ix_note_embeddings_note_id | BTREE | Get note chunks |
 | note_embeddings | ix_note_embeddings_user_id | BTREE | Filter by user |
 | note_embeddings | ix_note_embeddings_note_chunk | BTREE | Chunk lookup |
+| note_embeddings | ix_embeddings_user_note | BTREE | User + note lookup |
 | note_embeddings | idx_note_embeddings_search_vector | GIN | Full-text search |
 | chat_conversations | ix_chat_conversations_user_id | BTREE | Filter by user |
 | chat_conversations | ix_chat_conversations_updated_at | BTREE | Sort by recent |
+| chat_conversations | ix_conversations_user_updated | BTREE | User + updated sort |
+| chat_conversations | ix_conversations_user_deleted | BTREE | Soft delete queries |
 | chat_messages | ix_chat_messages_conversation_id | BTREE | Get messages |
 | chat_messages | ix_chat_messages_timestamp | BTREE | Sort by time |
 | tool_calls | ix_tool_calls_message_id | BTREE | Get tool calls |
@@ -196,9 +230,10 @@ psql -d secondbrain -f 11_message_images.sql
 | generated_images | ix_generated_images_message_id | BTREE | Get images |
 | rag_query_logs | idx_rag_query_logs_user_id | BTREE | Filter by user |
 | rag_query_logs | idx_rag_query_logs_created_at | BTREE | Sort by date |
-| rag_query_logs | idx_rag_query_logs_user_feedback | BTREE | Filter by feedback |
+| rag_query_logs | idx_rag_query_logs_user_feedback | BTREE | Filter by feedback (partial) |
 | rag_query_logs | idx_rag_query_logs_conversation | BTREE | Filter by conversation |
-| rag_query_logs | idx_rag_query_logs_topic_cluster | BTREE | Filter by topic |
+| rag_query_logs | idx_rag_query_logs_topic_cluster | BTREE | Filter by topic (partial) |
+| rag_query_logs | ix_rag_logs_user_created | BTREE | User + created sort |
 | brainstorm_sessions | ix_brainstorm_sessions_user_id | BTREE | Filter by user |
 | brainstorm_sessions | ix_brainstorm_sessions_created_at | BTREE | Sort by date |
 | brainstorm_results | ix_brainstorm_results_session_id | BTREE | Get results |
@@ -265,9 +300,9 @@ USING hnsw (embedding vector_cosine_ops);
 |------|-------------|
 | `00_extensions.sql` | pgvector extension setup |
 | `01_users.sql` | users, user_preferences tables |
-| `02_notes.sql` | notes table |
-| `03_note_embeddings.sql` | Vector embeddings table |
-| `04_chat.sql` | Chat-related tables |
+| `02_notes.sql` | notes table (with soft delete columns) |
+| `03_note_embeddings.sql` | Vector embeddings table with note_updated_at |
+| `04_chat.sql` | Chat-related tables (with soft delete columns) |
 | `05_indexing_jobs.sql` | Job tracking table |
 | `06_indexes.sql` | Base index definitions |
 | `07_generated_images.sql` | AI-generated images table |
@@ -275,12 +310,31 @@ USING hnsw (embedding vector_cosine_ops);
 | `09_rag_analytics.sql` | RAG analytics/topic clustering columns |
 | `10_brainstorm.sql` | Brainstorm sessions and results tables |
 | `11_message_images.sql` | User-uploaded message images table |
-| `schema.sql` | Master script (runs all) |
+| `12_agent_rag_enabled.sql` | agent_rag_enabled column for chat_conversations |
+| `schema.sql` | Master script (runs all 13 scripts) |
+| `POSTGRESQL_18_FEATURES.md` | **PostgreSQL 18 features guide and migration instructions** |
 
 ## Notes
 
 - All timestamps use `TIMESTAMP WITH TIME ZONE` for UTC storage
 - Arrays use PostgreSQL `TEXT[]` type for tags and errors
 - Foreign keys use `ON DELETE CASCADE` for automatic cleanup
-- The schema matches Entity Framework Core migrations in `backend/src/SecondBrain.Infrastructure/Migrations/`
+- The schema matches Entity Framework Core entity definitions in `backend/src/SecondBrain.Core/Entities/`
 - Hybrid search uses Reciprocal Rank Fusion (RRF) to combine vector and BM25 results
+- Soft delete is supported on `notes` and `chat_conversations` tables via `is_deleted`, `deleted_at`, `deleted_by` columns
+- Total indexes: 53 (including primary keys and partial indexes)
+- The desktop app (Tauri) uses Homebrew PostgreSQL on port 5433, Docker uses port 5432
+
+## PostgreSQL 18 Optimization
+
+For advanced PostgreSQL 18 features including:
+
+- **UUIDv7** for time-ordered, high-performance primary keys
+- **Async I/O (AIO)** for 2-3x faster sequential scans
+- **pgvector 0.8** optimizations for filtered vector queries
+- **MERGE with RETURNING** for atomic upsert operations
+- **JSON_TABLE** for cleaner JSON data querying
+- **Virtual/Stored Generated Columns** for computed fields
+- **Temporal Constraints** for audit trails
+
+See the comprehensive **[PostgreSQL 18 Features Guide](./POSTGRESQL_18_FEATURES.md)** for detailed implementation instructions, migration scripts, and code examples.
