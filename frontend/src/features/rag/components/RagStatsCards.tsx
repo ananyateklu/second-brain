@@ -22,14 +22,14 @@ interface StatCardProps {
   };
 }
 
-const StatCard = memo(function StatCard({
+const StatCard = memo(({
   title,
   value,
   subtitle,
   icon,
   accentColor = 'var(--color-primary)',
   trend,
-}: StatCardProps) {
+}: StatCardProps) => {
   const trendColors = {
     positive: 'var(--color-brand-400)',
     negative: 'var(--color-error)',
@@ -96,7 +96,7 @@ const StatCard = memo(function StatCard({
   );
 });
 
-export const RagStatsCards = memo(function RagStatsCards({ stats }: RagStatsCardsProps) {
+export const RagStatsCards = memo(({ stats }: RagStatsCardsProps) => {
   const feedbackRate = stats.queriesWithFeedback > 0
     ? Math.round(stats.positiveFeedbackRate * 100)
     : 0;

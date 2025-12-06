@@ -12,10 +12,10 @@ interface TopicsSectionProps {
   topicsLoading: boolean;
 }
 
-export const TopicsSection = memo(function TopicsSection({
+export const TopicsSection = memo(({
   topicData,
   topicsLoading,
-}: TopicsSectionProps) {
+}: TopicsSectionProps) => {
   return (
     <div className="min-h-full overflow-visible">
       <TopicDistributionCard topicData={topicData} isLoading={topicsLoading} />

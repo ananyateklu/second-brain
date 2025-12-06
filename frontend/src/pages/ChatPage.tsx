@@ -184,7 +184,7 @@ export function ChatPage() {
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    return () => { window.removeEventListener('beforeunload', handleBeforeUnload); };
   }, []);
 
   // Track message counts (increment when streaming ends)
@@ -242,9 +242,9 @@ export function ChatPage() {
             isNewChat={isNewChat}
             onSelectConversation={handleSelectConversation}
             onDeleteConversation={handleDeleteConversation}
-            onBulkDeleteConversations={handleBulkDeleteConversations}
+            onBulkDeleteConversations={handleBulkDeleteConversations ? (ids: string[]) => { void handleBulkDeleteConversations(ids); } : undefined}
             onNewChat={handleNewChat}
-            onToggleSidebar={() => setShowSidebar(false)}
+            onToggleSidebar={() => { setShowSidebar(false); }}
           />
         </Suspense>
       )}
@@ -263,9 +263,9 @@ export function ChatPage() {
             onProviderChange={handleProviderChange}
             onModelChange={handleModelChange}
             ragEnabled={ragEnabled}
-            onRagToggle={handleRagToggle}
+            onRagToggle={(enabled) => { void handleRagToggle(enabled); }}
             selectedVectorStore={selectedVectorStore as 'PostgreSQL' | 'Pinecone'}
-            onVectorStoreChange={(provider) => handleVectorStoreChange(provider as VectorStoreProvider)}
+            onVectorStoreChange={(provider) => { void handleVectorStoreChange(provider as VectorStoreProvider); }}
             agentModeEnabled={agentModeEnabled}
             onAgentModeChange={setAgentModeEnabled}
             agentRagEnabled={agentRagEnabled}
@@ -309,7 +309,7 @@ export function ChatPage() {
         <ChatInputArea
           value={inputValue}
           onChange={setInputValue}
-          onSend={handleSendMessage}
+          onSend={(images) => { void handleSendMessage(images); }}
           onCancel={cancelStream}
           isStreaming={isStreaming}
           isLoading={isLoading}

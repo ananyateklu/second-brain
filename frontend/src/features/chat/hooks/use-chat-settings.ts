@@ -53,7 +53,7 @@ export function useChatSettings(options: UseChatSettingsOptions): ChatSettingsSt
   const updateConversationSettings = useUpdateConversationSettings();
 
   const [ragEnabled, setRagEnabledLocal] = useState<boolean>(false);
-  const [selectedVectorStore, setSelectedVectorStoreLocal] = useState<'PostgreSQL' | 'Pinecone'>(defaultVectorStore as 'PostgreSQL' | 'Pinecone');
+  const [selectedVectorStore, setSelectedVectorStoreLocal] = useState<'PostgreSQL' | 'Pinecone'>(defaultVectorStore);
   const [agentModeEnabled, setAgentModeEnabledLocal] = useState<boolean>(false);
   const [agentRagEnabled, setAgentRagEnabledLocal] = useState<boolean>(true);
   const [notesCapabilityEnabled, setNotesCapabilityEnabledLocal] = useState<boolean>(false);
@@ -93,7 +93,7 @@ export function useChatSettings(options: UseChatSettingsOptions): ChatSettingsSt
       lastLoadedConversationId.current = null; // Reset the ref for new chats
       /* eslint-disable react-hooks/set-state-in-effect -- Valid state reset for new chat */
       setRagEnabledLocal(false);
-      setSelectedVectorStoreLocal(defaultVectorStore as 'PostgreSQL' | 'Pinecone');
+      setSelectedVectorStoreLocal(defaultVectorStore);
       setAgentModeEnabledLocal(false);
       setAgentRagEnabledLocal(true); // Default to true for new chats
       setNotesCapabilityEnabledLocal(false);
@@ -199,11 +199,11 @@ export function useChatSettings(options: UseChatSettingsOptions): ChatSettingsSt
     // Setters
     setRagEnabled: setRagEnabledLocal,
     setSelectedVectorStore: setSelectedVectorStoreLocal,
-    setAgentModeEnabled,
-    setAgentRagEnabled,
-    setNotesCapabilityEnabled,
+    setAgentModeEnabled: (enabled: boolean) => { void setAgentModeEnabled(enabled); },
+    setAgentRagEnabled: (enabled: boolean) => { void setAgentRagEnabled(enabled); },
+    setNotesCapabilityEnabled: (enabled: boolean) => { void setNotesCapabilityEnabled(enabled); },
     // Handlers
-    handleRagToggle,
-    handleVectorStoreChange,
+    handleRagToggle: (enabled: boolean) => { void handleRagToggle(enabled); },
+    handleVectorStoreChange: (provider: 'PostgreSQL' | 'Pinecone') => { void handleVectorStoreChange(provider); },
   };
 }

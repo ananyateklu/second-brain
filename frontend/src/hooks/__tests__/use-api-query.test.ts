@@ -41,7 +41,7 @@ describe('use-api-query', () => {
     describe('useApiQuery', () => {
         it('should return loading state initially', () => {
             // Arrange
-            const mockFn = vi.fn(() => new Promise(() => { })); // Never resolves
+            const mockFn = vi.fn(() => new Promise(() => { /* no-op */ })); // Never resolves
 
             // Act
             const { result } = renderHook(() => useApiQuery(['test-key'], mockFn), {

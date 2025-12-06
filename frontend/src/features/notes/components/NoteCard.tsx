@@ -75,7 +75,7 @@ const getRelevanceBg = (score: number) => {
   return 'var(--color-brand-100)'; // Lightest background for low scores
 };
 
-export const NoteCard = memo(function NoteCard({
+export const NoteCard = memo(({
   note,
   variant = 'full',
   relevanceScore,
@@ -88,7 +88,7 @@ export const NoteCard = memo(function NoteCard({
   isBulkMode = false,
   isSelected = false,
   onSelect,
-}: NoteCardProps) {
+}: NoteCardProps) => {
   const openEditModal = useUIStore((state) => state.openEditModal);
   const deleteNoteMutation = useDeleteNote();
   const archiveNoteMutation = useArchiveNote();
@@ -220,8 +220,8 @@ export const NoteCard = memo(function NoteCard({
         willChange: 'transform, box-shadow',
       }}
       onClick={handleCardClick}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={() => { setIsHovered(true); }}
+      onMouseLeave={() => { setIsHovered(false); }}
     >
       {/* Bulk Selection Checkbox */}
       {isBulkMode && (
@@ -330,7 +330,7 @@ export const NoteCard = memo(function NoteCard({
                 </button>
                 {/* Delete Button */}
                 <button
-                  onClick={handleDelete}
+                  onClick={(e) => { void handleDelete(e); }}
                   className="flex items-center justify-center w-7 h-7 rounded-full transition-colors"
                   style={{
                     backgroundColor: 'var(--surface-hover)',
@@ -439,7 +439,7 @@ export const NoteCard = memo(function NoteCard({
                   border: `1px solid ${isDarkMode ? 'color-mix(in srgb, var(--color-warning) 30%, transparent)' : 'color-mix(in srgb, var(--color-warning) 25%, transparent)'}`,
                 }}
               >
-                <svg className={`${isMicro ? 'w-2.5 h-2.5' : 'w-3 h-3'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className={isMicro ? 'w-2.5 h-2.5' : 'w-3 h-3'} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
                 </svg>
                 Archived

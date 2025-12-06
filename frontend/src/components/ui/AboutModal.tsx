@@ -20,7 +20,7 @@ export function AboutModal({ isOpen, onClose }: AboutModalProps) {
   // Get app version from Tauri
   useEffect(() => {
     if (isOpen) {
-      getAppVersion().then(setAppVersion);
+      void getAppVersion().then(setAppVersion);
     }
   }, [isOpen]);
 
@@ -33,7 +33,7 @@ export function AboutModal({ isOpen, onClose }: AboutModalProps) {
     };
 
     document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
+    return () => { document.removeEventListener('keydown', handleEscape); };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
@@ -58,7 +58,7 @@ export function AboutModal({ isOpen, onClose }: AboutModalProps) {
           backgroundColor: 'var(--surface-card-solid)',
           borderColor: 'var(--border)',
         }}
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => { e.stopPropagation(); }}
       >
         {/* Content */}
         <div className="flex flex-col items-center p-8 pt-10">

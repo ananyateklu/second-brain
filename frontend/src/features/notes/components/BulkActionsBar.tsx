@@ -10,14 +10,14 @@ interface BulkActionsBarProps {
   isDeleting?: boolean;
 }
 
-export const BulkActionsBar = memo(function BulkActionsBar({
+export const BulkActionsBar = memo(({
   selectedCount,
   totalCount,
   onSelectAll,
   onDeselectAll,
   onDelete,
   isDeleting = false,
-}: BulkActionsBarProps) {
+}: BulkActionsBarProps) => {
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
 
   const handleDeleteClick = async () => {
@@ -110,7 +110,7 @@ export const BulkActionsBar = memo(function BulkActionsBar({
       {/* Delete Button */}
       <button
         type="button"
-        onClick={handleDeleteClick}
+        onClick={() => { void handleDeleteClick(); }}
         disabled={isProcessing || selectedCount === 0}
         className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
         style={{

@@ -26,8 +26,8 @@ export function IndexingButton({ userId = 'default-user', onComplete }: Indexing
         onComplete();
       }
       // Reset job ID after a delay to allow toast to show
-      const timer = setTimeout(() => setCurrentJobId(null), 3000);
-      return () => clearTimeout(timer);
+      const timer = setTimeout(() => { setCurrentJobId(null); }, 3000);
+      return () => { clearTimeout(timer); };
     }
   }, [isCompleted, onComplete]);
 
@@ -65,7 +65,7 @@ export function IndexingButton({ userId = 'default-user', onComplete }: Indexing
           );
           toastShownRef.current = statusKey;
           // Use setTimeout to defer state update and avoid synchronous setState in effect
-          setTimeout(() => setCurrentJobId(null), 0);
+          setTimeout(() => { setCurrentJobId(null); }, 0);
         }
       }
     }
@@ -113,7 +113,7 @@ export function IndexingButton({ userId = 'default-user', onComplete }: Indexing
                     <button
                       type="button"
                       key={store}
-                      onClick={() => setVectorStore(store)}
+                      onClick={() => { setVectorStore(store); }}
                       className="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-brand-500)] hover:-translate-y-0.5 hover:shadow-md"
                       style={{
                         backgroundColor: isActive ? 'var(--color-brand-600)' : 'var(--surface-elevated)',
@@ -162,7 +162,7 @@ export function IndexingButton({ userId = 'default-user', onComplete }: Indexing
                     <button
                       type="button"
                       key={provider}
-                      onClick={() => setEmbeddingProvider(provider)}
+                      onClick={() => { setEmbeddingProvider(provider); }}
                       className="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-brand-500)] hover:-translate-y-0.5 hover:shadow-md"
                       style={{
                         backgroundColor: isActive ? 'var(--color-brand-600)' : 'var(--surface-elevated)',
@@ -201,7 +201,7 @@ export function IndexingButton({ userId = 'default-user', onComplete }: Indexing
       )}
 
       <button
-        onClick={handleStartIndexing}
+        onClick={() => { void handleStartIndexing(); }}
         disabled={isIndexing || startIndexing.isPending}
         className="w-full px-4 py-2 rounded-lg transition-colors disabled:cursor-not-allowed flex items-center justify-center gap-2"
         style={{

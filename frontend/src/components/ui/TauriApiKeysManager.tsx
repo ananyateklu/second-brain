@@ -82,7 +82,7 @@ export function TauriProviderApiKeyInput({ providerId, onSaveSuccess }: TauriPro
 
   useEffect(() => {
     if (isTauri()) {
-      loadSecrets();
+      void loadSecrets();
     }
   }, [loadSecrets]);
 
@@ -90,8 +90,8 @@ export function TauriProviderApiKeyInput({ providerId, onSaveSuccess }: TauriPro
     return null;
   }
 
-  const currentValue = secrets[secretKey] as string | null | undefined;
-  const originalValue = originalSecrets[secretKey] as string | null | undefined;
+  const currentValue = secrets[secretKey];
+  const originalValue = originalSecrets[secretKey];
   const hasChanges = (currentValue || '') !== (originalValue || '');
   const hasValue = !!currentValue;
 
@@ -108,7 +108,7 @@ export function TauriProviderApiKeyInput({ providerId, onSaveSuccess }: TauriPro
     }));
   };
 
-  const handleSave = async (restart: boolean = true) => {
+  const handleSave = async (restart = true) => {
     try {
       setIsSaving(true);
       await saveSecrets(secrets, restart);
@@ -173,7 +173,7 @@ export function TauriProviderApiKeyInput({ providerId, onSaveSuccess }: TauriPro
           <input
             type={isPassword && !isVisible && !isFocused ? 'password' : 'text'}
             value={displayValue}
-            onChange={(e) => handleChange(e.target.value)}
+            onChange={(e) => { handleChange(e.target.value); }}
             placeholder={keyInfo.placeholder}
             className="w-full px-3 py-2.5 pr-10 rounded-xl text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] focus:border-transparent"
             style={{
@@ -181,13 +181,13 @@ export function TauriProviderApiKeyInput({ providerId, onSaveSuccess }: TauriPro
               border: '1px solid var(--border)',
               color: 'var(--text-primary)',
             }}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
+            onFocus={() => { setIsFocused(true); }}
+            onBlur={() => { setIsFocused(false); }}
           />
           {isPassword && (
             <button
               type="button"
-              onClick={() => setIsVisible(!isVisible)}
+              onClick={() => { setIsVisible(!isVisible); }}
               className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-colors hover:bg-[var(--surface-elevated)]"
               style={{ color: 'var(--text-secondary)' }}
               tabIndex={-1}
@@ -213,7 +213,7 @@ export function TauriProviderApiKeyInput({ providerId, onSaveSuccess }: TauriPro
       <div className="flex justify-end gap-2 pt-2">
         <button
           type="button"
-          onClick={() => handleSave(false)}
+          onClick={() => { void handleSave(false); }}
           disabled={!hasChanges || isSaving}
           className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98]"
           style={{
@@ -226,7 +226,7 @@ export function TauriProviderApiKeyInput({ providerId, onSaveSuccess }: TauriPro
         </button>
         <button
           type="button"
-          onClick={() => handleSave(true)}
+          onClick={() => { void handleSave(true); }}
           disabled={!hasChanges || isSaving}
           className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98]"
           style={{
@@ -282,7 +282,7 @@ export function TauriApiKeysManager() {
   // Load secrets on mount
   useEffect(() => {
     if (isTauri()) {
-      loadSecrets();
+      void loadSecrets();
     }
   }, [loadSecrets]);
 
@@ -307,7 +307,7 @@ export function TauriApiKeysManager() {
     setHasChanges(hasActualChanges);
   };
 
-  const handleSave = async (restart: boolean = true) => {
+  const handleSave = async (restart = true) => {
     try {
       setIsSaving(true);
       await saveSecrets(secrets, restart);
@@ -365,7 +365,7 @@ export function TauriApiKeysManager() {
             <ApiKeyInput
               key={field.key}
               field={field}
-              value={secrets[field.key] as string | null | undefined}
+              value={secrets[field.key]}
               isVisible={visibleFields.has(field.key)}
               onChange={handleChange}
               onToggleVisibility={toggleVisibility}
@@ -385,7 +385,7 @@ export function TauriApiKeysManager() {
             <ApiKeyInput
               key={field.key}
               field={field}
-              value={secrets[field.key] as string | null | undefined}
+              value={secrets[field.key]}
               isVisible={visibleFields.has(field.key)}
               onChange={handleChange}
               onToggleVisibility={toggleVisibility}
@@ -405,7 +405,7 @@ export function TauriApiKeysManager() {
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={() => handleSave(false)}
+            onClick={() => { void handleSave(false); }}
             disabled={!hasChanges || isSaving}
             className="px-4 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98]"
             style={{
@@ -419,7 +419,7 @@ export function TauriApiKeysManager() {
           </button>
           <button
             type="button"
-            onClick={() => handleSave(true)}
+            onClick={() => { void handleSave(true); }}
             disabled={!hasChanges || isSaving}
             className="px-4 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98]"
             style={{
@@ -485,7 +485,7 @@ function ApiKeyInput({ field, value, isVisible, onChange, onToggleVisibility, ma
         <input
           type={isPasswordType && !isVisible && !isFocused ? 'password' : 'text'}
           value={displayValue}
-          onChange={(e) => onChange(field.key, e.target.value)}
+          onChange={(e) => { onChange(field.key, e.target.value); }}
           placeholder={field.placeholder}
           className="w-full px-3 py-2.5 pr-10 rounded-xl text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] focus:border-transparent"
           style={{
@@ -493,13 +493,13 @@ function ApiKeyInput({ field, value, isVisible, onChange, onToggleVisibility, ma
             border: '1px solid var(--border)',
             color: 'var(--text-primary)',
           }}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
+          onFocus={() => { setIsFocused(true); }}
+          onBlur={() => { setIsFocused(false); }}
         />
         {isPasswordType && (
           <button
             type="button"
-            onClick={() => onToggleVisibility(field.key)}
+            onClick={() => { onToggleVisibility(field.key); }}
             className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-colors hover:bg-[var(--surface-card)]"
             style={{ color: 'var(--text-secondary)' }}
             tabIndex={-1}

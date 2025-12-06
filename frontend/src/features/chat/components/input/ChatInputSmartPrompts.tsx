@@ -100,7 +100,7 @@ export function ChatInputSmartPromptsPanel() {
           )}
         </button>
         <button
-          onClick={() => onToggleSmartPrompts(false)}
+          onClick={() => { onToggleSmartPrompts(false); }}
           className="p-1.5 rounded-lg transition-all duration-200 hover:scale-110 active:scale-95 flex items-center justify-center"
           style={{
             color: 'var(--text-tertiary)',
@@ -119,7 +119,7 @@ export function ChatInputSmartPromptsPanel() {
         {displayPrompts.map((prompt, index) => (
           <button
             key={prompt.id}
-            onClick={() => onPromptClick(prompt)}
+            onClick={() => { onPromptClick(prompt); }}
             className="prompt-chip px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-1.5 max-w-xs truncate"
             style={{
               '--chip-index': index,

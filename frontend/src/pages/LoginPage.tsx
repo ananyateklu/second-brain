@@ -17,6 +17,7 @@ export function LoginPage() {
   useEffect(() => {
     // Redirect if already authenticated
     if (isAuthenticated) {
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises -- navigate from useNavigate() returns void, not a promise
       navigate('/', { replace: true });
     }
   }, [isAuthenticated, navigate]);
@@ -34,7 +35,7 @@ export function LoginPage() {
 
   useEffect(() => {
     // Clear error on unmount
-    return () => clearError();
+    return () => { clearError(); };
   }, [clearError]);
 
   const validateForm = (): boolean => {
@@ -79,6 +80,7 @@ export function LoginPage() {
       } else {
         await login(email, password);
       }
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises -- navigate from useNavigate() returns void, not a promise
       navigate('/', { replace: true });
     } catch {
       // Error is already handled in the store
@@ -185,7 +187,7 @@ export function LoginPage() {
           )}
 
           {/* Login/Register Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-4">
             {/* Email Input */}
             <div>
               <label
@@ -199,7 +201,7 @@ export function LoginPage() {
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => { setEmail(e.target.value); }}
                 className="w-full px-4 py-3 rounded-xl border transition-all duration-200 focus:outline-none focus:ring-2"
                 style={{
                   backgroundColor: 'var(--surface-elevated)',
@@ -226,7 +228,7 @@ export function LoginPage() {
                   id="displayName"
                   type="text"
                   value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
+                  onChange={(e) => { setDisplayName(e.target.value); }}
                   className="w-full px-4 py-3 rounded-xl border transition-all duration-200 focus:outline-none focus:ring-2"
                   style={{
                     backgroundColor: 'var(--surface-elevated)',
@@ -253,7 +255,7 @@ export function LoginPage() {
                 id="password"
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => { setPassword(e.target.value); }}
                 className="w-full px-4 py-3 rounded-xl border transition-all duration-200 focus:outline-none focus:ring-2"
                 style={{
                   backgroundColor: 'var(--surface-elevated)',
@@ -280,7 +282,7 @@ export function LoginPage() {
                   id="confirmPassword"
                   type="password"
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={(e) => { setConfirmPassword(e.target.value); }}
                   className="w-full px-4 py-3 rounded-xl border transition-all duration-200 focus:outline-none focus:ring-2"
                   style={{
                     backgroundColor: 'var(--surface-elevated)',

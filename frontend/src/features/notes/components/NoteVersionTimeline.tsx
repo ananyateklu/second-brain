@@ -83,14 +83,14 @@ export function NoteVersionTimeline({
               {!isCurrent && (
                 <div className="flex gap-2">
                   <button
-                    onClick={() => onCompare(version.versionNumber, currentVersion)}
+                    onClick={() => { onCompare(version.versionNumber, currentVersion); }}
                     className="text-xs px-2 py-1 rounded border transition-colors hover:bg-[var(--surface-hover)]"
                     style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
                   >
                     Compare
                   </button>
                   <button
-                    onClick={() => onRestore(version.versionNumber)}
+                    onClick={() => { onRestore(version.versionNumber); }}
                     disabled={isRestoring}
                     className="text-xs px-2 py-1 rounded bg-[var(--color-brand-600)] text-white transition-colors hover:bg-[var(--color-brand-700)] disabled:opacity-50"
                   >

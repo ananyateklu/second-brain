@@ -74,7 +74,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       // Use custom fallback if provided
       if (this.props.fallback) {
         if (typeof this.props.fallback === 'function') {
-          return this.props.fallback(this.state.error!, this.handleReset);
+          return this.props.fallback(this.state.error ?? new Error('Unknown error'), this.handleReset);
         }
         return this.props.fallback;
       }

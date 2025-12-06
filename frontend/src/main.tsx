@@ -30,7 +30,11 @@ const initializeTheme = () => {
 
 // Render the app with BackendReadyProvider to prevent requests before backend is ready
 const renderApp = () => {
-  createRoot(document.getElementById('root')!).render(
+  const rootElement = document.getElementById('root');
+  if (!rootElement) {
+    throw new Error('Root element not found');
+  }
+  createRoot(rootElement).render(
     <StrictMode>
       <ErrorBoundary>
         <BackendReadyProvider>
@@ -52,28 +56,28 @@ async function initApp() {
 
   // Configure API URL for Tauri
   if (isTauri()) {
-    console.log('Running in Tauri mode, configuring API URL...');
+    console.warn('[Debug] Running in Tauri mode, configuring API URL...');
 
     try {
       // Get backend URL from Tauri
       const backendUrl = await getBackendUrl();
-      console.log('Backend URL from Tauri:', backendUrl);
+      console.warn('[Debug] Backend URL from Tauri:', backendUrl);
       
       // In development mode with HTTPS, use the Vite proxy to avoid mixed content issues
       // The Vite dev server proxies /api/* requests to the backend
       if (import.meta.env.DEV && window.location.protocol === 'https:') {
-        console.log('Using Vite proxy for HTTPS dev mode');
+        console.warn('[Debug] Using Vite proxy for HTTPS dev mode');
         setApiBaseUrl('/api');
       } else {
         setApiBaseUrl(backendUrl);
       }
 
       // Listen for backend events
-      onBackendEvent('backend-error', (error) => {
+      void onBackendEvent('backend-error', (error) => {
         console.error('Backend error:', error);
       });
 
-      onBackendEvent('backend-terminated', () => {
+      void onBackendEvent('backend-terminated', () => {
         console.warn('Backend terminated unexpectedly');
       });
     } catch (error) {
@@ -85,4 +89,4 @@ async function initApp() {
   renderApp();
 }
 
-initApp();
+void initApp();

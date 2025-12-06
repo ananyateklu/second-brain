@@ -47,7 +47,7 @@ export function ThinkingStepCard({ step, isStreaming = false }: ThinkingStepCard
       {/* Content */}
       <div className="text-sm">
         <button
-          onClick={() => setIsExpanded(!isExpanded)}
+          onClick={() => { setIsExpanded(!isExpanded); }}
           className="flex items-center gap-2 w-full text-left hover:opacity-80 transition-opacity"
         >
           <span

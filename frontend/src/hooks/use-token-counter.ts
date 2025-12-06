@@ -66,11 +66,11 @@ export function useTokenCounter(options: UseTokenCounterOptions = {}): UseTokenC
       if (id !== pendingIdRef.current) return;
 
       if (type === 'counted') {
-        const { tokens, characters, words } = event.data as TokenCountResponse;
+        const { tokens, characters, words } = event.data;
         setResult({ tokens, characters, words });
         setIsCounting(false);
       } else if (type === 'batchCounted') {
-        const { counts, total } = event.data as BatchTokenCountResponse;
+        const { counts, total } = event.data;
         setBatchResult({ counts, total });
         setIsCounting(false);
       }

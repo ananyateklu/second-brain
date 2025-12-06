@@ -15,7 +15,7 @@ export const createOllamaSlice: SliceCreator<OllamaSlice> = (set, get) => ({
 
     // Check if already downloading
     const existing = get().downloads[key];
-    if (existing && existing.status === 'downloading') {
+    if (existing?.status === 'downloading') {
       console.warn('Model already downloading:', { modelName: request.modelName });
       return;
     }

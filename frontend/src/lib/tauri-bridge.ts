@@ -109,16 +109,16 @@ export async function onBackendEvent(
   callback: (payload: unknown) => void
 ): Promise<() => void> {
   if (!isTauri()) {
-    return () => { };
+    return () => { /* no-op */ };
   }
 
-  return await listen(event, (e) => callback(e.payload));
+  return await listen(event, (e) => { callback(e.payload); });
 }
 
 /**
  * Wait for backend to be ready
  */
-export async function waitForBackend(maxWaitMs: number = 30000): Promise<boolean> {
+export async function waitForBackend(maxWaitMs = 30000): Promise<boolean> {
   if (!isTauri()) {
     return true;
   }
@@ -169,7 +169,7 @@ export async function getSecrets(): Promise<Secrets> {
 /**
  * Save API secrets and optionally restart the backend
  */
-export async function saveSecrets(secrets: Secrets, restart: boolean = true): Promise<void> {
+export async function saveSecrets(secrets: Secrets, restart = true): Promise<void> {
   if (!isTauri()) {
     console.warn('saveSecrets is only available in Tauri');
     return;
@@ -198,10 +198,10 @@ export async function getSecretsPath(): Promise<string> {
  */
 export async function onNavigateToSettings(callback: () => void): Promise<() => void> {
   if (!isTauri()) {
-    return () => { };
+    return () => { /* no-op */ };
   }
 
-  return await listen('navigate-to-settings', () => callback());
+  return await listen('navigate-to-settings', () => { callback(); });
 }
 
 /**
@@ -209,10 +209,10 @@ export async function onNavigateToSettings(callback: () => void): Promise<() => 
  */
 export async function onShowAboutDialog(callback: () => void): Promise<() => void> {
   if (!isTauri()) {
-    return () => { };
+    return () => { /* no-op */ };
   }
 
-  return await listen('show-about-dialog', () => callback());
+  return await listen('show-about-dialog', () => { callback(); });
 }
 
 /**
@@ -220,10 +220,10 @@ export async function onShowAboutDialog(callback: () => void): Promise<() => voi
  */
 export async function onCreateNewNote(callback: () => void): Promise<() => void> {
   if (!isTauri()) {
-    return () => { };
+    return () => { /* no-op */ };
   }
 
-  return await listen('create-new-note', () => callback());
+  return await listen('create-new-note', () => { callback(); });
 }
 
 /**
@@ -231,10 +231,10 @@ export async function onCreateNewNote(callback: () => void): Promise<() => void>
  */
 export async function onCreateNewChat(callback: () => void): Promise<() => void> {
   if (!isTauri()) {
-    return () => { };
+    return () => { /* no-op */ };
   }
 
-  return await listen('create-new-chat', () => callback());
+  return await listen('create-new-chat', () => { callback(); });
 }
 
 /**
@@ -242,10 +242,10 @@ export async function onCreateNewChat(callback: () => void): Promise<() => void>
  */
 export async function onOpenDocumentation(callback: () => void): Promise<() => void> {
   if (!isTauri()) {
-    return () => { };
+    return () => { /* no-op */ };
   }
 
-  return await listen('open-documentation', () => callback());
+  return await listen('open-documentation', () => { callback(); });
 }
 
 /**
@@ -253,10 +253,10 @@ export async function onOpenDocumentation(callback: () => void): Promise<() => v
  */
 export async function onOpenReportIssue(callback: () => void): Promise<() => void> {
   if (!isTauri()) {
-    return () => { };
+    return () => { /* no-op */ };
   }
 
-  return await listen('open-report-issue', () => callback());
+  return await listen('open-report-issue', () => { callback(); });
 }
 
 /**
@@ -272,14 +272,14 @@ export type TauriEvent =
   | 'open-documentation'
   | 'open-report-issue';
 
-export async function onTauriEvent<T = unknown>(
+export async function onTauriEvent(
   event: TauriEvent,
-  callback: (payload: T) => void
+  callback: (payload: unknown) => void
 ): Promise<() => void> {
   if (!isTauri()) {
-    return () => { };
+    return () => { /* no-op */ };
   }
 
-  return await listen(event, (e) => callback(e.payload as T));
+  return await listen(event, (e) => { callback(e.payload as T); });
 }
 

@@ -95,7 +95,7 @@ export function ChatImageSettingsBar({
         </label>
         <select
           value={size}
-          onChange={(e) => onSizeChange(e.target.value)}
+          onChange={(e) => { onSizeChange(e.target.value); }}
           disabled={disabled}
           className="px-2.5 py-1.5 rounded-lg text-xs outline-none cursor-pointer"
           style={{
@@ -120,7 +120,7 @@ export function ChatImageSettingsBar({
           </label>
           <select
             value={quality}
-            onChange={(e) => onQualityChange(e.target.value)}
+            onChange={(e) => { onQualityChange(e.target.value); }}
             disabled={disabled}
             className="px-2.5 py-1.5 rounded-lg text-xs outline-none cursor-pointer"
             style={{
@@ -146,7 +146,7 @@ export function ChatImageSettingsBar({
           </label>
           <select
             value={style}
-            onChange={(e) => onStyleChange(e.target.value)}
+            onChange={(e) => { onStyleChange(e.target.value); }}
             disabled={disabled}
             className="px-2.5 py-1.5 rounded-lg text-xs outline-none cursor-pointer"
             style={{

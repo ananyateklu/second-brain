@@ -51,13 +51,13 @@ export function ChatInputTextArea({ placeholder }: ChatInputTextAreaProps) {
         accept={getAllSupportedExtensions().join(',')}
         multiple
         className="hidden"
-        onChange={(e) => onFileSelect(e.target.files)}
+        onChange={(e) => { onFileSelect(e.target.files); }}
       />
 
       <textarea
         ref={textareaRef}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => { onChange(e.target.value); }}
         onKeyDown={handleKeyDown}
         onPaste={!isImageGenerationMode ? handlePaste : undefined}
         placeholder={placeholder || defaultPlaceholder}

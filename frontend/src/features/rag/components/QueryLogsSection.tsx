@@ -21,7 +21,7 @@ interface QueryLogsSectionProps {
   setPage: (value: number) => void;
 }
 
-export const QueryLogsSection = memo(function QueryLogsSection({
+export const QueryLogsSection = memo(({
   logsResponse,
   logsLoading,
   page,
@@ -29,7 +29,7 @@ export const QueryLogsSection = memo(function QueryLogsSection({
   feedbackOnly,
   setFeedbackOnly,
   setPage,
-}: QueryLogsSectionProps) {
+}: QueryLogsSectionProps) => {
   return (
     <div className="flex flex-col min-h-full gap-4 overflow-visible">
       {/* Query Logs Table - Takes remaining space */}

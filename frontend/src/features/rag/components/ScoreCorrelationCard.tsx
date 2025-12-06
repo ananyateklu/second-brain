@@ -18,13 +18,13 @@ interface CorrelationBarProps {
   gradientColors: [string, string];
 }
 
-const CorrelationBar = memo(function CorrelationBar({
+const CorrelationBar = memo(({
   label,
   value,
   avgScore,
   description,
   gradientColors,
-}: CorrelationBarProps) {
+}: CorrelationBarProps) => {
   const hasData = value !== null;
   const correlation = value ?? 0;
 
@@ -115,7 +115,7 @@ const CorrelationBar = memo(function CorrelationBar({
   );
 });
 
-export const ScoreCorrelationCard = memo(function ScoreCorrelationCard({ stats }: ScoreCorrelationCardProps) {
+export const ScoreCorrelationCard = memo(({ stats }: ScoreCorrelationCardProps) => {
   const hasEnoughData = stats.queriesWithFeedback >= 10;
 
   return (

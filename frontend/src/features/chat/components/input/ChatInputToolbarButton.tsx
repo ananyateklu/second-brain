@@ -119,7 +119,7 @@ export function ChatInputSmartPromptsButton() {
 
   return (
     <ToolbarButton
-      onClick={() => onToggleSmartPrompts(true)}
+      onClick={() => { onToggleSmartPrompts(true); }}
       title="Show smart prompts"
       icon={<SparkleIcon />}
     />

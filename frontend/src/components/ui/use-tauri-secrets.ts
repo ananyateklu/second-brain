@@ -36,7 +36,7 @@ export function useTauriSecrets() {
   }, []);
 
   useEffect(() => {
-    loadSecrets();
+    void loadSecrets();
   }, [loadSecrets]);
 
   const isProviderConfigured = useCallback((providerId: string): boolean => {

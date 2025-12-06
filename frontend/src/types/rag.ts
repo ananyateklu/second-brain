@@ -23,7 +23,7 @@ export type IndexingStatus = 'pending' | 'processing' | 'completed' | 'failed';
  */
 export interface IndexingJobResponse {
   id: string;
-  status: IndexingStatus | string;
+  status: IndexingStatus;
   totalNotes: number;
   processedNotes: number;
   skippedNotes: number;

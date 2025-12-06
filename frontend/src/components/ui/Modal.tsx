@@ -47,7 +47,7 @@ export function Modal({ isOpen, onClose, title, children, icon, maxWidth = 'max-
           backgroundColor: 'var(--surface-card)',
           borderColor: 'var(--border)',
         }}
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => { e.stopPropagation(); }}
       >
         {/* Header */}
         <div

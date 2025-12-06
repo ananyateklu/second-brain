@@ -19,13 +19,13 @@ interface NoteListProps {
  * NoteList - Standard note list component without virtualization.
  * For large lists (50+ notes), consider using VirtualizedNoteList instead.
  */
-export const NoteList = memo(function NoteList({
+export const NoteList = memo(({
   notes,
   viewMode = 'card',
   isBulkMode = false,
   selectedNoteIds,
   onNoteSelect,
-}: NoteListProps) {
+}: NoteListProps) => {
   if (viewMode === 'list') {
     return (
       <div className="flex flex-col gap-2">

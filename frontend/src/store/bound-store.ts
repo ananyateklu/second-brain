@@ -60,18 +60,20 @@ const _useBoundStore = create<BoundStore>()(
       }),
       merge: (persistedState, currentState) => {
         const parsed = persistedState as Partial<BoundStore> | undefined;
-        if (!parsed) return currentState;
+        if (parsed === undefined) return currentState;
 
-        // Validate NoteView
+        // Validate NoteView - check if value exists and is valid
         const validNoteViews: NoteView[] = ['list', 'grid'];
-        const defaultNoteView: NoteView = validNoteViews.includes(parsed.defaultNoteView as NoteView)
-          ? (parsed.defaultNoteView as NoteView)
+        const parsedNoteView = parsed.defaultNoteView;
+        const defaultNoteView: NoteView = parsedNoteView !== undefined && validNoteViews.includes(parsedNoteView)
+          ? parsedNoteView
           : currentState.defaultNoteView;
 
-        // Validate FontSize
+        // Validate FontSize - check if value exists and is valid
         const validFontSizes: FontSize[] = ['small', 'medium', 'large'];
-        const fontSize: FontSize = validFontSizes.includes(parsed.fontSize as FontSize)
-          ? (parsed.fontSize as FontSize)
+        const parsedFontSize = parsed.fontSize;
+        const fontSize: FontSize = parsedFontSize !== undefined && validFontSizes.includes(parsedFontSize)
+          ? parsedFontSize
           : currentState.fontSize;
 
         // Validate VectorStoreProvider - use explicit assertion since persisted state is unknown
@@ -81,10 +83,11 @@ const _useBoundStore = create<BoundStore>()(
           vectorStoreProvider = parsedProvider;
         }
 
-        // Validate Theme
+        // Validate Theme - check if value exists and is valid
         const validThemes: Theme[] = ['light', 'dark', 'blue'];
-        const theme: Theme = validThemes.includes(parsed.theme as Theme)
-          ? (parsed.theme as Theme)
+        const parsedTheme = parsed.theme;
+        const theme: Theme = parsedTheme !== undefined && validThemes.includes(parsedTheme)
+          ? parsedTheme
           : currentState.theme;
 
         return {

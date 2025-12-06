@@ -201,7 +201,7 @@ export function NotesDirectoryPage() {
               Folders
             </h2>
             <button
-              onClick={() => setShowSidebar(false)}
+              onClick={() => { setShowSidebar(false); }}
               className="p-2 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
               style={{
                 backgroundColor: 'color-mix(in srgb, var(--surface-card) 80%, transparent)',
@@ -226,8 +226,8 @@ export function NotesDirectoryPage() {
               }}
               className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition-all duration-150"
               style={getItemStyle('all', selectedFolder === null && archiveFilter === 'all')}
-              onMouseEnter={() => setHoveredItem('all')}
-              onMouseLeave={() => setHoveredItem(null)}
+              onMouseEnter={() => { setHoveredItem('all'); }}
+              onMouseLeave={() => { setHoveredItem(null); }}
             >
               <span className="flex items-center gap-3">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -259,8 +259,8 @@ export function NotesDirectoryPage() {
               }}
               className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition-all duration-150"
               style={getItemStyle('active', selectedFolder === null && archiveFilter === 'not-archived')}
-              onMouseEnter={() => setHoveredItem('active')}
-              onMouseLeave={() => setHoveredItem(null)}
+              onMouseEnter={() => { setHoveredItem('active'); }}
+              onMouseLeave={() => { setHoveredItem(null); }}
             >
               <span className="flex items-center gap-3">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -292,8 +292,8 @@ export function NotesDirectoryPage() {
               }}
               className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition-all duration-150"
               style={getItemStyle('archived', archiveFilter === 'archived')}
-              onMouseEnter={() => setHoveredItem('archived')}
-              onMouseLeave={() => setHoveredItem(null)}
+              onMouseEnter={() => { setHoveredItem('archived'); }}
+              onMouseLeave={() => { setHoveredItem(null); }}
             >
               <span className="flex items-center gap-3">
                 <svg
@@ -336,11 +336,11 @@ export function NotesDirectoryPage() {
             {/* Unfiled */}
             {folderStats.unfiled > 0 && (
               <button
-                onClick={() => handleFolderSelect('')}
+                onClick={() => { handleFolderSelect(''); }}
                 className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition-all duration-150"
                 style={getItemStyle('unfiled', isSelected(''))}
-                onMouseEnter={() => setHoveredItem('unfiled')}
-                onMouseLeave={() => setHoveredItem(null)}
+                onMouseEnter={() => { setHoveredItem('unfiled'); }}
+                onMouseLeave={() => { setHoveredItem(null); }}
               >
                 <span className="flex items-center gap-3">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -377,11 +377,11 @@ export function NotesDirectoryPage() {
                 {folderList.map((folder) => (
                   <button
                     key={folder}
-                    onClick={() => handleFolderSelect(folder)}
+                    onClick={() => { handleFolderSelect(folder); }}
                     className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition-all duration-150"
                     style={getItemStyle(`folder-${folder}`, isSelected(folder))}
-                    onMouseEnter={() => setHoveredItem(`folder-${folder}`)}
-                    onMouseLeave={() => setHoveredItem(null)}
+                    onMouseEnter={() => { setHoveredItem(`folder-${folder}`); }}
+                    onMouseLeave={() => { setHoveredItem(null); }}
                   >
                     <span className="flex items-center gap-3 truncate">
                       <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -421,7 +421,7 @@ export function NotesDirectoryPage() {
           <div className="flex items-center gap-3">
             {!showSidebar && (
               <button
-                onClick={() => setShowSidebar(true)}
+                onClick={() => { setShowSidebar(true); }}
                 className="p-2 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
                 style={{
                   backgroundColor: 'color-mix(in srgb, var(--surface-card) 80%, transparent)',

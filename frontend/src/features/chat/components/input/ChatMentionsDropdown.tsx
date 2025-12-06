@@ -27,7 +27,7 @@ export function ChatMentionsDropdown({
 
   const notes = propNotes ?? contextValue?.filteredNotes ?? [];
   const selectedIndex = propSelectedIndex ?? contextValue?.mentionIndex ?? 0;
-  const onSelect = propOnSelect ?? contextValue?.onMentionSelect ?? (() => { });
+  const onSelect = propOnSelect ?? contextValue?.onMentionSelect ?? (() => { /* no-op */ });
   const showMentions = contextValue?.showMentions ?? true;
 
   if (notes.length === 0 || !showMentions) return null;
@@ -50,7 +50,7 @@ export function ChatMentionsDropdown({
       {notes.map((note, index) => (
         <button
           key={note.id}
-          onClick={() => onSelect(note)}
+          onClick={() => { onSelect(note); }}
           className={`w-full px-3 py-2.5 text-left text-sm transition-colors flex items-center gap-2 ${index === selectedIndex ? 'bg-white/10' : ''
             }`}
           style={{

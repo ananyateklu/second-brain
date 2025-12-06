@@ -132,7 +132,7 @@ export function NoteVersionHistoryPanel({
           noteId={noteId}
           fromVersion={selectedVersions[0]}
           toVersion={selectedVersions[1]}
-          onClose={() => setShowDiff(false)}
+          onClose={() => { setShowDiff(false); }}
         />
       )}
     </>

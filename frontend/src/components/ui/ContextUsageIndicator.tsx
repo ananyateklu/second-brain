@@ -49,7 +49,7 @@ export function ContextUsageIndicator({
     }
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => { document.removeEventListener('mousedown', handleClickOutside); };
   }, []);
 
   // Color scheme based on warning level - using theme CSS variables
@@ -140,7 +140,7 @@ export function ContextUsageIndicator({
       {/* Main indicator button */}
       <button
         ref={buttonRef}
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={() => { setIsExpanded(!isExpanded); }}
         className="flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-300 border backdrop-blur-sm hover:scale-[1.02] active:scale-[0.98]"
         style={{
           backgroundColor: isExpanded ? 'var(--surface-elevated)' : 'var(--surface-card)',

@@ -25,7 +25,7 @@ export function PieChartTooltip({
   totalConversations,
   totalTokens,
 }: PieChartTooltipProps) {
-  if (!active || !payload || !payload.length) return null;
+  if (!active || !payload?.length) return null;
 
   const data = payload[0];
   const modelName = data.name || label || '';

@@ -304,7 +304,9 @@ describe('NoteCard', () => {
       );
 
       const card = screen.getByText('Test Note Title').closest('div[class*="cursor-pointer"]');
-      fireEvent.click(card!);
+      if (card) {
+        fireEvent.click(card);
+      }
 
       // Assert
       expect(onSelect).toHaveBeenCalledWith('note-1');

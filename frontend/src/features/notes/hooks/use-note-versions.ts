@@ -115,9 +115,9 @@ export function useRestoreNoteVersion() {
       },
       onSettled: (_data, _error, { noteId }) => {
         // Invalidate related queries to refetch fresh data
-        queryClient.invalidateQueries({ queryKey: noteVersionKeys.history(noteId) });
-        queryClient.invalidateQueries({ queryKey: noteKeys.detail(noteId) });
-        queryClient.invalidateQueries({ queryKey: noteKeys.all });
+        void queryClient.invalidateQueries({ queryKey: noteVersionKeys.history(noteId) });
+        void queryClient.invalidateQueries({ queryKey: noteKeys.detail(noteId) });
+        void queryClient.invalidateQueries({ queryKey: noteKeys.all });
       },
     }
   );
@@ -131,7 +131,7 @@ export function usePrefetchVersionHistory() {
   const queryClient = useQueryClient();
 
   return (noteId: string) => {
-    queryClient.prefetchQuery({
+    void queryClient.prefetchQuery({
       queryKey: noteVersionKeys.history(noteId),
       queryFn: () => notesService.getVersionHistory(noteId),
       staleTime: 1000 * 60 * 5, // 5 minutes
@@ -147,9 +147,9 @@ export function useInvalidateVersionQueries() {
   const queryClient = useQueryClient();
 
   return (noteId: string) => {
-    queryClient.invalidateQueries({ queryKey: noteVersionKeys.history(noteId) });
+    void queryClient.invalidateQueries({ queryKey: noteVersionKeys.history(noteId) });
     // Also invalidate any diff queries for this note
-    queryClient.invalidateQueries({
+    void queryClient.invalidateQueries({
       predicate: (query) => {
         const key = query.queryKey;
         return (

@@ -99,7 +99,7 @@ export const statsService = {
    */
   convertToolCallsToChartData(
     dailyCalls: Record<string, number>,
-    days: number = 30
+    days = 30
   ): ChartDataPoint[] {
     return this.convertToChartData(dailyCalls, days);
   },
@@ -109,7 +109,7 @@ export const statsService = {
    */
   convertSuccessRatesToChartData(
     dailyRates: Record<string, number>,
-    days: number = 30
+    days = 30
   ): ChartDataPoint[] {
     const result: ChartDataPoint[] = [];
     const today = new Date();
@@ -163,7 +163,7 @@ export const statsService = {
    */
   convertToChartData(
     dailyCounts: Record<string, number>,
-    days: number = 30
+    days = 30
   ): ChartDataPoint[] {
     const result: ChartDataPoint[] = [];
     const today = new Date();
@@ -253,14 +253,14 @@ export const statsService = {
   /**
    * Get top N providers by usage
    */
-  getTopProviders(stats: AIUsageStats, limit: number = 5): PieChartData[] {
+  getTopProviders(stats: AIUsageStats, limit = 5): PieChartData[] {
     return this.convertProviderUsageToPieData(stats.providerUsageCounts).slice(0, limit);
   },
 
   /**
    * Get top N models by usage
    */
-  getTopModels(stats: AIUsageStats, limit: number = 5): ModelUsageData[] {
+  getTopModels(stats: AIUsageStats, limit = 5): ModelUsageData[] {
     return this.convertModelUsageToData(
       stats.modelUsageCounts,
       stats.modelTokenUsageCounts
@@ -343,7 +343,7 @@ export const statsService = {
   /**
    * Format percentage for display
    */
-  formatPercentage(value: number, decimals: number = 1): string {
+  formatPercentage(value: number, decimals = 1): string {
     return `${value.toFixed(decimals)}%`;
   },
 

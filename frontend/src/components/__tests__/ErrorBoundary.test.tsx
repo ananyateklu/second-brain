@@ -111,7 +111,9 @@ describe('ErrorBoundary', () => {
             expect(onError).toHaveBeenCalledTimes(1);
             expect(onError).toHaveBeenCalledWith(
                 expect.objectContaining({ message: 'Test error' }),
-                expect.objectContaining({ componentStack: expect.any(String) })
+                expect.objectContaining({ 
+                    componentStack: expect.any(String) as string 
+                })
             );
         });
 

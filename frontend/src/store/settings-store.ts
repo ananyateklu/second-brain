@@ -19,11 +19,11 @@ const createStoreProxy = (): BoundStoreType => {
     },
     get(_target, prop: string | symbol) {
       const store = getStore();
-      return Reflect.get(store, prop);
+      return Reflect.get(store, prop) as unknown;
     },
   };
 
-  return new Proxy((() => { }) as unknown as BoundStoreType, handler);
+  return new Proxy((() => { /* no-op */ }) as unknown as BoundStoreType, handler);
 };
 
 // Re-export the combined store as useSettingsStore for backward compatibility

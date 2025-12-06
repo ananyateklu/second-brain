@@ -70,7 +70,7 @@ export function RagSettingsPopover({
           role="switch"
           aria-checked={ragEnabled}
           disabled={disabled}
-          onClick={() => onRagToggle(!ragEnabled)}
+          onClick={() => { onRagToggle(!ragEnabled); }}
           className={`
             relative inline-flex h-5 w-9 items-center rounded-full transition-all duration-200 flex-shrink-0
             ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-md'}
@@ -105,7 +105,7 @@ export function RagSettingsPopover({
             <button
               type="button"
               disabled={disabled}
-              onClick={() => onVectorStoreChange('PostgreSQL')}
+              onClick={() => { onVectorStoreChange('PostgreSQL'); }}
               className={`
                 flex-1 px-2.5 py-2 rounded-xl text-xs font-medium transition-all duration-200 border
                 ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-[1.02] active:scale-[0.98]'}
@@ -141,7 +141,7 @@ export function RagSettingsPopover({
             <button
               type="button"
               disabled={disabled}
-              onClick={() => onVectorStoreChange('Pinecone')}
+              onClick={() => { onVectorStoreChange('Pinecone'); }}
               className={`
                 flex-1 px-2.5 py-2 rounded-xl text-xs font-medium transition-all duration-200 border
                 ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-[1.02] active:scale-[0.98]'}

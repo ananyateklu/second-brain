@@ -83,9 +83,9 @@ function ChatInputAreaInner() {
           <ImageGenerationPanel
             conversationId={conversationId}
             isGenerating={isGeneratingImage}
-            onGenerateStart={() => { }}
-            onGenerateComplete={() => onToggleImageGenPanel(false)}
-            onClose={() => onToggleImageGenPanel(false)}
+            onGenerateStart={() => { /* no-op */ }}
+            onGenerateComplete={() => { onToggleImageGenPanel(false); }}
+            onClose={() => { onToggleImageGenPanel(false); }}
             initialPrompt={value}
           />
         </div>

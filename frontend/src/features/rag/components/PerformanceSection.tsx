@@ -13,9 +13,9 @@ interface PerformanceSectionProps {
   stats: RagPerformanceStats;
 }
 
-export const PerformanceSection = memo(function PerformanceSection({
+export const PerformanceSection = memo(({
   stats,
-}: PerformanceSectionProps) {
+}: PerformanceSectionProps) => {
   return (
     <div className="flex flex-col min-h-full gap-4 overflow-visible">
       {/* Stats Cards - 2x2 Grid */}

@@ -30,7 +30,7 @@ export function ChatAttachmentGallery({
   const contextValue = useChatInputContextSafe();
 
   const files = propFiles ?? contextValue?.attachedFiles ?? [];
-  const onRemoveFile = propOnRemoveFile ?? contextValue?.onRemoveFile ?? (() => { });
+  const onRemoveFile = propOnRemoveFile ?? contextValue?.onRemoveFile ?? (() => { /* no-op */ });
   const onAddMore = propOnAddMore ?? (() => contextValue?.fileInputRef.current?.click());
   const onImageClick = propOnImageClick ?? contextValue?.onLightboxOpen;
   const isImageGenerationMode = contextValue?.isImageGenerationMode ?? false;

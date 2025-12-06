@@ -9,6 +9,8 @@ export interface BackendReadyContextValue {
 export const BackendReadyContext = createContext<BackendReadyContextValue>({
     isReady: false,
     error: null,
-    retry: () => { },
+    retry: () => {
+        // Default no-op implementation
+    },
 });
 

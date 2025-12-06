@@ -100,7 +100,7 @@ self.onmessage = (event: MessageEvent<TokenCountMessage | BatchTokenCountMessage
   const { type, id } = event.data;
 
   if (type === 'count') {
-    const { text, model } = event.data as TokenCountMessage;
+    const { text, model } = event.data;
     const tokens = estimateTokens(text, model);
     const response: TokenCountResponse = {
       type: 'counted',
@@ -111,7 +111,7 @@ self.onmessage = (event: MessageEvent<TokenCountMessage | BatchTokenCountMessage
     };
     self.postMessage(response);
   } else if (type === 'countBatch') {
-    const { texts, model } = event.data as BatchTokenCountMessage;
+    const { texts, model } = event.data;
     const counts = texts.map((text) => estimateTokens(text, model));
     const response: BatchTokenCountResponse = {
       type: 'batchCounted',

@@ -18,7 +18,7 @@ interface QueryLogsTableProps {
   setFeedbackOnly: (value: boolean) => void;
 }
 
-const FeedbackBadge = memo(function FeedbackBadge({ feedback }: { feedback: RagFeedbackType | null }) {
+const FeedbackBadge = memo(({ feedback }: { feedback: RagFeedbackType | null }) => {
   if (!feedback) {
     return (
       <span
@@ -70,7 +70,7 @@ function truncateQuery(query: string, maxLength = 60): string {
   return query.substring(0, maxLength) + '...';
 }
 
-const FeatureBadge = memo(function FeatureBadge({ label }: { label: string }) {
+const FeatureBadge = memo(({ label }: { label: string }) => {
   return (
     <span
       className="text-xs px-2 py-0.5 rounded-md font-medium"
@@ -85,7 +85,7 @@ const FeatureBadge = memo(function FeatureBadge({ label }: { label: string }) {
   );
 });
 
-export const QueryLogsTable = memo(function QueryLogsTable({
+export const QueryLogsTable = memo(({
   logs,
   totalCount,
   page,
@@ -95,7 +95,7 @@ export const QueryLogsTable = memo(function QueryLogsTable({
   isLoading,
   feedbackOnly,
   setFeedbackOnly,
-}: QueryLogsTableProps) {
+}: QueryLogsTableProps) => {
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
   return (
@@ -329,7 +329,7 @@ export const QueryLogsTable = memo(function QueryLogsTable({
                         ? 'color-mix(in srgb, var(--surface-elevated) 50%, transparent)'
                         : 'transparent',
                     }}
-                    onClick={() => setExpandedRow(expandedRow === log.id ? null : log.id)}
+                    onClick={() => { setExpandedRow(expandedRow === log.id ? null : log.id); }}
                     onMouseEnter={(e) => {
                       if (expandedRow !== log.id) {
                         e.currentTarget.style.backgroundColor = 'color-mix(in srgb, var(--surface-elevated) 30%, transparent)';
@@ -533,7 +533,7 @@ export const QueryLogsTable = memo(function QueryLogsTable({
           </p>
           <div className="flex gap-2">
             <button
-              onClick={() => onPageChange(page - 1)}
+              onClick={() => { onPageChange(page - 1); }}
               disabled={page <= 1}
               className="px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98]"
               style={{
@@ -562,7 +562,7 @@ export const QueryLogsTable = memo(function QueryLogsTable({
                 return (
                   <button
                     key={pageNum}
-                    onClick={() => onPageChange(pageNum)}
+                    onClick={() => { onPageChange(pageNum); }}
                     className="w-9 h-9 text-sm font-medium rounded-lg transition-all duration-200 hover:scale-[1.05]"
                     style={{
                       backgroundColor: page === pageNum ? 'var(--color-brand-500)' : 'transparent',
@@ -576,7 +576,7 @@ export const QueryLogsTable = memo(function QueryLogsTable({
             </div>
 
             <button
-              onClick={() => onPageChange(page + 1)}
+              onClick={() => { onPageChange(page + 1); }}
               disabled={page >= totalPages}
               className="px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98]"
               style={{

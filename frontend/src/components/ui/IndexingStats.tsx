@@ -244,7 +244,7 @@ function StatsCard({ title, stats, userId, vectorStoreProvider, isIndexing }: { 
             {stats.totalEmbeddings > 0 && (
               <button
                 type="button"
-                onClick={handleDelete}
+                onClick={(e) => { void handleDelete(e); }}
                 disabled={deleteIndexedNotesMutation.isPending}
                 className="flex items-center justify-center w-6 h-6 rounded-md transition-all duration-200 hover:bg-opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1"
                 style={{
@@ -637,7 +637,7 @@ export function IndexingStats({ userId = 'default-user' }: IndexingStatsProps) {
                 </p>
                 <button
                   type="button"
-                  onClick={() => setShowPineconeSetup(true)}
+                  onClick={() => { setShowPineconeSetup(true); }}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:scale-[1.02] active:scale-[0.98]"
                   style={{
                     backgroundColor: 'var(--color-brand-600)',
@@ -666,9 +666,9 @@ export function IndexingStats({ userId = 'default-user' }: IndexingStatsProps) {
       {/* Pinecone Setup Modal */}
       <TauriPineconeSetupModal
         isOpen={showPineconeSetup}
-        onClose={() => setShowPineconeSetup(false)}
+        onClose={() => { setShowPineconeSetup(false); }}
         onSaveSuccess={() => {
-          refetchPineconeConfig();
+          void refetchPineconeConfig();
         }}
       />
     </>

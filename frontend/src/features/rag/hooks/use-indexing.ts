@@ -2,7 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import { ragService } from '../../../services';
 import { IndexingJobResponse, IndexStatsResponse, VectorStoreProvider, EmbeddingProvider } from '../../../types/rag';
-import { QUERY_KEYS } from '../../../lib/constants';
+import { indexingKeys } from '../../../lib/query-keys';
 import { useApiQuery, useConditionalQuery } from '../../../hooks/use-api-query';
 import { useApiMutation } from '../../../hooks/use-api-mutation';
 
@@ -26,11 +26,11 @@ export const useStartIndexing = () => {
     {
       onSuccess: (job, variables) => {
         // Invalidate stats query for the specific user to refresh after indexing starts
-        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.indexing.stats(variables.userId) });
+        void queryClient.invalidateQueries({ queryKey: indexingKeys.stats(variables.userId) });
 
         // Set up cleanup for when job completes
         const cleanup = setInterval(() => {
-          const jobData = queryClient.getQueryData<IndexingJobResponse>(QUERY_KEYS.indexing.job(job.id));
+          const jobData = queryClient.getQueryData<IndexingJobResponse>(indexingKeys.job(job.id));
           if (jobData && (jobData.status === 'completed' || jobData.status === 'partially_completed' || jobData.status === 'failed')) {
             localStorage.removeItem(`indexing_job_${job.id}`);
             clearInterval(cleanup);
@@ -47,11 +47,14 @@ export const useStartIndexing = () => {
   );
 };
 
-export const useIndexingStatus = (jobId: string | null, enabled: boolean = true) => {
+export const useIndexingStatus = (jobId: string | null, enabled = true) => {
   return useConditionalQuery<IndexingJobResponse>(
     enabled && !!jobId,
-    QUERY_KEYS.indexing.job(jobId || ''),
-    () => ragService.getIndexingStatus(jobId!),
+    indexingKeys.job(jobId || ''),
+    () => {
+      if (!jobId) throw new Error('Job ID is required');
+      return ragService.getIndexingStatus(jobId);
+    },
     {
       refetchInterval: (query) => {
         const data = query.state.data;
@@ -73,9 +76,9 @@ export const useIndexingStatus = (jobId: string | null, enabled: boolean = true)
   );
 };
 
-export const useIndexStats = (userId: string = 'default-user') => {
+export const useIndexStats = (userId = 'default-user') => {
   return useApiQuery<IndexStatsResponse>(
-    QUERY_KEYS.indexing.stats(userId),
+    indexingKeys.stats(userId),
     () => ragService.getIndexStats(userId),
     {
       staleTime: 30000, // Consider data fresh for 30 seconds
@@ -84,10 +87,10 @@ export const useIndexStats = (userId: string = 'default-user') => {
 };
 
 export const useReindexNote = () => {
-  return useApiMutation<void, string>(
+  return useApiMutation<unknown, string>(
     (noteId) => ragService.reindexNote(noteId),
     {
-      invalidateQueries: [QUERY_KEYS.indexing.all],
+      invalidateQueries: [indexingKeys.all],
     }
   );
 };
@@ -95,12 +98,12 @@ export const useReindexNote = () => {
 export const useDeleteIndexedNotes = () => {
   const queryClient = useQueryClient();
 
-  return useApiMutation<void, { userId: string; vectorStoreProvider: VectorStoreProvider }>(
+  return useApiMutation<unknown, { userId: string; vectorStoreProvider: VectorStoreProvider }>(
     ({ vectorStoreProvider }) => ragService.deleteIndexedNotes(vectorStoreProvider),
     {
       onSuccess: (_, variables) => {
         // Invalidate stats query for the specific user to refresh after deletion
-        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.indexing.stats(variables.userId) });
+        void queryClient.invalidateQueries({ queryKey: indexingKeys.stats(variables.userId) });
       },
     }
   );
@@ -132,8 +135,14 @@ export const useActiveIndexingVectorStores = (): Set<VectorStoreProvider> => {
             const storedJob = localStorage.getItem(`indexing_job_${jobId}`);
             if (storedJob) {
               try {
-                const { vectorStoreProvider } = JSON.parse(storedJob);
-                if (vectorStoreProvider) {
+                const parsed: unknown = JSON.parse(storedJob);
+                if (
+                  typeof parsed === 'object' &&
+                  parsed !== null &&
+                  'vectorStoreProvider' in parsed &&
+                  typeof (parsed as { vectorStoreProvider: unknown }).vectorStoreProvider === 'string'
+                ) {
+                  const { vectorStoreProvider } = parsed as { vectorStoreProvider: string };
                   if (vectorStoreProvider === 'Both') {
                     vectorStores.add('PostgreSQL');
                     vectorStores.add('Pinecone');
@@ -161,7 +170,7 @@ export const useActiveIndexingVectorStores = (): Set<VectorStoreProvider> => {
     // Set up interval to check for active jobs every second
     const interval = setInterval(checkActiveJobs, 1000);
 
-    return () => clearInterval(interval);
+    return () => { clearInterval(interval); };
   }, [queryClient]);
 
   return activeVectorStores;

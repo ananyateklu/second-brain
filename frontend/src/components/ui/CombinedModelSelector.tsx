@@ -74,7 +74,7 @@ export function CombinedModelSelector({
   const groupedModels = useMemo(() => groupModelsByCategory(availableModels), [availableModels]);
 
   const flatModelList = useMemo(() => {
-    const flat: Array<{ type: 'model' | 'header'; value: string; category?: string }> = [];
+    const flat: { type: 'model' | 'header'; value: string; category?: string }[] = [];
     groupedModels.forEach(group => {
       flat.push({ type: 'header', value: group.displayName, category: group.category });
       group.models.forEach(model => {
@@ -108,7 +108,7 @@ export function CombinedModelSelector({
 
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+      return () => { document.removeEventListener('mousedown', handleClickOutside); };
     }
   }, [isOpen]);
 
@@ -138,7 +138,7 @@ export function CombinedModelSelector({
           }
         }
 
-        let newIndex: number = -1;
+        let newIndex = -1;
         if (e.key === 'ArrowDown') {
           for (let i = currentModelIndex + 1; i < flatModelList.length; i++) {
             if (flatModelList[i].type === 'model') {
@@ -178,7 +178,7 @@ export function CombinedModelSelector({
 
       if (e.key === 'Enter' && focusedIndex !== null) {
         const item = flatModelList[focusedIndex];
-        if (item && item.type === 'model') {
+        if (item?.type === 'model') {
           e.preventDefault();
           onModelChange(item.value);
           setIsOpen(false);
@@ -189,7 +189,7 @@ export function CombinedModelSelector({
     };
 
     document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    return () => { document.removeEventListener('keydown', handleKeyDown); };
   }, [isOpen, focusedIndex, flatModelList, selectedModel, onModelChange]);
 
   const handleProviderSelect = (provider: string) => {
@@ -293,7 +293,7 @@ export function CombinedModelSelector({
           {/* Backdrop */}
           <div
             className="fixed inset-0 z-40"
-            onClick={() => setIsOpen(false)}
+            onClick={() => { setIsOpen(false); }}
             style={{ backgroundColor: 'rgba(0, 0, 0, 0.2)' }}
           />
 
@@ -324,7 +324,7 @@ export function CombinedModelSelector({
                   <button
                     key={provider.provider}
                     type="button"
-                    onClick={() => handleProviderSelect(provider.provider)}
+                    onClick={() => { handleProviderSelect(provider.provider); }}
                     className="flex-1 px-3 py-2.5 text-sm font-medium transition-all duration-200 relative"
                     style={{
                       color: isSelected ? 'var(--color-brand-400)' : 'var(--text-secondary)',
@@ -402,8 +402,8 @@ export function CombinedModelSelector({
                           key={model}
                           ref={isSelected ? selectedModelRef : null}
                           type="button"
-                          onClick={() => handleModelSelect(model)}
-                          onMouseEnter={() => setFocusedIndex(flatIndex)}
+                          onClick={() => { handleModelSelect(model); }}
+                          onMouseEnter={() => { setFocusedIndex(flatIndex); }}
                           className="w-full text-left px-4 py-2.5 transition-colors duration-150 text-sm"
                           style={{
                             backgroundColor: isFocused

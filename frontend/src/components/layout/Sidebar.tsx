@@ -31,7 +31,7 @@ export function Sidebar() {
   const prefetchRouteData = useCallback((route: string) => {
     switch (route) {
       case 'dashboard':
-        queryClient.prefetchQuery({
+        void queryClient.prefetchQuery({
           queryKey: statsKeys.ai(),
           queryFn: () => statsService.getAIStats(),
           staleTime: CACHE.STALE_TIME,
@@ -39,14 +39,14 @@ export function Sidebar() {
         break;
       case 'notes':
       case 'directory':
-        queryClient.prefetchQuery({
+        void queryClient.prefetchQuery({
           queryKey: noteKeys.all,
           queryFn: () => notesService.getAll(),
           staleTime: CACHE.STALE_TIME,
         });
         break;
       case 'chat':
-        queryClient.prefetchQuery({
+        void queryClient.prefetchQuery({
           queryKey: conversationKeys.all,
           queryFn: () => chatService.getConversations(),
           staleTime: CACHE.STALE_TIME,

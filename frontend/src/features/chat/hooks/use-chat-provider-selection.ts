@@ -45,7 +45,7 @@ export function useChatProviderSelection(): ProviderSelectionState & ProviderSel
   // Load preferences from backend on mount
   useEffect(() => {
     if (user?.userId) {
-      loadPreferencesFromBackend(user.userId);
+      void loadPreferencesFromBackend(user.userId);
     }
   }, [user?.userId, loadPreferencesFromBackend]);
 
@@ -72,7 +72,7 @@ export function useChatProviderSelection(): ProviderSelectionState & ProviderSel
   const availableProviders = useMemo(() => (
     Array.isArray(healthData?.providers)
       ? healthData.providers
-        .filter((p) => p && p.isHealthy)
+        .filter((p) => p?.isHealthy)
         .map((p) => ({
           ...p,
           provider: typeof p.provider === 'string' ? p.provider : String(p.provider || ''),

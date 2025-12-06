@@ -111,7 +111,7 @@ export const aiService = {
       }
     };
 
-    startPull();
+    void startPull();
     return abortController;
   },
 

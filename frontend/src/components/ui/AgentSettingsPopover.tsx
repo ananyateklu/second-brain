@@ -84,7 +84,7 @@ export function AgentSettingsPopover({
           role="switch"
           aria-checked={agentEnabled}
           disabled={disabled}
-          onClick={() => onAgentToggle(!agentEnabled)}
+          onClick={() => { onAgentToggle(!agentEnabled); }}
           className={`
             relative inline-flex h-5 w-9 items-center rounded-full transition-all duration-200 flex-shrink-0
             ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:shadow-md'}
@@ -165,7 +165,7 @@ export function AgentSettingsPopover({
               role="switch"
               aria-checked={agentRagEnabled}
               disabled={disabled}
-              onClick={() => onAgentRagToggle(!agentRagEnabled)}
+              onClick={() => { onAgentRagToggle(!agentRagEnabled); }}
               className={`
                 relative inline-flex h-4.5 w-8 items-center rounded-full transition-all duration-200 flex-shrink-0
                 ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
@@ -242,7 +242,7 @@ export function AgentSettingsPopover({
                 role="switch"
                 aria-checked={capability.enabled}
                 disabled={disabled}
-                onClick={() => capability.onChange(!capability.enabled)}
+                onClick={() => { capability.onChange(!capability.enabled); }}
                 className={`
                   relative inline-flex h-4.5 w-8 items-center rounded-full transition-all duration-200 flex-shrink-0
                   ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}

@@ -20,7 +20,20 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "noUncheckedSideEffectImports": true,
+    
+    /* Additional Checks (balanced) */
+    "noImplicitReturns": true,
+    "noImplicitOverride": true,
+    "forceConsistentCasingInFileNames": true,
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false
+    
+    /* REMOVED (too strict for now):
+     * - noPropertyAccessFromIndexSignature: conflicts with ESLint dot-notation
+     * - noUncheckedIndexedAccess: adds undefined to all array accesses
+     * - exactOptionalPropertyTypes: complicates React props
+     */
   },
   "include": ["src"]
 }

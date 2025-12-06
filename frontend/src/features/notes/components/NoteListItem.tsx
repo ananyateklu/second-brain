@@ -15,13 +15,13 @@ interface NoteListItemProps {
 }
 
 
-export const NoteListItem = memo(function NoteListItem({
+export const NoteListItem = memo(({
   note,
   showDeleteButton = true,
   isBulkMode = false,
   isSelected = false,
   onSelect,
-}: NoteListItemProps) {
+}: NoteListItemProps) => {
   const openEditModal = useUIStore((state) => state.openEditModal);
   const deleteNoteMutation = useDeleteNote();
   const [isHovered, setIsHovered] = useState(false);
@@ -108,8 +108,8 @@ export const NoteListItem = memo(function NoteListItem({
         willChange: 'transform, box-shadow',
       }}
       onClick={handleItemClick}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={() => { setIsHovered(true); }}
+      onMouseLeave={() => { setIsHovered(false); }}
     >
       <div className="flex items-center gap-4 px-4 py-3">
         {/* Bulk Selection Checkbox */}
@@ -209,7 +209,7 @@ export const NoteListItem = memo(function NoteListItem({
         {/* Delete Button */}
         {showDeleteButton && !isBulkMode && (
           <button
-            onClick={handleDelete}
+            onClick={(e) => { void handleDelete(e); }}
             className={`flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-full transition-all duration-200 ${
               isHovered ? 'opacity-100' : 'opacity-0'
             }`}

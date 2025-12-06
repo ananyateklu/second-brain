@@ -58,7 +58,7 @@ export const notesService = {
    * Delete a note
    */
   async delete(id: string): Promise<void> {
-    return apiClient.delete<void>(API_ENDPOINTS.NOTES.BY_ID(id));
+    return apiClient.delete<undefined>(API_ENDPOINTS.NOTES.BY_ID(id));
   },
 
   /**

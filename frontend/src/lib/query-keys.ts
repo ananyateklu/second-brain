@@ -388,37 +388,41 @@ type FunctionMembers<T> = {
 }[keyof T];
 
 /** Type for note query keys */
-export type NoteQueryKey = typeof noteKeys['all'] | ReturnType<FunctionMembers<typeof noteKeys>>;
+export type NoteQueryKey = typeof noteKeys['all'] | Exclude<ReturnType<FunctionMembers<typeof noteKeys>>, never>;
 
 /** Type for conversation query keys */
-export type ConversationQueryKey = typeof conversationKeys['all'] | ReturnType<FunctionMembers<typeof conversationKeys>>;
+export type ConversationQueryKey = typeof conversationKeys['all'] | Exclude<ReturnType<FunctionMembers<typeof conversationKeys>>, never>;
 
 /** Type for AI health query keys */
-export type AIHealthQueryKey = typeof aiHealthKeys['all'] | ReturnType<FunctionMembers<typeof aiHealthKeys>>;
+ 
+export type AIHealthQueryKey = typeof aiHealthKeys['all'] | ReturnType<typeof aiHealthKeys.health> | ReturnType<typeof aiHealthKeys.provider> | ReturnType<typeof aiHealthKeys.ollamaModels>;
 
 /** Type for indexing query keys */
-export type IndexingQueryKey = typeof indexingKeys['all'] | ReturnType<FunctionMembers<typeof indexingKeys>>;
+ 
+export type IndexingQueryKey = typeof indexingKeys['all'] | ReturnType<typeof indexingKeys.stats> | ReturnType<typeof indexingKeys.job> | ReturnType<typeof indexingKeys.progress>;
 
 /** Type for RAG analytics query keys */
-export type RagAnalyticsQueryKey = typeof ragAnalyticsKeys['all'] | ReturnType<FunctionMembers<typeof ragAnalyticsKeys>>;
+export type RagAnalyticsQueryKey = typeof ragAnalyticsKeys['all'] | Exclude<ReturnType<FunctionMembers<typeof ragAnalyticsKeys>>, never>;
 
 /** Type for stats query keys */
-export type StatsQueryKey = typeof statsKeys['all'] | ReturnType<FunctionMembers<typeof statsKeys>>;
+export type StatsQueryKey = typeof statsKeys['all'] | Exclude<ReturnType<FunctionMembers<typeof statsKeys>>, never>;
 
 /** Type for user preferences query keys */
-export type UserPreferencesQueryKey = typeof userPreferencesKeys['all'] | ReturnType<FunctionMembers<typeof userPreferencesKeys>>;
+ 
+export type UserPreferencesQueryKey = typeof userPreferencesKeys['all'] | ReturnType<typeof userPreferencesKeys.byUser>;
 
 /** Type for image generation query keys */
-export type ImageGenerationQueryKey = typeof imageGenerationKeys['all'] | ReturnType<FunctionMembers<typeof imageGenerationKeys>>;
+export type ImageGenerationQueryKey = typeof imageGenerationKeys['all'] | Exclude<ReturnType<FunctionMembers<typeof imageGenerationKeys>>, never>;
 
 /** Type for agent query keys */
-export type AgentQueryKey = typeof agentKeys['all'] | ReturnType<FunctionMembers<typeof agentKeys>>;
+export type AgentQueryKey = typeof agentKeys['all'] | Exclude<ReturnType<FunctionMembers<typeof agentKeys>>, never>;
 
 /** Type for note version query keys */
-export type NoteVersionQueryKey = typeof noteVersionKeys['all'] | ReturnType<FunctionMembers<typeof noteVersionKeys>>;
+ 
+export type NoteVersionQueryKey = typeof noteVersionKeys['all'] | ReturnType<typeof noteVersionKeys.history> | ReturnType<typeof noteVersionKeys.atTime> | ReturnType<typeof noteVersionKeys.diff>;
 
 /** Type for chat session query keys */
-export type ChatSessionQueryKey = typeof chatSessionKeys['all'] | ReturnType<FunctionMembers<typeof chatSessionKeys>>;
+export type ChatSessionQueryKey = typeof chatSessionKeys['all'] | Exclude<ReturnType<FunctionMembers<typeof chatSessionKeys>>, never>;
 
 // ============================================
 // Utility Functions

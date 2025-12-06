@@ -5,6 +5,90 @@ import { ToolExecution, ThinkingStep, AgentMessageRequest, RetrievedNoteContext 
 import { estimateTokenCount } from '../../../utils/token-utils';
 import { getApiBaseUrl, API_ENDPOINTS } from '../../../lib/constants';
 
+// Type guards for parsed JSON data
+interface ToolStartData {
+  tool: string;
+  arguments: string;
+}
+
+interface ToolEndData {
+  tool: string;
+  result: string;
+}
+
+interface ThinkingData {
+  content: string;
+}
+
+interface StatusData {
+  status: string;
+}
+
+interface ContextRetrievalData {
+  retrievedNotes?: RetrievedNoteContext[];
+  ragLogId?: string;
+}
+
+interface EndData {
+  ragLogId?: string;
+}
+
+interface ErrorData {
+  error?: string;
+}
+
+function isToolStartData(data: unknown): data is ToolStartData {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'tool' in data &&
+    typeof (data as ToolStartData).tool === 'string' &&
+    'arguments' in data &&
+    typeof (data as ToolStartData).arguments === 'string'
+  );
+}
+
+function isToolEndData(data: unknown): data is ToolEndData {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'tool' in data &&
+    typeof (data as ToolEndData).tool === 'string' &&
+    'result' in data &&
+    typeof (data as ToolEndData).result === 'string'
+  );
+}
+
+function isThinkingData(data: unknown): data is ThinkingData {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'content' in data &&
+    typeof (data as ThinkingData).content === 'string'
+  );
+}
+
+function isStatusData(data: unknown): data is StatusData {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'status' in data &&
+    typeof (data as StatusData).status === 'string'
+  );
+}
+
+function isContextRetrievalData(data: unknown): data is ContextRetrievalData {
+  return typeof data === 'object' && data !== null;
+}
+
+function isEndData(data: unknown): data is EndData {
+  return typeof data === 'object' && data !== null;
+}
+
+function isErrorData(data: unknown): data is ErrorData {
+  return typeof data === 'object' && data !== null;
+}
+
 // Parse thinking blocks from streaming message
 // Returns array of thinking steps, including incomplete ones (without closing tag)
 // Returns both complete and incomplete blocks
@@ -27,7 +111,7 @@ const parseThinkingBlocks = (message: string): { complete: ThinkingStep[]; incom
 
     // Find the closing tag after this opening tag
     closingTagRegex.lastIndex = startIndex;
-    const closingMatch = closingTagRegex.exec(message);
+    const closingMatch: RegExpExecArray | null = closingTagRegex.exec(message);
 
     if (closingMatch) {
       // Complete thinking block
@@ -58,12 +142,12 @@ const parseThinkingBlocks = (message: string): { complete: ThinkingStep[]; incom
 // Estimate token count for RAG context injected into the prompt
 // This mirrors the format built by the backend in AgentService.TryRetrieveContextAsync
 const estimateContextTokens = (notes: RetrievedNoteContext[]): number => {
-  if (!notes || notes.length === 0) return 0;
+  if (notes.length === 0) return 0;
 
   // Reconstruct the context format matching backend
   let contextText = '---RELEVANT NOTES CONTEXT (use for answering)---\n';
   for (const note of notes) {
-    const tagsStr = note.tags?.length ? ` [Tags: ${note.tags.join(', ')}]` : '';
+    const tagsStr = note.tags !== undefined && note.tags !== null && note.tags.length > 0 ? ` [Tags: ${note.tags.join(', ')}]` : '';
     contextText += `[Note: "${note.title}"] (relevance: ${note.similarityScore.toFixed(2)})${tagsStr}\n`;
     contextText += `Preview: ${note.preview}\n\n`;
   }
@@ -122,7 +206,7 @@ export function useAgentStream() {
         'Content-Type': 'application/json',
       };
 
-      if (authStore.token) {
+      if (authStore.token !== null && authStore.token !== undefined && authStore.token.length > 0) {
         headers['Authorization'] = `Bearer ${authStore.token}`;
       }
 
@@ -165,7 +249,7 @@ export function useAgentStream() {
 
           // Process complete SSE messages (separated by \n\n)
           const messages = buffer.split('\n\n');
-          buffer = messages.pop() || '';
+          buffer = messages.pop() ?? '';
 
           for (const message of messages) {
             if (!message.trim()) continue;
@@ -214,7 +298,7 @@ export function useAgentStream() {
                         const existingStep = stepMap.get(stepKey);
                         mergedSteps.push({
                           ...completeStep,
-                          timestamp: existingStep?.timestamp || completeStep.timestamp,
+                          timestamp: existingStep?.timestamp ?? completeStep.timestamp,
                         });
                         stepMap.delete(stepKey); // Remove from map so we don't add it again
                       });
@@ -253,17 +337,19 @@ export function useAgentStream() {
               case 'tool_start':
                 if (data) {
                   try {
-                    const toolData = JSON.parse(data);
-                    setToolExecutions((prev) => [
-                      ...prev,
-                      {
-                        tool: toolData.tool,
-                        arguments: toolData.arguments,
-                        result: '',
-                        status: 'executing',
-                        timestamp: new Date(),
-                      },
-                    ]);
+                    const parsed = JSON.parse(data) as unknown;
+                    if (isToolStartData(parsed)) {
+                      setToolExecutions((prev) => [
+                        ...prev,
+                        {
+                          tool: parsed.tool,
+                          arguments: parsed.arguments,
+                          result: '',
+                          status: 'executing',
+                          timestamp: new Date(),
+                        },
+                      ]);
+                    }
                   } catch (e) {
                     console.error('Failed to parse tool_start data:', e);
                   }
@@ -273,14 +359,16 @@ export function useAgentStream() {
               case 'tool_end':
                 if (data) {
                   try {
-                    const toolData = JSON.parse(data);
-                    setToolExecutions((prev) =>
-                      prev.map((t) =>
-                        t.tool === toolData.tool && t.status === 'executing'
-                          ? { ...t, result: toolData.result, status: 'completed' }
-                          : t
-                      )
-                    );
+                    const parsed = JSON.parse(data) as unknown;
+                    if (isToolEndData(parsed)) {
+                      setToolExecutions((prev) =>
+                        prev.map((t) =>
+                          t.tool === parsed.tool && t.status === 'executing'
+                            ? { ...t, result: parsed.result, status: 'completed' }
+                            : t
+                        )
+                      );
+                    }
                   } catch (e) {
                     console.error('Failed to parse tool_end data:', e);
                   }
@@ -290,37 +378,39 @@ export function useAgentStream() {
               case 'thinking':
                 if (data) {
                   try {
-                    const thinkingData = JSON.parse(data);
-                    const stepKey = thinkingData.content.substring(0, 50);
+                    const parsed = JSON.parse(data) as unknown;
+                    if (isThinkingData(parsed)) {
+                      const stepKey = parsed.content.substring(0, 50);
 
-                    // Mark as complete
-                    completeThinkingBlocksRef.current.add(stepKey);
+                      // Mark as complete
+                      completeThinkingBlocksRef.current.add(stepKey);
 
-                    setThinkingSteps((prev) => {
-                      // Check if we already have this step (from streaming message parsing)
-                      const existingIndex = prev.findIndex(
-                        (step) => step.content.substring(0, 50) === stepKey
-                      );
+                      setThinkingSteps((prev) => {
+                        // Check if we already have this step (from streaming message parsing)
+                        const existingIndex = prev.findIndex(
+                          (step) => step.content.substring(0, 50) === stepKey
+                        );
 
-                      if (existingIndex >= 0) {
-                        // Update existing step with complete content
-                        const updated = [...prev];
-                        updated[existingIndex] = {
-                          content: thinkingData.content,
-                          timestamp: prev[existingIndex].timestamp, // Keep original timestamp
-                        };
-                        return updated;
-                      } else {
-                        // Add new step
-                        return [
-                          ...prev,
-                          {
-                            content: thinkingData.content,
-                            timestamp: new Date(),
-                          },
-                        ];
-                      }
-                    });
+                        if (existingIndex >= 0) {
+                          // Update existing step with complete content
+                          const updated = [...prev];
+                          updated[existingIndex] = {
+                            content: parsed.content,
+                            timestamp: prev[existingIndex].timestamp, // Keep original timestamp
+                          };
+                          return updated;
+                        } else {
+                          // Add new step
+                          return [
+                            ...prev,
+                            {
+                              content: parsed.content,
+                              timestamp: new Date(),
+                            },
+                          ];
+                        }
+                      });
+                    }
                   } catch (e) {
                     console.error('Failed to parse thinking data:', e);
                   }
@@ -330,8 +420,10 @@ export function useAgentStream() {
               case 'status':
                 if (data) {
                   try {
-                    const statusData = JSON.parse(data);
-                    setProcessingStatus(statusData.status);
+                    const parsed = JSON.parse(data) as unknown;
+                    if (isStatusData(parsed)) {
+                      setProcessingStatus(parsed.status);
+                    }
                   } catch (e) {
                     console.error('Failed to parse status data:', e);
                   }
@@ -341,16 +433,18 @@ export function useAgentStream() {
               case 'context_retrieval':
                 if (data) {
                   try {
-                    const contextData = JSON.parse(data);
-                    if (contextData.retrievedNotes && Array.isArray(contextData.retrievedNotes)) {
-                      setRetrievedNotes(contextData.retrievedNotes);
-                      // Update input tokens to include RAG context
-                      const contextTokens = estimateContextTokens(contextData.retrievedNotes);
-                      setInputTokens((prev) => (prev ?? 0) + contextTokens);
-                    }
-                    // Capture ragLogId for feedback submission
-                    if (contextData.ragLogId) {
-                      setRagLogId(contextData.ragLogId);
+                    const parsed = JSON.parse(data) as unknown;
+                    if (isContextRetrievalData(parsed)) {
+                      if (parsed.retrievedNotes !== undefined && Array.isArray(parsed.retrievedNotes)) {
+                        setRetrievedNotes(parsed.retrievedNotes);
+                        // Update input tokens to include RAG context
+                        const contextTokens = estimateContextTokens(parsed.retrievedNotes);
+                        setInputTokens((prev) => (prev ?? 0) + contextTokens);
+                      }
+                      // Capture ragLogId for feedback submission
+                      if (parsed.ragLogId !== undefined && parsed.ragLogId !== null) {
+                        setRagLogId(parsed.ragLogId);
+                      }
                     }
                   } catch (e) {
                     console.error('Failed to parse context_retrieval data:', e);
@@ -361,17 +455,19 @@ export function useAgentStream() {
               case 'end':
                 if (data) {
                   try {
-                    const endData = JSON.parse(data);
-                    // Capture ragLogId from end event (ensures we have it even if context_retrieval was missed)
-                    if (endData.ragLogId) {
-                      setRagLogId(endData.ragLogId);
+                    const parsed = JSON.parse(data) as unknown;
+                    if (isEndData(parsed)) {
+                      // Capture ragLogId from end event (ensures we have it even if context_retrieval was missed)
+                      if (parsed.ragLogId !== undefined && parsed.ragLogId !== null) {
+                        setRagLogId(parsed.ragLogId);
+                      }
                     }
                   } catch (e) {
                     console.error('Failed to parse end data:', e);
                   }
                 }
 
-                if (streamStartTimeRef.current) {
+                if (streamStartTimeRef.current !== null && streamStartTimeRef.current !== undefined) {
                   const duration = Date.now() - streamStartTimeRef.current;
                   setStreamDuration(duration);
                   streamStartTimeRef.current = null;
@@ -381,23 +477,31 @@ export function useAgentStream() {
                 setProcessingStatus(null);
 
                 setTimeout(() => {
-                  queryClient.invalidateQueries({ queryKey: ['conversation', conversationId] });
-                  queryClient.invalidateQueries({ queryKey: ['conversations'] });
+                  void queryClient.invalidateQueries({ queryKey: ['conversation', conversationId] });
+                  void queryClient.invalidateQueries({ queryKey: ['conversations'] });
                   // Also invalidate notes since agent may have created/updated them
-                  queryClient.invalidateQueries({ queryKey: ['notes'] });
+                  void queryClient.invalidateQueries({ queryKey: ['notes'] });
                 }, 150);
                 break;
 
               case 'error':
                 if (data) {
                   try {
-                    const errorData = JSON.parse(data);
-                    throw new Error(errorData.error || 'Unknown error');
+                    const parsed = JSON.parse(data) as unknown;
+                    if (isErrorData(parsed)) {
+                      const errorMessage = typeof parsed.error === 'string' ? parsed.error : 'Unknown error';
+                      throw new Error(errorMessage);
+                    } else {
+                      throw new Error(data);
+                    }
                   } catch (e) {
                     if (e instanceof SyntaxError) {
                       throw new Error(data);
                     }
-                    throw e;
+                    if (e instanceof Error) {
+                      throw e;
+                    }
+                    throw new Error('Unknown error occurred');
                   }
                 }
                 break;

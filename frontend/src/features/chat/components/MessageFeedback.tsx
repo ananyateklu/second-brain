@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { ragService } from '../../../services/rag.service';
 import type { RagFeedbackType, RagFeedbackCategory } from '../../../types/rag';
-import { QUERY_KEYS } from '../../../lib/constants';
+import { ragAnalyticsKeys } from '../../../lib/query-keys';
 import { useApiMutation } from '../../../hooks/use-api-mutation';
 
 interface MessageFeedbackProps {
@@ -50,7 +50,7 @@ export function MessageFeedback({
       });
     },
     {
-      invalidateQueries: [QUERY_KEYS.ragAnalytics.all],
+      invalidateQueries: [ragAnalyticsKeys.all()],
       showErrorToast: false, // Handle errors silently, just reset UI
       onSuccess: (_, variables) => {
         setSelectedFeedback(variables.feedback);
@@ -214,7 +214,7 @@ export function MessageFeedback({
             {FEEDBACK_CATEGORIES.map((cat) => (
               <button
                 key={cat.value}
-                onClick={() => handleCategorySelect(cat.value)}
+                onClick={() => { handleCategorySelect(cat.value); }}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${selectedCategory === cat.value ? 'ring-2 ring-offset-1' : ''
                   }`}
                 style={{
@@ -238,7 +238,7 @@ export function MessageFeedback({
             <div className="mb-3">
               <textarea
                 value={comment}
-                onChange={(e) => setComment(e.target.value)}
+                onChange={(e) => { setComment(e.target.value); }}
                 placeholder="Add additional details (optional)"
                 className="w-full px-3 py-2 rounded-lg text-sm resize-none"
                 style={{

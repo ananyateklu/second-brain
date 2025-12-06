@@ -27,7 +27,7 @@ let _isBackendReady = false;
 /**
  * Callbacks waiting for backend to be ready
  */
-const _backendReadyCallbacks: Array<() => void> = [];
+const _backendReadyCallbacks: (() => void)[] = [];
 
 /**
  * Check if the backend is ready for requests
@@ -41,7 +41,7 @@ export const setBackendReady = (ready: boolean): void => {
   _isBackendReady = ready;
   if (ready) {
     // Notify all waiting callbacks
-    _backendReadyCallbacks.forEach(cb => cb());
+    _backendReadyCallbacks.forEach(cb => { cb(); });
     _backendReadyCallbacks.length = 0;
   }
 };
@@ -90,7 +90,7 @@ export const getApiBaseUrl = (): string => {
 
   // Check for Tauri URL set on window
   if (typeof window !== 'undefined' && '__TAURI_API_URL__' in window) {
-    return (window as WindowWithTauriApiUrl).__TAURI_API_URL__ as string;
+    return (window as WindowWithTauriApiUrl).__TAURI_API_URL__ ?? '/api';
   }
 
   return import.meta.env.VITE_API_URL || '/api';
@@ -120,7 +120,7 @@ export const getDirectBackendUrl = (): string => {
 
   // Check for Tauri URL set on window
   if (typeof window !== 'undefined' && '__TAURI_API_URL__' in window) {
-    return (window as WindowWithTauriApiUrl).__TAURI_API_URL__ as string;
+    return (window as WindowWithTauriApiUrl).__TAURI_API_URL__ ?? '/api';
   }
 
   // In development, use the direct backend URL (bypassing Vite proxy)

@@ -37,7 +37,7 @@ export function stripThinkingTags(content: string): string {
  * @param includeIncomplete - Whether to include incomplete thinking blocks (e.g., during streaming)
  * @returns Array of thinking step contents
  */
-export function extractThinkingContent(content: string, includeIncomplete: boolean = false): string[] {
+export function extractThinkingContent(content: string, includeIncomplete = false): string[] {
   const thinkingSteps: string[] = [];
 
   // Create fresh regex instances for each extraction

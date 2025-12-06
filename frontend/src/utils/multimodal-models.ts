@@ -170,7 +170,7 @@ export function isMultimodalModel(provider: string, model: string): boolean {
  * Get multimodal configuration for a provider
  */
 export function getMultimodalConfig(provider: string): MultimodalModelConfig | null {
-  return MULTIMODAL_CONFIGS[provider] || null;
+  return MULTIMODAL_CONFIGS[provider] ?? null;
 }
 
 /**
@@ -227,7 +227,7 @@ export function fileToBase64(file: File): Promise<string> {
  * Extract base64 data and media type from a data URL
  */
 export function parseDataUrl(dataUrl: string): { mediaType: string; base64Data: string } | null {
-  const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+  const match = /^data:([^;]+);base64,(.+)$/.exec(dataUrl);
   if (!match) {
     return null;
   }
@@ -243,9 +243,9 @@ export function parseDataUrl(dataUrl: string): { mediaType: string; base64Data: 
  */
 export async function resizeImageIfNeeded(
   dataUrl: string,
-  maxWidth: number = 2048,
-  maxHeight: number = 2048,
-  quality: number = 0.9
+  maxWidth = 2048,
+  maxHeight = 2048,
+  quality = 0.9
 ): Promise<string> {
   return new Promise((resolve) => {
     const img = new Image();
@@ -287,7 +287,7 @@ export async function resizeImageIfNeeded(
       const mimeType = parsed?.mediaType || 'image/jpeg';
       resolve(canvas.toDataURL(mimeType, quality));
     };
-    img.onerror = () => resolve(dataUrl);
+    img.onerror = () => { resolve(dataUrl); };
     img.src = dataUrl;
   });
 }
@@ -369,6 +369,11 @@ export const FILE_TYPE_CONFIGS: Record<string, FileTypeConfig> = {
 };
 
 /**
+ * Image file type configuration (extracted for type safety)
+ */
+const IMAGE_CONFIG = FILE_TYPE_CONFIGS.image;
+
+/**
  * Get file category from MIME type
  */
 export function getFileCategory(mimeType: string): FileAttachment['fileCategory'] {
@@ -384,7 +389,7 @@ export function getFileCategory(mimeType: string): FileAttachment['fileCategory'
  * Check if a file type is an image
  */
 export function isImageFile(mimeType: string): boolean {
-  return FILE_TYPE_CONFIGS.image.mimeTypes.includes(mimeType);
+  return IMAGE_CONFIG.mimeTypes.includes(mimeType);
 }
 
 /**
@@ -444,7 +449,7 @@ export async function createImageAttachment(file: File): Promise<ImageAttachment
   const resizedDataUrl = await resizeImageIfNeeded(dataUrl);
 
   return {
-    id: `img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    id: `img_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
     file,
     dataUrl: resizedDataUrl,
     name: file.name,
@@ -462,7 +467,7 @@ export async function createFileAttachment(file: File): Promise<FileAttachment> 
   const finalDataUrl = isImage ? await resizeImageIfNeeded(dataUrl) : dataUrl;
 
   return {
-    id: `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    id: `file_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
     file,
     dataUrl: finalDataUrl,
     name: file.name,

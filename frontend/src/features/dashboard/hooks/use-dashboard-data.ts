@@ -147,7 +147,7 @@ export function useDashboardData(): DashboardData {
 
   // Filtered and aggregated model usage data generator
   const getFilteredModelUsageData = useMemo(() => {
-    return (timeRange: number, aggregateThreshold: number = 0.05): {
+    return (timeRange: number, aggregateThreshold = 0.05): {
       data: AggregatedModelUsageEntry[];
       allFilteredModels: ModelUsageEntry[];
       totalConversations: number;

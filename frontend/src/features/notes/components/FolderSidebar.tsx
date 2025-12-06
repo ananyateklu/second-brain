@@ -122,7 +122,7 @@ export function FolderSidebar({
           </svg>
         </button>
         <button
-          onClick={() => onArchiveFilterChange('archived')}
+          onClick={() => { onArchiveFilterChange('archived'); }}
           className="p-2 rounded-lg transition-colors"
           style={{
             backgroundColor: archiveFilter === 'archived'
@@ -193,8 +193,8 @@ export function FolderSidebar({
           }}
           className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition-all duration-150"
           style={getItemStyle('all', selectedFolder === null && archiveFilter === 'all')}
-          onMouseEnter={() => setHoveredItem('all')}
-          onMouseLeave={() => setHoveredItem(null)}
+          onMouseEnter={() => { setHoveredItem('all'); }}
+          onMouseLeave={() => { setHoveredItem(null); }}
         >
           <span className="flex items-center gap-3">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -221,8 +221,8 @@ export function FolderSidebar({
           }}
           className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition-all duration-150"
           style={getItemStyle('active', selectedFolder === null && archiveFilter === 'not-archived')}
-          onMouseEnter={() => setHoveredItem('active')}
-          onMouseLeave={() => setHoveredItem(null)}
+          onMouseEnter={() => { setHoveredItem('active'); }}
+          onMouseLeave={() => { setHoveredItem(null); }}
         >
           <span className="flex items-center gap-3">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -249,8 +249,8 @@ export function FolderSidebar({
           }}
           className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition-all duration-150"
           style={getItemStyle('archived', archiveFilter === 'archived')}
-          onMouseEnter={() => setHoveredItem('archived')}
-          onMouseLeave={() => setHoveredItem(null)}
+          onMouseEnter={() => { setHoveredItem('archived'); }}
+          onMouseLeave={() => { setHoveredItem(null); }}
         >
           <span className="flex items-center gap-3">
             <svg
@@ -298,8 +298,8 @@ export function FolderSidebar({
             }}
             className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition-all duration-150"
             style={getItemStyle('unfiled', isSelected(''))}
-            onMouseEnter={() => setHoveredItem('unfiled')}
-            onMouseLeave={() => setHoveredItem(null)}
+            onMouseEnter={() => { setHoveredItem('unfiled'); }}
+            onMouseLeave={() => { setHoveredItem(null); }}
           >
             <span className="flex items-center gap-3">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -337,8 +337,8 @@ export function FolderSidebar({
                 }}
                 className="w-full flex items-center justify-between px-4 py-2.5 text-sm transition-all duration-150"
                 style={getItemStyle(`folder-${folder}`, isSelected(folder))}
-                onMouseEnter={() => setHoveredItem(`folder-${folder}`)}
-                onMouseLeave={() => setHoveredItem(null)}
+                onMouseEnter={() => { setHoveredItem(`folder-${folder}`); }}
+                onMouseLeave={() => { setHoveredItem(null); }}
               >
                 <span className="flex items-center gap-3 truncate">
                   <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">

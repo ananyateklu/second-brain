@@ -128,7 +128,7 @@ export function NotesFilter({
 
     updatePosition();
     window.addEventListener('resize', updatePosition);
-    return () => window.removeEventListener('resize', updatePosition);
+    return () => { window.removeEventListener('resize', updatePosition); };
   }, [variant]);
 
   // Memoize expensive tag calculation - only recalculate when notes array changes
@@ -179,7 +179,7 @@ export function NotesFilter({
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => { document.removeEventListener('mousedown', handleClickOutside); };
   }, []);
 
   const getDateFilterLabel = () => {
@@ -332,7 +332,7 @@ export function NotesFilter({
         <DropdownButton
           label={getDateFilterLabel()}
           isOpen={isDateDropdownOpen}
-          onClick={() => setIsDateDropdownOpen(!isDateDropdownOpen)}
+          onClick={() => { setIsDateDropdownOpen(!isDateDropdownOpen); }}
         />
         {renderDropdownMenu(isDateDropdownOpen, (
           <div className="p-2">
@@ -340,7 +340,7 @@ export function NotesFilter({
               <button
                 key={filter}
                 type="button"
-                onClick={() => handleDateFilterChange(filter)}
+                onClick={() => { handleDateFilterChange(filter); }}
                 className="w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm"
                 style={{
                   backgroundColor: filterState.dateFilter === filter
@@ -408,7 +408,7 @@ export function NotesFilter({
           <input
             type="date"
             value={filterState.customDateStart || ''}
-            onChange={(e) => onFilterChange({ ...filterState, customDateStart: e.target.value })}
+            onChange={(e) => { onFilterChange({ ...filterState, customDateStart: e.target.value }); }}
             className="px-3 py-2 rounded-xl text-sm border"
             style={{
               backgroundColor: 'var(--surface-elevated)',
@@ -420,7 +420,7 @@ export function NotesFilter({
           <input
             type="date"
             value={filterState.customDateEnd || ''}
-            onChange={(e) => onFilterChange({ ...filterState, customDateEnd: e.target.value })}
+            onChange={(e) => { onFilterChange({ ...filterState, customDateEnd: e.target.value }); }}
             className="px-3 py-2 rounded-xl text-sm border"
             style={{
               backgroundColor: 'var(--surface-elevated)',
@@ -437,7 +437,7 @@ export function NotesFilter({
           <DropdownButton
             label="Tags"
             isOpen={isTagDropdownOpen}
-            onClick={() => setIsTagDropdownOpen(!isTagDropdownOpen)}
+            onClick={() => { setIsTagDropdownOpen(!isTagDropdownOpen); }}
             count={filterState.selectedTags.length}
           />
           {renderDropdownMenu(isTagDropdownOpen, (
@@ -468,7 +468,7 @@ export function NotesFilter({
                   <input
                     type="checkbox"
                     checked={filterState.selectedTags.includes(tag)}
-                    onChange={() => handleTagToggle(tag)}
+                    onChange={() => { handleTagToggle(tag); }}
                     className="w-4 h-4 rounded"
                     style={{
                       accentColor: 'var(--color-primary)',
@@ -487,7 +487,7 @@ export function NotesFilter({
         <DropdownButton
           label={getSortLabel()}
           isOpen={isSortDropdownOpen}
-          onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
+          onClick={() => { setIsSortDropdownOpen(!isSortDropdownOpen); }}
         />
         {renderDropdownMenu(isSortDropdownOpen, (
           <div className="p-2">
@@ -495,7 +495,7 @@ export function NotesFilter({
               <button
                 key={sort}
                 type="button"
-                onClick={() => handleSortChange(sort)}
+                onClick={() => { handleSortChange(sort); }}
                 className="w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm"
                 style={{
                   backgroundColor: filterState.sortBy === sort
@@ -531,7 +531,7 @@ export function NotesFilter({
         <DropdownButton
           label={getArchiveLabel()}
           isOpen={isArchiveDropdownOpen}
-          onClick={() => setIsArchiveDropdownOpen(!isArchiveDropdownOpen)}
+          onClick={() => { setIsArchiveDropdownOpen(!isArchiveDropdownOpen); }}
         />
         {renderDropdownMenu(isArchiveDropdownOpen, (
           <div className="p-2">
@@ -539,7 +539,7 @@ export function NotesFilter({
               <button
                 key={filter}
                 type="button"
-                onClick={() => handleArchiveFilterChange(filter)}
+                onClick={() => { handleArchiveFilterChange(filter); }}
                 className="w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm"
                 style={{
                   backgroundColor: filterState.archiveFilter === filter
@@ -575,14 +575,14 @@ export function NotesFilter({
           <DropdownButton
             label={getFolderLabel()}
             isOpen={isFolderDropdownOpen}
-            onClick={() => setIsFolderDropdownOpen(!isFolderDropdownOpen)}
+            onClick={() => { setIsFolderDropdownOpen(!isFolderDropdownOpen); }}
           />
           {renderDropdownMenu(isFolderDropdownOpen, (
             <div className="p-2 max-h-64 overflow-y-auto">
               {/* All folders option */}
               <button
                 type="button"
-                onClick={() => handleFolderFilterChange(null)}
+                onClick={() => { handleFolderFilterChange(null); }}
                 className="w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm flex items-center justify-between"
                 style={{
                   backgroundColor: filterState.selectedFolder === null || filterState.selectedFolder === undefined
@@ -616,7 +616,7 @@ export function NotesFilter({
               {folderCounts.unfiled > 0 && (
                 <button
                   type="button"
-                  onClick={() => handleFolderFilterChange('')}
+                  onClick={() => { handleFolderFilterChange(''); }}
                   className="w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm flex items-center justify-between"
                   style={{
                     backgroundColor: filterState.selectedFolder === ''
@@ -657,7 +657,7 @@ export function NotesFilter({
                 <button
                   key={folder}
                   type="button"
-                  onClick={() => handleFolderFilterChange(folder)}
+                  onClick={() => { handleFolderFilterChange(folder); }}
                   className="w-full text-left px-4 py-2.5 rounded-lg transition-all duration-150 text-sm flex items-center justify-between"
                   style={{
                     backgroundColor: filterState.selectedFolder === folder
@@ -730,7 +730,7 @@ export function NotesFilter({
         >
           <button
             type="button"
-            onClick={() => onViewModeChange('card')}
+            onClick={() => { onViewModeChange('card'); }}
             className="flex items-center justify-center w-9 h-9 transition-all duration-200"
             style={{
               backgroundColor: viewMode === 'card' ? 'var(--color-brand-600)' : 'transparent',
@@ -762,7 +762,7 @@ export function NotesFilter({
           />
           <button
             type="button"
-            onClick={() => onViewModeChange('list')}
+            onClick={() => { onViewModeChange('list'); }}
             className="flex items-center justify-center w-9 h-9 transition-all duration-200"
             style={{
               backgroundColor: viewMode === 'list' ? 'var(--color-brand-600)' : 'transparent',

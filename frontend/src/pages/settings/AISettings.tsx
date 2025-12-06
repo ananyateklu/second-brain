@@ -75,13 +75,13 @@ const PROVIDER_DETAILS: Record<string, {
 
 type VectorProvider = 'PostgreSQL' | 'Pinecone';
 
-const VECTOR_STORE_OPTIONS: Array<{
+const VECTOR_STORE_OPTIONS: {
     id: VectorProvider;
     label: string;
     badge?: string;
     description: string;
     features: string[];
-}> = [
+}[] = [
         {
             id: 'PostgreSQL',
             label: 'PostgreSQL',
@@ -99,13 +99,13 @@ const VECTOR_STORE_OPTIONS: Array<{
     ];
 
 // Curated list of popular Ollama models
-const POPULAR_OLLAMA_MODELS: Array<{
+const POPULAR_OLLAMA_MODELS: {
     name: string;
     tag: string;
     description: string;
     size: string;
     category: 'language' | 'code' | 'vision' | 'embedding';
-}> = [
+}[] = [
         // Language Models
         { name: 'llama3.2', tag: '3b', description: 'Latest Llama model, great for general use', size: '2.0 GB', category: 'language' },
         { name: 'llama3.2', tag: '1b', description: 'Compact Llama model for quick responses', size: '1.3 GB', category: 'language' },
@@ -329,7 +329,7 @@ export function AISettings() {
                                     >
                                         <button
                                             type="button"
-                                            onClick={() => setSelectedProvider({ id: provider.id, name: provider.name })}
+                                            onClick={() => { setSelectedProvider({ id: provider.id, name: provider.name }); }}
                                             className="w-full rounded-2xl border px-4 py-4 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] focus-visible:ring-offset-[color:var(--surface-card)] hover:-translate-y-1 hover:shadow-lg"
                                             style={{
                                                 backgroundColor: 'var(--surface-elevated)',
@@ -546,25 +546,27 @@ export function AISettings() {
                                     <button
                                         type="button"
                                         key={option.id}
-                                        onClick={async () => {
-                                            if (!user?.userId) {
-                                                console.error('User not authenticated');
-                                                return;
-                                            }
+                                        onClick={() => {
+                                            void (async () => {
+                                                if (!user?.userId) {
+                                                    console.error('User not authenticated');
+                                                    return;
+                                                }
 
-                                            setIsSavingVectorStore(true);
-                                            try {
-                                                // Update local state first
-                                                await setVectorStoreProvider(option.id, false);
+                                                setIsSavingVectorStore(true);
+                                                try {
+                                                    // Update local state first
+                                                    await setVectorStoreProvider(option.id, false);
 
-                                                // Then sync to backend explicitly with userId
-                                                await syncPreferencesToBackend(user.userId);
-                                            } catch (error) {
-                                                console.error('Failed to update vector store provider:', { error });
-                                                toast.error('Failed to save vector store preference', 'Please try again.');
-                                            } finally {
-                                                setIsSavingVectorStore(false);
-                                            }
+                                                    // Then sync to backend explicitly with userId
+                                                    await syncPreferencesToBackend(user.userId);
+                                                } catch (error) {
+                                                    console.error('Failed to update vector store provider:', { error });
+                                                    toast.error('Failed to save vector store preference', 'Please try again.');
+                                                } finally {
+                                                    setIsSavingVectorStore(false);
+                                                }
+                                            })();
                                         }}
                                         disabled={isSavingVectorStore}
                                         className="w-full text-left rounded-2xl border p-4 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 hover:-translate-y-1 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
@@ -710,7 +712,7 @@ export function AISettings() {
             {selectedProvider && (
                 <Modal
                     isOpen={!!selectedProvider}
-                    onClose={() => setSelectedProvider(null)}
+                    onClose={() => { setSelectedProvider(null); }}
                     title={`Configure ${selectedProvider.name}`}
                     maxWidth="max-w-7xl"
                     icon={
@@ -922,13 +924,13 @@ export function AISettings() {
                                                 </div>
                                                 <button
                                                     type="button"
-                                                    onClick={async () => {
+                                                    onClick={() => {
                                                         if (!user?.userId) return;
                                                         setIsSavingOllama(true);
                                                         try {
                                                             setUseRemoteOllama(!useRemoteOllama);
                                                             setTimeout(() => {
-                                                                refetchHealth();
+                                                                void refetchHealth();
                                                             }, 100);
                                                         } catch (error) {
                                                             console.error('Failed to toggle remote Ollama:', { error });
@@ -973,7 +975,7 @@ export function AISettings() {
                                                             <input
                                                                 type="text"
                                                                 value={localOllamaUrl}
-                                                                onChange={(e) => setLocalOllamaUrl(e.target.value)}
+                                                                onChange={(e) => { setLocalOllamaUrl(e.target.value); }}
                                                                 placeholder="http://192.168.1.100:11434"
                                                                 className="flex-1 px-3 py-2 rounded-xl border text-xs transition-all duration-200 focus:outline-none focus:ring-2"
                                                                 style={{
@@ -984,14 +986,14 @@ export function AISettings() {
                                                             />
                                                             <button
                                                                 type="button"
-                                                                onClick={async () => {
+                                                                onClick={() => {
                                                                     if (!user?.userId) return;
                                                                     setIsSavingOllama(true);
                                                                     try {
                                                                         setOllamaRemoteUrl(localOllamaUrl || null);
                                                                         toast.success('Ollama URL saved', 'Your remote Ollama URL has been updated.');
                                                                         setTimeout(() => {
-                                                                            refetchHealth();
+                                                                            void refetchHealth();
                                                                         }, 100);
                                                                     } catch (error) {
                                                                         console.error('Failed to save Ollama URL:', { error });
@@ -1037,7 +1039,7 @@ export function AISettings() {
                                                         <input
                                                             type="text"
                                                             value={modelToDownload}
-                                                            onChange={(e) => setModelToDownload(e.target.value)}
+                                                            onChange={(e) => { setModelToDownload(e.target.value); }}
                                                             placeholder="e.g., llama3:8b, codellama:13b"
                                                             onKeyDown={(e) => {
                                                                 if (e.key === 'Enter' && modelToDownload.trim()) {
@@ -1090,7 +1092,7 @@ export function AISettings() {
                                                     {/* Popular Models Toggle */}
                                                     <button
                                                         type="button"
-                                                        onClick={() => setShowPopularModels(!showPopularModels)}
+                                                        onClick={() => { setShowPopularModels(!showPopularModels); }}
                                                         className="w-full flex items-center justify-between p-2 rounded-xl border transition-all duration-200 hover:border-opacity-60"
                                                         style={{
                                                             backgroundColor: 'var(--surface-card)',
@@ -1124,7 +1126,7 @@ export function AISettings() {
                                                             <div className="flex flex-wrap gap-1.5">
                                                                 <button
                                                                     type="button"
-                                                                    onClick={() => setSelectedModelCategory(null)}
+                                                                    onClick={() => { setSelectedModelCategory(null); }}
                                                                     className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 border-2 ${selectedModelCategory === null ? 'border-current' : 'border-transparent'}`}
                                                                     style={{
                                                                         backgroundColor: selectedModelCategory === null ? 'var(--color-brand-600)' : 'var(--surface-card)',
@@ -1137,7 +1139,7 @@ export function AISettings() {
                                                                     <button
                                                                         key={key}
                                                                         type="button"
-                                                                        onClick={() => setSelectedModelCategory(key)}
+                                                                        onClick={() => { setSelectedModelCategory(key); }}
                                                                         className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 border-2 ${selectedModelCategory === key ? 'border-current' : 'border-transparent'}`}
                                                                         style={{
                                                                             backgroundColor: selectedModelCategory === key ? 'var(--color-brand-600)' : 'var(--surface-card)',
@@ -1257,7 +1259,7 @@ export function AISettings() {
                                                                         </div>
                                                                         <button
                                                                             type="button"
-                                                                            onClick={() => cancelDownload(download.modelName)}
+                                                                            onClick={() => { cancelDownload(download.modelName); }}
                                                                             className="text-xs px-2 py-1 rounded-lg transition-colors hover:bg-red-500/10"
                                                                             style={{ color: '#ef4444' }}
                                                                         >
@@ -1318,7 +1320,7 @@ export function AISettings() {
                                                                 </p>
                                                                 <button
                                                                     type="button"
-                                                                    onClick={() => clearCompletedDownloads()}
+                                                                    onClick={() => { clearCompletedDownloads(); }}
                                                                     className="text-xs px-2 py-1 rounded-lg transition-colors"
                                                                     style={{ color: 'var(--text-secondary)' }}
                                                                 >
@@ -1351,7 +1353,7 @@ export function AISettings() {
                                                                     </div>
                                                                     <button
                                                                         type="button"
-                                                                        onClick={() => clearDownload(download.modelName)}
+                                                                        onClick={() => { clearDownload(download.modelName); }}
                                                                         className="text-xs px-2 py-1 rounded transition-colors hover:opacity-70"
                                                                         style={{ color: 'var(--text-secondary)' }}
                                                                     >
@@ -1373,8 +1375,8 @@ export function AISettings() {
                                         <TauriProviderApiKeyInput
                                             providerId={selectedProvider.id}
                                             onSaveSuccess={() => {
-                                                refetchHealth();
-                                                refetchSecrets();
+                                                void refetchHealth();
+                                                void refetchSecrets();
                                             }}
                                         />
                                     )}
@@ -1453,8 +1455,8 @@ export function AISettings() {
                                                 <TauriProviderApiKeyInput
                                                     providerId={selectedProvider.id}
                                                     onSaveSuccess={() => {
-                                                        refetchHealth();
-                                                        refetchSecrets();
+                                                        void refetchHealth();
+                                                        void refetchSecrets();
                                                     }}
                                                 />
                                             )}
@@ -1561,9 +1563,9 @@ export function AISettings() {
             {/* Pinecone Setup Modal */}
             <TauriPineconeSetupModal
                 isOpen={showPineconeSetup}
-                onClose={() => setShowPineconeSetup(false)}
+                onClose={() => { setShowPineconeSetup(false); }}
                 onSaveSuccess={() => {
-                    refetchPineconeConfig();
+                    void refetchPineconeConfig();
                 }}
             />
         </div>

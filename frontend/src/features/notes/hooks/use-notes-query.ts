@@ -3,20 +3,21 @@ import { notesService } from '../../../services';
 import { Note, CreateNoteRequest, UpdateNoteRequest } from '../../../types/notes';
 import { useApiQuery, useConditionalQuery } from '../../../hooks/use-api-query';
 import { useApiMutation } from '../../../hooks/use-api-mutation';
-import { QUERY_KEYS, NOTES_FOLDERS } from '../../../lib/constants';
+import { NOTES_FOLDERS } from '../../../lib/constants';
+import { noteKeys } from '../../../lib/query-keys';
 
 // Type aliases for backward compatibility
 type CreateNoteInput = CreateNoteRequest;
 type UpdateNoteInput = UpdateNoteRequest;
 
 // Re-export query keys for backward compatibility
-export const notesKeys = QUERY_KEYS.notes;
+export { noteKeys };
 
 // Query: Get all notes
 export function useNotes() {
   return useApiQuery<Note[]>(
-    notesKeys.all,
-    notesService.getAll
+    noteKeys.all,
+    () => notesService.getAll()
   );
 }
 
@@ -24,7 +25,7 @@ export function useNotes() {
 export function useNote(id: string) {
   return useConditionalQuery<Note>(
     !!id,
-    notesKeys.detail(id),
+    noteKeys.detail(id),
     () => notesService.getById(id)
   );
 }
@@ -37,9 +38,9 @@ export function useCreateNote() {
       successMessage: 'Note created successfully',
       showSuccessToast: true,
       errorMessage: 'Failed to create note',
-      invalidateQueries: [notesKeys.all],
+      invalidateQueries: [noteKeys.all],
       optimisticUpdate: {
-        queryKey: notesKeys.all,
+        queryKey: noteKeys.all,
         getOptimisticData: (newNote, currentData) => {
           const notes = (currentData as Note[] | undefined) ?? [];
           const optimisticNote: Note = {
@@ -73,17 +74,17 @@ export function useUpdateNote() {
       errorMessage: 'Failed to update note',
       onMutate: async ({ id, data }) => {
         // Cancel outgoing refetches
-        await queryClient.cancelQueries({ queryKey: notesKeys.all });
-        await queryClient.cancelQueries({ queryKey: notesKeys.detail(id) });
+        await queryClient.cancelQueries({ queryKey: noteKeys.all });
+        await queryClient.cancelQueries({ queryKey: noteKeys.detail(id) });
 
         // Snapshot previous values
-        const previousNotes = queryClient.getQueryData<Note[]>(notesKeys.all);
-        const previousNote = queryClient.getQueryData<Note>(notesKeys.detail(id));
+        const previousNotes = queryClient.getQueryData<Note[]>(noteKeys.all);
+        const previousNote = queryClient.getQueryData<Note>(noteKeys.detail(id));
 
         // Optimistically update notes list
         if (previousNotes) {
           queryClient.setQueryData<Note[]>(
-            notesKeys.all,
+            noteKeys.all,
             previousNotes.map((note) =>
               note.id === id
                 ? { ...note, ...data, updatedAt: new Date().toISOString() }
@@ -94,7 +95,7 @@ export function useUpdateNote() {
 
         // Optimistically update single note
         if (previousNote) {
-          queryClient.setQueryData<Note>(notesKeys.detail(id), {
+          queryClient.setQueryData<Note>(noteKeys.detail(id), {
             ...previousNote,
             ...data,
             updatedAt: new Date().toISOString(),
@@ -106,16 +107,16 @@ export function useUpdateNote() {
       onError: (_error, { id }, context) => {
         // Rollback on error
         if (context?.previousNotes) {
-          queryClient.setQueryData(notesKeys.all, context.previousNotes);
+          queryClient.setQueryData(noteKeys.all, context.previousNotes);
         }
         if (context?.previousNote) {
-          queryClient.setQueryData(notesKeys.detail(id), context.previousNote);
+          queryClient.setQueryData(noteKeys.detail(id), context.previousNote);
         }
       },
       onSettled: (_data, _error, { id }) => {
         // Refetch to ensure consistency
-        queryClient.invalidateQueries({ queryKey: notesKeys.all });
-        queryClient.invalidateQueries({ queryKey: notesKeys.detail(id) });
+        void queryClient.invalidateQueries({ queryKey: noteKeys.all });
+        void queryClient.invalidateQueries({ queryKey: noteKeys.detail(id) });
       },
     }
   );
@@ -123,15 +124,15 @@ export function useUpdateNote() {
 
 // Mutation: Delete note
 export function useDeleteNote() {
-  return useApiMutation<void, string>(
+  return useApiMutation<undefined, string>(
     (id) => notesService.delete(id),
     {
       successMessage: 'Note deleted successfully',
       showSuccessToast: true,
       errorMessage: 'Failed to delete note',
-      invalidateQueries: [notesKeys.all],
+      invalidateQueries: [noteKeys.all],
       optimisticUpdate: {
-        queryKey: notesKeys.all,
+        queryKey: noteKeys.all,
         getOptimisticData: (id, currentData) => {
           const notes = (currentData as Note[] | undefined) ?? [];
           return notes.filter((note) => note.id !== id);
@@ -147,9 +148,9 @@ export function useBulkDeleteNotes() {
     (noteIds) => notesService.bulkDelete(noteIds),
     {
       errorMessage: 'Failed to delete notes',
-      invalidateQueries: [notesKeys.all],
+      invalidateQueries: [noteKeys.all],
       optimisticUpdate: {
-        queryKey: notesKeys.all,
+        queryKey: noteKeys.all,
         getOptimisticData: (noteIds, currentData) => {
           const notes = (currentData as Note[] | undefined) ?? [];
           return notes.filter((note) => !noteIds.includes(note.id));
@@ -177,17 +178,17 @@ export function useArchiveNote() {
       errorMessage: 'Failed to archive note',
       onMutate: async (id) => {
         // Cancel outgoing refetches
-        await queryClient.cancelQueries({ queryKey: notesKeys.all });
-        await queryClient.cancelQueries({ queryKey: notesKeys.detail(id) });
+        await queryClient.cancelQueries({ queryKey: noteKeys.all });
+        await queryClient.cancelQueries({ queryKey: noteKeys.detail(id) });
 
         // Snapshot previous values
-        const previousNotes = queryClient.getQueryData<Note[]>(notesKeys.all);
-        const previousNote = queryClient.getQueryData<Note>(notesKeys.detail(id));
+        const previousNotes = queryClient.getQueryData<Note[]>(noteKeys.all);
+        const previousNote = queryClient.getQueryData<Note>(noteKeys.detail(id));
 
         // Optimistically update notes list (set isArchived and move to Archived folder)
         if (previousNotes) {
           queryClient.setQueryData<Note[]>(
-            notesKeys.all,
+            noteKeys.all,
             previousNotes.map((note) =>
               note.id === id
                 ? { ...note, isArchived: true, folder: NOTES_FOLDERS.ARCHIVED, updatedAt: new Date().toISOString() }
@@ -198,7 +199,7 @@ export function useArchiveNote() {
 
         // Optimistically update single note
         if (previousNote) {
-          queryClient.setQueryData<Note>(notesKeys.detail(id), {
+          queryClient.setQueryData<Note>(noteKeys.detail(id), {
             ...previousNote,
             isArchived: true,
             folder: NOTES_FOLDERS.ARCHIVED,
@@ -211,16 +212,16 @@ export function useArchiveNote() {
       onError: (_error, id, context) => {
         // Rollback on error
         if (context?.previousNotes) {
-          queryClient.setQueryData(notesKeys.all, context.previousNotes);
+          queryClient.setQueryData(noteKeys.all, context.previousNotes);
         }
         if (context?.previousNote) {
-          queryClient.setQueryData(notesKeys.detail(id), context.previousNote);
+          queryClient.setQueryData(noteKeys.detail(id), context.previousNote);
         }
       },
       onSettled: (_data, _error, id) => {
         // Refetch to ensure consistency
-        queryClient.invalidateQueries({ queryKey: notesKeys.all });
-        queryClient.invalidateQueries({ queryKey: notesKeys.detail(id) });
+        void queryClient.invalidateQueries({ queryKey: noteKeys.all });
+        void queryClient.invalidateQueries({ queryKey: noteKeys.detail(id) });
       },
     }
   );
@@ -238,17 +239,17 @@ export function useUnarchiveNote() {
       errorMessage: 'Failed to restore note',
       onMutate: async (id) => {
         // Cancel outgoing refetches
-        await queryClient.cancelQueries({ queryKey: notesKeys.all });
-        await queryClient.cancelQueries({ queryKey: notesKeys.detail(id) });
+        await queryClient.cancelQueries({ queryKey: noteKeys.all });
+        await queryClient.cancelQueries({ queryKey: noteKeys.detail(id) });
 
         // Snapshot previous values
-        const previousNotes = queryClient.getQueryData<Note[]>(notesKeys.all);
-        const previousNote = queryClient.getQueryData<Note>(notesKeys.detail(id));
+        const previousNotes = queryClient.getQueryData<Note[]>(noteKeys.all);
+        const previousNote = queryClient.getQueryData<Note>(noteKeys.detail(id));
 
         // Optimistically update notes list (set isArchived to false and remove from Archived folder)
         if (previousNotes) {
           queryClient.setQueryData<Note[]>(
-            notesKeys.all,
+            noteKeys.all,
             previousNotes.map((note) =>
               note.id === id
                 ? {
@@ -265,7 +266,7 @@ export function useUnarchiveNote() {
 
         // Optimistically update single note
         if (previousNote) {
-          queryClient.setQueryData<Note>(notesKeys.detail(id), {
+          queryClient.setQueryData<Note>(noteKeys.detail(id), {
             ...previousNote,
             isArchived: false,
             // Only remove folder if it was in the Archived folder
@@ -279,16 +280,16 @@ export function useUnarchiveNote() {
       onError: (_error, id, context) => {
         // Rollback on error
         if (context?.previousNotes) {
-          queryClient.setQueryData(notesKeys.all, context.previousNotes);
+          queryClient.setQueryData(noteKeys.all, context.previousNotes);
         }
         if (context?.previousNote) {
-          queryClient.setQueryData(notesKeys.detail(id), context.previousNote);
+          queryClient.setQueryData(noteKeys.detail(id), context.previousNote);
         }
       },
       onSettled: (_data, _error, id) => {
         // Refetch to ensure consistency
-        queryClient.invalidateQueries({ queryKey: notesKeys.all });
-        queryClient.invalidateQueries({ queryKey: notesKeys.detail(id) });
+        void queryClient.invalidateQueries({ queryKey: noteKeys.all });
+        void queryClient.invalidateQueries({ queryKey: noteKeys.detail(id) });
       },
     }
   );
@@ -312,17 +313,17 @@ export function useMoveToFolder() {
       errorMessage: 'Failed to move note',
       onMutate: async ({ id, folder }) => {
         // Cancel outgoing refetches
-        await queryClient.cancelQueries({ queryKey: notesKeys.all });
-        await queryClient.cancelQueries({ queryKey: notesKeys.detail(id) });
+        await queryClient.cancelQueries({ queryKey: noteKeys.all });
+        await queryClient.cancelQueries({ queryKey: noteKeys.detail(id) });
 
         // Snapshot previous values
-        const previousNotes = queryClient.getQueryData<Note[]>(notesKeys.all);
-        const previousNote = queryClient.getQueryData<Note>(notesKeys.detail(id));
+        const previousNotes = queryClient.getQueryData<Note[]>(noteKeys.all);
+        const previousNote = queryClient.getQueryData<Note>(noteKeys.detail(id));
 
         // Optimistically update notes list
         if (previousNotes) {
           queryClient.setQueryData<Note[]>(
-            notesKeys.all,
+            noteKeys.all,
             previousNotes.map((note) =>
               note.id === id
                 ? { ...note, folder: folder || undefined, updatedAt: new Date().toISOString() }
@@ -333,7 +334,7 @@ export function useMoveToFolder() {
 
         // Optimistically update single note
         if (previousNote) {
-          queryClient.setQueryData<Note>(notesKeys.detail(id), {
+          queryClient.setQueryData<Note>(noteKeys.detail(id), {
             ...previousNote,
             folder: folder || undefined,
             updatedAt: new Date().toISOString(),
@@ -345,16 +346,16 @@ export function useMoveToFolder() {
       onError: (_error, { id }, context) => {
         // Rollback on error
         if (context?.previousNotes) {
-          queryClient.setQueryData(notesKeys.all, context.previousNotes);
+          queryClient.setQueryData(noteKeys.all, context.previousNotes);
         }
         if (context?.previousNote) {
-          queryClient.setQueryData(notesKeys.detail(id), context.previousNote);
+          queryClient.setQueryData(noteKeys.detail(id), context.previousNote);
         }
       },
       onSettled: (_data, _error, { id }) => {
         // Refetch to ensure consistency
-        queryClient.invalidateQueries({ queryKey: notesKeys.all });
-        queryClient.invalidateQueries({ queryKey: notesKeys.detail(id) });
+        void queryClient.invalidateQueries({ queryKey: noteKeys.all });
+        void queryClient.invalidateQueries({ queryKey: noteKeys.detail(id) });
       },
     }
   );

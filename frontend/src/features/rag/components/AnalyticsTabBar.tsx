@@ -44,10 +44,10 @@ interface AnalyticsTabBarProps {
   onTabChange: (tab: TabType) => void;
 }
 
-export const AnalyticsTabBar = memo(function AnalyticsTabBar({
+export const AnalyticsTabBar = memo(({
   activeTab,
   onTabChange,
-}: AnalyticsTabBarProps) {
+}: AnalyticsTabBarProps) => {
   return (
     <div
       className="flex items-center p-1 rounded-xl backdrop-blur-md"
@@ -59,7 +59,7 @@ export const AnalyticsTabBar = memo(function AnalyticsTabBar({
       {TABS.map((tab) => (
         <button
           key={tab.id}
-          onClick={() => onTabChange(tab.id)}
+          onClick={() => { onTabChange(tab.id); }}
           className="flex items-center gap-2 px-5 py-2.5 text-sm rounded-lg transition-all duration-200 relative"
           style={{
             backgroundColor: activeTab === tab.id ? 'var(--surface-card)' : 'transparent',

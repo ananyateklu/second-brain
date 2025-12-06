@@ -171,7 +171,7 @@ export function ImageGenerationPanel({
       <div className="mb-4">
         <textarea
           value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
+          onChange={(e) => { setPrompt(e.target.value); }}
           placeholder="Describe the image you want to create..."
           disabled={isGenerating}
           rows={3}
@@ -184,7 +184,7 @@ export function ImageGenerationPanel({
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
-              handleGenerate();
+              void handleGenerate();
             }
           }}
         />
@@ -202,7 +202,7 @@ export function ImageGenerationPanel({
           </label>
           <select
             value={provider}
-            onChange={(e) => setProvider(e.target.value)}
+            onChange={(e) => { setProvider(e.target.value); }}
             disabled={isGenerating}
             className="w-full px-3 py-2 rounded-lg text-sm outline-none cursor-pointer"
             style={{
@@ -229,7 +229,7 @@ export function ImageGenerationPanel({
           </label>
           <select
             value={model}
-            onChange={(e) => setModel(e.target.value)}
+            onChange={(e) => { setModel(e.target.value); }}
             disabled={isGenerating}
             className="w-full px-3 py-2 rounded-lg text-sm outline-none cursor-pointer"
             style={{
@@ -256,7 +256,7 @@ export function ImageGenerationPanel({
           </label>
           <select
             value={size}
-            onChange={(e) => setSize(e.target.value)}
+            onChange={(e) => { setSize(e.target.value); }}
             disabled={isGenerating}
             className="w-full px-3 py-2 rounded-lg text-sm outline-none cursor-pointer"
             style={{
@@ -284,7 +284,7 @@ export function ImageGenerationPanel({
             </label>
             <select
               value={quality}
-              onChange={(e) => setQuality(e.target.value)}
+              onChange={(e) => { setQuality(e.target.value); }}
               disabled={isGenerating}
               className="w-full px-3 py-2 rounded-lg text-sm outline-none cursor-pointer"
               style={{
@@ -313,7 +313,7 @@ export function ImageGenerationPanel({
             </label>
             <select
               value={style}
-              onChange={(e) => setStyle(e.target.value)}
+              onChange={(e) => { setStyle(e.target.value); }}
               disabled={isGenerating}
               className="w-full px-3 py-2 rounded-lg text-sm outline-none cursor-pointer"
               style={{
@@ -361,7 +361,7 @@ export function ImageGenerationPanel({
 
       {/* Generate Button */}
       <button
-        onClick={handleGenerate}
+        onClick={() => { void handleGenerate(); }}
         disabled={isGenerating || !prompt.trim()}
         className="w-full py-2.5 rounded-xl font-medium text-sm transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         style={{

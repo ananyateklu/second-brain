@@ -10,8 +10,15 @@ interface ToolExecutionCardProps {
 // Helper to parse note results from JSON
 const parseNotesResult = (result: string): AgentNotesResponse | null => {
   try {
-    const parsed = JSON.parse(result);
-    if (parsed.type === 'notes' && Array.isArray(parsed.notes)) {
+    const parsed: unknown = JSON.parse(result);
+    if (
+      typeof parsed === 'object' &&
+      parsed !== null &&
+      'type' in parsed &&
+      parsed.type === 'notes' &&
+      'notes' in parsed &&
+      Array.isArray(parsed.notes)
+    ) {
       return parsed as AgentNotesResponse;
     }
   } catch {
@@ -117,7 +124,7 @@ export function ToolExecutionCard({ execution }: ToolExecutionCardProps) {
       {/* Content */}
       <div className="text-sm">
         <button
-          onClick={() => setIsExpanded(!isExpanded)}
+          onClick={() => { setIsExpanded(!isExpanded); }}
           className="flex items-center gap-2 w-full text-left hover:opacity-80 transition-opacity"
         >
           <span 

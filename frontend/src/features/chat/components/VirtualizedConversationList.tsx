@@ -23,7 +23,7 @@ const ITEM_HEIGHT = 72;
  * VirtualizedConversationList - A performant conversation list that supports 
  * virtual scrolling for large datasets.
  */
-export const VirtualizedConversationList = memo(function VirtualizedConversationList({
+export const VirtualizedConversationList = memo(({
   conversations,
   selectedConversationId,
   isNewChat,
@@ -33,7 +33,7 @@ export const VirtualizedConversationList = memo(function VirtualizedConversation
   onDeleteConversation,
   onToggleSelection,
   enableVirtualization = true,
-}: VirtualizedConversationListProps) {
+}: VirtualizedConversationListProps) => {
   const parentRef = useRef<HTMLDivElement>(null);
 
   // Sort conversations by updated date

@@ -301,9 +301,9 @@ function MessageWithContext({
       {/* Use ProcessTimeline to wrap reasoning, context retrieval, and tool executions */}
       <ProcessTimeline hasContent={hasProcessContent}>
         {/* Show retrieved notes context first (from RAG or agent context injection) */}
-        {shouldShowPersistedRetrievedNotes && (
+        {shouldShowPersistedRetrievedNotes && message.retrievedNotes && (
           <RetrievedNotesCard
-            notes={message.retrievedNotes!}
+            notes={message.retrievedNotes}
           />
         )}
 
@@ -318,11 +318,11 @@ function MessageWithContext({
           />
         ))}
 
-        {shouldShowPersistedToolExecutions && message.toolCalls!.map((toolCall: ToolCall, toolIndex: number) => (
+        {shouldShowPersistedToolExecutions && message.toolCalls?.map((toolCall: ToolCall, toolIndex: number) => (
           <ToolExecutionCard
             key={`${index}-tool-${toolIndex}`}
             execution={convertToolCallToExecution(toolCall)}
-            isLast={toolIndex === message.toolCalls!.length - 1}
+            isLast={toolIndex === (message.toolCalls?.length ?? 0) - 1}
           />
         ))}
       </ProcessTimeline>

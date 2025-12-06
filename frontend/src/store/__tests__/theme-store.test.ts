@@ -20,9 +20,9 @@ describe('theme-store', () => {
         vi.clearAllMocks();
 
         // Mock document methods
-        vi.spyOn(document.documentElement, 'setAttribute').mockImplementation(() => { });
-        vi.spyOn(document.documentElement.classList, 'add').mockImplementation(() => { });
-        vi.spyOn(document.documentElement.classList, 'remove').mockImplementation(() => { });
+        vi.spyOn(document.documentElement, 'setAttribute').mockImplementation(() => { /* no-op */ });
+        vi.spyOn(document.documentElement.classList, 'add').mockImplementation(() => { /* no-op */ });
+        vi.spyOn(document.documentElement.classList, 'remove').mockImplementation(() => { /* no-op */ });
     });
 
     afterEach(() => {

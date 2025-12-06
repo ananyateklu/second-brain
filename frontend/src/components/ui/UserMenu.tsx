@@ -27,12 +27,13 @@ export function UserMenu() {
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => { document.removeEventListener('mousedown', handleClickOutside); };
   }, [isOpen]);
 
-  const handleSignOut = async () => {
+  const handleSignOut = () => {
     try {
-      await signOut();
+      signOut();
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises -- navigate from useNavigate() returns void, not a promise
       navigate('/login');
     } catch (error) {
       console.error('Sign out error:', error);
@@ -57,7 +58,10 @@ export function UserMenu() {
   };
 
   const copyApiKey = (apiKey: string) => {
-    navigator.clipboard.writeText(apiKey);
+    void navigator.clipboard.writeText(apiKey).catch((error: unknown) => {
+      console.error('Failed to copy API key:', error);
+      toast.error('Failed to copy API key');
+    });
     toast.success('API key copied to clipboard');
   };
 
@@ -67,7 +71,7 @@ export function UserMenu() {
     <>
       <div className="relative" ref={menuRef}>
         <button
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={() => { setIsOpen(!isOpen); }}
           className="flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)]"
           style={{ 
             color: 'var(--text-primary)',
@@ -181,7 +185,7 @@ export function UserMenu() {
                     {user.apiKey.substring(0, 32)}...
                   </code>
                   <button
-                    onClick={() => copyApiKey(user.apiKey!)}
+                    onClick={() => { if (user.apiKey) copyApiKey(user.apiKey); }}
                     className="p-2 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)]"
                     style={{ 
                       color: 'var(--color-brand-600)',
@@ -290,7 +294,7 @@ export function UserMenu() {
               ? 'rgba(10, 22, 40, 0.85)' // Darker blue overlay for blue theme
               : 'rgba(0, 0, 0, 0.5)' 
           }}
-          onClick={() => setShowApiKeyModal(false)}
+          onClick={() => { setShowApiKeyModal(false); }}
         >
           <div 
             className="rounded-2xl border max-w-md w-full p-6 animate-in zoom-in-95 duration-200"
@@ -303,7 +307,7 @@ export function UserMenu() {
               backdropFilter: 'blur(12px) saturate(180%)',
               WebkitBackdropFilter: 'blur(12px) saturate(180%)'
             }}
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); }}
           >
             <div className="flex items-center gap-3 mb-6">
               <div 
@@ -332,7 +336,7 @@ export function UserMenu() {
 
                 <div className="flex gap-3">
                   <button
-                    onClick={() => setShowApiKeyModal(false)}
+                    onClick={() => { setShowApiKeyModal(false); }}
                     className="flex-1 px-4 py-2.5 text-sm font-medium rounded-xl border transition-all duration-200 hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)]"
                     style={{ 
                       color: 'var(--text-primary)',
@@ -349,7 +353,7 @@ export function UserMenu() {
                     Cancel
                   </button>
                   <button
-                    onClick={handleGenerateApiKey}
+                    onClick={() => { void handleGenerateApiKey(); }}
                     disabled={isGeneratingKey}
                     className="flex-1 px-4 py-2.5 text-sm font-semibold rounded-xl border transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)]"
                     style={{ 
@@ -421,7 +425,7 @@ export function UserMenu() {
                     {newApiKey}
                   </code>
                   <button
-                    onClick={() => copyApiKey(newApiKey)}
+                    onClick={() => { copyApiKey(newApiKey); }}
                     className="absolute top-2 right-2 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
                     style={{ 
                       color: 'var(--color-brand-600)',
@@ -437,7 +441,7 @@ export function UserMenu() {
 
                 <div className="flex gap-3">
                   <button
-                    onClick={() => copyApiKey(newApiKey)}
+                    onClick={() => { copyApiKey(newApiKey); }}
                     className="flex-1 px-4 py-2.5 text-sm font-medium rounded-xl border transition-all duration-200 hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] flex items-center justify-center gap-2"
                     style={{ 
                       color: 'var(--text-primary)',

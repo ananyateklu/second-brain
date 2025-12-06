@@ -23,7 +23,7 @@ export function ChatFormattingToolbar({
   // Use safe context hook - returns null if not in ChatInput context
   const contextValue = useChatInputContextSafe();
 
-  const onFormat = propOnFormat ?? contextValue?.onFormat ?? (() => { });
+  const onFormat = propOnFormat ?? contextValue?.onFormat ?? (() => { /* no-op */ });
   const showToolbar = contextValue?.showToolbar ?? true;
 
   if (!showToolbar) return null;
@@ -42,7 +42,7 @@ export function ChatFormattingToolbar({
             <div className="w-px h-4 mx-1" style={{ backgroundColor: 'var(--border)' }} />
           )}
           <button
-            onClick={() => onFormat(action.before, action.after)}
+            onClick={() => { onFormat(action.before, action.after); }}
             className="p-1.5 rounded-lg transition-colors hover:bg-white/10"
             title={action.title}
             style={{ color: 'var(--text-secondary)' }}

@@ -87,8 +87,8 @@ export function useStartSession() {
       errorMessage: 'Failed to start session',
       onSuccess: () => {
         // Invalidate active sessions and stats
-        queryClient.invalidateQueries({ queryKey: chatSessionKeys.active() });
-        queryClient.invalidateQueries({ queryKey: chatSessionKeys.stats() });
+        void queryClient.invalidateQueries({ queryKey: chatSessionKeys.active() });
+        void queryClient.invalidateQueries({ queryKey: chatSessionKeys.stats() });
       },
     }
   );
@@ -108,7 +108,7 @@ export function useEndSession() {
   const queryClient = useQueryClient();
 
   return useApiMutation<
-    void,
+    undefined,
     { sessionId: string; data?: EndSessionRequest },
     EndSessionContext
   >(
@@ -145,9 +145,9 @@ export function useEndSession() {
       },
       onSettled: () => {
         // Invalidate related queries
-        queryClient.invalidateQueries({ queryKey: chatSessionKeys.active() });
-        queryClient.invalidateQueries({ queryKey: chatSessionKeys.stats() });
-        queryClient.invalidateQueries({ queryKey: chatSessionKeys.history() });
+        void queryClient.invalidateQueries({ queryKey: chatSessionKeys.active() });
+        void queryClient.invalidateQueries({ queryKey: chatSessionKeys.stats() });
+        void queryClient.invalidateQueries({ queryKey: chatSessionKeys.history() });
       },
     }
   );
@@ -161,7 +161,7 @@ export function usePrefetchSessionStats() {
   const queryClient = useQueryClient();
 
   return () => {
-    queryClient.prefetchQuery({
+    void queryClient.prefetchQuery({
       queryKey: chatSessionKeys.stats(),
       queryFn: () => chatService.getSessionStats(),
       staleTime: 1000 * 60 * 5, // 5 minutes
@@ -177,7 +177,7 @@ export function useInvalidateSessionQueries() {
   const queryClient = useQueryClient();
 
   return () => {
-    queryClient.invalidateQueries({ queryKey: chatSessionKeys.all });
+    void queryClient.invalidateQueries({ queryKey: chatSessionKeys.all });
   };
 }
 
@@ -190,7 +190,8 @@ export function collectDeviceInfo(): string {
 
   if (typeof navigator !== 'undefined') {
     info.userAgent = navigator.userAgent;
-    info.platform = navigator.platform;
+    // Use userAgent to infer platform instead of deprecated navigator.platform
+    info.platform = navigator.userAgent.includes('Mac') ? 'MacIntel' : navigator.userAgent.includes('Win') ? 'Win32' : navigator.userAgent.includes('Linux') ? 'Linux x86_64' : 'Unknown';
     info.language = navigator.language;
     info.cookiesEnabled = navigator.cookieEnabled;
     info.onLine = navigator.onLine;

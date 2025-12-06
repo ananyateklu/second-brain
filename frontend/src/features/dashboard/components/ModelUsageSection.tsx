@@ -153,7 +153,7 @@ export function ModelUsageSection({
           x={x}
           y={y}
           fill="var(--text-primary)"
-          textAnchor={x > entry.cx! ? 'start' : 'end'}
+          textAnchor={x > entry.cx ? 'start' : 'end'}
           dominantBaseline="central"
           fontSize={11}
           style={{ fontWeight: 500 }}
@@ -425,7 +425,7 @@ export function ModelUsageSection({
                     return (
                       <button
                         key={`legend-${entry.originalName}`}
-                        onClick={() => toggleModelVisibility(entry.name)}
+                        onClick={() => { toggleModelVisibility(entry.name); }}
                         className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-200 hover:scale-105 flex-shrink-0 whitespace-nowrap"
                         style={{
                           backgroundColor: isHidden ? 'var(--surface-hover)' : 'transparent',

@@ -237,7 +237,7 @@ export function formatSizeLabel(size: string): string {
 export function downloadGeneratedImage(
   base64Data: string | undefined,
   url: string | undefined,
-  filename: string = 'generated-image.png'
+  filename = 'generated-image.png'
 ): void {
   if (base64Data) {
     // Create blob from base64
@@ -267,7 +267,7 @@ export function downloadGeneratedImage(
 /**
  * Get data URL from base64 data
  */
-export function getImageDataUrl(base64Data: string, mediaType: string = 'image/png'): string {
+export function getImageDataUrl(base64Data: string, mediaType = 'image/png'): string {
   return `data:${mediaType};base64,${base64Data}`;
 }
 

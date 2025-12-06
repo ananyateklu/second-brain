@@ -97,7 +97,7 @@ export function CreateNoteModal() {
         ) : null
       }
     >
-      <form ref={formRef} onSubmit={handleSubmit} className="h-full flex flex-col">
+      <form ref={formRef} onSubmit={(e) => { void handleSubmit(e); }} className="h-full flex flex-col">
         <RichNoteForm
           register={register}
           control={control}

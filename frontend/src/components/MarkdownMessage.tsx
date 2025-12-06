@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import ReactMarkdown, { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import type { Element } from 'hast';
+// Element type is used in type assertions below
 import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 // Import only the languages you need (reduces bundle size significantly)
@@ -68,12 +68,12 @@ export function MarkdownMessage({ content }: MarkdownMessageProps) {
   const processedContent = useMemo(() => {
     // Decode Unicode escape sequences (e.g., \uD83D\uDC4B -> 👋)
     // Replace all \uXXXX patterns with their actual Unicode characters
-    const decoded = content.replace(/\\u([0-9A-Fa-f]{4})/g, (_match, code) => {
+    const decoded = content.replace(/\\u([0-9A-Fa-f]{4})/g, (_match: string, code: string) => {
       return String.fromCharCode(parseInt(code, 16));
     });
 
     // Replace [Note Name] with custom link, avoiding checkboxes [x] [ ] and existing links
-    return decoded.replace(/\[([^\]]+)\](?!\()/g, (match, name) => {
+    return decoded.replace(/\[([^\]]+)\](?!\()/g, (match: string, name: string) => {
       const trimmed = name.trim();
       // Avoid matching checkboxes
       if (trimmed === 'x' || trimmed === 'X' || trimmed === '') return match;
@@ -178,8 +178,8 @@ export function MarkdownMessage({ content }: MarkdownMessageProps) {
           ),
           // Code blocks
           code: (({ className, children, ...props }) => {
-            const match = /language-(\w+)/.exec(className || '');
-            const language = match ? match[1] : '';
+            const match = /language-(\w+)/.exec(className ?? '');
+            const language = match?.[1] !== undefined ? match[1] : '';
             // Check if inline based on whether parent is a pre element (heuristic)
             const isInline = !className?.includes('language-');
 
@@ -199,6 +199,19 @@ export function MarkdownMessage({ content }: MarkdownMessageProps) {
               );
             }
 
+            // Convert children to string safely
+            const childrenStr = Array.isArray(children)
+              ? children.map((child) => {
+                  if (typeof child === 'string') return child;
+                  if (typeof child === 'number' || typeof child === 'boolean') return String(child);
+                  return '';
+                }).join('')
+              : typeof children === 'string'
+                ? children
+                : typeof children === 'number' || typeof children === 'boolean'
+                  ? String(children)
+                  : '';
+
             return (
               <SyntaxHighlighter
                 language={language || 'text'}
@@ -214,16 +227,22 @@ export function MarkdownMessage({ content }: MarkdownMessageProps) {
                 }}
                 PreTag="div"
               >
-                {String(children).replace(/\n$/, '')}
+                {childrenStr.replace(/\n$/, '')}
               </SyntaxHighlighter>
             );
           }) as Components['code'],
           pre: (({ node, children, ...props }) => {
             // If it contains a code element with syntax highlighting, don't wrap it
-            const hasCodeBlock = (node as Element)?.children?.some(
-              (child: Element | { type: string }) => child.type === 'element' &&
-                (child as Element).tagName === 'code' &&
-                (child as Element).properties?.className
+            const hasCodeBlock = node !== undefined && node !== null && 'children' in node && Array.isArray(node.children) && node.children.some(
+              (child: unknown) => {
+                if (typeof child === 'object' && child !== null && 'type' in child) {
+                  const typedChild = child as { type: string; tagName?: string; properties?: { className?: unknown } };
+                  return typedChild.type === 'element' &&
+                    typedChild.tagName === 'code' &&
+                    typedChild.properties?.className !== undefined;
+                }
+                return false;
+              }
             );
 
             if (hasCodeBlock) {

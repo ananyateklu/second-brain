@@ -31,7 +31,7 @@ export function ProcessTimeline({
             {!isStreaming && (
                 <div className="flex items-center gap-2 mb-2">
                     <button
-                        onClick={() => setIsExpanded(!isExpanded)}
+                        onClick={() => { setIsExpanded(!isExpanded); }}
                         className="text-xs font-medium flex items-center gap-1.5 px-2 py-1 rounded hover:bg-[var(--surface-elevated)] transition-colors"
                         style={{ color: 'var(--text-secondary)' }}
                     >

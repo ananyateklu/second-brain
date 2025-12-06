@@ -98,7 +98,7 @@ export function ChatHeader({
 
   // Build badge items with icons and colors for enabled features (Agent)
   const agentBadgeItems = useMemo(() => {
-    const items: Array<{ icon: ReactNode; color: string }> = [];
+    const items: { icon: ReactNode; color: string }[] = [];
 
     // Add Auto Context icon if enabled
     if (agentRagEnabled) {
@@ -134,7 +134,7 @@ export function ChatHeader({
   const ragBadgeItems = useMemo(() => {
     if (!ragEnabled) return undefined;
 
-    const items: Array<{ icon: ReactNode; color: string }> = [];
+    const items: { icon: ReactNode; color: string }[] = [];
 
     // Add vector store icon
     if (selectedVectorStore === 'PostgreSQL') {

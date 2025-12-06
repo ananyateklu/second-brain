@@ -15,7 +15,8 @@ import { useContextUsage } from './use-context-usage';
 import { chatService } from '../../../services';
 import { toast } from '../../../hooks/use-toast';
 import { useAuthStore } from '../../../store/auth-store';
-import { DEFAULT_USER_ID, QUERY_KEYS } from '../../../lib/constants';
+import { DEFAULT_USER_ID } from '../../../lib/constants';
+import { conversationKeys } from '../../../lib/query-keys';
 import { isImageGenerationModel } from '../../../utils/image-generation-models';
 import type { MessageImage, ImageGenerationResponse, ChatConversation } from '../../../types/chat';
 import type { AgentCapability } from '../components/ChatHeader';
@@ -205,7 +206,7 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     // Only sync when the conversation ID actually changes (new conversation selected)
     if (conversationId !== prevConversationIdRef.current) {
       prevConversationIdRef.current = conversationId;
-      
+
       // If we have a conversation loaded (not a new chat), sync its provider/model
       if (conversation && !isNewChat && conversationId) {
         setProviderAndModel(conversation.provider, conversation.model);
@@ -217,10 +218,10 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
   useEffect(() => {
     if (isImageGenerationMode) {
       if (ragEnabled) {
-        handleRagToggle(false);
+        void handleRagToggle(false);
       }
       if (agentModeEnabled) {
-        setAgentModeEnabled(false);
+        void setAgentModeEnabled(false);
       }
     }
   }, [isImageGenerationMode, ragEnabled, agentModeEnabled, handleRagToggle, setAgentModeEnabled]);
@@ -349,8 +350,9 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
         setPendingMessage(null);
       }, 2000); // 2 second fallback timeout
 
-      return () => clearTimeout(timeoutId);
+      return () => { clearTimeout(timeoutId); };
     }
+    return undefined;
   }, [isStreaming, streamingMessage, resetStream, setPendingMessage]);
 
   // Handle sending a message
@@ -446,10 +448,10 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
       const targetConversationId = response.conversationId || conversationId;
 
       if (targetConversationId) {
-        queryClient.refetchQueries({
-          queryKey: QUERY_KEYS.conversation(targetConversationId),
+        void queryClient.refetchQueries({
+          queryKey: conversationKeys.detail(targetConversationId),
         });
-        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations.all });
+        void queryClient.invalidateQueries({ queryKey: conversationKeys.all });
       }
       toast.success(
         'Image generated',
@@ -613,15 +615,17 @@ export function useChatPageState(): ChatPageState & ChatPageActions {
     // Conversation Actions
     handleNewChat,
     handleSelectConversation,
-    handleDeleteConversation,
-    handleBulkDeleteConversations,
+    handleDeleteConversation: (id: string) => { void handleDeleteConversation(id); },
+    ...(handleBulkDeleteConversations ? {
+      handleBulkDeleteConversations: handleBulkDeleteConversations as (ids: string[]) => Promise<void>
+    } : {}),
 
     // Settings Actions
-    handleRagToggle,
+    handleRagToggle: (enabled: boolean) => { void handleRagToggle(enabled); },
     handleVectorStoreChange,
-    setAgentModeEnabled,
-    setAgentRagEnabled,
-    setNotesCapabilityEnabled,
+    setAgentModeEnabled: (enabled: boolean) => { void setAgentModeEnabled(enabled); },
+    setAgentRagEnabled: (enabled: boolean) => { void setAgentRagEnabled(enabled); },
+    setNotesCapabilityEnabled: (enabled: boolean) => { void setNotesCapabilityEnabled(enabled); },
 
     // Message Actions
     handleSendMessage,

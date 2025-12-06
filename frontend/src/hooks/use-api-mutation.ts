@@ -159,7 +159,7 @@ export function useApiMutation<TData, TVariables, TContext = unknown>(
       // Invalidate queries
       if (invalidateQueries) {
         for (const queryKey of invalidateQueries) {
-          queryClient.invalidateQueries({ queryKey });
+          void queryClient.invalidateQueries({ queryKey });
         }
       }
 
@@ -199,7 +199,7 @@ export function useApiMutation<TData, TVariables, TContext = unknown>(
     onSettled: (data, error, variables, context) => {
       // Refetch to ensure consistency after optimistic updates
       if (optimisticUpdate) {
-        queryClient.invalidateQueries({ queryKey: optimisticUpdate.queryKey });
+        void queryClient.invalidateQueries({ queryKey: optimisticUpdate.queryKey });
       }
 
       // Call original onSettled (use simpler 4-arg signature)

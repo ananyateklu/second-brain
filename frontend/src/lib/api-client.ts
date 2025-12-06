@@ -24,7 +24,7 @@ async function ensureBackendReady(): Promise<void> {
   if (isBackendReadyForRequests()) {
     return;
   }
-  
+
   // Wait for backend to be ready (with shorter timeout for individual requests)
   try {
     await waitForBackendReady(10000);
@@ -96,17 +96,37 @@ export function addErrorInterceptor(interceptor: ErrorInterceptor): () => void {
 // ============================================
 
 /**
+ * Normalize HeadersInit to a plain object
+ */
+function normalizeHeaders(headers: HeadersInit): Record<string, string> {
+  if (headers instanceof Headers) {
+    const result: Record<string, string> = {};
+    headers.forEach((value, key) => {
+      result[key] = value;
+    });
+    return result;
+  }
+  if (Array.isArray(headers)) {
+    const result: Record<string, string> = {};
+    headers.forEach(([key, value]) => {
+      result[key] = value;
+    });
+    return result;
+  }
+  return headers;
+}
+
+/**
  * Get authentication headers from the auth store
  */
-function getAuthHeaders(): HeadersInit {
+function getAuthHeaders(): Record<string, string> {
   const authStore = useBoundStore.getState();
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    ...(authStore.token !== null && authStore.token.length > 0 && {
+      Authorization: `Bearer ${authStore.token}`,
+    }),
   };
-
-  if (authStore.token) {
-    headers['Authorization'] = `Bearer ${authStore.token}`;
-  }
 
   return headers;
 }
@@ -137,13 +157,19 @@ function getErrorCodeFromStatus(status: number): ApiErrorCode {
  * Parse error message from response
  */
 async function parseErrorMessage(response: Response): Promise<string> {
-  const defaultMessage = `Failed to ${response.url.split('/').pop()?.split('?')[0] || 'complete request'}`;
+  const defaultMessage = `Failed to ${response.url.split('/').pop()?.split('?')[0] ?? 'complete request'}`;
 
   try {
-    const errorData = await response.json();
-    if (errorData.error) return errorData.error;
-    if (errorData.message) return errorData.message;
-    if (errorData.title) return errorData.title;
+    const errorData = await response.json() as { error?: string; message?: string; title?: string };
+    if (typeof errorData.error === 'string' && errorData.error.length > 0) {
+      return errorData.error;
+    }
+    if (typeof errorData.message === 'string' && errorData.message.length > 0) {
+      return errorData.message;
+    }
+    if (typeof errorData.title === 'string' && errorData.title.length > 0) {
+      return errorData.title;
+    }
     return defaultMessage;
   } catch {
     return defaultMessage;
@@ -238,8 +264,8 @@ async function handleResponse<T>(response: Response): Promise<T> {
 
   // Handle empty responses (like DELETE)
   const contentType = response.headers.get('content-type');
-  if (contentType && contentType.includes('application/json')) {
-    return response.json();
+  if (contentType?.includes('application/json') === true) {
+    return response.json() as Promise<T>;
   }
 
   return undefined as T;
@@ -260,8 +286,8 @@ async function fetchWithRetry<T>(
     try {
       // Create abort controller for timeout
       const controller = new AbortController();
-      const timeoutId = timeout
-        ? setTimeout(() => controller.abort(), timeout)
+      const timeoutId = timeout !== undefined && timeout > 0
+        ? setTimeout(() => { controller.abort(); }, timeout)
         : undefined;
 
       // Merge signals if one was provided
@@ -274,7 +300,9 @@ async function fetchWithRetry<T>(
         signal,
       });
 
-      if (timeoutId) clearTimeout(timeoutId);
+      if (timeoutId !== undefined) {
+        clearTimeout(timeoutId);
+      }
 
       return await handleResponse<T>(response);
     } catch (error) {
@@ -284,7 +312,7 @@ async function fetchWithRetry<T>(
       if (
         error instanceof Error &&
         (error.name === 'AbortError' ||
-          (error instanceof ApiError && error.status && error.status < 500))
+          (error instanceof ApiError && error.status !== undefined && error.status < 500))
       ) {
         throw error;
       }
@@ -303,7 +331,7 @@ async function fetchWithRetry<T>(
   }
 
   throw new ApiError(
-    lastError?.message || 'Request failed after retries',
+    lastError?.message ?? 'Request failed after retries',
     ApiErrorCode.NETWORK_ERROR
   );
 }
@@ -319,7 +347,7 @@ function mergeAbortSignals(...signals: AbortSignal[]): AbortSignal {
       controller.abort();
       break;
     }
-    signal.addEventListener('abort', () => controller.abort());
+    signal.addEventListener('abort', () => { controller.abort(); });
   }
 
   return controller.signal;
@@ -342,19 +370,19 @@ export const apiClient = {
     config: Partial<RequestConfig> = {}
   ): Promise<T> {
     await ensureBackendReady();
-    
+
     const mergedConfig = { ...defaultConfig, ...config };
-    let requestInit: RequestInit = {
+    const requestInit: RequestInit = {
       method: 'GET',
       headers: {
         ...getAuthHeaders(),
-        ...headers,
+        ...normalizeHeaders(headers),
       },
     };
 
-    requestInit = await applyRequestInterceptors(requestInit);
+    const modifiedInit = await applyRequestInterceptors(requestInit);
 
-    return fetchWithRetry<T>(`${getApiUrl()}${endpoint}`, requestInit, mergedConfig);
+    return fetchWithRetry<T>(`${getApiUrl()}${endpoint}`, modifiedInit, mergedConfig);
   },
 
   /**
@@ -367,20 +395,20 @@ export const apiClient = {
     config: Partial<RequestConfig> = {}
   ): Promise<T> {
     await ensureBackendReady();
-    
+
     const mergedConfig = { ...defaultConfig, ...config };
-    let requestInit: RequestInit = {
+    const requestInit: RequestInit = {
       method: 'POST',
       headers: {
         ...getAuthHeaders(),
-        ...headers,
+        ...normalizeHeaders(headers),
       },
-      body: body ? JSON.stringify(body) : undefined,
+      ...(body !== null && body !== undefined && { body: JSON.stringify(body) }),
     };
 
-    requestInit = await applyRequestInterceptors(requestInit);
+    const modifiedInit = await applyRequestInterceptors(requestInit);
 
-    return fetchWithRetry<T>(`${getApiUrl()}${endpoint}`, requestInit, mergedConfig);
+    return fetchWithRetry<T>(`${getApiUrl()}${endpoint}`, modifiedInit, mergedConfig);
   },
 
   /**
@@ -393,20 +421,20 @@ export const apiClient = {
     config: Partial<RequestConfig> = {}
   ): Promise<T> {
     await ensureBackendReady();
-    
+
     const mergedConfig = { ...defaultConfig, ...config };
-    let requestInit: RequestInit = {
+    const requestInit: RequestInit = {
       method: 'PUT',
       headers: {
         ...getAuthHeaders(),
-        ...headers,
+        ...normalizeHeaders(headers),
       },
       body: JSON.stringify(body),
     };
 
-    requestInit = await applyRequestInterceptors(requestInit);
+    const modifiedInit = await applyRequestInterceptors(requestInit);
 
-    return fetchWithRetry<T>(`${getApiUrl()}${endpoint}`, requestInit, mergedConfig);
+    return fetchWithRetry<T>(`${getApiUrl()}${endpoint}`, modifiedInit, mergedConfig);
   },
 
   /**
@@ -419,20 +447,20 @@ export const apiClient = {
     config: Partial<RequestConfig> = {}
   ): Promise<T> {
     await ensureBackendReady();
-    
+
     const mergedConfig = { ...defaultConfig, ...config };
-    let requestInit: RequestInit = {
+    const requestInit: RequestInit = {
       method: 'PATCH',
       headers: {
         ...getAuthHeaders(),
-        ...headers,
+        ...normalizeHeaders(headers),
       },
       body: JSON.stringify(body),
     };
 
-    requestInit = await applyRequestInterceptors(requestInit);
+    const modifiedInit = await applyRequestInterceptors(requestInit);
 
-    return fetchWithRetry<T>(`${getApiUrl()}${endpoint}`, requestInit, mergedConfig);
+    return fetchWithRetry<T>(`${getApiUrl()}${endpoint}`, modifiedInit, mergedConfig);
   },
 
   /**
@@ -444,19 +472,19 @@ export const apiClient = {
     config: Partial<RequestConfig> = {}
   ): Promise<T> {
     await ensureBackendReady();
-    
+
     const mergedConfig = { ...defaultConfig, ...config };
-    let requestInit: RequestInit = {
+    const requestInit: RequestInit = {
       method: 'DELETE',
       headers: {
         ...getAuthHeaders(),
-        ...headers,
+        ...normalizeHeaders(headers),
       },
     };
 
-    requestInit = await applyRequestInterceptors(requestInit);
+    const modifiedInit = await applyRequestInterceptors(requestInit);
 
-    return fetchWithRetry<T>(`${getApiUrl()}${endpoint}`, requestInit, mergedConfig);
+    return fetchWithRetry<T>(`${getApiUrl()}${endpoint}`, modifiedInit, mergedConfig);
   },
 
   /**
@@ -469,29 +497,28 @@ export const apiClient = {
     signal?: AbortSignal
   ): Promise<Response> {
     await ensureBackendReady();
-    
+
     const authStore = useBoundStore.getState();
     const requestHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
       'Accept': 'text/event-stream',
-      ...(headers as Record<string, string>),
+      ...normalizeHeaders(headers),
+      ...(authStore.token !== null && authStore.token.length > 0 && {
+        Authorization: `Bearer ${authStore.token}`,
+      }),
     };
 
-    if (authStore.token) {
-      requestHeaders['Authorization'] = `Bearer ${authStore.token}`;
-    }
-
-    let requestInit: RequestInit = {
+    const requestInit: RequestInit = {
       method: 'POST',
       headers: requestHeaders,
-      body: body ? JSON.stringify(body) : undefined,
-      signal,
+      ...(body !== null && body !== undefined && { body: JSON.stringify(body) }),
+      ...(signal !== undefined && { signal }),
       credentials: 'include',
     };
 
-    requestInit = await applyRequestInterceptors(requestInit);
+    const modifiedInit = await applyRequestInterceptors(requestInit);
 
-    const response = await fetch(`${getApiUrl()}${endpoint}`, requestInit);
+    const response = await fetch(`${getApiUrl()}${endpoint}`, modifiedInit);
 
     if (!response.ok) {
       const errorMessage = await parseErrorMessage(response);

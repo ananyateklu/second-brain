@@ -80,7 +80,7 @@ describe('use-notes-query', () => {
     describe('useNotes', () => {
         it('should return loading state initially', () => {
             // Arrange
-            vi.mocked(notesService.getAll).mockImplementation(() => new Promise(() => { }));
+            vi.mocked(notesService.getAll).mockImplementation(() => new Promise(() => { /* no-op */ }));
 
             // Act
             const { result } = renderHook(() => useNotes(), {
@@ -438,7 +438,7 @@ describe('use-notes-query', () => {
 
             vi.mocked(notesService.getAll).mockResolvedValue(existingNotes);
             vi.mocked(notesService.create).mockImplementation(
-                () => new Promise((resolve) => setTimeout(() => resolve(createMockNote({ id: '2', ...newNoteData })), 100))
+                () => new Promise((resolve) => setTimeout(() => { resolve(createMockNote({ id: '2', ...newNoteData })); }, 100))
             );
 
             const queryClient = new QueryClient({

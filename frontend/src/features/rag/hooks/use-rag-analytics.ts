@@ -3,7 +3,7 @@
  */
 
 import { ragService } from '../../../services/rag.service';
-import { QUERY_KEYS } from '../../../lib/constants';
+import { ragAnalyticsKeys } from '../../../lib/query-keys';
 import type { RagPerformanceStats, RagQueryLogsResponse, TopicAnalyticsResponse } from '../../../types/rag';
 import { useApiQuery, useConditionalQuery } from '../../../hooks/use-api-query';
 
@@ -12,7 +12,7 @@ import { useApiQuery, useConditionalQuery } from '../../../hooks/use-api-query';
  */
 export function useRagPerformanceStats(since?: Date) {
   return useApiQuery<RagPerformanceStats>(
-    QUERY_KEYS.ragAnalytics.stats(since?.toISOString()),
+    ragAnalyticsKeys.stats(since?.toISOString()),
     () => ragService.getPerformanceStats(since),
     {
       staleTime: 1000 * 60 * 5, // 5 minutes
@@ -30,7 +30,7 @@ export function useRagQueryLogs(
   feedbackOnly = false
 ) {
   return useApiQuery<RagQueryLogsResponse>(
-    [...QUERY_KEYS.ragAnalytics.logs(page, pageSize), { since: since?.toISOString(), feedbackOnly }],
+    ragAnalyticsKeys.logs({ page, pageSize, since: since?.toISOString(), feedback: feedbackOnly ? 'thumbs_up' : null }),
     () => ragService.getQueryLogs(page, pageSize, since, feedbackOnly),
     {
       staleTime: 1000 * 60 * 2, // 2 minutes
@@ -44,7 +44,7 @@ export function useRagQueryLogs(
 export function useTopicAnalytics(enabled = true) {
   return useConditionalQuery<TopicAnalyticsResponse>(
     enabled,
-    QUERY_KEYS.ragAnalytics.topics(),
+    ragAnalyticsKeys.topics(),
     () => ragService.getTopicStats(),
     {
       staleTime: 1000 * 60 * 5, // 5 minutes

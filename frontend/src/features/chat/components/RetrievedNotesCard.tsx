@@ -164,7 +164,7 @@ export function RetrievedNotesCard({ notes, isStreaming = false }: RetrievedNote
       {/* Content */}
       <div className="text-xs">
         <button
-          onClick={() => setIsExpanded(!isExpanded)}
+          onClick={() => { setIsExpanded(!isExpanded); }}
           className="flex items-center gap-1.5 w-full text-left hover:opacity-80 transition-opacity"
         >
           <span 

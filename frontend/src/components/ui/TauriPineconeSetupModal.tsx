@@ -36,7 +36,7 @@ export function TauriPineconeSetupModal({ isOpen, onClose, onSaveSuccess }: Taur
 
   useEffect(() => {
     if (isOpen && isTauri()) {
-      loadSecrets();
+      void loadSecrets();
     }
   }, [isOpen, loadSecrets]);
 
@@ -149,9 +149,9 @@ export function TauriPineconeSetupModal({ isOpen, onClose, onSaveSuccess }: Taur
               <input
                 type={apiKeyVisible ? 'text' : 'password'}
                 value={apiKeyVisible ? (secrets.pinecone_api_key || '') : (secrets.pinecone_api_key ? maskValue(secrets.pinecone_api_key) : '')}
-                onChange={(e) => handleChange('pinecone_api_key', e.target.value)}
-                onFocus={() => setApiKeyVisible(true)}
-                onBlur={() => setApiKeyVisible(false)}
+                onChange={(e) => { handleChange('pinecone_api_key', e.target.value); }}
+                onFocus={() => { setApiKeyVisible(true); }}
+                onBlur={() => { setApiKeyVisible(false); }}
                 placeholder="pcsk_..."
                 className="w-full px-3 py-2.5 pr-10 rounded-xl text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] focus:border-transparent"
                 style={{
@@ -162,7 +162,7 @@ export function TauriPineconeSetupModal({ isOpen, onClose, onSaveSuccess }: Taur
               />
               <button
                 type="button"
-                onClick={() => setApiKeyVisible(!apiKeyVisible)}
+                onClick={() => { setApiKeyVisible(!apiKeyVisible); }}
                 className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-colors hover:bg-[var(--surface-card)]"
                 style={{ color: 'var(--text-secondary)' }}
                 tabIndex={-1}
@@ -192,7 +192,7 @@ export function TauriPineconeSetupModal({ isOpen, onClose, onSaveSuccess }: Taur
             <input
               type="text"
               value={secrets.pinecone_environment || ''}
-              onChange={(e) => handleChange('pinecone_environment', e.target.value)}
+              onChange={(e) => { handleChange('pinecone_environment', e.target.value); }}
               placeholder="us-east-1 (leave empty for serverless)"
               className="w-full px-3 py-2.5 rounded-xl text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] focus:border-transparent"
               style={{
@@ -217,7 +217,7 @@ export function TauriPineconeSetupModal({ isOpen, onClose, onSaveSuccess }: Taur
             <input
               type="text"
               value={secrets.pinecone_index_name || ''}
-              onChange={(e) => handleChange('pinecone_index_name', e.target.value)}
+              onChange={(e) => { handleChange('pinecone_index_name', e.target.value); }}
               placeholder="second-brain"
               className="w-full px-3 py-2.5 rounded-xl text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-500)] focus:border-transparent"
               style={{
@@ -247,7 +247,7 @@ export function TauriPineconeSetupModal({ isOpen, onClose, onSaveSuccess }: Taur
             </button>
             <button
               type="button"
-              onClick={handleSave}
+              onClick={() => { void handleSave(); }}
               disabled={isSaving}
               className="px-4 py-2 rounded-xl text-sm font-medium transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
               style={{

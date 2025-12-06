@@ -1,18 +1,18 @@
 import { aiService } from '../../../services';
 import { AIHealthResponse, AIProviderHealth } from '../../../types/ai';
 import { useSettingsStore } from '../../../store/settings-store';
-import { QUERY_KEYS } from '../../../lib/constants';
+import { aiHealthKeys } from '../../../lib/query-keys';
 import { useApiQuery, useConditionalQuery } from '../../../hooks/use-api-query';
 
 // Re-export query keys for backward compatibility
-export const aiHealthKeys = QUERY_KEYS.aiHealth;
+export { aiHealthKeys };
 
 // Query: Get health status for all AI providers
 export function useAIHealth() {
   const { ollamaRemoteUrl, useRemoteOllama } = useSettingsStore();
 
   return useApiQuery<AIHealthResponse>(
-    QUERY_KEYS.aiHealth.health(ollamaRemoteUrl, useRemoteOllama),
+    aiHealthKeys.health({ ollamaBaseUrl: ollamaRemoteUrl, useRemoteOllama }),
     () => aiService.getHealth({
       ollamaBaseUrl: ollamaRemoteUrl,
       useRemoteOllama,
@@ -32,7 +32,7 @@ export function useProviderHealth(provider: string) {
 
   return useConditionalQuery<AIProviderHealth>(
     !!provider,
-    QUERY_KEYS.aiHealth.provider(provider, ollamaRemoteUrl, useRemoteOllama),
+    aiHealthKeys.provider(provider, { ollamaBaseUrl: ollamaRemoteUrl, useRemoteOllama }),
     () => aiService.getProviderHealth(provider, {
       ollamaBaseUrl: ollamaRemoteUrl,
       useRemoteOllama,

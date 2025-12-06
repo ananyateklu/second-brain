@@ -49,10 +49,12 @@ export function BackendReadyProvider({ children }: BackendReadyProviderProps) {
 
         // In Tauri mode, use the built-in wait function
         if (inTauri) {
+            // eslint-disable-next-line no-console
             console.log('[BackendReadyProvider] Waiting for backend via Tauri bridge...');
             const ready = await waitForBackend(60000); // 60 second timeout
 
             if (ready) {
+                // eslint-disable-next-line no-console
                 console.log('[BackendReadyProvider] Backend is ready (Tauri)');
                 setBackendReady(true); // Set global flag BEFORE updating React state
                 setIsReady(true);
@@ -63,6 +65,7 @@ export function BackendReadyProvider({ children }: BackendReadyProviderProps) {
         }
 
         // In web/dev mode, poll the health endpoint
+        // eslint-disable-next-line no-console
         console.log('[BackendReadyProvider] Polling backend health endpoint...');
         const maxAttempts = 30;
         const pollInterval = 1000;
@@ -72,6 +75,7 @@ export function BackendReadyProvider({ children }: BackendReadyProviderProps) {
 
             const healthy = await checkBackendHealth();
             if (healthy) {
+                // eslint-disable-next-line no-console
                 console.log(`[BackendReadyProvider] Backend is ready after ${attempt} attempt(s)`);
                 setBackendReady(true); // Set global flag BEFORE updating React state
                 setIsReady(true);
@@ -92,7 +96,7 @@ export function BackendReadyProvider({ children }: BackendReadyProviderProps) {
         setIsReady(false);
         setError(null);
         setCheckCount(0);
-        waitForBackendReady();
+        void waitForBackendReady();
     }, [waitForBackendReady]);
 
     useEffect(() => {
@@ -103,7 +107,7 @@ export function BackendReadyProvider({ children }: BackendReadyProviderProps) {
             await waitForBackendReady();
         };
 
-        initBackend();
+        void initBackend();
 
         return () => {
             isMountedRef.current = false;
@@ -125,8 +129,8 @@ export function BackendReadyProvider({ children }: BackendReadyProviderProps) {
     };
 
     // Determine the sub-message for Tauri mode
-    const getSubMessage = () => {
-        if (inTauriMode && !error) {
+    const getSubMessage = (): string | undefined => {
+        if (inTauriMode && error === null) {
             return 'Starting PostgreSQL and API server...';
         }
         return undefined;

@@ -29,7 +29,7 @@ export interface SearchResult {
   score: number;
   matches: {
     field: 'title' | 'content' | 'tags';
-    positions: Array<[number, number]>; // [start, end]
+    positions: [number, number][]; // [start, end]
   }[];
 }
 
@@ -51,10 +51,10 @@ export interface SearchWorkerResponse {
 /**
  * Calculate similarity score using a simple term frequency approach
  */
-function calculateScore(text: string, terms: string[]): { score: number; positions: Array<[number, number]> } {
+function calculateScore(text: string, terms: string[]): { score: number; positions: [number, number][] } {
   const lowerText = text.toLowerCase();
   let score = 0;
-  const positions: Array<[number, number]> = [];
+  const positions: [number, number][] = [];
 
   for (const term of terms) {
     let pos = 0;

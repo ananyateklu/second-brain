@@ -196,7 +196,7 @@ export function ChatInputRoot({
     if (!supportsVision && attachedFiles.some(f => f.isImage)) {
       setAttachedFiles(prev => prev.filter(f => !f.isImage));
       setFileError('Images cleared: current model does not support vision');
-      setTimeout(() => setFileError(null), 3000);
+      setTimeout(() => { setFileError(null); }, 3000);
     }
   }, [supportsVision, attachedFiles]);
 
@@ -205,9 +205,17 @@ export function ChatInputRoot({
     try {
       const cached = sessionStorage.getItem(STORAGE_KEYS.SUGGESTED_PROMPTS);
       if (cached) {
-        const parsed = JSON.parse(cached);
-        if (parsed.prompts && Array.isArray(parsed.prompts) && parsed.prompts.length > 0) {
-          setSmartPrompts(parsed.prompts);
+        const parsed: unknown = JSON.parse(cached);
+        if (
+          typeof parsed === 'object' &&
+          parsed !== null &&
+          'prompts' in parsed &&
+          Array.isArray(parsed.prompts) &&
+          parsed.prompts.length > 0
+        ) {
+          // Type guard: verify prompts array contains SuggestedPrompt objects
+          const prompts = parsed.prompts as SuggestedPrompt[];
+          setSmartPrompts(prompts);
           setPromptsGenerated(true);
         }
       }
@@ -319,7 +327,7 @@ export function ChatInputRoot({
 
   const handleSend = useCallback(() => {
     if (isImageGenerationMode) {
-      handleImageGeneration();
+      void handleImageGeneration();
       return;
     }
 
@@ -328,7 +336,7 @@ export function ChatInputRoot({
     const images: MessageImage[] | undefined =
       attachedFiles.filter(f => f.isImage).length > 0
         ? attachedFiles.filter(f => f.isImage).map((img) => {
-          const base64Match = img.dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+          const base64Match = /^data:([^;]+);base64,(.+)$/.exec(img.dataUrl);
           return {
             base64Data: base64Match ? base64Match[2] : img.dataUrl,
             mediaType: img.type,
@@ -444,7 +452,7 @@ export function ChatInputRoot({
     if (disabled) return;
 
     const files = e.dataTransfer.files;
-    handleFileSelect(files);
+    void handleFileSelect(files);
   }, [disabled, handleFileSelect]);
 
   const handlePaste = useCallback((e: React.ClipboardEvent) => {
@@ -464,7 +472,7 @@ export function ChatInputRoot({
       e.preventDefault();
       const dataTransfer = new DataTransfer();
       files.forEach((f) => dataTransfer.items.add(f));
-      handleFileSelect(dataTransfer.files);
+      void handleFileSelect(dataTransfer.files);
     }
   }, [disabled, handleFileSelect]);
 
@@ -506,6 +514,15 @@ export function ChatInputRoot({
     setImageSettings(prev => ({ ...prev, ...settings }));
   }, []);
 
+  // Wrapper functions to convert async to void for context props
+  const handleFileSelectWrapper = useCallback((files: FileList | null) => {
+    void handleFileSelect(files);
+  }, [handleFileSelect]);
+
+  const handleGenerateSmartPromptsWrapper = useCallback(() => {
+    void handleGenerateSmartPrompts();
+  }, [handleGenerateSmartPrompts]);
+
   // Create context value
   const contextValue: ChatInputContextValue = {
     value,
@@ -517,7 +534,7 @@ export function ChatInputRoot({
     disabled,
     attachedFiles,
     onRemoveFile: handleRemoveFile,
-    onFileSelect: handleFileSelect,
+    onFileSelect: handleFileSelectWrapper,
     fileError,
     isDragging,
     onDragOver: handleDragOver,
@@ -530,14 +547,14 @@ export function ChatInputRoot({
     onMentionSelect: insertMention,
     onMentionIndexChange: setMentionIndex,
     showToolbar,
-    onToggleToolbar: () => setShowToolbar(prev => !prev),
+    onToggleToolbar: () => { setShowToolbar(prev => !prev); },
     onFormat: insertFormatting,
     showSmartPrompts,
     displayPrompts,
     isLoadingPrompts,
     promptsGenerated,
     onToggleSmartPrompts: setShowSmartPrompts,
-    onGenerateSmartPrompts: handleGenerateSmartPrompts,
+    onGenerateSmartPrompts: handleGenerateSmartPromptsWrapper,
     onPromptClick: handlePromptClick,
     isImageGenerationMode,
     isGeneratingImage,
@@ -558,7 +575,7 @@ export function ChatInputRoot({
     conversationId,
     lightboxImage,
     onLightboxOpen: setLightboxImage,
-    onLightboxClose: () => setLightboxImage(null),
+    onLightboxClose: () => { setLightboxImage(null); },
     onSend: handleSend,
     onCancel,
     handleKeyDown,

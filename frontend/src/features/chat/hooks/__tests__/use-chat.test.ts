@@ -83,7 +83,7 @@ describe('use-chat', () => {
     describe('useChatConversations', () => {
         it('should return loading state initially', () => {
             // Arrange
-            vi.mocked(chatService.getConversations).mockImplementation(() => new Promise(() => { }));
+            vi.mocked(chatService.getConversations).mockImplementation(() => new Promise(() => { /* no-op */ }));
 
             // Act
             const { result } = renderHook(() => useChatConversations('user-123'), {

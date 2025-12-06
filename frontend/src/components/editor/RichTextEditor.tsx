@@ -40,7 +40,7 @@ const SuggestionList = forwardRef((props: SuggestionListProps, ref) => {
 
   const selectItem = (index: number) => {
     const item = props.items[index];
-    if (item) {
+    if (item !== undefined && item !== null && item.length > 0) {
       props.command({ id: item });
     }
   };
@@ -84,7 +84,7 @@ const SuggestionList = forwardRef((props: SuggestionListProps, ref) => {
               : 'text-[var(--text-secondary)] hover:bg-[var(--surface-card)]'
               }`}
             key={index}
-            onClick={() => selectItem(index)}
+            onClick={() => { selectItem(index); }}
           >
             <span className="opacity-50 mr-1">#</span>
             {item}
@@ -410,7 +410,7 @@ export function RichTextEditor({
         if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
           event.preventDefault();
           const url = window.prompt('Enter link URL:');
-          if (url && editor) {
+          if (url !== null && url !== '' && editor !== null && editor !== undefined) {
             editor.chain().focus().setLink({ href: url }).run();
           }
           return true;
@@ -441,7 +441,7 @@ export function RichTextEditor({
   const convertTagsToMentions = useCallback((editorInstance: Editor) => {
     const { state } = editorInstance;
     const { doc } = state;
-    const replacements: Array<{ from: number; to: number; tag: string; needsSpace: boolean }> = [];
+    const replacements: { from: number; to: number; tag: string; needsSpace: boolean }[] = [];
 
     // Traverse the document to find #tag patterns in text nodes
     doc.descendants((node: ProseMirrorNode, pos: number) => {
@@ -473,7 +473,7 @@ export function RichTextEditor({
           const resolvedPos = doc.resolve(from);
           const nodeAt = resolvedPos.nodeAfter;
 
-          if (!nodeAt || nodeAt.type.name !== 'mention') {
+          if (nodeAt?.type.name !== 'mention') {
             replacements.push({ from, to, tag, needsSpace });
           }
         }
@@ -485,7 +485,11 @@ export function RichTextEditor({
       const tr = state.tr;
 
       for (let i = replacements.length - 1; i >= 0; i--) {
-        const { from, to, tag, needsSpace } = replacements[i];
+        const replacement = replacements[i];
+        if (!replacement) {
+          continue;
+        }
+        const { from, to, tag, needsSpace } = replacement;
 
         try {
           // Delete the #tag text and insert mention node
@@ -494,11 +498,21 @@ export function RichTextEditor({
           tr.insert(from, mentionNode);
           // Insert a space after the mention only if needed
           if (needsSpace) {
-            tr.insertText(' ', from + mentionNode.nodeSize);
+            const nodeSize = mentionNode.nodeSize;
+            if (typeof nodeSize === 'number') {
+              tr.insertText(' ', from + nodeSize);
+            }
           }
-        } catch (error) {
+        } catch (error: unknown) {
           // Ignore errors for individual tag conversions
-          console.error('Error converting tag to mention:', { error, tag, from, to });
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          const errorDetails = {
+            error: errorMessage,
+            tag,
+            from,
+            to,
+          };
+          console.error('Error converting tag to mention:', errorDetails);
         }
       }
 

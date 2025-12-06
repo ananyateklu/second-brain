@@ -114,7 +114,7 @@ export function calculateStats(notes: Note[]): DashboardStats {
  * For longer ranges (>90 days), groups by week or month for better readability
  * Note: "Last N days" includes today, so we subtract N-1 days from today
  */
-export function getChartData(notes: Note[], days: number = 30): ChartDataPoint[] {
+export function getChartData(notes: Note[], days = 30): ChartDataPoint[] {
   const now = new Date();
   // Subtract days-1 so that "Last 30 days" means "29 days ago through today" = 30 data points including today
   const rangeStart = startOfDay(subDays(now, days - 1));
@@ -241,7 +241,7 @@ function getDailyChartData(notes: Note[], rangeStart: Date, now: Date, days: num
 /**
  * Get recent notes sorted by updatedAt (most recent first)
  */
-export function getRecentNotes(notes: Note[], limit: number = 5): Note[] {
+export function getRecentNotes(notes: Note[], limit = 5): Note[] {
   return [...notes]
     .sort((a, b) => {
       const dateA = parseISO(a.updatedAt);
@@ -287,7 +287,7 @@ export function getChatUsageChartData(
   dailyNonRagCounts: Record<string, number>,
   dailyAgentCounts: Record<string, number>,
   dailyImageGenCounts: Record<string, number>,
-  days: number = 30
+  days = 30
 ): ChatUsageDataPoint[] {
   const now = new Date();
   // Subtract days-1 so that "Last 30 days" means "29 days ago through today" = 30 data points including today

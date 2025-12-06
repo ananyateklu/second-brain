@@ -228,7 +228,7 @@ export const userPreferencesService = {
   /**
    * Create debounced sync function
    */
-  createDebouncedSync(delay: number = 1000): (userId: string, preferences: UserPreferences) => void {
+  createDebouncedSync(delay = 1000): (userId: string, preferences: UserPreferences) => void {
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
     
     return (userId: string, preferences: UserPreferences) => {

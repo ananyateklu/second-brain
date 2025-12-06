@@ -33,7 +33,7 @@ export function usePineconeConfigured() {
   }, []);
 
   useEffect(() => {
-    checkConfiguration();
+    void checkConfiguration();
   }, [checkConfiguration]);
 
   return { isConfigured, isLoading, refetch: checkConfiguration };

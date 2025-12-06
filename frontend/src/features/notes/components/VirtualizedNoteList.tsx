@@ -27,14 +27,14 @@ const GRID_GAP = 20; // Gap between grid items
  * For lists with fewer than 50 items, virtualization can be disabled for simplicity.
  * For larger lists, virtualization significantly improves performance.
  */
-export const VirtualizedNoteList = memo(function VirtualizedNoteList({
+export const VirtualizedNoteList = memo(({
   notes,
   viewMode = 'card',
   isBulkMode = false,
   selectedNoteIds,
   onNoteSelect,
   enableVirtualization = true,
-}: VirtualizedNoteListProps) {
+}: VirtualizedNoteListProps) => {
   const parentRef = useRef<HTMLDivElement>(null);
 
   // Calculate columns for grid view based on viewport

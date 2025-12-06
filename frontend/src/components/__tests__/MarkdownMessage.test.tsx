@@ -14,7 +14,7 @@ vi.mock('react-syntax-highlighter', () => {
     const MockPrismLight = function ({ children }: { children: React.ReactNode }) {
         return React.createElement('pre', { 'data-testid': 'syntax-highlighter' }, children);
     };
-    MockPrismLight.registerLanguage = () => { };
+    MockPrismLight.registerLanguage = () => { /* no-op */ };
     return { PrismLight: MockPrismLight };
 });
 

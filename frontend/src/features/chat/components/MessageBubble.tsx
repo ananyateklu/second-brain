@@ -51,9 +51,9 @@ function GeneratedImageDisplay({ image, index }: { image: GeneratedImage; index:
           maxWidth: '100%',
           aspectRatio: image.width && image.height ? `${image.width}/${image.height}` : '1/1',
         }}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        onClick={() => setShowLightbox(true)}
+        onMouseEnter={() => { setIsHovered(true); }}
+        onMouseLeave={() => { setIsHovered(false); }}
+        onClick={() => { setShowLightbox(true); }}
       >
         <img
           src={imageUrl}
@@ -147,12 +147,12 @@ function GeneratedImageDisplay({ image, index }: { image: GeneratedImage; index:
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-8"
           style={{ backgroundColor: 'rgba(0,0,0,0.9)' }}
-          onClick={() => setShowLightbox(false)}
+          onClick={() => { setShowLightbox(false); }}
         >
           <button
             className="absolute top-4 right-4 p-2 rounded-full transition-colors hover:bg-white/10"
             style={{ color: 'white' }}
-            onClick={() => setShowLightbox(false)}
+            onClick={() => { setShowLightbox(false); }}
           >
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -183,7 +183,7 @@ function GeneratedImageDisplay({ image, index }: { image: GeneratedImage; index:
             src={imageUrl}
             alt={image.revisedPrompt || 'Generated image'}
             className="max-w-full max-h-full object-contain rounded-lg"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); }}
           />
 
           {image.revisedPrompt && (
@@ -306,9 +306,9 @@ export function MessageBubble({
         ) : (
           <>
             {/* Display generated images */}
-            {hasGeneratedImages && (
+            {hasGeneratedImages && message.generatedImages && (
               <div className="mb-3 space-y-3">
-                {message.generatedImages!.map((image, index) => (
+                {message.generatedImages.map((image, index) => (
                   <GeneratedImageDisplay key={index} image={image} index={index} />
                 ))}
               </div>

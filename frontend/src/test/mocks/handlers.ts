@@ -91,11 +91,11 @@ export const handlers = [
   // ============================================
   // Auth Endpoints
   // ============================================
-  http.post(`${API_BASE}/auth/login`, async () => {
+  http.post(`${API_BASE}/auth/login`, () => {
     return HttpResponse.json(mockUser);
   }),
 
-  http.post(`${API_BASE}/auth/register`, async () => {
+  http.post(`${API_BASE}/auth/register`, () => {
     return HttpResponse.json(mockUser);
   }),
 
@@ -207,7 +207,7 @@ export const handlers = [
   }),
 
   // Chat message (non-streaming)
-  http.post(`${API_BASE}/chat/conversations/:id/messages`, async () => {
+  http.post(`${API_BASE}/chat/conversations/:id/messages`, () => {
     return HttpResponse.json({
       conversation: {
         ...mockConversations[0],

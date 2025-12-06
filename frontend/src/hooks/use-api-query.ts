@@ -9,14 +9,14 @@ import {
   UseQueryResult,
   QueryKey,
 } from '@tanstack/react-query';
-import { ApiError, isApiError } from '../types/api';
+import { ApiError, ApiErrorCode, isApiError } from '../types/api';
 import { CACHE } from '../lib/constants';
 
 /**
  * Extended query options with additional configuration
  */
 export interface UseApiQueryOptions<TData, TError = ApiError>
-  extends Omit<UseQueryOptions<TData, TError, TData, QueryKey>, 'queryKey' | 'queryFn'> {
+  extends Omit<UseQueryOptions<TData, TError, TData>, 'queryKey' | 'queryFn'> {
   /**
    * Custom error handler
    */
@@ -74,7 +74,7 @@ export function useApiQuery<TData, TError = ApiError>(
     ...queryOptions
   } = options || {};
 
-  const result = useQuery<TData, TError, TData, QueryKey>({
+  const result = useQuery<TData, TError, TData>({
     queryKey,
     queryFn,
     staleTime: CACHE.STALE_TIME,
@@ -83,7 +83,7 @@ export function useApiQuery<TData, TError = ApiError>(
     // This can be overridden by queryOptions or QueryClient defaults
     retry: (failureCount, error) => {
       if (isApiError(error)) {
-        if (error.isAuthError() || error.code === 'NOT_FOUND') {
+        if (error.isAuthError() || error.code === ApiErrorCode.NOT_FOUND) {
           return false;
         }
       }
@@ -97,7 +97,7 @@ export function useApiQuery<TData, TError = ApiError>(
   const isApiErrorType = result.error ? isApiError(result.error) : false;
   const apiError = isApiErrorType ? (result.error as unknown as ApiError) : null;
   const isAuthError = apiError?.isAuthError() || false;
-  const isNotFoundError = apiError?.code === 'NOT_FOUND';
+  const isNotFoundError = apiError?.code === ApiErrorCode.NOT_FOUND;
 
   return {
     ...result,

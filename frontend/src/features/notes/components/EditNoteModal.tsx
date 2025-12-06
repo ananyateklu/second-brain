@@ -87,6 +87,11 @@ export function EditNoteModal() {
     },
   });
 
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    void handleSubmit(e)();
+  };
+
   // Reset form when editing note changes (use note ID to detect changes)
   useEffect(() => {
     if (editingNote && isOpen) {
@@ -153,7 +158,7 @@ export function EditNoteModal() {
           <div className="relative">
             <button
               type="button"
-              onClick={() => setIsFolderDropdownOpen(!isFolderDropdownOpen)}
+              onClick={() => { setIsFolderDropdownOpen(!isFolderDropdownOpen); }}
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200"
               style={{
                 backgroundColor: currentFolder
@@ -193,7 +198,7 @@ export function EditNoteModal() {
                   {/* Remove from folder */}
                   <button
                     type="button"
-                    onClick={() => handleFolderChange(null)}
+                    onClick={() => { void handleFolderChange(null); }}
                     className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors"
                     style={{
                       backgroundColor: !currentFolder ? 'var(--color-brand-600)' : 'transparent',
@@ -221,7 +226,7 @@ export function EditNoteModal() {
                     <button
                       key={folder}
                       type="button"
-                      onClick={() => handleFolderChange(folder)}
+                      onClick={() => { void handleFolderChange(folder); }}
                       className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors"
                       style={{
                         backgroundColor: currentFolder === folder ? 'var(--color-brand-600)' : 'transparent',
@@ -257,12 +262,12 @@ export function EditNoteModal() {
                           if (e.key === 'Enter') {
                             const value = e.currentTarget.value.trim();
                             if (value) {
-                              handleFolderChange(value);
+                              void handleFolderChange(value);
                               e.currentTarget.value = '';
                             }
                           }
                         }}
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e) => { e.stopPropagation(); }}
                       />
                     </div>
                   </div>
@@ -275,7 +280,7 @@ export function EditNoteModal() {
           <Button
             type="button"
             variant="secondary"
-            onClick={() => setIsHistoryOpen(true)}
+            onClick={() => { setIsHistoryOpen(true); }}
             title="View version history"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -290,7 +295,7 @@ export function EditNoteModal() {
             variant="secondary"
             isLoading={archiveNoteMutation.isPending || unarchiveNoteMutation.isPending}
             disabled={archiveNoteMutation.isPending || unarchiveNoteMutation.isPending}
-            onClick={handleArchiveToggle}
+            onClick={() => { void handleArchiveToggle(); }}
             title={isArchived ? 'Restore from archive' : 'Archive note'}
           >
             {isArchived ? (
@@ -337,7 +342,7 @@ export function EditNoteModal() {
         </div>
       }
     >
-      <form ref={formRef} onSubmit={handleSubmit} className="h-full flex flex-col">
+      <form ref={formRef} onSubmit={handleFormSubmit} className="h-full flex flex-col">
         <RichNoteForm
           register={register}
           control={control}
@@ -352,7 +357,7 @@ export function EditNoteModal() {
         <NoteVersionHistoryPanel
           noteId={editingNote.id}
           isOpen={isHistoryOpen}
-          onClose={() => setIsHistoryOpen(false)}
+          onClose={() => { setIsHistoryOpen(false); }}
           onRestore={() => {
             // Refresh the note data after restore
             closeModal();

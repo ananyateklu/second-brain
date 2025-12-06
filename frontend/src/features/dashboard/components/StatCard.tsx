@@ -8,7 +8,7 @@ export interface StatCardProps {
   show?: boolean;
 }
 
-export const StatCard = memo(function StatCard({ title, value, icon, subtitle, show = true }: StatCardProps) {
+export const StatCard = memo(({ title, value, icon, subtitle, show = true }: StatCardProps) => {
   if (!show) return null;
 
   return (

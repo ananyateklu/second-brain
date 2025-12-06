@@ -104,7 +104,9 @@ describe('Modal', () => {
             render(<Modal {...defaultProps} onClose={onClose} />);
             // Click on the backdrop (first div with fixed class)
             const overlay = document.querySelector('.fixed');
-            fireEvent.click(overlay!);
+            if (overlay) {
+              fireEvent.click(overlay);
+            }
 
             // Assert
             expect(onClose).toHaveBeenCalledTimes(1);

@@ -27,10 +27,10 @@ export interface FeatureModePillProps {
   /** Custom width for the popover (default: 260px) */
   popoverWidth?: string;
   /** Badge items to show (icons with colors for enabled features) */
-  badgeItems?: Array<{
+  badgeItems?: {
     icon: ReactNode;
     color: string;
-  }>;
+  }[];
 }
 
 const defaultColors = {
@@ -67,7 +67,7 @@ export function FeatureModePill({
 
     if (isPopoverOpen) {
       document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+      return () => { document.removeEventListener('mousedown', handleClickOutside); };
     }
   }, [isPopoverOpen]);
 
@@ -82,7 +82,7 @@ export function FeatureModePill({
 
     if (isPopoverOpen) {
       document.addEventListener('keydown', handleKeyDown);
-      return () => document.removeEventListener('keydown', handleKeyDown);
+      return () => { document.removeEventListener('keydown', handleKeyDown); };
     }
   }, [isPopoverOpen]);
 
@@ -181,7 +181,7 @@ export function FeatureModePill({
           {/* Backdrop - semi-transparent for focus */}
           <div
             className="fixed inset-0 z-40"
-            onClick={() => setIsPopoverOpen(false)}
+            onClick={() => { setIsPopoverOpen(false); }}
             style={{ backgroundColor: 'rgba(0, 0, 0, 0.15)' }}
           />
 
@@ -215,7 +215,7 @@ export function FeatureModePill({
                 </h3>
                 <button
                   type="button"
-                  onClick={() => setIsPopoverOpen(false)}
+                  onClick={() => { setIsPopoverOpen(false); }}
                   className="p-1.5 rounded-lg transition-all duration-200 hover:scale-110 active:scale-95"
                   style={{
                     color: 'var(--text-tertiary)',

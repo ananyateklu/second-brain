@@ -28,16 +28,25 @@ async function postUnauthenticated<T>(endpoint: string, body: unknown): Promise<
   if (!response.ok) {
     let errorMessage = 'Request failed';
     try {
-      const errorData = await response.json();
-      if (errorData.error) errorMessage = errorData.error;
-      else if (errorData.message) errorMessage = errorData.message;
+      const errorData: unknown = await response.json();
+      if (
+        typeof errorData === 'object' &&
+        errorData !== null &&
+        ('error' in errorData || 'message' in errorData)
+      ) {
+        if ('error' in errorData && typeof errorData.error === 'string') {
+          errorMessage = errorData.error;
+        } else if ('message' in errorData && typeof errorData.message === 'string') {
+          errorMessage = errorData.message;
+        }
+      }
     } catch {
       // ignore json parse error
     }
     throw new Error(errorMessage);
   }
 
-  return response.json();
+  return response.json() as Promise<T>;
 }
 
 /**
@@ -134,8 +143,8 @@ export const authService = {
     }
     
     const passwordValidation = this.validatePassword(password);
-    if (!passwordValidation.valid) {
-      errors.push(passwordValidation.message!);
+    if (!passwordValidation.valid && passwordValidation.message) {
+      errors.push(passwordValidation.message);
     }
     
     if (password !== confirmPassword) {

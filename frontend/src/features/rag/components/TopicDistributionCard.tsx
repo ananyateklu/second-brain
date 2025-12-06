@@ -5,7 +5,7 @@
 
 import { useState, memo } from 'react';
 import { ragService } from '../../../services/rag.service';
-import { QUERY_KEYS } from '../../../lib/constants';
+import { ragAnalyticsKeys } from '../../../lib/query-keys';
 import type { TopicAnalyticsResponse } from '../../../types/rag';
 import { useApiMutation } from '../../../hooks/use-api-mutation';
 
@@ -28,13 +28,13 @@ const TOPIC_COLORS = [
   { main: '#e879f9', bg: '#d946ef' },
 ];
 
-export const TopicDistributionCard = memo(function TopicDistributionCard({ topicData, isLoading }: TopicDistributionCardProps) {
+export const TopicDistributionCard = memo(({ topicData, isLoading }: TopicDistributionCardProps) => {
   const [clusterCount, setClusterCount] = useState(5);
 
   const clusterMutation = useApiMutation<{ message: string }, number>(
     (count) => ragService.clusterQueries(count),
     {
-      invalidateQueries: [QUERY_KEYS.ragAnalytics.topics(), QUERY_KEYS.ragAnalytics.logs()],
+      invalidateQueries: [ragAnalyticsKeys.topics(), ragAnalyticsKeys.logs()],
     }
   );
 
@@ -99,7 +99,7 @@ export const TopicDistributionCard = memo(function TopicDistributionCard({ topic
         <div className="flex items-center gap-1.5">
           <select
             value={clusterCount}
-            onChange={(e) => setClusterCount(Number(e.target.value))}
+            onChange={(e) => { setClusterCount(Number(e.target.value)); }}
             className="px-2 py-1 text-xs rounded-lg transition-colors cursor-pointer"
             style={{
               backgroundColor: 'var(--surface-elevated)',
@@ -112,7 +112,7 @@ export const TopicDistributionCard = memo(function TopicDistributionCard({ topic
             ))}
           </select>
           <button
-            onClick={() => clusterMutation.mutate(clusterCount)}
+            onClick={() => { clusterMutation.mutate(clusterCount); }}
             disabled={clusterMutation.isPending}
             className="px-3 py-1 text-xs font-medium rounded-lg transition-all duration-200 disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98]"
             style={{

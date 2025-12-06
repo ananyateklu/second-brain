@@ -32,7 +32,7 @@ export const ragService = {
    * This is critical for correlating retrieval metrics with user satisfaction
    */
   async submitFeedback(request: RagFeedbackRequest): Promise<void> {
-    return apiClient.post<void>(API_ENDPOINTS.RAG_ANALYTICS.FEEDBACK, request);
+    return apiClient.post<undefined>(API_ENDPOINTS.RAG_ANALYTICS.FEEDBACK, request);
   },
 
   /**
@@ -132,7 +132,7 @@ export const ragService = {
    * Reindex a specific note
    */
   async reindexNote(noteId: string): Promise<void> {
-    return apiClient.post<void>(API_ENDPOINTS.INDEXING.REINDEX_NOTE(noteId));
+    return apiClient.post<undefined>(API_ENDPOINTS.INDEXING.REINDEX_NOTE(noteId));
   },
 
   /**
@@ -140,7 +140,7 @@ export const ragService = {
    */
   async deleteIndexedNotes(vectorStoreProvider: VectorStoreProvider): Promise<void> {
     const params = new URLSearchParams({ vectorStoreProvider });
-    return apiClient.delete<void>(`${API_ENDPOINTS.INDEXING.DELETE_NOTES}?${params}`);
+    return apiClient.delete<undefined>(`${API_ENDPOINTS.INDEXING.DELETE_NOTES}?${params}`);
   },
 
   // ============================================

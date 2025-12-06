@@ -4,7 +4,7 @@ import { chatService } from '../../../services';
 import { SendMessageRequest } from '../../../types/chat';
 import { RagContextNote } from '../../../types/rag';
 import { estimateTokenCount } from '../../../utils/token-utils';
-import { QUERY_KEYS } from '../../../lib/constants';
+import { conversationKeys } from '../../../lib/query-keys';
 
 export interface StreamingState {
   isStreaming: boolean;
@@ -100,8 +100,8 @@ export function useChatStream() {
               // for clearing the streaming state once the new message appears in the conversation.
               setTimeout(() => {
                 // Invalidate queries to refresh with complete conversation data
-                queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversation(conversationId) });
-                queryClient.invalidateQueries({ queryKey: QUERY_KEYS.conversations.all });
+                void queryClient.invalidateQueries({ queryKey: conversationKeys.detail(conversationId) });
+                void queryClient.invalidateQueries({ queryKey: conversationKeys.all });
               }, 150);
             },
             onError: (error: Error) => {
@@ -115,7 +115,7 @@ export function useChatStream() {
                 // Exponential backoff
                 const delay = Math.min(1000 * Math.pow(2, retryCount), 5000);
                 setTimeout(() => {
-                  sendStreamingMessage(conversationId, request, retryCount + 1);
+                  void sendStreamingMessage(conversationId, request, retryCount + 1);
                 }, delay);
                 return;
               }
@@ -141,7 +141,7 @@ export function useChatStream() {
               // Exponential backoff
               const delay = Math.min(1000 * Math.pow(2, retryCount), 5000);
               setTimeout(() => {
-                sendStreamingMessage(conversationId, request, retryCount + 1);
+                void sendStreamingMessage(conversationId, request, retryCount + 1);
               }, delay);
               return;
             }

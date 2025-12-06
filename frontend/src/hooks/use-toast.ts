@@ -216,14 +216,14 @@ export const toast = {
         duration: Infinity,
         action: {
           label: confirmText,
-          onClick: () => resolve(true),
+          onClick: () => { resolve(true); },
         },
         cancel: {
           label: cancelText,
-          onClick: () => resolve(false),
+          onClick: () => { resolve(false); },
         },
-        onDismiss: () => resolve(false),
-        onAutoClose: () => resolve(false),
+        onDismiss: () => { resolve(false); },
+        onAutoClose: () => { resolve(false); },
       });
     });
   },

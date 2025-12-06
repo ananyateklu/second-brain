@@ -392,7 +392,7 @@ export const chatService = {
   /**
    * Generate a title from message content
    */
-  generateTitle(content: string, maxLength: number = 50): string {
+  generateTitle(content: string, maxLength = 50): string {
     const cleanContent = content.trim().replace(/\n/g, ' ');
     if (cleanContent.length <= maxLength) {
       return cleanContent;

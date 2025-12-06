@@ -33,7 +33,7 @@ function isCSSVariable(value: string): boolean {
  * Extract variable name from var() reference
  */
 function extractVariableName(value: string): string | null {
-  const match = value.match(/var\(--([^,)]+)/);
+  const match = /var\(--([^,)]+)/.exec(value);
   return match ? `--${match[1]}` : null;
 }
 
@@ -95,7 +95,7 @@ export function useDesignTokens(): UseDesignTokensReturn {
       attributeFilter: ['data-theme'],
     });
 
-    return () => observer.disconnect();
+    return () => { observer.disconnect(); };
   }, []);
 
   /**

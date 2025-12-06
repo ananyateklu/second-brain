@@ -46,7 +46,7 @@ export function NotesChart({ chartData, selectedTimeRange, onTimeRangeChange }: 
             {TIME_RANGE_OPTIONS.map((option: TimeRangeOption) => (
               <button
                 key={option.days}
-                onClick={() => onTimeRangeChange(option.days)}
+                onClick={() => { onTimeRangeChange(option.days); }}
                 className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 ${selectedTimeRange === option.days
                   ? 'scale-105'
                   : 'hover:scale-105'

@@ -23,7 +23,7 @@ export function ChatLightbox({
   const contextValue = useChatInputContextSafe();
 
   const image = propImage ?? contextValue?.lightboxImage;
-  const onClose = propOnClose ?? contextValue?.onLightboxClose ?? (() => { });
+  const onClose = propOnClose ?? contextValue?.onLightboxClose ?? (() => { /* no-op */ });
 
   if (!image) return null;
 
@@ -46,7 +46,7 @@ export function ChatLightbox({
         src={image.dataUrl}
         alt={image.name}
         className="lightbox-image max-w-full max-h-full object-contain rounded-lg"
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => { e.stopPropagation(); }}
       />
       <div
         className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded-lg"

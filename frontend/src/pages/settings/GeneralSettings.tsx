@@ -187,9 +187,9 @@ export function GeneralSettings() {
                                     type="button"
                                     onClick={() => {
                                         const mockPromise = new Promise<string>((resolve) => {
-                                            setTimeout(() => resolve('Data loaded!'), 2500);
+                                            setTimeout(() => { resolve('Data loaded!'); }, 2500);
                                         });
-                                        toast.promise(mockPromise, {
+                                        void toast.promise(mockPromise, {
                                             loading: 'Fetching data...',
                                             success: (data) => data,
                                             error: 'Failed to fetch data',
@@ -292,7 +292,7 @@ export function GeneralSettings() {
                                         <button
                                             key={view}
                                             type="button"
-                                            onClick={() => setDefaultNoteView(view)}
+                                            onClick={() => { setDefaultNoteView(view); }}
                                             className="w-full text-center rounded-2xl border p-4 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] hover:-translate-y-1"
                                             style={{
                                                 backgroundColor: isActive
@@ -355,7 +355,7 @@ export function GeneralSettings() {
                                         <button
                                             key={count}
                                             type="button"
-                                            onClick={() => setItemsPerPage(count)}
+                                            onClick={() => { setItemsPerPage(count); }}
                                             className="px-4 py-2.5 rounded-xl border text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] hover:-translate-y-0.5"
                                             style={{
                                                 backgroundColor: isActive
@@ -409,7 +409,7 @@ export function GeneralSettings() {
                             </div>
                             <button
                                 type="button"
-                                onClick={() => setEnableNotifications(!enableNotifications)}
+                                onClick={() => { setEnableNotifications(!enableNotifications); }}
                                 className="relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] hover:scale-105 active:scale-95"
                                 style={{
                                     backgroundColor: enableNotifications ? 'var(--color-brand-600)' : 'color-mix(in srgb, var(--border) 60%, transparent)',
@@ -494,7 +494,7 @@ export function GeneralSettings() {
                                     <button
                                         key={interval}
                                         type="button"
-                                        onClick={() => setAutoSaveInterval(interval)}
+                                        onClick={() => { setAutoSaveInterval(interval); }}
                                         className="flex-1 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] hover:-translate-y-0.5"
                                         style={{
                                             backgroundColor: isActive
@@ -577,7 +577,7 @@ export function GeneralSettings() {
                                     <button
                                         key={size}
                                         type="button"
-                                        onClick={() => setFontSize(size)}
+                                        onClick={() => { setFontSize(size); }}
                                         className="flex-1 px-3 py-2.5 rounded-xl border text-sm font-medium capitalize transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[color:var(--color-brand-600)] hover:-translate-y-0.5"
                                         style={{
                                             backgroundColor: isActive

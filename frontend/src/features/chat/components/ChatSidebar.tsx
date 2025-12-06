@@ -36,9 +36,9 @@ export function ChatSidebar({
     if (prevSelectionModeRef.current !== isSelectionMode) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setToggleAnimation(isSelectionMode ? 'in' : 'out');
-      const timer = setTimeout(() => setToggleAnimation(null), 300);
+      const timer = setTimeout(() => { setToggleAnimation(null); }, 300);
       prevSelectionModeRef.current = isSelectionMode;
-      return () => clearTimeout(timer);
+      return () => { clearTimeout(timer); };
     }
     return undefined;
   }, [isSelectionMode]);
@@ -113,7 +113,7 @@ export function ChatSidebar({
           {/* Selection Mode Toggle */}
           {selectableConversations.length > 0 && (
             <button
-              onClick={() => setIsSelectionMode(!isSelectionMode)}
+              onClick={() => { setIsSelectionMode(!isSelectionMode); }}
               className={`p-2 rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 ${getToggleAnimationClass()}`}
               style={{
                 backgroundColor: isSelectionMode
@@ -235,7 +235,7 @@ export function ChatSidebar({
 
           {/* Delete button */}
           <button
-            onClick={handleBulkDelete}
+            onClick={() => { void handleBulkDelete(); }}
             disabled={selectedIds.size === 0 || !onBulkDeleteConversations}
             className={`delete-button-shake flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold transition-all duration-200 hover:scale-105 active:scale-95 ${selectedIds.size > 0 ? 'delete-button-pulse' : ''}`}
             style={{
