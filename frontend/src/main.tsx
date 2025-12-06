@@ -4,11 +4,12 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { ToastProviderWithRef, ToastContainer } from './components/ui/Toast';
 import { queryClient } from './lib/query-client';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { BackendReadyProvider } from './components/BackendReadyProvider';
 // Import bound-store first to register it before other stores are accessed
 import './store/bound-store';
 import { useThemeStore } from './store/theme-store';
 import { isTauri } from './lib/native-notifications';
-import { getBackendUrl, waitForBackend, onBackendEvent } from './lib/tauri-bridge';
+import { getBackendUrl, onBackendEvent } from './lib/tauri-bridge';
 import { setApiBaseUrl } from './lib/constants';
 import App from './App';
 import './index.css';
@@ -27,17 +28,19 @@ const initializeTheme = () => {
   }
 };
 
-// Render the app
+// Render the app with BackendReadyProvider to prevent requests before backend is ready
 const renderApp = () => {
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <ErrorBoundary>
-        <QueryClientProvider client={queryClient}>
-          <ToastProviderWithRef maxToasts={5}>
-            <App />
-            <ToastContainer position="top-right" gap={12} />
-          </ToastProviderWithRef>
-        </QueryClientProvider>
+        <BackendReadyProvider>
+          <QueryClientProvider client={queryClient}>
+            <ToastProviderWithRef maxToasts={5}>
+              <App />
+              <ToastContainer position="top-right" gap={12} />
+            </ToastProviderWithRef>
+          </QueryClientProvider>
+        </BackendReadyProvider>
       </ErrorBoundary>
     </StrictMode>
   );
@@ -47,12 +50,12 @@ const renderApp = () => {
 async function initApp() {
   initializeTheme();
 
-  // If running in Tauri, wait for backend to be ready
+  // Configure API URL for Tauri
   if (isTauri()) {
-    console.log('Running in Tauri mode, initializing...');
+    console.log('Running in Tauri mode, configuring API URL...');
 
     try {
-      // Get backend URL
+      // Get backend URL from Tauri
       const backendUrl = await getBackendUrl();
       console.log('Backend URL from Tauri:', backendUrl);
       
@@ -63,17 +66,6 @@ async function initApp() {
         setApiBaseUrl('/api');
       } else {
         setApiBaseUrl(backendUrl);
-      }
-      console.log('API Base URL set to:', import.meta.env.DEV && window.location.protocol === 'https:' ? '/api' : backendUrl);
-
-      // Wait for backend to be ready (up to 60 seconds)
-      const isReady = await waitForBackend(60000);
-
-      if (!isReady) {
-        console.error('Backend failed to start within timeout');
-        // Still render the app - it will show connection errors
-      } else {
-        console.log('Backend is ready!');
       }
 
       // Listen for backend events
@@ -89,7 +81,7 @@ async function initApp() {
     }
   }
 
-  // Render the app
+  // Render the app - BackendReadyProvider will handle waiting for backend
   renderApp();
 }
 

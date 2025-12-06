@@ -18,6 +18,60 @@ export const DEFAULT_USER_ID = 'default-user';
  */
 let _apiBaseUrl: string | null = null;
 
+/**
+ * Global flag to track if the backend is ready.
+ * API requests will be blocked until this is set to true.
+ */
+let _isBackendReady = false;
+
+/**
+ * Callbacks waiting for backend to be ready
+ */
+const _backendReadyCallbacks: Array<() => void> = [];
+
+/**
+ * Check if the backend is ready for requests
+ */
+export const isBackendReadyForRequests = (): boolean => _isBackendReady;
+
+/**
+ * Set the backend ready state (called by BackendReadyProvider)
+ */
+export const setBackendReady = (ready: boolean): void => {
+  _isBackendReady = ready;
+  if (ready) {
+    // Notify all waiting callbacks
+    _backendReadyCallbacks.forEach(cb => cb());
+    _backendReadyCallbacks.length = 0;
+  }
+};
+
+/**
+ * Wait for the backend to be ready
+ * Returns immediately if already ready, otherwise waits
+ */
+export const waitForBackendReady = (timeoutMs = 30000): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    if (_isBackendReady) {
+      resolve();
+      return;
+    }
+    
+    const timeoutId = setTimeout(() => {
+      const idx = _backendReadyCallbacks.indexOf(callback);
+      if (idx > -1) _backendReadyCallbacks.splice(idx, 1);
+      reject(new Error('Timeout waiting for backend'));
+    }, timeoutMs);
+    
+    const callback = () => {
+      clearTimeout(timeoutId);
+      resolve();
+    };
+    
+    _backendReadyCallbacks.push(callback);
+  });
+};
+
 // Type for window with Tauri API URL
 interface WindowWithTauriApiUrl extends Window {
   __TAURI_API_URL__?: string;

@@ -7,10 +7,15 @@ import '@testing-library/jest-dom';
 import { afterEach, beforeAll, afterAll, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import { server } from './mocks/server';
+import { setBackendReady } from '../lib/constants';
 
 // Start MSW server before all tests
 beforeAll(() => {
     server.listen({ onUnhandledRequest: 'warn' });
+    
+    // Mark backend as ready for API requests in tests
+    // This prevents API client from waiting for BackendReadyProvider
+    setBackendReady(true);
 });
 
 // Reset handlers after each test (important for test isolation)

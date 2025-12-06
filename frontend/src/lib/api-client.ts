@@ -7,7 +7,7 @@
 // auth-store re-exports useBoundStore, but importing it causes a cycle
 import { useBoundStore } from '../store/bound-store';
 import { ApiError, ApiErrorCode, RequestConfig } from '../types/api';
-import { getApiBaseUrl, TIMEOUTS, RETRY } from './constants';
+import { getApiBaseUrl, TIMEOUTS, RETRY, isBackendReadyForRequests, waitForBackendReady } from './constants';
 
 // ============================================
 // Configuration
@@ -15,6 +15,27 @@ import { getApiBaseUrl, TIMEOUTS, RETRY } from './constants';
 
 // Get API URL dynamically (don't cache - Tauri sets it after module load)
 const getApiUrl = () => getApiBaseUrl();
+
+/**
+ * Ensure backend is ready before making requests.
+ * Throws an error if backend is not ready within timeout.
+ */
+async function ensureBackendReady(): Promise<void> {
+  if (isBackendReadyForRequests()) {
+    return;
+  }
+  
+  // Wait for backend to be ready (with shorter timeout for individual requests)
+  try {
+    await waitForBackendReady(10000);
+  } catch {
+    throw new ApiError(
+      'Backend is not ready. Please wait for the application to initialize.',
+      ApiErrorCode.SERVICE_UNAVAILABLE,
+      503
+    );
+  }
+}
 
 /**
  * Default request configuration
@@ -320,6 +341,8 @@ export const apiClient = {
     headers: HeadersInit = {},
     config: Partial<RequestConfig> = {}
   ): Promise<T> {
+    await ensureBackendReady();
+    
     const mergedConfig = { ...defaultConfig, ...config };
     let requestInit: RequestInit = {
       method: 'GET',
@@ -343,6 +366,8 @@ export const apiClient = {
     headers: HeadersInit = {},
     config: Partial<RequestConfig> = {}
   ): Promise<T> {
+    await ensureBackendReady();
+    
     const mergedConfig = { ...defaultConfig, ...config };
     let requestInit: RequestInit = {
       method: 'POST',
@@ -367,6 +392,8 @@ export const apiClient = {
     headers: HeadersInit = {},
     config: Partial<RequestConfig> = {}
   ): Promise<T> {
+    await ensureBackendReady();
+    
     const mergedConfig = { ...defaultConfig, ...config };
     let requestInit: RequestInit = {
       method: 'PUT',
@@ -391,6 +418,8 @@ export const apiClient = {
     headers: HeadersInit = {},
     config: Partial<RequestConfig> = {}
   ): Promise<T> {
+    await ensureBackendReady();
+    
     const mergedConfig = { ...defaultConfig, ...config };
     let requestInit: RequestInit = {
       method: 'PATCH',
@@ -414,6 +443,8 @@ export const apiClient = {
     headers: HeadersInit = {},
     config: Partial<RequestConfig> = {}
   ): Promise<T> {
+    await ensureBackendReady();
+    
     const mergedConfig = { ...defaultConfig, ...config };
     let requestInit: RequestInit = {
       method: 'DELETE',
@@ -437,6 +468,8 @@ export const apiClient = {
     headers: HeadersInit = {},
     signal?: AbortSignal
   ): Promise<Response> {
+    await ensureBackendReady();
+    
     const authStore = useBoundStore.getState();
     const requestHeaders: Record<string, string> = {
       'Content-Type': 'application/json',

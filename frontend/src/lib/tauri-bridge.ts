@@ -3,6 +3,23 @@ import { listen } from '@tauri-apps/api/event';
 import { isTauri } from './native-notifications';
 
 /**
+ * Wait for Tauri to be available (it may take a moment for Tauri to inject internals)
+ * This handles the race condition where React renders before Tauri is fully initialized
+ */
+export async function waitForTauriReady(maxWaitMs = 2000): Promise<boolean> {
+  const startTime = Date.now();
+  
+  while (Date.now() - startTime < maxWaitMs) {
+    if (isTauri()) {
+      return true;
+    }
+    await new Promise(resolve => setTimeout(resolve, 50));
+  }
+  
+  return isTauri();
+}
+
+/**
  * Get the backend URL from Tauri
  * Falls back to default for web development
  */
