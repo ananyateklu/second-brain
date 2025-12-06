@@ -1,22 +1,9 @@
-import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
+import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { isTauri } from '../lib/native-notifications';
 import { waitForBackend, isBackendReady, waitForTauriReady } from '../lib/tauri-bridge';
 import { setBackendReady } from '../lib/constants';
 import { AppLoadingScreen } from './ui/AppLoadingScreen';
-
-interface BackendReadyContextValue {
-    isReady: boolean;
-    error: string | null;
-    retry: () => void;
-}
-
-const BackendReadyContext = createContext<BackendReadyContextValue>({
-    isReady: false,
-    error: null,
-    retry: () => { },
-});
-
-export const useBackendReady = () => useContext(BackendReadyContext);
+import { BackendReadyContext, type BackendReadyContextValue } from './backend-ready-context';
 
 interface BackendReadyProviderProps {
     children: ReactNode;
