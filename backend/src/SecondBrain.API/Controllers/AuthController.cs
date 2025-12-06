@@ -71,10 +71,21 @@ public class AuthController : ControllerBase
                 return Conflict(new { error = "An account with this email already exists" });
             }
 
+            if (!string.IsNullOrWhiteSpace(request.Username))
+            {
+                var existingUsername = await _userRepository.GetByUsernameAsync(request.Username);
+                if (existingUsername != null)
+                {
+                    _logger.LogWarning("Registration attempted with existing username: {Username}", request.Username);
+                    return Conflict(new { error = "Username is already taken" });
+                }
+            }
+
             // Create new user with hashed password
             var newUser = new User
             {
                 Email = request.Email.ToLowerInvariant().Trim(),
+                Username = request.Username?.Trim(),
                 PasswordHash = _passwordService.HashPassword(request.Password),
                 DisplayName = !string.IsNullOrWhiteSpace(request.DisplayName)
                     ? request.DisplayName.Trim()
@@ -94,6 +105,7 @@ public class AuthController : ControllerBase
             {
                 UserId = createdUser.Id,
                 Email = createdUser.Email,
+                Username = createdUser.Username,
                 DisplayName = createdUser.DisplayName,
                 ApiKey = createdUser.ApiKey,
                 Token = token,
@@ -118,33 +130,43 @@ public class AuthController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<AuthResponse>> Login([FromBody] LoginRequest request)
     {
-        if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
+        if (string.IsNullOrWhiteSpace(request.Identifier) || string.IsNullOrWhiteSpace(request.Password))
         {
-            return BadRequest(new { error = "Email and password are required" });
+            return BadRequest(new { error = "Email/Username and password are required" });
         }
 
         try
         {
-            // Get user by email
-            var user = await _userRepository.GetByEmailAsync(request.Email.ToLowerInvariant().Trim());
+            User? user;
+            var identifier = request.Identifier.Trim();
+
+            // Check if identifier is an email
+            if (identifier.Contains("@"))
+            {
+                 user = await _userRepository.GetByEmailAsync(identifier.ToLowerInvariant());
+            }
+            else
+            {
+                 user = await _userRepository.GetByUsernameAsync(identifier);
+            }
 
             if (user == null)
             {
-                _logger.LogWarning("Login attempted with non-existent email: {Email}", request.Email);
-                return Unauthorized(new { error = "Invalid email or password" });
+                _logger.LogWarning("Login attempted with non-existent identifier: {Identifier}", request.Identifier);
+                return Unauthorized(new { error = "Invalid credentials" });
             }
 
             if (string.IsNullOrEmpty(user.PasswordHash))
             {
                 _logger.LogWarning("User has no password set. UserId: {UserId}", user.Id);
-                return Unauthorized(new { error = "Invalid email or password" });
+                return Unauthorized(new { error = "Invalid credentials" });
             }
 
             // Verify password
             if (!_passwordService.VerifyPassword(request.Password, user.PasswordHash))
             {
                 _logger.LogWarning("Invalid password attempt for user. UserId: {UserId}", user.Id);
-                return Unauthorized(new { error = "Invalid email or password" });
+                return Unauthorized(new { error = "Invalid credentials" });
             }
 
             if (!user.IsActive)
@@ -163,6 +185,7 @@ public class AuthController : ControllerBase
             {
                 UserId = user.Id,
                 Email = user.Email,
+                Username = user.Username,
                 DisplayName = user.DisplayName,
                 ApiKey = user.ApiKey,
                 Token = token,
@@ -206,6 +229,7 @@ public class AuthController : ControllerBase
             {
                 UserId = user.Id,
                 Email = user.Email,
+                Username = user.Username,
                 DisplayName = user.DisplayName,
                 ApiKey = user.ApiKey,
                 IsNewUser = false
@@ -286,6 +310,9 @@ public class RegisterRequest
     [EmailAddress]
     public string Email { get; set; } = string.Empty;
 
+    [RegularExpression(@"^[a-zA-Z0-9_-]{3,20}$", ErrorMessage = "Username must be 3-20 characters and contain only letters, numbers, underscores, and hyphens")]
+    public string? Username { get; set; }
+
     [Required]
     [MinLength(6)]
     public string Password { get; set; } = string.Empty;
@@ -296,8 +323,7 @@ public class RegisterRequest
 public class LoginRequest
 {
     [Required]
-    [EmailAddress]
-    public string Email { get; set; } = string.Empty;
+    public string Identifier { get; set; } = string.Empty;
 
     [Required]
     public string Password { get; set; } = string.Empty;
@@ -307,6 +333,7 @@ public class AuthResponse
 {
     public string UserId { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
+    public string? Username { get; set; }
     public string DisplayName { get; set; } = string.Empty;
     public string? ApiKey { get; set; }
     public string? Token { get; set; }

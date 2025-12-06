@@ -1546,3 +1546,330 @@ button {
   display: flex;
   flex-direction: column;
 }
+
+/* ========================================
+   Dashboard Performance-Optimized Animations
+   ======================================== */
+
+/* Dashboard container */
+.dashboard-container {
+  /* Enable hardware acceleration for entire dashboard */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Dashboard stat card entrance animation */
+@keyframes dashboardCardEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Dashboard section entrance animation */
+@keyframes dashboardSectionEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Chart line draw animation */
+@keyframes chartLineDraw {
+  0% {
+    stroke-dashoffset: 1000;
+    opacity: 0;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+/* Stats number counter animation */
+@keyframes statsCountUp {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Dashboard item visibility classes */
+.dashboard-item-hidden {
+  opacity: 0;
+  transform: translateY(12px) scale(0.98);
+}
+
+.dashboard-item-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.dashboard-section-hidden {
+  opacity: 0;
+  transform: translateY(16px);
+}
+
+.dashboard-section-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* WebKit/Tauri-specific optimizations */
+@supports (-webkit-app-region: drag) {
+  /* Reduce blur intensity for better performance */
+  .dashboard-container .backdrop-blur-md {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  
+  /* Disable ambient glow effects on Tauri for performance */
+  .dashboard-container [aria-hidden="true"].blur-3xl,
+  .dashboard-container [aria-hidden="true"].blur-2xl {
+    display: none !important;
+  }
+  
+  /* Faster transitions */
+  .dashboard-container * {
+    transition-duration: 250ms !important;
+  }
+  
+  /* Force GPU compositing for smoother animations */
+  .dashboard-stats-grid > div {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    will-change: transform, opacity;
+  }
+}
+
+/* Smooth transitions for interactive elements */
+.dashboard-container button {
+  /* Only transition specific properties, not 'all' */
+  transition-property: transform, background-color, color, border-color, opacity;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Prevent layout thrashing during animations */
+.dashboard-container .rounded-2xl,
+.dashboard-container .rounded-3xl {
+  contain: layout style paint;
+}
+
+/* Reduced motion preference support */
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-container * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .dashboard-item-hidden,
+  .dashboard-section-hidden {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Dashboard loading skeleton */
+@keyframes dashboardShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.dashboard-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surface-card) 25%,
+    var(--surface-elevated) 50%,
+    var(--surface-card) 75%
+  );
+  background-size: 200% 100%;
+  animation: dashboardShimmer 1.5s ease-in-out infinite;
+}
+
+/* ========================================
+   Page Transition Animations
+   ======================================== */
+
+/* Page transition container */
+.page-transition-container {
+  /* Enable GPU acceleration */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  /* Ensure smooth font rendering during transitions */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Page enter animation */
+@keyframes pageEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.99);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Page exit animation */
+@keyframes pageExit {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.99);
+  }
+}
+
+/* Alternative fade transition for simpler effect */
+@keyframes pageFadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes pageFadeOut {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Slide transitions for different directions */
+@keyframes pageSlideInFromRight {
+  0% {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pageSlideInFromLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Main content wrapper - ensure smooth transitions */
+.main-content-wrapper {
+  /* GPU acceleration for main content area */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  /* Smooth transitions */
+  transition-property: margin-left;
+  transition-duration: 300ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* App layout container */
+.app-layout {
+  /* Ensure layout stability during page transitions */
+  contain: layout style;
+}
+
+/* WebKit/Tauri-specific page transition optimizations */
+@supports (-webkit-app-region: drag) {
+  .page-transition-container {
+    /* Faster transitions for Tauri/WebKit */
+    --page-transition-duration: 200ms;
+    /* Force GPU layer for smoother animations */
+    will-change: transform, opacity;
+  }
+  
+  /* Disable heavy effects during page transitions on WebKit */
+  .page-transition-container[data-transitioning="true"] .backdrop-blur-md,
+  .page-transition-container[data-transitioning="true"] .blur-3xl,
+  .page-transition-container[data-transitioning="true"] .blur-2xl {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    filter: none !important;
+  }
+}
+
+/* Reduced motion support for page transitions */
+@media (prefers-reduced-motion: reduce) {
+  .page-transition-container {
+    transition: none !important;
+    animation: none !important;
+  }
+  
+  @keyframes pageEnter {
+    0%, 100% {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  
+  @keyframes pageExit {
+    0%, 100% {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+/* Navigation link transitions - optimized for smoothness */
+nav a {
+  /* GPU-accelerated transitions */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  /* Only transition specific properties */
+  transition-property: transform, background-color, color, border-color, box-shadow, opacity;
+  transition-duration: 200ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Active link indicator animation */
+@keyframes navLinkActivate {
+  0% {
+    transform: scale(0.98);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.02);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Apply smooth focus transition */
+nav a:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 12px;
+}

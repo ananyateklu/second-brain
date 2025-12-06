@@ -72,8 +72,8 @@ export interface AuthSliceState {
 }
 
 export interface AuthSliceActions {
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, displayName?: string) => Promise<void>;
+  login: (identifier: string, password: string) => Promise<void>;
+  register: (email: string, password: string, displayName?: string, username?: string) => Promise<void>;
   signOut: () => void;
   setUser: (user: User | null) => void;
   setToken: (token: string | null) => void;

@@ -1,7 +1,13 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, CSSProperties, memo } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { PieChartTooltip } from './PieChartTooltip';
 import { formatTokenCount, TIME_RANGE_OPTIONS, TimeRangeOption, getProviderFromModelName } from '../utils/dashboard-utils';
+
+// Detect if running in Tauri (WebKit)
+const isTauri = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  return !!(window as unknown as { __TAURI__?: unknown }).__TAURI__;
+};
 
 interface ModelUsageEntry {
   name: string;
@@ -29,15 +35,152 @@ interface ModelUsageSectionProps {
     totalTokens: number;
     modelDataMap: Map<string, { conversations: number; tokens: number }>;
   };
+  /** Animation delay for staggered section entrance */
+  animationDelay?: number;
+  /** Whether animations are ready */
+  isAnimationReady?: boolean;
 }
+
+// Memoized time range button to prevent unnecessary re-renders
+const TimeRangeButton = memo(({ 
+  option, 
+  isSelected, 
+  onClick 
+}: { 
+  option: TimeRangeOption; 
+  isSelected: boolean; 
+  onClick: () => void;
+}) => (
+  <button
+    onClick={onClick}
+    className={`px-3 py-1.5 text-xs font-medium rounded-lg ${
+      isSelected ? 'scale-105' : 'hover:scale-105'
+    }`}
+    style={{
+      backgroundColor: isSelected ? 'var(--color-brand-600)' : 'var(--surface-elevated)',
+      color: isSelected ? '#ffffff' : 'var(--text-secondary)',
+      border: `1px solid ${isSelected ? 'var(--color-brand-600)' : 'var(--border)'}`,
+      // GPU-accelerated transitions on specific properties only
+      transitionProperty: 'transform, background-color, color, border-color',
+      transitionDuration: '200ms',
+      transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+    }}
+    onMouseEnter={(e) => {
+      if (!isSelected) {
+        e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+        e.currentTarget.style.color = 'var(--text-primary)';
+      }
+    }}
+    onMouseLeave={(e) => {
+      if (!isSelected) {
+        e.currentTarget.style.backgroundColor = 'var(--surface-elevated)';
+        e.currentTarget.style.color = 'var(--text-secondary)';
+      }
+    }}
+  >
+    {option.label}
+  </button>
+));
+
+TimeRangeButton.displayName = 'TimeRangeButton';
+
+// Memoized legend button
+const LegendButton = memo(({ 
+  entry, 
+  isHidden, 
+  onClick 
+}: { 
+  entry: { name: string; originalName: string; value: number; color: string }; 
+  isHidden: boolean; 
+  onClick: () => void;
+}) => (
+  <button
+    onClick={onClick}
+    className="flex items-center gap-2 px-3 py-1.5 rounded-lg flex-shrink-0 whitespace-nowrap"
+    style={{
+      backgroundColor: isHidden ? 'var(--surface-hover)' : 'transparent',
+      opacity: isHidden ? 0.5 : 1,
+      border: `1px solid ${isHidden ? 'var(--border)' : 'transparent'}`,
+      cursor: 'pointer',
+      // GPU-accelerated transitions
+      transitionProperty: 'transform, background-color, opacity, border-color',
+      transitionDuration: '200ms',
+      transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)',
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
+      e.currentTarget.style.transform = 'scale(1.05)';
+    }}
+    onMouseLeave={(e) => {
+      if (!isHidden) {
+        e.currentTarget.style.backgroundColor = 'transparent';
+      }
+      e.currentTarget.style.transform = 'scale(1)';
+    }}
+  >
+    <div
+      className="w-3 h-3 rounded-full flex-shrink-0"
+      style={{ backgroundColor: entry.color }}
+    />
+    <span 
+      className="text-xs font-medium"
+      style={{ color: 'var(--text-primary)' }}
+    >
+      {entry.name}
+    </span>
+    <span 
+      className="text-xs"
+      style={{ color: 'var(--text-secondary)' }}
+    >
+      ({entry.value} msgs)
+    </span>
+  </button>
+));
+
+LegendButton.displayName = 'LegendButton';
 
 export function ModelUsageSection({ 
   modelUsageData, 
   colors,
   getFilteredModelUsageData,
+  animationDelay = 0,
+  isAnimationReady = true,
 }: ModelUsageSectionProps) {
   const [selectedTimeRange, setSelectedTimeRange] = useState<number>(30);
   const [hiddenModels, setHiddenModels] = useState<Set<string>>(new Set());
+
+  // Check platform once for performance optimizations
+  const isWebKit = useMemo(() => isTauri(), []);
+
+  // Container animation styles - GPU accelerated
+  const containerStyles = useMemo<CSSProperties>(() => ({
+    backgroundColor: 'var(--surface-card)',
+    borderColor: 'var(--border)',
+    // Simpler shadow for WebKit
+    boxShadow: isWebKit 
+      ? 'var(--shadow-lg)' 
+      : 'var(--shadow-lg), 0 0 60px -20px var(--color-primary-alpha)',
+    // Animation properties
+    opacity: isAnimationReady ? 1 : 0,
+    transform: isAnimationReady ? 'translateY(0)' : 'translateY(16px)',
+    transitionProperty: 'opacity, transform',
+    transitionDuration: isWebKit ? '300ms' : '400ms',
+    transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)',
+    transitionDelay: `${animationDelay}ms`,
+    willChange: isAnimationReady ? 'auto' : 'transform, opacity',
+    backfaceVisibility: 'hidden',
+  }), [isWebKit, isAnimationReady, animationDelay]);
+
+  // Glow effect styles - disabled on WebKit
+  const glowStyles = useMemo<CSSProperties>(() => 
+    isWebKit 
+      ? { display: 'none' } 
+      : {
+          background: 'radial-gradient(circle, var(--color-primary), transparent)',
+          opacity: 0.2,
+        },
+    [isWebKit]
+  );
 
   // Get filtered and aggregated data
   const { data: filteredData, allFilteredModels, modelDataMap } = useMemo(
@@ -133,14 +276,13 @@ export function ModelUsageSection({
     percent?: number;
     name?: string;
   }) => {
-    if (!entry.percent || entry.percent < 0.05) return ''; // Hide labels for very small slices
+    if (!entry.percent || entry.percent < 0.05) return '';
     if (!entry.name) return '';
     
     const truncatedName = entry.name.length > 12 
       ? entry.name.substring(0, 10) + '...' 
       : entry.name;
     
-    // If we have positioning info, render as positioned text
     if (entry.cx !== undefined && entry.cy !== undefined && entry.midAngle !== undefined && 
         entry.innerRadius !== undefined && entry.outerRadius !== undefined) {
       const RADIAN = Math.PI / 180;
@@ -166,7 +308,6 @@ export function ModelUsageSection({
       );
     }
     
-    // Fallback to simple string label
     return `${truncatedName} ${(entry.percent * 100).toFixed(0)}%`;
   };
 
@@ -175,72 +316,57 @@ export function ModelUsageSection({
   return (
     <div className="space-y-3">
       <div
-        className="rounded-3xl border p-5 backdrop-blur-md relative overflow-hidden"
-        style={{
-          backgroundColor: 'var(--surface-card)',
-          borderColor: 'var(--border)',
-          boxShadow: 'var(--shadow-lg), 0 0 60px -20px var(--color-primary-alpha)',
-        }}
+        className={`rounded-3xl border p-5 relative overflow-hidden ${isWebKit ? '' : 'backdrop-blur-md'}`}
+        style={containerStyles}
       >
-        {/* Ambient glow effect */}
+        {/* Ambient glow effect - hidden on WebKit for performance */}
         <div
-          className="absolute -top-32 -right-32 w-64 h-64 rounded-full opacity-20 blur-3xl pointer-events-none transition-opacity duration-1000"
-          style={{
-            background: `radial-gradient(circle, var(--color-primary), transparent)`,
-          }}
+          className="absolute -top-32 -right-32 w-64 h-64 rounded-full blur-3xl pointer-events-none"
+          style={glowStyles}
+          aria-hidden="true"
         />
+        
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <svg className="h-5 w-5" style={{ color: 'var(--color-brand-600)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              <svg 
+                className="h-5 w-5" 
+                style={{ color: 'var(--color-brand-600)' }} 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={2} 
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" 
+                />
               </svg>
-              <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
+              <h3 
+                className="text-lg font-semibold" 
+                style={{ color: 'var(--text-primary)' }}
+              >
                 Model Usage Distribution
               </h3>
             </div>
+            
             {/* Time Range Filters */}
             <div className="flex items-center gap-1">
               {TIME_RANGE_OPTIONS.map((option: TimeRangeOption) => (
-                <button
+                <TimeRangeButton
                   key={option.days}
+                  option={option}
+                  isSelected={selectedTimeRange === option.days}
                   onClick={() => {
                     setSelectedTimeRange(option.days);
-                    setHiddenModels(new Set()); // Reset hidden models when changing time range
+                    setHiddenModels(new Set());
                   }}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 ${selectedTimeRange === option.days
-                    ? 'scale-105'
-                    : 'hover:scale-105'
-                    }`}
-                  style={{
-                    backgroundColor: selectedTimeRange === option.days
-                      ? 'var(--color-brand-600)'
-                      : 'var(--surface-elevated)',
-                    color: selectedTimeRange === option.days
-                      ? '#ffffff'
-                      : 'var(--text-secondary)',
-                    border: `1px solid ${selectedTimeRange === option.days
-                      ? 'var(--color-brand-600)'
-                      : 'var(--border)'}`,
-                  }}
-                  onMouseEnter={(e) => {
-                    if (selectedTimeRange !== option.days) {
-                      e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
-                      e.currentTarget.style.color = 'var(--text-primary)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (selectedTimeRange !== option.days) {
-                      e.currentTarget.style.backgroundColor = 'var(--surface-elevated)';
-                      e.currentTarget.style.color = 'var(--text-secondary)';
-                    }
-                  }}
-                >
-                  {option.label}
-                </button>
+                />
               ))}
             </div>
           </div>
+          
           <div className="flex flex-col gap-4">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Models by Provider - Left Col */}
@@ -324,7 +450,10 @@ export function ModelUsageSection({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-56">
                   {/* Pie Chart - Conversations */}
                   <div className="flex flex-col h-full">
-                    <h4 className="text-sm font-medium text-center mb-2" style={{ color: 'var(--text-secondary)' }}>
+                    <h4 
+                      className="text-sm font-medium text-center mb-2" 
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
                       By Conversation
                     </h4>
                     <div className="flex-1 min-h-0">
@@ -340,14 +469,19 @@ export function ModelUsageSection({
                             fill="var(--color-brand-600)"
                             dataKey="value"
                             paddingAngle={2}
+                            // Faster animation for WebKit
+                            animationDuration={isWebKit ? 300 : 500}
+                            animationEasing="ease-out"
                           >
                             {dataWithColors.map((entry) => (
                               <Cell
                                 key={`cell-conv-${entry.originalName}`}
                                 fill={entry.color}
-                                className="transition-opacity hover:opacity-80 cursor-pointer"
                                 style={{
                                   opacity: hiddenModels.has(entry.name) ? 0.3 : 1,
+                                  cursor: 'pointer',
+                                  // GPU-accelerated opacity transition
+                                  transition: 'opacity 200ms ease-out',
                                 }}
                               />
                             ))}
@@ -361,6 +495,8 @@ export function ModelUsageSection({
                                 totalTokens={visibleTotalTokens}
                               />
                             }
+                            // Disable animation on WebKit
+                            isAnimationActive={!isWebKit}
                           />
                         </PieChart>
                       </ResponsiveContainer>
@@ -369,7 +505,10 @@ export function ModelUsageSection({
 
                   {/* Pie Chart - Token Usage */}
                   <div className="flex flex-col h-full">
-                    <h4 className="text-sm font-medium text-center mb-2" style={{ color: 'var(--text-secondary)' }}>
+                    <h4 
+                      className="text-sm font-medium text-center mb-2" 
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
                       By Token Usage
                     </h4>
                     <div className="flex-1 min-h-0">
@@ -388,6 +527,9 @@ export function ModelUsageSection({
                             fill="var(--color-brand-600)"
                             dataKey="value"
                             paddingAngle={2}
+                            // Faster animation for WebKit
+                            animationDuration={isWebKit ? 300 : 500}
+                            animationEasing="ease-out"
                           >
                             {dataWithColors
                               .filter(d => d.tokens > 0)
@@ -395,9 +537,11 @@ export function ModelUsageSection({
                                 <Cell
                                   key={`cell-token-${entry.originalName}`}
                                   fill={entry.color}
-                                  className="transition-opacity hover:opacity-80 cursor-pointer"
                                   style={{
                                     opacity: hiddenModels.has(entry.name) ? 0.3 : 1,
+                                    cursor: 'pointer',
+                                    // GPU-accelerated opacity transition
+                                    transition: 'opacity 200ms ease-out',
                                   }}
                                 />
                               ))}
@@ -411,6 +555,8 @@ export function ModelUsageSection({
                                 totalTokens={visibleTotalTokens}
                               />
                             }
+                            // Disable animation on WebKit
+                            isAnimationActive={!isWebKit}
                           />
                         </PieChart>
                       </ResponsiveContainer>
@@ -419,48 +565,22 @@ export function ModelUsageSection({
                 </div>
 
                 {/* Interactive Legend */}
-                <div className="flex flex-nowrap gap-3 justify-center items-center px-4 py-1.5 rounded-lg overflow-x-auto [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--border)] [&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--text-secondary)]" style={{ backgroundColor: 'var(--surface-elevated)', scrollbarWidth: 'thin', scrollbarColor: 'var(--border) transparent' }}>
-                  {dataWithColors.map((entry) => {
-                    const isHidden = hiddenModels.has(entry.name);
-                    return (
-                      <button
-                        key={`legend-${entry.originalName}`}
-                        onClick={() => { toggleModelVisibility(entry.name); }}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-200 hover:scale-105 flex-shrink-0 whitespace-nowrap"
+                <div 
+                  className="flex flex-nowrap gap-3 justify-center items-center px-4 py-1.5 rounded-lg overflow-x-auto [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--border)] [&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--text-secondary)]" 
                         style={{
-                          backgroundColor: isHidden ? 'var(--surface-hover)' : 'transparent',
-                          opacity: isHidden ? 0.5 : 1,
-                          border: `1px solid ${isHidden ? 'var(--border)' : 'transparent'}`,
-                          cursor: 'pointer',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = 'var(--surface-hover)';
-                        }}
-                        onMouseLeave={(e) => {
-                          if (!isHidden) {
-                            e.currentTarget.style.backgroundColor = 'transparent';
-                          }
-                        }}
-                      >
-                        <div
-                          className="w-3 h-3 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: entry.color }}
-                        />
-                        <span 
-                          className="text-xs font-medium"
-                          style={{ color: 'var(--text-primary)' }}
-                        >
-                          {entry.name}
-                        </span>
-                        <span 
-                          className="text-xs"
-                          style={{ color: 'var(--text-secondary)' }}
-                        >
-                          ({entry.value} msgs)
-                        </span>
-                      </button>
-                    );
-                  })}
+                    backgroundColor: 'var(--surface-elevated)', 
+                    scrollbarWidth: 'thin', 
+                    scrollbarColor: 'var(--border) transparent' 
+                  }}
+                >
+                  {dataWithColors.map((entry) => (
+                    <LegendButton
+                      key={`legend-${entry.originalName}`}
+                      entry={entry}
+                      isHidden={hiddenModels.has(entry.name)}
+                      onClick={() => toggleModelVisibility(entry.name)}
+                    />
+                  ))}
                 </div>
               </div>
             </div>
@@ -470,4 +590,3 @@ export function ModelUsageSection({
     </div>
   );
 }
-

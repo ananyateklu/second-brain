@@ -1,9 +1,10 @@
-import { ReactNode } from 'react';
+import { ReactNode, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
 import { TitleBar } from './TitleBar';
 import { useTitleBarHeight } from './use-title-bar-height';
+import { PageTransition } from '../PageTransition';
 import { CreateNoteModal } from '../../features/notes/components/CreateNoteModal';
 import { useUIStore } from '../../store/ui-store';
 import { isTauri } from '../../lib/native-notifications';
@@ -30,9 +31,52 @@ export function AppLayout({ children }: AppLayoutProps) {
     (isDirectoryPage && isFullscreenDirectory)
   );
 
+  // Memoize main content classes to prevent unnecessary recalculations
+  const mainClasses = useMemo(() => {
+    const classes = ['flex-1'];
+    
+    // Padding classes
+    if (isPageFullscreen) {
+      classes.push('px-0', 'pt-0');
+    } else {
+      classes.push('px-4', 'md:px-6');
+    }
+    
+    // Top padding for chat/directory
+    if ((isChatPage || isDirectoryPage) && !isPageFullscreen) {
+      classes.push('md:pt-4');
+    }
+    
+    // Padding for other pages
+    if (!isChatPage && !isDirectoryPage) {
+      classes.push('py-4', 'sm:py-1');
+    }
+    
+    // Settings page centering
+    if (isSettingsPage) {
+      classes.push('flex', 'items-center', 'justify-center');
+    }
+    
+    // Width and margin
+    if (isPageFullscreen) {
+      classes.push('w-full');
+    } else {
+      classes.push('mx-auto', 'max-w-5xl', 'md:max-w-none', 'w-full');
+    }
+    
+    // Overflow handling
+    if (!isChatPage) {
+      classes.push('overflow-y-auto', 'scrollbar-thin');
+    } else {
+      classes.push('overflow-hidden');
+    }
+    
+    return classes.join(' ');
+  }, [isChatPage, isDirectoryPage, isSettingsPage, isPageFullscreen]);
+
   return (
     <div
-      className="h-screen overflow-hidden flex flex-col md:flex-row"
+      className="h-screen overflow-hidden flex flex-col md:flex-row app-layout"
       style={{
         background: 'transparent',
         // Add padding for the title bar when in Tauri
@@ -44,19 +88,24 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       {/* Sidebar - floats above content when page is fullscreen */}
       <div className={isPageFullscreen ? 'fixed z-40' : ''}>
-      <Sidebar />
+        <Sidebar />
       </div>
 
       <div 
-        className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${isPageFullscreen ? 'ml-0' : ''}`}
-        style={isPageFullscreen ? { marginLeft: 0 } : undefined}
+        className={`flex-1 flex flex-col min-w-0 main-content-wrapper ${isPageFullscreen ? 'ml-0' : ''}`}
+        style={{
+          // GPU acceleration for the main content area
+          transform: 'translateZ(0)',
+          backfaceVisibility: 'hidden',
+          ...(isPageFullscreen ? { marginLeft: 0 } : {}),
+        }}
       >
         {!isChatPage && !isDirectoryPage && <Header />}
 
-        <main
-          className={`flex-1 ${isPageFullscreen ? 'px-0 pt-0' : 'px-4 md:px-6'} ${(isChatPage || isDirectoryPage) && !isPageFullscreen ? 'md:pt-4' : ''} ${!isChatPage && !isDirectoryPage ? 'py-4 sm:py-1' : ''} ${isSettingsPage ? 'flex items-center justify-center' : ''} ${isPageFullscreen ? 'w-full' : 'mx-auto max-w-5xl md:max-w-none w-full'} ${!isChatPage ? 'overflow-y-auto scrollbar-thin' : 'overflow-hidden'}`}
-        >
-          {children}
+        <main className={mainClasses}>
+          <PageTransition>
+            {children}
+          </PageTransition>
         </main>
       </div>
 

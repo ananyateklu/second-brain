@@ -14,6 +14,10 @@ public class User
     [MaxLength(256)]
     public string Email { get; set; } = string.Empty;
 
+    [Column("username")]
+    [MaxLength(50)]
+    public string? Username { get; set; }
+
     [Column("password_hash")]
     [MaxLength(256)]
     public string? PasswordHash { get; set; }

@@ -1,6 +1,7 @@
 import { useMemo, ReactNode } from 'react';
 import { StatCard } from './StatCard';
 import { formatTokenCount } from '../utils/dashboard-utils';
+import { useDashboardAnimations } from '../hooks/use-dashboard-animations';
 import type { AIUsageStats } from '../../../types/stats';
 import type { SessionStats } from '../../../types/chat';
 
@@ -26,7 +27,7 @@ interface StatConfig {
   show: boolean;
 }
 
-// Icon components
+// Icon components - memoized SVG icons for performance
 const NotesIcon = () => (
   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -210,16 +211,25 @@ export function StatCardsGrid({ stats, aiStats, totalTokens, sessionStats }: Sta
     },
   ], [stats, aiStats, totalTokens, sessionStats]);
 
+  // Filter to only visible stats
+  const visibleStats = useMemo(
+    () => statsConfig.filter(stat => stat.show),
+    [statsConfig]
+  );
+
+  // Use optimized dashboard animations
+  const { isReady } = useDashboardAnimations(true, visibleStats.length);
+
   return (
     <div
-      className="flex gap-2"
+      className="flex gap-2 dashboard-stats-grid"
       style={{
         flexWrap: 'wrap',
       }}
     >
-      {statsConfig.map((stat, index) => (
+      {visibleStats.map((stat, index) => (
         <div
-          key={index}
+          key={stat.title}
           style={{
             flex: '1 1 0',
             minWidth: '150px',
@@ -232,10 +242,11 @@ export function StatCardsGrid({ stats, aiStats, totalTokens, sessionStats }: Sta
             icon={stat.icon}
             subtitle={stat.subtitle}
             show={stat.show}
+            index={index}
+            isAnimationReady={isReady}
           />
         </div>
       ))}
     </div>
   );
 }
-

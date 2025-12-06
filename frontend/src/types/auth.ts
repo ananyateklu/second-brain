@@ -9,6 +9,7 @@
 export interface User {
   userId: string;
   email: string;
+  username?: string;
   displayName: string;
   apiKey?: string;
   createdAt?: string;
@@ -20,7 +21,7 @@ export interface User {
  * Login request payload
  */
 export interface LoginRequest {
-  email: string;
+  identifier: string;
   password: string;
 }
 
@@ -29,6 +30,7 @@ export interface LoginRequest {
  */
 export interface RegisterRequest {
   email: string;
+  username?: string;
   password: string;
   displayName?: string;
 }
@@ -39,6 +41,7 @@ export interface RegisterRequest {
 export interface AuthResponse {
   userId: string;
   email: string;
+  username?: string;
   displayName: string;
   apiKey?: string;
   token: string;

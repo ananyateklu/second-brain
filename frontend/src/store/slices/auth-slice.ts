@@ -20,18 +20,18 @@ export const createAuthSlice: SliceCreator<AuthSlice> = (set, get) => ({
   // Auth Actions
   // ============================================
 
-  login: async (email: string, password: string) => {
+  login: async (identifier: string, password: string) => {
     set({ isLoading: true, error: null });
 
     try {
       // Validate input
-      const validation = authService.validateLoginForm(email, password);
+      const validation = authService.validateLoginForm(identifier, password);
       if (!validation.valid) {
         throw new Error(validation.errors[0]);
       }
 
       // Call auth service
-      const response = await authService.login({ email, password });
+      const response = await authService.login({ identifier, password });
       const user = authService.extractUser(response);
 
       set({
@@ -59,12 +59,12 @@ export const createAuthSlice: SliceCreator<AuthSlice> = (set, get) => ({
     }
   },
 
-  register: async (email: string, password: string, displayName?: string) => {
+  register: async (email: string, password: string, displayName?: string, username?: string) => {
     set({ isLoading: true, error: null });
 
     try {
       // Call auth service
-      const response = await authService.register({ email, password, displayName });
+      const response = await authService.register({ email, password, displayName, username });
       const user = authService.extractUser(response);
 
       set({

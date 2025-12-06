@@ -8,7 +8,8 @@ export function LoginPage() {
   const { login, register, isLoading, isAuthenticated, error, clearError } = useAuthStore();
 
   const [isRegisterMode, setIsRegisterMode] = useState(false);
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -39,15 +40,22 @@ export function LoginPage() {
   }, [clearError]);
 
   const validateForm = (): boolean => {
-    if (!email.trim()) {
-      setValidationError('Email is required');
+    if (!identifier.trim()) {
+      setValidationError(isRegisterMode ? 'Email is required' : 'Email or Username is required');
       return false;
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setValidationError('Please enter a valid email address');
-      return false;
+    if (isRegisterMode) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(identifier)) {
+        setValidationError('Please enter a valid email address');
+        return false;
+      }
+
+      if (username && !/^[a-zA-Z0-9_-]{3,20}$/.test(username)) {
+        setValidationError('Username must be 3-20 characters and contain only letters, numbers, underscores, and hyphens');
+        return false;
+      }
     }
 
     if (!password) {
@@ -76,9 +84,9 @@ export function LoginPage() {
 
     try {
       if (isRegisterMode) {
-        await register(email, password, displayName || undefined);
+        await register(identifier, password, displayName || undefined, username || undefined);
       } else {
-        await login(email, password);
+        await login(identifier, password);
       }
       // eslint-disable-next-line @typescript-eslint/no-floating-promises -- navigate from useNavigate() returns void, not a promise
       navigate('/', { replace: true });
@@ -188,31 +196,59 @@ export function LoginPage() {
 
           {/* Login/Register Form */}
           <form onSubmit={(e) => { void handleSubmit(e); }} className="space-y-4">
-            {/* Email Input */}
+            {/* Email/Identifier Input */}
             <div>
               <label
-                htmlFor="email"
+                htmlFor="identifier"
                 className="block text-sm font-medium mb-2"
                 style={{ color: 'var(--text-secondary)' }}
               >
-                Email
+                {isRegisterMode ? 'Email' : 'Email or Username'}
               </label>
               <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => { setEmail(e.target.value); }}
+                id="identifier"
+                type={isRegisterMode ? "email" : "text"}
+                value={identifier}
+                onChange={(e) => { setIdentifier(e.target.value); }}
                 className="w-full px-4 py-3 rounded-xl border transition-all duration-200 focus:outline-none focus:ring-2"
                 style={{
                   backgroundColor: 'var(--surface-elevated)',
                   borderColor: 'var(--border)',
                   color: 'var(--text-primary)',
                 }}
-                placeholder="you@example.com"
-                autoComplete="email"
+                placeholder={isRegisterMode ? "you@example.com" : "Email or Username"}
+                autoComplete={isRegisterMode ? "email" : "username"}
                 disabled={isLoading}
               />
             </div>
+
+            {/* Username (Register only) */}
+            {isRegisterMode && (
+              <div>
+                <label
+                  htmlFor="username"
+                  className="block text-sm font-medium mb-2"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  Username (optional)
+                </label>
+                <input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => { setUsername(e.target.value); }}
+                  className="w-full px-4 py-3 rounded-xl border transition-all duration-200 focus:outline-none focus:ring-2"
+                  style={{
+                    backgroundColor: 'var(--surface-elevated)',
+                    borderColor: 'var(--border)',
+                    color: 'var(--text-primary)',
+                  }}
+                  placeholder="unique_username"
+                  autoComplete="username"
+                  disabled={isLoading}
+                />
+              </div>
+            )}
 
             {/* Display Name (Register only) */}
             {isRegisterMode && (

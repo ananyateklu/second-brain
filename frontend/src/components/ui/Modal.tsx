@@ -1,4 +1,5 @@
 import { ReactNode, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 interface ModalProps {
   isOpen: boolean;
@@ -33,7 +34,7 @@ export function Modal({ isOpen, onClose, title, children, icon, maxWidth = 'max-
 
   if (!isOpen) return null;
 
-  return (
+  const modalContent = (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center backdrop-blur-sm p-4 animate-in fade-in duration-200"
       style={{
@@ -122,5 +123,8 @@ export function Modal({ isOpen, onClose, title, children, icon, maxWidth = 'max-
       </div>
     </div>
   );
+
+  // Render modal at the root level using a portal
+  return createPortal(modalContent, document.body);
 }
 

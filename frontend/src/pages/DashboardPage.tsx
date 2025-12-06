@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
 import { useDashboardData } from '../features/dashboard/hooks/use-dashboard-data';
+import { useDashboardAnimations } from '../features/dashboard/hooks/use-dashboard-animations';
 import {
   StatCardsGrid,
   NotesChart,
@@ -32,6 +33,9 @@ export function DashboardPage() {
     getFilteredModelUsageData,
   } = useDashboardData();
 
+  // Use optimized animations - 13 stat cards is typical
+  const { isReady, getSectionAnimation } = useDashboardAnimations(!isLoading && !!notes, 13);
+
   // Memoize chart data based on time range selections
   const chartData = useMemo(
     () => getNotesChartData(selectedTimeRange),
@@ -42,6 +46,11 @@ export function DashboardPage() {
     () => getChatUsageData(selectedChatTimeRange),
     [getChatUsageData, selectedChatTimeRange]
   );
+
+  // Get section animation states
+  const notesChartAnimation = getSectionAnimation(0);
+  const chatChartAnimation = getSectionAnimation(1);
+  const modelUsageAnimation = getSectionAnimation(2);
 
   if (error) {
     return (
@@ -90,7 +99,7 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 dashboard-container">
       {/* Aggregated Stats Cards */}
       <StatCardsGrid
         stats={stats}
@@ -105,6 +114,8 @@ export function DashboardPage() {
           chartData={chartData}
           selectedTimeRange={selectedTimeRange}
           onTimeRangeChange={setSelectedTimeRange}
+          animationDelay={notesChartAnimation.delay}
+          isAnimationReady={isReady}
         />
 
         {aiStats && (
@@ -116,6 +127,8 @@ export function DashboardPage() {
             regularChartColor={regularChartColor}
             agentChartColor={agentChartColor}
             imageGenChartColor={imageGenChartColor}
+            animationDelay={chatChartAnimation.delay}
+            isAnimationReady={isReady}
           />
         )}
       </div>
@@ -126,6 +139,8 @@ export function DashboardPage() {
           modelUsageData={modelUsageData}
           colors={colors}
           getFilteredModelUsageData={getFilteredModelUsageData}
+          animationDelay={modelUsageAnimation.delay}
+          isAnimationReady={isReady}
         />
       )}
     </div>

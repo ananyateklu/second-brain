@@ -74,6 +74,7 @@ export const authService = {
     return {
       userId: response.userId,
       email: response.email,
+      username: response.username,
       displayName: response.displayName,
       apiKey: response.apiKey,
     };
@@ -109,12 +110,12 @@ export const authService = {
   /**
    * Validate login form
    */
-  validateLoginForm(email: string, password: string): { valid: boolean; errors: string[] } {
+  validateLoginForm(identifier: string, password: string): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
     
-    if (!email.trim()) {
-      errors.push('Email is required');
-    } else if (!this.validateEmail(email)) {
+    if (!identifier.trim()) {
+      errors.push('Email or Username is required');
+    } else if (identifier.includes('@') && !this.validateEmail(identifier)) {
       errors.push('Invalid email format');
     }
     
@@ -132,7 +133,8 @@ export const authService = {
     email: string,
     password: string,
     confirmPassword: string,
-    displayName?: string
+    displayName?: string,
+    username?: string
   ): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
     
@@ -140,6 +142,10 @@ export const authService = {
       errors.push('Email is required');
     } else if (!this.validateEmail(email)) {
       errors.push('Invalid email format');
+    }
+
+    if (username && !/^[a-zA-Z0-9_-]{3,20}$/.test(username)) {
+       errors.push('Username must be 3-20 characters and contain only letters, numbers, underscores, and hyphens');
     }
     
     const passwordValidation = this.validatePassword(password);

@@ -97,6 +97,32 @@ public class SqlUserRepository : IUserRepository
         }
     }
 
+    public async Task<User?> GetByUsernameAsync(string username)
+    {
+        try
+        {
+            _logger.LogDebug("Retrieving user by username. Username: {Username}", username);
+            var user = await _context.Users
+                .Include(u => u.Preferences)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Username != null && u.Username.ToLower() == username.ToLower());
+
+            if (user == null)
+            {
+                _logger.LogDebug("User not found by username. Username: {Username}", username);
+                return null;
+            }
+
+            _logger.LogDebug("User retrieved by username. UserId: {UserId}, Username: {Username}", user.Id, username);
+            return user;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving user by username. Username: {Username}", username);
+            throw new RepositoryException($"Failed to retrieve user with username '{username}'", ex);
+        }
+    }
+
     public async Task<User> CreateAsync(User user)
     {
         try
@@ -151,6 +177,7 @@ public class SqlUserRepository : IUserRepository
 
             // Update basic properties
             existingUser.Email = user.Email;
+            existingUser.Username = user.Username;
             existingUser.DisplayName = user.DisplayName;
             existingUser.ApiKey = user.ApiKey;
             existingUser.PasswordHash = user.PasswordHash;
