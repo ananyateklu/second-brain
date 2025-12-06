@@ -120,6 +120,31 @@ public class TestUserRepository : IUserRepository
         }
     }
 
+    public async Task<User?> GetByUsernameAsync(string username)
+    {
+        try
+        {
+            _logger.LogDebug("Retrieving user by username. Username: {Username}", username);
+            var user = await _context.Users
+                .Include(u => u.Preferences)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Email == username);
+
+            if (user == null)
+            {
+                _logger.LogDebug("User not found by username. Username: {Username}", username);
+                return null;
+            }
+
+            return user;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving user by username. Username: {Username}", username);
+            throw new RepositoryException($"Failed to retrieve user with username '{username}'", ex);
+        }
+    }
+
     public async Task<User> CreateAsync(User user)
     {
         try
