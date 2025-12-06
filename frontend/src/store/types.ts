@@ -26,6 +26,25 @@ export type NoteView = 'list' | 'grid';
 export type FontSize = 'small' | 'medium' | 'large';
 
 // ============================================
+// Notes Filter Types
+// ============================================
+
+export type DateFilter = 'all' | 'today' | 'yesterday' | 'last7days' | 'last30days' | 'last90days' | 'custom';
+export type SortOption = 'newest' | 'oldest' | 'title-asc' | 'title-desc';
+export type ArchiveFilter = 'all' | 'archived' | 'not-archived';
+export type FolderFilter = string | null; // null means all folders, empty string means unfiled
+
+export interface NotesFilterState {
+  dateFilter: DateFilter;
+  customDateStart?: string;
+  customDateEnd?: string;
+  selectedTags: string[];
+  sortBy: SortOption;
+  archiveFilter: ArchiveFilter;
+  selectedFolder?: FolderFilter;
+}
+
+// ============================================
 // Ollama Download Types
 // ============================================
 
@@ -98,6 +117,8 @@ export interface UISliceState {
   sidebarState: SidebarState;
   previousSidebarState: SidebarState | null;
   notesViewMode: NotesViewMode;
+  isFullscreenChat: boolean;
+  isFullscreenDirectory: boolean;
 }
 
 export interface UISliceActions {
@@ -116,9 +137,27 @@ export interface UISliceActions {
   toggleSidebar: () => void;
   closeSidebar: () => void;
   setNotesViewMode: (mode: NotesViewMode) => void;
+  toggleFullscreenChat: () => void;
+  toggleFullscreenDirectory: () => void;
+  setFullscreenChat: (isFullscreen: boolean) => void;
+  setFullscreenDirectory: (isFullscreen: boolean) => void;
 }
 
 export type UISlice = UISliceState & UISliceActions;
+
+export interface NotesSliceState {
+  filterState: NotesFilterState;
+  isBulkMode: boolean;
+}
+
+export interface NotesSliceActions {
+  setFilterState: (filterState: NotesFilterState) => void;
+  setBulkMode: (isBulkMode: boolean) => void;
+  toggleBulkMode: () => void;
+  resetFilters: () => void;
+}
+
+export type NotesSlice = NotesSliceState & NotesSliceActions;
 
 export interface ThemeSliceState {
   theme: Theme;
@@ -144,11 +183,18 @@ export interface OllamaSliceActions {
 
 export type OllamaSlice = OllamaSliceState & OllamaSliceActions;
 
+export interface RagAnalyticsSlice {
+  activeTab: 'performance' | 'topics' | 'logs';
+  selectedTimeRange: number | null;
+  setActiveTab: (tab: 'performance' | 'topics' | 'logs') => void;
+  setSelectedTimeRange: (days: number | null) => void;
+}
+
 // ============================================
 // Combined Store Type
 // ============================================
 
-export type BoundStore = AuthSlice & SettingsSlice & UISlice & ThemeSlice & OllamaSlice;
+export type BoundStore = AuthSlice & SettingsSlice & UISlice & NotesSlice & ThemeSlice & OllamaSlice & RagAnalyticsSlice;
 
 // ============================================
 // Slice Creator Type

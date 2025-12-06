@@ -572,12 +572,12 @@ export function ChatInputRoot({
   return (
     <ChatInputContext.Provider value={contextValue}>
       <div
-        className={`absolute bottom-0 left-0 right-0 px-6 py-6 z-20 ${className || ''}`}
+        className={`absolute bottom-0 left-0 w-full px-6 py-6 z-20 pointer-events-none ${className || ''}`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-4xl mx-auto pointer-events-auto">
           {children}
         </div>
       </div>

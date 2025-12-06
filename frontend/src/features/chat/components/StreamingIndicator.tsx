@@ -2,9 +2,8 @@ import { MarkdownMessage } from '../../../components/MarkdownMessage';
 import { TokenUsageDisplay } from '../../../components/TokenUsageDisplay';
 import { ThinkingStepCard } from '../../agents/components/ThinkingStepCard';
 import { ToolExecutionCard } from '../../agents/components/ToolExecutionCard';
-import { RetrievedContextCard } from '../../agents/components/RetrievedContextCard';
+import { RetrievedNotesCard } from './RetrievedNotesCard';
 import { ProcessTimeline } from './ProcessTimeline';
-import { RetrievedNotes } from '../../../components/ui/RetrievedNotes';
 import { ToolExecution, ThinkingStep, RetrievedNoteContext } from '../../agents/types/agent-types';
 import { RagContextNote } from '../../../types/rag';
 import { stripThinkingTags } from '../../../utils/thinking-utils';
@@ -43,33 +42,33 @@ export function StreamingIndicator({
   agentRetrievedNotes = [],
 }: StreamingIndicatorProps) {
   const hasAgentRetrievedNotes = agentRetrievedNotes.length > 0;
-  const hasSteps = thinkingSteps.length > 0 || toolExecutions.length > 0 || hasAgentRetrievedNotes;
+  const hasRegularRagNotes = retrievedNotes.length > 0;
+  const hasAnyRetrievedNotes = hasAgentRetrievedNotes || hasRegularRagNotes;
+  const hasSteps = thinkingSteps.length > 0 || toolExecutions.length > 0 || hasAnyRetrievedNotes;
 
   return (
     <div>
       {/* Show thinking steps, context retrieval, and tool executions in timeline */}
-      {agentModeEnabled && (
-        <ProcessTimeline
-          isStreaming={isStreaming}
-          hasContent={hasSteps}
-        >
-          {/* Show automatically retrieved notes context first */}
-          {hasAgentRetrievedNotes && (
-            <RetrievedContextCard 
-              retrievedNotes={agentRetrievedNotes} 
-              isStreaming={isStreaming && !streamingMessage} 
-            />
-          )}
+      <ProcessTimeline
+        isStreaming={isStreaming}
+        hasContent={hasSteps}
+      >
+        {/* Show retrieved notes context first (from agent auto-context or regular RAG) */}
+        {hasAnyRetrievedNotes && (
+          <RetrievedNotesCard
+            notes={hasAgentRetrievedNotes ? agentRetrievedNotes : retrievedNotes}
+            isStreaming={isStreaming && !streamingMessage}
+          />
+        )}
 
-          {thinkingSteps.map((step, index) => (
-            <ThinkingStepCard key={`thinking-${index}`} step={step} isStreaming={isStreaming} />
-          ))}
+        {agentModeEnabled && thinkingSteps.map((step, index) => (
+          <ThinkingStepCard key={`thinking-${index}`} step={step} isStreaming={isStreaming} />
+        ))}
 
-          {toolExecutions.map((execution, index) => (
-            <ToolExecutionCard key={`streaming-${index}`} execution={execution} />
-          ))}
-        </ProcessTimeline>
-      )}
+        {agentModeEnabled && toolExecutions.map((execution, index) => (
+          <ToolExecutionCard key={`streaming-${index}`} execution={execution} />
+        ))}
+      </ProcessTimeline>
 
       {/* Show processing status indicator when streaming (agent mode only) */}
       {agentModeEnabled && isStreaming && processingStatus && !streamingMessage && !hasSteps && (
@@ -190,11 +189,6 @@ export function StreamingIndicator({
             />
           </div>
         </div>
-      )}
-
-      {/* Show retrieved notes during streaming if RAG was used */}
-      {!agentModeEnabled && retrievedNotes && retrievedNotes.length > 0 && (
-        <RetrievedNotes notes={retrievedNotes} />
       )}
 
       {/* Show streaming error */}

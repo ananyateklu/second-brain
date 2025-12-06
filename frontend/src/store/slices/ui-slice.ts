@@ -70,6 +70,8 @@ export const createUISlice: SliceCreator<UISlice> = (set) => ({
   sidebarState: initialSidebarState,
   previousSidebarState: null,
   notesViewMode: initialNotesViewMode,
+  isFullscreenChat: false,
+  isFullscreenDirectory: false,
 
   // ============================================
   // Modal Actions
@@ -146,4 +148,13 @@ export const createUISlice: SliceCreator<UISlice> = (set) => ({
     saveNotesViewMode(mode);
     set({ notesViewMode: mode });
   },
+
+  // ============================================
+  // Fullscreen Actions (Tauri only)
+  // ============================================
+
+  toggleFullscreenChat: () => set((state) => ({ isFullscreenChat: !state.isFullscreenChat })),
+  toggleFullscreenDirectory: () => set((state) => ({ isFullscreenDirectory: !state.isFullscreenDirectory })),
+  setFullscreenChat: (isFullscreen: boolean) => set({ isFullscreenChat: isFullscreen }),
+  setFullscreenDirectory: (isFullscreen: boolean) => set({ isFullscreenDirectory: isFullscreen }),
 });

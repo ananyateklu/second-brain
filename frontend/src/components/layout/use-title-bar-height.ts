@@ -14,6 +14,7 @@ export function useTitleBarHeight(): number {
     // Use lazy initialization to avoid setState in useEffect
     const [isTauriApp] = useState(() => isTauri());
 
-    // Return 28px (macOS standard) for Tauri, 0 for web
-    return isTauriApp ? 28 : 0;
+    // Return 16px (reduced from 28px) for Tauri to allow tighter header integration
+    // while still keeping content below the traffic lights
+    return isTauriApp ? 16 : 0;
 }

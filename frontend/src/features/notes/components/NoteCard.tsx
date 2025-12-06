@@ -208,15 +208,16 @@ export const NoteCard = memo(function NoteCard({
 
   return (
     <div
-      className={`group relative border transition-all duration-300 cursor-pointer overflow-hidden backdrop-blur-md flex flex-col ${containerPadding}`}
+      className={`group relative border transition-all duration-300 cursor-pointer overflow-hidden flex flex-col ${containerPadding}`}
       style={{
         backgroundColor: getBackgroundStyle(),
         borderColor: getBorderColor(),
         borderWidth: isBulkMode && isSelected ? '2px' : '1px',
         boxShadow: isHovered
           ? 'var(--shadow-lg), 0 0 40px -15px var(--color-primary-alpha)'
-          : (isSmall ? 'var(--shadow-sm)' : 'var(--shadow-card), 0 0 30px -20px var(--color-primary-alpha)'),
+          : (isSmall ? 'var(--shadow-sm)' : 'var(--shadow-card)'),
         transform: isHovered && !isSmall ? 'translateY(-4px) scale-[1.02]' : (isHovered && isSmall ? 'scale-[1.01]' : 'none'),
+        willChange: 'transform, box-shadow',
       }}
       onClick={handleCardClick}
       onMouseEnter={() => setIsHovered(true)}
@@ -241,14 +242,15 @@ export const NoteCard = memo(function NoteCard({
       )}
 
 
-      {/* Ambient glow effect */}
-      <div
-        className="absolute -top-20 -right-20 w-40 h-40 rounded-full opacity-15 blur-2xl pointer-events-none transition-opacity duration-1000"
-        style={{
-          background: `radial-gradient(circle, var(--color-primary), transparent)`,
-          opacity: isHovered ? 0.25 : 0.15,
-        }}
-      />
+      {/* Ambient glow effect - simplified for performance */}
+      {isHovered && (
+        <div
+          className="absolute -top-20 -right-20 w-40 h-40 rounded-full opacity-15 blur-2xl pointer-events-none transition-opacity duration-300"
+          style={{
+            background: `radial-gradient(circle, var(--color-primary), transparent)`,
+          }}
+        />
+      )}
       {/* Relevance Indicator Strip (only for high relevance compact/micro cards) */}
       {isSmall && relevanceScore && relevanceScore > 0.8 && (
         <div

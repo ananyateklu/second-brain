@@ -4,36 +4,36 @@
  * Modern glassmorphism design with elegant animations and tabbed navigation
  */
 
-import { useState, useMemo } from 'react';
+import { useMemo, useEffect, useState, startTransition } from 'react';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
+import { useBoundStore } from '../store/bound-store';
 import {
   useRagPerformanceStats,
   useRagQueryLogs,
   useTopicAnalytics,
 } from '../features/rag/hooks/use-rag-analytics';
 import {
-  AnalyticsTabBar,
   PerformanceSection,
   TopicsSection,
   QueryLogsSection,
-  type TabType,
 } from '../features/rag/components';
 
-// Time range options for filtering
-const TIME_RANGES = [
-  { label: '7 days', days: 7 },
-  { label: '30 days', days: 30 },
-  { label: '90 days', days: 90 },
-  { label: 'All time', days: null },
-];
-
 export function RagAnalyticsPage() {
-  const [activeTab, setActiveTab] = useState<TabType>('performance');
-  const [selectedTimeRange, setSelectedTimeRange] = useState<number | null>(30);
+  // Get state from store
+  const activeTab = useBoundStore((state) => state.activeTab);
+  const selectedTimeRange = useBoundStore((state) => state.selectedTimeRange);
+
   const [feedbackOnly, setFeedbackOnly] = useState(false);
   const [page, setPage] = useState(1);
   const pageSize = 15;
+
+  // Reset page when time range changes
+  useEffect(() => {
+    startTransition(() => {
+      setPage(1);
+    });
+  }, [selectedTimeRange]);
 
   // Calculate the since date based on selected time range
   const sinceDate = useMemo(() => {
@@ -147,65 +147,6 @@ export function RagAnalyticsPage() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Page Header */}
-      <div className="flex-shrink-0 pb-4">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="flex items-center gap-6">
-            <div>
-              <h1
-                className="text-2xl font-bold tracking-tight"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                RAG Analytics
-              </h1>
-              <p
-                className="text-sm mt-1"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                Monitor retrieval performance and user satisfaction
-              </p>
-            </div>
-
-            {/* Tab Bar */}
-            <AnalyticsTabBar activeTab={activeTab} onTabChange={setActiveTab} />
-          </div>
-
-          {/* Time Range Selector */}
-          <div
-            className="flex items-center p-1 rounded-xl backdrop-blur-md"
-            style={{
-              backgroundColor: 'var(--surface-elevated)',
-              border: '1px solid var(--border)',
-            }}
-          >
-            {TIME_RANGES.map((range) => (
-              <button
-                key={range.label}
-                onClick={() => {
-                  setSelectedTimeRange(range.days);
-                  setPage(1);
-                }}
-                className="px-4 py-2 text-sm rounded-lg transition-all duration-200"
-                style={{
-                  backgroundColor: selectedTimeRange === range.days
-                    ? 'var(--surface-card)'
-                    : 'transparent',
-                  color: selectedTimeRange === range.days
-                    ? 'var(--text-primary)'
-                    : 'var(--text-tertiary)',
-                  fontWeight: selectedTimeRange === range.days ? 600 : 400,
-                  boxShadow: selectedTimeRange === range.days
-                    ? 'var(--shadow-sm)'
-                    : 'none',
-                }}
-              >
-                {range.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
       {/* Tab Content - Full Screen */}
       <div className="flex-1 overflow-auto">
         {/* Performance Tab */}

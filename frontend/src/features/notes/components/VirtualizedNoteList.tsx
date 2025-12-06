@@ -57,7 +57,7 @@ export const VirtualizedNoteList = memo(function VirtualizedNoteList({
     count: rowCount,
     getScrollElement: () => parentRef.current,
     estimateSize: () => viewMode === 'list' ? LIST_ITEM_HEIGHT : CARD_HEIGHT + GRID_GAP,
-    overscan: 5, // Render 5 extra items above/below viewport
+    overscan: 12, // Render more items to prevent blank space during fast scrolling
   });
 
   // If virtualization is disabled or we have few notes, render normally

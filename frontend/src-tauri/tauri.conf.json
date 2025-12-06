@@ -5,7 +5,7 @@
   "identifier": "com.secondbrain.desktop",
   "build": {
     "beforeDevCommand": "pnpm dev",
-    "devUrl": "http://localhost:3000",
+    "devUrl": "https://localhost:3000",
     "beforeBuildCommand": "pnpm build",
     "frontendDist": "../dist"
   },
@@ -27,7 +27,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:* https://*.openai.com https://*.anthropic.com https://*.googleapis.com https://*.x.ai; img-src 'self' data: blob: https:; font-src 'self' data:"
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:* https://localhost:* https://*.openai.com https://*.anthropic.com https://*.googleapis.com https://*.x.ai; img-src 'self' data: blob: https:; font-src 'self' data:"
     }
   },
   "bundle": {

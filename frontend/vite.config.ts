@@ -13,7 +13,15 @@ const certsExist = fs.existsSync(keyPath) && fs.existsSync(certPath)
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react({
+      babel: {
+        plugins: [
+          ["babel-plugin-react-compiler", {}],
+        ],
+      },
+    })
+  ],
   // Use relative paths for Tauri production builds
   base: './',
   server: {

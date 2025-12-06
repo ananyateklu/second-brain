@@ -5,10 +5,10 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Button } from '../components/ui/Button';
 import { useUIStore } from '../store/ui-store';
+import { useBoundStore } from '../store/bound-store';
 import { EditNoteModal } from '../features/notes/components/EditNoteModal';
 import { BulkActionsBar } from '../features/notes/components/BulkActionsBar';
 import { Note } from '../features/notes/types/note';
-import { NotesFilter, NotesFilterState } from '../features/notes/components/NotesFilter';
 import { toast } from '../hooks/use-toast';
 import {
   startOfDay,
@@ -84,37 +84,25 @@ export function NotesPage() {
   const openCreateModal = useUIStore((state) => state.openCreateModal);
   const searchQuery = useUIStore((state) => state.searchQuery);
   const searchMode = useUIStore((state) => state.searchMode);
-  const notesViewMode = useUIStore((state) => state.notesViewMode);
-  const setNotesViewMode = useUIStore((state) => state.setNotesViewMode);
+  
+  // Use filter state from global store
+  const filterState = useBoundStore((state) => state.filterState);
+  const notesViewMode = useBoundStore((state) => state.notesViewMode);
+  const isBulkMode = useBoundStore((state) => state.isBulkMode);
+  const setBulkMode = useBoundStore((state) => state.setBulkMode);
 
   // Defer search query updates to keep typing responsive
   // This prevents expensive filtering from blocking user input
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const isSearchStale = searchQuery !== deferredSearchQuery;
 
-  const [filterState, setFilterState] = useState<NotesFilterState>({
-    dateFilter: 'all',
-    selectedTags: [],
-    sortBy: 'newest',
-    archiveFilter: 'all',
-    selectedFolder: null,
-  });
-
-  // Bulk selection state
-  const [isBulkMode, setIsBulkMode] = useState(false);
+  // Local selection state (transient)
   const [selectedNoteIds, setSelectedNoteIds] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Bulk mode handlers
-  const toggleBulkMode = useCallback(() => {
-    setIsBulkMode((prev) => {
-      if (prev) {
-        // Exiting bulk mode - clear selections
-        setSelectedNoteIds(new Set());
-      }
-      return !prev;
-    });
-  }, []);
+  // Reset bulk mode when leaving the page or when not needed
+  // Not strictly necessary as it is global, but good cleanup if desired.
+  // We keep it sticky for now as requested.
 
   const handleNoteSelect = useCallback((noteId: string) => {
     setSelectedNoteIds((prev) => {
@@ -267,14 +255,14 @@ export function NotesPage() {
 
       toast.success('Notes deleted', `Successfully deleted ${result.deletedCount} note${result.deletedCount === 1 ? '' : 's'}.`);
       setSelectedNoteIds(new Set());
-      setIsBulkMode(false);
+      setBulkMode(false);
     } catch (error) {
       console.error('Failed to delete notes:', { error, idsToDelete });
       toast.error('Failed to delete notes', 'An error occurred while deleting notes.');
     } finally {
       setIsDeleting(false);
     }
-  }, [selectedNoteIds, bulkDeleteMutation]);
+  }, [selectedNoteIds, bulkDeleteMutation, setBulkMode]);
 
   if (error) {
     return (
@@ -343,17 +331,6 @@ export function NotesPage() {
   if (hasActiveFilters && filteredNotes.length === 0) {
     return (
       <>
-        {notes && notes.length > 0 && (
-          <NotesFilter
-            notes={notes}
-            filterState={filterState}
-            onFilterChange={setFilterState}
-            viewMode={notesViewMode}
-            onViewModeChange={setNotesViewMode}
-            isBulkMode={isBulkMode}
-            onBulkModeToggle={toggleBulkMode}
-          />
-        )}
         <EmptyState
           icon={
             <svg className="h-8 w-8" style={{ color: 'var(--text-secondary)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -374,19 +351,8 @@ export function NotesPage() {
 
   return (
     <>
-      {notes && notes.length > 0 && (
-        <NotesFilter
-          notes={notes}
-          filterState={filterState}
-          onFilterChange={setFilterState}
-          viewMode={notesViewMode}
-          onViewModeChange={setNotesViewMode}
-          isBulkMode={isBulkMode}
-          onBulkModeToggle={toggleBulkMode}
-        />
-      )}
       <div
-        className={notes && notes.length > 0 ? 'pt-10 transition-opacity duration-200' : 'transition-opacity duration-200'}
+        className={notes && notes.length > 0 ? 'pt-2 transition-opacity duration-200' : 'transition-opacity duration-200'}
         style={{ opacity: isSearchStale ? 0.7 : 1 }}
       >
         <NoteList
@@ -411,4 +377,3 @@ export function NotesPage() {
     </>
   );
 }
-

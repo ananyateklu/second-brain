@@ -11,13 +11,9 @@ import { EditNoteModal } from '../features/notes/components/EditNoteModal';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { EmptyState } from '../components/ui/EmptyState';
 import { useThemeStore } from '../store/theme-store';
-
-/**
- * Check if we're running in Tauri
- */
-const isTauri = (): boolean => {
-  return '__TAURI_INTERNALS__' in window;
-};
+import { useUIStore } from '../store/ui-store';
+import { useTitleBarHeight } from '../components/layout/use-title-bar-height';
+import { isTauri } from '../lib/native-notifications';
 
 type FolderFilter = string | null;
 type ArchiveFilter = 'all' | 'not-archived' | 'archived';
@@ -27,11 +23,13 @@ export function NotesDirectoryPage() {
   const { data: notes, isLoading, error } = useNotes();
   const theme = useThemeStore((state) => state.theme);
   const isDarkMode = theme === 'dark' || theme === 'blue';
-  // Use lazy initialization to avoid setState in useEffect
-  const [isTauriApp] = useState(() => isTauri());
+  const titleBarHeight = useTitleBarHeight();
 
-  // Calculate title bar offset for container height
-  const titleBarOffset = isTauriApp ? 28 : 0;
+  // Fullscreen state for Tauri
+  const isFullscreen = useUIStore((state) => state.isFullscreenDirectory);
+  const toggleFullscreen = useUIStore((state) => state.toggleFullscreenDirectory);
+  const isInTauri = isTauri();
+  const isPageFullscreen = isInTauri && isFullscreen;
 
   const [showSidebar, setShowSidebar] = useState(true);
   const [selectedFolder, setSelectedFolder] = useState<FolderFilter>(null);
@@ -118,19 +116,36 @@ export function NotesDirectoryPage() {
     return 'All Notes';
   };
 
+  // Calculate container styles based on fullscreen mode
+  const containerStyles = isPageFullscreen
+    ? {
+        backgroundColor: 'var(--surface-card)',
+        borderColor: 'var(--border)',
+        boxShadow: 'var(--shadow-2xl)',
+        height: '100vh',
+        maxHeight: '100vh',
+        position: 'fixed' as const,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 30,
+        borderRadius: 0,
+      }
+    : {
+        backgroundColor: 'var(--surface-card)',
+        borderColor: 'var(--border)',
+        boxShadow: 'var(--shadow-2xl)',
+        height: `calc(100vh - ${titleBarHeight}px - 2rem)`,
+        maxHeight: `calc(100vh - ${titleBarHeight}px - 2rem)`,
+      };
+
   if (error) {
     return (
       <div
         ref={containerRef}
-        className="flex overflow-hidden rounded-3xl border transition-all duration-300"
-        style={{
-          backgroundColor: 'var(--surface-card)',
-          borderColor: 'var(--border)',
-          boxShadow: 'var(--shadow-2xl)',
-          height: isTauriApp
-            ? `calc(100vh - 2rem - ${titleBarOffset}px)`
-            : 'calc(100vh - 2rem)',
-        }}
+        className={`flex overflow-hidden border transition-all duration-300 ${isPageFullscreen ? '' : 'rounded-3xl'}`}
+        style={containerStyles}
       >
         <div className="flex-1 flex items-center justify-center">
           <div
@@ -168,15 +183,8 @@ export function NotesDirectoryPage() {
   return (
     <div
       ref={containerRef}
-      className="flex overflow-hidden rounded-3xl border transition-all duration-300"
-      style={{
-        backgroundColor: 'var(--surface-card)',
-        borderColor: 'var(--border)',
-        boxShadow: 'var(--shadow-2xl)',
-        height: isTauriApp
-          ? `calc(100vh - 2rem - ${titleBarOffset}px)`
-          : 'calc(100vh - 2rem)',
-      }}
+      className={`flex overflow-hidden border transition-all duration-300 ${isPageFullscreen ? '' : 'rounded-3xl'}`}
+      style={containerStyles}
     >
       {/* Folder Sidebar */}
       {showSidebar && (
@@ -447,9 +455,47 @@ export function NotesDirectoryPage() {
               </h1>
             </div>
           </div>
+          <div className="flex items-center gap-3">
           <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
             {filteredNotes.length} {filteredNotes.length === 1 ? 'note' : 'notes'}
           </span>
+            
+            {/* Fullscreen Toggle - Only in Tauri */}
+            {isInTauri && (
+              <button
+                onClick={toggleFullscreen}
+                className="p-2 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
+                style={{
+                  backgroundColor: isFullscreen ? 'var(--color-primary-alpha)' : 'var(--surface-card)',
+                  color: isFullscreen ? 'var(--color-primary)' : 'var(--text-secondary)',
+                  border: `1px solid ${isFullscreen ? 'var(--color-primary)' : 'var(--border)'}`,
+                }}
+                title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+              >
+                {isFullscreen ? (
+                  // Exit fullscreen icon (minimize/contract)
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25"
+                    />
+                  </svg>
+                ) : (
+                  // Enter fullscreen icon (expand)
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"
+                    />
+                  </svg>
+                )}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Notes Content */}

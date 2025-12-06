@@ -7,9 +7,8 @@ import { StreamingIndicator, ImageGenerationLoadingSkeleton } from './StreamingI
 import { ChatWelcomeScreen } from './ChatWelcomeScreen';
 import { ThinkingStepCard } from '../../agents/components/ThinkingStepCard';
 import { ToolExecutionCard } from '../../agents/components/ToolExecutionCard';
-import { RetrievedContextCard } from '../../agents/components/RetrievedContextCard';
+import { RetrievedNotesCard } from './RetrievedNotesCard';
 import { ProcessTimeline } from './ProcessTimeline';
-import { RetrievedNotes } from '../../../components/ui/RetrievedNotes';
 import { TokenUsageDisplay } from '../../../components/TokenUsageDisplay';
 import { extractThinkingContent, hasThinkingTags } from '../../../utils/thinking-utils';
 import { convertToolCallToExecution } from '../utils/tool-utils';
@@ -118,9 +117,9 @@ export function ChatMessageList({
   return (
     <div
       ref={messagesContainerRef}
-      className="flex-1 overflow-y-auto px-4 py-4 mb-6 min-h-0 [scrollbar-gutter:stable] [scrollbar-width:thin] [scrollbar-color:var(--color-brand-400)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-brand-400)] [&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--color-brand-300)]"
+      className="flex-1 overflow-y-auto px-4 pt-4 min-h-0 [scrollbar-gutter:stable] [scrollbar-width:thin] [scrollbar-color:var(--color-brand-400)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-brand-400)] [&::-webkit-scrollbar-thumb]:hover:bg-[color:var(--color-brand-300)]"
     >
-      <div className="max-w-4xl mx-auto space-y-4 h-full">
+      <div className="max-w-4xl mx-auto space-y-4 pb-34">
         {hasNoMessages ? (
           <ChatWelcomeScreen />
         ) : (
@@ -176,7 +175,7 @@ export function ChatMessageList({
             )}
           </>
         )}
-        <div ref={messagesEndRef} className="h-8" />
+        <div ref={messagesEndRef} className="h-0" />
       </div>
     </div>
   );
@@ -291,11 +290,9 @@ function MessageWithContext({
   const shouldShowPersistedToolExecutions =
     hasToolCalls && !isStreamingDuplicate;
 
-  // Show retrieved notes in timeline for agent mode messages
-  // Use conversation.agentEnabled to check if this was an agent conversation (for persisted messages)
-  const isAgentConversation = conversation.agentEnabled || agentModeEnabled;
+  // Show retrieved notes in timeline for both agent and normal RAG modes
   const shouldShowPersistedRetrievedNotes =
-    isAgentConversation && hasRetrievedNotes && !isStreamingDuplicate;
+    hasRetrievedNotes && !isStreamingDuplicate;
 
   const hasProcessContent = shouldShowPersistedThinking || shouldShowPersistedToolExecutions || shouldShowPersistedRetrievedNotes;
 
@@ -303,16 +300,10 @@ function MessageWithContext({
     <div>
       {/* Use ProcessTimeline to wrap reasoning, context retrieval, and tool executions */}
       <ProcessTimeline hasContent={hasProcessContent}>
-        {/* Show retrieved notes context first (from agent context injection) */}
+        {/* Show retrieved notes context first (from RAG or agent context injection) */}
         {shouldShowPersistedRetrievedNotes && (
-          <RetrievedContextCard
-            retrievedNotes={message.retrievedNotes!.map(note => ({
-              noteId: note.noteId,
-              title: note.title,
-              preview: note.chunkContent,
-              tags: note.tags,
-              similarityScore: note.relevanceScore
-            }))}
+          <RetrievedNotesCard
+            notes={message.retrievedNotes!}
           />
         )}
 
@@ -351,11 +342,6 @@ function MessageWithContext({
           isLastMessage={isLastMessage}
           ragLogId={isLastMessage && isAssistantMessage ? streamingRagLogId : undefined}
         />
-      )}
-
-      {/* Show retrieved notes after assistant messages for non-agent RAG mode */}
-      {isAssistantMessage && !isAgentConversation && message.retrievedNotes && message.retrievedNotes.length > 0 && (
-        <RetrievedNotes notes={message.retrievedNotes} />
       )}
     </div>
   );

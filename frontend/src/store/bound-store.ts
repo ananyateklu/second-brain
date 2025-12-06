@@ -17,6 +17,8 @@ import { createSettingsSlice } from './slices/settings-slice';
 import { createUISlice } from './slices/ui-slice';
 import { createThemeSlice } from './slices/theme-slice';
 import { createOllamaSlice } from './slices/ollama-slice';
+import { createNotesSlice } from './slices/notes-slice';
+import { createRagAnalyticsSlice } from './slices/rag-analytics-slice';
 
 // ============================================
 // Combined Store
@@ -30,6 +32,8 @@ const _useBoundStore = create<BoundStore>()(
       ...createUISlice(...args),
       ...createThemeSlice(...args),
       ...createOllamaSlice(...args),
+      ...createNotesSlice(...args),
+      ...createRagAnalyticsSlice(...args),
     }),
     {
       name: STORAGE_KEYS.AUTH, // Use auth key for backward compatibility
@@ -51,6 +55,8 @@ const _useBoundStore = create<BoundStore>()(
         autoSaveInterval: state.autoSaveInterval,
         // Theme state
         theme: state.theme,
+        // Notes state
+        filterState: state.filterState,
       }),
       merge: (persistedState, currentState) => {
         const parsed = persistedState as Partial<BoundStore> | undefined;
@@ -100,6 +106,8 @@ const _useBoundStore = create<BoundStore>()(
           autoSaveInterval: typeof parsed.autoSaveInterval === 'number' ? parsed.autoSaveInterval : currentState.autoSaveInterval,
           // Merge theme
           theme,
+          // Merge notes state
+          filterState: parsed.filterState ? { ...currentState.filterState, ...parsed.filterState } : currentState.filterState,
         };
       },
     }

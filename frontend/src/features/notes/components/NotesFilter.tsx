@@ -71,9 +71,19 @@ interface NotesFilterProps {
   onViewModeChange?: (mode: NotesViewMode) => void;
   isBulkMode?: boolean;
   onBulkModeToggle?: () => void;
+  variant?: 'sticky' | 'embedded';
 }
 
-export function NotesFilter({ notes, filterState, onFilterChange, viewMode = 'card', onViewModeChange, isBulkMode = false, onBulkModeToggle }: NotesFilterProps) {
+export function NotesFilter({
+  notes,
+  filterState,
+  onFilterChange,
+  viewMode = 'card',
+  onViewModeChange,
+  isBulkMode = false,
+  onBulkModeToggle,
+  variant = 'sticky'
+}: NotesFilterProps) {
   const [isDateDropdownOpen, setIsDateDropdownOpen] = useState(false);
   const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
@@ -92,6 +102,8 @@ export function NotesFilter({ notes, filterState, onFilterChange, viewMode = 'ca
 
   // Handle responsive positioning
   useEffect(() => {
+    if (variant === 'embedded') return;
+
     const updatePosition = () => {
       if (window.innerWidth >= 768) {
         // Desktop: below header (h-12 + padding = ~72px)
@@ -117,7 +129,7 @@ export function NotesFilter({ notes, filterState, onFilterChange, viewMode = 'ca
     updatePosition();
     window.addEventListener('resize', updatePosition);
     return () => window.removeEventListener('resize', updatePosition);
-  }, []);
+  }, [variant]);
 
   // Memoize expensive tag calculation - only recalculate when notes array changes
   const allTags = useMemo(() =>
@@ -277,7 +289,7 @@ export function NotesFilter({ notes, filterState, onFilterChange, viewMode = 'ca
 
     return (
       <div
-        className="absolute top-full left-0 mt-2 min-w-[200px] max-w-[calc(100vw-3rem)] rounded-2xl border shadow-2xl z-50"
+        className="absolute top-full left-0 mt-2 min-w-[200px] max-w-[calc(100vw-3rem)] rounded-2xl border shadow-2xl z-40"
         style={{
           backgroundColor: isBlueTheme
             ? 'rgba(10, 22, 40, 0.98)' // Darker blue for blue theme - less transparent
@@ -297,8 +309,8 @@ export function NotesFilter({ notes, filterState, onFilterChange, viewMode = 'ca
   return (
     <div
       ref={filterRef}
-      className="flex flex-wrap items-center gap-3 px-4 md:px-6 py-4 sticky"
-      style={{
+      className={`flex flex-wrap items-center gap-3 px-4 md:px-6 py-4 ${variant === 'sticky' ? 'sticky' : ''}`}
+      style={variant === 'sticky' ? {
         top: topPosition,
         backgroundColor: 'transparent',
         backdropFilter: 'blur(12px)',
@@ -309,10 +321,14 @@ export function NotesFilter({ notes, filterState, onFilterChange, viewMode = 'ca
         paddingLeft: '1rem', // Restore padding
         paddingRight: '1rem', // Restore padding
         zIndex: 40, // Below header (z-50) but above content
+      } : {
+        // Embedded styles
+        backgroundColor: 'transparent',
+        padding: '0.5rem 0 0 0',
       }}
     >
       {/* Date Filter */}
-      <div ref={dateDropdownRef} className="relative" style={{ zIndex: 51 }}>
+      <div ref={dateDropdownRef} className="relative" style={{ zIndex: 40 }}>
         <DropdownButton
           label={getDateFilterLabel()}
           isOpen={isDateDropdownOpen}
@@ -417,7 +433,7 @@ export function NotesFilter({ notes, filterState, onFilterChange, viewMode = 'ca
 
       {/* Tag Filter */}
       {allTags.length > 0 && (
-        <div ref={tagDropdownRef} className="relative" style={{ zIndex: 51 }}>
+        <div ref={tagDropdownRef} className="relative" style={{ zIndex: 40 }}>
           <DropdownButton
             label="Tags"
             isOpen={isTagDropdownOpen}
@@ -467,7 +483,7 @@ export function NotesFilter({ notes, filterState, onFilterChange, viewMode = 'ca
       )}
 
       {/* Sort Filter */}
-      <div ref={sortDropdownRef} className="relative" style={{ zIndex: 51 }}>
+      <div ref={sortDropdownRef} className="relative" style={{ zIndex: 40 }}>
         <DropdownButton
           label={getSortLabel()}
           isOpen={isSortDropdownOpen}
@@ -511,7 +527,7 @@ export function NotesFilter({ notes, filterState, onFilterChange, viewMode = 'ca
       </div>
 
       {/* Archive Filter */}
-      <div ref={archiveDropdownRef} className="relative" style={{ zIndex: 51 }}>
+      <div ref={archiveDropdownRef} className="relative" style={{ zIndex: 40 }}>
         <DropdownButton
           label={getArchiveLabel()}
           isOpen={isArchiveDropdownOpen}
@@ -555,7 +571,7 @@ export function NotesFilter({ notes, filterState, onFilterChange, viewMode = 'ca
 
       {/* Folder Filter */}
       {(allFolders.length > 0 || folderCounts.unfiled > 0) && (
-        <div ref={folderDropdownRef} className="relative" style={{ zIndex: 51 }}>
+        <div ref={folderDropdownRef} className="relative" style={{ zIndex: 40 }}>
           <DropdownButton
             label={getFolderLabel()}
             isOpen={isFolderDropdownOpen}
@@ -820,4 +836,3 @@ export function NotesFilter({ notes, filterState, onFilterChange, viewMode = 'ca
     </div>
   );
 }
-

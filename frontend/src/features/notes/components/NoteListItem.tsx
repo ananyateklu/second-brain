@@ -96,7 +96,7 @@ export const NoteListItem = memo(function NoteListItem({
 
   return (
     <div
-      className="group relative border rounded-xl transition-all duration-200 cursor-pointer overflow-hidden backdrop-blur-md"
+      className="group relative border rounded-xl transition-all duration-200 cursor-pointer overflow-hidden"
       style={{
         backgroundColor: getBackgroundStyle(),
         borderColor: getBorderColor(),
@@ -105,6 +105,7 @@ export const NoteListItem = memo(function NoteListItem({
           ? 'var(--shadow-md), 0 0 20px -10px var(--color-primary-alpha)'
           : 'var(--shadow-sm)',
         transform: isHovered ? 'scale-[1.005]' : 'none',
+        willChange: 'transform, box-shadow',
       }}
       onClick={handleItemClick}
       onMouseEnter={() => setIsHovered(true)}

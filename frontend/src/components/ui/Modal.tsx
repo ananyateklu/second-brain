@@ -35,7 +35,7 @@ export function Modal({ isOpen, onClose, title, children, icon, maxWidth = 'max-
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm p-4 animate-in fade-in duration-200"
+      className="fixed inset-0 z-[100] flex items-center justify-center backdrop-blur-sm p-4 animate-in fade-in duration-200"
       style={{
         backgroundColor: 'var(--modal-overlay)',
       }}

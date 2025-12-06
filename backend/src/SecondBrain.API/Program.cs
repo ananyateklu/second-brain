@@ -51,14 +51,25 @@ if (File.Exists(envPath))
     }
 
     // Build PostgreSQL connection string from individual env vars if provided
-    var pgHost = Environment.GetEnvironmentVariable("POSTGRES_HOST") ?? "localhost";
-    var pgPort = Environment.GetEnvironmentVariable("POSTGRES_PORT") ?? "5432";
-    var pgDb = Environment.GetEnvironmentVariable("POSTGRES_DB") ?? "secondbrain";
-    var pgUser = Environment.GetEnvironmentVariable("POSTGRES_USER") ?? "postgres";
-    var pgPassword = Environment.GetEnvironmentVariable("POSTGRES_PASSWORD") ?? "postgres";
+    // BUT only if POSTGRES_HOST or POSTGRES_PORT is explicitly set, to avoid overwriting
+    // a connection string already passed via environment (e.g., from Tauri desktop app)
+    var existingConnString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
+    var pgHostEnv = Environment.GetEnvironmentVariable("POSTGRES_HOST");
+    var pgPortEnv = Environment.GetEnvironmentVariable("POSTGRES_PORT");
+    
+    // Only build connection string from individual vars if at least one is set,
+    // or if no connection string was provided
+    if (!string.IsNullOrEmpty(pgHostEnv) || !string.IsNullOrEmpty(pgPortEnv) || string.IsNullOrEmpty(existingConnString))
+    {
+        var pgHost = pgHostEnv ?? "localhost";
+        var pgPort = pgPortEnv ?? "5432";
+        var pgDb = Environment.GetEnvironmentVariable("POSTGRES_DB") ?? "secondbrain";
+        var pgUser = Environment.GetEnvironmentVariable("POSTGRES_USER") ?? "postgres";
+        var pgPassword = Environment.GetEnvironmentVariable("POSTGRES_PASSWORD") ?? "postgres";
 
-    var connectionString = $"Host={pgHost};Port={pgPort};Database={pgDb};Username={pgUser};Password={pgPassword}";
-    Environment.SetEnvironmentVariable("ConnectionStrings__DefaultConnection", connectionString);
+        var connectionString = $"Host={pgHost};Port={pgPort};Database={pgDb};Username={pgUser};Password={pgPassword}";
+        Environment.SetEnvironmentVariable("ConnectionStrings__DefaultConnection", connectionString);
+    }
 
     // Special handling for reused keys (embedding providers use same API keys as AI providers)
     var openAiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");

@@ -295,7 +295,7 @@ async fn start_backend_internal(app: &AppHandle) -> Result<(), String> {
             format!("http://localhost:{}", backend_port),
         )
         .env("ASPNETCORE_ENVIRONMENT", "Production")
-        .env("Logging__LogLevel__Default", "Information")
+        .env("Logging__LogLevel__Default", "Warning")
         .env("ConnectionStrings__DefaultConnection", connection_string)
         .env(
             "SecondBrain__LogPath",
@@ -690,7 +690,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(
             tauri_plugin_log::Builder::default()
-                .level(log::LevelFilter::Info)
+                .level(log::LevelFilter::Warn)
                 .build(),
         )
         .plugin(tauri_plugin_shell::init())

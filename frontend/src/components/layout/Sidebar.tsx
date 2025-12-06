@@ -7,16 +7,10 @@ import { ThemeToggle } from '../ui/ThemeToggle';
 import { noteKeys, conversationKeys, statsKeys } from '../../lib/query-keys';
 import { notesService, chatService, statsService } from '../../services';
 import { CACHE } from '../../lib/constants';
+import { useTitleBarHeight } from './use-title-bar-height';
 import logoLight from '../../assets/second-brain-logo-light-mode.png';
 import logoDark from '../../assets/second-brain-logo-dark-mode.png';
 import brainTopTab from '../../assets/brain-top-tab.png';
-
-/**
- * Check if we're running in Tauri
- */
-const isTauri = (): boolean => {
-  return '__TAURI_INTERNALS__' in window;
-};
 
 export function Sidebar() {
   const queryClient = useQueryClient();
@@ -25,11 +19,10 @@ export function Sidebar() {
   const previousSidebarState = useUIStore((state) => state.previousSidebarState);
   const toggleSidebar = useUIStore((state) => state.toggleSidebar);
   const { theme } = useThemeStore();
+  const titleBarHeight = useTitleBarHeight();
   const logo = theme === 'light' ? logoLight : logoDark;
 
   const [hoveredLink, setHoveredLink] = useState<string | null>(null);
-  // Use lazy initialization to avoid setState in useEffect
-  const [isTauriApp] = useState(() => isTauri());
 
   /**
    * Prefetch data on hover for instant navigation
@@ -68,16 +61,16 @@ export function Sidebar() {
   const isClosed = sidebarState === 'closed';
   const canCloseFromCollapsed = isCollapsed && previousSidebarState === 'expanded';
 
-  // Calculate top position and height based on Tauri mode
-  // In Tauri, we need to offset for the title bar (28px) plus some margin
-  const titleBarOffset = isTauriApp ? 28 : 0;
-  const topPosition = isTauriApp ? `calc(1rem + ${titleBarOffset}px)` : '1rem';
-  const sidebarHeight = isTauriApp ? `calc(100vh - 2rem - ${titleBarOffset}px)` : 'calc(100vh - 2rem)';
+  // Calculate top position and height accounting for title bar
+  const topPosition = '1rem';
+  // Height: viewport height - title bar - top margin (1rem) - bottom margin (1rem)
+  const sidebarHeight = `calc(100vh - ${titleBarHeight}px - 2rem)`;
+  const maxHeight = `calc(100vh - ${titleBarHeight}px - 2rem)`;
 
   // Green toggle button when sidebar is closed
   if (isClosed) {
-    // Calculate vertical center accounting for title bar
-    const centerOffset = isTauriApp ? `calc(50% + ${titleBarOffset / 2}px)` : '50%';
+    // Calculate vertical center
+    const centerOffset = '50%';
 
     return (
       <button
@@ -120,6 +113,7 @@ export function Sidebar() {
       style={{
         top: topPosition,
         height: sidebarHeight,
+        maxHeight: maxHeight,
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',
         boxShadow: 'var(--shadow-2xl), 0 0 80px -20px var(--color-primary-alpha)',
@@ -137,7 +131,7 @@ export function Sidebar() {
         }}
       />
 
-      <div className="flex-1 flex flex-col relative z-10">
+      <div className="flex-1 flex flex-col relative z-10 overflow-y-auto min-h-0">
         {/* Logo/Brand */}
         <div className={`mb-6 transition-all duration-600 ease-out ${isCollapsed ? 'mb-4' : 'mb-8'}`}>
           <div className="flex justify-center">
@@ -480,7 +474,7 @@ export function Sidebar() {
               viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
             </svg>
             {!isCollapsed && (
               <span className="whitespace-nowrap transition-all duration-300 ease-out relative z-10">

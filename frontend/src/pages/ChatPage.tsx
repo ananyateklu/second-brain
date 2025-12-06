@@ -6,7 +6,7 @@
  * Enhanced with granular Suspense boundaries for better loading UX
  */
 
-import { useEffect, useState, useRef, Suspense } from 'react';
+import { useEffect, useRef, Suspense } from 'react';
 import { useChatPageState } from '../features/chat/hooks/use-chat-page-state';
 import { ChatSidebar } from '../features/chat/components/ChatSidebar';
 import { ChatHeader } from '../features/chat/components/ChatHeader';
@@ -14,9 +14,12 @@ import { ChatMessageList } from '../features/chat/components/ChatMessageList';
 import { ChatInputArea } from '../features/chat/components/ChatInputArea';
 import { EditNoteModal } from '../features/notes/components/EditNoteModal';
 import { useAuthStore } from '../store/auth-store';
+import { useUIStore } from '../store/ui-store';
 import { useSendMessage } from '../features/chat/hooks/use-chat';
 import { useStartSession, useEndSession, collectDeviceInfo } from '../features/chat/hooks/use-chat-sessions';
 import { getDirectBackendUrl, API_ENDPOINTS } from '../lib/constants';
+import { useTitleBarHeight } from '../components/layout/use-title-bar-height';
+import { isTauri } from '../lib/native-notifications';
 import type { VectorStoreProvider } from '../types/rag';
 import {
   ChatSidebarSkeleton,
@@ -24,18 +27,14 @@ import {
   ChatMessagesSkeleton,
 } from '../components/skeletons';
 
-/**
- * Check if we're running in Tauri
- */
-const isTauri = (): boolean => {
-  return '__TAURI_INTERNALS__' in window;
-};
-
 export function ChatPage() {
   const user = useAuthStore((state) => state.user);
   const sendMessage = useSendMessage();
-  // Use lazy initialization to avoid setState in useEffect
-  const [isTauriApp] = useState(() => isTauri());
+  const titleBarHeight = useTitleBarHeight();
+  
+  // Fullscreen state for Tauri
+  const isFullscreen = useUIStore((state) => state.isFullscreenChat);
+  const isInTauri = isTauri();
 
   // Session tracking hooks (PostgreSQL 18 Temporal Features)
   const { mutate: startSession } = useStartSession();
@@ -43,9 +42,6 @@ export function ChatPage() {
   const sessionIdRef = useRef<string | null>(null);
   const messageCountRef = useRef({ sent: 0, received: 0 });
   const previousConversationIdRef = useRef<string | null>(null);
-
-  // Calculate title bar offset for chat container height
-  const titleBarOffset = isTauriApp ? 28 : 0;
 
   // Consolidated chat page state
   const {
@@ -206,18 +202,36 @@ export function ChatPage() {
     }
   }, [pendingMessage]);
 
-  return (
-    <div
-      ref={containerRef}
-      className="flex overflow-hidden rounded-3xl border transition-all duration-300"
-      style={{
+  // Calculate container styles based on fullscreen mode
+  const isPageFullscreen = isInTauri && isFullscreen;
+  const containerStyles = isPageFullscreen
+    ? {
         backgroundColor: 'var(--surface-card)',
         borderColor: 'var(--border)',
         boxShadow: 'var(--shadow-2xl)',
-        height: isTauriApp
-          ? `calc(100vh - 2rem - ${titleBarOffset}px)`
-          : 'calc(100vh - 2rem)',
-      }}
+        height: '100vh',
+        maxHeight: '100vh',
+        position: 'fixed' as const,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 30,
+        borderRadius: 0,
+      }
+    : {
+        backgroundColor: 'var(--surface-card)',
+        borderColor: 'var(--border)',
+        boxShadow: 'var(--shadow-2xl)',
+        height: `calc(100vh - ${titleBarHeight}px - 2rem)`,
+        maxHeight: `calc(100vh - ${titleBarHeight}px - 2rem)`,
+      };
+
+  return (
+    <div
+      ref={containerRef}
+      className={`flex overflow-hidden border transition-all duration-300 ${isPageFullscreen ? '' : 'rounded-3xl'}`}
+      style={containerStyles}
     >
       {/* Sidebar with Suspense boundary for independent loading */}
       {showSidebar && (

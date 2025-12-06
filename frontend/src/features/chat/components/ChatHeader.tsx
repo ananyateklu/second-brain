@@ -7,6 +7,8 @@ import { RagSettingsPopover } from '../../../components/ui/RagSettingsPopover';
 import { AgentSettingsPopover } from '../../../components/ui/AgentSettingsPopover';
 import { ContextUsageIndicator } from '../../../components/ui/ContextUsageIndicator';
 import { ContextUsageState } from '../../../types/context-usage';
+import { useUIStore } from '../../../store/ui-store';
+import { isTauri } from '../../../lib/native-notifications';
 
 export interface ProviderInfo {
   provider: string;
@@ -299,13 +301,62 @@ export function ChatHeader({
       {/* Spacer */}
       <div className="flex-1 min-w-0" />
 
-      {/* Right side: Context Usage Indicator */}
-      <div className="flex-shrink-0">
+      {/* Right side: Context Usage Indicator and Fullscreen Toggle */}
+      <div className="flex items-center gap-3 flex-shrink-0">
         <ContextUsageIndicator
           contextUsage={contextUsage}
           isStreaming={isStreaming}
         />
+        
+        {/* Fullscreen Toggle - Only in Tauri */}
+        <FullscreenToggle />
       </div>
     </div>
+  );
+}
+
+/**
+ * Fullscreen toggle button - only visible in Tauri desktop app
+ */
+function FullscreenToggle() {
+  const isInTauri = isTauri();
+  const isFullscreen = useUIStore((state) => state.isFullscreenChat);
+  const toggleFullscreen = useUIStore((state) => state.toggleFullscreenChat);
+
+  if (!isInTauri) return null;
+
+  return (
+    <button
+      onClick={toggleFullscreen}
+      className="p-2 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
+      style={{
+        backgroundColor: isFullscreen ? 'var(--color-primary-alpha)' : 'var(--surface-card)',
+        color: isFullscreen ? 'var(--color-primary)' : 'var(--text-secondary)',
+        border: `1px solid ${isFullscreen ? 'var(--color-primary)' : 'var(--border)'}`,
+      }}
+      title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+    >
+      {isFullscreen ? (
+        // Exit fullscreen icon (minimize/contract)
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25"
+          />
+        </svg>
+      ) : (
+        // Enter fullscreen icon (expand)
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"
+          />
+        </svg>
+      )}
+    </button>
   );
 }

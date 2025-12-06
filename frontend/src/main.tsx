@@ -1,7 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ToastProviderWithRef, ToastContainer } from './components/ui/Toast';
 import { queryClient } from './lib/query-client';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -38,7 +37,6 @@ const renderApp = () => {
             <App />
             <ToastContainer position="top-right" gap={12} />
           </ToastProviderWithRef>
-          <ReactQueryDevtools initialIsOpen={false} />
         </QueryClientProvider>
       </ErrorBoundary>
     </StrictMode>
@@ -54,10 +52,19 @@ async function initApp() {
     console.log('Running in Tauri mode, initializing...');
 
     try {
-      // Get backend URL and set it
+      // Get backend URL
       const backendUrl = await getBackendUrl();
-      setApiBaseUrl(backendUrl);
-      console.log('Backend URL:', backendUrl);
+      console.log('Backend URL from Tauri:', backendUrl);
+      
+      // In development mode with HTTPS, use the Vite proxy to avoid mixed content issues
+      // The Vite dev server proxies /api/* requests to the backend
+      if (import.meta.env.DEV && window.location.protocol === 'https:') {
+        console.log('Using Vite proxy for HTTPS dev mode');
+        setApiBaseUrl('/api');
+      } else {
+        setApiBaseUrl(backendUrl);
+      }
+      console.log('API Base URL set to:', import.meta.env.DEV && window.location.protocol === 'https:' ? '/api' : backendUrl);
 
       // Wait for backend to be ready (up to 60 seconds)
       const isReady = await waitForBackend(60000);
