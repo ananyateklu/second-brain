@@ -1,11 +1,11 @@
-import { 
-  ReactNode, 
-  useState, 
-  useEffect, 
-  useRef, 
+import {
+  ReactNode,
+  useState,
+  useEffect,
+  useRef,
   useMemo,
   useCallback,
-  CSSProperties 
+  CSSProperties
 } from 'react';
 import { useLocation } from 'react-router-dom';
 
@@ -36,8 +36,8 @@ type TransitionState = 'entering' | 'entered' | 'exiting';
  * Provides smooth page transitions with GPU-accelerated animations
  * Optimized for both web browsers and Tauri/WebKit
  */
-export function PageTransition({ 
-  children, 
+export function PageTransition({
+  children,
   duration: customDuration,
   easing: customEasing,
 }: PageTransitionProps) {
@@ -55,7 +55,7 @@ export function PageTransition({
   const config = useMemo(() => {
     const baseDuration = customDuration ?? (isWebKit ? 200 : 280);
     const exitDuration = isWebKit ? 120 : 150;
-    
+
     return {
       duration: reduceMotion ? 0 : baseDuration,
       exitDuration: reduceMotion ? 0 : exitDuration,
@@ -152,7 +152,7 @@ export function PageTransition({
   }, [transitionState, config, reduceMotion]);
 
   return (
-    <div 
+    <div
       className="page-transition-container w-full h-full"
       style={getTransitionStyles()}
     >
@@ -160,36 +160,3 @@ export function PageTransition({
     </div>
   );
 }
-
-/**
- * Hook to access page transition state
- * Useful for components that need to coordinate with page transitions
- */
-function usePageTransition() {
-  const location = useLocation();
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const previousPathRef = useRef(location.pathname);
-
-  useEffect(() => {
-    if (location.pathname !== previousPathRef.current) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setIsTransitioning(true);
-      previousPathRef.current = location.pathname;
-
-      const timer = setTimeout(() => {
-        setIsTransitioning(false);
-      }, 350); // Match total transition time
-
-      return () => clearTimeout(timer);
-    }
-  }, [location.pathname]);
-
-  return {
-    isTransitioning,
-    currentPath: location.pathname,
-  };
-}
-
-// Export the hook separately to satisfy fast-refresh
-export { usePageTransition };
-
