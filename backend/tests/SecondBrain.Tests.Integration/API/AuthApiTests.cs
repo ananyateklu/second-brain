@@ -121,7 +121,7 @@ public class AuthApiTests
         // Act
         var loginRequest = new
         {
-            email = email,
+            identifier = email,
             password = password
         };
         var response = await _client.PostAsJsonAsync("/api/auth/login", loginRequest);
@@ -150,7 +150,7 @@ public class AuthApiTests
         // Act
         var loginRequest = new
         {
-            email = email,
+            identifier = email,
             password = "WrongPassword123!"
         };
         var response = await _client.PostAsJsonAsync("/api/auth/login", loginRequest);
@@ -165,7 +165,7 @@ public class AuthApiTests
         // Arrange
         var loginRequest = new
         {
-            email = "nonexistent@example.com",
+            identifier = "nonexistent@example.com",
             password = "SomePassword123!"
         };
 
@@ -193,7 +193,7 @@ public class AuthApiTests
         // Act - Test versioned route
         var loginRequest = new
         {
-            email = email,
+            identifier = email,
             password = password
         };
         var response = await _client.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
