@@ -142,50 +142,63 @@ describe('authService', () => {
     describe('validateLoginForm', () => {
         it('should return valid for correct email and password', () => {
             // Arrange
-            const email = 'test@example.com';
+            const identifier = 'test@example.com';
             const password = 'anyPassword';
 
             // Act
-            const result = authService.validateLoginForm(email, password);
+            const result = authService.validateLoginForm(identifier, password);
 
             // Assert
             expect(result.valid).toBe(true);
             expect(result.errors).toHaveLength(0);
         });
 
-        it('should return error for empty email', () => {
+        it('should return valid for username and password', () => {
             // Arrange
-            const email = '';
+            const identifier = 'testuser123';
             const password = 'anyPassword';
 
             // Act
-            const result = authService.validateLoginForm(email, password);
+            const result = authService.validateLoginForm(identifier, password);
+
+            // Assert
+            expect(result.valid).toBe(true);
+            expect(result.errors).toHaveLength(0);
+        });
+
+        it('should return error for empty identifier', () => {
+            // Arrange
+            const identifier = '';
+            const password = 'anyPassword';
+
+            // Act
+            const result = authService.validateLoginForm(identifier, password);
 
             // Assert
             expect(result.valid).toBe(false);
-            expect(result.errors).toContain('Email is required');
+            expect(result.errors).toContain('Email or Username is required');
         });
 
-        it('should return error for whitespace-only email', () => {
+        it('should return error for whitespace-only identifier', () => {
             // Arrange
-            const email = '   ';
+            const identifier = '   ';
             const password = 'anyPassword';
 
             // Act
-            const result = authService.validateLoginForm(email, password);
+            const result = authService.validateLoginForm(identifier, password);
 
             // Assert
             expect(result.valid).toBe(false);
-            expect(result.errors).toContain('Email is required');
+            expect(result.errors).toContain('Email or Username is required');
         });
 
-        it('should return error for invalid email format', () => {
+        it('should return error for invalid email format when @ is present', () => {
             // Arrange
-            const email = 'invalid-email';
+            const identifier = 'invalid@email';  // Has @ but invalid format
             const password = 'anyPassword';
 
             // Act
-            const result = authService.validateLoginForm(email, password);
+            const result = authService.validateLoginForm(identifier, password);
 
             // Assert
             expect(result.valid).toBe(false);
@@ -194,11 +207,11 @@ describe('authService', () => {
 
         it('should return error for empty password', () => {
             // Arrange
-            const email = 'test@example.com';
+            const identifier = 'test@example.com';
             const password = '';
 
             // Act
-            const result = authService.validateLoginForm(email, password);
+            const result = authService.validateLoginForm(identifier, password);
 
             // Assert
             expect(result.valid).toBe(false);
@@ -207,15 +220,15 @@ describe('authService', () => {
 
         it('should return multiple errors for multiple invalid fields', () => {
             // Arrange
-            const email = '';
+            const identifier = '';
             const password = '';
 
             // Act
-            const result = authService.validateLoginForm(email, password);
+            const result = authService.validateLoginForm(identifier, password);
 
             // Assert
             expect(result.valid).toBe(false);
-            expect(result.errors).toContain('Email is required');
+            expect(result.errors).toContain('Email or Username is required');
             expect(result.errors).toContain('Password is required');
         });
     });
