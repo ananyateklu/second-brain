@@ -8,8 +8,8 @@
 [![Frontend Tests](https://github.com/ananyateklu/second-brain/actions/workflows/frontend-tests.yml/badge.svg)](https://github.com/ananyateklu/second-brain/actions/workflows/frontend-tests.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-10.0-512BD4)](https://dotnet.microsoft.com/)
-[![React](https://img.shields.io/badge/React-18-61DAFB)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-19-61DAFB)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6)](https://www.typescriptlang.org/)
 [![Tauri](https://img.shields.io/badge/Tauri-2.0-FFC131)](https://tauri.app/)
 
 </div>
@@ -116,8 +116,8 @@ docker-compose up -d  # Access at http://localhost:3000
 
 ### Frontend
 
-- **Framework**: React 18 with TypeScript
-- **Build Tool**: Vite 6
+- **Framework**: React 19 with TypeScript
+- **Build Tool**: Vite 7
 - **Routing**: React Router v7
 - **State Management**: Zustand
 - **Styling**: Tailwind CSS v4
