@@ -19,11 +19,57 @@ public class SqlChatRepository : IChatRepository
         _logger = logger;
     }
 
+    /// <summary>
+    /// Gets conversation headers (without messages) for list/sidebar display.
+    /// Optimized query without includes for better performance.
+    /// </summary>
+    public async Task<IEnumerable<ChatConversation>> GetConversationHeadersAsync(string userId)
+    {
+        try
+        {
+            _logger.LogDebug("Retrieving conversation headers for user. UserId: {UserId}", userId);
+
+            var conversations = await _context.ChatConversations
+                .AsNoTracking()
+                .Where(c => c.UserId == userId)
+                .OrderByDescending(c => c.UpdatedAt)
+                .ToListAsync();
+
+            _logger.LogDebug("Retrieved conversation headers for user. UserId: {UserId}, Count: {Count}", userId, conversations.Count);
+            return conversations;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving conversation headers for user. UserId: {UserId}", userId);
+            throw new RepositoryException("Failed to retrieve conversation headers", ex);
+        }
+    }
+
+    /// <summary>
+    /// Checks if a conversation exists and belongs to the specified user.
+    /// </summary>
+    public async Task<bool> ExistsForUserAsync(string conversationId, string userId)
+    {
+        try
+        {
+            return await _context.ChatConversations
+                .AnyAsync(c => c.Id == conversationId && c.UserId == userId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking conversation existence. ConversationId: {ConversationId}, UserId: {UserId}", conversationId, userId);
+            throw new RepositoryException("Failed to check conversation existence", ex);
+        }
+    }
+
     public async Task<IEnumerable<ChatConversation>> GetAllAsync(string userId)
     {
         try
         {
             _logger.LogDebug("Retrieving all conversations for user. UserId: {UserId}", userId);
+
+            // Use AsSplitQuery to reduce memory pressure with complex includes.
+            // Split queries execute multiple SQL queries instead of one large Cartesian product.
             var conversations = await _context.ChatConversations
                 .Include(c => c.Messages)
                     .ThenInclude(m => m.RetrievedNotes)
@@ -34,6 +80,7 @@ public class SqlChatRepository : IChatRepository
                 .Include(c => c.Messages)
                     .ThenInclude(m => m.GeneratedImages)
                 .AsNoTracking()
+                .AsSplitQuery()
                 .Where(c => c.UserId == userId)
                 .OrderByDescending(c => c.UpdatedAt)
                 .ToListAsync();
@@ -53,6 +100,8 @@ public class SqlChatRepository : IChatRepository
         try
         {
             _logger.LogDebug("Retrieving conversation by ID. ConversationId: {ConversationId}", id);
+
+            // Use AsSplitQuery to reduce memory pressure with complex includes.
             var conversation = await _context.ChatConversations
                 .Include(c => c.Messages.OrderBy(m => m.Timestamp))
                     .ThenInclude(m => m.RetrievedNotes)
@@ -63,6 +112,7 @@ public class SqlChatRepository : IChatRepository
                 .Include(c => c.Messages)
                     .ThenInclude(m => m.GeneratedImages)
                 .AsNoTracking()
+                .AsSplitQuery()
                 .FirstOrDefaultAsync(c => c.Id == id);
 
             if (conversation == null)
@@ -168,6 +218,8 @@ public class SqlChatRepository : IChatRepository
         try
         {
             _logger.LogDebug("Updating conversation. ConversationId: {ConversationId}", id);
+
+            // Use AsSplitQuery to reduce memory pressure with complex includes.
             var existingConversation = await _context.ChatConversations
                 .Include(c => c.Messages)
                     .ThenInclude(m => m.RetrievedNotes)
@@ -177,6 +229,7 @@ public class SqlChatRepository : IChatRepository
                     .ThenInclude(m => m.Images)
                 .Include(c => c.Messages)
                     .ThenInclude(m => m.GeneratedImages)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync(c => c.Id == id);
 
             if (existingConversation == null)
@@ -332,6 +385,8 @@ public class SqlChatRepository : IChatRepository
         try
         {
             _logger.LogDebug("Adding message to conversation. ConversationId: {ConversationId}, Role: {Role}", id, message.Role);
+
+            // Use AsSplitQuery to reduce memory pressure with complex includes.
             var conversation = await _context.ChatConversations
                 .Include(c => c.Messages)
                     .ThenInclude(m => m.RetrievedNotes)
@@ -341,6 +396,7 @@ public class SqlChatRepository : IChatRepository
                     .ThenInclude(m => m.Images)
                 .Include(c => c.Messages)
                     .ThenInclude(m => m.GeneratedImages)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync(c => c.Id == id);
 
             if (conversation == null)

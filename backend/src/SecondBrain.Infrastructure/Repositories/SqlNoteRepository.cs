@@ -40,7 +40,10 @@ public class SqlNoteRepository : INoteRepository
         try
         {
             _logger.LogDebug("Retrieving note by ID. NoteId: {NoteId}", id);
-            var note = await _context.Notes.AsNoTracking().FirstOrDefaultAsync(n => n.Id == id);
+
+            var note = await _context.Notes
+                .AsNoTracking()
+                .FirstOrDefaultAsync(n => n.Id == id);
 
             if (note == null)
             {
@@ -211,6 +214,7 @@ public class SqlNoteRepository : INoteRepository
         try
         {
             _logger.LogDebug("Retrieving note by userId and externalId. UserId: {UserId}, ExternalId: {ExternalId}", userId, externalId);
+
             var note = await _context.Notes
                 .AsNoTracking()
                 .FirstOrDefaultAsync(n => n.UserId == userId && n.ExternalId == externalId);
@@ -236,9 +240,12 @@ public class SqlNoteRepository : INoteRepository
         try
         {
             _logger.LogDebug("Retrieving notes by userId. UserId: {UserId}", userId);
+
+            // Use regular query with AsNoTracking for read-only access
             var notes = await _context.Notes
                 .AsNoTracking()
                 .Where(n => n.UserId == userId)
+                .OrderByDescending(n => n.UpdatedAt)
                 .ToListAsync();
 
             _logger.LogDebug("Retrieved notes for user. UserId: {UserId}, Count: {Count}", userId, notes.Count);

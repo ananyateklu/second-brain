@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useTransition } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { chatService } from '../../../services';
 import { SendMessageRequest } from '../../../types/chat';
@@ -16,6 +16,8 @@ export interface StreamingState {
   streamDuration?: number; // Duration in milliseconds
   /** RAG query log ID for feedback submission */
   ragLogId?: string;
+  /** Whether a transition is pending (for UI feedback) */
+  isPending?: boolean;
 }
 
 export function useChatStream() {
@@ -31,16 +33,22 @@ export function useChatStream() {
   const abortControllerRef = useRef<AbortController | null>(null);
   const streamStartTimeRef = useRef<number | null>(null);
 
+  // useTransition for non-blocking state updates during streaming
+  const [isPending, startTransition] = useTransition();
+
   const sendStreamingMessage = useCallback(
     async (conversationId: string, request: SendMessageRequest, retryCount = 0) => {
       const MAX_RETRIES = 2;
 
-      // Reset state
-      setIsStreaming(true);
-      setStreamingMessage('');
-      setStreamingError(null);
-      setRetrievedNotes([]);
-      setRagLogId(undefined);
+      // Reset state using transition for non-blocking updates
+      // This keeps the input responsive while preparing for streaming
+      startTransition(() => {
+        setIsStreaming(true);
+        setStreamingMessage('');
+        setStreamingError(null);
+        setRetrievedNotes([]);
+        setRagLogId(undefined);
+      });
 
       // Calculate input tokens for the user's message
       const estimatedInputTokens = estimateTokenCount(request.content);
@@ -181,6 +189,7 @@ export function useChatStream() {
     outputTokens,
     streamDuration,
     ragLogId,
+    isPending, // Transition pending state for UI feedback
 
     // Actions
     sendStreamingMessage,

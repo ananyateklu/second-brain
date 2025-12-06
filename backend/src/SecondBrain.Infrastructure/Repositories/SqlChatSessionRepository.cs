@@ -195,7 +195,8 @@ public class SqlChatSessionRepository : IChatSessionRepository
             }
             else
             {
-                _logger.LogWarning("Session {SessionId} not found or already ended", sessionId);
+                // Debug level since this is expected for idempotent operations
+                _logger.LogDebug("Session {SessionId} not found or already ended (idempotent)", sessionId);
             }
 
             return ended;

@@ -18,6 +18,11 @@ export const DEFAULT_USER_ID = 'default-user';
  */
 let _apiBaseUrl: string | null = null;
 
+// Type for window with Tauri API URL
+interface WindowWithTauriApiUrl extends Window {
+  __TAURI_API_URL__?: string;
+}
+
 /**
  * Get the base API URL from environment or default
  * In Tauri, this comes from the Rust backend
@@ -31,8 +36,7 @@ export const getApiBaseUrl = (): string => {
 
   // Check for Tauri URL set on window
   if (typeof window !== 'undefined' && '__TAURI_API_URL__' in window) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (window as any).__TAURI_API_URL__ as string;
+    return (window as WindowWithTauriApiUrl).__TAURI_API_URL__ as string;
   }
 
   return import.meta.env.VITE_API_URL || '/api';
@@ -44,9 +48,34 @@ export const getApiBaseUrl = (): string => {
 export const setApiBaseUrl = (url: string): void => {
   _apiBaseUrl = url;
   if (typeof window !== 'undefined') {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).__TAURI_API_URL__ = url;
+    (window as WindowWithTauriApiUrl).__TAURI_API_URL__ = url;
   }
+};
+
+/**
+ * Get the direct backend URL for use with sendBeacon or other direct requests.
+ * This bypasses the Vite proxy and returns the actual backend URL.
+ * In development, this returns http://localhost:5001/api
+ * In production or Tauri, this uses the configured API URL
+ */
+export const getDirectBackendUrl = (): string => {
+  // In Tauri mode, use the configured URL
+  if (_apiBaseUrl) {
+    return _apiBaseUrl;
+  }
+
+  // Check for Tauri URL set on window
+  if (typeof window !== 'undefined' && '__TAURI_API_URL__' in window) {
+    return (window as WindowWithTauriApiUrl).__TAURI_API_URL__ as string;
+  }
+
+  // In development, use the direct backend URL (bypassing Vite proxy)
+  // In production, the VITE_API_URL or /api should work directly
+  if (import.meta.env.DEV) {
+    return 'http://localhost:5001/api';
+  }
+
+  return import.meta.env.VITE_API_URL || '/api';
 };
 
 /**

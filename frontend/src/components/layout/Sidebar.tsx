@@ -1,8 +1,12 @@
 import { NavLink } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useUIStore } from '../../store/ui-store';
 import { useThemeStore } from '../../store/theme-store';
 import { ThemeToggle } from '../ui/ThemeToggle';
+import { noteKeys, conversationKeys, statsKeys } from '../../lib/query-keys';
+import { notesService, chatService, statsService } from '../../services';
+import { CACHE } from '../../lib/constants';
 import logoLight from '../../assets/second-brain-logo-light-mode.png';
 import logoDark from '../../assets/second-brain-logo-dark-mode.png';
 import brainTopTab from '../../assets/brain-top-tab.png';
@@ -15,6 +19,7 @@ const isTauri = (): boolean => {
 };
 
 export function Sidebar() {
+  const queryClient = useQueryClient();
   const openCreateModal = useUIStore((state) => state.openCreateModal);
   const sidebarState = useUIStore((state) => state.sidebarState);
   const previousSidebarState = useUIStore((state) => state.previousSidebarState);
@@ -25,6 +30,38 @@ export function Sidebar() {
   const [hoveredLink, setHoveredLink] = useState<string | null>(null);
   // Use lazy initialization to avoid setState in useEffect
   const [isTauriApp] = useState(() => isTauri());
+
+  /**
+   * Prefetch data on hover for instant navigation
+   * This improves perceived performance by loading data before the user clicks
+   */
+  const prefetchRouteData = useCallback((route: string) => {
+    switch (route) {
+      case 'dashboard':
+        queryClient.prefetchQuery({
+          queryKey: statsKeys.ai(),
+          queryFn: () => statsService.getAIStats(),
+          staleTime: CACHE.STALE_TIME,
+        });
+        break;
+      case 'notes':
+      case 'directory':
+        queryClient.prefetchQuery({
+          queryKey: noteKeys.all,
+          queryFn: () => notesService.getAll(),
+          staleTime: CACHE.STALE_TIME,
+        });
+        break;
+      case 'chat':
+        queryClient.prefetchQuery({
+          queryKey: conversationKeys.all,
+          queryFn: () => chatService.getConversations(),
+          staleTime: CACHE.STALE_TIME,
+        });
+        break;
+      // analytics and settings don't need prefetch - data loads quickly
+    }
+  }, [queryClient]);
 
   const isCollapsed = sidebarState === 'collapsed';
   const isExpanded = sidebarState === 'expanded';
@@ -145,6 +182,7 @@ export function Sidebar() {
               const link = e.currentTarget;
               const isActive = link.getAttribute('aria-current') === 'page';
               setHoveredLink('dashboard');
+              prefetchRouteData('dashboard'); // Prefetch dashboard data on hover
               if (!isActive) {
                 link.style.backgroundColor = 'var(--surface-elevated)';
                 link.style.color = 'var(--text-primary)';
@@ -210,6 +248,7 @@ export function Sidebar() {
               const link = e.currentTarget;
               const isActive = link.getAttribute('aria-current') === 'page';
               setHoveredLink('notes');
+              prefetchRouteData('notes'); // Prefetch notes data on hover
               if (!isActive) {
                 link.style.backgroundColor = 'var(--surface-elevated)';
                 link.style.color = 'var(--text-primary)';
@@ -275,6 +314,7 @@ export function Sidebar() {
               const link = e.currentTarget;
               const isActive = link.getAttribute('aria-current') === 'page';
               setHoveredLink('directory');
+              prefetchRouteData('directory'); // Prefetch notes data on hover (shared with notes)
               if (!isActive) {
                 link.style.backgroundColor = 'var(--surface-elevated)';
                 link.style.color = 'var(--text-primary)';
@@ -340,6 +380,7 @@ export function Sidebar() {
               const link = e.currentTarget;
               const isActive = link.getAttribute('aria-current') === 'page';
               setHoveredLink('chat');
+              prefetchRouteData('chat'); // Prefetch conversations on hover
               if (!isActive) {
                 link.style.backgroundColor = 'var(--surface-elevated)';
                 link.style.color = 'var(--text-primary)';

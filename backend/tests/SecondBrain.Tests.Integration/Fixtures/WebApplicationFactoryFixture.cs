@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Time.Testing;
 using SecondBrain.Application.Services.AI.Interfaces;
 using SecondBrain.Application.Services.Embeddings;
 using SecondBrain.Infrastructure.Data;
@@ -32,6 +33,12 @@ public class WebApplicationFactoryFixture : WebApplicationFactory<Program>, IAsy
     /// Test user ID.
     /// </summary>
     public string TestUserId { get; private set; } = "test-user-id";
+
+    /// <summary>
+    /// FakeTimeProvider for testing time-dependent behavior.
+    /// Use Advance() to move time forward in tests.
+    /// </summary>
+    public FakeTimeProvider FakeTimeProvider { get; } = new(DateTimeOffset.UtcNow);
 
     public async Task InitializeAsync()
     {
@@ -80,6 +87,11 @@ public class WebApplicationFactoryFixture : WebApplicationFactory<Program>, IAsy
             // Replace embedding provider factory with mock
             services.RemoveAll<IEmbeddingProviderFactory>();
             services.AddSingleton<IEmbeddingProviderFactory, MockEmbeddingProviderFactory>();
+
+            // Replace TimeProvider with FakeTimeProvider for testing time-dependent behavior
+            // This enables tests to control time (e.g., token expiration, circuit breaker timeouts)
+            services.RemoveAll<TimeProvider>();
+            services.AddSingleton<TimeProvider>(FakeTimeProvider);
 
             // Ensure database is created
             using var scope = services.BuildServiceProvider().CreateScope();

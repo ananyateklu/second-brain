@@ -1,4 +1,5 @@
 import { useEditor, EditorContent, ReactRenderer, Editor } from '@tiptap/react';
+import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import Mention from '@tiptap/extension-mention';
@@ -235,10 +236,9 @@ export function RichTextEditor({
 
   const extractTags = useCallback((editorInstance: Editor) => {
     const newTags: string[] = [];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    editorInstance.state.doc.descendants((node: any) => {
+    editorInstance.state.doc.descendants((node: ProseMirrorNode) => {
       if (node.type.name === 'mention') {
-        newTags.push(node.attrs.id);
+        newTags.push(node.attrs.id as string);
       }
     });
     // Deduplicate tags and filter out empty strings
@@ -444,15 +444,14 @@ export function RichTextEditor({
     const replacements: Array<{ from: number; to: number; tag: string; needsSpace: boolean }> = [];
 
     // Traverse the document to find #tag patterns in text nodes
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    doc.descendants((node: any, pos: number) => {
+    doc.descendants((node: ProseMirrorNode, pos: number) => {
       // Skip if already a mention node
       if (node.type.name === 'mention') {
         return;
       }
 
       // Only process text nodes
-      if (node.isText) {
+      if (node.isText && node.text) {
         const text = node.text;
         const tagPattern = /#([a-zA-Z0-9_-]+)/g;
         let match;
@@ -468,7 +467,7 @@ export function RichTextEditor({
 
           // Check if there's already whitespace after the tag (don't add extra space)
           const charAfter = text[matchEnd];
-          const needsSpace = charAfter && charAfter !== ' ' && charAfter !== '\n' && charAfter !== '\t';
+          const needsSpace = Boolean(charAfter && charAfter !== ' ' && charAfter !== '\n' && charAfter !== '\t');
 
           // Check if this position is already a mention (might be in a different node)
           const resolvedPos = doc.resolve(from);

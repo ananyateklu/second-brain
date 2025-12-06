@@ -1387,11 +1387,10 @@ Generate prompts that would be genuinely useful for exploring this content.";
     }
 
     /// <summary>
-    /// End an active chat session
+    /// End an active chat session (idempotent - returns success even if session doesn't exist)
     /// </summary>
     [HttpPost("sessions/{sessionId}/end")]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult> EndSession(
         string sessionId,
@@ -1413,12 +1412,14 @@ Generate prompts that would be genuinely useful for exploring this content.";
                 request?.TokensUsed,
                 cancellationToken);
 
+            // Idempotent: return success even if session was already ended or doesn't exist
+            // This handles race conditions during page unload and stale session IDs
             if (!ended)
             {
-                return NotFound(new { error = "Session not found or already ended" });
+                _logger.LogDebug("Session {SessionId} was already ended or not found (idempotent success)", sessionId);
             }
 
-            return Ok(new { message = "Session ended successfully" });
+            return Ok(new { message = "Session ended successfully", wasActive = ended });
         }
         catch (Exception ex)
         {

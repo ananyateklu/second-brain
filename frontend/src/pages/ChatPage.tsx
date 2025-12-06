@@ -3,9 +3,10 @@
  * Main chat interface with AI conversations, streaming, and image generation
  * 
  * Refactored to use consolidated state hook for better maintainability
+ * Enhanced with granular Suspense boundaries for better loading UX
  */
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
 import { useChatPageState } from '../features/chat/hooks/use-chat-page-state';
 import { ChatSidebar } from '../features/chat/components/ChatSidebar';
 import { ChatHeader } from '../features/chat/components/ChatHeader';
@@ -15,8 +16,13 @@ import { EditNoteModal } from '../features/notes/components/EditNoteModal';
 import { useAuthStore } from '../store/auth-store';
 import { useSendMessage } from '../features/chat/hooks/use-chat';
 import { useStartSession, useEndSession, collectDeviceInfo } from '../features/chat/hooks/use-chat-sessions';
-import { getApiBaseUrl, API_ENDPOINTS } from '../lib/constants';
+import { getDirectBackendUrl, API_ENDPOINTS } from '../lib/constants';
 import type { VectorStoreProvider } from '../types/rag';
+import {
+  ChatSidebarSkeleton,
+  ChatHeaderSkeleton,
+  ChatMessagesSkeleton,
+} from '../components/skeletons';
 
 /**
  * Check if we're running in Tauri
@@ -169,9 +175,10 @@ export function ChatPage() {
     const handleBeforeUnload = () => {
       if (sessionIdRef.current) {
         // Use sendBeacon for reliable cleanup when tab is closing
-        const apiUrl = getApiBaseUrl();
+        // Must use direct backend URL as sendBeacon bypasses Vite proxy
+        const backendUrl = getDirectBackendUrl();
         navigator.sendBeacon(
-          `${apiUrl}${API_ENDPOINTS.CHAT.SESSIONS.END(sessionIdRef.current)}`,
+          `${backendUrl}${API_ENDPOINTS.CHAT.SESSIONS.END(sessionIdRef.current)}`,
           JSON.stringify({
             messagesSent: messageCountRef.current.sent,
             messagesReceived: messageCountRef.current.received,
@@ -212,71 +219,77 @@ export function ChatPage() {
           : 'calc(100vh - 2rem)',
       }}
     >
-      {/* Sidebar */}
+      {/* Sidebar with Suspense boundary for independent loading */}
       {showSidebar && (
-        <ChatSidebar
-          conversations={displayConversations}
-          selectedConversationId={conversationId}
-          isNewChat={isNewChat}
-          onSelectConversation={handleSelectConversation}
-          onDeleteConversation={handleDeleteConversation}
-          onBulkDeleteConversations={handleBulkDeleteConversations}
-          onNewChat={handleNewChat}
-          onToggleSidebar={() => setShowSidebar(false)}
-        />
+        <Suspense fallback={<ChatSidebarSkeleton />}>
+          <ChatSidebar
+            conversations={displayConversations}
+            selectedConversationId={conversationId}
+            isNewChat={isNewChat}
+            onSelectConversation={handleSelectConversation}
+            onDeleteConversation={handleDeleteConversation}
+            onBulkDeleteConversations={handleBulkDeleteConversations}
+            onNewChat={handleNewChat}
+            onToggleSidebar={() => setShowSidebar(false)}
+          />
+        </Suspense>
       )}
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col h-full min-w-0 relative">
-        {/* Header */}
-        <ChatHeader
-          showSidebar={showSidebar}
-          onToggleSidebar={toggleSidebar}
-          isHealthLoading={isHealthLoading}
-          availableProviders={availableProviders}
-          selectedProvider={selectedProvider}
-          selectedModel={selectedModel}
-          onProviderChange={handleProviderChange}
-          onModelChange={handleModelChange}
-          ragEnabled={ragEnabled}
-          onRagToggle={handleRagToggle}
-          selectedVectorStore={selectedVectorStore as 'PostgreSQL' | 'Pinecone'}
-          onVectorStoreChange={(provider) => handleVectorStoreChange(provider as VectorStoreProvider)}
-          agentModeEnabled={agentModeEnabled}
-          onAgentModeChange={setAgentModeEnabled}
-          agentRagEnabled={agentRagEnabled}
-          onAgentRagChange={setAgentRagEnabled}
-          agentCapabilities={agentCapabilities}
-          isLoading={isLoading}
-          isImageGenerationMode={isImageGenerationMode}
-          contextUsage={contextUsage}
-          isStreaming={isStreaming}
-        />
+        {/* Header with Suspense boundary */}
+        <Suspense fallback={<ChatHeaderSkeleton />}>
+          <ChatHeader
+            showSidebar={showSidebar}
+            onToggleSidebar={toggleSidebar}
+            isHealthLoading={isHealthLoading}
+            availableProviders={availableProviders}
+            selectedProvider={selectedProvider}
+            selectedModel={selectedModel}
+            onProviderChange={handleProviderChange}
+            onModelChange={handleModelChange}
+            ragEnabled={ragEnabled}
+            onRagToggle={handleRagToggle}
+            selectedVectorStore={selectedVectorStore as 'PostgreSQL' | 'Pinecone'}
+            onVectorStoreChange={(provider) => handleVectorStoreChange(provider as VectorStoreProvider)}
+            agentModeEnabled={agentModeEnabled}
+            onAgentModeChange={setAgentModeEnabled}
+            agentRagEnabled={agentRagEnabled}
+            onAgentRagChange={setAgentRagEnabled}
+            agentCapabilities={agentCapabilities}
+            isLoading={isLoading}
+            isImageGenerationMode={isImageGenerationMode}
+            contextUsage={contextUsage}
+            isStreaming={isStreaming}
+          />
+        </Suspense>
 
-        {/* Messages Area */}
-        <ChatMessageList
-          conversation={conversation}
-          pendingMessage={pendingMessage}
-          isStreaming={isStreaming}
-          streamingMessage={streamingMessage}
-          streamingError={streamingError}
-          retrievedNotes={retrievedNotes}
-          toolExecutions={toolExecutions}
-          thinkingSteps={thinkingSteps}
-          agentRetrievedNotes={agentRetrievedNotes}
-          processingStatus={processingStatus}
-          inputTokens={inputTokens}
-          outputTokens={outputTokens}
-          streamDuration={streamDuration}
-          ragLogId={ragLogId}
-          agentModeEnabled={agentModeEnabled}
-          userName={user?.displayName}
-          isSending={sendMessage.isPending}
-          isCreating={isCreating}
-          isGeneratingImage={isGeneratingImage}
-          messagesContainerRef={messagesContainerRef}
-          messagesEndRef={messagesEndRef}
-        />
+        {/* Messages Area with Suspense boundary */}
+        <Suspense fallback={<ChatMessagesSkeleton />}>
+          <ChatMessageList
+            conversation={conversation}
+            pendingMessage={pendingMessage}
+            isStreaming={isStreaming}
+            streamingMessage={streamingMessage}
+            streamingError={streamingError}
+            retrievedNotes={retrievedNotes}
+            toolExecutions={toolExecutions}
+            thinkingSteps={thinkingSteps}
+            agentRetrievedNotes={agentRetrievedNotes}
+            processingStatus={processingStatus}
+            inputTokens={inputTokens}
+            outputTokens={outputTokens}
+            streamDuration={streamDuration}
+            ragLogId={ragLogId}
+            agentModeEnabled={agentModeEnabled}
+            userName={user?.displayName}
+            isSending={sendMessage.isPending}
+            isCreating={isCreating}
+            isGeneratingImage={isGeneratingImage}
+            messagesContainerRef={messagesContainerRef}
+            messagesEndRef={messagesEndRef}
+          />
+        </Suspense>
 
         {/* Input Area */}
         <ChatInputArea

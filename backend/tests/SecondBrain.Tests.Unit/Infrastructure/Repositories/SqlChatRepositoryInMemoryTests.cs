@@ -411,6 +411,22 @@ public class TestChatRepository : IChatRepository
         }
     }
 
+    // Optimized query methods (new interface additions)
+    public async Task<IEnumerable<ChatConversation>> GetConversationHeadersAsync(string userId)
+    {
+        return await _context.ChatConversations
+            .AsNoTracking()
+            .Where(c => c.UserId == userId)
+            .OrderByDescending(c => c.UpdatedAt)
+            .ToListAsync();
+    }
+
+    public async Task<bool> ExistsForUserAsync(string conversationId, string userId)
+    {
+        return await _context.ChatConversations
+            .AnyAsync(c => c.Id == conversationId && c.UserId == userId);
+    }
+
     // Soft delete methods (simplified implementations for testing)
     public async Task<bool> SoftDeleteAsync(string id, string deletedBy)
     {

@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Hybrid;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -347,6 +348,15 @@ public static class ServiceCollectionExtensions
             .AddCheck<MemoryHealthCheck>("memory",
                 failureStatus: Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Degraded,
                 tags: new[] { "memory", "live" });
+
+        // Register health check publisher for metrics/alerting
+        // Publishes health check results to OpenTelemetry metrics and logs
+        services.Configure<HealthCheckPublisherOptions>(options =>
+        {
+            options.Delay = TimeSpan.FromSeconds(5);   // Initial delay before first publish
+            options.Period = TimeSpan.FromSeconds(30); // Publish interval
+        });
+        services.AddSingleton<IHealthCheckPublisher, HealthCheckPublisher>();
 
         return services;
     }

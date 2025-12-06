@@ -51,14 +51,18 @@ What is the change that we're proposing and/or doing?
 
 | ADR | Title | Status | Date |
 |-----|-------|--------|------|
-| [001](001-zustand-for-client-state.md) | Zustand for Client State Management | Accepted | 2024-12 |
-| [002](002-tanstack-query-for-server-state.md) | TanStack Query for Server State | Accepted | 2024-12 |
-| [003](003-clean-architecture-backend.md) | Clean Architecture for Backend | Accepted | 2024-12 |
-| [004](004-ai-provider-factory-pattern.md) | AI Provider Factory Pattern | Accepted | 2024-12 |
-| [005](005-result-pattern-error-handling.md) | Result Pattern for Error Handling | Accepted | 2024-12 |
-| [006](006-cqrs-mediatr-pattern.md) | CQRS with MediatR | Accepted | 2024-12 |
+| [001](001-zustand-for-client-state.md) | Zustand for Client State Management | Accepted | 2025-12 |
+| [002](002-tanstack-query-for-server-state.md) | TanStack Query for Server State | Accepted | 2025-12 |
+| [003](003-clean-architecture-backend.md) | Clean Architecture for Backend | Accepted | 2025-12 |
+| [004](004-ai-provider-factory-pattern.md) | AI Provider Factory Pattern | Accepted | 2025-12 |
+| [005](005-result-pattern-error-handling.md) | Result Pattern for Error Handling | Accepted | 2025-12 |
+| [006](006-cqrs-mediatr-pattern.md) | CQRS with MediatR | Accepted | 2025-12 |
 | [007](007-tauri-macos-desktop-app.md) | Tauri macOS Desktop App | Accepted | 2025-12 |
 | [008](008-ios-shortcuts-integration.md) | iOS Shortcuts Integration | Accepted | 2025-12 |
+| [009](009-opentelemetry-observability.md) | OpenTelemetry Observability | Accepted | 2025-12 |
+| [010](010-hybridcache-distributed-caching.md) | HybridCache for Distributed Caching | Accepted | 2025-12 |
+| [011](011-backend-performance-optimizations.md) | Backend Performance Optimizations | Accepted | 2025-12 |
+| [012](012-postgresql-18-temporal-features.md) | PostgreSQL 18 Temporal Features | Accepted | 2025-12 |
 
 ## Creating a New ADR
 

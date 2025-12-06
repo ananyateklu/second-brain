@@ -6,6 +6,10 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
 import { LoginPage } from '../pages/LoginPage';
 import { NotFoundPage } from '../pages/NotFoundPage';
 import { PageLoader } from './PageLoader';
+import { queryClient } from './query-client';
+import { noteKeys, conversationKeys, statsKeys } from './query-keys';
+import { notesService, chatService, statsService } from '../services';
+import { CACHE } from './constants';
 
 // Lazy load heavy pages to reduce initial bundle size
 const DashboardPage = lazy(() => import('../pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
@@ -30,6 +34,22 @@ export const router = createBrowserRouter([
   },
   {
     path: '/',
+    loader: async () => {
+      // Prefetch dashboard data while route loads
+      await Promise.all([
+        queryClient.prefetchQuery({
+          queryKey: statsKeys.ai(),
+          queryFn: () => statsService.getAIStats(),
+          staleTime: CACHE.STALE_TIME,
+        }),
+        queryClient.prefetchQuery({
+          queryKey: noteKeys.all,
+          queryFn: () => notesService.getAll(),
+          staleTime: CACHE.STALE_TIME,
+        }),
+      ]);
+      return null;
+    },
     element: (
       <ProtectedRoute>
         <ErrorBoundary>
@@ -44,6 +64,15 @@ export const router = createBrowserRouter([
   },
   {
     path: '/notes',
+    loader: async () => {
+      // Prefetch notes while route loads for instant display
+      await queryClient.prefetchQuery({
+        queryKey: noteKeys.all,
+        queryFn: () => notesService.getAll(),
+        staleTime: CACHE.STALE_TIME,
+      });
+      return null;
+    },
     element: (
       <ProtectedRoute>
         <ErrorBoundary>
@@ -72,6 +101,15 @@ export const router = createBrowserRouter([
   },
   {
     path: '/chat',
+    loader: async () => {
+      // Prefetch conversations list while route loads
+      await queryClient.prefetchQuery({
+        queryKey: conversationKeys.all,
+        queryFn: () => chatService.getConversations(),
+        staleTime: CACHE.STALE_TIME,
+      });
+      return null;
+    },
     element: (
       <ProtectedRoute>
         <ErrorBoundary>

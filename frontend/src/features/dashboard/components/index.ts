@@ -4,4 +4,5 @@ export { NotesChart } from './NotesChart';
 export { ChatUsageChart } from './ChatUsageChart';
 export { ModelUsageSection } from './ModelUsageSection';
 export { PieChartTooltip } from './PieChartTooltip';
+export { SessionStatsSection } from './SessionStatsSection';
 

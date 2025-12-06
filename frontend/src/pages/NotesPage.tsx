@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useDeferredValue } from 'react';
 import { useNotes, useBulkDeleteNotes } from '../features/notes/hooks/use-notes-query';
 import { NoteList } from '../features/notes/components/NoteList';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
@@ -87,6 +87,11 @@ export function NotesPage() {
   const notesViewMode = useUIStore((state) => state.notesViewMode);
   const setNotesViewMode = useUIStore((state) => state.setNotesViewMode);
 
+  // Defer search query updates to keep typing responsive
+  // This prevents expensive filtering from blocking user input
+  const deferredSearchQuery = useDeferredValue(searchQuery);
+  const isSearchStale = searchQuery !== deferredSearchQuery;
+
   const [filterState, setFilterState] = useState<NotesFilterState>({
     dateFilter: 'all',
     selectedTags: [],
@@ -130,10 +135,11 @@ export function NotesPage() {
   }, [filterState.dateFilter]);
 
   // Apply all filters and sorting - optimized version
+  // Uses deferred search query to prevent UI lag while typing
   const filteredNotes = useMemo(() => {
     if (!notes) return [];
 
-    const query = searchQuery.trim().toLowerCase();
+    const query = deferredSearchQuery.trim().toLowerCase();
     const hasSearchQuery = query.length > 0;
     const hasDateFilter = filterState.dateFilter !== 'all';
     const hasTagFilter = filterState.selectedTags.length > 0;
@@ -234,7 +240,7 @@ export function NotesPage() {
     });
 
     return filtered;
-  }, [notes, searchQuery, searchMode, filterState, dateBoundaries]);
+  }, [notes, deferredSearchQuery, searchMode, filterState, dateBoundaries]);
 
   // Select/Deselect all handlers - operates on filtered notes
   const handleSelectAll = useCallback(() => {
@@ -258,7 +264,7 @@ export function NotesPage() {
     try {
       // Use bulk delete endpoint - single API call instead of multiple
       const result = await bulkDeleteMutation.mutateAsync(idsToDelete);
-      
+
       toast.success('Notes deleted', `Successfully deleted ${result.deletedCount} note${result.deletedCount === 1 ? '' : 's'}.`);
       setSelectedNoteIds(new Set());
       setIsBulkMode(false);
@@ -379,7 +385,10 @@ export function NotesPage() {
           onBulkModeToggle={toggleBulkMode}
         />
       )}
-      <div className={notes && notes.length > 0 ? 'pt-10' : ''}>
+      <div
+        className={notes && notes.length > 0 ? 'pt-10 transition-opacity duration-200' : 'transition-opacity duration-200'}
+        style={{ opacity: isSearchStale ? 0.7 : 1 }}
+      >
         <NoteList
           notes={filteredNotes}
           viewMode={notesViewMode}

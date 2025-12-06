@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown, { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import type { Element } from 'hast';
 import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 // Import only the languages you need (reduces bundle size significantly)
@@ -176,12 +177,13 @@ export function MarkdownMessage({ content }: MarkdownMessageProps) {
             />
           ),
           // Code blocks
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          code: ({ node: _node, inline, className, children, ...props }: any) => {
+          code: (({ className, children, ...props }) => {
             const match = /language-(\w+)/.exec(className || '');
             const language = match ? match[1] : '';
+            // Check if inline based on whether parent is a pre element (heuristic)
+            const isInline = !className?.includes('language-');
 
-            if (inline) {
+            if (isInline) {
               return (
                 <code
                   className="px-1.5 py-0.5 rounded text-sm font-mono"
@@ -211,22 +213,21 @@ export function MarkdownMessage({ content }: MarkdownMessageProps) {
                   marginBottom: '1rem',
                 }}
                 PreTag="div"
-                {...props}
               >
                 {String(children).replace(/\n$/, '')}
               </SyntaxHighlighter>
             );
-          },
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          pre: ({ node, ...props }: any) => {
+          }) as Components['code'],
+          pre: (({ node, children, ...props }) => {
             // If it contains a code element with syntax highlighting, don't wrap it
-            const hasCodeBlock = node?.children?.some(
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              (child: any) => child.type === 'element' && child.tagName === 'code' && child.properties?.className
+            const hasCodeBlock = (node as Element)?.children?.some(
+              (child: Element | { type: string }) => child.type === 'element' &&
+                (child as Element).tagName === 'code' &&
+                (child as Element).properties?.className
             );
 
             if (hasCodeBlock) {
-              return <>{props.children}</>;
+              return <>{children}</>;
             }
 
             return (
@@ -237,9 +238,11 @@ export function MarkdownMessage({ content }: MarkdownMessageProps) {
                   border: '1px solid var(--border)',
                 }}
                 {...props}
-              />
+              >
+                {children}
+              </pre>
             );
-          },
+          }) as Components['pre'],
           // Blockquotes
           blockquote: ({ node: _node, ...props }) => (
             <blockquote
