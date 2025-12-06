@@ -83,7 +83,7 @@ export function useDashboardAnimations(
   const [isReady, setIsReady] = useState(false);
   const [animationKey, setAnimationKey] = useState(0);
   const mountedRef = useRef(false);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Determine config based on environment
   const config = useMemo<AnimationConfig>(() => {
@@ -120,6 +120,7 @@ export function useDashboardAnimations(
   // Trigger animations on mount and when data loads
   useEffect(() => {
     if (!isDataLoaded) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsReady(false);
       return;
     }
@@ -150,7 +151,7 @@ export function useDashboardAnimations(
 
   // Get animation state for a specific item
   const getItemAnimation = useCallback(
-    (index: number, total: number = itemCount): AnimatedItemState => {
+    (index: number, _total: number = itemCount): AnimatedItemState => {
       const delay = config.baseDelay + index * config.staggerDelay;
       
       // Calculate animation completion time for this item
@@ -248,6 +249,7 @@ export function useAnimatedVisibility(
 
   useEffect(() => {
     if (!isVisible) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setHasAppeared(false);
       return;
     }

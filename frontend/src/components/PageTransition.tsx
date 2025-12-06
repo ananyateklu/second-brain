@@ -45,7 +45,7 @@ export function PageTransition({
   const [displayChildren, setDisplayChildren] = useState(children);
   const [transitionState, setTransitionState] = useState<TransitionState>('entered');
   const previousPathRef = useRef(location.pathname);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Platform detection for optimized animations
   const isWebKit = useMemo(() => isTauri(), []);
@@ -78,6 +78,7 @@ export function PageTransition({
 
     // If reduce motion is preferred, just swap content immediately
     if (reduceMotion) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDisplayChildren(children);
       previousPathRef.current = location.pathname;
       return;
@@ -108,6 +109,7 @@ export function PageTransition({
   // Update children if already on same page (for content changes)
   useEffect(() => {
     if (location.pathname === previousPathRef.current && transitionState === 'entered') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDisplayChildren(children);
     }
   }, [children, location.pathname, transitionState]);
@@ -163,13 +165,14 @@ export function PageTransition({
  * Hook to access page transition state
  * Useful for components that need to coordinate with page transitions
  */
-export function usePageTransition() {
+function usePageTransition() {
   const location = useLocation();
   const [isTransitioning, setIsTransitioning] = useState(false);
   const previousPathRef = useRef(location.pathname);
 
   useEffect(() => {
     if (location.pathname !== previousPathRef.current) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsTransitioning(true);
       previousPathRef.current = location.pathname;
 
@@ -186,4 +189,7 @@ export function usePageTransition() {
     currentPath: location.pathname,
   };
 }
+
+// Export the hook separately to satisfy fast-refresh
+export { usePageTransition };
 

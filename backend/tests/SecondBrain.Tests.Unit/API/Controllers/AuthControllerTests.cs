@@ -249,7 +249,7 @@ public class AuthControllerTests
         // Arrange
         var request = new LoginRequest
         {
-            Email = "test@example.com",
+            Identifier = "test@example.com",
             Password = "password123"
         };
 
@@ -288,7 +288,7 @@ public class AuthControllerTests
     public async Task Login_WhenEmailEmpty_ReturnsBadRequest()
     {
         // Arrange
-        var request = new LoginRequest { Email = "", Password = "password123" };
+        var request = new LoginRequest { Identifier = "", Password = "password123" };
 
         // Act
         var result = await _sut.Login(request);
@@ -301,7 +301,7 @@ public class AuthControllerTests
     public async Task Login_WhenPasswordEmpty_ReturnsBadRequest()
     {
         // Arrange
-        var request = new LoginRequest { Email = "test@example.com", Password = "" };
+        var request = new LoginRequest { Identifier = "test@example.com", Password = "" };
 
         // Act
         var result = await _sut.Login(request);
@@ -316,7 +316,7 @@ public class AuthControllerTests
         // Arrange
         var request = new LoginRequest
         {
-            Email = "nonexistent@example.com",
+            Identifier = "nonexistent@example.com",
             Password = "password123"
         };
 
@@ -328,7 +328,7 @@ public class AuthControllerTests
 
         // Assert
         var unauthorizedResult = result.Result.Should().BeOfType<UnauthorizedObjectResult>().Subject;
-        unauthorizedResult.Value.Should().BeEquivalentTo(new { error = "Invalid email or password" });
+        unauthorizedResult.Value.Should().BeEquivalentTo(new { error = "Invalid credentials" });
     }
 
     [Fact]
@@ -337,7 +337,7 @@ public class AuthControllerTests
         // Arrange
         var request = new LoginRequest
         {
-            Email = "test@example.com",
+            Identifier = "test@example.com",
             Password = "wrong_password"
         };
 
@@ -359,7 +359,7 @@ public class AuthControllerTests
 
         // Assert
         var unauthorizedResult = result.Result.Should().BeOfType<UnauthorizedObjectResult>().Subject;
-        unauthorizedResult.Value.Should().BeEquivalentTo(new { error = "Invalid email or password" });
+        unauthorizedResult.Value.Should().BeEquivalentTo(new { error = "Invalid credentials" });
     }
 
     [Fact]
@@ -368,7 +368,7 @@ public class AuthControllerTests
         // Arrange
         var request = new LoginRequest
         {
-            Email = "test@example.com",
+            Identifier = "test@example.com",
             Password = "password123"
         };
 
@@ -396,7 +396,7 @@ public class AuthControllerTests
         // Arrange
         var request = new LoginRequest
         {
-            Email = "test@example.com",
+            Identifier = "test@example.com",
             Password = "password123"
         };
 
@@ -427,7 +427,7 @@ public class AuthControllerTests
         // Arrange
         var request = new LoginRequest
         {
-            Email = "TEST@EXAMPLE.COM",
+            Identifier = "TEST@EXAMPLE.COM",
             Password = "password123"
         };
 
