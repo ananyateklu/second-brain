@@ -15,20 +15,21 @@ export function IndexingButton({ userId = 'default-user', onComplete }: Indexing
   const { data: jobStatus } = useIndexingStatus(currentJobId, !!currentJobId);
   const toastShownRef = useRef<string | null>(null);
 
-  const isIndexing = jobStatus?.status === 'running' || jobStatus?.status === 'pending';
-  const isCompleted = jobStatus?.status === 'completed' || jobStatus?.status === 'partially_completed';
+  const isIndexing = jobStatus?.status === 'processing' || jobStatus?.status === 'pending';
+  const isCompleted = jobStatus?.status === 'completed';
   const isFailed = jobStatus?.status === 'failed';
 
   // Handle completion
   useEffect(() => {
-    if (isCompleted) {
-      if (onComplete) {
-        onComplete();
-      }
-      // Reset job ID after a delay to allow toast to show
-      const timer = setTimeout(() => { setCurrentJobId(null); }, 3000);
-      return () => { clearTimeout(timer); };
+    if (!isCompleted) {
+      return;
     }
+    if (onComplete) {
+      onComplete();
+    }
+    // Reset job ID after a delay to allow toast to show
+    const timer = setTimeout(() => { setCurrentJobId(null); }, 3000);
+    return () => { clearTimeout(timer); };
   }, [isCompleted, onComplete]);
 
   // Handle status changes

@@ -280,6 +280,6 @@ export async function onTauriEvent(
     return () => { /* no-op */ };
   }
 
-  return await listen(event, (e) => { callback(e.payload as T); });
+  return await listen(event, (e) => { callback(e.payload); });
 }
 

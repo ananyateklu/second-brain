@@ -89,7 +89,7 @@ export function EditNoteModal() {
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    void handleSubmit(e)();
+    void handleSubmit();
   };
 
   // Reset form when editing note changes (use note ID to detect changes)

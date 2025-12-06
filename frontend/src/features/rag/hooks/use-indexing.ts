@@ -26,12 +26,12 @@ export const useStartIndexing = () => {
     {
       onSuccess: (job, variables) => {
         // Invalidate stats query for the specific user to refresh after indexing starts
-        void queryClient.invalidateQueries({ queryKey: indexingKeys.stats(variables.userId) });
+        void queryClient.invalidateQueries({ queryKey: indexingKeys.stats({ userId: variables.userId }) });
 
         // Set up cleanup for when job completes
         const cleanup = setInterval(() => {
           const jobData = queryClient.getQueryData<IndexingJobResponse>(indexingKeys.job(job.id));
-          if (jobData && (jobData.status === 'completed' || jobData.status === 'partially_completed' || jobData.status === 'failed')) {
+          if (jobData && (jobData.status === 'completed' || jobData.status === 'failed')) {
             localStorage.removeItem(`indexing_job_${job.id}`);
             clearInterval(cleanup);
           }
@@ -58,15 +58,12 @@ export const useIndexingStatus = (jobId: string | null, enabled = true) => {
     {
       refetchInterval: (query) => {
         const data = query.state.data;
-        // Continue polling if job is still running or pending
-        if (data?.status === 'running' || data?.status === 'pending') {
+        // Continue polling if job is still processing or pending
+        if (data?.status === 'processing' || data?.status === 'pending') {
           return 1000; // Poll every 1 second for faster updates
         }
-        // For completed/failed status, do one final refetch after a short delay
-        // to ensure we have the latest status before stopping
-        if (data?.status === 'completed' || data?.status === 'partially_completed' || data?.status === 'failed') {
-          // Return a small interval to allow one more refetch, then stop
-          // This ensures we capture the final status update
+        // For completed/failed status, stop polling
+        if (data?.status === 'completed' || data?.status === 'failed') {
           return false; // Stop polling after final status is confirmed
         }
         return false; // Stop polling for unknown statuses
@@ -78,7 +75,7 @@ export const useIndexingStatus = (jobId: string | null, enabled = true) => {
 
 export const useIndexStats = (userId = 'default-user') => {
   return useApiQuery<IndexStatsResponse>(
-    indexingKeys.stats(userId),
+    indexingKeys.stats({ userId }),
     () => ragService.getIndexStats(userId),
     {
       staleTime: 30000, // Consider data fresh for 30 seconds
@@ -103,7 +100,7 @@ export const useDeleteIndexedNotes = () => {
     {
       onSuccess: (_, variables) => {
         // Invalidate stats query for the specific user to refresh after deletion
-        void queryClient.invalidateQueries({ queryKey: indexingKeys.stats(variables.userId) });
+        void queryClient.invalidateQueries({ queryKey: indexingKeys.stats({ userId: variables.userId }) });
       },
     }
   );
@@ -131,7 +128,7 @@ export const useActiveIndexingVectorStores = (): Set<VectorStoreProvider> => {
           const jobData = query.state.data as IndexingJobResponse | undefined;
 
           // If job is active, check localStorage for vector store
-          if (jobData && (jobData.status === 'running' || jobData.status === 'pending')) {
+          if (jobData && (jobData.status === 'processing' || jobData.status === 'pending')) {
             const storedJob = localStorage.getItem(`indexing_job_${jobId}`);
             if (storedJob) {
               try {
@@ -154,7 +151,7 @@ export const useActiveIndexingVectorStores = (): Set<VectorStoreProvider> => {
                 // Ignore parse errors
               }
             }
-          } else if (jobData && (jobData.status === 'completed' || jobData.status === 'partially_completed' || jobData.status === 'failed')) {
+          } else if (jobData && (jobData.status === 'completed' || jobData.status === 'failed')) {
             // Clean up completed jobs
             localStorage.removeItem(`indexing_job_${jobId}`);
           }

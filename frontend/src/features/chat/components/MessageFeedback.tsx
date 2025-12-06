@@ -50,7 +50,7 @@ export function MessageFeedback({
       });
     },
     {
-      invalidateQueries: [ragAnalyticsKeys.all()],
+      invalidateQueries: [ragAnalyticsKeys.all],
       showErrorToast: false, // Handle errors silently, just reset UI
       onSuccess: (_, variables) => {
         setSelectedFeedback(variables.feedback);

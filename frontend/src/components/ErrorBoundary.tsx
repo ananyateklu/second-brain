@@ -45,7 +45,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     this.setState({ errorInfo });
     
     // Log error
@@ -69,7 +69,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     }
   };
 
-  render(): ReactNode {
+  override render(): ReactNode {
     if (this.state.hasError) {
       // Use custom fallback if provided
       if (this.props.fallback) {
@@ -305,7 +305,7 @@ export class FeatureErrorBoundary extends Component<
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Feature error:', {
       feature: this.props.feature,
       error,
@@ -317,7 +317,7 @@ export class FeatureErrorBoundary extends Component<
     this.setState({ hasError: false, error: null });
   };
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       if (this.props.fallback) {
         return this.props.fallback;

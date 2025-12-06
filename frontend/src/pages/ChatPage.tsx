@@ -242,7 +242,7 @@ export function ChatPage() {
             isNewChat={isNewChat}
             onSelectConversation={handleSelectConversation}
             onDeleteConversation={handleDeleteConversation}
-            onBulkDeleteConversations={handleBulkDeleteConversations ? (ids: string[]) => { void handleBulkDeleteConversations(ids); } : undefined}
+            onBulkDeleteConversations={handleBulkDeleteConversations}
             onNewChat={handleNewChat}
             onToggleSidebar={() => { setShowSidebar(false); }}
           />

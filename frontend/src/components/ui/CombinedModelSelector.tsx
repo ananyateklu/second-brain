@@ -99,6 +99,8 @@ export function CombinedModelSelector({
 
   // Close dropdown when clicking outside
   useEffect(() => {
+    if (!isOpen) return;
+
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
@@ -106,10 +108,8 @@ export function CombinedModelSelector({
       }
     };
 
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => { document.removeEventListener('mousedown', handleClickOutside); };
-    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => { document.removeEventListener('mousedown', handleClickOutside); };
   }, [isOpen]);
 
   // Keyboard navigation

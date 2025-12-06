@@ -203,7 +203,7 @@ export function useChatSettings(options: UseChatSettingsOptions): ChatSettingsSt
     setAgentRagEnabled: (enabled: boolean) => { void setAgentRagEnabled(enabled); },
     setNotesCapabilityEnabled: (enabled: boolean) => { void setNotesCapabilityEnabled(enabled); },
     // Handlers
-    handleRagToggle: (enabled: boolean) => { void handleRagToggle(enabled); },
-    handleVectorStoreChange: (provider: 'PostgreSQL' | 'Pinecone') => { void handleVectorStoreChange(provider); },
+    handleRagToggle,
+    handleVectorStoreChange,
   };
 }

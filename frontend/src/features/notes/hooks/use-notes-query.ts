@@ -124,7 +124,7 @@ export function useUpdateNote() {
 
 // Mutation: Delete note
 export function useDeleteNote() {
-  return useApiMutation<undefined, string>(
+  return useApiMutation<void, string>(
     (id) => notesService.delete(id),
     {
       successMessage: 'Note deleted successfully',

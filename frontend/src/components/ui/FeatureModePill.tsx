@@ -59,31 +59,31 @@ export function FeatureModePill({
 
   // Close popover when clicking outside
   useEffect(() => {
+    if (!isPopoverOpen) return;
+
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsPopoverOpen(false);
       }
     };
 
-    if (isPopoverOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => { document.removeEventListener('mousedown', handleClickOutside); };
-    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => { document.removeEventListener('mousedown', handleClickOutside); };
   }, [isPopoverOpen]);
 
   // Close on escape
   useEffect(() => {
+    if (!isPopoverOpen) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isPopoverOpen) {
+      if (e.key === 'Escape') {
         setIsPopoverOpen(false);
         buttonRef.current?.focus();
       }
     };
 
-    if (isPopoverOpen) {
-      document.addEventListener('keydown', handleKeyDown);
-      return () => { document.removeEventListener('keydown', handleKeyDown); };
-    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => { document.removeEventListener('keydown', handleKeyDown); };
   }, [isPopoverOpen]);
 
   const handleClick = () => {

@@ -108,7 +108,7 @@ export function useEndSession() {
   const queryClient = useQueryClient();
 
   return useApiMutation<
-    undefined,
+    void,
     { sessionId: string; data?: EndSessionRequest },
     EndSessionContext
   >(
